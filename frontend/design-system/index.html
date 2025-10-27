@@ -518,6 +518,73 @@
             transform: scale(1.05);
         }
 
+        /* --- Search Overlay Styles --- */
+        .search-overlay {
+            position: absolute;
+            top: 60px; /* Below the header */
+            right: 20px;
+            width: 400px;
+            background-color: var(--background-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            padding: 15px;
+            display: none; /* Hidden by default */
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .search-overlay.active {
+            display: block;
+        }
+        .search-overlay h4 {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            margin: 0 0 10px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--border-primary);
+        }
+        .search-item {
+            padding: 8px 0;
+            cursor: pointer;
+            transition: background-color 0.1s;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .search-item:hover {
+            background-color: var(--surface-primary);
+        }
+        .search-item .icon {
+            margin-right: 10px;
+            color: var(--accent-primary-start);
+        }
+        .search-item p {
+            margin: 0;
+            font-size: 0.9rem;
+        }
+        .search-item span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-left: auto;
+        }
+        .esang-ai-search-prompt {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-primary);
+        }
+        .esang-ai-search-prompt button {
+            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
         /* Pulse Effect Keyframes */
         @keyframes pulse {
             0% {
@@ -659,17 +726,48 @@
         }
 
         function renderHeader() {
-            const headerHtml = `
+                 function toggleSearchOverlay(show) {
+            const overlay = document.getElementById('search-overlay');
+            if (overlay) {
+                if (show) {
+                    overlay.classList.add('active');
+                } else {
+                    // Only hide if the input is not focused
+                    overlay.classList.remove('active');
+                }
+            }
+        }
+
+        function renderHeader() {
+            return `
                 <header>
                     <div class="search-bar">
-                        <input type="text" placeholder="Search shipments, contacts...">
+                        <input type="text" id="search-input" placeholder="Search shipments, contacts..." onfocus="toggleSearchOverlay(true)" onblur="setTimeout(() => toggleSearchOverlay(false), 200)">
+                        <div id="search-overlay" class="search-overlay">
+                            <h4>Shipments (2)</h4>
+                            <div class="search-item">
+                                <span class="icon">📦</span><p>SH-001 - Methanol</p><span>In Transit</span>
+                            </div>
+                            <div class="search-item">
+                                <span class="icon">📦</span><p>SH-002 - Pharma</p><span>Loading</span>
+                            </div>
+
+                            <h4>Contacts (1)</h4>
+                            <div class="search-item">
+                                <span class="icon">👤</span><p>Marcus Johnson</p><span>Driver</span>
+                            </div>
+
+                            <div class="esang-ai-search-prompt">
+                                <button onclick="alert('Launching ESANG AI Search...')">Ask ESANG AI for Complex Search</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="user-profile">
-                        <img src="https://placehold.co/40x40/A371F7/white/png?text=${appState.user.name.charAt(0)}" alt="User Avatar" style="border-radius: 50%; margin-left: 15px;">
+                        <img src="https://placehold.co/40x40/58A6FF/A371F7/png?text=MJ" alt="User Avatar" class="avatar" style="border-radius: 50%;">
                     </div>
                 </header>
             `;
-            return headerHtml;
+        }    return headerHtml;
         }
 
         function renderDashboardContent() {
