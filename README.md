@@ -36,7 +36,7 @@ The platform is designed to empower its users financially and operationally thro
 
 *   **EusoWallet & Commission Engine:** Provides drivers with instant pay capabilities, automated commission calculation, and secure, multi-party payment splitting logic.
 *   **Collaborative Logistics Engine:** Enables secure, real-time load sharing and data exchange between trusted, certified business partners, enhancing network efficiency.
-*   **PSO-Inspired Gamification:** A unique system that tracks driver performance, calculates reputation scores, and rewards safe, efficient operation through achievement unlocking and leaderboards.
+*   **Gamification:** A unique system that tracks driver performance, calculates reputation scores, and rewards safe, efficient operation through achievement unlocking and leaderboards.
 
 ---
 
