@@ -829,7 +829,7 @@
                         <h2>Welcome to EusoTrip</h2>
                         <input type="text" placeholder="Email or Username">
                         <input type="password" placeholder="Password">
-                        <button class="button-primary" onclick="loginUser('CATALYST')">Login</button>
+                        <button class="button-primary" id="login-button">Login</button>
                         <p class="select-role">Or select user type for demo:</p>
                         <div class="role-selection">
                             <button class="role-button" onclick="loginUser('CATALYST')">CATALYST</button>
@@ -981,47 +981,29 @@
             `;
         }
 
-        function renderSidebar() {
-            // Static sidebar structure
-            const sidebarHtml = `
-                <div class="sidebar">
-                    <div class="logo">
-                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="margin-right: 10px; width: 30px; height: 30px; border-radius: 4px;" onerror="this.onerror=null;this.src='https://placehold.co/30x30/0077FF/CC00FF/png?text=E';">
-                        <h1>EusoTrip</h1>
-                    </div>
-                    <nav>
-                        <h6>MAIN</h6>
-                        <ul>
-                            <li><a href="#" data-section="Dashboard" onclick="event.preventDefault(); renderContent('Dashboard');" class="active"><i class="icon-dashboard"></i> Dashboard</a></li>
-                            <li><a href="#" data-section="Shipment" onclick="event.preventDefault(); renderContent('Shipment');"><i class="icon-shipment"></i> Shipment</a></li>
-                            <li><a href="#" data-section="My Jobs" onclick="event.preventDefault(); renderContent('My Jobs');"><i class="icon-jobs"></i> My Jobs</a></li>
-                            <li><a href="#" data-section="Messages" onclick="event.preventDefault(); renderContent('Messages');"><i class="icon-messages"></i> Messages <span class="badge">2</span></a></li>
-                            <li><a href="#" data-section="Company Channels" onclick="event.preventDefault(); renderContent('Company Channels');"><i class="icon-channels"></i> Company Channels</a></li>
-                        </ul>
-                        <h6>ACCOUNT</h6>
-                        <ul>
-                            <li><a href="#" data-section="My Profile" onclick="event.preventDefault(); renderContent('My Profile');"><i class="icon-profile"></i> My Profile</a></li>
-                            <li><a href="#" data-section="Company Details" onclick="event.preventDefault(); renderContent('Company Details');"><i class="icon-details"></i> Company Details</a></li>
-                            <li><a href="#" data-section="Facility Address" onclick="event.preventDefault(); renderContent('Facility Address');"><i class="icon-facility"></i> Facility Address</a></li>
-                        </ul>
-                        <h6>OPERATIONS</h6>
-                        <ul>
-                            <li><a href="#" data-section="Job Procedure" onclick="event.preventDefault(); renderContent('Job Procedure');"><i class="icon-procedure"></i> Job Procedure</a></li>
-                            <li><a href="#" data-section="Truck Diagnostics" onclick="event.preventDefault(); renderContent('Truck Diagnostics');"><i class="icon-diagnostics"></i> Truck Diagnostics</a></li>
-                            <li><a href="#" data-section="EusoWallet" onclick="event.preventDefault(); renderContent('EusoWallet');"><i class="icon-wallet"></i> EusoWallet</a></li>
-                        </ul>
-                        <h6>SYSTEM</h6>
-                        <ul>
-                            <li><a href="#" data-section="Settings" onclick="event.preventDefault(); renderContent('Settings');"><i class="icon-settings"></i> Settings</a></li>
-                            <li><a href="#" data-section="News Feed" onclick="event.preventDefault(); renderContent('News Feed');"><i class="icon-news"></i> News Feed</a></li>
-                            <li><a href="#" data-section="Support" onclick="event.preventDefault(); renderContent('Support');"><i class="icon-support"></i> Support</a></li>
-                        </ul>
-                        <h6 style="margin-top: 30px;"><a href="#" onclick="event.preventDefault(); renderLoginScreen();" style="color: var(--status-danger); padding: 0 20px;"><i class="icon-logout" style="color: var(--status-danger);"></i> Logout</a></h6>
-                    </nav>
-                </div>
-            `;
-            return sidebarHtml;
-        }
+        // The renderSidebar function is now defined in auth-service.js for role-based filtering.
+// We will keep a placeholder here that calls the external function to avoid breaking the shell.
+function renderSidebar() {
+    // The actual renderSidebar function is now defined in auth-service.js and is called 'renderSidebarExternal'
+    if (typeof renderSidebarExternal === 'function') {
+        return renderSidebarExternal();
+    }
+    // Fallback to original static sidebar if external function not loaded
+    return `
+        <div class="sidebar">
+            <div class="logo">
+                <img src="./assets/images/eusotrip-logo-small.png" alt="EusoTrip" style="width: 30px; margin-right: 10px;" onerror="this.onerror=null;this.src='https://placehold.co/30x30/0077FF/CC00FF/png?text=ET';">
+                <h1>EusoTrip</h1>
+            </div>
+            <nav>
+                <h6>CORE</h6>
+                <ul>
+                    <li><a href="#" data-section="Dashboard" class="active" onclick="event.preventDefault(); renderContent('Dashboard');"><i class="icon-dashboard"></i> Dashboard</a></li>
+                </ul>
+            </nav>
+        </div>
+    `;
+}
 
         function toggleSearchOverlay(show) {
             const overlay = document.getElementById('search-overlay');
@@ -1150,15 +1132,12 @@
             `;
         }
 
-        function loginUser(role) {
-            // Simulate a successful login and set state
-            appState.setUser(role, role === 'CATALYST' ? 'Marcus Johnson' : 'Eusorone Shipper');
-            renderAppShell();
-        }
+        
 
         // --- Initialization ---
         // Start on the login screen
         renderLoginScreen();
     </script>
+    <script src="./search-service.js"></script>
 </body>
 </html>
