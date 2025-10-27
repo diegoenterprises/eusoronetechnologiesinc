@@ -65,6 +65,12 @@
             font-weight: 600;
             cursor: pointer;
             margin-bottom: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Added shadow for depth */
+            transition: all 0.2s ease;
+        }
+        .login-container button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
         .demo-logins { text-align: center; }
         .demo-logins button {
@@ -88,7 +94,7 @@
         .sidebar nav h6 { color: var(--text-secondary); text-transform: uppercase; font-size: 0.8rem; margin: 20px 0 10px 15px; }
         .sidebar nav li a { display: flex; align-items: center; padding: 12px 15px; color: var(--text-secondary); text-decoration: none; border-radius: 8px; margin-bottom: 5px; transition: all 0.2s ease; }
         .sidebar nav li a:hover { background-color: var(--surface-primary); color: var(--text-primary); }
-        .sidebar nav li a.active { background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end)); color: white; }
+        .sidebar nav li a.active { background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end)); color: white; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); } /* Added box-shadow for active state depth */
         .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
         header {
             display: flex;
@@ -113,21 +119,119 @@
             right: 30px;
             background: linear-gradient(90deg, #58A6FF, #A371F7);
             color: white;
-            padding: 15px 25px;
-            border-radius: 50px;
+            width: 60px; /* Set a fixed width */
+            height: 60px; /* Set a fixed height */
+            padding: 0; /* Remove padding for perfect circle */
+            border-radius: 50%; /* Perfect circle */
             border: none;
-            font-size: 1rem;
-            font-weight: 600;
+            font-size: 0; /* Hide text for a cleaner look, or use an icon */
+            display: flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            /* Add a visual indicator for ESANG AI */
+            content: '✨'; /* Placeholder for the actual icon */
         }
-        .esang-ai-button:hover { transform: scale(1.05); }
+        .esang-ai-button::before {
+            content: '✨'; /* Placeholder for the actual icon */
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+        .esang-ai-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); }
+        .app-footer {
+            padding: 10px 20px;
+            border-top: 1px solid var(--border-primary);
+            background-color: var(--background-secondary);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-operational { color: #50fa7b; font-weight: 600; } /* Bright green for operational */
+        .user-type { color: var(--accent-primary-start); font-weight: 600; }
     </style>
 </head>
 <body>
-    <div id="root"></div>
-    <button class="esang-ai-button">Ask ESANG AI</button>
+        <div id="root">
+            <!-- This is where the application shell will be rendered by the JavaScript -->
+            <div class="app-layout">
+                <div class="sidebar">
+                    <div class="logo">
+                        <!-- Placeholder for the EusoTrip Logo (Image 1) -->
+                        <img src="https://placehold.co/30x30/58A6FF/A371F7/png?text=E" alt="EusoTrip Logo" style="margin-right: 10px; border-radius: 4px;">
+                        <h1>EusoTrip</h1>
+                    </div>
+                    <nav>
+                        <ul>
+                            <li><a href="#" class="active"><i class="icon-dashboard"></i> Dashboard</a></li>
+                            <li><a href="#"><i class="icon-shipment"></i> Shipment</a></li>
+                            <li><a href="#"><i class="icon-jobs"></i> My Jobs</a></li>
+                            <li><a href="#"><i class="icon-messages"></i> Messages <span class="badge">2</span></a></li>
+                        </ul>
+                        <h6>Company</h6>
+                        <ul>
+                            <li><a href="#"><i class="icon-channels"></i> Company Channels</a></li>
+                            <li><a href="#"><i class="icon-profile"></i> My Profile</a></li>
+                            <li><a href="#"><i class="icon-details"></i> Company Details</a></li>
+                            <li><a href="#"><i class="icon-facility"></i> Facility Address</a></li>
+                            <li><a href="#"><i class="icon-procedure"></i> Job Procedure</a></li>
+                            <li><a href="#"><i class="icon-diagnostics"></i> Truck Diagnostics</a></li>
+                            <li><a href="#"><i class="icon-wallet"></i> EusoWallet</a></li>
+                        </ul>
+                        <h6>System</h6>
+                        <ul>
+                            <li><a href="#"><i class="icon-settings"></i> Settings</a></li>
+                            <li><a href="#"><i class="icon-news"></i> News Feed</a></li>
+                            <li><a href="#"><i class="icon-support"></i> Support</a></li>
+                        </ul>
+                    </nav>
+                </div>
+                <div class="main-content">
+                    <header>
+                        <div class="search-bar">
+                            <input type="text" placeholder="Search shipments, contacts...">
+                        </div>
+                        <div class="user-profile">
+                            <!-- Placeholder for user avatar and menu -->
+                            <img src="https://placehold.co/40x40/A371F7/white/png?text=MJ" alt="User Avatar" style="border-radius: 50%; margin-left: 15px;">
+                        </div>
+                    </header>
+                    <div id="dashboard-container">
+                        <!-- Dashboard content will be rendered here by JS -->
+                        <div class="dashboard-header-card">
+                            <h2 class="welcome-text">Welcome back, Marcus Johnson!</h2>
+                            <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <h3 class="stat-value">2</h3>
+                                    <p class="stat-label">Active Shipments</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3 class="stat-value">$47,250</h3>
+                                    <p class="stat-label">This Month Revenue</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3 class="stat-value">98.5%</h3>
+                                    <p class="stat-label">Compliance Score</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3 class="stat-value">2,847</h3>
+                                    <p class="stat-label">Miles This Week</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <button class="esang-ai-button" title="Ask ESANG AI"></button>
+    <div class="app-footer">
+        <p>Copyright © 2024 EusoTrip - Revolutionary Logistics Platform</p>
+        <p>Platform Status: <span class="status-operational">Operational</span> • User Type: <span class="user-type">CATALYST</span></p>
+    </div>
     <script>
         class EusoTripState {
   constructor() {
