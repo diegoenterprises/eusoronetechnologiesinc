@@ -49,3 +49,28 @@ This microservice provides the core Hazmat identification and ERG guidance logic
 | `/gamification/leaderboard` | `GET` | Simulates fetching the top 10 users from the global leaderboard. | None | `{ "leaderboard": [ ... ], "timestamp": "string" }` |
 
 **All services are now ready for Team Alpha integration and integration testing.**
+
+
+## Geolocation Intelligence Microservice
+
+**Service Name:** `geolocation_intelligence_service`
+**IP Integrated:** `geolocation_intelligence_framework.md`
+
+| Endpoint | Method | Description | Request Body (JSON) | Response Body (JSON) |
+| :--- | :--- | :--- | :--- | :--- |
+| `/geolocation/status` | `GET` | Returns the operational status of the service. | None | `{ "service_name": "...", "status": "Operational", "geofences_monitored": int }` |
+| `/geolocation/track-update` | `POST` | Receives a real-time location update and performs geofencing and route deviation analysis. | `{ "load_id": "string", "current_location": { "latitude": float, "longitude": float, "timestamp": "datetime" }, "planned_route_id": "string" }` | `{ "load_id": "string", "ai_status": "string", "geofence_alert": { ... } or null }` |
+| `/geolocation/geofences` | `GET` | Returns the list of currently monitored geofences. | None | `{ "geofences": { ... } }` |
+
+## Load Optimization Microservice
+
+**Service Name:** `load_optimization_service`
+**IP Integrated:** `fuel-loading-algorithm.txt`
+
+| Endpoint | Method | Description | Request Body (JSON) | Response Body (JSON) |
+| :--- | :--- | :--- | :--- | :--- |
+| `/optimization/status` | `GET` | Returns the operational status of the service. | None | `{ "service_name": "...", "status": "Operational", "algorithm_version": "..." }` |
+| `/optimization/match-loads` | `POST` | Implements EsangAI.matchLoadsToDrivers for intelligent load assignment based on certifications, safety, and proximity. | `{ "loads": [ { ... } ], "drivers": [ { ... } ] }` | `[ { "load_id": "string", "driver_id": "string", "match_score": float, "reasoning": "string" } ]` |
+| `/optimization/calculate-route` | `POST` | Implements EsangAI.calculateHazmatRoute for hazmat-compliant route planning, avoiding restrictions. | `{ "load_id": "string", "hazmat_class": "string", "origin_lat": float, "origin_lon": float, "destination_lat": float, "destination_lon": float, ... }` | `{ "route_id": "string", "distance_km": float, "is_hazmat_compliant": bool, "hazmat_restrictions_avoided": [ "string" ], ... }` |
+
+**All six core specialized microservices are now complete and ready for Team Alpha integration.**
