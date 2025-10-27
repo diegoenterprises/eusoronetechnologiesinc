@@ -3,8 +3,7 @@
 
 :root {
     /* 1. Brand Color Palette (From PDF) */
-    --brand-primary-blue: #1473FF; /* HEX: #1473FF, Pantone: 2728 C */
-    --brand-secondary-purple: #BE01FF; /* HEX: #BE01FF, Pantone: 2592 C */
+
 
     /* 2. Platform Color Palette (From Perfected Design Code) */
     --background-primary: #0D1117; /* Deep Dark Background */
@@ -18,7 +17,7 @@
     --accent-primary-start: #58A6FF;
     --accent-primary-end: #A371F7;
     --gradient-primary: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
-    --gradient-brand: linear-gradient(90deg, var(--brand-primary-blue), var(--brand-secondary-purple));
+
 
     /* 4. Typography (From Brand Guidelines and Perfected Design Code) */
     --font-family-sans: 'Inter', 'Gilroy', sans-serif; /* Inter from code, Gilroy from PDF */
