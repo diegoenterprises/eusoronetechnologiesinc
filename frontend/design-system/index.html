@@ -13,8 +13,8 @@
             --border-primary: #30363D;
             --text-primary: #C9D1D9; /* Light text for dark mode */
             --text-secondary: #8B949E; /* Muted text */
-            --accent-primary-start: #58A6FF; /* Blue gradient start */
-            --accent-primary-end: #A371F7; /* Purple gradient end */
+            --accent-primary-start: #0077FF; /* Richer Blue from Logo */
+            --accent-primary-end: #CC00FF; /* Richer Purple/Magenta from Logo */
             --success-color: #50fa7b; /* Bright green for operational status/success */
             --warning-color: #FFD700; /* Yellow for loading/warning */
             --error-color: #F85149; /* Red for errors */
@@ -285,9 +285,10 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: linear-gradient(45deg, #FF00FF, #00FFFF); /* Placeholder for the burning flame logo */
             margin-right: 20px;
             flex-shrink: 0;
+            object-fit: contain;
+            padding: 5px; /* To make the particle logo stand out */
         }
         .welcome-text-container h2 {
             font-size: 2.2rem;
@@ -502,8 +503,15 @@
             content: 'AI';
         }
         
-        .esang-ai-button::before {
-            content: 'AI';
+        .esang-ai-button {
+            /* ... existing styles ... */
+            background: linear-gradient(45deg, var(--accent-primary-start), var(--accent-primary-end));
+            /* Remove content: 'AI' as it's now an image */
+        }
+        .esang-ai-button img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
         }
 
         .esang-ai-button:hover {
@@ -618,7 +626,7 @@
             const sidebarHtml = `
                 <div class="sidebar">
                     <div class="logo">
-                        <img src="https://placehold.co/30x30/58A6FF/A371F7/png?text=E" alt="EusoTrip Logo" style="margin-right: 10px; border-radius: 4px;">
+                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="margin-right: 10px; width: 30px; height: 30px; border-radius: 4px;">
                         <h1>EusoTrip</h1>
                     </div>
                     <nav>
@@ -672,7 +680,7 @@
                         <!-- Top Welcome Card (Driver/CATALYST View) - Exact Replication -->
                         <div class="card welcome-card">
                             <div class="welcome-header">
-                                <div class="esang-logo-placeholder"></div>
+                                <img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI Logo" class="esang-logo-placeholder">
                                 <div class="welcome-text-container">
                                     <h2>Welcome back, ${appState.user.name}!</h2>
                                     <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
@@ -807,7 +815,7 @@
                         ${renderDashboardContent()}
                     </div>
                 </div>
-                <button class="esang-ai-button pulse-effect" onclick="alert('ESANG AI Activated!')"></button>
+                <button class="esang-ai-button pulse-effect" onclick="alert('ESANG AI Activated!')"><img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI"></button>
                 <div class="app-footer">
                     <p>Copyright © 2024 EusoTrip - Revolutionary Logistics Platform</p>
                     <p>Platform Status: <span class="status-operational">Operational</span> • User Type: <span class="user-type">${appState.user.role}</span></p>
