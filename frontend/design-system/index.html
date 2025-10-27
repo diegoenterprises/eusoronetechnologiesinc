@@ -688,36 +688,113 @@
             renderAppShell();
         }
 
+        function renderContent(section) {
+            const mainContent = document.getElementById('main-content');
+            let contentHTML = '';
+
+            // 1. Dashboard Content (Default)
+            if (section === 'Dashboard') {
+                contentHTML = renderDashboardContent();
+            }
+            // 2. Shipment Content (Placeholder)
+            else if (section === 'Shipment') {
+                contentHTML = `
+                    <div id="shipment-content" style="padding: 30px;">
+                        <h1 style="color: var(--accent-primary-start);">Shipment Management</h1>
+                        <p style="color: var(--text-secondary);">This is the shell for the **Shipment** section. The full interactive view will be built here.</p>
+                        <div class="card" style="padding: 50px; text-align: center;">
+                            <h3 style="margin-top: 0;">Shipment Creation Form Shell</h3>
+                            <p>This area will contain the multi-step form for creating new shipments, matching the design from the live application.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            // 3. My Jobs Content (Placeholder)
+            else if (section === 'My Jobs') {
+                contentHTML = `
+                    <div id="my-jobs-content" style="padding: 30px;">
+                        <h1 style="color: var(--accent-primary-start);">My Jobs</h1>
+                        <p style="color: var(--text-secondary);">This is the shell for the **My Jobs** section. It will contain the job cards and filtering options.</p>
+                        <div class="card" style="padding: 50px; text-align: center;">
+                            <h3 style="margin-top: 0;">Job Board Shell</h3>
+                            <p>This area will contain the job board with sortable and filterable job cards, matching the design from the live application.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            // 4. Other Sections (Generic Placeholder)
+            else {
+                contentHTML = `
+                    <div id="${section.toLowerCase().replace(/\s/g, '-')}-content" style="padding: 30px;">
+                        <h1 style="color: var(--accent-primary-start);">${section}</h1>
+                        <p style="color: var(--text-secondary);">This is the shell for the **${section}** section. The full interactive view will be built here, matching the visual style of the live application.</p>
+                        <div class="card" style="padding: 50px; text-align: center;">
+                            <h3 style="margin-top: 0;">${section} Content Shell</h3>
+                            <p>This area will contain the specific content for the ${section} section, matching the design from the live application.</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Update main content area
+            const mainContentContainer = document.getElementById('main-content-container');
+            if (mainContentContainer) {
+                mainContentContainer.innerHTML = `${renderHeader()} ${contentHTML}`;
+            }
+
+            // Update active state in sidebar
+            document.querySelectorAll('.sidebar nav li a').forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-section') === section) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        function openEsangChat() {
+            const chatModal = document.getElementById('esang-chat-modal');
+            if (chatModal) {
+                chatModal.classList.add('active');
+            }
+        }
+
+        function closeEsangChat() {
+            const chatModal = document.getElementById('esang-chat-modal');
+            if (chatModal) {
+                chatModal.classList.remove('active');
+            }
+        }
+
         function renderSidebar() {
             // Static sidebar structure
             const sidebarHtml = `
                 <div class="sidebar">
                     <div class="logo">
-                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="margin-right: 10px; width: 30px; height: 30px; border-radius: 4px;">
+                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="margin-right: 10px; width: 30px; height: 30px; border-radius: 4px;" onerror="this.onerror=null;this.src='https://placehold.co/30x30/58A6FF/A371F7/png?text=E';">
                         <h1>EusoTrip</h1>
                     </div>
                     <nav>
                         <ul>
-                            <li><a href="#" class="active"><i class="icon-dashboard"></i> Dashboard</a></li>
-                            <li><a href="#"><i class="icon-shipment"></i> Shipment</a></li>
-                            <li><a href="#"><i class="icon-jobs"></i> My Jobs</a></li>
-                            <li><a href="#"><i class="icon-messages"></i> Messages <span class="badge">2</span></a></li>
+                            <li><a href="#" data-section="Dashboard" onclick="event.preventDefault(); renderContent('Dashboard');" class="active"><i class="icon-dashboard"></i> Dashboard</a></li>
+                            <li><a href="#" data-section="Shipment" onclick="event.preventDefault(); renderContent('Shipment');"><i class="icon-shipment"></i> Shipment</a></li>
+                            <li><a href="#" data-section="My Jobs" onclick="event.preventDefault(); renderContent('My Jobs');"><i class="icon-jobs"></i> My Jobs</a></li>
+                            <li><a href="#" data-section="Messages" onclick="event.preventDefault(); renderContent('Messages');"><i class="icon-messages"></i> Messages <span class="badge">2</span></a></li>
                         </ul>
                         <h6>Company</h6>
                         <ul>
-                            <li><a href="#"><i class="icon-channels"></i> Company Channels</a></li>
-                            <li><a href="#"><i class="icon-profile"></i> My Profile</a></li>
-                            <li><a href="#"><i class="icon-details"></i> Company Details</a></li>
-                            <li><a href="#"><i class="icon-facility"></i> Facility Address</a></li>
-                            <li><a href="#"><i class="icon-procedure"></i> Job Procedure</a></li>
-                            <li><a href="#"><i class="icon-diagnostics"></i> Truck Diagnostics</a></li>
-                            <li><a href="#"><i class="icon-wallet"></i> EusoWallet</a></li>
+                            <li><a href="#" data-section="Company Channels" onclick="event.preventDefault(); renderContent('Company Channels');"><i class="icon-channels"></i> Company Channels</a></li>
+                            <li><a href="#" data-section="My Profile" onclick="event.preventDefault(); renderContent('My Profile');"><i class="icon-profile"></i> My Profile</a></li>
+                            <li><a href="#" data-section="Company Details" onclick="event.preventDefault(); renderContent('Company Details');"><i class="icon-details"></i> Company Details</a></li>
+                            <li><a href="#" data-section="Facility Address" onclick="event.preventDefault(); renderContent('Facility Address');"><i class="icon-facility"></i> Facility Address</a></li>
+                            <li><a href="#" data-section="Job Procedure" onclick="event.preventDefault(); renderContent('Job Procedure');"><i class="icon-procedure"></i> Job Procedure</a></li>
+                            <li><a href="#" data-section="Truck Diagnostics" onclick="event.preventDefault(); renderContent('Truck Diagnostics');"><i class="icon-diagnostics"></i> Truck Diagnostics</a></li>
+                            <li><a href="#" data-section="EusoWallet" onclick="event.preventDefault(); renderContent('EusoWallet');"><i class="icon-wallet"></i> EusoWallet</a></li>
                         </ul>
                         <h6>System</h6>
                         <ul>
-                            <li><a href="#"><i class="icon-settings"></i> Settings</a></li>
-                            <li><a href="#"><i class="icon-news"></i> News Feed</a></li>
-                            <li><a href="#"><i class="icon-support"></i> Support</a></li>
+                            <li><a href="#" data-section="Settings" onclick="event.preventDefault(); renderContent('Settings');"><i class="icon-settings"></i> Settings</a></li>
+                            <li><a href="#" data-section="News Feed" onclick="event.preventDefault(); renderContent('News Feed');"><i class="icon-news"></i> News Feed</a></li>
+                            <li><a href="#" data-section="Support" onclick="event.preventDefault(); renderContent('Support');"><i class="icon-support"></i> Support</a></li>
                         </ul>
                     </nav>
                 </div>
@@ -778,7 +855,7 @@
                         <!-- Top Welcome Card (Driver/CATALYST View) - Exact Replication -->
                         <div class="card welcome-card">
                             <div class="welcome-header">
-                                <img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI Logo" class="esang-logo-placeholder">
+                                <img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI Logo" class="esang-logo-placeholder" onerror="this.onerror=null;this.src='https://placehold.co/50x50/58A6FF/A371F7/png?text=AI';">
                                 <div class="welcome-text-container">
                                     <h2>Welcome back, ${appState.user.name}!</h2>
                                     <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
@@ -908,15 +985,31 @@
             root.innerHTML = `
                 <div class="app-layout">
                     ${renderSidebar()}
-                    <div class="main-content">
+                    <div class="main-content" id="main-content-container">
                         ${renderHeader()}
-                        ${renderDashboardContent()}
+                        ${renderContent('Dashboard')}
                     </div>
                 </div>
-                <button class="esang-ai-button pulse-effect" onclick="alert('ESANG AI Activated!')"><img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI"></button>
+                <button class="esang-ai-button pulse-effect" onclick="openEsangChat()"><img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI" onerror="this.onerror=null;this.src='https://placehold.co/50x50/58A6FF/A371F7/png?text=AI';"></button>
                 <div class="app-footer">
                     <p>Copyright © 2024 EusoTrip - Revolutionary Logistics Platform</p>
                     <p>Platform Status: <span class="status-operational">Operational</span> • User Type: <span class="user-type">${appState.user.role}</span></p>
+                </div>
+                <!-- ESANG AI Chat Modal Shell -->
+                <div id="esang-chat-modal" class="esang-chat-modal">
+                    <div class="chat-header">
+                        <h3>ESANG AI - Intelligent Assistant</h3>
+                        <button onclick="closeEsangChat()">×</button>
+                    </div>
+                    <div class="chat-messages">
+                        <div class="message-bubble ai-message">Hello ${appState.user.name}, I am ESANG AI. How can I assist you with your logistics and platform needs today?</div>
+                        <div class="message-bubble user-message">Show me my highest paying job.</div>
+                        <div class="message-bubble ai-message">Your highest paying job is SH-001 (Methanol) at $4,250. Would you like to see the details?</div>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" placeholder="Ask ESANG AI a question...">
+                        <button>Send</button>
+                    </div>
                 </div>
             `;
             // Ensure footer is visible
