@@ -3,164 +3,621 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EusoTrip - Revolutionary Logistics Platform</title>
-    <meta name="description" content="A revolutionary, Einstein-inspired specialized trucking platform featuring world-class compliance verification, an integrated EusoWallet fintech system, and a sleek, Jony Ive-inspired design.">
-    <meta name="author" content="Eusorone Technologies, Inc. - Designed by Mike 'Diego' Usoro">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>EusoTrip Platform - Master Design Shell</title>
     <style>
+        /* --- EusoTrip Design Tokens (Pixel-Perfect Replication) --- */
         :root {
-            --background-primary: #0D1117;
-            --background-secondary: #161B22;
-            --surface-primary: #1C2128;
-            --text-primary: #C9D1D9;
-            --text-secondary: #8B949E;
-            --accent-primary-start: #58A6FF;
-            --accent-primary-end: #A371F7;
+            --background-primary: #161B22; /* Dark background */
+            --background-secondary: #0D1117; /* Even darker for cards/surfaces */
+            --surface-primary: #1F242C; /* Slightly lighter surface for elements */
             --border-primary: #30363D;
-            --font-family-sans: 'Inter', sans-serif;
+            --text-primary: #C9D1D9; /* Light text for dark mode */
+            --text-secondary: #8B949E; /* Muted text */
+            --accent-primary-start: #58A6FF; /* Blue gradient start */
+            --accent-primary-end: #A371F7; /* Purple gradient end */
+            --success-color: #50fa7b; /* Bright green for operational status/success */
+            --warning-color: #FFD700; /* Yellow for loading/warning */
+            --error-color: #F85149; /* Red for errors */
         }
+
+        /* --- Base Styles --- */
         body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             background-color: var(--background-primary);
             color: var(--text-primary);
-            font-family: var(--font-family-sans);
             margin: 0;
-        }
-        #root {
+            padding: 0;
+            overflow: hidden; /* Hide scrollbar for the main layout */
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            height: 100vh;
         }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        /* --- Login Screen --- */
         .login-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            padding: 20px;
+            height: 100vh;
+            text-align: center;
         }
-        .login-container h1 { font-size: 2.5rem; margin-bottom: 10px; }
-        .login-container h2 { font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 30px; }
+
+        .login-container h1 {
+            font-size: 3rem;
+            margin-bottom: 5px;
+            background: -webkit-linear-gradient(45deg, var(--accent-primary-start), var(--accent-primary-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-container h2 {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+
         .login-container input {
-            background: var(--surface-primary);
+            width: 300px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
             border: 1px solid var(--border-primary);
             border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 15px;
-            width: 100%;
-            max-width: 350px;
+            background-color: var(--surface-primary);
             color: var(--text-primary);
             font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
         }
+
+        .login-container input:focus {
+            border-color: var(--accent-primary-start);
+        }
+
         .login-container button {
-            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
+            width: 300px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
             border: none;
             border-radius: 8px;
-            padding: 12px;
-            width: 100%;
-            max-width: 350px;
+            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
             color: white;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3); /* Added shadow for depth */
-            transition: all 0.2s ease;
+            transition: opacity 0.2s;
         }
+
         .login-container button:hover {
             opacity: 0.9;
-            transform: translateY(-1px);
         }
-        .demo-logins { text-align: center; }
+
+        .demo-logins {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-primary);
+            width: 300px;
+        }
+
+        .demo-logins p {
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
         .demo-logins button {
-             background: var(--surface-primary);
-             width: auto;
-             padding: 8px 12px;
-             margin: 5px;
+            width: 145px;
+            background: var(--surface-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            margin-right: 5px;
         }
-        .app-layout { display: flex; height: 100%; }
+
+        .demo-logins button:last-child {
+            margin-right: 0;
+        }
+
+        /* --- App Layout (Shell) --- */
+        .app-layout {
+            display: flex;
+            flex-grow: 1;
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
         .sidebar {
-            width: 260px;
+            width: 250px;
             background-color: var(--background-secondary);
-            padding: 20px;
+            border-right: 1px solid var(--border-primary);
+            padding: 20px 0;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid var(--border-primary);
+            margin-bottom: 15px;
+        }
+
+        .sidebar .logo h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .sidebar nav {
+            padding: 0 10px;
+        }
+
+        .sidebar nav h6 {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            padding: 10px 20px 5px 20px;
+            margin: 0;
+        }
+
+        .sidebar nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+
+        .sidebar nav li a {
+            display: flex;
+            align-items: center;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: var(--text-primary);
+            border-radius: 8px;
+            margin: 5px 0;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .sidebar nav li a:hover {
+            background-color: var(--surface-primary);
+        }
+
+        .sidebar nav li a.active {
+            background: linear-gradient(90deg, var(--accent-primary-start) 0%, var(--accent-primary-end) 100%);
+            color: white;
+            box-shadow: 0 4px 10px rgba(88, 166, 255, 0.3); /* Subtle glow for active state */
+        }
+
+        .sidebar nav li a i {
+            margin-right: 10px;
+            font-style: normal; /* To allow text placeholders */
+        }
+
+        .sidebar nav li a .badge {
+            background-color: var(--error-color);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        /* --- Main Content --- */
+        .main-content {
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
-            border-right: 1px solid var(--border-primary);
+            overflow-y: auto;
         }
-        .sidebar .logo { display: flex; align-items: center; margin-bottom: 30px; }
-        .sidebar .logo h1 { font-size: 1.5rem; font-weight: 700; }
-        .sidebar nav ul { list-style: none; padding: 0; margin: 0; }
-        .sidebar nav h6 { color: var(--text-secondary); text-transform: uppercase; font-size: 0.8rem; margin: 20px 0 10px 15px; }
-        .sidebar nav li a { display: flex; align-items: center; padding: 12px 15px; color: var(--text-secondary); text-decoration: none; border-radius: 8px; margin-bottom: 5px; transition: all 0.2s ease; }
-        .sidebar nav li a:hover { background-color: var(--surface-primary); color: var(--text-primary); }
-        .sidebar nav li a.active { background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end)); color: white; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); } /* Added box-shadow for active state depth */
-        .main-content { flex-grow: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        header {
+
+        /* --- Header --- */
+        .main-content header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 15px 30px;
+            background-color: var(--background-primary);
             border-bottom: 1px solid var(--border-primary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        header .search-bar input {
-            background-color: var(--surface-primary);
+
+        .search-bar input {
+            width: 400px;
+            padding: 10px 15px;
             border: 1px solid var(--border-primary);
             border-radius: 8px;
-            padding: 10px 15px;
+            background-color: var(--surface-primary);
             color: var(--text-primary);
-            width: 300px;
+            font-size: 0.9rem;
+            outline: none;
         }
-        header .user-profile { display: flex; align-items: center; }
-        #dashboard-container { padding: 20px; }
+
+        .user-profile img {
+            cursor: pointer;
+            border: 2px solid var(--accent-primary-start);
+        }
+
+        /* --- Dashboard Content --- */
+        #dashboard-container {
+            padding: 30px;
+            flex-grow: 1;
+        }
+
+        /* --- Dashboard Specific Styles (Pixel-Perfect Replication) --- */
+        .dashboard-grid {
+            padding: 0;
+        }
+        .card {
+            background-color: var(--background-secondary);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-primary);
+        }
+        .card:hover {
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+            transform: translateY(-2px);
+        }
+        .welcome-card {
+            background: linear-gradient(135deg, #2A3648 0%, #17202B 100%); /* Closer to the visual */
+            padding: 30px;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .welcome-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            /* This section is the gradient card behind the text */
+            background: linear-gradient(135deg, #58A6FF, #A371F7);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        .esang-logo-placeholder {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #FF00FF, #00FFFF); /* Placeholder for the burning flame logo */
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        .welcome-text-container h2 {
+            font-size: 2.2rem;
+            margin: 0;
+            font-weight: 700;
+        }
+        .welcome-text-container p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .user-meta p {
+            font-size: 0.8rem;
+            margin: 0;
+            text-align: right;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .stats-grid-large {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .stat-item .stat-label {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 5px;
+        }
+        .stat-item .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            color: white;
+        }
+        .stat-item .stat-subtext {
+            font-size: 0.7rem;
+            color: var(--success-color); /* Success color for positive change */
+            margin-top: 5px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .action-buttons button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .action-buttons .button-primary {
+            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
+            color: white;
+            border: none;
+        }
+        .action-buttons .button-secondary {
+            background-color: var(--surface-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+        .shipment-card {
+            padding: 15px 20px;
+        }
+        .shipment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .shipment-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .shipment-route {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin: 5px 0 2px 0;
+        }
+        .shipment-details {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin: 0 0 10px 0;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .status-in-transit {
+            background-color: var(--accent-primary-start);
+            color: white;
+        }
+        .status-loading {
+            background-color: var(--warning-color);
+            color: var(--background-secondary);
+        }
+        .progress-bar-container {
+            margin-bottom: 10px;
+            position: relative;
+            height: 5px;
+            background-color: var(--surface-primary);
+            border-radius: 5px;
+        }
+        .progress-bar {
+            height: 5px;
+            background: linear-gradient(90deg, var(--accent-primary-end), var(--accent-primary-start));
+            border-radius: 5px;
+        }
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .action-icons {
+            display: flex;
+            gap: 10px;
+        }
+        .action-icon {
+            font-size: 0.7rem;
+            cursor: pointer;
+            color: var(--accent-primary-start);
+        }
+        .tag-list {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            background-color: var(--surface-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+        }
+        .summary-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .summary-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: 20px;
+        }
+        .summary-card .icon-placeholder {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--accent-primary-start);
+        }
+        .summary-card .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 5px;
+        }
+        .summary-card .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-primary);
+        }
+        .summary-card .stat-subtext {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        .status-operational-text {
+            color: var(--success-color);
+        }
+
+        /* --- ESANG AI Button (Circular and Pulsing) --- */
         .esang-ai-button {
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background: linear-gradient(90deg, #58A6FF, #A371F7);
-            color: white;
-            width: 60px; /* Set a fixed width */
-            height: 60px; /* Set a fixed height */
-            padding: 0; /* Remove padding for perfect circle */
-            border-radius: 50%; /* Perfect circle */
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             border: none;
-            font-size: 0; /* Hide text for a cleaner look, or use an icon */
+            background: linear-gradient(45deg, var(--accent-primary-start), var(--accent-primary-end));
+            box-shadow: 0 4px 15px rgba(88, 166, 255, 0.7);
+            cursor: pointer;
+            z-index: 100;
+            transition: transform 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            /* Add a visual indicator for ESANG AI */
-            content: '✨'; /* Placeholder for the actual icon */
-        }
-        .esang-ai-button::before {
-            content: '✨'; /* Placeholder for the actual icon */
+            color: white;
             font-size: 1.5rem;
-            line-height: 1;
+            font-weight: 700;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            /* Icon placeholder - exact match to live app */
+            content: 'AI';
         }
-        .esang-ai-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6); }
+        
+        .esang-ai-button::before {
+            content: 'AI';
+        }
+
+        .esang-ai-button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Pulse Effect Keyframes */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(88, 166, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(88, 166, 255, 0);
+            }
+        }
+
+        .pulse-effect {
+            animation: pulse 2s infinite;
+        }
+
+        /* --- Footer --- */
         .app-footer {
-            padding: 10px 20px;
-            border-top: 1px solid var(--border-primary);
-            background-color: var(--background-secondary);
-            color: var(--text-secondary);
-            font-size: 0.85rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 10px 30px;
+            background-color: var(--background-secondary);
+            border-top: 1px solid var(--border-primary);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
         }
-        .status-operational { color: #50fa7b; font-weight: 600; } /* Bright green for operational */
-        .user-type { color: var(--accent-primary-start); font-weight: 600; }
+
+        .status-operational {
+            color: var(--success-color);
+            font-weight: 600;
+        }
+
+        .user-type {
+            color: var(--accent-primary-start);
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
-        <div id="root">
-            <!-- This is where the application shell will be rendered by the JavaScript -->
-            <div class="app-layout">
+    <div id="root">
+        <!-- Content injected by JavaScript -->
+    </div>
+
+    <script>
+        // --- S.E.A.L. Team 6 Master Code Logic (Pixel-Perfect Replication) ---
+
+        // 1. Placeholder for Icon Loading (as per the Perfected Design Code)
+        function loadSvgIcon(iconName) {
+            // In a real application, this would load an SVG file/sprite
+            // For the master shell, we use a text placeholder
+            const icons = {
+                'dashboard': '🏠', 'shipment': '📦', 'jobs': '🚚', 'messages': '💬',
+                'channels': '👥', 'profile': '👤', 'details': '🏢', 'facility': '📍',
+                'procedure': '📋', 'diagnostics': '🔬', 'wallet': '💳', 'settings': '⚙️',
+                'news': '📰', 'support': '❓'
+            };
+            // Exact match to the live app's icon placeholders (no emojis in final code)
+            return ''; 
+        }
+
+        // 2. State Management Placeholder (as seen in .js files)
+        class EusoTripState {
+            constructor() {
+                this.user = { role: 'GUEST', name: 'Guest' };
+            }
+            setUser(role, name) {
+                this.user.role = role;
+                this.user.name = name;
+            }
+        }
+        const appState = new EusoTripState();
+
+        // 3. Core Rendering Functions
+        function renderLoginScreen() {
+            const root = document.getElementById('root');
+            root.innerHTML = `
+                <div class="login-container">
+                    <h1>EusoTrip</h1>
+                    <h2>Revolutionary Logistics Platform</h2>
+                    <input type="email" placeholder="Email" value="marcus.johnson@jtransport.com">
+                    <input type="password" placeholder="Password" value="••••••••">
+                    <button onclick="loginUser('CATALYST')">Login</button>
+                    <div class="demo-logins">
+                        <p>Or login as demo:</p>
+                        <button onclick="loginUser('SHIPPER')">Shipper Demo</button>
+                        <button onclick="loginUser('CATALYST')">CATALYST Demo</button>
+                    </div>
+                </div>
+            `;
+            // Remove footer in login screen for cleaner look
+            const footer = document.querySelector('.app-footer');
+            if (footer) footer.style.display = 'none';
+        }
+
+        function loginUser(role) {
+            // Simulate a successful login and set state
+            appState.setUser(role, role === 'CATALYST' ? 'Marcus Johnson' : 'Eusorone Shipper');
+            renderAppShell();
+        }
+
+        function renderSidebar() {
+            // Static sidebar structure
+            const sidebarHtml = `
                 <div class="sidebar">
                     <div class="logo">
-                        <!-- Placeholder for the EusoTrip Logo (Image 1) -->
                         <img src="https://placehold.co/30x30/58A6FF/A371F7/png?text=E" alt="EusoTrip Logo" style="margin-right: 10px; border-radius: 4px;">
                         <h1>EusoTrip</h1>
                     </div>
@@ -189,636 +646,187 @@
                         </ul>
                     </nav>
                 </div>
-                <div class="main-content">
-                    <header>
-                        <div class="search-bar">
-                            <input type="text" placeholder="Search shipments, contacts...">
-                        </div>
-                        <div class="user-profile">
-                            <!-- Placeholder for user avatar and menu -->
-                            <img src="https://placehold.co/40x40/A371F7/white/png?text=MJ" alt="User Avatar" style="border-radius: 50%; margin-left: 15px;">
-                        </div>
-                    </header>
-                    <div id="dashboard-container">
-                        <!-- Dashboard content will be rendered here by JS -->
-                        <div class="dashboard-header-card">
-                            <h2 class="welcome-text">Welcome back, Marcus Johnson!</h2>
-                            <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
-                            <div class="stats-grid">
-                                <div class="stat-card">
-                                    <h3 class="stat-value">2</h3>
+            `;
+            return sidebarHtml;
+        }
+
+        function renderHeader() {
+            const headerHtml = `
+                <header>
+                    <div class="search-bar">
+                        <input type="text" placeholder="Search shipments, contacts...">
+                    </div>
+                    <div class="user-profile">
+                        <img src="https://placehold.co/40x40/A371F7/white/png?text=${appState.user.name.charAt(0)}" alt="User Avatar" style="border-radius: 50%; margin-left: 15px;">
+                    </div>
+                </header>
+            `;
+            return headerHtml;
+        }
+
+        function renderDashboardContent() {
+            // This is the static HTML template for the master shell, ensuring the visual is perfect
+            return `
+                <div id="dashboard-container">
+                    <div class="dashboard-grid">
+                        <!-- Top Welcome Card (Driver/CATALYST View) - Exact Replication -->
+                        <div class="card welcome-card">
+                            <div class="welcome-header">
+                                <div class="esang-logo-placeholder"></div>
+                                <div class="welcome-text-container">
+                                    <h2>Welcome back, ${appState.user.name}!</h2>
+                                    <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
+                                    <p class="user-details-secondary">8 years experience • HazMat, Tanker, Heavy Haul</p>
+                                </div>
+                                <div class="user-meta">
+                                    <p>DOT: DOT-3456789</p>
+                                    <p>MC: MC-987654</p>
+                                    <p>Fleet: 3 vehicles</p>
+                                </div>
+                            </div>
+                            <div class="stats-grid-large">
+                                <div class="stat-item">
                                     <p class="stat-label">Active Shipments</p>
+                                    <h3 class="stat-value">2</h3>
+                                    <p class="stat-subtext">1 HazMat loads</p>
                                 </div>
-                                <div class="stat-card">
-                                    <h3 class="stat-value">$47,250</h3>
+                                <div class="stat-item">
                                     <p class="stat-label">This Month Revenue</p>
+                                    <h3 class="stat-value">$47,250</h3>
+                                    <p class="stat-subtext">+12% vs last month</p>
                                 </div>
-                                <div class="stat-card">
-                                    <h3 class="stat-value">98.5%</h3>
+                                <div class="stat-item">
                                     <p class="stat-label">Compliance Score</p>
+                                    <h3 class="stat-value">98.5%</h3>
+                                    <p class="stat-subtext">Excellent rating</p>
                                 </div>
-                                <div class="stat-card">
-                                    <h3 class="stat-value">2,847</h3>
+                                <div class="stat-item">
                                     <p class="stat-label">Miles This Week</p>
+                                    <h3 class="stat-value">2,847</h3>
+                                    <p class="stat-subtext">Within HOS limits</p>
                                 </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="button-primary">Create New Shipment →</button>
+                                <button class="button-secondary">View My Jobs</button>
+                                <button class="button-secondary esang-ai-action">Ask ESANG AI</button>
+                            </div>
+                        </div>
+
+                        <!-- Active Shipments Section - Exact Replication -->
+                        <h2 class="section-title">Active Shipments</h2>
+                        <div class="shipment-list">
+                            <!-- Shipment Card 1 -->
+                            <div class="card shipment-card">
+                                <div class="shipment-header">
+                                    <h3 class="shipment-title">SH-001 - Class 3 Flammable Liquids - Methanol 99.9%</h3>
+                                    <span class="status-badge status-in-transit">IN TRANSIT</span>
+                                </div>
+                                <p class="shipment-route">Houston, TX → Denver, CO</p>
+                                <p class="shipment-details">Rate: $4,250 • 1015 miles</p>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 75%;"></div>
+                                    <div class="progress-labels">
+                                        <span class="eta">ETA: 2024-12-18 14:00</span>
+                                        <span class="action-icons">
+                                            <span class="action-icon pick-up">📞 Pickup</span>
+                                            <span class="action-icon delivery">💬 Delivery</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="tag-list">
+                                    <span class="tag tag-hazmat">HazMat</span>
+                                    <span class="tag tag-twic">TWIC</span>
+                                    <span class="tag tag-class3">Class 3 Endorsement</span>
+                                </div>
+                            </div>
+                            <!-- Shipment Card 2 -->
+                            <div class="card shipment-card">
+                                <div class="shipment-header">
+                                    <h3 class="shipment-title">SH-002 - Refrigerated Pharmaceuticals - Temperature Controlled</h3>
+                                    <span class="status-badge status-loading">LOADING</span>
+                                </div>
+                                <p class="shipment-route">Miami, FL → Atlanta, GA</p>
+                                <p class="shipment-details">Rate: $3,150 • 647 miles</p>
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar" style="width: 25%;"></div>
+                                    <div class="progress-labels">
+                                        <span class="eta">ETA: 2024-12-17 10:00</span>
+                                        <span class="action-icons">
+                                            <span class="action-icon pick-up">📞 Pickup</span>
+                                            <span class="action-icon delivery">💬 Delivery</span>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="tag-list">
+                                    <span class="tag tag-temp">Temperature Control</span>
+                                    <span class="tag tag-chain">Chain of Custody</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Summary Cards Section - Exact Replication -->
+                        <div class="summary-cards-grid">
+                            <div class="card summary-card">
+                                <div class="icon-placeholder status-icon">✓</div>
+                                <p class="stat-label">Platform Status</p>
+                                <h3 class="stat-value status-operational-text">Operational</h3>
+                                <p class="stat-subtext">All systems running</p>
+                            </div>
+                            <div class="card summary-card">
+                                <div class="icon-placeholder specialization-icon"></div>
+                                <p class="stat-label">Specializations</p>
+                                <h3 class="stat-value">52</h3>
+                                <p class="stat-subtext">Cargo types available</p>
+                            </div>
+                            <div class="card summary-card">
+                                <div class="icon-placeholder users-icon"></div>
+                                <p class="stat-label">Active Users</p>
+                                <h3 class="stat-value">15,847</h3>
+                                <p class="stat-subtext">Drivers, shippers, brokers</p>
+                            </div>
+                            <div class="card summary-card">
+                                <div class="icon-placeholder shipments-icon"></div>
+                                <p class="stat-label">Total Shipments</p>
+                                <h3 class="stat-value">234,567</h3>
+                                <p class="stat-subtext">Platform lifetime</p>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    <button class="esang-ai-button" title="Ask ESANG AI"></button>
-    <div class="app-footer">
-        <p>Copyright © 2024 EusoTrip - Revolutionary Logistics Platform</p>
-        <p>Platform Status: <span class="status-operational">Operational</span> • User Type: <span class="user-type">CATALYST</span></p>
-    </div>
-    <script>
-        class EusoTripState {
-  constructor() {
-    this.state = {};
-    this.subscribers = {};
-    this.realtimeSubscribers = {};
-    this.init();
-  }
+            `;
+        }
 
-  init() {
-    // Load initial state from localStorage or server
-    const savedState = localStorage.getItem("eusoTripState");
-    if (savedState) {
-      this.state = JSON.parse(savedState);
-    } else {
-      // Default initial state
-      this.state = {
-        user: null,
-        settings: { theme: "dark", notifications: true },
-        activeShipments: [],
-        notifications: []
-      };
-    }
-    // Initialize WebSocket connection for real-time updates
-    this.webSocketManager = new WebSocketManager(this); // Initialize WebSocket connection for real-time updates
-    this.webSocketManager.connect(); // Establish connection on init
-  }
+        function renderAppShell() {
+            const root = document.getElementById('root');
+            root.innerHTML = `
+                <div class="app-layout">
+                    ${renderSidebar()}
+                    <div class="main-content">
+                        ${renderHeader()}
+                        ${renderDashboardContent()}
+                    </div>
+                </div>
+                <button class="esang-ai-button pulse-effect" onclick="alert('ESANG AI Activated!')"></button>
+                <div class="app-footer">
+                    <p>Copyright © 2024 EusoTrip - Revolutionary Logistics Platform</p>
+                    <p>Platform Status: <span class="status-operational">Operational</span> • User Type: <span class="user-type">${appState.user.role}</span></p>
+                </div>
+            `;
+            // Ensure footer is visible
+            const footer = document.querySelector('.app-footer');
+            if (footer) footer.style.display = 'flex';
 
-  getState(key) {
-    return key ? this.state[key] : this.state;
-  }
-
-  setState(newState, silent = false) {
-    this.state = { ...this.state, ...newState };
-    localStorage.setItem("eusoTripState", JSON.stringify(this.state));
-    if (!silent) {
-      this.notifySubscribers(Object.keys(newState));
-    }
-  }
-
-  subscribe(key, callback) {
-    if (!this.subscribers[key]) {
-      this.subscribers[key] = [];
-    }
-    this.subscribers[key].push(callback);
-    // Immediately call with current state for initial render
-    // Immediately call with current state for initial render, ensuring the key exists
-    if (this.state.hasOwnProperty(key)) {
-      callback(this.state[key]);
-    }
-  }
-
-  unsubscribe(key, callback) {
-    if (this.subscribers[key]) {
-      this.subscribers[key] = this.subscribers[key].filter(sub => sub !== callback);
-    }
-  }
-
-  notifySubscribers(keys) {
-    keys.forEach(key => {
-      if (this.subscribers[key]) {
-        this.subscribers[key].forEach(callback => callback(this.state[key]));
-      }
-    });
-  }
-
-  // Real-time updates
-  subscribeToRealtimeUpdates(channel, callback) {
-    if (!this.realtimeSubscribers[channel]) {
-      this.realtimeSubscribers[channel] = [];
-    }
-    this.realtimeSubscribers[channel].push(callback);
-    if (this.webSocketManager) {
-      this.webSocketManager.subscribe(channel);
-    }
-  }
-
-  unsubscribeFromRealtimeUpdates(channel, callback) {
-    if (this.realtimeSubscribers[channel]) {
-      this.realtimeSubscribers[channel] = this.realtimeSubscribers[channel].filter(sub => sub !== callback);
-    }
-    if (this.webSocketManager) {
-      this.webSocketManager.unsubscribe(channel);
-    }
-  }
-
-  handleRealtimeMessage(message) {
-    const { channel, payload } = message;
-    if (this.realtimeSubscribers[channel]) {
-      this.realtimeSubscribers[channel].forEach(callback => callback(payload));
-    }
-    // Optionally update global state based on real-time message
-    if (channel === "global_notifications") {
-      this.setState({ notifications: [...this.state.notifications, payload] });
-    }
-  }
-
-  // Global instance
-  static getInstance() {
-    if (!EusoTripState._instance) {
-      EusoTripState._instance = new EusoTripState();
-    }
-    return EusoTripState._instance;
-  }
-}
-
-// Expose a global instance for easy access
-window.eusoTripState = EusoTripState.getInstance();
-
-// Example usage:
-// window.eusoTripState.subscribe("user", (user) => console.log("User updated:", user));
-// window.eusoTripState.setState({ user: { name: "John Doe", id: "123" } });
-
-class WebSocketManager {
-  constructor(stateManager) {
-    this.stateManager = stateManager;
-    this.socket = null;
-    this.channels = new Set();
-    this.reconnectInterval = 5000; // 5 seconds
-    this.init();
-  }
-
-  init() {
-    this.connect();
-  }
-
-  connect() {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      return;
-    }
-    const user = this.stateManager.getState("user");
-    const token = user ? user.token : null; // Handle case where user or token is null
-    const wsUrl = `${window.EUSOTRIP_CONFIG.wsBaseUrl}?token=${token}`;
-    this.socket = new WebSocket(wsUrl);
-
-    this.socket.onopen = () => {
-      console.log("WebSocket connected.");
-      this.channels.forEach(channel => this.send({ type: "subscribe", channel }));
-    };
-
-    this.socket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      this.stateManager.handleRealtimeMessage(message);
-    };
-
-    this.socket.onclose = (event) => {
-      console.warn("WebSocket disconnected:", event.code, event.reason);
-      setTimeout(() => this.connect(), this.reconnectInterval);
-    };
-
-    this.socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      this.socket.close();
-    };
-  }
-
-  send(message) {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(message));
-    } else {
-      console.warn("WebSocket not open, message not sent:", message);
-    }
-  }
-
-  subscribe(channel) {
-    this.channels.add(channel);
-    this.send({ type: "subscribe", channel });
-  }
-
-  unsubscribe(channel) {
-    this.channels.delete(channel);
-    this.send({ type: "unsubscribe", channel });
-  }
-
-  close() {
-    if (this.socket) {
-      this.socket.close();
-    }
-  }
-}
-
-class EusoTripAPI {
-  constructor(baseUrl) {
-    this.baseUrl = baseUrl;
-  }
-
-  async request(endpoint, method = "GET", data = null, customHeaders = {}) {
-    const user = window.eusoTripState.getState("user");
-    const headers = {
-      "Content-Type": "application/json",
-      ...(user?.token && { "Authorization": `Bearer ${user.token}` }),
-      ...customHeaders
-    };
-
-    const config = {
-      method,
-      headers,
-      ...(data && { body: JSON.stringify(data) })
-    };
-
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, config);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `API Error: ${response.statusText}`);
-      }
-      return response.json();
-    } catch (error) {
-      console.error("API Request Error:", error);
-      throw error;
-    }
-  }
-
-  // Authentication
-  login(credentials) {
-    return this.request("/auth/login", "POST", credentials);
-  }
-
-  register(userData) {
-    return this.request("/auth/register", "POST", userData);
-  }
-
-  logout() {
-    // Invalidate token on server side if applicable
-    window.eusoTripState.setState({ user: null });
-    return Promise.resolve({ message: "Logged out successfully" });
-  }
-
-  // User Management
-  getUserProfile(userId) {
-    return this.request(`/users/${userId}`);
-  }
-
-  updateUserProfile(userId, profileData) {
-    return this.request(`/users/${userId}`, "PUT", profileData);
-  }
-
-  // Shipment Management
-  getShipments(query = {}) {
-    const queryString = new URLSearchParams(query).toString();
-    return this.request(`/shipments${queryString ? `?${queryString}` : ""}`);
-  }
-
-  createShipment(shipmentData) {
-    return this.request("/shipments", "POST", shipmentData);
-  }
-
-  updateShipment(shipmentId, updateData) {
-    return this.request(`/shipments/${shipmentId}`, "PUT", updateData);
-  }
-
-  deleteShipment(shipmentId) {
-    return this.request(`/shipments/${shipmentId}`, "DELETE");
-  }
-
-  // Other API methods for various modules...
-}
-
-// Global API instance
-window.eusoTripAPI = new EusoTripAPI(window.EUSOTRIP_CONFIG.apiBaseUrl);
-
-class AuthManager {
-  constructor(api, stateManager) {
-    this.api = api;
-    this.stateManager = stateManager;
-    this.init();
-  }
-
-  init() {
-    // Check for existing session on load
-    const user = this.stateManager.getState("user");
-    if (user && user.token) {
-      // Optionally validate token with backend
-      console.log("User session found.");
-    }
-  }
-
-  async login(email, password) {
-    try {
-      const response = await this.api.login({ email, password });
-      const user = { ...response.user, token: response.token };
-      this.stateManager.setState({ user });
-      return user;
-    } catch (error) {
-      console.error("Login failed:", error);
-      throw error;
-    }
-  }
-
-  async register(userData) {
-    try {
-      const response = await this.api.register(userData);
-      const user = { ...response.user, token: response.token };
-      this.stateManager.setState({ user });
-      return user;
-    } catch (error) {
-      console.error("Registration failed:", error);
-      throw error;
-    }
-  }
-
-  async logout() {
-    try {
-      await this.api.logout();
-      this.stateManager.setState({ user: null });
-      console.log("User logged out.");
-    } catch (error) {
-      console.error("Logout failed:", error);
-      throw error;
-    }
-  }
-
-  isAuthenticated() {
-    return !!this.stateManager.getState("user")?.token;
-  }
-}
-
-window.eusoTripAuth = new AuthManager(window.eusoTripAPI, window.eusoTripState);
-
-// Configuration for each user type's dashboard
-const USER_DASHBOARD_CONFIGS = {
-  SHIPPER: {
-    workflows: ["material_details", "location_selection", "quote_insertion", "facility_book", "shipment_creation", "trailer_details", "job_procedure"],
-    features: ["shipment_tracking", "billing_invoicing", "reporting_analytics", "document_management"],
-    dashboardComponents: ["active_shipments", "shipment_history", "billing_summary", "analytics_overview", "notifications_feed"]
-  },
-  BROKER: {
-    workflows: ["load_matching", "carrier_onboarding", "rate_negotiation", "dispatch_management"],
-    features: ["carrier_network_access", "load_board_integration", "commission_tracking", "compliance_checks"],
-    dashboardComponents: ["available_loads", "assigned_loads", "carrier_network", "commission_reports", "compliance_alerts"]
-  },
-  CATALYST: {
-    workflows: ["trip_planning", "hos_tracking", "inspection_reporting", "fuel_management", "euso_wallet_integration"],
-    features: ["realtime_navigation", "geofencing_alerts", "document_scanning", "maintenance_scheduling"],
-    dashboardComponents: ["current_trip_status", "hos_dashboard", "earnings_summary", "maintenance_reminders", "euso_wallet_balance"]
-  },
-  CARRIER_DISPATCHER: {
-    workflows: ["driver_assignment", "route_optimization", "fleet_tracking", "driver_communication"],
-    features: ["load_dispatching", "driver_management", "performance_monitoring", "safety_compliance"],
-    dashboardComponents: ["fleet_overview", "driver_status", "dispatched_loads", "performance_analytics", "safety_alerts"]
-  },
-  CARRIER_OWNER: {
-    workflows: ["business_analytics", "driver_payroll", "asset_management", "insurance_management"],
-    features: ["profit_loss_reporting", "driver_hiring", "vehicle_maintenance_tracking", "regulatory_compliance"],
-    dashboardComponents: ["profit_loss_dashboard", "payroll_summary", "asset_utilization", "compliance_reports"]
-  },
-  DRIVER: {
-    workflows: ["load_acceptance", "navigation", "delivery_confirmation", "hos_logging", "expense_reporting"],
-    features: ["realtime_load_updates", "route_guidance", "document_upload", "e_logs", "per_diem_tracking"],
-    dashboardComponents: ["current_load_details", "next_stops", "hos_status", "earnings_overview", "notifications"]
-  },
-  FLEET_MANAGER: {
-    workflows: ["fleet_optimization", "driver_scheduling", "maintenance_planning", "fuel_efficiency_monitoring"],
-    features: ["predictive_maintenance", "route_auditing", "driver_performance_reviews", "cost_analysis"],
-    dashboardComponents: ["fleet_health", "driver_availability", "maintenance_schedule", "fuel_consumption_reports"]
-  },
-  COMPLIANCE_OFFICER: {
-    workflows: ["regulatory_audits", "safety_training_management", "incident_reporting", "policy_enforcement"],
-    features: ["realtime_compliance_alerts", "training_module_tracking", "incident_investigation_tools", "audit_trail"],
-    dashboardComponents: ["compliance_dashboard", "training_status", "incident_log", "policy_updates"]
-  },
-  ACCOUNTING: {
-    workflows: ["invoice_processing", "payment_reconciliation", "financial_reporting", "tax_preparation"],
-    features: ["automated_invoicing", "payment_gateway_integration", "budget_vs_actual_analysis", "tax_document_generation"],
-    dashboardComponents: ["accounts_receivable", "accounts_payable", "profit_loss_statements", "balance_sheet"]
-  },
-  HR: {
-    workflows: ["employee_onboarding", "benefits_administration", "performance_management", "recruitment"],
-    features: ["digital_onboarding", "employee_self_service_portal", "performance_review_tracking", "applicant_tracking_system"],
-    dashboardComponents: ["employee_directory", "open_positions", "performance_reviews_due", "benefits_enrollment"]
-  },
-  SALES: {
-    workflows: ["lead_management", "quote_generation", "customer_relationship_management", "sales_forecasting"],
-    features: ["crm_integration", "automated_quoting", "sales_pipeline_tracking", "commission_calculator"],
-    dashboardComponents: ["sales_pipeline", "new_leads", "customer_accounts", "sales_performance"]
-  },
-  CUSTOMER_SERVICE: {
-    workflows: ["ticket_management", "issue_resolution", "customer_feedback_collection", "knowledge_base_management"],
-    features: ["ai_powered_support", "ticket_escalation", "sentiment_analysis", "faq_management"],
-    dashboardComponents: ["open_tickets", "resolved_tickets", "customer_satisfaction", "knowledge_base_updates"]
-  },
-  ADMIN: {
-    workflows: ["user_management", "system_configuration", "security_monitoring", "data_backup_management"],
-    features: ["role_based_access_control", "audit_logging", "intrusion_detection", "disaster_recovery"],
-    dashboardComponents: ["system_status", "user_activity", "security_alerts", "backup_status"]
-  },
-  MAINTENANCE_MANAGER: {
-    workflows: ["preventative_maintenance_scheduling", "repair_order_management", "parts_inventory_management", "vendor_management"],
-    features: ["telematics_integration", "diagnostic_tools", "automated_parts_ordering", "maintenance_cost_analysis"],
-    dashboardComponents: ["upcoming_maintenance", "open_repair_orders", "parts_inventory", "maintenance_history"]
-  },
-  WAREHOUSE_MANAGER: {
-    workflows: ["inventory_management", "shipping_receiving", "order_fulfillment", "space_optimization"],
-    features: ["barcode_scanning", "automated_picking", "realtime_inventory_tracking", "warehouse_layout_optimization"],
-    dashboardComponents: ["current_inventory", "pending_orders", "shipping_schedule", "warehouse_utilization"]
-  },
-  FINANCE_MANAGER: {
-    workflows: ["cash_flow_forecasting", "investment_analysis", "risk_management", "budget_allocation"],
-    features: ["financial_modeling", "portfolio_management", "fraud_detection", "expense_tracking"],
-    dashboardComponents: ["cash_flow_dashboard", "investment_portfolio", "risk_assessment", "budget_overview"]
-  }
-};
-
-class DashboardGenerator {
-  constructor(stateManager) {
-    this.stateManager = stateManager;
-    this.dashboardContainer = document.getElementById("dashboard-container");
-    if (!this.dashboardContainer) {
-      console.error("Dashboard container not found!");
-      return;
-    }
-    this.stateManager.subscribe("user", this.renderDashboard.bind(this));
-    this.renderDashboard(this.stateManager.getState("user"));
-  }
-
-  renderDashboard(user) {
-    if (!user || !user.userType) {
-      this.dashboardContainer.innerHTML = "<p>Please log in to view your dashboard.</p>";
-      return;
-    }
-
-    const config = USER_DASHBOARD_CONFIGS[user.userType.toUpperCase()];
-    if (!config) {
-      this.dashboardContainer.innerHTML = `<p>No dashboard configuration found for user type: ${user.userType}</p>`;
-      return;
-    }
-
-    let dashboardHtml = `<h2>Welcome, ${user.name}!</h2>`;
-
-    // Render Workflows
-    dashboardHtml += `<h3>Your Workflows:</h3><ul>`;
-    config.workflows.forEach(workflow => {
-      dashboardHtml += `<li>${this.formatName(workflow)}</li>`;
-    });
-    dashboardHtml += `</ul>`;
-
-    // Render Features
-    dashboardHtml += `<h3>Key Features:</h3><ul>`;
-    config.features.forEach(feature => {
-      dashboardHtml += `<li>${this.formatName(feature)}</li>`;
-    });
-    dashboardHtml += `</ul>`;
-
-    // Render Dashboard Components (placeholders for now)
-    dashboardHtml += `<h3>Dashboard Overview:</h3>`;
-    config.dashboardComponents.forEach(component => {
-      dashboardHtml += `<div class="dashboard-component"><h4>${this.formatName(component)}</h4><p>Content for ${this.formatName(component)}...</p></div>`;
-    });
-
-    this.dashboardContainer.innerHTML = dashboardHtml;
-  }
-
-  formatName(name) {
-    return name.replace(/_/g, " ").replace(/\b\w/g, char => char.toUpperCase());
-  }
-}
-
-// Initialize dashboard after state and API are ready
-document.addEventListener("DOMContentLoaded", () => {
-  // Ensure EUSOTRIP_CONFIG is defined globally or passed appropriately
-  window.EUSOTRIP_CONFIG = {
-    apiBaseUrl: "/api", // Example API base URL
-    wsBaseUrl: "ws://localhost:3000/ws" // Example WebSocket base URL
-  };
-
-  // Initialize global state and API instances
-  window.eusoTripState = EusoTripState.getInstance();
-  window.eusoTripAPI = new EusoTripAPI(window.EUSOTRIP_CONFIG.apiBaseUrl);
-  window.eusoTripAuth = new AuthManager(window.eusoTripAPI, window.eusoTripState);
-
-  // Initialize Dashboard Generator
-  new DashboardGenerator(window.eusoTripState);
-
-  // --- START: Auto-Login Simulation for Preview ---
-  // This block simulates a successful login for the SHIPPER role to display the dashboard structure.
-  if (!window.eusoTripAuth.isAuthenticated()) {
-    window.eusoTripState.setState({
-      user: {
-        name: "Marcus Johnson (SHIPPER)",
-        userType: "SHIPPER", // Use one of the 16 defined types (e.g., SHIPPER, BROKER, CATALYST, DRIVER, ADMIN)
-        token: "preview-token-12345"
-      }
-    });
-  }
-  // --- END: Auto-Login Simulation for Preview ---
-
-  // Example of how to load SVG icons dynamically or via CSS if needed.
-  // For now, these are commented out to remove embedded emoji/SVG code from JS.
-  // loadSvgIcon("vl", "vl-icon-container");
-  // loadSvgIcon("jp", "jp-icon-container");
-  // loadSvgIcon("_p", "_p-icon-container");
-  // loadSvgIcon("Op", "Op-icon-container");
-  // loadSvgIcon("$p", "$p-icon-container");
-  // loadSvgIcon("qp", "qp-icon-container");
-});
-
-// Function to load SVG icons dynamically
-function loadSvgIcon(iconName, containerId) {
-    fetch(`/icons/${iconName}.svg`)
-        .then(response => response.text())
-        .then(svg => {
-            const container = document.getElementById(containerId);
-            if (container) {
-                container.innerHTML = svg;
-            } else {
-                console.warn(`Container with ID ${containerId} not found for icon ${iconName}`);
+            // Placeholder for the ESANG AI pulse animation
+            const esangButton = document.querySelector('.esang-ai-button');
+            if (esangButton) {
+                esangButton.classList.add('pulse-effect');
             }
-        })
-        .catch(error => console.error(`Error loading ${iconName}.svg:`, error));
-}
+        }
 
-// Plausible Analytics script (kept as is, but can be externalized)
-window.plausible =
-    window.plausible ||
-    function () {
-        (window.plausible.q = window.plausible.q || []).push(arguments);
-    };
-plausible("custom-pageview", {
-  props: {
-        domain: window.location.host
-  }
-});
-
-// ESANG AI Chatbot Integration (Placeholder - further implementation needed)
-class EsangAIChatbot {
-  constructor() {
-    this.button = document.querySelector(".esang-ai-button");
-    if (this.button) {
-      this.button.addEventListener("click", this.openChat.bind(this));
-    }
-    console.log("ESANG AI Chatbot initialized.");
-  }
-
-  openChat() {
-    alert("ESANG AI Chatbot: How can I help you today?");
-    // Here, you would typically open a chat widget or navigate to a chat interface.
-    // Further implementation would involve integrating with an actual chatbot service.
-  }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  new EsangAIChatbot();
-});
-
-// General Utility Functions (Example: Xc for mobile detection, Bl, vt, Qt, tt, O for templating)
-// These would typically come from a UI library or be defined globally if custom.
-// For now, assuming they are available or will be provided by the framework.
-
-// Placeholder for Xc, Bl, vt, Qt, tt, O if they are not globally available
-function Xc() { return window.innerWidth <= 768; } // Example mobile detection
-
-// Assuming Bl, vt, Qt, tt, O are part of a templating library like LitElement or similar.
-// If not, these would need to be defined or replaced with standard DOM manipulation.
-// For the purpose of this perfected code, we'll assume they are part of the environment.
-
-// Example dummy implementations for templating functions if not using a library
-function O(strings, ...values) {
-  let str = '';
-  strings.forEach((string, i) => {
-    str += string + (values[i] || '');
-  });
-  return str;
-}
-
-function vt(template, shadowRoot) {
-  if (shadowRoot) {
-    shadowRoot.innerHTML = template;
-  } else {
-    console.warn("ShadowRoot not provided for vt function.");
-  }
-}
-
-function Qt(callback) {
-  // Placeholder for LitElement-like directive
-  return `data-lit-directive="${callback.name}"`;
-}
-
-function tt(classes) {
-  // Placeholder for LitElement-like class map
-  return Object.entries(classes).filter(([, value]) => value).map(([key]) => key).join(' ');
-}
-
-class Bl { /* Base class for UI elements */ }
-
-// Placeholder for Np and Bu functions if they are part of a specific framework initialization
-function Np() { console.log("Np function called."); }
-function Bu(callback) { callback(); }
+        // --- Initialization ---
+        // Default to the CATALYST view as requested by the user's last message
+        loginUser('CATALYST');
     </script>
 </body>
 </html>
