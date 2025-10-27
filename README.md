@@ -1,6 +1,6 @@
 # EusoTrip: The Revolutionary Logistics Platform - Powered by ESANG AI
 
-## The Platform Bible: A Unified, Intelligent Ecosystem
+## The Platform : A Unified, Intelligent Ecosystem
 
 EusoTrip is the definitive next-generation logistics and transportation ecosystem, built on a foundation of **Intelligence, Compliance, and Collaboration**. Developed by Eusorone Technologies, this platform transforms the hazardous materials and specialized freight industry by unifying shippers, carriers, and brokers onto a single, transparent, and AI-driven network.
 
