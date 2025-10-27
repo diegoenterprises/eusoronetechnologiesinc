@@ -3,139 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EusoTrip Platform - Master Design Shell</title>
+    <title>EusoTrip - Seamless Experience & Aesthetic Logic</title>
     <style>
-        /* --- EusoTrip Design Tokens (Pixel-Perfect Replication) --- */
+        /* --- Design Tokens (Colors, Fonts, Spacing) --- */
         :root {
-            --background-primary: #161B22; /* Dark background */
-            --background-secondary: #0D1117; /* Even darker for cards/surfaces */
-            --surface-primary: #1F242C; /* Slightly lighter surface for elements */
-            --border-primary: #30363D;
-            --text-primary: #C9D1D9; /* Light text for dark mode */
-            --text-secondary: #8B949E; /* Muted text */
-            --accent-primary-start: #0077FF; /* Richer Blue from Logo */
-            --accent-primary-end: #CC00FF; /* Richer Purple/Magenta from Logo */
-            --success-color: #50fa7b; /* Bright green for operational status/success */
-            --warning-color: #FFD700; /* Yellow for loading/warning */
-            --error-color: #F85149; /* Red for errors */
+            /* Core Colors (Rich Gradient from EusoTrip Flame Logo) */
+            --accent-primary-start: #0077FF; /* Deep Blue */
+            --accent-primary-end: #CC00FF;   /* Rich Magenta/Purple */
+            --accent-secondary: #00FFC2;     /* Teal/Cyan for highlights */
+
+            /* Backgrounds */
+            --background-primary: #121212; /* Deep Dark Gray */
+            --background-secondary: #1E1E1E; /* Slightly Lighter Dark Gray (for cards/surfaces) */
+            --surface-primary: #2C2C2C; /* Active/Hover surface */
+            --border-primary: #3A3A3A; /* Subtle borders */
+
+            /* Text */
+            --text-primary: #E0E0E0; /* Light Gray for main text */
+            --text-secondary: #A0A0A0; /* Muted Gray for subtext/labels */
+            --text-link: var(--accent-primary-start);
+
+            /* Status Colors */
+            --status-success: #4CAF50;
+            --status-warning: #FFC107;
+            --status-danger: #F44336;
+            --status-info: #2196F3;
         }
 
-        /* --- Base Styles --- */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-            background-color: var(--background-primary);
-            color: var(--text-primary);
-            margin: 0;
-            padding: 0;
-            overflow: hidden; /* Hide scrollbar for the main layout */
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
+        /* --- Global Styles --- */
         * {
             box-sizing: border-box;
         }
 
-        /* --- Login Screen --- */
-        .login-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-        }
-
-        .login-container h1 {
-            font-size: 3rem;
-            margin-bottom: 5px;
-            background: -webkit-linear-gradient(45deg, var(--accent-primary-start), var(--accent-primary-end));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .login-container h2 {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            margin-bottom: 40px;
-            font-weight: 400;
-        }
-
-        .login-container input {
-            width: 300px;
-            padding: 12px 15px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border-primary);
-            border-radius: 8px;
-            background-color: var(--surface-primary);
+        body {
+            font-family: 'Inter', sans-serif; /* Assuming a modern, clean font */
+            margin: 0;
+            padding: 0;
+            background-color: var(--background-primary);
             color: var(--text-primary);
-            font-size: 1rem;
-            outline: none;
-            transition: border-color 0.2s;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        .login-container input:focus {
-            border-color: var(--accent-primary-start);
-        }
-
-        .login-container button {
-            width: 300px;
-            padding: 12px 15px;
-            margin-bottom: 10px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .login-container button:hover {
-            opacity: 0.9;
-        }
-
-        .demo-logins {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-primary);
-            width: 300px;
-        }
-
-        .demo-logins p {
-            color: var(--text-secondary);
-            margin-bottom: 10px;
-        }
-
-        .demo-logins button {
-            width: 145px;
-            background: var(--surface-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-primary);
-            margin-right: 5px;
-        }
-
-        .demo-logins button:last-child {
-            margin-right: 0;
-        }
-
-        /* --- App Layout (Shell) --- */
+        /* --- Layout --- */
         .app-layout {
             display: flex;
-            flex-grow: 1;
-            overflow: hidden;
+            min-height: 100vh;
         }
 
         /* --- Sidebar --- */
         .sidebar {
             width: 250px;
             background-color: var(--background-secondary);
-            border-right: 1px solid var(--border-primary);
             padding: 20px 0;
-            flex-shrink: 0;
-            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100%;
+            z-index: 50;
         }
 
         .sidebar .logo {
@@ -143,42 +68,50 @@
             align-items: center;
             padding: 0 20px 20px 20px;
             border-bottom: 1px solid var(--border-primary);
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .sidebar .logo h1 {
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             margin: 0;
             font-weight: 700;
         }
 
         .sidebar nav {
-            padding: 0 10px;
+            flex-grow: 1;
+            overflow-y: auto;
         }
 
         .sidebar nav h6 {
             color: var(--text-secondary);
-            font-size: 0.8rem;
             text-transform: uppercase;
-            padding: 10px 20px 5px 20px;
-            margin: 0;
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 10px 20px 5px;
+            margin: 10px 0 0;
         }
 
         .sidebar nav ul {
             list-style: none;
             padding: 0;
-            margin: 0 0 20px 0;
+            margin: 0;
         }
 
         .sidebar nav li a {
             display: flex;
             align-items: center;
-            padding: 10px 20px;
-            text-decoration: none;
+            padding: 12px 20px;
             color: var(--text-primary);
-            border-radius: 8px;
-            margin: 5px 0;
-            transition: background-color 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            font-size: 0.95rem;
+            transition: background-color 0.2s, color 0.2s;
+            position: relative;
+        }
+
+        .sidebar nav li a i {
+            margin-right: 10px;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
         }
 
         .sidebar nav li a:hover {
@@ -188,297 +121,362 @@
         .sidebar nav li a.active {
             background: linear-gradient(90deg, var(--accent-primary-start) 0%, var(--accent-primary-end) 100%);
             color: white;
-            box-shadow: 0 4px 10px rgba(88, 166, 255, 0.3); /* Subtle glow for active state */
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0, 119, 255, 0.3);
+            border-radius: 8px;
+            margin: 0 10px;
+            padding: 12px 15px;
         }
 
-        .sidebar nav li a i {
-            margin-right: 10px;
-            font-style: normal; /* To allow text placeholders */
+        .sidebar nav li a.active i {
+            color: white;
         }
 
         .sidebar nav li a .badge {
-            background-color: var(--error-color);
+            background-color: var(--status-danger);
             color: white;
             font-size: 0.7rem;
             padding: 2px 6px;
             border-radius: 10px;
             margin-left: auto;
+            font-weight: 700;
         }
 
         /* --- Main Content --- */
         .main-content {
+            margin-left: 250px; /* Offset for fixed sidebar */
             flex-grow: 1;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
         }
 
         /* --- Header --- */
-        .main-content header {
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 30px;
-            background-color: var(--background-primary);
+            padding: 10px 0;
             border-bottom: 1px solid var(--border-primary);
+            margin-bottom: 20px;
             position: sticky;
             top: 0;
-            z-index: 10;
+            background-color: var(--background-primary);
+            z-index: 40;
+        }
+
+        .search-bar {
+            position: relative;
+            flex-grow: 1;
+            max-width: 400px;
+            margin-right: 20px;
         }
 
         .search-bar input {
-            width: 400px;
+            width: 100%;
             padding: 10px 15px;
             border: 1px solid var(--border-primary);
             border-radius: 8px;
-            background-color: var(--surface-primary);
+            background-color: var(--background-secondary);
             color: var(--text-primary);
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-bar input:focus {
+            border-color: var(--accent-primary-start);
+            box-shadow: 0 0 0 2px rgba(0, 119, 255, 0.2);
             outline: none;
         }
 
-        .user-profile img {
-            cursor: pointer;
+        .user-profile {
+            display: flex;
+            align-items: center;
+        }
+
+        .user-profile .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
             border: 2px solid var(--accent-primary-start);
         }
 
         /* --- Dashboard Content --- */
-        #dashboard-container {
-            padding: 30px;
-            flex-grow: 1;
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
         }
 
-        /* --- Dashboard Specific Styles (Pixel-Perfect Replication) --- */
-        .dashboard-grid {
-            padding: 0;
-        }
         .card {
             background-color: var(--background-secondary);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
-            transition: all 0.2s ease;
-            border: 1px solid var(--border-primary);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
+
         .card:hover {
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
         }
+
         .welcome-card {
-            background: linear-gradient(135deg, #2A3648 0%, #17202B 100%); /* Closer to the visual */
-            padding: 30px;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Darker Blue Gradient */
             color: white;
-            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
         }
+
         .welcome-header {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            /* This section is the gradient card behind the text */
-            background: linear-gradient(135deg, #58A6FF, #A371F7);
-            border-radius: 10px;
-            padding: 20px;
+            margin-bottom: 15px;
         }
+
         .esang-logo-placeholder {
             width: 50px;
             height: 50px;
+            margin-right: 15px;
             border-radius: 50%;
-            margin-right: 20px;
-            flex-shrink: 0;
-            object-fit: contain;
-            padding: 5px; /* To make the particle logo stand out */
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px;
         }
+
         .welcome-text-container h2 {
-            font-size: 2.2rem;
             margin: 0;
+            font-size: 1.8rem;
             font-weight: 700;
         }
+
         .welcome-text-container p {
             margin: 0;
             font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
+            opacity: 0.8;
         }
-        .user-meta p {
-            font-size: 0.8rem;
-            margin: 0;
-            text-align: right;
-            color: rgba(255, 255, 255, 0.7);
-        }
+
         .stats-grid-large {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
-            margin-bottom: 25px;
+            margin-top: 20px;
         }
+
         .stat-item {
             background-color: rgba(0, 0, 0, 0.2);
             padding: 15px;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .stat-item .stat-label {
+
+        .stat-label {
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 5px;
+            color: rgba(255, 255, 255, 0.7);
+            margin: 0 0 5px 0;
         }
-        .stat-item .stat-value {
-            font-size: 1.8rem;
+
+        .stat-value {
+            font-size: 1.5rem;
             font-weight: 700;
             margin: 0;
-            color: white;
         }
-        .stat-item .stat-subtext {
-            font-size: 0.7rem;
-            color: var(--success-color); /* Success color for positive change */
-            margin-top: 5px;
+
+        .stat-subtext {
+            font-size: 0.75rem;
+            color: var(--status-success);
+            margin: 5px 0 0 0;
         }
+
         .action-buttons {
             display: flex;
             gap: 10px;
+            margin-top: 20px;
         }
-        .action-buttons button {
-            padding: 12px 20px;
+
+        .button-primary, .button-secondary {
+            padding: 10px 15px;
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .action-buttons .button-primary {
-            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
-            color: white;
+            transition: background-color 0.2s, transform 0.1s;
             border: none;
         }
-        .action-buttons .button-secondary {
+
+        .button-primary {
+            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 119, 255, 0.3);
+        }
+
+        .button-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(0, 119, 255, 0.4);
+        }
+
+        .button-secondary {
             background-color: var(--surface-primary);
             color: var(--text-primary);
             border: 1px solid var(--border-primary);
         }
+
+        .button-secondary:hover {
+            background-color: #3A3A3A;
+        }
+
+        /* --- Active Shipments --- */
         .section-title {
             font-size: 1.5rem;
-            color: var(--text-primary);
-            margin-bottom: 15px;
+            margin: 20px 0 15px 0;
+            font-weight: 600;
         }
+
+        .shipment-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
         .shipment-card {
-            padding: 15px 20px;
+            border-left: 5px solid var(--accent-primary-start);
+            padding: 15px;
         }
+
         .shipment-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            margin-bottom: 5px;
         }
+
         .shipment-title {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             margin: 0;
             color: var(--text-primary);
         }
-        .shipment-route {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin: 5px 0 2px 0;
-        }
-        .shipment-details {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin: 0 0 10px 0;
-        }
+
         .status-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
             padding: 4px 8px;
             border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 700;
             text-transform: uppercase;
-        }
-        .status-in-transit {
-            background-color: var(--accent-primary-start);
             color: white;
         }
+
+        .status-in-transit {
+            background-color: var(--status-info);
+        }
+
         .status-loading {
-            background-color: var(--warning-color);
-            color: var(--background-secondary);
+            background-color: var(--status-warning);
         }
+
+        .shipment-route, .shipment-details {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 2px 0;
+        }
+
         .progress-bar-container {
-            margin-bottom: 10px;
+            margin: 10px 0;
+            background-color: var(--border-primary);
+            border-radius: 4px;
+            height: 8px;
+            overflow: hidden;
             position: relative;
-            height: 5px;
-            background-color: var(--surface-primary);
-            border-radius: 5px;
         }
+
         .progress-bar {
-            height: 5px;
-            background: linear-gradient(90deg, var(--accent-primary-end), var(--accent-primary-start));
-            border-radius: 5px;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
+            transition: width 0.5s ease-in-out;
         }
+
         .progress-labels {
             display: flex;
             justify-content: space-between;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             color: var(--text-secondary);
             margin-top: 5px;
         }
-        .action-icons {
-            display: flex;
-            gap: 10px;
-        }
-        .action-icon {
-            font-size: 0.7rem;
-            cursor: pointer;
-            color: var(--accent-primary-start);
-        }
+
         .tag-list {
-            display: flex;
-            gap: 8px;
             margin-top: 10px;
         }
+
         .tag {
-            padding: 4px 8px;
-            border-radius: 4px;
+            display: inline-block;
             font-size: 0.7rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-right: 5px;
+            margin-bottom: 5px;
             font-weight: 500;
-            background-color: var(--surface-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border-primary);
         }
+
+        .tag-hazmat {
+            background-color: rgba(244, 67, 54, 0.2);
+            color: var(--status-danger);
+        }
+
+        .tag-twic {
+            background-color: rgba(33, 150, 243, 0.2);
+            color: var(--status-info);
+        }
+
+        .tag-class3 {
+            background-color: rgba(255, 193, 7, 0.2);
+            color: var(--status-warning);
+        }
+
+        .tag-temp {
+            background-color: rgba(76, 175, 80, 0.2);
+            color: var(--status-success);
+        }
+
+        .tag-chain {
+            background-color: rgba(156, 39, 176, 0.2);
+            color: #9C27B0;
+        }
+
+        /* --- Summary Cards --- */
         .summary-cards-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 20px;
-            margin-top: 30px;
-        }
-        .summary-card {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            padding: 20px;
-        }
-        .summary-card .icon-placeholder {
-            font-size: 1.5rem;
-            margin-bottom: 10px;
-            color: var(--accent-primary-start);
-        }
-        .summary-card .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-        .summary-card .stat-value {
-            font-size: 1.6rem;
-            font-weight: 700;
-            margin: 0;
-            color: var(--text-primary);
-        }
-        .summary-card .stat-subtext {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            margin-top: 5px;
-        }
-        .status-operational-text {
-            color: var(--success-color);
+            margin-top: 20px;
         }
 
-        /* --- ESANG AI Button (Circular and Pulsing) --- */
+        .summary-card {
+            text-align: center;
+            padding: 15px;
+        }
+
+        .summary-card .icon-placeholder {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: var(--accent-primary-end);
+        }
+
+        .summary-card .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        .summary-card .stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 5px 0 0;
+        }
+
+        .status-operational-text {
+            color: var(--status-success);
+        }
+
+        /* --- ESANG AI Button --- */
         .esang-ai-button {
             position: fixed;
             bottom: 30px;
@@ -486,28 +484,17 @@
             width: 60px;
             height: 60px;
             border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-primary-start), var(--accent-primary-end));
             border: none;
-            background: linear-gradient(45deg, var(--accent-primary-start), var(--accent-primary-end));
-            box-shadow: 0 4px 15px rgba(88, 166, 255, 0.7);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
             cursor: pointer;
-            z-index: 100;
-            transition: transform 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
-            /* Icon placeholder - exact match to live app */
-            content: 'AI';
+            z-index: 100;
+            transition: transform 0.2s;
         }
-        
-        .esang-ai-button {
-            /* ... existing styles ... */
-            background: linear-gradient(45deg, var(--accent-primary-start), var(--accent-primary-end));
-            /* Remove content: 'AI' as it's now an image */
-        }
+
         .esang-ai-button img {
             width: 70%;
             height: 70%;
@@ -516,6 +503,118 @@
 
         .esang-ai-button:hover {
             transform: scale(1.05);
+        }
+
+        /* Pulse Effect Keyframes */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 119, 255, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 15px rgba(0, 119, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 119, 255, 0);
+            }
+        }
+
+        .pulse-effect {
+            animation: pulse 2s infinite;
+        }
+
+        /* --- App Footer --- */
+        .app-footer {
+            position: fixed;
+            bottom: 0;
+            left: 250px; /* Aligned with main content */
+            right: 0;
+            background-color: var(--background-secondary);
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-primary);
+            z-index: 50;
+        }
+
+        .app-footer p {
+            margin: 0;
+        }
+
+        .app-footer .status-operational {
+            color: var(--status-success);
+            font-weight: 600;
+        }
+
+        .app-footer .user-type {
+            font-weight: 600;
+            color: var(--accent-primary-end);
+        }
+
+        /* --- Login Screen --- */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        }
+
+        .login-box {
+            background-color: var(--background-secondary);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            color: var(--text-primary);
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        .login-box input[type="text"],
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-primary);
+            border-radius: 8px;
+            background-color: var(--background-primary);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .login-box .select-role {
+            margin-top: 20px;
+            color: var(--text-secondary);
+        }
+
+        .login-box .role-button {
+            margin: 5px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            background-color: var(--surface-primary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-primary);
+            cursor: pointer;
+        }
+
+        .login-box .role-button:hover {
+            background-color: var(--accent-primary-start);
+            color: white;
         }
 
         /* --- Search Overlay Styles --- */
@@ -585,150 +684,402 @@
             font-weight: 600;
         }
 
-        /* Pulse Effect Keyframes */
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.7);
-            }
-            70% {
-                box-shadow: 0 0 0 15px rgba(88, 166, 255, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(88, 166, 255, 0);
-            }
-        }
-
-        .pulse-effect {
-            animation: pulse 2s infinite;
-        }
-
-        /* --- Footer --- */
-        .app-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 30px;
+        /* --- ESANG AI Chat Modal Styles --- */
+        .esang-chat-modal {
+            position: fixed;
+            bottom: 60px; /* Above the footer */
+            right: 30px;
+            width: 380px;
+            height: 500px;
             background-color: var(--background-secondary);
+            border: 1px solid var(--border-primary);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .esang-chat-modal.active {
+            display: flex;
+        }
+        .chat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: linear-gradient(90deg, var(--accent-primary-start), var(--accent-primary-end));
+            color: white;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        .chat-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+        .chat-header button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .chat-header button:hover {
+            opacity: 1;
+        }
+        .chat-messages {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            background-color: var(--background-primary);
+            display: flex;
+            flex-direction: column;
+        }
+        .message-bubble {
+            max-width: 80%;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        .ai-message {
+            align-self: flex-start;
+            background-color: var(--surface-primary);
+            border-bottom-left-radius: 2px;
+        }
+        .user-message {
+            align-self: flex-end;
+            background-color: var(--accent-primary-start);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+        .chat-input {
+            padding: 15px;
             border-top: 1px solid var(--border-primary);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            flex-shrink: 0;
+            display: flex;
+        }
+        .chat-input input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid var(--border-primary);
+            border-radius: 6px;
+            background-color: var(--surface-primary);
+            color: var(--text-primary);
+            margin-right: 10px;
+        }
+        .chat-input button {
+            background: var(--accent-primary-end);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
         }
 
-        .status-operational {
-            color: var(--success-color);
-            font-weight: 600;
-        }
+        /* --- Icon Placeholders (using Font Awesome class names for Team Beta) --- */
+        .icon-dashboard:before { content: '🏠'; }
+        .icon-shipment:before { content: '📦'; }
+        .icon-jobs:before { content: '💼'; }
+        .icon-messages:before { content: '💬'; }
+        .icon-channels:before { content: '👥'; }
+        .icon-profile:before { content: '👤'; }
+        .icon-details:before { content: '🏢'; }
+        .icon-facility:before { content: '📍'; }
+        .icon-procedure:before { content: '📋'; }
+        .icon-diagnostics:before { content: '🚚'; }
+        .icon-wallet:before { content: '💰'; }
+        .icon-settings:before { content: '⚙️'; }
+        .icon-news:before { content: '📰'; }
+        .icon-support:before { content: '❓'; }
+        .icon-logout:before { content: '🚪'; }
 
-        .user-type {
-            color: var(--accent-primary-start);
-            font-weight: 600;
-        }
     </style>
 </head>
 <body>
+
     <div id="root">
-        <!-- Content injected by JavaScript -->
+        <!-- Content will be rendered here by JavaScript -->
     </div>
 
     <script>
-        // --- S.E.A.L. Team 6 Master Code Logic (Pixel-Perfect Replication) ---
-
-        // 1. Placeholder for Icon Loading (as per the Perfected Design Code)
-        function loadSvgIcon(iconName) {
-            // In a real application, this would load an SVG file/sprite
-            // For the master shell, we use a text placeholder
-            const icons = {
-                'dashboard': '🏠', 'shipment': '📦', 'jobs': '🚚', 'messages': '💬',
-                'channels': '👥', 'profile': '👤', 'details': '🏢', 'facility': '📍',
-                'procedure': '📋', 'diagnostics': '🔬', 'wallet': '💳', 'settings': '⚙️',
-                'news': '📰', 'support': '❓'
-            };
-            // Exact match to the live app's icon placeholders (no emojis in final code)
-            return ''; 
-        }
-
-        // 2. State Management Placeholder (as seen in .js files)
-        class EusoTripState {
-            constructor() {
-                this.user = { role: 'GUEST', name: 'Guest' };
-            }
+        // --- State Management Shell ---
+        const appState = {
+            user: {
+                isLoggedIn: false,
+                role: 'GUEST',
+                name: 'Guest'
+            },
             setUser(role, name) {
+                this.user.isLoggedIn = true;
                 this.user.role = role;
                 this.user.name = name;
             }
-        }
-        const appState = new EusoTripState();
+        };
 
-        // 3. Core Rendering Functions
+        // --- Content Renderers ---
+
         function renderLoginScreen() {
             const root = document.getElementById('root');
             root.innerHTML = `
                 <div class="login-container">
-                    <h1>EusoTrip</h1>
-                    <h2>Revolutionary Logistics Platform</h2>
-                    <input type="email" placeholder="Email" value="marcus.johnson@jtransport.com">
-                    <input type="password" placeholder="Password" value="••••••••">
-                    <button onclick="loginUser('CATALYST')">Login</button>
-                    <div class="demo-logins">
-                        <p>Or login as demo:</p>
-                        <button onclick="loginUser('SHIPPER')">Shipper Demo</button>
-                        <button onclick="loginUser('CATALYST')">CATALYST Demo</button>
+                    <div class="login-box">
+                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="width: 60px; margin-bottom: 15px;" onerror="this.onerror=null;this.src='https://placehold.co/60x60/0077FF/CC00FF/png?text=E';">
+                        <h2>Welcome to EusoTrip</h2>
+                        <input type="text" placeholder="Email or Username">
+                        <input type="password" placeholder="Password">
+                        <button class="button-primary" onclick="loginUser('CATALYST')">Login</button>
+                        <p class="select-role">Or select user type for demo:</p>
+                        <div class="role-selection">
+                            <button class="role-button" onclick="loginUser('CATALYST')">CATALYST</button>
+                            <button class="role-button" onclick="loginUser('SHIPPER')">SHIPPER</button>
+                            <button class="role-button" onclick="loginUser('ADMIN')">ADMIN</button>
+                        </div>
                     </div>
                 </div>
             `;
-            // Remove footer in login screen for cleaner look
-            const footer = document.querySelector('.app-footer');
-            if (footer) footer.style.display = 'none';
         }
 
-        function loginUser(role) {
-            // Simulate a successful login and set state
-            appState.setUser(role, role === 'CATALYST' ? 'Marcus Johnson' : 'Eusorone Shipper');
-            renderAppShell();
+        function renderDashboardContent() {
+            return `
+                <div id="dashboard-content" style="padding: 0 20px 20px 0;">
+                    <div class="dashboard-grid">
+                        <!-- Top Welcome Card (Driver/CATALYST View) - Exact Replication -->
+                        <div class="card welcome-card">
+                            <div class="welcome-header">
+                                <img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI Logo" class="esang-logo-placeholder" onerror="this.onerror=null;this.src='https://placehold.co/50x50/58A6FF/A371F7/png?text=AI';">
+                                <div class="welcome-text-container">
+                                    <h2>Welcome back, ${appState.user.name}!</h2>
+                                    <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
+                                    <p class="user-details-secondary">8 years experience • HazMat, Tanker, Heavy Haul</p>
+                                </div>
+                            </div>
+                            <div class="stats-grid-large">
+                                <div class="stat-item">
+                                    <p class="stat-label">Active Shipments</p>
+                                    <h3 class="stat-value">2</h3>
+                                    <p class="stat-subtext">1 HazMat loads</p>
+                                </div>
+                                <div class="stat-item">
+                                    <p class="stat-label">This Month Revenue</p>
+                                    <h3 class="stat-value">$47,250</h3>
+                                    <p class="stat-subtext">+12% vs last month</p>
+                                </div>
+                                <div class="stat-item">
+                                    <p class="stat-label">Compliance Score</p>
+                                    <h3 class="stat-value">98.5%</h3>
+                                    <p class="stat-subtext">Excellent rating</p>
+                                </div>
+                                <div class="stat-item">
+                                    <p class="stat-label">Miles This Week</p>
+                                    <h3 class="stat-value">2,847</h3>
+                                    <p class="stat-subtext">Within HOS limits</p>
+                                </div>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="button-primary">Create New Shipment →</button>
+                                <button class="button-secondary">View My Jobs</button>
+                                <button class="button-secondary esang-ai-action">Ask ESANG AI</button>
+                            </div>
+                        </div>
+
+                        <!-- Secondary Info Cards -->
+                        <div class="card">
+                            <h3 class="section-title" style="margin-top: 0;">Quick Status</h3>
+                            <div class="summary-cards-grid" style="grid-template-columns: 1fr;">
+                                <div class="stat-item" style="background-color: var(--background-primary); border: 1px solid var(--border-primary);">
+                                    <p class="stat-label">HOS Status</p>
+                                    <h3 class="stat-value" style="color: var(--status-success);">Driving (3:45 remaining)</h3>
+                                    <p class="stat-subtext">Next break due in 45 mins</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Shipments Section - Exact Replication -->
+                    <h2 class="section-title">Active Shipments</h2>
+                    <div class="shipment-list">
+                        <!-- Shipment Card 1 -->
+                        <div class="card shipment-card">
+                            <div class="shipment-header">
+                                <h3 class="shipment-title">SH-001 - Class 3 Flammable Liquids - Methanol 99.9%</h3>
+                                <span class="status-badge status-in-transit">IN TRANSIT</span>
+                            </div>
+                            <p class="shipment-route">Houston, TX → Denver, CO</p>
+                            <p class="shipment-details">Rate: $4,250 • 1015 miles</p>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: 75%;"></div>
+                                <div class="progress-labels">
+                                    <span class="eta">ETA: 2024-12-18 14:00</span>
+                                    <span class="action-icons">
+                                        <span class="action-icon pick-up">📞 Pickup</span>
+                                        <span class="action-icon delivery">💬 Delivery</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="tag-list">
+                                <span class="tag tag-hazmat">HazMat</span>
+                                <span class="tag tag-twic">TWIC</span>
+                                <span class="tag tag-class3">Class 3 Endorsement</span>
+                            </div>
+                        </div>
+                        <!-- Shipment Card 2 -->
+                        <div class="card shipment-card">
+                            <div class="shipment-header">
+                                <h3 class="shipment-title">SH-002 - Refrigerated Pharmaceuticals - Temperature Controlled</h3>
+                                <span class="status-badge status-loading">LOADING</span>
+                            </div>
+                            <p class="shipment-route">Miami, FL → Atlanta, GA</p>
+                            <p class="shipment-details">Rate: $3,150 • 647 miles</p>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: 25%;"></div>
+                                <div class="progress-labels">
+                                    <span class="eta">ETA: 2024-12-17 10:00</span>
+                                    <span class="action-icons">
+                                        <span class="action-icon pick-up">📞 Pickup</span>
+                                        <span class="action-icon delivery">💬 Delivery</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="tag-list">
+                                <span class="tag tag-temp">Temperature Control</span>
+                                <span class="tag tag-chain">Chain of Custody</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Cards Section - Exact Replication -->
+                    <h2 class="section-title">Platform Status Overview</h2>
+                    <div class="summary-cards-grid">
+                        <div class="card summary-card">
+                            <div class="icon-placeholder status-icon">✓</div>
+                            <p class="stat-label">Platform Status</p>
+                            <h3 class="stat-value status-operational-text">Operational</h3>
+                            <p class="stat-subtext">All systems running</p>
+                        </div>
+                        <div class="card summary-card">
+                            <div class="icon-placeholder specialization-icon"></div>
+                            <p class="stat-label">Specializations</p>
+                            <h3 class="stat-value">52</h3>
+                            <p class="stat-subtext">Cargo types available</p>
+                        </div>
+                        <div class="card summary-card">
+                            <div class="icon-placeholder users-icon"></div>
+                            <p class="stat-label">Active Users</p>
+                            <h3 class="stat-value">15,847</h3>
+                            <p class="stat-subtext">Drivers, shippers, brokers</p>
+                        </div>
+                        <div class="card summary-card">
+                            <div class="icon-placeholder shipments-icon"></div>
+                            <p class="stat-label">Total Shipments</p>
+                            <h3 class="stat-value">234,567</h3>
+                            <p class="stat-subtext">Platform lifetime</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSidebar() {
+            // Static sidebar structure
+            const sidebarHtml = `
+                <div class="sidebar">
+                    <div class="logo">
+                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="margin-right: 10px; width: 30px; height: 30px; border-radius: 4px;" onerror="this.onerror=null;this.src='https://placehold.co/30x30/0077FF/CC00FF/png?text=E';">
+                        <h1>EusoTrip</h1>
+                    </div>
+                    <nav>
+                        <h6>MAIN</h6>
+                        <ul>
+                            <li><a href="#" data-section="Dashboard" onclick="event.preventDefault(); renderContent('Dashboard');" class="active"><i class="icon-dashboard"></i> Dashboard</a></li>
+                            <li><a href="#" data-section="Shipment" onclick="event.preventDefault(); renderContent('Shipment');"><i class="icon-shipment"></i> Shipment</a></li>
+                            <li><a href="#" data-section="My Jobs" onclick="event.preventDefault(); renderContent('My Jobs');"><i class="icon-jobs"></i> My Jobs</a></li>
+                            <li><a href="#" data-section="Messages" onclick="event.preventDefault(); renderContent('Messages');"><i class="icon-messages"></i> Messages <span class="badge">2</span></a></li>
+                            <li><a href="#" data-section="Company Channels" onclick="event.preventDefault(); renderContent('Company Channels');"><i class="icon-channels"></i> Company Channels</a></li>
+                        </ul>
+                        <h6>ACCOUNT</h6>
+                        <ul>
+                            <li><a href="#" data-section="My Profile" onclick="event.preventDefault(); renderContent('My Profile');"><i class="icon-profile"></i> My Profile</a></li>
+                            <li><a href="#" data-section="Company Details" onclick="event.preventDefault(); renderContent('Company Details');"><i class="icon-details"></i> Company Details</a></li>
+                            <li><a href="#" data-section="Facility Address" onclick="event.preventDefault(); renderContent('Facility Address');"><i class="icon-facility"></i> Facility Address</a></li>
+                        </ul>
+                        <h6>OPERATIONS</h6>
+                        <ul>
+                            <li><a href="#" data-section="Job Procedure" onclick="event.preventDefault(); renderContent('Job Procedure');"><i class="icon-procedure"></i> Job Procedure</a></li>
+                            <li><a href="#" data-section="Truck Diagnostics" onclick="event.preventDefault(); renderContent('Truck Diagnostics');"><i class="icon-diagnostics"></i> Truck Diagnostics</a></li>
+                            <li><a href="#" data-section="EusoWallet" onclick="event.preventDefault(); renderContent('EusoWallet');"><i class="icon-wallet"></i> EusoWallet</a></li>
+                        </ul>
+                        <h6>SYSTEM</h6>
+                        <ul>
+                            <li><a href="#" data-section="Settings" onclick="event.preventDefault(); renderContent('Settings');"><i class="icon-settings"></i> Settings</a></li>
+                            <li><a href="#" data-section="News Feed" onclick="event.preventDefault(); renderContent('News Feed');"><i class="icon-news"></i> News Feed</a></li>
+                            <li><a href="#" data-section="Support" onclick="event.preventDefault(); renderContent('Support');"><i class="icon-support"></i> Support</a></li>
+                        </ul>
+                        <h6 style="margin-top: 30px;"><a href="#" onclick="event.preventDefault(); renderLoginScreen();" style="color: var(--status-danger); padding: 0 20px;"><i class="icon-logout" style="color: var(--status-danger);"></i> Logout</a></h6>
+                    </nav>
+                </div>
+            `;
+            return sidebarHtml;
+        }
+
+        function toggleSearchOverlay(show) {
+            const overlay = document.getElementById('search-overlay');
+            if (overlay) {
+                if (show) {
+                    overlay.classList.add('active');
+                } else {
+                    // Only hide if the input is not focused
+                    overlay.classList.remove('active');
+                }
+            }
+        }
+
+        function renderHeader() {
+            return `
+                <header>
+                    <div class="search-bar">
+                        <input type="text" id="search-input" placeholder="Search shipments, contacts..." onfocus="toggleSearchOverlay(true)" onblur="setTimeout(() => toggleSearchOverlay(false), 200)">
+                        <div id="search-overlay" class="search-overlay">
+                            <h4>Shipments (2)</h4>
+                            <div class="search-item">
+                                <span class="icon">📦</span><p>SH-001 - Methanol</p><span>In Transit</span>
+                            </div>
+                            <div class="search-item">
+                                <span class="icon">📦</span><p>SH-002 - Pharma</p><span>Loading</span>
+                            </div>
+
+                            <h4>Contacts (1)</h4>
+                            <div class="search-item">
+                                <span class="icon">👤</span><p>Marcus Johnson</p><span>Driver</span>
+                            </div>
+
+                            <div class="esang-ai-search-prompt">
+                                <button onclick="openEsangChat()">Ask ESANG AI for Complex Search</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="user-profile">
+                        <img src="https://placehold.co/40x40/0077FF/CC00FF/png?text=MJ" alt="User Avatar" class="avatar">
+                    </div>
+                </header>
+            `;
         }
 
         function renderContent(section) {
-            const mainContent = document.getElementById('main-content');
             let contentHTML = '';
 
             // 1. Dashboard Content (Default)
             if (section === 'Dashboard') {
                 contentHTML = renderDashboardContent();
             }
-            // 2. Shipment Content (Placeholder)
-            else if (section === 'Shipment') {
-                contentHTML = `
-                    <div id="shipment-content" style="padding: 30px;">
-                        <h1 style="color: var(--accent-primary-start);">Shipment Management</h1>
-                        <p style="color: var(--text-secondary);">This is the shell for the **Shipment** section. The full interactive view will be built here.</p>
-                        <div class="card" style="padding: 50px; text-align: center;">
-                            <h3 style="margin-top: 0;">Shipment Creation Form Shell</h3>
-                            <p>This area will contain the multi-step form for creating new shipments, matching the design from the live application.</p>
-                        </div>
-                    </div>
-                `;
-            }
-            // 3. My Jobs Content (Placeholder)
-            else if (section === 'My Jobs') {
-                contentHTML = `
-                    <div id="my-jobs-content" style="padding: 30px;">
-                        <h1 style="color: var(--accent-primary-start);">My Jobs</h1>
-                        <p style="color: var(--text-secondary);">This is the shell for the **My Jobs** section. It will contain the job cards and filtering options.</p>
-                        <div class="card" style="padding: 50px; text-align: center;">
-                            <h3 style="margin-top: 0;">Job Board Shell</h3>
-                            <p>This area will contain the job board with sortable and filterable job cards, matching the design from the live application.</p>
-                        </div>
-                    </div>
-                `;
-            }
-            // 4. Other Sections (Generic Placeholder)
+            // 2. Placeholder Content for all other sections
             else {
                 contentHTML = `
-                    <div id="${section.toLowerCase().replace(/\s/g, '-')}-content" style="padding: 30px;">
+                    <div id="${section.toLowerCase().replace(/\s/g, '-')}-content" style="padding: 0 20px 20px 0;">
                         <h1 style="color: var(--accent-primary-start);">${section}</h1>
-                        <p style="color: var(--text-secondary);">This is the shell for the **${section}** section. The full interactive view will be built here, matching the visual style of the live application.</p>
-                        <div class="card" style="padding: 50px; text-align: center;">
+                        <p style="color: var(--text-secondary);">This is the shell for the **${section}** section. Team Beta/Alpha must replace this placeholder with the final, dynamic UI, adhering strictly to the visual style of the Dashboard components.</p>
+                        <div class="card" style="padding: 50px; text-align: center; margin-top: 20px;">
                             <h3 style="margin-top: 0;">${section} Content Shell</h3>
                             <p>This area will contain the specific content for the ${section} section, matching the design from the live application.</p>
                         </div>
@@ -765,221 +1116,6 @@
             }
         }
 
-        function renderSidebar() {
-            // Static sidebar structure
-            const sidebarHtml = `
-                <div class="sidebar">
-                    <div class="logo">
-                        <img src="./assets/images/eusotrip_flame_logo.png" alt="EusoTrip Logo" style="margin-right: 10px; width: 30px; height: 30px; border-radius: 4px;" onerror="this.onerror=null;this.src='https://placehold.co/30x30/58A6FF/A371F7/png?text=E';">
-                        <h1>EusoTrip</h1>
-                    </div>
-                    <nav>
-                        <ul>
-                            <li><a href="#" data-section="Dashboard" onclick="event.preventDefault(); renderContent('Dashboard');" class="active"><i class="icon-dashboard"></i> Dashboard</a></li>
-                            <li><a href="#" data-section="Shipment" onclick="event.preventDefault(); renderContent('Shipment');"><i class="icon-shipment"></i> Shipment</a></li>
-                            <li><a href="#" data-section="My Jobs" onclick="event.preventDefault(); renderContent('My Jobs');"><i class="icon-jobs"></i> My Jobs</a></li>
-                            <li><a href="#" data-section="Messages" onclick="event.preventDefault(); renderContent('Messages');"><i class="icon-messages"></i> Messages <span class="badge">2</span></a></li>
-                        </ul>
-                        <h6>Company</h6>
-                        <ul>
-                            <li><a href="#" data-section="Company Channels" onclick="event.preventDefault(); renderContent('Company Channels');"><i class="icon-channels"></i> Company Channels</a></li>
-                            <li><a href="#" data-section="My Profile" onclick="event.preventDefault(); renderContent('My Profile');"><i class="icon-profile"></i> My Profile</a></li>
-                            <li><a href="#" data-section="Company Details" onclick="event.preventDefault(); renderContent('Company Details');"><i class="icon-details"></i> Company Details</a></li>
-                            <li><a href="#" data-section="Facility Address" onclick="event.preventDefault(); renderContent('Facility Address');"><i class="icon-facility"></i> Facility Address</a></li>
-                            <li><a href="#" data-section="Job Procedure" onclick="event.preventDefault(); renderContent('Job Procedure');"><i class="icon-procedure"></i> Job Procedure</a></li>
-                            <li><a href="#" data-section="Truck Diagnostics" onclick="event.preventDefault(); renderContent('Truck Diagnostics');"><i class="icon-diagnostics"></i> Truck Diagnostics</a></li>
-                            <li><a href="#" data-section="EusoWallet" onclick="event.preventDefault(); renderContent('EusoWallet');"><i class="icon-wallet"></i> EusoWallet</a></li>
-                        </ul>
-                        <h6>System</h6>
-                        <ul>
-                            <li><a href="#" data-section="Settings" onclick="event.preventDefault(); renderContent('Settings');"><i class="icon-settings"></i> Settings</a></li>
-                            <li><a href="#" data-section="News Feed" onclick="event.preventDefault(); renderContent('News Feed');"><i class="icon-news"></i> News Feed</a></li>
-                            <li><a href="#" data-section="Support" onclick="event.preventDefault(); renderContent('Support');"><i class="icon-support"></i> Support</a></li>
-                        </ul>
-                    </nav>
-                </div>
-            `;
-            return sidebarHtml;
-        }
-
-        function renderHeader() {
-                 function toggleSearchOverlay(show) {
-            const overlay = document.getElementById('search-overlay');
-            if (overlay) {
-                if (show) {
-                    overlay.classList.add('active');
-                } else {
-                    // Only hide if the input is not focused
-                    overlay.classList.remove('active');
-                }
-            }
-        }
-
-        function renderHeader() {
-            return `
-                <header>
-                    <div class="search-bar">
-                        <input type="text" id="search-input" placeholder="Search shipments, contacts..." onfocus="toggleSearchOverlay(true)" onblur="setTimeout(() => toggleSearchOverlay(false), 200)">
-                        <div id="search-overlay" class="search-overlay">
-                            <h4>Shipments (2)</h4>
-                            <div class="search-item">
-                                <span class="icon">📦</span><p>SH-001 - Methanol</p><span>In Transit</span>
-                            </div>
-                            <div class="search-item">
-                                <span class="icon">📦</span><p>SH-002 - Pharma</p><span>Loading</span>
-                            </div>
-
-                            <h4>Contacts (1)</h4>
-                            <div class="search-item">
-                                <span class="icon">👤</span><p>Marcus Johnson</p><span>Driver</span>
-                            </div>
-
-                            <div class="esang-ai-search-prompt">
-                                <button onclick="alert('Launching ESANG AI Search...')">Ask ESANG AI for Complex Search</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="user-profile">
-                        <img src="https://placehold.co/40x40/58A6FF/A371F7/png?text=MJ" alt="User Avatar" class="avatar" style="border-radius: 50%;">
-                    </div>
-                </header>
-            `;
-        }    return headerHtml;
-        }
-
-        function renderDashboardContent() {
-            // This is the static HTML template for the master shell, ensuring the visual is perfect
-            return `
-                <div id="dashboard-container">
-                    <div class="dashboard-grid">
-                        <!-- Top Welcome Card (Driver/CATALYST View) - Exact Replication -->
-                        <div class="card welcome-card">
-                            <div class="welcome-header">
-                                <img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI Logo" class="esang-logo-placeholder" onerror="this.onerror=null;this.src='https://placehold.co/50x50/58A6FF/A371F7/png?text=AI';">
-                                <div class="welcome-text-container">
-                                    <h2>Welcome back, ${appState.user.name}!</h2>
-                                    <p class="user-details">Johnson Transport LLC • Owner-Operator Driver</p>
-                                    <p class="user-details-secondary">8 years experience • HazMat, Tanker, Heavy Haul</p>
-                                </div>
-                                <div class="user-meta">
-                                    <p>DOT: DOT-3456789</p>
-                                    <p>MC: MC-987654</p>
-                                    <p>Fleet: 3 vehicles</p>
-                                </div>
-                            </div>
-                            <div class="stats-grid-large">
-                                <div class="stat-item">
-                                    <p class="stat-label">Active Shipments</p>
-                                    <h3 class="stat-value">2</h3>
-                                    <p class="stat-subtext">1 HazMat loads</p>
-                                </div>
-                                <div class="stat-item">
-                                    <p class="stat-label">This Month Revenue</p>
-                                    <h3 class="stat-value">$47,250</h3>
-                                    <p class="stat-subtext">+12% vs last month</p>
-                                </div>
-                                <div class="stat-item">
-                                    <p class="stat-label">Compliance Score</p>
-                                    <h3 class="stat-value">98.5%</h3>
-                                    <p class="stat-subtext">Excellent rating</p>
-                                </div>
-                                <div class="stat-item">
-                                    <p class="stat-label">Miles This Week</p>
-                                    <h3 class="stat-value">2,847</h3>
-                                    <p class="stat-subtext">Within HOS limits</p>
-                                </div>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="button-primary">Create New Shipment →</button>
-                                <button class="button-secondary">View My Jobs</button>
-                                <button class="button-secondary esang-ai-action">Ask ESANG AI</button>
-                            </div>
-                        </div>
-
-                        <!-- Active Shipments Section - Exact Replication -->
-                        <h2 class="section-title">Active Shipments</h2>
-                        <div class="shipment-list">
-                            <!-- Shipment Card 1 -->
-                            <div class="card shipment-card">
-                                <div class="shipment-header">
-                                    <h3 class="shipment-title">SH-001 - Class 3 Flammable Liquids - Methanol 99.9%</h3>
-                                    <span class="status-badge status-in-transit">IN TRANSIT</span>
-                                </div>
-                                <p class="shipment-route">Houston, TX → Denver, CO</p>
-                                <p class="shipment-details">Rate: $4,250 • 1015 miles</p>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar" style="width: 75%;"></div>
-                                    <div class="progress-labels">
-                                        <span class="eta">ETA: 2024-12-18 14:00</span>
-                                        <span class="action-icons">
-                                            <span class="action-icon pick-up">📞 Pickup</span>
-                                            <span class="action-icon delivery">💬 Delivery</span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="tag-list">
-                                    <span class="tag tag-hazmat">HazMat</span>
-                                    <span class="tag tag-twic">TWIC</span>
-                                    <span class="tag tag-class3">Class 3 Endorsement</span>
-                                </div>
-                            </div>
-                            <!-- Shipment Card 2 -->
-                            <div class="card shipment-card">
-                                <div class="shipment-header">
-                                    <h3 class="shipment-title">SH-002 - Refrigerated Pharmaceuticals - Temperature Controlled</h3>
-                                    <span class="status-badge status-loading">LOADING</span>
-                                </div>
-                                <p class="shipment-route">Miami, FL → Atlanta, GA</p>
-                                <p class="shipment-details">Rate: $3,150 • 647 miles</p>
-                                <div class="progress-bar-container">
-                                    <div class="progress-bar" style="width: 25%;"></div>
-                                    <div class="progress-labels">
-                                        <span class="eta">ETA: 2024-12-17 10:00</span>
-                                        <span class="action-icons">
-                                            <span class="action-icon pick-up">📞 Pickup</span>
-                                            <span class="action-icon delivery">💬 Delivery</span>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="tag-list">
-                                    <span class="tag tag-temp">Temperature Control</span>
-                                    <span class="tag tag-chain">Chain of Custody</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Summary Cards Section - Exact Replication -->
-                        <div class="summary-cards-grid">
-                            <div class="card summary-card">
-                                <div class="icon-placeholder status-icon">✓</div>
-                                <p class="stat-label">Platform Status</p>
-                                <h3 class="stat-value status-operational-text">Operational</h3>
-                                <p class="stat-subtext">All systems running</p>
-                            </div>
-                            <div class="card summary-card">
-                                <div class="icon-placeholder specialization-icon"></div>
-                                <p class="stat-label">Specializations</p>
-                                <h3 class="stat-value">52</h3>
-                                <p class="stat-subtext">Cargo types available</p>
-                            </div>
-                            <div class="card summary-card">
-                                <div class="icon-placeholder users-icon"></div>
-                                <p class="stat-label">Active Users</p>
-                                <h3 class="stat-value">15,847</h3>
-                                <p class="stat-subtext">Drivers, shippers, brokers</p>
-                            </div>
-                            <div class="card summary-card">
-                                <div class="icon-placeholder shipments-icon"></div>
-                                <p class="stat-label">Total Shipments</p>
-                                <h3 class="stat-value">234,567</h3>
-                                <p class="stat-subtext">Platform lifetime</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
         function renderAppShell() {
             const root = document.getElementById('root');
             root.innerHTML = `
@@ -990,7 +1126,7 @@
                         ${renderContent('Dashboard')}
                     </div>
                 </div>
-                <button class="esang-ai-button pulse-effect" onclick="openEsangChat()"><img src="./assets/images/esang_ai_particle_logo.png" alt="ESANG AI" onerror="this.onerror=null;this.src='https://placehold.co/50x50/58A6FF/A371F7/png?text=AI';"></button>
+                <button class="esang-ai-button pulse-effect" onclick="openEsangChat()"><img src="./assets/images/esang-ai-particle-logo.png" alt="ESANG AI" onerror="this.onerror=null;this.src='https://placehold.co/50x50/0077FF/CC00FF/png?text=AI';"></button>
                 <div class="app-footer">
                     <p>Copyright © 2024 EusoTrip - Revolutionary Logistics Platform</p>
                     <p>Platform Status: <span class="status-operational">Operational</span> • User Type: <span class="user-type">${appState.user.role}</span></p>
@@ -1012,20 +1148,17 @@
                     </div>
                 </div>
             `;
-            // Ensure footer is visible
-            const footer = document.querySelector('.app-footer');
-            if (footer) footer.style.display = 'flex';
+        }
 
-            // Placeholder for the ESANG AI pulse animation
-            const esangButton = document.querySelector('.esang-ai-button');
-            if (esangButton) {
-                esangButton.classList.add('pulse-effect');
-            }
+        function loginUser(role) {
+            // Simulate a successful login and set state
+            appState.setUser(role, role === 'CATALYST' ? 'Marcus Johnson' : 'Eusorone Shipper');
+            renderAppShell();
         }
 
         // --- Initialization ---
-        // Default to the CATALYST view as requested by the user's last message
-        loginUser('CATALYST');
+        // Start on the login screen
+        renderLoginScreen();
     </script>
 </body>
 </html>
