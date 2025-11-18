@@ -1,0 +1,18 @@
+{
+  "query": "SHOW COLUMNS FROM users LIKE 'role'",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3Qd4cxSg8onxF69.root --database REbawm5FMED62FLpHMShim --execute SHOW COLUMNS FROM users LIKE 'role'",
+  "rows": [
+    {
+      "Field": "role",
+      "Type": "enum('user','admin','SHIPPER','CARRIER','BROKER','DRIVER','CATALYST','ESCORT','TERMINAL_MANAGER','ADMIN','SUPER_ADMIN')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "user",
+      "Extra": ""
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nrole\tenum('user','admin','SHIPPER','CARRIER','BROKER','DRIVER','CATALYST','ESCORT','TERMINAL_MANAGER','ADMIN','SUPER_ADMIN')\tNO\t\tuser\t\n",
+  "stderr": "",
+  "execution_time_ms": 146
+}
