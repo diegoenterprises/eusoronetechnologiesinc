@@ -1358,3 +1358,179 @@
 - [ ] Add .gitignore for node_modules, .env, etc.
 - [ ] Organize folders (frontend, backend, docs)
 - [ ] Keep GitHub repo updated with each major change
+
+
+## PHASE 10: SETTINGS & COMPANY TRPC INTEGRATION (COMPLETED)
+- [x] Connected Settings.tsx to tRPC users router
+  - [x] Added trpc.users.getProfile query
+  - [x] Added trpc.users.updateProfile mutation
+  - [x] Replaced mock save handler with real database mutation
+- [x] Connected Company.tsx to tRPC companies router
+  - [x] Added trpc.companies.getProfile query with companyId parameter
+  - [x] Added trpc.companies.getFleet query for vehicle list
+  - [x] Added trpc.companies.updateProfile mutation
+  - [x] Replaced mock save handler with real database mutation
+- [x] Fixed TypeScript compilation errors (0 errors)
+- [x] Verified dev server running successfully
+
+
+## PHASE 11: COMPREHENSIVE PAGE DIFFERENTIATION - ALL 9 ROLES (CRITICAL)
+
+### SHIPPER ROLE - Page Differentiation Required
+- [ ] "My Loads" page - Should show shipper's created loads with status tracking
+- [ ] "Create Load" page - Load posting wizard (already exists, verify uniqueness)
+- [ ] "Active Loads" page - Real-time tracking of loads in transit
+- [ ] "Track Shipments" page - GPS tracking and delivery status monitoring
+- [ ] "Carriers" page - Carrier directory, ratings, and performance metrics
+- [ ] "Payments" page - Invoice management, payment processing, transaction history
+- [ ] "Wallet" page - EusoWallet balance, P2P payments (already connected to DB)
+- [ ] Ensure all pages link logically and reduce redundancy
+
+### CARRIER ROLE - Page Differentiation Required
+- [ ] "Find Loads" page - Load board with search and filters
+- [ ] "Assigned Loads" page - Loads assigned to carrier's fleet
+- [ ] "In Transit" page - Real-time tracking of active deliveries
+- [ ] "Analytics" page - Performance metrics, revenue charts, efficiency stats
+- [ ] "Earnings" page - Revenue breakdown, payment schedule, invoicing
+- [ ] "Wallet" page - EusoWallet balance, payment methods (already connected to DB)
+- [ ] Ensure all pages link logically and reduce redundancy
+
+### BROKER ROLE - Page Differentiation Required
+- [ ] "Post Loads" page - Load posting interface for marketplace
+- [ ] "Marketplace" page - Active marketplace with bids and negotiations
+- [ ] "Carriers" page - Carrier network management and vetting
+- [ ] "Active Loads" page - Real-time monitoring of brokered loads
+- [ ] "Analytics" page - Commission tracking, market insights, performance
+- [ ] Ensure all pages link logically and reduce redundancy
+
+### DRIVER ROLE - Page Differentiation Required
+- [ ] "My Jobs" page - Assigned jobs with details and requirements
+- [ ] "Current Job" page - Active job with step-by-step guidance
+- [ ] "Navigation" page - GPS navigation with HazMat routing (NOT generic content)
+- [ ] "Vehicle" page - Vehicle information, inspection checklist, maintenance
+- [ ] "Diagnostics" page - Zeun Mechanics integration (already exists, verify uniqueness)
+- [ ] "Earnings" page - Pay statements, mileage tracking, bonus calculations
+- [ ] "Wallet" page - EusoWallet balance, instant pay (already connected to DB)
+- [ ] Ensure all pages link logically and reduce redundancy
+
+### CATALYST ROLE - Page Differentiation Required
+- [ ] "Specializations" page - Catalyst's oil identification specializations and certifications (NOT generic content - use intelligence)
+- [ ] "Matched" page - Jobs matched to catalyst's expertise
+- [ ] "Opportunities" page - Available catalyst jobs in marketplace
+- [ ] "Performance" page - Catalyst performance metrics and ratings
+- [ ] "ESANG AI" page - AI assistant for oil identification (rename from "AI Assistant")
+- [ ] "Messages" page - Communication with shippers and terminals
+- [ ] Ensure all pages are unique and link logically
+
+### ESCORT ROLE - Page Differentiation Required
+- [ ] "Team" page - Escort team management and assignments (NOT generic content - use intelligence)
+- [ ] "Active Convoys" page - Current convoy assignments with route info
+- [ ] "Tracking" page - Real-time GPS tracking of escorted loads
+- [ ] "Incidents" page - Incident reporting and management
+- [ ] "Reports" page - Escort reports, compliance documentation
+- [ ] Ensure all pages are unique and link logically
+
+### TERMINAL_MANAGER ROLE - Complete Rebuild Based on Dearman Documentation
+**CRITICAL: Rebrand all Dearman concepts as Eusorone Technologies, Inc. / EusoTrip**
+**CRITICAL: Create open APIs that integrate with existing terminal PLC/SCADA systems**
+
+- [ ] "Staff" page - Terminal staff management, scheduling, roles (NOT generic content)
+- [ ] "Incoming" page - Incoming shipments, scheduling, bay assignments
+- [ ] "Outgoing" page - Outgoing loads, loading operations, BOL generation
+- [ ] "Operations" page - Real-time terminal operations dashboard
+- [ ] "Compliance" page - Regulatory compliance, certifications, inspections
+- [ ] "Reports" page - Terminal performance reports, throughput, inventory
+
+**Terminal Manager API Integration Requirements:**
+- [ ] Research industry-leading terminal PLC/SCADA systems (Honeywell, Siemens, Allen-Bradley, ABB, Schneider)
+- [ ] Design open API endpoints for terminal automation integration
+- [ ] Create API documentation for terminal operators
+- [ ] Implement TAS (Terminal Automation System) equivalent as EusoTAS
+- [ ] Implement UNITY (Corporate Level) equivalent as EusoUNITY
+- [ ] Implement LYNX (Customer Portal) equivalent as EusoLYNX
+
+**EusoTAS API Endpoints (Field Level):**
+- [ ] POST /api/v2/auth/token - OAuth 2.0 authentication
+- [ ] GET /api/v2/orders - List terminal orders
+- [ ] POST /api/v2/orders - Create new order
+- [ ] GET /api/v2/loadings - List loading operations
+- [ ] POST /api/v2/loadings/{id}/authorize - Authorize loading
+- [ ] POST /api/v2/loadings/{id}/start - Start loading
+- [ ] POST /api/v2/loadings/{id}/complete - Complete loading
+- [ ] GET /api/v2/inventory - Get inventory levels
+- [ ] GET /api/v2/equipment - List terminal equipment
+- [ ] POST /api/v2/equipment/{id}/control - Control equipment
+- [ ] GET /api/v2/bols - List BOLs
+- [ ] POST /api/v2/bols/generate - Generate BOL
+
+**Hardware Integration Protocols:**
+- [ ] Modbus TCP/IP integration for flow meters
+- [ ] RS-232/485 integration for weight scales
+- [ ] HART protocol support for tank gauges
+- [ ] OPC UA integration for PLC systems
+- [ ] Ethernet/IP support for industrial devices
+
+**EusoUNITY API Endpoints (Corporate Level):**
+- [ ] GET /api/v2/customers - Customer management
+- [ ] GET /api/v2/products - Product catalog
+- [ ] GET /api/v2/inventory/forecast - Inventory forecasting
+- [ ] GET /api/v2/reports/throughput - Throughput reports
+- [ ] POST /api/v2/integration/accounting/invoices - Accounting integration
+- [ ] GET /api/v2/integration/planning/schedule - Terminal scheduling
+
+**EusoLYNX API Endpoints (Customer/Carrier Portal):**
+- [ ] GET /api/v2/customer/orders - Customer order management
+- [ ] POST /api/v2/customer/schedule - Request loading slot
+- [ ] GET /api/v2/customer/bols - Access BOLs
+- [ ] GET /api/v2/carrier/drivers - Driver management
+- [ ] GET /api/v2/carrier/vehicles - Vehicle management
+- [ ] POST /api/v2/driver/checkin - Driver check-in at terminal
+
+**Terminal Manager Features:**
+- [ ] Real-time inventory monitoring with tank gauges
+- [ ] Loading bay management and scheduling
+- [ ] BOL generation and digital signatures
+- [ ] Equipment control and monitoring
+- [ ] Safety system integration (fire, gas, CCTV, access control)
+- [ ] Compliance reporting (EPA, OSHA, CFATS)
+- [ ] Weights and measures compliance (NTEP certified)
+- [ ] Environmental monitoring (emissions, leak detection)
+- [ ] ERP integration (SAP, Oracle, Dynamics)
+- [ ] Mobile driver app for terminal check-in
+
+### COMPLIANCE_OFFICER ROLE - Full Revamp Required
+- [ ] Complete redesign of Compliance Officer dashboard
+- [ ] Integrate with Terminal Manager compliance features
+- [ ] DOT/FMCSA compliance monitoring
+- [ ] HazMat certification tracking
+- [ ] Driver qualification file management
+- [ ] Vehicle inspection compliance
+- [ ] Hours of Service (HOS) compliance
+- [ ] Drug and alcohol testing program management
+- [ ] Incident investigation and reporting
+- [ ] Regulatory audit preparation
+- [ ] Compliance training tracking
+- [ ] Real-time violation alerts
+
+### SAFETY_MANAGER ROLE - Full Revamp Required
+- [ ] Complete redesign of Safety Manager dashboard
+- [ ] Integrate with Terminal Manager safety features
+- [ ] Safety incident tracking and investigation
+- [ ] OSHA 1910.119 PSM compliance
+- [ ] Emergency response planning
+- [ ] Safety training program management
+- [ ] PPE compliance tracking
+- [ ] Safety inspection scheduling
+- [ ] Near-miss reporting system
+- [ ] Safety performance metrics
+- [ ] Hazard identification and mitigation
+- [ ] Safety meeting documentation
+- [ ] Real-time safety alerts
+
+## IMPLEMENTATION PRIORITY
+1. Add all items to todo.md ✅
+2. Create differentiated pages for each role (SHIPPER, CARRIER, BROKER, DRIVER, CATALYST, ESCORT)
+3. Complete Terminal Manager rebuild with Dearman logic rebranded as EusoTrip
+4. Revamp Compliance Officer and Safety Manager profiles
+5. Test all pages thoroughly
+6. Save checkpoint and push to GitHub

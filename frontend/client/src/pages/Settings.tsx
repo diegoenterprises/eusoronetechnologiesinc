@@ -38,6 +38,17 @@ export default function SettingsPage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"account" | "notifications" | "security" | "billing" | "privacy" | "integrations">("account");
   
+  // Fetch user profile from database
+  const { data: userProfile, isLoading: profileLoading } = trpc.users.getProfile.useQuery();
+  const updateProfileMutation = trpc.users.updateProfile.useMutation({
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+    },
+    onError: (error) => {
+      toast.error(`Failed to update profile: ${error.message}`);
+    },
+  });
+
   // Account Settings State
   const [accountData, setAccountData] = useState({
     name: user?.name || "",
@@ -133,7 +144,11 @@ export default function SettingsPage() {
   };
 
   const handleSaveAccount = () => {
-    toast.success("Account settings saved successfully");
+    updateProfileMutation.mutate({
+      name: accountData.name,
+      email: accountData.email,
+      phone: accountData.phone,
+    });
   };
 
   const handleChangePassword = () => {

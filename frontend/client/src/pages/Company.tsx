@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface ComplianceDocument {
   id: string;
@@ -40,6 +41,22 @@ export default function CompanyPage() {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "compliance" | "fleet" | "certifications" | "performance">("details");
+
+  // Fetch company profile from database (using user's companyId)
+  const companyId = user?.companyId || 1; // Default to 1 for testing
+  const { data: companyProfile, isLoading: companyLoading } = trpc.companies.getProfile.useQuery({ companyId });
+  const updateCompanyMutation = trpc.companies.updateProfile.useMutation({
+    onSuccess: () => {
+      setIsEditing(false);
+      toast.success("Company profile updated successfully");
+    },
+    onError: (error) => {
+      toast.error(`Failed to update company: ${error.message}`);
+    },
+  });
+
+  // Fetch fleet vehicles from database
+  const { data: fleetData, isLoading: fleetLoading } = trpc.companies.getFleet.useQuery({ companyId });
 
   // Company data state
   const [companyData, setCompanyData] = useState({
@@ -169,8 +186,18 @@ export default function CompanyPage() {
   };
 
   const handleSave = () => {
-    setIsEditing(false);
-    toast.success("Company profile updated successfully");
+    updateCompanyMutation.mutate({
+      companyId,
+      name: companyData.name,
+      mcNumber: companyData.mcNumber,
+      dotNumber: companyData.dotNumber,
+      scacCode: companyData.scacCode,
+      taxId: companyData.taxId,
+      address: companyData.address,
+      phone: companyData.phone,
+      email: companyData.email,
+      website: companyData.website,
+    });
   };
 
   const handleUploadDocument = (type: string) => {
