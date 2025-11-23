@@ -1534,3 +1534,99 @@
 4. Revamp Compliance Officer and Safety Manager profiles
 5. Test all pages thoroughly
 6. Save checkpoint and push to GitHub
+
+
+## PHASE 11: COMPREHENSIVE PAGE DIFFERENTIATION (67 PAGES)
+### SHIPPER Role - 6 New Pages
+- [x] MyLoads.tsx - Shipper's load management dashboard with status tracking
+- [x] LoadCreate.tsx - Multi-step wizard for posting new loads
+- [ ] ActiveLoads.tsx - Real-time tracking of active shipments
+- [ ] TrackShipments.tsx - Advanced tracking with GPS and ETAs
+- [ ] Carriers.tsx - Carrier directory and performance ratings
+- [ ] Payments.tsx - Payment history and invoice management
+
+### CARRIER Role - 7 New Pages
+- [ ] FindLoads.tsx - Load marketplace with bidding
+- [ ] AssignedLoads.tsx - Accepted loads awaiting pickup
+- [ ] InTransit.tsx - Loads currently being transported
+- [ ] CarrierAnalytics.tsx - Revenue, efficiency, and performance metrics
+- [ ] Fleet.tsx - Vehicle fleet management
+- [ ] Drivers.tsx - Driver roster and assignments
+- [ ] Earnings.tsx - Revenue breakdown and payout schedule
+
+### BROKER Role - 6 New Pages
+- [ ] PostLoads.tsx - Broker load posting interface
+- [ ] BrokerMarketplace.tsx - Load-carrier matching marketplace
+- [ ] BrokerCarriers.tsx - Carrier network management
+- [ ] BrokerActiveLoads.tsx - Active brokered loads
+- [ ] BrokerAnalytics.tsx - Commission and volume analytics
+- [ ] (Commission.tsx and Shippers.tsx already exist)
+
+### DRIVER Role - 5 New Pages
+- [ ] MyJobs.tsx - Driver's assigned jobs
+- [ ] CurrentJob.tsx - Active job with navigation and checklist
+- [ ] Navigation.tsx - HazMat-aware GPS navigation
+- [ ] Vehicle.tsx - Vehicle status and maintenance
+- [ ] DriverEarnings.tsx - Pay stubs and earnings history
+
+### CATALYST Role - 7 New Pages
+- [ ] Opportunities.tsx - Specialized load opportunities
+- [ ] Specializations.tsx - Manage certifications and expertise
+- [ ] Projects.tsx - Long-term project assignments
+- [ ] CatalystAnalytics.tsx - Performance and utilization metrics
+- [ ] Equipment.tsx - Specialized equipment inventory
+- [ ] Certifications.tsx - Certification management
+- [ ] CatalystEarnings.tsx - Project-based earnings
+
+### ESCORT Role - 7 New Pages
+- [ ] Convoys.tsx - Active and scheduled convoys
+- [ ] Routes.tsx - Permitted routes and restrictions
+- [ ] Permits.tsx - Permit management and renewals
+- [ ] EscortAnalytics.tsx - Convoy metrics and safety stats
+- [ ] Vehicles.tsx - Escort vehicle fleet
+- [ ] Schedule.tsx - Convoy scheduling calendar
+- [ ] EscortEarnings.tsx - Escort service earnings
+
+### TERMINAL_MANAGER Role - Complete Rebuild (8 Pages)
+- [ ] TerminalDashboard.tsx - Real-time terminal operations overview
+- [ ] LoadingBays.tsx - Bay assignments and scheduling
+- [ ] Inventory.tsx - Tank levels and commodity tracking
+- [ ] Equipment.tsx - PLC, SCADA, flow meters, scales integration
+- [ ] Safety.tsx - Safety systems and compliance monitoring
+- [ ] Scheduling.tsx - Loading/unloading schedule management
+- [ ] Reports.tsx - BOL generation and operational reports
+- [ ] TerminalAnalytics.tsx - Throughput and efficiency metrics
+
+### COMPLIANCE_OFFICER Role - Full Revamp (7 Pages)
+- [ ] ComplianceDashboard.tsx - Regulatory compliance overview
+- [ ] Audits.tsx - Audit scheduling and findings
+- [ ] Violations.tsx - Violation tracking and remediation
+- [ ] Training.tsx - Compliance training management
+- [ ] Documentation.tsx - Regulatory document repository
+- [ ] Reporting.tsx - Compliance reporting and submissions
+- [ ] ComplianceAnalytics.tsx - Compliance metrics and trends
+
+### SAFETY_MANAGER Role - Full Revamp (7 Pages)
+- [ ] SafetyDashboard.tsx - Safety metrics and incidents
+- [ ] Incidents.tsx - Incident reporting and investigation
+- [ ] Inspections.tsx - Vehicle and facility inspections
+- [ ] SafetyTraining.tsx - Safety training programs
+- [ ] PPE.tsx - Personal protective equipment tracking
+- [ ] EmergencyResponse.tsx - Emergency procedures and drills
+- [ ] SafetyAnalytics.tsx - Safety performance metrics
+
+### Database Schema Extensions
+- [ ] Terminal operations tables (bays, inventory, equipment)
+- [ ] Compliance tracking tables (audits, violations, training)
+- [ ] Safety management tables (incidents, inspections, PPE)
+- [ ] Fleet management tables (vehicles, maintenance, drivers)
+- [ ] Specialized equipment tables (catalyst, escort)
+- [ ] Convoy management tables (routes, permits, schedules)
+
+### tRPC Router Extensions
+- [ ] Terminal router (bays, inventory, equipment, scheduling)
+- [ ] Compliance router (audits, violations, training, reporting)
+- [ ] Safety router (incidents, inspections, training, analytics)
+- [ ] Fleet router (vehicles, drivers, maintenance, assignments)
+- [ ] Convoy router (routes, permits, schedules, assignments)
+- [ ] Equipment router (specialized equipment, certifications)

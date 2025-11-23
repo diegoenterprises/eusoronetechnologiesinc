@@ -62,6 +62,97 @@ export const loadsRouter = router({
     }),
 
   /**
+   * Create a new load
+   */
+  create: protectedProcedure
+    .input(
+      z.object({
+        cargoType: z.enum(["general", "hazmat", "refrigerated", "oversized", "liquid", "gas", "chemicals", "petroleum"]),
+        hazmatClass: z.string().optional(),
+        unNumber: z.string().optional(),
+        weight: z.number().optional(),
+        weightUnit: z.string().default("lbs"),
+        volume: z.number().optional(),
+        volumeUnit: z.string().default("gal"),
+        pickupLocation: z.object({
+          address: z.string(),
+          city: z.string(),
+          state: z.string(),
+          zipCode: z.string(),
+          lat: z.number(),
+          lng: z.number(),
+        }),
+        deliveryLocation: z.object({
+          address: z.string(),
+          city: z.string(),
+          state: z.string(),
+          zipCode: z.string(),
+          lat: z.number(),
+          lng: z.number(),
+        }),
+        pickupDate: z.date().optional(),
+        deliveryDate: z.date().optional(),
+        rate: z.number().optional(),
+        currency: z.string().default("USD"),
+        specialInstructions: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Generate unique load number
+      const loadNumber = `LOAD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+      const result = await db.insert(loads).values({
+        shipperId: ctx.user.id,
+        loadNumber,
+        status: "draft",
+        cargoType: input.cargoType,
+        hazmatClass: input.hazmatClass,
+        unNumber: input.unNumber,
+        weight: input.weight?.toString(),
+        weightUnit: input.weightUnit,
+        volume: input.volume?.toString(),
+        volumeUnit: input.volumeUnit,
+        pickupLocation: input.pickupLocation,
+        deliveryLocation: input.deliveryLocation,
+        pickupDate: input.pickupDate,
+        deliveryDate: input.deliveryDate,
+        rate: input.rate?.toString(),
+        currency: input.currency,
+        specialInstructions: input.specialInstructions,
+      });
+
+      const insertedId = (result as any).insertId || 0;
+      return { success: true, loadId: Number(insertedId) };
+    }),
+
+  /**
+   * Delete a load (draft only)
+   */
+  deleteLoad: protectedProcedure
+    .input(z.object({ loadId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Only allow deleting draft loads owned by the user
+      const load = await db
+        .select()
+        .from(loads)
+        .where(and(eq(loads.id, input.loadId), eq(loads.shipperId, ctx.user.id)))
+        .limit(1);
+
+      if (!load[0]) throw new Error("Load not found or you don't have permission");
+      if (load[0].status !== "draft") throw new Error("Can only delete draft loads");
+
+      await db.delete(loads).where(eq(loads.id, input.loadId));
+
+      return { success: true };
+    }),
+
+  /**
    * Get dashboard statistics
    */
   getStats: protectedProcedure.query(async ({ ctx }) => {
