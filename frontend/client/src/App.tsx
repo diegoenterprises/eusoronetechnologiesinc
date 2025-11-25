@@ -29,6 +29,9 @@ import DashboardLayout from "./components/DashboardLayout";
 import ZeunBreakdownReport from "./pages/ZeunBreakdownReport";
 import ZeunMaintenanceTracker from "./pages/ZeunMaintenanceTracker";
 import ZeunProviderNetwork from "./pages/ZeunProviderNetwork";
+import MyLoadsPage from "./pages/MyLoads";
+import LoadCreatePage from "./pages/LoadCreate";
+import FindLoadsPage from "./pages/FindLoads";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -126,12 +129,12 @@ function Router() {
       {/* Shipper-specific routes */}
       <Route path={"/loads"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <MyLoadsPage />
         </DashboardLayout>
       )} />
       <Route path={"/loads/create"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <LoadCreatePage />
         </DashboardLayout>
       )} />
       <Route path={"/loads/active"} component={() => (
@@ -169,7 +172,7 @@ function Router() {
       {/* Carrier-specific routes */}
       <Route path={"/marketplace"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <FindLoadsPage />
         </DashboardLayout>
       )} />
       <Route path={"/bids"} component={() => (
