@@ -32,6 +32,10 @@ import ZeunProviderNetwork from "./pages/ZeunProviderNetwork";
 import MyLoadsPage from "./pages/MyLoads";
 import LoadCreatePage from "./pages/LoadCreate";
 import FindLoadsPage from "./pages/FindLoads";
+import ActiveLoadsPage from "./pages/ActiveLoads";
+import TrackShipmentsPage from "./pages/TrackShipments";
+import CarriersPage from "./pages/Carriers";
+import PaymentsPage from "./pages/Payments";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -139,22 +143,22 @@ function Router() {
       )} />
       <Route path={"/loads/active"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <ActiveLoadsPage />
         </DashboardLayout>
       )} />
       <Route path={"/tracking"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <TrackShipmentsPage />
         </DashboardLayout>
       )} />
       <Route path={"/carriers"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <CarriersPage />
         </DashboardLayout>
       )} />
       <Route path={"/payments"} component={() => (
         <DashboardLayout>
-          <WalletPage />
+          <PaymentsPage />
         </DashboardLayout>
       )} />
             {/* Broker-specific routes */}
