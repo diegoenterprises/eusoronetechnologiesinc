@@ -1545,12 +1545,14 @@
 - [x] Carriers.tsx - Carrier directory and performance ratings
 - [x] Payments.tsx - Payment history and invoice management
 
-### CARRIER Role - 7 New Pages- [x] FindLoads.tsx - Carrier load marketplace with bidding systemdLoads.tsx - Accepted loads awaiting pickup
-- [ ] InTransit.tsx - Loads currently being transported
-- [ ] CarrierAnalytics.tsx - Revenue, efficiency, and performance metrics
-- [ ] Fleet.tsx - Vehicle fleet management
-- [ ] Drivers.tsx - Driver roster and assignments
-- [ ] Earnings.tsx - Revenue breakdown and payout schedule
+### CARRIER Role - 7 New Pages
+- [x] FindLoads.tsx - Carrier load marketplace with bidding system
+- [x] AssignedLoads.tsx - Accepted loads awaiting pickup
+- [x] InTransit.tsx - Loads currently being transported
+- [x] CarrierAnalytics.tsx - Revenue, efficiency, and performance metrics
+- [x] Fleet.tsx - Vehicle fleet management
+- [x] Drivers.tsx - Driver roster and assignments
+- [x] Earnings.tsx - Revenue breakdown and payout schedule
 
 ### BROKER Role - 6 New Pages
 - [ ] PostLoads.tsx - Broker load posting interface

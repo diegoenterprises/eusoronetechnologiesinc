@@ -36,6 +36,12 @@ import ActiveLoadsPage from "./pages/ActiveLoads";
 import TrackShipmentsPage from "./pages/TrackShipments";
 import CarriersPage from "./pages/Carriers";
 import PaymentsPage from "./pages/Payments";
+import AssignedLoadsPage from "./pages/AssignedLoads";
+import InTransitPage from "./pages/InTransit";
+import CarrierAnalyticsPage from "./pages/CarrierAnalytics";
+import FleetPage from "./pages/Fleet";
+import DriversPage from "./pages/Drivers";
+import EarningsPage from "./pages/Earnings";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -179,34 +185,34 @@ function Router() {
           <FindLoadsPage />
         </DashboardLayout>
       )} />
-      <Route path={"/bids"} component={() => (
+      <Route path={"/loads/assigned"} component={() => (
         <DashboardLayout>
-          <JobsPage />
+          <AssignedLoadsPage />
         </DashboardLayout>
       )} />
       <Route path={"/loads/transit"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <InTransitPage />
+        </DashboardLayout>
+      )} />
+      <Route path={"/carrier/analytics"} component={() => (
+        <DashboardLayout>
+          <CarrierAnalyticsPage />
         </DashboardLayout>
       )} />
       <Route path={"/fleet"} component={() => (
         <DashboardLayout>
-          <DiagnosticsPage />
+          <FleetPage />
         </DashboardLayout>
       )} />
       <Route path={"/drivers"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <DriversPage />
         </DashboardLayout>
       )} />
       <Route path={"/earnings"} component={() => (
         <DashboardLayout>
-          <WalletPage />
-        </DashboardLayout>
-      )} />
-      <Route path={"/analytics"} component={() => (
-        <DashboardLayout>
-          <ShipmentPage />
+          <EarningsPage />
         </DashboardLayout>
       )} />
       
