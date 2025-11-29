@@ -1630,3 +1630,107 @@
 - [ ] Fleet router (vehicles, drivers, maintenance, assignments)
 - [ ] Convoy router (routes, permits, schedules, assignments)
 - [ ] Equipment router (specialized equipment, certifications)
+
+
+## URGENT: PLATFORM-WIDE DESIGN UNIFICATION (TOP PRIORITY)
+
+### Design System Standards (from new pages)
+- Dark background: #0a0a0a
+- Gradient text headings (role-specific colors)
+- Gradient cards with subtle borders
+- Professional shadcn/ui components
+- Clean spacing and modern layouts
+- No generic white boxes
+- Consistent color themes per role
+
+### SHIPPER Pages Redesign
+- [x] Dashboard.tsx - Redesign with gradient hero, stats cards, and modern layout (ShipperDashboard.tsx created)
+- [ ] Jobs.tsx - Redesign with gradient cards and filters
+- [ ] Messages.tsx - Redesign with modern chat interface
+- [ ] Profile.tsx - Redesign with gradient sections
+- [ ] Company.tsx - Already redesigned ✅
+- [ ] Wallet.tsx - Redesign with gradient balance cards
+- [ ] Analytics.tsx - Redesign with gradient charts
+- [ ] Settings.tsx - Already redesigned ✅
+
+### CARRIER Pages Redesign
+- [x] Dashboard.tsx - Redesign with gradient hero and fleet stats (CarrierDashboard.tsx created)
+- [ ] Jobs.tsx - Redesign to match new pages
+- [ ] Messages.tsx - Redesign with modern interface
+- [ ] Profile.tsx - Redesign with gradient sections
+- [ ] Company.tsx - Redesign with fleet information
+- [ ] Analytics.tsx - Already created (CarrierAnalytics.tsx) ✅
+- [ ] Wallet.tsx - Already created (Earnings.tsx) ✅
+
+### BROKER Pages Redesign
+- [ ] Dashboard.tsx - Redesign with marketplace stats
+- [ ] Commission.tsx - Redesign with gradient revenue cards
+- [ ] Shippers.tsx - Redesign with modern directory
+- [ ] Jobs.tsx - Redesign to match new pages
+- [ ] Messages.tsx - Redesign with modern interface
+- [ ] Profile.tsx - Redesign with gradient sections
+- [ ] Company.tsx - Redesign with broker information
+- [ ] Analytics.tsx - Redesign with commission tracking
+
+### DRIVER Pages Redesign
+- [ ] Dashboard.tsx - Redesign with job stats and navigation
+- [ ] Jobs.tsx - Redesign with gradient job cards
+- [ ] Messages.tsx - Redesign with modern interface
+- [ ] Profile.tsx - Redesign with CDL and certifications
+- [ ] Diagnostics.tsx - Redesign with vehicle health
+- [ ] Wallet.tsx - Redesign with earnings breakdown
+- [ ] Documents.tsx - Redesign with document manager
+
+### CATALYST Pages Redesign
+- [ ] Dashboard.tsx - Redesign with specialization matching
+- [ ] Jobs.tsx - Redesign with matched loads
+- [ ] Messages.tsx - Redesign with modern interface
+- [ ] Profile.tsx - Redesign with specializations
+- [ ] Company.tsx - Redesign with catalyst info
+- [ ] Analytics.tsx - Redesign with performance metrics
+
+### ESCORT Pages Redesign
+- [ ] Dashboard.tsx - Redesign with convoy management
+- [ ] Jobs.tsx - Redesign with escort assignments
+- [ ] Messages.tsx - Redesign with modern interface
+- [ ] Profile.tsx - Redesign with certifications
+- [ ] Company.tsx - Redesign with escort services
+- [ ] Analytics.tsx - Redesign with convoy stats
+
+### TERMINAL_MANAGER Complete Rebuild
+- [ ] Dashboard.tsx - Terminal operations with bay assignments
+- [ ] Staff.tsx - Employee roster and shifts
+- [ ] Incoming.tsx - Incoming shipments and scheduling
+- [ ] Outgoing.tsx - Outgoing shipments and loading
+- [ ] Operations.tsx - Real-time terminal operations
+- [ ] Compliance.tsx - Terminal compliance tracking
+- [ ] Reports.tsx - Terminal performance reports
+- [ ] Inventory.tsx - Tank levels and product inventory
+- [ ] Equipment.tsx - Terminal equipment status
+- [ ] Terminal Automation API integration (PLCs, flow meters, scales, tank gauges)
+
+### COMPLIANCE_OFFICER Complete Rebuild
+- [ ] Dashboard.tsx - Compliance overview and alerts
+- [ ] Audits.tsx - Audit management and scheduling
+- [ ] Violations.tsx - Violation tracking and remediation
+- [ ] Certifications.tsx - Company and driver certifications
+- [ ] Inspections.tsx - Inspection scheduling and results
+- [ ] Documentation.tsx - Compliance document library
+- [ ] Training.tsx - Compliance training tracker
+- [ ] Reports.tsx - Regulatory reporting
+- [ ] Alerts.tsx - Real-time compliance alerts
+- [ ] Analytics.tsx - Compliance metrics and trends
+- [ ] Settings.tsx - Compliance configuration
+
+### SAFETY_MANAGER Complete Rebuild
+- [ ] Dashboard.tsx - Safety overview and incident stats
+- [ ] Incidents.tsx - Incident reporting and tracking
+- [ ] Investigations.tsx - Incident investigation management
+- [ ] HazMat.tsx - HazMat compliance and tracking
+- [ ] Training.tsx - Safety training management
+- [ ] Equipment.tsx - Safety equipment tracking
+- [ ] Inspections.tsx - Safety inspection scheduling
+- [ ] Reports.tsx - Safety performance reports
+- [ ] Alerts.tsx - Real-time safety alerts
+- [ ] Analytics.tsx - Safety metrics and trends
+- [ ] Settings.tsx - Safety configuration
