@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
+import RoleBasedMap from "@/components/RoleBasedMap";
 
 export default function CarrierDashboard() {
   const { user } = useAuth();
@@ -64,18 +65,8 @@ export default function CarrierDashboard() {
 
   const recentLoads = loads?.slice(0, 5) || [];
 
-  if (loadsLoading || assignedLoading || earningsLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0a] p-6">
-        <Skeleton className="h-32 w-full mb-6" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {[1, 2, 3, 4].map(i => (
-            <Skeleton key={i} className="h-32" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Show dashboard immediately, handle loading per section
+  const isLoading = loadsLoading || assignedLoading || earningsLoading;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] p-6">
@@ -137,6 +128,14 @@ export default function CarrierDashboard() {
             );
           })}
         </div>
+      </div>
+
+      {/* Map Section */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
+          Fleet Tracking
+        </h2>
+        <RoleBasedMap height="h-96" />
       </div>
 
       {/* Recent Activity */}
