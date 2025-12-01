@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import RoleBasedMap from "@/components/RoleBasedMap";
+import Weather from "@/components/Weather";
 
 export default function CarrierDashboard() {
   const { user } = useAuth();
@@ -70,12 +71,17 @@ export default function CarrierDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] p-6">
-      {/* Hero Section */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 via-red-500 to-pink-600 bg-clip-text text-transparent">
-          Welcome back, {user?.name || 'Carrier'}
-        </h1>
-        <p className="text-gray-400">Manage your fleet and maximize your earnings</p>
+      {/* Hero Section with Weather */}
+      <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 via-red-500 to-pink-600 bg-clip-text text-transparent">
+            Welcome back, {user?.name || 'Carrier'}
+          </h1>
+          <p className="text-gray-400">Manage your fleet and track deliveries</p>
+        </div>
+        <div>
+          <Weather compact />
+        </div>
       </div>
 
       {/* Metrics Grid */}

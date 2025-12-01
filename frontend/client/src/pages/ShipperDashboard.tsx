@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import RoleBasedMap from "@/components/RoleBasedMap";
+import Weather from "@/components/Weather";
 
 export default function ShipperDashboard() {
   const { user } = useAuth();
@@ -69,12 +70,17 @@ export default function ShipperDashboard() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] p-6">
-      {/* Hero Section */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-          Welcome back, {user?.name || 'Shipper'}
-        </h1>
-        <p className="text-gray-400">Monitor your shipments and manage logistics operations</p>
+      {/* Hero Section with Weather */}
+      <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+            Welcome back, {user?.name || 'Shipper'}
+          </h1>
+          <p className="text-gray-400">Monitor your shipments and manage logistics operations</p>
+        </div>
+        <div>
+          <Weather compact />
+        </div>
       </div>
 
       {/* Metrics Grid */}
@@ -127,6 +133,62 @@ export default function ShipperDashboard() {
             );
           })}
         </div>
+      </div>
+
+      {/* Performance & KPIs */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Performance Trend */}
+        <Card className="border-gray-800 bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm p-6">
+          <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-green-400 to-emerald-500 bg-clip-text text-transparent">
+            Performance Trend
+          </h3>
+          <div className="space-y-4">
+            {[
+              { week: "Week 1", value: 65 },
+              { week: "Week 2", value: 78 },
+              { week: "Week 3", value: 82 },
+              { week: "Week 4", value: 91 }
+            ].map((item) => (
+              <div key={item.week}>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm text-gray-400">{item.week}</span>
+                  <span className="text-sm font-semibold text-white">{item.value}%</span>
+                </div>
+                <div className="w-full bg-gray-800 rounded-full h-3">
+                  <div 
+                    className="bg-gradient-to-r from-purple-600 via-blue-600 to-purple-600 h-3 rounded-full transition-all shadow-lg shadow-purple-500/50"
+                    style={{ width: `${item.value}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Key Performance Indicators */}
+        <Card className="border-gray-800 bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm p-6">
+          <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+            Key Performance Indicators
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400">Avg Response</p>
+              <p className="text-2xl font-bold text-white">2.3s</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400">Uptime</p>
+              <p className="text-2xl font-bold text-green-400">99.9%</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400">Users Online</p>
+              <p className="text-2xl font-bold text-blue-400">1,234</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs text-gray-400">Transactions</p>
+              <p className="text-2xl font-bold text-purple-400">5.2K</p>
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Map Section */}
