@@ -1,10 +1,15 @@
 from fastapi import FastAPI, WebSocket, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from sqlalchemy import text as sql_text
+from typing import List, Dict, Optional, Any
 import json
+import os
 
 from . import crud, schemas
 from .database import SessionLocal, engine, Base, get_db, User, Load, Transaction
+from .erg_models import ensure_erg_schema, ErgUnIndex, ErgGuideText, ErgSourceDocument
+from .erg_ingestion import ingest_from_extraction
+from .embeddings import embed_text
 
 # Initialize FastAPI application
 app = FastAPI(
@@ -14,6 +19,7 @@ app = FastAPI(
 )
 
 # Create database tables (only if they don't exist)
+ensure_erg_schema(engine)
 Base.metadata.create_all(bind=engine)
 
 # --- 1. CORE API ENDPOINTS (User, Company, Load Management) ---
@@ -170,13 +176,225 @@ async def broadcast_message(message: str):
 # --- 6. SYSTEM INTEGRATION (Mandate: complete_backend_integration.py) ---
 
 @app.post("/integration/sync_external_data")
-def sync_external_data(source: str):
+def sync_external_data(
+    source: str,
+    extraction_dir: Optional[str] = None,
+    force: bool = False,
+    db: Session = Depends(get_db),
+):
     # Logic based on backend_ecosystem_enhancement.py and complete_integration_setup.py (Production Ready Mock)
     if source == "AI_ERG":
-        # Placeholder for Team Gamma's ERG/AI data ingestion pipeline
-        return {"message": "Data ingestion pipeline for AI_ERG initiated (Ready for Gamma Integration)"}
+        if not extraction_dir:
+            extraction_dir = os.getenv("ERG_EXTRACTION_DIR")
+        if not extraction_dir:
+            raise HTTPException(status_code=400, detail="Missing extraction_dir (or ERG_EXTRACTION_DIR env var)")
+        result = ingest_from_extraction(db=db, extraction_dir=extraction_dir, force=force)
+        return {"message": "AI_ERG ingestion completed", "result": result}
     elif source == "TELEMATICS":
         # Placeholder for external telematics data sync
         return {"message": "Telematics data sync initiated (Ready for External Integration)"}
     else:
         raise HTTPException(status_code=400, detail="Unknown data source for integration")
+
+
+@app.get("/erg/status")
+def erg_status(db: Session = Depends(get_db)):
+    latest = db.query(ErgSourceDocument).order_by(ErgSourceDocument.id.desc()).first()
+    if not latest:
+        return {"erg_installed": True, "latest_source_document": None}
+
+    un_count = db.query(ErgUnIndex).filter(ErgUnIndex.source_document_id == latest.id).count()
+    guide_count = db.query(ErgGuideText).filter(ErgGuideText.source_document_id == latest.id).count()
+    return {
+        "erg_installed": True,
+        "latest_source_document": {
+            "id": latest.id,
+            "version_tag": latest.version_tag,
+            "created_at": latest.created_at.isoformat() if latest.created_at else None,
+            "counts": {"un_index": un_count, "guide_text": guide_count},
+        }
+    }
+
+
+@app.get("/erg/un/{un_number}")
+def erg_lookup_un(un_number: str, limit: int = 10, db: Session = Depends(get_db)):
+    rows = (
+        db.query(ErgUnIndex)
+        .filter(ErgUnIndex.un_number == un_number)
+        .order_by(ErgUnIndex.id.asc())
+        .limit(limit)
+        .all()
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail=f"UN/NA {un_number} not found")
+    return {
+        "un_number": un_number,
+        "matches": [
+            {
+                "guide_number": r.guide_number,
+                "material_name": r.material_name,
+                "page_number": r.page_number,
+            }
+            for r in rows
+        ],
+    }
+
+
+@app.get("/erg/guide/{guide_number}")
+def erg_get_guide(guide_number: str, db: Session = Depends(get_db)):
+    row = (
+        db.query(ErgGuideText)
+        .filter(ErgGuideText.guide_number == guide_number)
+        .order_by(ErgGuideText.id.desc())
+        .first()
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Guide {guide_number} not found")
+    return {
+        "guide_number": guide_number,
+        "page_numbers": row.page_numbers,
+        "content": row.content,
+    }
+
+
+@app.get("/erg/search")
+def erg_search(q: str, k: int = 10, db: Session = Depends(get_db)):
+    if not q or not q.strip():
+        raise HTTPException(status_code=400, detail="Missing q")
+
+    db_url = os.getenv("DATABASE_URL", "")
+    if db_url.startswith("sqlite"):
+        qvec = embed_text(q)
+
+        # SQLite semantic search: embeddings are stored as JSON strings.
+        # For local dev scale (~4k rows), a full scan is acceptable and provides better recall
+        # than pre-filtering by tokens (guide text often doesn't contain the material name).
+        params: Dict[str, Any] = {"limit": max(5000, k * 200)}
+        rows = db.execute(
+            sql_text(
+                "SELECT chunk_type, guide_number, un_or_na, page_number, content, embedding "
+                "FROM erg_embedding_chunk "
+                "WHERE embedding IS NOT NULL "
+                "LIMIT :limit"
+            ),
+            params,
+        ).fetchall()
+
+        def _dot(a, b):
+            return float(sum(x * y for x, y in zip(a, b)))
+
+        scored = []
+        for r in rows:
+            emb_raw = r[5]
+            vec = None
+            if isinstance(emb_raw, str) and emb_raw:
+                try:
+                    vec = json.loads(emb_raw)
+                except Exception:
+                    vec = None
+            elif isinstance(emb_raw, list):
+                vec = emb_raw
+
+            if vec is None:
+                continue
+
+            try:
+                score = _dot(qvec, vec)
+            except Exception:
+                continue
+
+            scored.append((score, r))
+
+        # Anchor logic: the query may match an UN/material index row strongly (e.g., "Gasoline"),
+        # but the corresponding orange guide text may not contain that material name. In local
+        # SQLite mode, prioritize showing the guide text for the guide(s) identified via UN index.
+        un_index_scored = [(s, rr) for s, rr in scored if rr[0] == "un_index" and rr[1]]
+        un_index_scored.sort(key=lambda x: x[0], reverse=True)
+        anchor_guides = {rr[1] for s, rr in un_index_scored[:5] if s >= 0.15}
+
+        if anchor_guides:
+            boosted = []
+            for s, rr in scored:
+                if rr[0] == "guide_text" and rr[1] in anchor_guides:
+                    boosted.append((s + 0.60, rr))
+                elif rr[0] == "un_index" and rr[1] in anchor_guides:
+                    boosted.append((s + 0.20, rr))
+                else:
+                    boosted.append((s, rr))
+            scored = boosted
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+
+        # Ensure at least one guide_text chunk per anchored guide is included.
+        results = []
+        seen = set()
+
+        if anchor_guides:
+            for g in anchor_guides:
+                best = None
+                best_s = None
+                for s, rr in scored:
+                    if rr[0] == "guide_text" and rr[1] == g:
+                        best = rr
+                        best_s = s
+                        break
+                if best is not None:
+                    key = (best[0], best[1], best[2], best[3], best[4])
+                    if key not in seen:
+                        results.append((float(best_s), best))
+                        seen.add(key)
+
+        for s, rr in scored:
+            key = (rr[0], rr[1], rr[2], rr[3], rr[4])
+            if key in seen:
+                continue
+            results.append((float(s), rr))
+            seen.add(key)
+            if len(results) >= k:
+                break
+
+        top = results[:k]
+        return {
+            "query": q,
+            "mode": "sqlite_vector",
+            "results": [
+                {
+                    "chunk_type": r[1][0],
+                    "guide_number": r[1][1],
+                    "un_or_na": r[1][2],
+                    "page_number": r[1][3],
+                    "score": float(r[0]),
+                    "content": r[1][4],
+                }
+                for r in top
+            ],
+        }
+
+    qvec = embed_text(q)
+    rows = db.execute(
+        sql_text(
+            "SELECT chunk_type, guide_number, un_or_na, page_number, content, "
+            "(1 - (embedding <=> :qvec)) AS score "
+            "FROM erg.erg_embedding_chunk "
+            "WHERE embedding IS NOT NULL "
+            "ORDER BY embedding <=> :qvec "
+            "LIMIT :k"
+        ),
+        {"qvec": qvec, "k": k},
+    ).fetchall()
+
+    return {
+        "query": q,
+        "mode": "pgvector_cosine",
+        "results": [
+            {
+                "chunk_type": r[0],
+                "guide_number": r[1],
+                "un_or_na": r[2],
+                "page_number": r[3],
+                "content": r[4],
+                "score": float(r[5]) if r[5] is not None else None,
+            }
+            for r in rows
+        ],
+    }
