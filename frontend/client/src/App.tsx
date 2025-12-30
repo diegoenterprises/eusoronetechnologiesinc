@@ -42,6 +42,7 @@ import CarrierAnalyticsPage from "./pages/CarrierAnalytics";
 import FleetPage from "./pages/Fleet";
 import DriversPage from "./pages/Drivers";
 import EarningsPage from "./pages/Earnings";
+import ErgPage from "./pages/Erg";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -213,6 +214,12 @@ function Router() {
       <Route path={"/earnings"} component={() => (
         <DashboardLayout>
           <EarningsPage />
+        </DashboardLayout>
+      )} />
+
+      <Route path={"/erg"} component={() => (
+        <DashboardLayout>
+          <ErgPage />
         </DashboardLayout>
       )} />
       

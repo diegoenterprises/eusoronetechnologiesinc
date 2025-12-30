@@ -9,6 +9,8 @@ from . import crud, schemas
 from .database import SessionLocal, engine, Base, get_db, User, Load, Transaction
 from .erg_models import ensure_erg_schema, ErgUnIndex, ErgGuideText, ErgSourceDocument
 from .erg_ingestion import ingest_from_extraction
+from .erg_module_seed import seed_erg_from_json
+from .erg_api import router as erg_api_router
 from .embeddings import embed_text
 
 # Initialize FastAPI application
@@ -21,6 +23,8 @@ app = FastAPI(
 # Create database tables (only if they don't exist)
 ensure_erg_schema(engine)
 Base.metadata.create_all(bind=engine)
+
+app.include_router(erg_api_router)
 
 # --- 1. CORE API ENDPOINTS (User, Company, Load Management) ---
 
@@ -179,6 +183,7 @@ async def broadcast_message(message: str):
 def sync_external_data(
     source: str,
     extraction_dir: Optional[str] = None,
+    erg_json_path: Optional[str] = None,
     force: bool = False,
     db: Session = Depends(get_db),
 ):
@@ -190,6 +195,13 @@ def sync_external_data(
             raise HTTPException(status_code=400, detail="Missing extraction_dir (or ERG_EXTRACTION_DIR env var)")
         result = ingest_from_extraction(db=db, extraction_dir=extraction_dir, force=force)
         return {"message": "AI_ERG ingestion completed", "result": result}
+    elif source == "AI_ERG_MODULE":
+        if not erg_json_path:
+            erg_json_path = os.getenv("ERG_JSON_PATH")
+        if not erg_json_path:
+            erg_json_path = os.path.join(os.path.dirname(__file__), "erg2024_database.json")
+        result = seed_erg_from_json(db=db, json_path=erg_json_path, force=force, build_embeddings=True)
+        return {"message": "AI_ERG_MODULE seed completed", "result": result}
     elif source == "TELEMATICS":
         # Placeholder for external telematics data sync
         return {"message": "Telematics data sync initiated (Ready for External Integration)"}
