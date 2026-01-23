@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1761559201832,
+      "tag": "0000_lean_mordo",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1762591458641,
+      "tag": "0001_glossy_killer_shrike",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1763453627253,
+      "tag": "0002_smiling_toad",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1763460096339,
+      "tag": "0003_same_vapor",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1763460191205,
+      "tag": "0004_ambitious_big_bertha",
+      "breakpoints": true
+    }
+  ]
+}

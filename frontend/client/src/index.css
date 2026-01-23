@@ -1,0 +1,401 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --primary: var(--color-blue-700);
+  --primary-foreground: var(--color-blue-50);
+  --sidebar-primary: var(--color-blue-600);
+  --sidebar-primary-foreground: var(--color-blue-50);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --radius: 0.65rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.235 0.015 65);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.235 0.015 65);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.235 0.015 65);
+  --secondary: oklch(0.98 0.001 286.375);
+  --secondary-foreground: oklch(0.4 0.015 65);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.141 0.005 285.823);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.623 0.214 259.815);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.235 0.015 65);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.623 0.214 259.815);
+}
+
+.dark {
+  --primary: var(--color-blue-700);
+  --primary-foreground: var(--color-blue-50);
+  --sidebar-primary: var(--color-blue-500);
+  --sidebar-primary-foreground: var(--color-blue-50);
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.85 0.005 65);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.85 0.005 65);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.85 0.005 65);
+  --secondary: oklch(0.24 0.006 286.033);
+  --secondary-foreground: oklch(0.7 0.005 65);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground:  oklch(0.92 0.005 65);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.488 0.243 264.376);
+  --chart-1: var(--color-blue-300);
+  --chart-2: var(--color-blue-500);
+  --chart-3: var(--color-blue-600);
+  --chart-4: var(--color-blue-700);
+  --chart-5: var(--color-blue-800);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.85 0.005 65);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground:  oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.488 0.243 264.376);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ========================================
+   SEAL Team 6 Design System Integration
+   ======================================== */
+
+/* EusoTrip Core Design Tokens */
+:root {
+  --eusotrip-accent-primary-start: #0077FF; /* Deep Blue */
+  --eusotrip-accent-primary-end: #CC00FF; /* Rich Purple/Magenta */
+  --eusotrip-accent-secondary: #00FFC2; /* Teal/Cyan */
+  --eusotrip-background-primary: #161B22; /* Deep Dark Gray */
+  --eusotrip-background-secondary: #0D1117; /* Even darker for cards */
+  --eusotrip-surface-primary: #1F242C; /* Slightly lighter surface */
+  --eusotrip-border-primary: #30363D; /* Subtle borders */
+  --eusotrip-text-primary: #C9D1D9; /* Light Gray */
+  --eusotrip-text-secondary: #8B949E; /* Muted Gray */
+  --eusotrip-status-success: #50fa7b; /* Bright green */
+  --eusotrip-status-warning: #FFD700; /* Yellow */
+  --eusotrip-status-danger: #F85149; /* Red */
+}
+
+@layer components {
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+
+  /* SEAL Team 6 Component Styles */
+  .eusotrip-card {
+    @apply rounded-lg p-5 border shadow-md transition-all duration-200;
+    background-color: var(--eusotrip-background-secondary);
+    border-color: var(--eusotrip-border-primary);
+  }
+
+  .eusotrip-card:hover {
+    @apply shadow-lg -translate-y-0.5;
+  }
+
+  .eusotrip-button-primary {
+    @apply px-4 py-2 rounded-lg font-semibold text-white transition-all duration-200;
+    background: linear-gradient(90deg, var(--eusotrip-accent-primary-start), var(--eusotrip-accent-primary-end));
+    box-shadow: 0 4px 10px rgba(0, 119, 255, 0.3);
+  }
+
+  .eusotrip-button-primary:hover {
+    @apply -translate-y-0.5;
+    box-shadow: 0 6px 12px rgba(0, 119, 255, 0.4);
+  }
+
+  .eusotrip-button-secondary {
+    @apply px-4 py-2 rounded-lg font-semibold border transition-colors duration-200;
+    color: var(--eusotrip-text-primary);
+    background-color: var(--eusotrip-surface-primary);
+    border-color: var(--eusotrip-border-primary);
+  }
+
+  .eusotrip-button-secondary:hover {
+    background-color: var(--eusotrip-border-primary);
+  }
+
+  .eusotrip-status-badge {
+    @apply inline-block px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .eusotrip-status-badge.success {
+    color: var(--eusotrip-status-success);
+    background-color: rgba(80, 250, 123, 0.15);
+  }
+
+  .eusotrip-status-badge.warning {
+    color: var(--eusotrip-status-warning);
+    background-color: rgba(255, 215, 0, 0.15);
+  }
+
+  .eusotrip-status-badge.danger {
+    color: var(--eusotrip-status-danger);
+    background-color: rgba(248, 81, 73, 0.15);
+  }
+
+  .eusotrip-status-badge.info {
+    color: #2196F3;
+    background-color: rgba(33, 150, 243, 0.15);
+  }
+
+  .eusotrip-gradient-text {
+    background: linear-gradient(90deg, var(--eusotrip-accent-primary-start), var(--eusotrip-accent-primary-end));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+
+/* ========================================
+   GRADIENT UTILITIES FOR UI ELEMENTS
+   ======================================== */
+
+/* Primary Gradient - Blue to Purple */
+.gradient-primary {
+  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+}
+
+.gradient-primary-text {
+  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Button Gradients */
+.btn-gradient-primary {
+  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  color: white;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.btn-gradient-primary:hover {
+  background: linear-gradient(135deg, #0066DD 0%, #BB00EE 100%);
+  box-shadow: 0 8px 20px rgba(0, 119, 255, 0.3);
+}
+
+.btn-gradient-primary:active {
+  background: linear-gradient(135deg, #0055CC 0%, #AA00DD 100%);
+}
+
+/* Secondary Gradient - Teal/Cyan */
+.btn-gradient-secondary {
+  background: linear-gradient(135deg, #00FFC2 0%, #0077FF 100%);
+  color: #0D1117;
+  border: none;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+.btn-gradient-secondary:hover {
+  background: linear-gradient(135deg, #00FFBB 0%, #0066DD 100%);
+  box-shadow: 0 8px 20px rgba(0, 255, 194, 0.3);
+}
+
+/* Selection Highlight Gradient */
+.selection-gradient {
+  background: linear-gradient(90deg, rgba(0, 119, 255, 0.15) 0%, rgba(204, 0, 255, 0.15) 100%);
+  border-left: 4px solid;
+  border-image: linear-gradient(180deg, #0077FF 0%, #CC00FF 100%) 1;
+}
+
+.selection-gradient-hover {
+  background: linear-gradient(90deg, rgba(0, 119, 255, 0.25) 0%, rgba(204, 0, 255, 0.25) 100%);
+}
+
+/* Text Selection Gradient */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Underline Gradient */
+.underline-gradient {
+  position: relative;
+  display: inline-block;
+}
+
+.underline-gradient::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, #0077FF 0%, #CC00FF 100%);
+}
+
+/* Card Gradient Border */
+.card-gradient-border {
+  position: relative;
+  background: var(--eusotrip-background-secondary);
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.card-gradient-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  border-radius: inherit;
+  padding: 1px;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Badge Gradient */
+.badge-gradient {
+  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Input Focus Gradient Border */
+.input-gradient-focus:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 119, 255, 0.1), 0 0 0 1px rgba(204, 0, 255, 0.5);
+}
+
+/* Gradient Animation */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.gradient-animate {
+  background: linear-gradient(-45deg, #0077FF, #CC00FF, #00FFC2, #0077FF);
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
