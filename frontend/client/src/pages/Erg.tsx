@@ -1,8 +1,16 @@
-import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-// This component is expected to be copied from your "ERG EUSOTRIP MODULE" folder.
-import ERG2024Module from "@/components/erg/ERG2024Module_Live.jsx";
-
-export default function ErgPage() {
-  return <ERG2024Module />;
+export default function Erg() {
+  return (
+    <div className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>ERG 2024 Module</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Emergency Response Guidebook module - Coming soon</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
