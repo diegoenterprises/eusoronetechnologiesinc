@@ -1,330 +1,187 @@
 /**
  * COMMISSION PAGE
- * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
- * 
- * Broker commission tracking and analytics.
- * Features:
- * - Commission overview dashboard
- * - Earnings by shipper/carrier
- * - Payment status tracking
- * - Commission rate management
- * - Historical analytics
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  DollarSign,
-  TrendingUp,
-  Users,
-  Package,
-  Calendar,
-  Download,
-  Filter,
-  Search,
-} from "lucide-react";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import {
+  DollarSign, TrendingUp, Package, Download, Clock, CheckCircle
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface Commission {
-  id: string;
-  loadId: string;
-  shipper: string;
-  carrier: string;
-  loadRate: number;
-  commissionRate: number;
-  commissionAmount: number;
-  status: "pending" | "paid" | "processing";
-  date: Date;
-  paidDate?: Date;
-}
+export default function Commission() {
+  const [period, setPeriod] = useState("month");
 
-export default function CommissionPage() {
-  const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const summaryQuery = trpc.broker.getCommissionSummary.useQuery({ period });
+  const historyQuery = trpc.broker.getCommissionHistory.useQuery({ period, limit: 20 });
 
-  // Mock commission data - TODO: Replace with trpc.broker.commissions.useQuery()
-  const commissions: Commission[] = [
-    {
-      id: "C001",
-      loadId: "L001",
-      shipper: "PetroTrans Inc",
-      carrier: "Swift Logistics",
-      loadRate: 1200,
-      commissionRate: 15,
-      commissionAmount: 180,
-      status: "paid",
-      date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      paidDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: "C002",
-      loadId: "L002",
-      shipper: "Swift Energy",
-      carrier: "Texas Haulers",
-      loadRate: 1920,
-      commissionRate: 12,
-      commissionAmount: 230.4,
-      status: "processing",
-      date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    },
-    {
-      id: "C003",
-      loadId: "L003",
-      shipper: "Texas Fuel Co",
-      carrier: "Lone Star Transport",
-      loadRate: 1680,
-      commissionRate: 15,
-      commissionAmount: 252,
-      status: "pending",
-      date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    },
-  ];
+  const summary = summaryQuery.data;
 
-  const filteredCommissions = commissions.filter((commission) => {
-    if (statusFilter !== "all" && commission.status !== statusFilter) return false;
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      return (
-        commission.shipper.toLowerCase().includes(query) ||
-        commission.carrier.toLowerCase().includes(query) ||
-        commission.loadId.toLowerCase().includes(query)
-      );
-    }
-    return true;
-  });
-
-  const totalEarnings = commissions
-    .filter((c) => c.status === "paid")
-    .reduce((sum, c) => sum + c.commissionAmount, 0);
-
-  const pendingEarnings = commissions
-    .filter((c) => c.status === "pending" || c.status === "processing")
-    .reduce((sum, c) => sum + c.commissionAmount, 0);
-
-  const avgCommissionRate =
-    commissions.reduce((sum, c) => sum + c.commissionRate, 0) / commissions.length;
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "paid":
-        return "border-green-600 text-green-400 bg-green-600/10";
-      case "processing":
-        return "border-yellow-600 text-yellow-400 bg-yellow-600/10";
-      case "pending":
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
-      default:
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+      case "paid": return <Badge className="bg-green-500/20 text-green-400 border-0">Paid</Badge>;
+      case "pending": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Pending</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Commission Tracking</h1>
-            <p className="text-gray-400">
-              Track your brokerage earnings and commission rates
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button
-              variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
-            >
-              <Filter className="mr-2" size={18} />
-              Filters
-            </Button>
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white">
-              <Download className="mr-2" size={18} />
-              Export Report
-            </Button>
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Commission
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Track your broker commissions and earnings</p>
         </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-600/20 rounded-lg">
-                <DollarSign className="text-green-400" size={24} />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Total Earned</p>
-                <p className="text-2xl font-bold text-white">
-                  ${totalEarnings.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-yellow-600/20 rounded-lg">
-                <TrendingUp className="text-yellow-400" size={24} />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Pending</p>
-                <p className="text-2xl font-bold text-white">
-                  ${pendingEarnings.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-600/20 rounded-lg">
-                <Package className="text-blue-400" size={24} />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Total Loads</p>
-                <p className="text-2xl font-bold text-white">{commissions.length}</p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-700 p-6">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-600/20 rounded-lg">
-                <Users className="text-purple-400" size={24} />
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">Avg Rate</p>
-                <p className="text-2xl font-bold text-white">
-                  {avgCommissionRate.toFixed(1)}%
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Search and Filter */}
-        <Card className="bg-gray-900 border-gray-700 p-6">
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
-                size={20}
-              />
-              <Input
-                placeholder="Search by shipper, carrier, or load ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white rounded px-4 py-2"
-            >
-              <option value="all">All Status</option>
-              <option value="paid">Paid</option>
-              <option value="processing">Processing</option>
-              <option value="pending">Pending</option>
-            </select>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            {["week", "month", "year"].map((p) => (
+              <Button key={p} variant={period === p ? "default" : "outline"} size="sm" className={period === p ? "bg-cyan-600 hover:bg-cyan-700 rounded-lg" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"} onClick={() => setPeriod(p)}>
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </Button>
+            ))}
           </div>
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+            <Download className="w-4 h-4 mr-2" />Export
+          </Button>
+        </div>
+      </div>
+
+      {/* Total Commission Card */}
+      <Card className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 rounded-xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Total Commission ({period})</p>
+              {summaryQuery.isLoading ? <Skeleton className="h-12 w-48" /> : (
+                <p className="text-4xl font-bold text-white">${(summary?.totalCommission || 0).toLocaleString()}</p>
+              )}
+            </div>
+            <div className="p-4 rounded-full bg-emerald-500/20">
+              <DollarSign className="w-10 h-10 text-emerald-400" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-green-400">${(summary?.paid || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Paid</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
-        {/* Commission List */}
-        <div className="space-y-4">
-          {filteredCommissions.map((commission) => (
-            <Card
-              key={commission.id}
-              className="bg-gray-900 border-gray-700 p-6 hover:border-blue-500 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-4">
-                    <Badge
-                      variant="outline"
-                      className={getStatusColor(commission.status)}
-                    >
-                      {commission.status.toUpperCase()}
-                    </Badge>
-                    <span className="text-gray-400 text-sm">
-                      Load ID: {commission.loadId}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-gray-400 text-sm mb-1">Shipper</p>
-                      <p className="text-white font-semibold">{commission.shipper}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-400 text-sm mb-1">Carrier</p>
-                      <p className="text-white font-semibold">{commission.carrier}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="text-gray-500" size={16} />
-                      <span className="text-gray-300">
-                        Load Rate: ${commission.loadRate.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <TrendingUp className="text-gray-500" size={16} />
-                      <span className="text-gray-300">
-                        Commission: {commission.commissionRate}%
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="text-gray-500" size={16} />
-                      <span className="text-gray-300">
-                        {formatDate(commission.date)}
-                      </span>
-                    </div>
-                    {commission.paidDate && (
-                      <div className="flex items-center gap-2">
-                        <Calendar className="text-green-500" size={16} />
-                        <span className="text-green-400">
-                          Paid: {formatDate(commission.paidDate)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="text-right ml-6">
-                  <p className="text-3xl font-bold text-white">
-                    ${commission.commissionAmount.toLocaleString()}
-                  </p>
-                  <p className="text-gray-400 text-sm">Commission Earned</p>
-                </div>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Clock className="w-6 h-6 text-yellow-400" />
               </div>
-            </Card>
-          ))}
-        </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">${(summary?.pending || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Pending</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {filteredCommissions.length === 0 && (
-          <Card className="bg-gray-900 border-gray-700 p-12 text-center">
-            <DollarSign className="mx-auto text-gray-600 mb-4" size={48} />
-            <h3 className="text-xl font-bold text-white mb-2">No commissions found</h3>
-            <p className="text-gray-400">
-              Try adjusting your filters or search criteria
-            </p>
-          </Card>
-        )}
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Package className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{summary?.loadsMatched || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Loads Matched</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <TrendingUp className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-purple-400">{summary?.avgMargin || 0}%</p>
+                )}
+                <p className="text-xs text-slate-400">Avg Margin</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Commission History */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg">Commission History</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {historyQuery.isLoading ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : historyQuery.data?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <DollarSign className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No commission history</p>
+              <p className="text-slate-500 text-sm mt-1">Match loads to start earning commissions</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {historyQuery.data?.map((commission: any) => (
+                <div key={commission.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-3 rounded-xl", commission.status === "paid" ? "bg-green-500/20" : "bg-yellow-500/20")}>
+                        <DollarSign className={cn("w-6 h-6", commission.status === "paid" ? "text-green-400" : "text-yellow-400")} />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{commission.loadNumber}</p>
+                        <p className="text-sm text-slate-400">{commission.shipperName} → {commission.carrierName}</p>
+                        <p className="text-xs text-slate-500">{commission.date}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-emerald-400 font-bold text-lg">${commission.amount?.toLocaleString()}</p>
+                      <p className="text-xs text-slate-500">{commission.margin}% margin</p>
+                      {getStatusBadge(commission.status)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
