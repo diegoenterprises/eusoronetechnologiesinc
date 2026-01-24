@@ -102,6 +102,8 @@ import AccidentReport from "./pages/AccidentReport";
 import CarrierVettingDetails from "./pages/CarrierVettingDetails";
 import MessagingCenter from "./pages/MessagingCenter";
 import LoadDetails from "./pages/LoadDetails";
+import ELDLogs from "./pages/ELDLogs";
+import InvoiceDetails from "./pages/InvoiceDetails";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -398,6 +400,26 @@ function Router() {
       <Route path={"/loads/:loadId/details"} component={() => (
         <DashboardLayout>
           <LoadDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/eld"} component={() => (
+        <DashboardLayout>
+          <ELDLogs />
+        </DashboardLayout>
+      )} />
+      <Route path={"/compliance/eld"} component={() => (
+        <DashboardLayout>
+          <ELDLogs />
+        </DashboardLayout>
+      )} />
+      <Route path={"/invoice/:invoiceId"} component={() => (
+        <DashboardLayout>
+          <InvoiceDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/accounting/invoice/:invoiceId"} component={() => (
+        <DashboardLayout>
+          <InvoiceDetails />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
