@@ -41,6 +41,7 @@ import { permitsRouter } from "./routers/permits";
 import { facilitiesRouter } from "./routers/facilities";
 import { catalystsRouter } from "./routers/catalysts";
 import { adminRouter } from "./routers/admin";
+import { supportRouter } from "./routers/support";
 
 export const appRouter = router({
   system: systemRouter,
@@ -166,6 +167,9 @@ export const appRouter = router({
 
   // Admin/Super Admin Operations
   admin: adminRouter,
+
+  // Support & Help Center
+  support: supportRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
