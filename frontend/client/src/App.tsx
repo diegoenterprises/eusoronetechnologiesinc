@@ -106,6 +106,9 @@ import ELDLogs from "./pages/ELDLogs";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import EscortJobs from "./pages/EscortJobs";
 import BidDetails from "./pages/BidDetails";
+import FleetOverview from "./pages/FleetOverview";
+import ComplianceCalendar from "./pages/ComplianceCalendar";
+import DriverPerformance from "./pages/DriverPerformance";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -442,6 +445,36 @@ function Router() {
       <Route path={"/bids/:bidId/details"} component={() => (
         <DashboardLayout>
           <BidDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/fleet"} component={() => (
+        <DashboardLayout>
+          <FleetOverview />
+        </DashboardLayout>
+      )} />
+      <Route path={"/fleet/overview"} component={() => (
+        <DashboardLayout>
+          <FleetOverview />
+        </DashboardLayout>
+      )} />
+      <Route path={"/compliance/calendar"} component={() => (
+        <DashboardLayout>
+          <ComplianceCalendar />
+        </DashboardLayout>
+      )} />
+      <Route path={"/expirations"} component={() => (
+        <DashboardLayout>
+          <ComplianceCalendar />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver/performance"} component={() => (
+        <DashboardLayout>
+          <DriverPerformance />
+        </DashboardLayout>
+      )} />
+      <Route path={"/safety/driver-performance"} component={() => (
+        <DashboardLayout>
+          <DriverPerformance />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (

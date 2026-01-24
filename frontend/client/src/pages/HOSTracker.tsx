@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { trpc } from "@/lib/trpc";
 import {
   Clock, Play, Pause, Square, Coffee, Truck, AlertTriangle,
   Calendar, ChevronLeft, ChevronRight, FileText, Download,
