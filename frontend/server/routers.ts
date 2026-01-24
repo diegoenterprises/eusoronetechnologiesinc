@@ -52,6 +52,8 @@ import { fuelRouter } from "./routers/fuel";
 import { ratingsRouter } from "./routers/ratings";
 import { inventoryRouter } from "./routers/inventory";
 import { reportsRouter } from "./routers/reports";
+import { routesRouter } from "./routers/routes";
+import { trackingRouter } from "./routers/tracking";
 
 export const appRouter = router({
   system: systemRouter,
@@ -210,6 +212,12 @@ export const appRouter = router({
 
   // Reports & Analytics
   reports: reportsRouter,
+
+  // Route Planning
+  routes: routesRouter,
+
+  // Real-Time Tracking
+  tracking: trackingRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
