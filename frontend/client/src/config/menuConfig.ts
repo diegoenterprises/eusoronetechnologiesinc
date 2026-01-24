@@ -74,11 +74,32 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time GPS tracking"
     },
     { 
+      icon: "DollarSign", 
+      label: "Bid Management", 
+      path: "/bids", 
+      badge: 5,
+      description: "Review carrier bids"
+    },
+    { 
       icon: "Users", 
       label: "Carriers", 
       path: "/carriers", 
       badge: 12,
-      description: "Bid management"
+      description: "Carrier network"
+    },
+    { 
+      icon: "Bell", 
+      label: "Notifications", 
+      path: "/notifications", 
+      badge: 3,
+      description: "Alerts and updates"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Document management"
     },
     { 
       icon: "MessageSquare", 
@@ -137,6 +158,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform news and updates"
     },
     { 
+      icon: "Calculator", 
+      label: "Rate Calculator", 
+      path: "/tools/rate-calculator", 
+      badge: 0,
+      description: "Estimate freight rates"
+    },
+    { 
       icon: "HelpCircle", 
       label: "Support", 
       path: "/support", 
@@ -190,11 +218,32 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Manage vehicles"
     },
     { 
+      icon: "Fuel", 
+      label: "Fuel", 
+      path: "/fuel", 
+      badge: 0,
+      description: "Fuel management"
+    },
+    { 
       icon: "Users", 
       label: "Drivers", 
       path: "/drivers", 
       badge: 8,
       description: "Driver management"
+    },
+    { 
+      icon: "Bell", 
+      label: "Notifications", 
+      path: "/notifications", 
+      badge: 3,
+      description: "Alerts and updates"
+    },
+    { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "Document management"
     },
     { 
       icon: "TrendingUp", 
@@ -306,11 +355,25 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Shipper accounts"
     },
     { 
+      icon: "Shield", 
+      label: "Carrier Vetting", 
+      path: "/carrier-vetting", 
+      badge: 3,
+      description: "Vet carriers with SAFER"
+    },
+    { 
       icon: "DollarSign", 
       label: "Commission", 
       path: "/commission", 
       badge: 0,
       description: "Revenue tracking"
+    },
+    { 
+      icon: "Bell", 
+      label: "Notifications", 
+      path: "/notifications", 
+      badge: 2,
+      description: "Alerts and updates"
     },
     { 
       icon: "BarChart3", 
@@ -394,11 +457,39 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Active job details"
     },
     { 
+      icon: "Clock", 
+      label: "HOS Tracker", 
+      path: "/driver/hos", 
+      badge: 0,
+      description: "Hours of Service ELD"
+    },
+    { 
+      icon: "ClipboardCheck", 
+      label: "Pre-Trip", 
+      path: "/inspection/pre-trip", 
+      badge: 0,
+      description: "Pre-trip inspection checklist"
+    },
+    { 
+      icon: "FileText", 
+      label: "DVIR", 
+      path: "/inspection/dvir", 
+      badge: 0,
+      description: "Driver Vehicle Inspection Report"
+    },
+    { 
       icon: "MapPin", 
       label: "Navigation", 
       path: "/navigation", 
       badge: 0,
       description: "GPS and routing"
+    },
+    { 
+      icon: "Bell", 
+      label: "Notifications", 
+      path: "/notifications", 
+      badge: 2,
+      description: "Alerts and updates"
     },
     { 
       icon: "TrendingUp", 
@@ -479,7 +570,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
-  // CATALYST: Specialization matching, load optimization
+  // CATALYST: Dispatch operations, load optimization
   CATALYST: [
     { 
       icon: "LayoutDashboard", 
@@ -487,6 +578,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/", 
       badge: 0,
       description: "Catalyst dashboard"
+    },
+    { 
+      icon: "Truck", 
+      label: "Dispatch Board", 
+      path: "/dispatch", 
+      badge: 5,
+      description: "Driver and load assignment"
     },
     { 
       icon: "Zap", 
@@ -584,6 +682,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Escort dashboard"
     },
     { 
+      icon: "Search", 
+      label: "Job Marketplace", 
+      path: "/escort-jobs", 
+      badge: 8,
+      description: "Find escort opportunities"
+    },
+    { 
       icon: "Shield", 
       label: "Active Convoys", 
       path: "/convoys", 
@@ -677,6 +782,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/", 
       badge: 0,
       description: "Terminal operations overview"
+    },
+    { 
+      icon: "Calendar", 
+      label: "Scheduling", 
+      path: "/terminal", 
+      badge: 5,
+      description: "Appointment scheduling grid"
     },
     { 
       icon: "Building2", 
@@ -774,6 +886,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Compliance dashboard"
     },
     { 
+      icon: "FileText", 
+      label: "DQ Files", 
+      path: "/compliance/dq-files", 
+      badge: 4,
+      description: "Driver Qualification Files"
+    },
+    { 
       icon: "Shield", 
       label: "Compliance", 
       path: "/compliance", 
@@ -869,11 +988,32 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Safety dashboard"
     },
     { 
+      icon: "BarChart3", 
+      label: "CSA Scores", 
+      path: "/safety/csa-scores", 
+      badge: 1,
+      description: "CSA BASIC Scores dashboard"
+    },
+    { 
       icon: "ShieldCheck", 
       label: "Safety Metrics", 
       path: "/safety-metrics", 
       badge: 0,
       description: "Safety performance metrics"
+    },
+    { 
+      icon: "GraduationCap", 
+      label: "Training", 
+      path: "/training", 
+      badge: 2,
+      description: "Driver training management"
+    },
+    { 
+      icon: "Award", 
+      label: "Driver Scorecards", 
+      path: "/driver-scorecard", 
+      badge: 0,
+      description: "Individual driver metrics"
     },
     { 
       icon: "AlertTriangle", 
@@ -964,6 +1104,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Admin dashboard"
     },
     { 
+      icon: "CheckCircle", 
+      label: "Verification", 
+      path: "/admin/verification", 
+      badge: 5,
+      description: "User/company verification"
+    },
+    { 
       icon: "Users", 
       label: "Users", 
       path: "/admin/users", 
@@ -1011,6 +1158,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/admin/analytics", 
       badge: 0,
       description: "Platform analytics"
+    },
+    { 
+      icon: "Activity", 
+      label: "Audit Logs", 
+      path: "/admin/audit-logs", 
+      badge: 0,
+      description: "System activity logs"
     },
     { 
       icon: "Settings", 

@@ -1,0 +1,30 @@
+:root {
+  /* Glassmorphism Colors - Adapted for EusoTrip dark theme */
+  --glass-bg-primary: rgba(30, 30, 40, 0.7);
+  --glass-bg-secondary: rgba(20, 20, 30, 0.5);
+  --glass-border: rgba(139, 92, 246, 0.3); /* Eusorone purple */
+  --glass-shadow: rgba(139, 92, 246, 0.2);
+  --glass-shadow-hover: rgba(139, 92, 246, 0.4);
+  
+  /* Widget Sizes */
+  --widget-small-width: 200px;
+  --widget-small-height: 180px;
+  --widget-medium-width: 420px;
+  --widget-medium-height: 280px;
+  --widget-large-width: 100%;
+  --widget-large-height: 400px;
+  
+  /* Spacing */
+  --widget-gap: 20px;
+  --widget-padding: 20px;
+  --widget-border-radius: 16px;
+  
+  /* Animation */
+  --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-quick: all 0.2s ease;
+  
+  /* Eusorone Brand Colors */
+  --eusorone-purple: #8b5cf6;
+  --eusorone-blue: #3b82f6;
+  --eusorone-gradient: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+}

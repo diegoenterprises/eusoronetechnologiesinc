@@ -30,6 +30,7 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -468,7 +469,7 @@ export default function Marketplace() {
                   variant="outline"
                   className="border-gray-700 text-gray-400 hover:bg-gray-800"
                 >
-                  ✕
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
 

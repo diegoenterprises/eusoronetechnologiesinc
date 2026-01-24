@@ -44,6 +44,55 @@ import DriversPage from "./pages/Drivers";
 import EarningsPage from "./pages/Earnings";
 import ErgPage from "./pages/Erg";
 import TestLogin from "./pages/TestLogin";
+import Register from "./pages/Register";
+import RegisterShipper from "./pages/RegisterShipper";
+import RegisterCarrier from "./pages/RegisterCarrier";
+import RegisterDriver from "./pages/RegisterDriver";
+import LoadBids from "./pages/LoadBids";
+import RegisterEscort from "./pages/RegisterEscort";
+import RegisterBroker from "./pages/RegisterBroker";
+import RegisterCatalyst from "./pages/RegisterCatalyst";
+import RegisterTerminal from "./pages/RegisterTerminal";
+import RegisterCompliance from "./pages/RegisterCompliance";
+import RegisterSafety from "./pages/RegisterSafety";
+import DispatchDashboard from "./pages/DispatchDashboard";
+import LoadBoard from "./pages/LoadBoard";
+import SafetyDashboard from "./pages/SafetyDashboard";
+import ComplianceDashboard from "./pages/ComplianceDashboard";
+import TerminalDashboard from "./pages/TerminalDashboard";
+import BrokerDashboard from "./pages/BrokerDashboard";
+import EscortDashboard from "./pages/EscortDashboard";
+import FleetManagement from "./pages/FleetManagement";
+import ShipperLoads from "./pages/ShipperLoads";
+import Billing from "./pages/Billing";
+import LoadTracking from "./pages/LoadTracking";
+import IncidentReport from "./pages/IncidentReport";
+import AuditLog from "./pages/AuditLog";
+import IndustryDirectory from "./pages/IndustryDirectory";
+import LiveNewsFeed from "./pages/LiveNewsFeed";
+import ESANGChat from "./pages/ESANGChat";
+import DriverDashboard from "./pages/DriverDashboard";
+import LoadCreationWizard from "./pages/LoadCreationWizard";
+import BidManagement from "./pages/BidManagement";
+import CarrierBidSubmission from "./pages/CarrierBidSubmission";
+import PreTripInspection from "./pages/PreTripInspection";
+import DVIR from "./pages/DVIR";
+import DispatchBoard from "./pages/DispatchBoard";
+import CarrierVetting from "./pages/CarrierVetting";
+import EscortJobMarketplace from "./pages/EscortJobMarketplace";
+import TerminalScheduling from "./pages/TerminalScheduling";
+import DQFileManagement from "./pages/DQFileManagement";
+import CSAScoresDashboard from "./pages/CSAScoresDashboard";
+import UserVerification from "./pages/UserVerification";
+import HOSTracker from "./pages/HOSTracker";
+import NotificationsCenter from "./pages/NotificationsCenter";
+import DocumentCenter from "./pages/DocumentCenter";
+import AuditLogs from "./pages/AuditLogs";
+import RateCalculator from "./pages/RateCalculator";
+import DriverEarnings from "./pages/DriverEarnings";
+import TrainingManagement from "./pages/TrainingManagement";
+import FuelManagement from "./pages/FuelManagement";
+import DriverScorecard from "./pages/DriverScorecard";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -56,6 +105,212 @@ function Router() {
       )} />
       <Route path={"/home"} component={Home} />
       <Route path={"/login"} component={TestLogin} />
+      <Route path={"/register"} component={Register} />
+      <Route path={"/register/shipper"} component={RegisterShipper} />
+      <Route path={"/register/carrier"} component={RegisterCarrier} />
+      <Route path={"/register/driver"} component={RegisterDriver} />
+      <Route path={"/loads/:loadId/bids"} component={LoadBids} />
+      <Route path={"/register/escort"} component={RegisterEscort} />
+      <Route path={"/register/broker"} component={RegisterBroker} />
+      <Route path={"/register/catalyst"} component={RegisterCatalyst} />
+      <Route path={"/register/terminal"} component={RegisterTerminal} />
+      <Route path={"/register/compliance"} component={RegisterCompliance} />
+      <Route path={"/register/safety"} component={RegisterSafety} />
+      <Route path={"/dispatch"} component={() => (
+        <DashboardLayout>
+          <DispatchDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/load-board"} component={() => (
+        <DashboardLayout>
+          <LoadBoard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/safety"} component={() => (
+        <DashboardLayout>
+          <SafetyDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/compliance"} component={() => (
+        <DashboardLayout>
+          <ComplianceDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/terminal"} component={() => (
+        <DashboardLayout>
+          <TerminalDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/broker"} component={() => (
+        <DashboardLayout>
+          <BrokerDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/escort"} component={() => (
+        <DashboardLayout>
+          <EscortDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/fleet"} component={() => (
+        <DashboardLayout>
+          <FleetManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/my-loads"} component={() => (
+        <DashboardLayout>
+          <ShipperLoads />
+        </DashboardLayout>
+      )} />
+      <Route path={"/billing"} component={() => (
+        <DashboardLayout>
+          <Billing />
+        </DashboardLayout>
+      )} />
+      <Route path={"/tracking"} component={() => (
+        <DashboardLayout>
+          <LoadTracking />
+        </DashboardLayout>
+      )} />
+      <Route path={"/incidents"} component={() => (
+        <DashboardLayout>
+          <IncidentReport />
+        </DashboardLayout>
+      )} />
+      <Route path={"/audit-log"} component={() => (
+        <DashboardLayout>
+          <AuditLog />
+        </DashboardLayout>
+      )} />
+      <Route path={"/directory"} component={() => (
+        <DashboardLayout>
+          <IndustryDirectory />
+        </DashboardLayout>
+      )} />
+      <Route path={"/live-news"} component={() => (
+        <DashboardLayout>
+          <LiveNewsFeed />
+        </DashboardLayout>
+      )} />
+      <Route path={"/esang"} component={() => (
+        <DashboardLayout>
+          <ESANGChat />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver"} component={() => (
+        <DashboardLayout>
+          <DriverDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/loads/create"} component={() => (
+        <DashboardLayout>
+          <LoadCreationWizard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/bids"} component={() => (
+        <DashboardLayout>
+          <BidManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/bids/submit/:loadId"} component={() => (
+        <DashboardLayout>
+          <CarrierBidSubmission />
+        </DashboardLayout>
+      )} />
+      <Route path={"/inspection/pre-trip"} component={() => (
+        <DashboardLayout>
+          <PreTripInspection />
+        </DashboardLayout>
+      )} />
+      <Route path={"/inspection/dvir"} component={() => (
+        <DashboardLayout>
+          <DVIR />
+        </DashboardLayout>
+      )} />
+      <Route path={"/dispatch"} component={() => (
+        <DashboardLayout>
+          <DispatchBoard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/carrier-vetting"} component={() => (
+        <DashboardLayout>
+          <CarrierVetting />
+        </DashboardLayout>
+      )} />
+      <Route path={"/escort-jobs"} component={() => (
+        <DashboardLayout>
+          <EscortJobMarketplace />
+        </DashboardLayout>
+      )} />
+      <Route path={"/terminal"} component={() => (
+        <DashboardLayout>
+          <TerminalScheduling />
+        </DashboardLayout>
+      )} />
+      <Route path={"/compliance/dq-files"} component={() => (
+        <DashboardLayout>
+          <DQFileManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/safety/csa-scores"} component={() => (
+        <DashboardLayout>
+          <CSAScoresDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/admin/verification"} component={() => (
+        <DashboardLayout>
+          <UserVerification />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver/hos"} component={() => (
+        <DashboardLayout>
+          <HOSTracker />
+        </DashboardLayout>
+      )} />
+      <Route path={"/notifications"} component={() => (
+        <DashboardLayout>
+          <NotificationsCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/documents"} component={() => (
+        <DashboardLayout>
+          <DocumentCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/admin/audit-logs"} component={() => (
+        <DashboardLayout>
+          <AuditLogs />
+        </DashboardLayout>
+      )} />
+      <Route path={"/tools/rate-calculator"} component={() => (
+        <DashboardLayout>
+          <RateCalculator />
+        </DashboardLayout>
+      )} />
+      <Route path={"/earnings"} component={() => (
+        <DashboardLayout>
+          <DriverEarnings />
+        </DashboardLayout>
+      )} />
+      <Route path={"/training"} component={() => (
+        <DashboardLayout>
+          <TrainingManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/fuel"} component={() => (
+        <DashboardLayout>
+          <FuelManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver-scorecard"} component={() => (
+        <DashboardLayout>
+          <DriverScorecard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver-scorecard/:driverId"} component={() => (
+        <DashboardLayout>
+          <DriverScorecard />
+        </DashboardLayout>
+      )} />
       <Route path={"/shipments"} component={() => (
         <DashboardLayout>
           <ShipmentPage />

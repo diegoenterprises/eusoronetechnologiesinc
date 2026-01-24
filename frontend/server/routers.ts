@@ -9,6 +9,20 @@ import { inhouseRouter } from "./routers/inhouse";
 import { paymentsRouter } from "./routers/payments";
 import { usersRouter } from "./routers/users";
 import { companiesRouter } from "./routers/companies";
+import { esangRouter } from "./esangRouter";
+import { dashboardRouter } from "./routers/dashboard";
+import { inspectionsRouter } from "./routers/inspections";
+import { hosRouter } from "./routers/hos";
+import { notificationsRouter } from "./routers/notifications";
+import { documentsRouter } from "./routers/documents";
+import { dispatchRouter } from "./routers/dispatch";
+import { auditLogsRouter } from "./routers/auditLogs";
+import { billingRouter } from "./routers/billing";
+import { earningsRouter } from "./routers/earnings";
+import { fleetRouter } from "./routers/fleet";
+import { safetyRouter } from "./routers/safety";
+import { complianceRouter } from "./routers/compliance";
+import { trainingRouter } from "./routers/training";
 
 export const appRouter = router({
   system: systemRouter,
@@ -42,8 +56,50 @@ export const appRouter = router({
   users: usersRouter,
   companies: companiesRouter,
 
+  // Dashboard data for all widgets
+  dashboard: dashboardRouter,
+
+  // Inspections (Pre-Trip, DVIR)
+  inspections: inspectionsRouter,
+
+  // Hours of Service (ELD)
+  hos: hosRouter,
+
+  // Notifications
+  notifications: notificationsRouter,
+
+  // Documents
+  documents: documentsRouter,
+
+  // Dispatch Board
+  dispatch: dispatchRouter,
+
+  // Audit Logs
+  auditLogs: auditLogsRouter,
+
+  // Billing & Invoicing
+  billing: billingRouter,
+
+  // Driver/Carrier Earnings
+  earnings: earningsRouter,
+
+  // Fleet Management
+  fleet: fleetRouter,
+
+  // Safety Management
+  safety: safetyRouter,
+
+  // Compliance Management
+  compliance: complianceRouter,
+
+  // Training Management
+  training: trainingRouter,
+
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
+
+  // ESANG AI™ Intelligence Layer
+  esang: esangRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),

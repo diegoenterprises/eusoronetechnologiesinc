@@ -48,6 +48,15 @@ import {
   CloudRain,
   Sun,
   Wind,
+  Bell,
+  Clock,
+  ClipboardCheck,
+  Calendar,
+  Calculator,
+  GraduationCap,
+  Activity,
+  Fuel,
+  Award,
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -95,6 +104,15 @@ const iconMap: Record<string, React.ReactNode> = {
   CloudRain: <CloudRain size={20} />,
   Sun: <Sun size={20} />,
   Wind: <Wind size={20} />,
+  Bell: <Bell size={20} />,
+  Clock: <Clock size={20} />,
+  ClipboardCheck: <ClipboardCheck size={20} />,
+  Calendar: <Calendar size={20} />,
+  Calculator: <Calculator size={20} />,
+  GraduationCap: <GraduationCap size={20} />,
+  Activity: <Activity size={20} />,
+  Fuel: <Fuel size={20} />,
+  Award: <Award size={20} />,
 };
 
 interface DashboardLayoutProps {

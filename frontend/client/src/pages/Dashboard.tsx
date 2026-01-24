@@ -7,16 +7,12 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { UserRole } from "@/hooks/useRoleAccess";
 import ShipperDashboard from "./ShipperDashboard";
 import CarrierDashboard from "./CarrierDashboard";
+import PremiumDashboard from "@/components/PremiumDashboard";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// Import other role dashboards as they're created
-// import BrokerDashboard from "./BrokerDashboard";
-// import DriverDashboard from "./DriverDashboard";
-// etc.
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
-  const userRole = (user?.role as UserRole) || "USER";
+  const userRole = (user?.role as UserRole) || "SHIPPER";
 
   if (loading) {
     return (
@@ -31,32 +27,6 @@ export default function Dashboard() {
     );
   }
 
-  // Route to role-specific dashboard
-  switch (userRole) {
-    case "SHIPPER":
-      return <ShipperDashboard />;
-    
-    case "CARRIER":
-      return <CarrierDashboard />;
-    
-    // TODO: Add other role dashboards as they're created
-    // case "BROKER":
-    //   return <BrokerDashboard />;
-    // case "DRIVER":
-    //   return <DriverDashboard />;
-    // case "CATALYST":
-    //   return <CatalystDashboard />;
-    // case "ESCORT":
-    //   return <EscortDashboard />;
-    // case "TERMINAL_MANAGER":
-    //   return <TerminalManagerDashboard />;
-    // case "COMPLIANCE_OFFICER":
-    //   return <ComplianceOfficerDashboard />;
-    // case "SAFETY_MANAGER":
-    //   return <SafetyManagerDashboard />;
-    
-    default:
-      // Fallback for USER and other roles - show generic dashboard
-      return <ShipperDashboard />;
-  }
+  // All roles use PremiumDashboard with widget system
+  return <PremiumDashboard role={userRole} />;
 }

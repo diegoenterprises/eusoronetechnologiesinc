@@ -17,6 +17,7 @@ import {
   Loader2,
   Phone,
   MessageSquare,
+  X,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -343,7 +344,7 @@ export default function ZeunBreakdownReport() {
                     onClick={() => handleRemoveSymptom(idx)}
                     className="text-blue-400 hover:text-blue-300"
                   >
-                    ✕
+                    <X className="w-3 h-3" />
                   </button>
                 </div>
               ))}
