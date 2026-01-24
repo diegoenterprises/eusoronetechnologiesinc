@@ -66,6 +66,8 @@ import { drugTestingRouter } from "./routers/drugTesting";
 import { accidentsRouter } from "./routers/accidents";
 import { driverQualificationRouter } from "./routers/driverQualification";
 import { factoringRouter } from "./routers/factoring";
+import { inspectionFormsRouter } from "./routers/inspectionForms";
+import { loadBoardRouter } from "./routers/loadBoard";
 
 export const appRouter = router({
   system: systemRouter,
@@ -266,6 +268,12 @@ export const appRouter = router({
 
   // Freight Factoring & Quick Pay
   factoring: factoringRouter,
+
+  // DVIR & Inspection Forms
+  inspectionForms: inspectionFormsRouter,
+
+  // Load Board
+  loadBoard: loadBoardRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
