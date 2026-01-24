@@ -1,278 +1,201 @@
-import { useAuth } from "@/_core/hooks/useAuth";
+/**
+ * CARRIER DASHBOARD PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
+ */
+
 import { trpc } from "@/lib/trpc";
 import { 
   Truck, TrendingUp, Clock, DollarSign, Package, 
   Search, MapPin, Users, ArrowRight, AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import RoleBasedMap from "@/components/RoleBasedMap";
-import Weather from "@/components/Weather";
 
 export default function CarrierDashboard() {
-  const { user } = useAuth();
   const [, navigate] = useLocation();
   
-  // Fetch real data from tRPC
   const { data: loads, isLoading: loadsLoading } = trpc.loads.list.useQuery({ status: 'posted', limit: 50 });
   const { data: assignedLoads, isLoading: assignedLoading } = trpc.loads.list.useQuery({ limit: 50 });
   const { data: earnings, isLoading: earningsLoading } = trpc.payments.getTransactions.useQuery({ limit: 50 });
   
-  // Calculate metrics from real data
   const availableLoads = loads?.length || 0;
   const activeJobs = assignedLoads?.filter((l: any) => l.status === 'accepted' || l.status === 'in_transit').length || 0;
   const completedJobs = assignedLoads?.filter((l: any) => l.status === 'delivered').length || 0;
   const totalEarnings = earnings?.reduce((sum: number, e: any) => sum + Number(e.amount), 0) || 0;
 
-  const metrics = [
-    {
-      label: "Available Loads",
-      value: availableLoads.toString(),
-      icon: Package,
-      gradient: "from-blue-500 to-cyan-600",
-      bgGradient: "from-blue-500/10 to-cyan-600/10"
-    },
-    {
-      label: "Active Jobs",
-      value: activeJobs.toString(),
-      icon: Truck,
-      gradient: "from-orange-500 to-red-600",
-      bgGradient: "from-orange-500/10 to-red-600/10"
-    },
-    {
-      label: "Completed",
-      value: completedJobs.toString(),
-      icon: Clock,
-      gradient: "from-green-500 to-emerald-600",
-      bgGradient: "from-green-500/10 to-emerald-600/10"
-    },
-    {
-      label: "Total Earnings",
-      value: `$${totalEarnings.toLocaleString()}`,
-      icon: DollarSign,
-      gradient: "from-purple-500 to-pink-600",
-      bgGradient: "from-purple-500/10 to-pink-600/10"
-    }
-  ];
-
-  const quickActions = [
-    { label: "Find Loads", icon: Search, path: "/marketplace", gradient: "from-blue-600 to-cyan-600" },
-    { label: "Active Jobs", icon: Truck, path: "/loads/transit", gradient: "from-orange-600 to-red-600" },
-    { label: "Fleet Management", icon: Users, path: "/fleet", gradient: "from-green-600 to-emerald-600" },
-    { label: "Earnings", icon: DollarSign, path: "/earnings", gradient: "from-purple-600 to-pink-600" }
-  ];
-
-  const recentLoads = loads?.slice(0, 5) || [];
-
-  // Show dashboard immediately, handle loading per section
   const isLoading = loadsLoading || assignedLoading || earningsLoading;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] p-6">
-      {/* Hero Section with Weather */}
-      <div className="mb-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-orange-400 via-red-500 to-pink-600 bg-clip-text text-transparent">
-            Welcome back, {user?.name || 'Carrier'}
-          </h1>
-          <p className="text-gray-400">Manage your fleet and track deliveries</p>
-        </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
+      <div className="flex items-center justify-between">
         <div>
-          <Weather compact />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Carrier Dashboard
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Manage your fleet and find available loads</p>
         </div>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => navigate("/loads/find")}>
+          <Search className="w-4 h-4 mr-2" />Find Loads
+        </Button>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {metrics.map((metric, index) => {
-          const Icon = metric.icon;
-          return (
-            <Card 
-              key={index}
-              className={`relative overflow-hidden border-gray-800 bg-gradient-to-br ${metric.bgGradient} backdrop-blur-sm`}
-            >
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-lg bg-gradient-to-br ${metric.gradient}`}>
-                    <Icon className="w-6 h-6 text-white" />
-                  </div>
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm text-gray-400">{metric.label}</p>
-                  <p className={`text-3xl font-bold bg-gradient-to-r ${metric.gradient} bg-clip-text text-transparent`}>
-                    {metric.value}
-                  </p>
-                </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Package className="w-6 h-6 text-blue-400" />
               </div>
-            </Card>
-          );
-        })}
+              <div>
+                {isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{availableLoads}</p>
+                )}
+                <p className="text-xs text-slate-400">Available Loads</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-orange-500/20">
+                <Truck className="w-6 h-6 text-orange-400" />
+              </div>
+              <div>
+                {isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-orange-400">{activeJobs}</p>
+                )}
+                <p className="text-xs text-slate-400">Active Jobs</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <Clock className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{completedJobs}</p>
+                )}
+                <p className="text-xs text-slate-400">Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-emerald-500/20">
+                <DollarSign className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                {isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <p className="text-2xl font-bold text-emerald-400">${totalEarnings.toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Earnings</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickActions.map((action, index) => {
-            const Icon = action.icon;
-            return (
-              <Button
-                key={index}
-                onClick={() => navigate(action.path)}
-                className={`h-24 bg-gradient-to-r ${action.gradient} hover:opacity-90 transition-opacity`}
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Icon className="w-6 h-6" />
-                  <span className="font-semibold">{action.label}</span>
-                </div>
-              </Button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Map Section */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-          Fleet Tracking
-        </h2>
-        <RoleBasedMap height="h-96" />
-      </div>
-
-      {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Available Loads */}
-        <Card className="border-gray-800 bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
-                Available Loads
-              </h3>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => navigate('/marketplace')}
-                className="text-cyan-400 hover:text-cyan-300"
-              >
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white text-lg">Available Loads</CardTitle>
+              <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300" onClick={() => navigate("/loads/find")}>
                 View All <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
-            
-            <div className="space-y-4">
-              {recentLoads.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No available loads</p>
-                  <Button 
-                    onClick={() => navigate('/marketplace')}
-                    className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600"
-                  >
-                    Browse Marketplace
-                  </Button>
+          </CardHeader>
+          <CardContent>
+            {loadsLoading ? (
+              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : loads?.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                  <Package className="w-8 h-8 text-slate-500" />
                 </div>
-              ) : (
-                recentLoads.map((load: any) => {
-                  return (
-                    <div 
-                      key={load.id}
-                      className="p-4 rounded-lg border border-gray-800 bg-gray-900/50 hover:bg-gray-900/70 transition-colors cursor-pointer"
-                      onClick={() => navigate(`/marketplace`)}
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <p className="font-semibold text-white">Load #{load.id}</p>
-                          <p className="text-sm text-gray-400">{load.cargoType}</p>
-                        </div>
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-green-500 to-emerald-500 text-white">
-                          ${Number(load.rate).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <MapPin className="w-4 h-4" />
-                        <span>{typeof load.origin === 'string' ? load.origin : (load.origin as any)?.city || 'Unknown'}</span>
-                        <ArrowRight className="w-4 h-4" />
-                        <span>{typeof load.destination === 'string' ? load.destination : (load.destination as any)?.city || 'Unknown'}</span>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
-                        <Clock className="w-3 h-3" />
-                        <span>Pickup: {load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : 'TBD'}</span>
-                      </div>
+                <p className="text-slate-400">No available loads</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {loads?.slice(0, 4).map((load: any) => (
+                  <div key={load.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => navigate(`/loads/${load.id}`)}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-white font-medium">{load.loadNumber || `#${load.id?.slice(0, 6)}`}</p>
+                      <p className="text-emerald-400 font-bold">${load.rate?.toLocaleString() || "0"}</p>
                     </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <MapPin className="w-3 h-3 text-green-400" />
+                      <span>{load.origin?.city || "N/A"}</span>
+                      <ArrowRight className="w-3 h-3" />
+                      <MapPin className="w-3 h-3 text-red-400" />
+                      <span>{load.destination?.city || "N/A"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
         </Card>
 
-        {/* Fleet Status */}
-        <Card className="border-gray-800 bg-gradient-to-br from-gray-900/50 to-gray-800/30 backdrop-blur-sm">
-          <div className="p-6">
-            <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-orange-400 to-red-500 bg-clip-text text-transparent">
-              Fleet Status
-            </h3>
-            
-            <div className="space-y-4">
-              {activeJobs > 0 && (
-                <div className="p-4 rounded-lg border border-orange-800/50 bg-orange-900/20">
-                  <div className="flex items-start gap-3">
-                    <Truck className="w-5 h-5 text-orange-500 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-orange-500">Active Deliveries</p>
-                      <p className="text-sm text-gray-400">
-                        {activeJobs} vehicle{activeJobs > 1 ? 's' : ''} currently on the road
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {availableLoads > 0 && (
-                <div className="p-4 rounded-lg border border-blue-800/50 bg-blue-900/20">
-                  <div className="flex items-start gap-3">
-                    <Package className="w-5 h-5 text-blue-500 mt-0.5" />
-                    <div>
-                      <p className="font-semibold text-blue-500">New Opportunities</p>
-                      <p className="text-sm text-gray-400">
-                        {availableLoads} load{availableLoads > 1 ? 's' : ''} available in your area
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              <div className="p-4 rounded-lg border border-green-800/50 bg-green-900/20">
-                <div className="flex items-start gap-3">
-                  <DollarSign className="w-5 h-5 text-green-500 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-green-500">This Month's Earnings</p>
-                    <p className="text-2xl font-bold text-white mt-1">
-                      ${totalEarnings.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {activeJobs === 0 && availableLoads === 0 && (
-                <div className="text-center py-8 text-gray-400">
-                  <AlertTriangle className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No active jobs</p>
-                  <Button 
-                    onClick={() => navigate('/marketplace')}
-                    className="mt-4 bg-gradient-to-r from-blue-600 to-cyan-600"
-                  >
-                    Find Loads
-                  </Button>
-                </div>
-              )}
+        {/* My Drivers */}
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white text-lg">My Drivers</CardTitle>
+              <Button variant="ghost" size="sm" className="text-cyan-400 hover:text-cyan-300" onClick={() => navigate("/drivers")}>
+                Manage <ArrowRight className="w-4 h-4 ml-1" />
+              </Button>
             </div>
-          </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <Users className="w-8 h-8 text-slate-500" />
+              </div>
+              <p className="text-slate-400">No drivers assigned</p>
+              <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => navigate("/drivers/add")}>
+                Add Driver
+              </Button>
+            </div>
+          </CardContent>
         </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Button variant="outline" className="h-20 flex-col bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/50 rounded-xl" onClick={() => navigate("/loads/find")}>
+          <Search className="w-6 h-6 mb-2 text-blue-400" />
+          <span className="text-slate-300">Find Loads</span>
+        </Button>
+        <Button variant="outline" className="h-20 flex-col bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/50 rounded-xl" onClick={() => navigate("/fleet")}>
+          <Truck className="w-6 h-6 mb-2 text-orange-400" />
+          <span className="text-slate-300">My Fleet</span>
+        </Button>
+        <Button variant="outline" className="h-20 flex-col bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/50 rounded-xl" onClick={() => navigate("/earnings")}>
+          <DollarSign className="w-6 h-6 mb-2 text-green-400" />
+          <span className="text-slate-300">Earnings</span>
+        </Button>
+        <Button variant="outline" className="h-20 flex-col bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/50 rounded-xl" onClick={() => navigate("/compliance")}>
+          <TrendingUp className="w-6 h-6 mb-2 text-purple-400" />
+          <span className="text-slate-300">Compliance</span>
+        </Button>
       </div>
     </div>
   );
