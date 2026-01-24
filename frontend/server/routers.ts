@@ -34,6 +34,8 @@ import { brokersRouter } from "./routers/brokers";
 import { shippersRouter } from "./routers/shippers";
 import { incidentsRouter } from "./routers/incidents";
 import { weatherRouter } from "./routers/weather";
+import { geolocationRouter } from "./routers/geolocation";
+import { ergRouter } from "./routers/erg";
 
 export const appRouter = router({
   system: systemRouter,
@@ -138,6 +140,12 @@ export const appRouter = router({
 
   // Weather & Route Conditions
   weather: weatherRouter,
+
+  // GPS Tracking & Geofencing
+  geolocation: geolocationRouter,
+
+  // ERG 2024 Hazmat Reference
+  erg: ergRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
