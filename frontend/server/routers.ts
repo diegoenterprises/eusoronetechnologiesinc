@@ -64,6 +64,8 @@ import { accountingRouter } from "./routers/accounting";
 import { certificationsRouter } from "./routers/certifications";
 import { drugTestingRouter } from "./routers/drugTesting";
 import { accidentsRouter } from "./routers/accidents";
+import { driverQualificationRouter } from "./routers/driverQualification";
+import { factoringRouter } from "./routers/factoring";
 
 export const appRouter = router({
   system: systemRouter,
@@ -258,6 +260,12 @@ export const appRouter = router({
 
   // Accident Reporting
   accidents: accidentsRouter,
+
+  // Driver Qualification Files (49 CFR 391.51)
+  driverQualification: driverQualificationRouter,
+
+  // Freight Factoring & Quick Pay
+  factoring: factoringRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
