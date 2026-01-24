@@ -39,6 +39,7 @@ import { ergRouter } from "./routers/erg";
 import { appointmentsRouter } from "./routers/appointments";
 import { permitsRouter } from "./routers/permits";
 import { facilitiesRouter } from "./routers/facilities";
+import { catalystsRouter } from "./routers/catalysts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -158,6 +159,9 @@ export const appRouter = router({
 
   // Facility Management
   facilities: facilitiesRouter,
+
+  // Catalyst/Dispatch Operations
+  catalysts: catalystsRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
