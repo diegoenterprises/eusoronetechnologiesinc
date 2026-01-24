@@ -93,6 +93,7 @@ import DriverEarnings from "./pages/DriverEarnings";
 import TrainingManagement from "./pages/TrainingManagement";
 import FuelManagement from "./pages/FuelManagement";
 import DriverScorecard from "./pages/DriverScorecard";
+import Rewards from "./pages/Rewards";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -309,6 +310,11 @@ function Router() {
       <Route path={"/driver-scorecard/:driverId"} component={() => (
         <DashboardLayout>
           <DriverScorecard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/rewards"} component={() => (
+        <DashboardLayout>
+          <Rewards />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
