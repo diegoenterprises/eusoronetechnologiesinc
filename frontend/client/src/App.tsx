@@ -111,6 +111,7 @@ import ComplianceCalendar from "./pages/ComplianceCalendar";
 import DriverPerformance from "./pages/DriverPerformance";
 import SettlementDetails from "./pages/SettlementDetails";
 import AppointmentScheduler from "./pages/AppointmentScheduler";
+import NotificationCenter from "./pages/NotificationCenter";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -497,6 +498,16 @@ function Router() {
       <Route path={"/appointments"} component={() => (
         <DashboardLayout>
           <AppointmentScheduler />
+        </DashboardLayout>
+      )} />
+      <Route path={"/notifications"} component={() => (
+        <DashboardLayout>
+          <NotificationCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/alerts"} component={() => (
+        <DashboardLayout>
+          <NotificationCenter />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
