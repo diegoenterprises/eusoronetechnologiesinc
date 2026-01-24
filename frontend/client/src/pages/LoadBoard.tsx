@@ -1,6 +1,7 @@
 /**
  * LOAD BOARD PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
 import React, { useState } from "react";
@@ -12,157 +13,200 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Package, MapPin, DollarSign, Clock, Truck, Search,
-  AlertTriangle, Eye, ChevronRight, Calendar, Filter
+  Search, MapPin, Package, DollarSign, Truck, Filter,
+  ArrowRight, Eye, Clock, RefreshCw
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 
 export default function LoadBoard() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [equipmentFilter, setEquipmentFilter] = useState("all");
-  const [originState, setOriginState] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.loads.getAvailable.useQuery({
-    search: searchTerm || undefined,
-    equipment: equipmentFilter !== "all" ? equipmentFilter : undefined,
-    originState: originState !== "all" ? originState : undefined,
+  const loadsQuery = trpc.loads.list.useQuery({ limit: 100 });
+
+  const filteredLoads = loadsQuery.data?.filter((load: any) => {
+    const matchesSearch = !searchTerm || 
+      load.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || load.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
-  if (loadsQuery.error) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-red-400">Error loading available loads</p>
-        <Button className="mt-4" onClick={() => loadsQuery.refetch()}>Retry</Button>
-      </div>
-    );
-  }
+  const totalLoads = loadsQuery.data?.length || 0;
+  const postedLoads = loadsQuery.data?.filter((l: any) => l.status === "posted").length || 0;
 
-  const getEquipmentColor = (type: string) => {
-    switch (type) {
-      case "dry_van": return "bg-blue-500/20 text-blue-400";
-      case "reefer": return "bg-cyan-500/20 text-cyan-400";
-      case "flatbed": return "bg-orange-500/20 text-orange-400";
-      case "tanker": return "bg-purple-500/20 text-purple-400";
-      default: return "bg-slate-500/20 text-slate-400";
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "posted": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Posted</Badge>;
+      case "bidding": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Bidding</Badge>;
+      case "assigned": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Assigned</Badge>;
+      case "in_transit": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">In Transit</Badge>;
+      case "delivered": return <Badge className="bg-green-500/20 text-green-400 border-0">Delivered</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Load Board</h1>
-          <p className="text-slate-400 text-sm">Find available loads to bid on</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Load Board
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Browse and manage all available loads</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-500/20 border border-yellow-500/30">
+            <Package className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-400 text-sm font-medium">Posted</span>
+            <span className="text-yellow-400 font-bold">{postedLoads}</span>
+          </div>
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => loadsQuery.refetch()}>
+            <RefreshCw className="w-4 h-4 mr-2" />Refresh
+          </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative flex-1 max-w-md">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-700/50 border-slate-600" />
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Package className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-blue-400">{totalLoads}</p>
+                <p className="text-xs text-slate-400">Total Loads</p>
+              </div>
             </div>
-            <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
-              <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Equipment" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Equipment</SelectItem>
-                <SelectItem value="dry_van">Dry Van</SelectItem>
-                <SelectItem value="reefer">Reefer</SelectItem>
-                <SelectItem value="flatbed">Flatbed</SelectItem>
-                <SelectItem value="tanker">Tanker</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={originState} onValueChange={setOriginState}>
-              <SelectTrigger className="w-40 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Origin State" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                <SelectItem value="TX">Texas</SelectItem>
-                <SelectItem value="CA">California</SelectItem>
-                <SelectItem value="FL">Florida</SelectItem>
-                <SelectItem value="IL">Illinois</SelectItem>
-                <SelectItem value="NY">New York</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* Results Count */}
-      <div className="flex items-center justify-between">
-        <p className="text-slate-400">
-          {loadsQuery.isLoading ? "Loading..." : `${loadsQuery.data?.length || 0} loads available`}
-        </p>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Clock className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-yellow-400">{postedLoads}</p>
+                <p className="text-xs text-slate-400">Posted</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-cyan-500/20">
+                <Truck className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-cyan-400">{loadsQuery.data?.filter((l: any) => l.status === "in_transit").length || 0}</p>
+                <p className="text-xs text-slate-400">In Transit</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <DollarSign className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-green-400">${(loadsQuery.data?.reduce((sum: number, l: any) => sum + (l.rate || 0), 0) || 0).toLocaleString()}</p>
+                <p className="text-xs text-slate-400">Total Value</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search loads..."
+            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-40 bg-slate-800/50 border-slate-700/50 rounded-lg">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            <SelectItem value="posted">Posted</SelectItem>
+            <SelectItem value="bidding">Bidding</SelectItem>
+            <SelectItem value="assigned">Assigned</SelectItem>
+            <SelectItem value="in_transit">In Transit</SelectItem>
+            <SelectItem value="delivered">Delivered</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Loads List */}
-      <div className="space-y-4">
-        {loadsQuery.isLoading ? (
-          [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-32 w-full" />)
-        ) : loadsQuery.data?.length === 0 ? (
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-12 text-center">
-              <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-              <p className="text-slate-400">No loads match your criteria</p>
-            </CardContent>
-          </Card>
-        ) : (
-          loadsQuery.data?.map((load) => (
-            <Card key={load.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <p className="text-white font-bold">{load.loadNumber}</p>
-                      <Badge className={getEquipmentColor(load.equipmentType)}>{load.equipmentType?.replace("_", " ")}</Badge>
-                      {load.hazmat && <Badge className="bg-red-500/20 text-red-400">Hazmat</Badge>}
-                    </div>
-                    <div className="flex items-center gap-6 mb-3">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-green-400" />
-                        <div>
-                          <p className="text-white">{load.pickupLocation?.city}, {load.pickupLocation?.state}</p>
-                          <p className="text-xs text-slate-500">{load.pickupDate}</p>
-                        </div>
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardContent className="p-0">
+          {loadsQuery.isLoading ? (
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : filteredLoads?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <Package className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No loads found</p>
+              <p className="text-slate-500 text-sm mt-1">Try adjusting your search criteria</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {filteredLoads?.map((load: any) => (
+                <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setLocation(`/loads/${load.id}`)}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-xl bg-blue-500/20">
+                        <Package className="w-6 h-6 text-blue-400" />
                       </div>
-                      <ChevronRight className="w-4 h-4 text-slate-500" />
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-red-400" />
-                        <div>
-                          <p className="text-white">{load.deliveryLocation?.city}, {load.deliveryLocation?.state}</p>
-                          <p className="text-xs text-slate-500">{load.deliveryDate}</p>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-bold">{load.loadNumber || `#${load.id?.slice(0, 6)}`}</p>
+                          {getStatusBadge(load.status)}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-400">
+                          <MapPin className="w-3 h-3 text-green-400" />
+                          <span>{load.origin?.city || "N/A"}</span>
+                          <ArrowRight className="w-3 h-3" />
+                          <MapPin className="w-3 h-3 text-red-400" />
+                          <span>{load.destination?.city || "N/A"}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-slate-400">
-                      <span className="flex items-center gap-1"><Truck className="w-4 h-4" />{load.distance} mi</span>
-                      <span>{load.weight}</span>
-                      <span>{load.commodity}</span>
-                    </div>
-                  </div>
-                  <div className="text-right ml-4">
-                    <p className="text-2xl font-bold text-green-400">${load.rate?.toLocaleString()}</p>
-                    <p className="text-sm text-slate-500">${load.ratePerMile?.toFixed(2)}/mi</p>
-                    <div className="flex gap-2 mt-3">
-                      <Button variant="outline" size="sm" className="border-slate-600" onClick={() => setLocation(`/loads/${load.id}`)}>
-                        <Eye className="w-4 h-4 mr-1" />Details
-                      </Button>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => setLocation(`/loads/${load.id}/bid`)}>
-                        <DollarSign className="w-4 h-4 mr-1" />Bid
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-emerald-400 font-bold text-lg">${(load.rate || 0).toLocaleString()}</p>
+                        <p className="text-xs text-slate-500">{load.distance || 0} miles</p>
+                      </div>
+                      <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg">
+                        <Eye className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

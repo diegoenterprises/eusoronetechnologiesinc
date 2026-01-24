@@ -1,357 +1,194 @@
 /**
- * DRIVERS PAGE - CARRIER ROLE
- * Driver roster management with assignments, performance tracking, and availability
+ * DRIVERS PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  User, Plus, Search, Phone, MessageSquare, Star,
-  CheckCircle, XCircle, Clock, TrendingUp, Award,
-  MapPin, Package, Edit, Eye, Calendar, Activity
-} from "lucide-react";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import {
+  Users, Search, Plus, Eye, Phone, Clock, CheckCircle,
+  AlertTriangle
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
-type DriverStatus = "available" | "on_route" | "off_duty" | "inactive";
+export default function Drivers() {
+  const [, setLocation] = useLocation();
+  const [searchTerm, setSearchTerm] = useState("");
 
-interface Driver {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  status: DriverStatus;
-  rating: number;
-  completedLoads: number;
-  onTimeDelivery: number;
-  currentLoad: string | null;
-  location: string;
-  licenseExpiry: Date;
-  medicalCertExpiry: Date;
-}
+  const driversQuery = trpc.drivers.list.useQuery({ limit: 50 });
 
-export default function DriversPage() {
-  const { user } = useAuth();
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-
-  // Mock driver data - in production, fetch from database
-  const drivers: Driver[] = [
-    {
-      id: 1,
-      name: "John Smith",
-      email: "john.smith@carrier.com",
-      phone: "(555) 123-4567",
-      status: "on_route",
-      rating: 4.8,
-      completedLoads: 245,
-      onTimeDelivery: 96,
-      currentLoad: "LD-2024-087",
-      location: "Houston, TX",
-      licenseExpiry: new Date(2025, 5, 15),
-      medicalCertExpiry: new Date(2025, 2, 20)
-    },
-    {
-      id: 2,
-      name: "Mike Johnson",
-      email: "mike.johnson@carrier.com",
-      phone: "(555) 234-5678",
-      status: "on_route",
-      rating: 4.6,
-      completedLoads: 198,
-      onTimeDelivery: 94,
-      currentLoad: "LD-2024-089",
-      location: "San Antonio, TX",
-      licenseExpiry: new Date(2025, 8, 10),
-      medicalCertExpiry: new Date(2025, 6, 5)
-    },
-    {
-      id: 3,
-      name: "Sarah Williams",
-      email: "sarah.williams@carrier.com",
-      phone: "(555) 345-6789",
-      status: "available",
-      rating: 4.9,
-      completedLoads: 312,
-      onTimeDelivery: 98,
-      currentLoad: null,
-      location: "Dallas, TX",
-      licenseExpiry: new Date(2026, 1, 25),
-      medicalCertExpiry: new Date(2025, 11, 15)
-    },
-    {
-      id: 4,
-      name: "David Brown",
-      email: "david.brown@carrier.com",
-      phone: "(555) 456-7890",
-      status: "off_duty",
-      rating: 4.7,
-      completedLoads: 267,
-      onTimeDelivery: 95,
-      currentLoad: null,
-      location: "Austin, TX",
-      licenseExpiry: new Date(2025, 10, 5),
-      medicalCertExpiry: new Date(2025, 7, 30)
-    },
-  ];
-
-  const getStatusBadge = (status: DriverStatus) => {
-    const badges: Record<DriverStatus, { label: string; color: string; icon: any }> = {
-      available: { label: "Available", color: "bg-green-600", icon: CheckCircle },
-      on_route: { label: "On Route", color: "bg-blue-600", icon: Activity },
-      off_duty: { label: "Off Duty", color: "bg-gray-600", icon: Clock },
-      inactive: { label: "Inactive", color: "bg-red-600", icon: XCircle },
-    };
-    return badges[status];
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active": return <Badge className="bg-green-500/20 text-green-400 border-0">Active</Badge>;
+      case "driving": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Driving</Badge>;
+      case "off_duty": return <Badge className="bg-slate-500/20 text-slate-400 border-0">Off Duty</Badge>;
+      case "inactive": return <Badge className="bg-red-500/20 text-red-400 border-0">Inactive</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
+    }
   };
 
-  const getCertificationStatus = (expiryDate: Date): { status: string; color: string } => {
-    const daysUntilExpiry = Math.floor((expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    if (daysUntilExpiry < 30) return { status: "Expiring Soon", color: "text-red-400" };
-    if (daysUntilExpiry < 90) return { status: "Renewal Due", color: "text-yellow-400" };
-    return { status: "Valid", color: "text-green-400" };
-  };
-
-  const handleAddDriver = () => {
-    toast.info("Add driver form (Feature coming soon)");
-  };
-
-  const handleAssignLoad = (driverId: number) => {
-    toast.info(`Assign load to driver #${driverId} (Feature coming soon)`);
-  };
-
-  const handleContactDriver = (driver: Driver) => {
-    toast.info(`Calling ${driver.name} at ${driver.phone}...`);
-  };
-
-  const filteredDrivers = drivers.filter(driver => {
-    const matchesSearch = searchQuery === "" || 
-      driver.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      driver.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || driver.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const filteredDrivers = driversQuery.data?.filter((driver: any) => {
+    return !searchTerm || 
+      driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      driver.cdlNumber?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const statusCounts = {
-    available: drivers.filter(d => d.status === "available").length,
-    on_route: drivers.filter(d => d.status === "on_route").length,
-    off_duty: drivers.filter(d => d.status === "off_duty").length,
-    inactive: drivers.filter(d => d.status === "inactive").length,
-  };
+  const totalDrivers = driversQuery.data?.length || 0;
+  const activeDrivers = driversQuery.data?.filter((d: any) => d.status === "active" || d.status === "driving").length || 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-400 via-red-500 to-pink-500 bg-clip-text text-transparent mb-2">
-                Driver Management
-              </h1>
-              <p className="text-gray-400 text-lg">Manage your driver roster and assignments</p>
-            </div>
-            <Button
-              onClick={handleAddDriver}
-              className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Driver
-            </Button>
-          </div>
-
-          {/* Status Summary */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card className="bg-green-900/20 border-green-700 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Available</p>
-                  <p className="text-3xl font-bold text-green-400">{statusCounts.available}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </Card>
-            <Card className="bg-blue-900/20 border-blue-700 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">On Route</p>
-                  <p className="text-3xl font-bold text-blue-400">{statusCounts.on_route}</p>
-                </div>
-                <Activity className="w-8 h-8 text-blue-500" />
-              </div>
-            </Card>
-            <Card className="bg-gray-900/50 border-gray-800 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Off Duty</p>
-                  <p className="text-3xl font-bold text-gray-400">{statusCounts.off_duty}</p>
-                </div>
-                <Clock className="w-8 h-8 text-gray-500" />
-              </div>
-            </Card>
-            <Card className="bg-gray-900/50 border-gray-800 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Total Drivers</p>
-                  <p className="text-3xl font-bold text-white">{drivers.length}</p>
-                </div>
-                <User className="w-8 h-8 text-gray-500" />
-              </div>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search by name or email..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-900/50 border-gray-800"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg text-white"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="available">Available</option>
-              <option value="on_route">On Route</option>
-              <option value="off_duty">Off Duty</option>
-              <option value="inactive">Inactive</option>
-            </select>
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Drivers
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Manage your driver roster and assignments</p>
         </div>
-
-        {/* Driver List */}
-        <div className="grid gap-4">
-          {filteredDrivers.map((driver) => {
-            const statusBadge = getStatusBadge(driver.status);
-            const StatusIcon = statusBadge.icon;
-            const licenseStatus = getCertificationStatus(driver.licenseExpiry);
-            const medicalStatus = getCertificationStatus(driver.medicalCertExpiry);
-
-            return (
-              <Card key={driver.id} className="bg-gray-900/50 border-gray-800 p-6 hover:border-orange-500/50 transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-16 h-16 rounded-full ${statusBadge.color}/20 flex items-center justify-center`}>
-                      <User className={`w-8 h-8 ${statusBadge.color.replace('bg-', 'text-')}`} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-xl font-bold">{driver.name}</h3>
-                        <Badge className={`${statusBadge.color} text-white`}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusBadge.label}
-                        </Badge>
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                          <span className="font-medium">{driver.rating}</span>
-                        </div>
-                      </div>
-                      <p className="text-gray-400 text-sm">{driver.email}</p>
-                      <p className="text-gray-500 text-sm">{driver.phone}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    {driver.status === "available" && (
-                      <Button
-                        size="sm"
-                        onClick={() => handleAssignLoad(driver.id)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Package className="w-4 h-4 mr-2" />
-                        Assign Load
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleContactDriver(driver)}
-                      className="border-gray-700 hover:border-orange-500"
-                    >
-                      <Phone className="w-4 h-4 mr-2" />
-                      Call
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-700 hover:border-blue-500"
-                    >
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Message
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 mb-4">
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Completed Loads</p>
-                    <p className="font-semibold text-lg">{driver.completedLoads}</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">On-Time Delivery</p>
-                    <p className="font-semibold text-lg text-green-400">{driver.onTimeDelivery}%</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Current Load</p>
-                    <p className="font-semibold">{driver.currentLoad || "None"}</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      Location
-                    </p>
-                    <p className="font-semibold text-sm">{driver.location}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-gray-800">
-                  <div className="flex items-center gap-6 text-sm">
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">CDL License</p>
-                      <p className={licenseStatus.color}>
-                        {driver.licenseExpiry.toLocaleDateString()} • {licenseStatus.status}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-gray-500 text-xs mb-1">Medical Cert</p>
-                      <p className={medicalStatus.color}>
-                        {driver.medicalCertExpiry.toLocaleDateString()} • {medicalStatus.status}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-700 hover:border-cyan-500"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-700 hover:border-blue-500"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Details
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/drivers/add")}>
+          <Plus className="w-4 h-4 mr-2" />Add Driver
+        </Button>
       </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Users className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {driversQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{totalDrivers}</p>
+                )}
+                <p className="text-xs text-slate-400">Total Drivers</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {driversQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{activeDrivers}</p>
+                )}
+                <p className="text-xs text-slate-400">Active</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-cyan-500/20">
+                <Clock className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                {driversQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-cyan-400">{driversQuery.data?.filter((d: any) => d.status === "driving").length || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Driving</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <AlertTriangle className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                {driversQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">{driversQuery.data?.filter((d: any) => d.hosRemaining && d.hosRemaining < 2).length || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Low HOS</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search drivers..."
+          className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+        />
+      </div>
+
+      {/* Drivers List */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardContent className="p-0">
+          {driversQuery.isLoading ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : filteredDrivers?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <Users className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No drivers found</p>
+              <p className="text-slate-500 text-sm mt-1">Add your first driver to get started</p>
+              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/drivers/add")}>
+                <Plus className="w-4 h-4 mr-2" />Add Driver
+              </Button>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {filteredDrivers?.map((driver: any) => (
+                <div key={driver.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-3 rounded-xl", driver.status === "driving" ? "bg-blue-500/20" : driver.status === "active" ? "bg-green-500/20" : "bg-slate-500/20")}>
+                        <Users className={cn("w-6 h-6", driver.status === "driving" ? "text-blue-400" : driver.status === "active" ? "text-green-400" : "text-slate-400")} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-medium">{driver.name}</p>
+                          {getStatusBadge(driver.status)}
+                        </div>
+                        <p className="text-sm text-slate-400">{driver.truckNumber} • CDL: {driver.cdlNumber}</p>
+                        {driver.hosRemaining !== undefined && (
+                          <p className={cn("text-xs", driver.hosRemaining < 2 ? "text-yellow-400" : "text-slate-500")}>
+                            HOS: {driver.hosRemaining}h remaining
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                        <Phone className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation(`/drivers/${driver.id}`)}>
+                        <Eye className="w-4 h-4 mr-1" />View
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
