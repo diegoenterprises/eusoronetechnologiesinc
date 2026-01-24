@@ -1,266 +1,228 @@
 /**
  * LOAD BIDS PAGE
- * View and manage bids on a specific load
- * Based on 01_SHIPPER_USER_JOURNEY.md
+ * 100% Dynamic - No mock data
  */
 
 import React, { useState } from "react";
-import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { 
-  ArrowLeft, Clock, MapPin, Package, DollarSign, 
-  Filter, SortAsc, RefreshCw, Sparkles, AlertTriangle
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import {
+  DollarSign, MapPin, Clock, Truck, AlertTriangle,
+  CheckCircle, XCircle, TrendingUp, TrendingDown, Star,
+  Building, ChevronRight, Eye, Loader2
 } from "lucide-react";
-import { BidCard, BidData } from "@/components/bids/BidCard";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useParams } from "wouter";
 
-// Mock data for demonstration
-const MOCK_LOAD = {
-  id: "LOAD-45901",
-  commodity: "Gasoline",
-  unNumber: "UN1203",
-  hazardClass: "3",
-  quantity: "8,500 gallons",
-  origin: "Houston, TX",
-  destination: "Dallas, TX",
-  distance: 250,
-  pickupDate: "Jan 25, 2026 08:00",
-  deliveryDate: "Jan 25, 2026 16:00",
-  targetRate: 2800,
-  suggestedRate: { min: 2650, max: 2900 },
-  biddingEnds: "4h 23m",
-  status: "bidding",
-};
+export default function LoadBids() {
+  const params = useParams();
+  const loadId = params.id;
+  const [bidAmount, setBidAmount] = useState("");
 
-const MOCK_BIDS: BidData[] = [
-  {
-    id: "bid-1",
-    carrierId: "carrier-1",
-    carrierName: "ABC Transport",
-    safetyRating: 5,
-    onTimeRate: 98,
-    totalLoads: 1247,
-    bidAmount: 2500,
-    eta: "On-time",
-    etaStatus: "on-time",
-    equipment: "MC-306",
-    driverName: "John D.",
-    driverHOS: "11h",
-    hasHazmatAuth: true,
-    insuranceCoverage: 2000000,
-    submittedAt: "2h ago",
-    status: "pending",
-    notes: "Available for immediate pickup. Driver is familiar with this route.",
-  },
-  {
-    id: "bid-2",
-    carrierId: "carrier-2",
-    carrierName: "XYZ Hazmat LLC",
-    safetyRating: 4,
-    onTimeRate: 95,
-    totalLoads: 892,
-    bidAmount: 2650,
-    eta: "On-time",
-    etaStatus: "on-time",
-    equipment: "MC-306",
-    hasHazmatAuth: true,
-    insuranceCoverage: 1500000,
-    submittedAt: "1h ago",
-    status: "pending",
-  },
-  {
-    id: "bid-3",
-    carrierId: "carrier-3",
-    carrierName: "SafeHaul Inc",
-    safetyRating: 5,
-    onTimeRate: 99,
-    totalLoads: 2150,
-    bidAmount: 2800,
-    eta: "On-time",
-    etaStatus: "on-time",
-    equipment: "MC-306",
-    driverName: "Sarah M.",
-    driverHOS: "10h",
-    hasHazmatAuth: true,
-    insuranceCoverage: 5000000,
-    submittedAt: "45m ago",
-    status: "pending",
-    notes: "Premium carrier with excellent safety record.",
-  },
-  {
-    id: "bid-4",
-    carrierId: "carrier-4",
-    carrierName: "ProChem Carriers",
-    safetyRating: 3,
-    onTimeRate: 88,
-    totalLoads: 456,
-    bidAmount: 2400,
-    eta: "-2 hours",
-    etaStatus: "late",
-    equipment: "MC-306",
-    hasHazmatAuth: true,
-    insuranceCoverage: 1000000,
-    submittedAt: "3h ago",
-    status: "pending",
-  },
-];
+  const loadQuery = trpc.loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
+  const bidsQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId! }, { enabled: !!loadId });
 
-export default function LoadBidsPage() {
-  const { loadId } = useParams<{ loadId: string }>();
-  const [, setLocation] = useLocation();
-  const [bids, setBids] = useState<BidData[]>(MOCK_BIDS);
-  const [sortBy, setSortBy] = useState<"price" | "rating" | "eta">("price");
-
-  const sortedBids = [...bids].sort((a, b) => {
-    switch (sortBy) {
-      case "price":
-        return a.bidAmount - b.bidAmount;
-      case "rating":
-        return b.safetyRating - a.safetyRating;
-      case "eta":
-        return a.etaStatus === "on-time" ? -1 : 1;
-      default:
-        return 0;
-    }
+  const submitBidMutation = trpc.bids.submit.useMutation({
+    onSuccess: () => { toast.success("Bid submitted"); setBidAmount(""); bidsQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const handleAcceptBid = (bidId: string) => {
-    setBids(bids.map(b => ({
-      ...b,
-      status: b.id === bidId ? "accepted" : b.status === "pending" ? "rejected" : b.status
-    })));
-    toast.success("Bid accepted! Rate confirmation sent to carrier.");
-  };
+  const acceptBidMutation = trpc.bids.accept.useMutation({
+    onSuccess: () => { toast.success("Bid accepted"); bidsQuery.refetch(); loadQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  const handleRejectBid = (bidId: string) => {
-    setBids(bids.map(b => ({
-      ...b,
-      status: b.id === bidId ? "rejected" : b.status
-    })));
-    toast.info("Bid rejected");
-  };
+  const rejectBidMutation = trpc.bids.reject.useMutation({
+    onSuccess: () => { toast.success("Bid rejected"); bidsQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  const handleCounterBid = (bidId: string, currentAmount: number) => {
-    const counterAmount = prompt(`Enter counter offer (current bid: $${currentAmount}):`, String(currentAmount - 100));
-    if (counterAmount) {
-      setBids(bids.map(b => ({
-        ...b,
-        status: b.id === bidId ? "countered" : b.status,
-        counterOffer: b.id === bidId ? parseInt(counterAmount) : b.counterOffer
-      })));
-      toast.success("Counter offer sent to carrier");
+  if (loadQuery.error) {
+    return (
+      <div className="p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-red-400">Error loading data</p>
+        <Button className="mt-4" onClick={() => loadQuery.refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+  const load = loadQuery.data;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "accepted": return "bg-green-500/20 text-green-400";
+      case "pending": return "bg-yellow-500/20 text-yellow-400";
+      case "rejected": return "bg-red-500/20 text-red-400";
+      case "countered": return "bg-blue-500/20 text-blue-400";
+      default: return "bg-slate-500/20 text-slate-400";
     }
+  };
+
+  const handleSubmitBid = () => {
+    if (!bidAmount || isNaN(parseFloat(bidAmount))) {
+      toast.error("Please enter a valid bid amount");
+      return;
+    }
+    submitBidMutation.mutate({ loadId: loadId!, amount: parseFloat(bidAmount) });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => setLocation("/my-loads")} className="text-slate-400">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Loads
-          </Button>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Load Bids</h1>
+          <p className="text-slate-400 text-sm">Manage bids for this load</p>
         </div>
+      </div>
 
-        {/* Load Summary */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-6">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-white flex items-center gap-2">
-                <Package className="w-5 h-5 text-blue-400" />
-                {MOCK_LOAD.id}
-              </CardTitle>
-              <Badge className="bg-yellow-500/20 text-yellow-400">
-                <Clock className="w-3 h-3 mr-1" />
-                Bidding ends in {MOCK_LOAD.biddingEnds}
-              </Badge>
+      {/* Load Details */}
+      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+        <CardContent className="p-6">
+          {loadQuery.isLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-6 w-full" />
+              <Skeleton className="h-6 w-64" />
             </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <p className="text-xs text-slate-500">Load Number</p>
+                <p className="text-white font-bold text-lg">{load?.loadNumber}</p>
+                {load?.biddingEnds && (
+                  <p className="text-xs text-yellow-400 flex items-center gap-1 mt-1">
+                    <Clock className="w-3 h-3" />Bidding ends in {load.biddingEnds}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Commodity</p>
+                <p className="text-white font-medium">{load?.commodity}</p>
+                {load?.hazmatClass && <p className="text-xs text-red-400">Hazmat Class {load.hazmatClass}</p>}
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Route</p>
+                <div className="flex items-center gap-1 text-sm">
+                  <MapPin className="w-3 h-3 text-green-400" />
+                  <span className="text-white">{load?.pickupLocation?.city}, {load?.pickupLocation?.state}</span>
+                  <ChevronRight className="w-3 h-3 text-slate-500" />
+                  <MapPin className="w-3 h-3 text-red-400" />
+                  <span className="text-white">{load?.deliveryLocation?.city}, {load?.deliveryLocation?.state}</span>
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{load?.distance} miles</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Target Rate</p>
+                <p className="text-green-400 font-bold text-xl">${load?.rate?.toLocaleString()}</p>
+                {load?.suggestedRateMin && load?.suggestedRateMax && (
+                  <p className="text-xs text-slate-500">Suggested: ${load.suggestedRateMin.toLocaleString()} - ${load.suggestedRateMax.toLocaleString()}</p>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Submit Bid */}
+        <Card className="bg-slate-800/50 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-400" />Submit Bid
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-4">
               <div>
-                <p className="text-xs text-slate-400">Commodity</p>
-                <p className="text-white font-medium">{MOCK_LOAD.commodity}</p>
-                <p className="text-xs text-slate-500">{MOCK_LOAD.unNumber} • Class {MOCK_LOAD.hazardClass}</p>
+                <p className="text-sm text-slate-400 mb-2">Your Bid Amount</p>
+                <div className="relative">
+                  <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <Input
+                    type="number"
+                    value={bidAmount}
+                    onChange={(e) => setBidAmount(e.target.value)}
+                    placeholder="Enter amount"
+                    className="pl-9 bg-slate-700/50 border-slate-600 text-lg"
+                  />
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-slate-400">Route</p>
-                <p className="text-white font-medium">{MOCK_LOAD.origin}</p>
-                <p className="text-xs text-slate-500">→ {MOCK_LOAD.destination} ({MOCK_LOAD.distance} mi)</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400">Your Target Rate</p>
-                <p className="text-white font-medium text-lg">${MOCK_LOAD.targetRate.toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-slate-400 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-purple-400" />
-                  AI Suggested
-                </p>
-                <p className="text-white font-medium">
-                  ${MOCK_LOAD.suggestedRate.min.toLocaleString()} - ${MOCK_LOAD.suggestedRate.max.toLocaleString()}
-                </p>
-              </div>
+              {bidAmount && load?.distance && (
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-400">Rate per mile</span>
+                    <span className="text-white">${(parseFloat(bidAmount) / load.distance).toFixed(2)}/mi</span>
+                  </div>
+                </div>
+              )}
+              <Button className="w-full bg-green-600 hover:bg-green-700" onClick={handleSubmitBid} disabled={submitBidMutation.isPending}>
+                {submitBidMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <DollarSign className="w-4 h-4 mr-2" />}
+                Submit Bid
+              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Bids Section */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-white">
-            {bids.length} Bids Received
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" className="border-slate-600">
-              <Filter className="w-4 h-4 mr-1" />
-              Filter
-            </Button>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-slate-700 border-slate-600 text-white rounded-md px-3 py-1.5 text-sm"
-            >
-              <option value="price">Sort by Price</option>
-              <option value="rating">Sort by Rating</option>
-              <option value="eta">Sort by ETA</option>
-            </select>
-            <Button variant="outline" size="sm" className="border-slate-600">
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Bid Cards */}
-        <div className="space-y-4">
-          {sortedBids.map((bid) => (
-            <BidCard
-              key={bid.id}
-              bid={bid}
-              targetRate={MOCK_LOAD.targetRate}
-              onAccept={handleAcceptBid}
-              onReject={handleRejectBid}
-              onCounter={handleCounterBid}
-              onMessage={(id) => toast.info("Opening message thread...")}
-              isShipperView={true}
-            />
-          ))}
-        </div>
-
-        {bids.length === 0 && (
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="py-12 text-center">
-              <AlertTriangle className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-              <p className="text-slate-400">No bids received yet</p>
-              <p className="text-sm text-slate-500 mt-1">
-                Carriers are reviewing your load. Check back soon.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        {/* Bids List */}
+        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-white">All Bids ({bidsQuery.data?.length || 0})</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {bidsQuery.isLoading ? (
+              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+            ) : bidsQuery.data?.length === 0 ? (
+              <div className="text-center py-8">
+                <DollarSign className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No bids yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bidsQuery.data?.map((bid) => (
+                  <div key={bid.id} className={cn("flex items-center justify-between p-4 rounded-lg border", bid.status === "accepted" ? "bg-green-500/10 border-green-500/30" : "bg-slate-700/30 border-slate-700")}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                        <Building className="w-5 h-5 text-slate-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{bid.carrierName}</p>
+                        <div className="flex items-center gap-2 text-xs text-slate-500">
+                          <Star className="w-3 h-3 text-yellow-400" />{bid.carrierRating}
+                          <span>MC# {bid.carrierMC}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-green-400 font-bold text-lg">${bid.amount?.toLocaleString()}</p>
+                        <p className="text-xs text-slate-500">${bid.ratePerMile?.toFixed(2)}/mi</p>
+                      </div>
+                      <Badge className={getStatusColor(bid.status)}>{bid.status}</Badge>
+                      {bid.status === "pending" && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" className="border-red-500/50 text-red-400" onClick={() => rejectBidMutation.mutate({ bidId: bid.id })} disabled={rejectBidMutation.isPending}>
+                            {rejectBidMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                          </Button>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => acceptBidMutation.mutate({ bidId: bid.id })} disabled={acceptBidMutation.isPending}>
+                            {acceptBidMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
