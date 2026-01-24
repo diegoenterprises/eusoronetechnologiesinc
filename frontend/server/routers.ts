@@ -62,6 +62,8 @@ import { vendorsRouter } from "./routers/vendors";
 import { contractsRouter } from "./routers/contracts";
 import { accountingRouter } from "./routers/accounting";
 import { certificationsRouter } from "./routers/certifications";
+import { drugTestingRouter } from "./routers/drugTesting";
+import { accidentsRouter } from "./routers/accidents";
 
 export const appRouter = router({
   system: systemRouter,
@@ -250,6 +252,12 @@ export const appRouter = router({
 
   // Certifications & Compliance
   certifications: certificationsRouter,
+
+  // Drug & Alcohol Testing
+  drugTesting: drugTestingRouter,
+
+  // Accident Reporting
+  accidents: accidentsRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
