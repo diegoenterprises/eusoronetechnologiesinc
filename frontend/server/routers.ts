@@ -36,6 +36,8 @@ import { incidentsRouter } from "./routers/incidents";
 import { weatherRouter } from "./routers/weather";
 import { geolocationRouter } from "./routers/geolocation";
 import { ergRouter } from "./routers/erg";
+import { appointmentsRouter } from "./routers/appointments";
+import { permitsRouter } from "./routers/permits";
 
 export const appRouter = router({
   system: systemRouter,
@@ -146,6 +148,12 @@ export const appRouter = router({
 
   // ERG 2024 Hazmat Reference
   erg: ergRouter,
+
+  // Appointment Scheduling
+  appointments: appointmentsRouter,
+
+  // Oversize/Overweight Permits
+  permits: permitsRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
