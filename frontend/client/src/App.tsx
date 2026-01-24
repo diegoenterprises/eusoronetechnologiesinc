@@ -101,6 +101,7 @@ import DriverOnboarding from "./pages/DriverOnboarding";
 import AccidentReport from "./pages/AccidentReport";
 import CarrierVettingDetails from "./pages/CarrierVettingDetails";
 import MessagingCenter from "./pages/MessagingCenter";
+import LoadDetails from "./pages/LoadDetails";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -387,6 +388,16 @@ function Router() {
       <Route path={"/chat"} component={() => (
         <DashboardLayout>
           <MessagingCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/load/:loadId"} component={() => (
+        <DashboardLayout>
+          <LoadDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/loads/:loadId/details"} component={() => (
+        <DashboardLayout>
+          <LoadDetails />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
