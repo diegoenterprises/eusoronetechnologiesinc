@@ -1,338 +1,193 @@
 /**
- * FLEET PAGE - CARRIER ROLE
- * Vehicle fleet management with maintenance tracking and availability status
+ * FLEET PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  Truck, Plus, Search, Filter, CheckCircle, AlertCircle,
-  XCircle, Wrench, Calendar, MapPin, Activity, Eye,
-  Edit, Trash2, FileText, TrendingUp
-} from "lucide-react";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import {
+  Truck, Search, Plus, Eye, MapPin, CheckCircle,
+  Wrench, AlertTriangle
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
-type VehicleStatus = "available" | "in_use" | "maintenance" | "out_of_service";
+export default function Fleet() {
+  const [, setLocation] = useLocation();
+  const [searchTerm, setSearchTerm] = useState("");
 
-interface Vehicle {
-  id: number;
-  number: string;
-  type: string;
-  make: string;
-  model: string;
-  year: number;
-  vin: string;
-  status: VehicleStatus;
-  mileage: number;
-  lastMaintenance: Date;
-  nextMaintenance: number;
-  currentDriver: string | null;
-  location: string;
-}
+  const fleetQuery = trpc.fleet.list.useQuery({ limit: 50 });
 
-export default function FleetPage() {
-  const { user } = useAuth();
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-
-  // Mock fleet data - in production, fetch from database
-  const vehicles: Vehicle[] = [
-    {
-      id: 1,
-      number: "TRK-001",
-      type: "Semi-Truck",
-      make: "Freightliner",
-      model: "Cascadia",
-      year: 2022,
-      vin: "1FUJGHDV8NLFK1234",
-      status: "in_use",
-      mileage: 45000,
-      lastMaintenance: new Date(2024, 10, 1),
-      nextMaintenance: 50000,
-      currentDriver: "John Smith",
-      location: "Houston, TX"
-    },
-    {
-      id: 2,
-      number: "TRK-002",
-      type: "Semi-Truck",
-      make: "Kenworth",
-      model: "T680",
-      year: 2023,
-      vin: "1XKYDP9X5NJ123456",
-      status: "available",
-      mileage: 32000,
-      lastMaintenance: new Date(2024, 10, 15),
-      nextMaintenance: 40000,
-      currentDriver: null,
-      location: "Dallas, TX"
-    },
-    {
-      id: 3,
-      number: "TRK-003",
-      type: "Box Truck",
-      make: "International",
-      model: "MV607",
-      year: 2021,
-      vin: "3HAMMAAR2ML123456",
-      status: "maintenance",
-      mileage: 67000,
-      lastMaintenance: new Date(2024, 10, 20),
-      nextMaintenance: 70000,
-      currentDriver: null,
-      location: "Service Center - Austin, TX"
-    },
-    {
-      id: 4,
-      number: "TRK-004",
-      type: "Semi-Truck",
-      make: "Peterbilt",
-      model: "579",
-      year: 2022,
-      vin: "1XPBDP9X4ND123456",
-      status: "in_use",
-      mileage: 52000,
-      lastMaintenance: new Date(2024, 9, 25),
-      nextMaintenance: 60000,
-      currentDriver: "Mike Johnson",
-      location: "San Antonio, TX"
-    },
-  ];
-
-  const getStatusBadge = (status: VehicleStatus) => {
-    const badges: Record<VehicleStatus, { label: string; color: string; icon: any }> = {
-      available: { label: "Available", color: "bg-green-600", icon: CheckCircle },
-      in_use: { label: "In Use", color: "bg-blue-600", icon: Activity },
-      maintenance: { label: "Maintenance", color: "bg-yellow-600", icon: Wrench },
-      out_of_service: { label: "Out of Service", color: "bg-red-600", icon: XCircle },
-    };
-    return badges[status];
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "active": return <Badge className="bg-green-500/20 text-green-400 border-0">Active</Badge>;
+      case "maintenance": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Maintenance</Badge>;
+      case "inactive": return <Badge className="bg-red-500/20 text-red-400 border-0">Inactive</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
+    }
   };
 
-  const getMaintenanceStatus = (vehicle: Vehicle): { status: string; color: string } => {
-    const remaining = vehicle.nextMaintenance - vehicle.mileage;
-    if (remaining < 1000) return { status: "Due Soon", color: "text-red-400" };
-    if (remaining < 3000) return { status: "Upcoming", color: "text-yellow-400" };
-    return { status: "On Schedule", color: "text-green-400" };
-  };
-
-  const handleAddVehicle = () => {
-    toast.info("Add vehicle form (Feature coming soon)");
-  };
-
-  const handleEditVehicle = (vehicleId: number) => {
-    toast.info(`Edit vehicle #${vehicleId} (Feature coming soon)`);
-  };
-
-  const handleScheduleMaintenance = (vehicleId: number) => {
-    toast.success("Maintenance scheduled (Feature coming soon)");
-  };
-
-  const filteredVehicles = vehicles.filter(vehicle => {
-    const matchesSearch = searchQuery === "" || 
-      vehicle.number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      vehicle.model.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || vehicle.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const filteredVehicles = fleetQuery.data?.vehicles?.filter((vehicle: any) => {
+    return !searchTerm || 
+      vehicle.unitNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const statusCounts = {
-    available: vehicles.filter(v => v.status === "available").length,
-    in_use: vehicles.filter(v => v.status === "in_use").length,
-    maintenance: vehicles.filter(v => v.status === "maintenance").length,
-    out_of_service: vehicles.filter(v => v.status === "out_of_service").length,
-  };
+  const totalVehicles = fleetQuery.data?.vehicles?.length || 0;
+  const activeVehicles = fleetQuery.data?.vehicles?.filter((v: any) => v.status === "active").length || 0;
+  const maintenanceVehicles = fleetQuery.data?.vehicles?.filter((v: any) => v.status === "maintenance").length || 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-500 to-teal-500 bg-clip-text text-transparent mb-2">
-                Fleet Management
-              </h1>
-              <p className="text-gray-400 text-lg">Manage your vehicle fleet and maintenance schedules</p>
-            </div>
-            <Button
-              onClick={handleAddVehicle}
-              className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Vehicle
-            </Button>
-          </div>
-
-          {/* Status Summary */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card className="bg-green-900/20 border-green-700 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Available</p>
-                  <p className="text-3xl font-bold text-green-400">{statusCounts.available}</p>
-                </div>
-                <CheckCircle className="w-8 h-8 text-green-500" />
-              </div>
-            </Card>
-            <Card className="bg-blue-900/20 border-blue-700 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">In Use</p>
-                  <p className="text-3xl font-bold text-blue-400">{statusCounts.in_use}</p>
-                </div>
-                <Activity className="w-8 h-8 text-blue-500" />
-              </div>
-            </Card>
-            <Card className="bg-yellow-900/20 border-yellow-700 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Maintenance</p>
-                  <p className="text-3xl font-bold text-yellow-400">{statusCounts.maintenance}</p>
-                </div>
-                <Wrench className="w-8 h-8 text-yellow-500" />
-              </div>
-            </Card>
-            <Card className="bg-gray-900/50 border-gray-800 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm mb-1">Total Fleet</p>
-                  <p className="text-3xl font-bold text-white">{vehicles.length}</p>
-                </div>
-                <Truck className="w-8 h-8 text-gray-500" />
-              </div>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search by vehicle number, make, or model..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-900/50 border-gray-800"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg text-white"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="available">Available</option>
-              <option value="in_use">In Use</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="out_of_service">Out of Service</option>
-            </select>
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Fleet
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Manage your vehicles and equipment</p>
         </div>
-
-        {/* Vehicle List */}
-        <div className="grid gap-4">
-          {filteredVehicles.map((vehicle) => {
-            const statusBadge = getStatusBadge(vehicle.status);
-            const StatusIcon = statusBadge.icon;
-            const maintenanceStatus = getMaintenanceStatus(vehicle);
-
-            return (
-              <Card key={vehicle.id} className="bg-gray-900/50 border-gray-800 p-6 hover:border-cyan-500/50 transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-16 h-16 rounded-lg ${statusBadge.color}/20 flex items-center justify-center`}>
-                      <Truck className={`w-8 h-8 ${statusBadge.color.replace('bg-', 'text-')}`} />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-xl font-bold">{vehicle.number}</h3>
-                        <Badge className={`${statusBadge.color} text-white`}>
-                          <StatusIcon className="w-3 h-3 mr-1" />
-                          {statusBadge.label}
-                        </Badge>
-                      </div>
-                      <p className="text-gray-400">{vehicle.year} {vehicle.make} {vehicle.model}</p>
-                      <p className="text-sm text-gray-500">{vehicle.type} • VIN: {vehicle.vin}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleEditVehicle(vehicle.id)}
-                      className="border-gray-700 hover:border-cyan-500"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-700 hover:border-blue-500"
-                    >
-                      <Eye className="w-4 h-4 mr-2" />
-                      Details
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 mb-4">
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Current Mileage</p>
-                    <p className="font-semibold text-lg">{vehicle.mileage.toLocaleString()} mi</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Next Maintenance</p>
-                    <p className={`font-semibold text-lg ${maintenanceStatus.color}`}>
-                      {vehicle.nextMaintenance.toLocaleString()} mi
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">{maintenanceStatus.status}</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Current Driver</p>
-                    <p className="font-semibold">{vehicle.currentDriver || "Unassigned"}</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1 flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      Location
-                    </p>
-                    <p className="font-semibold text-sm">{vehicle.location}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-gray-800">
-                  <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      Last service: {vehicle.lastMaintenance.toLocaleDateString()}
-                    </span>
-                    <span>•</span>
-                    <span>
-                      {(vehicle.nextMaintenance - vehicle.mileage).toLocaleString()} mi until next service
-                    </span>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleScheduleMaintenance(vehicle.id)}
-                    variant="outline"
-                    className="border-gray-700 hover:border-yellow-500"
-                  >
-                    <Wrench className="w-4 h-4 mr-2" />
-                    Schedule Maintenance
-                  </Button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet/add")}>
+          <Plus className="w-4 h-4 mr-2" />Add Vehicle
+        </Button>
       </div>
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Truck className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {fleetQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{totalVehicles}</p>
+                )}
+                <p className="text-xs text-slate-400">Total Vehicles</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {fleetQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{activeVehicles}</p>
+                )}
+                <p className="text-xs text-slate-400">Active</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Wrench className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                {fleetQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">{maintenanceVehicles}</p>
+                )}
+                <p className="text-xs text-slate-400">Maintenance</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-red-500/20">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                {fleetQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-red-400">{fleetQuery.data?.vehicles?.filter((v: any) => v.status === "inactive").length || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Inactive</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search vehicles..."
+          className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+        />
+      </div>
+
+      {/* Vehicles List */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardContent className="p-0">
+          {fleetQuery.isLoading ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : filteredVehicles?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <Truck className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No vehicles found</p>
+              <p className="text-slate-500 text-sm mt-1">Add your first vehicle to get started</p>
+              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet/add")}>
+                <Plus className="w-4 h-4 mr-2" />Add Vehicle
+              </Button>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {filteredVehicles?.map((vehicle: any) => (
+                <div key={vehicle.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-3 rounded-xl", vehicle.status === "active" ? "bg-green-500/20" : vehicle.status === "maintenance" ? "bg-yellow-500/20" : "bg-red-500/20")}>
+                        <Truck className={cn("w-6 h-6", vehicle.status === "active" ? "text-green-400" : vehicle.status === "maintenance" ? "text-yellow-400" : "text-red-400")} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-medium">{vehicle.unitNumber}</p>
+                          {getStatusBadge(vehicle.status)}
+                        </div>
+                        <p className="text-sm text-slate-400">{vehicle.make} {vehicle.model} {vehicle.year}</p>
+                        <p className="text-xs text-slate-500">VIN: {vehicle.vin}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {vehicle.currentLocation && (
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {vehicle.currentLocation.city}, {vehicle.currentLocation.state}
+                        </span>
+                      )}
+                      <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation(`/fleet/${vehicle.id}`)}>
+                        <Eye className="w-4 h-4 mr-1" />View
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
