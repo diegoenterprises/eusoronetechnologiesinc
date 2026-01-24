@@ -9,66 +9,53 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import {
-  Activity, Search, User, Clock, Download, Eye,
-  Shield, FileText, Settings, AlertTriangle,
-  ChevronLeft, ChevronRight
+  FileText, User, Clock, Search, Download, Filter,
+  Eye, Edit, Trash2, Plus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState("all");
-  const [userFilter, setUserFilter] = useState("all");
-  const [page, setPage] = useState(1);
 
-  const logsQuery = trpc.audit.getLogs.useQuery({
-    search: searchTerm || undefined,
-    action: actionFilter !== "all" ? actionFilter : undefined,
-    userId: userFilter !== "all" ? userFilter : undefined,
-    page,
-    limit: 50,
-  });
-  const usersQuery = trpc.audit.getUsers.useQuery();
-  const summaryQuery = trpc.audit.getSummary.useQuery();
+  const logsQuery = trpc.admin.getAuditLogs.useQuery({ limit: 100 });
+  const summaryQuery = trpc.admin.getAuditSummary.useQuery();
 
-  if (logsQuery.error) {
-    return (
-      <div className="p-6 text-center">
-        <div className="p-4 rounded-full bg-red-500/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-red-400" />
-        </div>
-        <p className="text-red-400 mb-4">Error loading audit logs</p>
-        <Button className="bg-slate-700 hover:bg-slate-600" onClick={() => logsQuery.refetch()}>Retry</Button>
-      </div>
-    );
-  }
-
-  const getActionColor = (action: string) => {
-    switch (action) {
-      case "create": return "bg-green-500/20 text-green-400";
-      case "update": return "bg-blue-500/20 text-blue-400";
-      case "delete": return "bg-red-500/20 text-red-400";
-      case "login": return "bg-purple-500/20 text-purple-400";
-      case "logout": return "bg-slate-500/20 text-slate-400";
-      case "view": return "bg-yellow-500/20 text-yellow-400";
-      default: return "bg-slate-500/20 text-slate-400";
-    }
-  };
+  const summary = summaryQuery.data;
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case "create": return FileText;
-      case "update": return Settings;
-      case "delete": return AlertTriangle;
-      case "login": case "logout": return User;
-      case "view": return Eye;
-      default: return Activity;
+      case "create": return <Plus className="w-4 h-4 text-green-400" />;
+      case "update": return <Edit className="w-4 h-4 text-blue-400" />;
+      case "delete": return <Trash2 className="w-4 h-4 text-red-400" />;
+      case "view": return <Eye className="w-4 h-4 text-slate-400" />;
+      default: return <FileText className="w-4 h-4 text-slate-400" />;
     }
   };
+
+  const getActionBadge = (action: string) => {
+    switch (action) {
+      case "create": return <Badge className="bg-green-500/20 text-green-400 border-0">Create</Badge>;
+      case "update": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Update</Badge>;
+      case "delete": return <Badge className="bg-red-500/20 text-red-400 border-0">Delete</Badge>;
+      case "view": return <Badge className="bg-slate-500/20 text-slate-400 border-0">View</Badge>;
+      case "login": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Login</Badge>;
+      case "logout": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Logout</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{action}</Badge>;
+    }
+  };
+
+  const filteredLogs = logsQuery.data?.filter((log: any) => {
+    const matchesSearch = !searchTerm || 
+      log.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.resource?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesAction = actionFilter === "all" || log.action === actionFilter;
+    return matchesSearch && matchesAction;
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -78,10 +65,10 @@ export default function AuditLogs() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
             Audit Logs
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Track all system activities and changes</p>
+          <p className="text-slate-400 text-sm mt-1">System activity and user action history</p>
         </div>
-        <Button className="bg-slate-700 hover:bg-slate-600 border border-slate-600">
-          <Download className="w-4 h-4 mr-2" />Export Logs
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+          <Download className="w-4 h-4 mr-2" />Export
         </Button>
       </div>
 
@@ -91,13 +78,13 @@ export default function AuditLogs() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-blue-500/20">
-                <Activity className="w-6 h-6 text-blue-400" />
+                <FileText className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{summaryQuery.data?.totalEvents?.toLocaleString() || 0}</p>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{summary?.totalLogs || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">Total Events</p>
+                <p className="text-xs text-slate-400">Total Logs</p>
               </div>
             </div>
           </CardContent>
@@ -107,13 +94,13 @@ export default function AuditLogs() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
-                <Clock className="w-6 h-6 text-green-400" />
+                <Plus className="w-6 h-6 text-green-400" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{summaryQuery.data?.todayEvents || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{summary?.creates || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">Today</p>
+                <p className="text-xs text-slate-400">Creates</p>
               </div>
             </div>
           </CardContent>
@@ -122,14 +109,14 @@ export default function AuditLogs() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-purple-500/20">
-                <User className="w-6 h-6 text-purple-400" />
+              <div className="p-3 rounded-full bg-cyan-500/20">
+                <Edit className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-purple-400">{summaryQuery.data?.activeUsers || 0}</p>
+                  <p className="text-2xl font-bold text-cyan-400">{summary?.updates || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">Active Users</p>
+                <p className="text-xs text-slate-400">Updates</p>
               </div>
             </div>
           </CardContent>
@@ -138,14 +125,14 @@ export default function AuditLogs() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-orange-500/20">
-                <Shield className="w-6 h-6 text-orange-400" />
+              <div className="p-3 rounded-full bg-red-500/20">
+                <Trash2 className="w-6 h-6 text-red-400" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-orange-400">{summaryQuery.data?.securityEvents || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{summary?.deletes || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">Security Events</p>
+                <p className="text-xs text-slate-400">Deletes</p>
               </div>
             </div>
           </CardContent>
@@ -153,96 +140,84 @@ export default function AuditLogs() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input 
-            value={searchTerm} 
-            onChange={(e) => setSearchTerm(e.target.value)} 
-            placeholder="Search logs..." 
-            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50" 
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by user or resource..."
+            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
           />
         </div>
         <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-36 bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue placeholder="Action" /></SelectTrigger>
+          <SelectTrigger className="w-40 bg-slate-800/50 border-slate-700/50 rounded-lg">
+            <Filter className="w-4 h-4 mr-2" />
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Actions</SelectItem>
             <SelectItem value="create">Create</SelectItem>
             <SelectItem value="update">Update</SelectItem>
             <SelectItem value="delete">Delete</SelectItem>
-            <SelectItem value="login">Login</SelectItem>
-            <SelectItem value="logout">Logout</SelectItem>
             <SelectItem value="view">View</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={userFilter} onValueChange={setUserFilter}>
-          <SelectTrigger className="w-48 bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue placeholder="User" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Users</SelectItem>
-            {usersQuery.data?.map(u => (
-              <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
-            ))}
+            <SelectItem value="login">Login</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Logs List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-        <CardContent className="p-0">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg">Activity Log</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0 max-h-[600px] overflow-y-auto">
           {logsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : logsQuery.data?.logs?.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Activity className="w-8 h-8 text-slate-500" />
+          ) : filteredLogs?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <FileText className="w-10 h-10 text-slate-500" />
               </div>
-              <p className="text-slate-400">No audit logs found</p>
-              <p className="text-slate-500 text-sm mt-1">Try adjusting your filters</p>
+              <p className="text-slate-400 text-lg">No logs found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {logsQuery.data?.logs?.map((log) => {
-                const ActionIcon = getActionIcon(log.action);
-                return (
-                  <div key={log.id} className="flex items-center justify-between p-4 hover:bg-slate-700/20 transition-colors">
+              {filteredLogs?.map((log: any) => (
+                <div key={log.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-2 rounded-full", getActionColor(log.action))}>
-                        <ActionIcon className="w-5 h-5" />
+                      <div className={cn("p-2 rounded-full", log.action === "create" ? "bg-green-500/20" : log.action === "update" ? "bg-blue-500/20" : log.action === "delete" ? "bg-red-500/20" : "bg-slate-700/50")}>
+                        {getActionIcon(log.action)}
                       </div>
                       <div>
-                        <p className="text-white">{log.description}</p>
-                        <div className="flex items-center gap-3 text-sm text-slate-400">
-                          <span className="flex items-center gap-1"><User className="w-3 h-3" />{log.userName}</span>
-                          <span>{log.resource}</span>
-                          {log.ipAddress && <span className="text-slate-500">{log.ipAddress}</span>}
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-medium">{log.description}</p>
+                          {getActionBadge(log.action)}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {log.userName}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {log.timestamp}
+                          </span>
+                          <span>Resource: {log.resource}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <Badge className={cn("border-0", getActionColor(log.action))}>{log.action}</Badge>
-                      <span className="text-sm text-slate-500">{log.timestamp}</span>
-                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white"><Eye className="w-4 h-4" /></Button>
+                    <div className="text-right">
+                      <p className="text-xs text-slate-500">{log.ipAddress}</p>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Pagination */}
-      {logsQuery.data?.totalPages && logsQuery.data.totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" className="bg-slate-800/50 border-slate-700/50 rounded-lg" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-          <span className="text-slate-400 px-4">Page {page} of {logsQuery.data.totalPages}</span>
-          <Button variant="outline" size="sm" className="bg-slate-800/50 border-slate-700/50 rounded-lg" onClick={() => setPage(p => p + 1)} disabled={page >= logsQuery.data.totalPages}>
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
