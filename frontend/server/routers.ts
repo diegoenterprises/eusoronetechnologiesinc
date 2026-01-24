@@ -42,6 +42,9 @@ import { facilitiesRouter } from "./routers/facilities";
 import { catalystsRouter } from "./routers/catalysts";
 import { adminRouter } from "./routers/admin";
 import { supportRouter } from "./routers/support";
+import { profileRouter } from "./routers/profile";
+import { settingsRouter } from "./routers/settings";
+import { walletRouter } from "./routers/wallet";
 
 export const appRouter = router({
   system: systemRouter,
@@ -170,6 +173,15 @@ export const appRouter = router({
 
   // Support & Help Center
   support: supportRouter,
+
+  // User Profile
+  profile: profileRouter,
+
+  // User Settings
+  settings: settingsRouter,
+
+  // EusoWallet Digital Payments
+  wallet: walletRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
