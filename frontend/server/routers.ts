@@ -29,6 +29,7 @@ import { terminalsRouter } from "./routers/terminals";
 import { escortsRouter } from "./routers/escorts";
 import { driversRouter } from "./routers/drivers";
 import { analyticsRouter } from "./routers/analytics";
+import { carriersRouter } from "./routers/carriers";
 
 export const appRouter = router({
   system: systemRouter,
@@ -118,6 +119,9 @@ export const appRouter = router({
 
   // Analytics & Reporting
   analytics: analyticsRouter,
+
+  // Carrier Management
+  carriers: carriersRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
