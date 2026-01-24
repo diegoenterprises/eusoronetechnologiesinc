@@ -1,5 +1,5 @@
 /**
- * PRE-TRIP INSPECTION PAGE
+ * PRE-TRIP INSPECTION PAGE (DVIR)
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
@@ -7,235 +7,170 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  CheckCircle, XCircle, AlertTriangle, Truck, FileText,
-  Send, Loader2, Clock
+  ClipboardCheck, CheckCircle, XCircle, AlertTriangle,
+  Truck, Camera, Send
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLocation } from "wouter";
 
-interface InspectionItem {
-  id: string;
-  name: string;
-  required: boolean;
-}
-
-interface InspectionCategory {
-  id: string;
-  name: string;
-  items: InspectionItem[];
-}
+const INSPECTION_CATEGORIES = [
+  { id: "brakes", name: "Brakes", items: ["Service Brakes", "Parking Brake", "Brake Lines", "Air Compressor"] },
+  { id: "tires", name: "Tires & Wheels", items: ["Tire Condition", "Tire Pressure", "Lug Nuts", "Wheel Seals"] },
+  { id: "lights", name: "Lights & Reflectors", items: ["Headlights", "Tail Lights", "Turn Signals", "Reflectors"] },
+  { id: "steering", name: "Steering", items: ["Steering Wheel", "Power Steering", "Tie Rods", "Steering Column"] },
+  { id: "fluids", name: "Fluids", items: ["Engine Oil", "Coolant", "Transmission Fluid", "Windshield Washer"] },
+  { id: "safety", name: "Safety Equipment", items: ["Fire Extinguisher", "Triangles", "First Aid Kit", "Spare Fuses"] },
+];
 
 export default function PreTripInspection() {
-  const [selectedDefects, setSelectedDefects] = useState<string[]>([]);
+  const [, setLocation] = useLocation();
+  const [inspectionResults, setInspectionResults] = useState<Record<string, "pass" | "fail" | null>>({});
   const [notes, setNotes] = useState("");
 
-  const templateQuery = trpc.inspections.getTemplate.useQuery({ type: "pre_trip" });
+  const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
+  const previousQuery = trpc.inspections.getPrevious.useQuery();
 
   const submitMutation = trpc.inspections.submit.useMutation({
-    onSuccess: () => {
-      toast.success("Pre-trip inspection submitted");
-      setSelectedDefects([]);
-      setNotes("");
-    },
-    onError: (error: { message: string }) => toast.error("Submission failed", { description: error.message }),
+    onSuccess: () => { toast.success("Inspection submitted"); setLocation("/driver"); },
+    onError: (error) => toast.error("Failed to submit inspection", { description: error.message }),
   });
 
-  const toggleDefect = (defectId: string) => {
-    setSelectedDefects(prev =>
-      prev.includes(defectId) ? prev.filter(d => d !== defectId) : [...prev, defectId]
-    );
+  const vehicle = vehicleQuery.data;
+
+  const handleItemResult = (itemId: string, result: "pass" | "fail") => {
+    setInspectionResults((prev) => ({ ...prev, [itemId]: result }));
   };
 
-  const handleSubmit = () => {
-    const items = templateQuery.data?.categories?.flatMap((cat: InspectionCategory) =>
-      cat.items.map((item: InspectionItem) => ({
-        id: item.id,
-        category: cat.id,
-        name: item.name,
-        status: selectedDefects.includes(item.id) ? "fail" as const : "pass" as const,
-        notes: "",
-      }))
-    ) || [];
+  const getCompletionPercentage = () => {
+    const totalItems = INSPECTION_CATEGORIES.reduce((acc, cat) => acc + cat.items.length, 0);
+    const completedItems = Object.keys(inspectionResults).length;
+    return Math.round((completedItems / totalItems) * 100);
+  };
 
+  const hasDefects = Object.values(inspectionResults).some((r) => r === "fail");
+
+  const handleSubmit = () => {
+    if (getCompletionPercentage() < 100) {
+      toast.error("Please complete all inspection items");
+      return;
+    }
     submitMutation.mutate({
-      vehicleId: "current",
-      type: "pre_trip",
-      odometer: 0,
-      items,
-      defectsFound: selectedDefects.length > 0,
-      safeToOperate: selectedDefects.length === 0,
-      driverSignature: "digital",
+      vehicleId: vehicle?.id,
+      results: inspectionResults,
       notes,
+      hasDefects,
     });
   };
 
-  const totalItems = templateQuery.data?.categories?.reduce((acc: number, cat: InspectionCategory) => acc + cat.items.length, 0) || 0;
-
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-6 max-w-3xl mx-auto">
       {/* Header with Gradient Title */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-            Pre-Trip Inspection
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Complete before starting your trip</p>
-        </div>
-        <div className="flex items-center gap-2 text-slate-400">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm">{new Date().toLocaleDateString()}</span>
-        </div>
+      <div className="text-center">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+          Pre-Trip Inspection
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">Driver Vehicle Inspection Report (DVIR)</p>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-500/20">
-                <FileText className="w-6 h-6 text-blue-400" />
+      {/* Vehicle Info */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardContent className="p-4">
+          {vehicleQuery.isLoading ? (
+            <Skeleton className="h-16 w-full rounded-xl" />
+          ) : (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-cyan-500/20">
+                  <Truck className="w-6 h-6 text-cyan-400" />
+                </div>
+                <div>
+                  <p className="text-white font-bold">{vehicle?.unitNumber}</p>
+                  <p className="text-sm text-slate-400">{vehicle?.make} {vehicle?.model} • {vehicle?.year}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-blue-400">{totalItems}</p>
-                <p className="text-xs text-slate-400">Total Items</p>
+              <div className="text-right">
+                <p className="text-sm text-slate-400">Odometer</p>
+                <p className="text-white font-medium">{vehicle?.odometer?.toLocaleString()} mi</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-green-500/20">
-                <CheckCircle className="w-6 h-6 text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-green-400">{totalItems - selectedDefects.length}</p>
-                <p className="text-xs text-slate-400">Passed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-red-500/20">
-                <XCircle className="w-6 h-6 text-red-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-red-400">{selectedDefects.length}</p>
-                <p className="text-xs text-slate-400">Defects</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Current Vehicle */}
-      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 rounded-xl">
-        <CardContent className="p-5">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-blue-500/20">
-              <Truck className="w-8 h-8 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-white font-bold text-lg">Current Vehicle</p>
-              <p className="text-slate-400 text-sm">Complete inspection before departure</p>
-            </div>
+      {/* Progress */}
+      <Card className="bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border-cyan-500/30 rounded-xl">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-slate-400">Inspection Progress</span>
+            <span className="text-white font-bold">{getCompletionPercentage()}%</span>
+          </div>
+          <div className="w-full h-3 bg-slate-700 rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all" style={{ width: `${getCompletionPercentage()}%` }} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Inspection Checklist */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-white text-lg flex items-center gap-2">
-            <FileText className="w-5 h-5 text-cyan-400" />
-            Inspection Checklist
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-slate-400 mb-4 text-sm">Select any defects found during inspection:</p>
-
-          {templateQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : (
-            <div className="space-y-6 mb-6">
-              {templateQuery.data?.categories?.map((category: InspectionCategory) => (
-                <div key={category.id}>
-                  <h3 className="text-white font-medium mb-3 text-sm uppercase tracking-wide">{category.name}</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {category.items.map((item: InspectionItem) => (
-                      <Button
-                        key={item.id}
-                        variant="outline"
-                        className={cn(
-                          "h-auto py-3 justify-start text-sm rounded-xl transition-all",
-                          selectedDefects.includes(item.id)
-                            ? "bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30"
-                            : "bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 text-slate-300"
-                        )}
-                        onClick={() => toggleDefect(item.id)}
-                      >
-                        {selectedDefects.includes(item.id) ? (
-                          <XCircle className="w-4 h-4 mr-2 text-red-400 flex-shrink-0" />
-                        ) : (
-                          <CheckCircle className="w-4 h-4 mr-2 text-green-400 flex-shrink-0" />
-                        )}
-                        <span className="truncate">{item.name}</span>
-                      </Button>
-                    ))}
+      {/* Inspection Categories */}
+      {INSPECTION_CATEGORIES.map((category) => (
+        <Card key={category.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white text-lg">{category.name}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {category.items.map((item) => {
+              const itemId = `${category.id}_${item.toLowerCase().replace(/\s/g, "_")}`;
+              const result = inspectionResults[itemId];
+              
+              return (
+                <div key={itemId} className={cn("p-3 rounded-xl flex items-center justify-between", result === "pass" ? "bg-green-500/10 border border-green-500/20" : result === "fail" ? "bg-red-500/10 border border-red-500/20" : "bg-slate-700/30")}>
+                  <span className={cn("font-medium", result === "pass" ? "text-green-400" : result === "fail" ? "text-red-400" : "text-white")}>{item}</span>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant={result === "pass" ? "default" : "outline"} className={cn("rounded-lg", result === "pass" ? "bg-green-600 hover:bg-green-700" : "bg-slate-700/50 border-slate-600/50 hover:bg-green-500/20 hover:border-green-500/30")} onClick={() => handleItemResult(itemId, "pass")}>
+                      <CheckCircle className="w-4 h-4" />
+                    </Button>
+                    <Button size="sm" variant={result === "fail" ? "default" : "outline"} className={cn("rounded-lg", result === "fail" ? "bg-red-600 hover:bg-red-700" : "bg-slate-700/50 border-slate-600/50 hover:bg-red-500/20 hover:border-red-500/30")} onClick={() => handleItemResult(itemId, "fail")}>
+                      <XCircle className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </CardContent>
+        </Card>
+      ))}
 
-          <div className="mb-6">
-            <Textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Additional notes..."
-              className="bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-cyan-500/50"
-              rows={3}
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30 mb-6">
-            <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", selectedDefects.length === 0 ? "bg-green-500/20" : "bg-yellow-500/20")}>
-                {selectedDefects.length === 0 ? (
-                  <CheckCircle className="w-6 h-6 text-green-400" />
-                ) : (
-                  <AlertTriangle className="w-6 h-6 text-yellow-400" />
-                )}
-              </div>
-              <div>
-                <p className="text-white font-medium">
-                  {selectedDefects.length === 0 ? "No Defects Found" : `${selectedDefects.length} Defect(s) Found`}
-                </p>
-                <p className="text-sm text-slate-400">
-                  {selectedDefects.length === 0 ? "Vehicle is safe to operate" : "Defects will be reported"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <Button 
-            className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl h-12 text-base font-medium" 
-            onClick={handleSubmit} 
-            disabled={submitMutation.isPending}
-          >
-            {submitMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
-            Submit Pre-Trip Inspection
+      {/* Notes */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-white text-lg">Notes / Defects</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe any defects or issues found..." className="bg-slate-700/30 border-slate-600/50 rounded-xl min-h-[100px]" />
+          <Button variant="outline" className="mt-3 bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-lg">
+            <Camera className="w-4 h-4 mr-2" />Add Photo
           </Button>
         </CardContent>
       </Card>
+
+      {/* Submit */}
+      <div className="space-y-3">
+        {hasDefects && (
+          <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400" />
+            <span className="text-red-400">Defects found - vehicle may require maintenance</span>
+          </div>
+        )}
+        <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl py-6 text-lg" onClick={handleSubmit} disabled={submitMutation.isPending}>
+          <Send className="w-5 h-5 mr-2" />
+          Submit Inspection
+        </Button>
+      </div>
     </div>
   );
 }
