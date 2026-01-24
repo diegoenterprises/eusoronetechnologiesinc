@@ -99,6 +99,8 @@ import TerminalSCADA from "./pages/TerminalSCADA";
 import Leaderboard from "./pages/Leaderboard";
 import DriverOnboarding from "./pages/DriverOnboarding";
 import AccidentReport from "./pages/AccidentReport";
+import CarrierVettingDetails from "./pages/CarrierVettingDetails";
+import MessagingCenter from "./pages/MessagingCenter";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -365,6 +367,26 @@ function Router() {
       <Route path={"/safety/incident"} component={() => (
         <DashboardLayout>
           <AccidentReport />
+        </DashboardLayout>
+      )} />
+      <Route path={"/carrier/:carrierId"} component={() => (
+        <DashboardLayout>
+          <CarrierVettingDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/broker/carrier-vetting"} component={() => (
+        <DashboardLayout>
+          <CarrierVettingDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/messaging"} component={() => (
+        <DashboardLayout>
+          <MessagingCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/chat"} component={() => (
+        <DashboardLayout>
+          <MessagingCenter />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
