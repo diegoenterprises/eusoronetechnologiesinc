@@ -28,6 +28,7 @@ import { ratesRouter } from "./routers/rates";
 import { terminalsRouter } from "./routers/terminals";
 import { escortsRouter } from "./routers/escorts";
 import { driversRouter } from "./routers/drivers";
+import { analyticsRouter } from "./routers/analytics";
 
 export const appRouter = router({
   system: systemRouter,
@@ -114,6 +115,9 @@ export const appRouter = router({
 
   // Driver Management
   drivers: driversRouter,
+
+  // Analytics & Reporting
+  analytics: analyticsRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
