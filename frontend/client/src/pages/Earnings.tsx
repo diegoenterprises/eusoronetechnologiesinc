@@ -1,338 +1,196 @@
 /**
- * EARNINGS PAGE - CARRIER ROLE
- * Payment tracking, revenue reports, and financial analytics
+ * EARNINGS PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
-import {
-  DollarSign, TrendingUp, TrendingDown, Calendar, Download,
-  FileText, CheckCircle, Clock, XCircle, Package, BarChart3,
-  ArrowUp, ArrowDown, Filter, Search
-} from "lucide-react";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import {
+  DollarSign, TrendingUp, Clock, CheckCircle, Download,
+  ArrowUpRight, Calendar
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-type PaymentStatus = "paid" | "pending" | "overdue" | "disputed";
+export default function Earnings() {
+  const [activeTab, setActiveTab] = useState("all");
+  const [period, setPeriod] = useState("week");
 
-interface Earning {
-  id: number;
-  loadNumber: string;
-  shipper: string;
-  amount: number;
-  status: PaymentStatus;
-  completedDate: Date;
-  paidDate: Date | null;
-  dueDate: Date;
-}
+  const earningsQuery = trpc.earnings.getHistory.useQuery({ period });
+  const summaryQuery = trpc.earnings.getSummary.useQuery({ period });
 
-export default function EarningsPage() {
-  const { user } = useAuth();
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
-  const [timeRange, setTimeRange] = useState<string>("THIS_MONTH");
+  const summary = summaryQuery.data;
 
-  // Mock earnings data - in production, fetch from database
-  const earnings: Earning[] = [
-    {
-      id: 1,
-      loadNumber: "LD-2024-087",
-      shipper: "ABC Logistics",
-      amount: 4500,
-      status: "paid",
-      completedDate: new Date(2024, 10, 20),
-      paidDate: new Date(2024, 10, 22),
-      dueDate: new Date(2024, 10, 27)
-    },
-    {
-      id: 2,
-      loadNumber: "LD-2024-086",
-      shipper: "XYZ Freight",
-      amount: 3200,
-      status: "pending",
-      completedDate: new Date(2024, 10, 22),
-      paidDate: null,
-      dueDate: new Date(2024, 10, 29)
-    },
-    {
-      id: 3,
-      loadNumber: "LD-2024-085",
-      shipper: "Global Shipping Co",
-      amount: 5800,
-      status: "paid",
-      completedDate: new Date(2024, 10, 18),
-      paidDate: new Date(2024, 10, 20),
-      dueDate: new Date(2024, 10, 25)
-    },
-    {
-      id: 4,
-      loadNumber: "LD-2024-084",
-      shipper: "Prime Transport",
-      amount: 2900,
-      status: "overdue",
-      completedDate: new Date(2024, 10, 10),
-      paidDate: null,
-      dueDate: new Date(2024, 10, 17)
-    },
-    {
-      id: 5,
-      loadNumber: "LD-2024-083",
-      shipper: "Swift Logistics",
-      amount: 4100,
-      status: "paid",
-      completedDate: new Date(2024, 10, 16),
-      paidDate: new Date(2024, 10, 18),
-      dueDate: new Date(2024, 10, 23)
-    },
-  ];
-
-  const getStatusBadge = (status: PaymentStatus) => {
-    const badges: Record<PaymentStatus, { label: string; color: string; icon: any }> = {
-      paid: { label: "Paid", color: "bg-green-600", icon: CheckCircle },
-      pending: { label: "Pending", color: "bg-yellow-600", icon: Clock },
-      overdue: { label: "Overdue", color: "bg-red-600", icon: XCircle },
-      disputed: { label: "Disputed", color: "bg-orange-600", icon: FileText },
-    };
-    return badges[status];
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "paid": return <Badge className="bg-green-500/20 text-green-400 border-0">Paid</Badge>;
+      case "pending": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Pending</Badge>;
+      case "processing": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Processing</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
+    }
   };
-
-  const handleDownloadInvoice = (loadNumber: string) => {
-    toast.success(`Downloading invoice for ${loadNumber}...`);
-  };
-
-  const handleExportReport = () => {
-    toast.success("Exporting earnings report...");
-  };
-
-  const filteredEarnings = earnings.filter(earning => {
-    const matchesSearch = searchQuery === "" || 
-      earning.loadNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      earning.shipper.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "ALL" || earning.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const totalEarned = earnings.filter(e => e.status === "paid").reduce((sum, e) => sum + e.amount, 0);
-  const totalPending = earnings.filter(e => e.status === "pending").reduce((sum, e) => sum + e.amount, 0);
-  const totalOverdue = earnings.filter(e => e.status === "overdue").reduce((sum, e) => sum + e.amount, 0);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 bg-clip-text text-transparent mb-2">
-                Earnings & Payments
-              </h1>
-              <p className="text-gray-400 text-lg">Track your revenue and payment history</p>
-            </div>
-            <div className="flex gap-3">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(e.target.value)}
-                className="px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg text-white"
-              >
-                <option value="THIS_WEEK">This Week</option>
-                <option value="THIS_MONTH">This Month</option>
-                <option value="THIS_QUARTER">This Quarter</option>
-                <option value="THIS_YEAR">This Year</option>
-              </select>
-              <Button
-                onClick={handleExportReport}
-                variant="outline"
-                className="border-gray-800 hover:border-green-500"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Export Report
-              </Button>
-            </div>
-          </div>
-
-          {/* Summary Cards */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card className="bg-gradient-to-br from-green-900/30 to-emerald-900/20 border-green-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-full bg-green-600/20 flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-green-500" />
-                </div>
-                <Badge className="bg-green-600 text-white">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +12%
-                </Badge>
-              </div>
-              <p className="text-gray-400 text-sm mb-1">Total Earned</p>
-              <p className="text-3xl font-bold text-green-400 mb-1">
-                ${totalEarned.toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500">
-                {earnings.filter(e => e.status === "paid").length} payments received
-              </p>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-yellow-900/30 to-orange-900/20 border-yellow-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-full bg-yellow-600/20 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-yellow-500" />
-                </div>
-                <Badge className="bg-yellow-600 text-white">
-                  {earnings.filter(e => e.status === "pending").length} loads
-                </Badge>
-              </div>
-              <p className="text-gray-400 text-sm mb-1">Pending</p>
-              <p className="text-3xl font-bold text-yellow-400 mb-1">
-                ${totalPending.toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500">
-                Expected within 7 days
-              </p>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-red-900/30 to-orange-900/20 border-red-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-full bg-red-600/20 flex items-center justify-center">
-                  <XCircle className="w-6 h-6 text-red-500" />
-                </div>
-                <Badge className="bg-red-600 text-white">
-                  Action Required
-                </Badge>
-              </div>
-              <p className="text-gray-400 text-sm mb-1">Overdue</p>
-              <p className="text-3xl font-bold text-red-400 mb-1">
-                ${totalOverdue.toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500">
-                {earnings.filter(e => e.status === "overdue").length} overdue payments
-              </p>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-blue-900/30 to-cyan-900/20 border-blue-700 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-full bg-blue-600/20 flex items-center justify-center">
-                  <BarChart3 className="w-6 h-6 text-blue-500" />
-                </div>
-                <Badge className="bg-blue-600 text-white">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  +8%
-                </Badge>
-              </div>
-              <p className="text-gray-400 text-sm mb-1">Avg Per Load</p>
-              <p className="text-3xl font-bold text-blue-400 mb-1">
-                ${Math.round((totalEarned + totalPending) / earnings.length).toLocaleString()}
-              </p>
-              <p className="text-xs text-gray-500">
-                Based on {earnings.length} loads
-              </p>
-            </Card>
-          </div>
-
-          {/* Filters */}
-          <div className="flex gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search by load number or shipper..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-gray-900/50 border-gray-800"
-              />
-            </div>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg text-white"
-            >
-              <option value="ALL">All Statuses</option>
-              <option value="paid">Paid</option>
-              <option value="pending">Pending</option>
-              <option value="overdue">Overdue</option>
-              <option value="disputed">Disputed</option>
-            </select>
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Earnings
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Track your income and payment history</p>
         </div>
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+          <Download className="w-4 h-4 mr-2" />Export
+        </Button>
+      </div>
 
-        {/* Earnings List */}
-        {filteredEarnings.length === 0 ? (
-          <Card className="bg-gray-900/50 border-gray-800 p-16 text-center">
-            <Package className="w-20 h-20 text-gray-600 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-gray-300 mb-3">No earnings found</h3>
-            <p className="text-gray-500">
-              {searchQuery || statusFilter !== "ALL"
-                ? "Try adjusting your filters"
-                : "Complete loads to start earning"}
-            </p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {filteredEarnings.map((earning) => {
-              const statusBadge = getStatusBadge(earning.status);
-              const StatusIcon = statusBadge.icon;
+      {/* Total Earnings Card */}
+      <Card className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 rounded-xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Total Earnings ({period})</p>
+              {summaryQuery.isLoading ? <Skeleton className="h-12 w-48" /> : (
+                <p className="text-4xl font-bold text-white">${(summary?.total || 0).toLocaleString()}</p>
+              )}
+              {summary?.change && (
+                <p className={cn("text-sm mt-2 flex items-center gap-1", summary.change >= 0 ? "text-green-400" : "text-red-400")}>
+                  <ArrowUpRight className={cn("w-4 h-4", summary.change < 0 && "rotate-180")} />
+                  {Math.abs(summary.change)}% from last {period}
+                </p>
+              )}
+            </div>
+            <div className="p-4 rounded-full bg-emerald-500/20">
+              <DollarSign className="w-10 h-10 text-emerald-400" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-              return (
-                <Card key={earning.id} className="bg-gray-900/50 border-gray-800 p-6 hover:border-green-500/50 transition-all">
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-green-400">${(summary?.paid || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Paid</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Clock className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">${(summary?.pending || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Pending</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <TrendingUp className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{summary?.loadsCompleted || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Loads</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <Calendar className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-purple-400">${(summary?.avgPerLoad || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Avg/Load</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Period Filter */}
+      <div className="flex items-center gap-2">
+        {["week", "month", "year"].map((p) => (
+          <Button key={p} variant={period === p ? "default" : "outline"} size="sm" className={period === p ? "bg-cyan-600 hover:bg-cyan-700 rounded-lg" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"} onClick={() => setPeriod(p)}>
+            This {p.charAt(0).toUpperCase() + p.slice(1)}
+          </Button>
+        ))}
+      </div>
+
+      {/* Earnings History */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg">Earnings History</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {earningsQuery.isLoading ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : earningsQuery.data?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <DollarSign className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No earnings yet</p>
+              <p className="text-slate-500 text-sm mt-1">Complete loads to start earning</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {earningsQuery.data?.map((earning: any) => (
+                <div key={earning.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className={`w-12 h-12 rounded-full ${statusBadge.color}/20 flex items-center justify-center`}>
-                        <StatusIcon className={`w-6 h-6 ${statusBadge.color.replace('bg-', 'text-')}`} />
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-3 rounded-xl", earning.status === "paid" ? "bg-green-500/20" : "bg-yellow-500/20")}>
+                        <DollarSign className={cn("w-6 h-6", earning.status === "paid" ? "text-green-400" : "text-yellow-400")} />
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-semibold text-lg">Load #{earning.loadNumber}</h3>
-                          <Badge className={`${statusBadge.color} text-white`}>
-                            {statusBadge.label}
-                          </Badge>
-                        </div>
-                        <p className="text-gray-400 text-sm mb-2">{earning.shipper}</p>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            Completed: {earning.completedDate.toLocaleDateString()}
-                          </span>
-                          {earning.paidDate ? (
-                            <span className="flex items-center gap-1 text-green-400">
-                              <CheckCircle className="w-3 h-3" />
-                              Paid: {earning.paidDate.toLocaleDateString()}
-                            </span>
-                          ) : (
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Due: {earning.dueDate.toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
+                      <div>
+                        <p className="text-white font-medium">{earning.loadNumber}</p>
+                        <p className="text-sm text-slate-400">{earning.description}</p>
+                        <p className="text-xs text-slate-500">{earning.date}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-6">
-                      <div className="text-right">
-                        <p className="text-xs text-gray-500 mb-1">Amount</p>
-                        <p className="text-2xl font-bold text-green-400">
-                          ${earning.amount.toLocaleString()}
-                        </p>
-                      </div>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownloadInvoice(earning.loadNumber)}
-                        className="border-gray-700 hover:border-green-500"
-                      >
-                        <Download className="w-4 h-4 mr-2" />
-                        Invoice
-                      </Button>
+                    <div className="text-right">
+                      <p className="text-emerald-400 font-bold text-xl">${earning.amount?.toLocaleString()}</p>
+                      {getStatusBadge(earning.status)}
                     </div>
                   </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

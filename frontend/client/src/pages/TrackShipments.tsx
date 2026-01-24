@@ -1,311 +1,175 @@
 /**
- * TRACK SHIPMENTS PAGE - SHIPPER ROLE
- * Advanced GPS tracking with interactive map, route visualization, and ETA calculations
+ * TRACK SHIPMENTS PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import { useState, useEffect } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  MapPin, Navigation, Clock, Truck, AlertCircle, Phone,
-  MessageSquare, RefreshCw, Maximize2, Filter, Search,
-  TrendingUp, CheckCircle, XCircle, Calendar, Package
+  MapPin, Truck, Clock, Package, Search, RefreshCw,
+  Navigation, Phone, CheckCircle
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-export default function TrackShipmentsPage() {
-  const { user } = useAuth();
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedLoadId, setSelectedLoadId] = useState<number | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
+export default function TrackShipments() {
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: loads, isLoading, refetch } = trpc.loads.list.useQuery({
-    status: "in_transit",
-    limit: 50,
-  });
+  const shipmentsQuery = trpc.loads.getTrackedLoads.useQuery({ search: searchTerm || undefined });
 
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const interval = setInterval(() => {
-      refetch();
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [autoRefresh, refetch]);
+  const activeCount = shipmentsQuery.data?.filter((s: any) => s.status === "in_transit").length || 0;
 
-  const calculateDistance = (load: any): number => {
-    return load.distance || Math.floor(Math.random() * 500) + 100;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "delivered": return <Badge className="bg-green-500/20 text-green-400 border-0">Delivered</Badge>;
+      case "in_transit": return <Badge className="bg-blue-500/20 text-blue-400 border-0">In Transit</Badge>;
+      case "picked_up": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Picked Up</Badge>;
+      case "delayed": return <Badge className="bg-red-500/20 text-red-400 border-0">Delayed</Badge>;
+      default: return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">{status}</Badge>;
+    }
   };
-
-  const calculateETA = (load: any): string => {
-    if (!load.deliveryDate) return "TBD";
-    const eta = new Date(load.deliveryDate);
-    const now = new Date();
-    const diffHours = Math.floor((eta.getTime() - now.getTime()) / (1000 * 60 * 60));
-    
-    if (diffHours < 0) return "Overdue";
-    if (diffHours < 1) return `${Math.floor(diffHours * 60)}min`;
-    if (diffHours < 24) return `${diffHours}h`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ${diffHours % 24}h`;
-  };
-
-  const getCurrentLocation = (load: any): string => {
-    const locations = [
-      "I-10 near Houston, TX",
-      "I-40 near Amarillo, TX",
-      "I-20 near Dallas, TX",
-      "US-75 near Sherman, TX",
-      "Rest Stop - Mile Marker 245"
-    ];
-    return locations[Math.floor(Math.random() * locations.length)];
-  };
-
-  const getSpeed = (load: any): number => {
-    return Math.floor(Math.random() * 20) + 55;
-  };
-
-  const filteredLoads = loads?.filter(load => 
-    searchQuery === "" || 
-    load.loadNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    load.pickupLocation?.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    load.deliveryLocation?.city?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
-
-  const selectedLoad = selectedLoadId ? filteredLoads.find(l => l.id === selectedLoadId) : filteredLoads[0];
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-green-500 to-cyan-500 bg-clip-text text-transparent mb-2">
-                Track Shipments
-              </h1>
-              <p className="text-gray-400 text-lg">Real-time GPS tracking with live updates</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => setAutoRefresh(!autoRefresh)}
-                variant={autoRefresh ? "default" : "outline"}
-                className={autoRefresh ? "bg-green-600 hover:bg-green-700" : "border-gray-800"}
-              >
-                <RefreshCw className={`w-4 h-4 mr-2 ${autoRefresh ? "animate-spin" : ""}`} />
-                {autoRefresh ? "Auto-Refresh ON" : "Auto-Refresh OFF"}
-              </Button>
-              <Button
-                onClick={() => refetch()}
-                variant="outline"
-                className="border-gray-800 hover:border-blue-500"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh Now
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              placeholder="Search by load number, origin, or destination..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-900/50 border-gray-800"
-            />
-          </div>
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Track Shipments
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Real-time tracking of your shipments</p>
         </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          <div className="col-span-1 space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2">
-            {isLoading ? (
-              <div className="text-center py-10">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-500 mx-auto mb-3"></div>
-                <p className="text-gray-400">Loading shipments...</p>
-              </div>
-            ) : filteredLoads.length === 0 ? (
-              <Card className="bg-gray-900/50 border-gray-800 p-8 text-center">
-                <Package className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-400">No active shipments</p>
-              </Card>
-            ) : (
-              filteredLoads.map((load) => (
-                <Card
-                  key={load.id}
-                  onClick={() => setSelectedLoadId(load.id)}
-                  className={`p-4 cursor-pointer transition-all ${
-                    selectedLoad?.id === load.id
-                      ? "bg-blue-900/30 border-blue-500"
-                      : "bg-gray-900/50 border-gray-800 hover:border-blue-500/50"
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <p className="font-semibold">#{load.loadNumber}</p>
-                      <p className="text-xs text-gray-400 capitalize">{load.cargoType}</p>
-                    </div>
-                    <Badge className="bg-green-600 text-white">
-                      <Navigation className="w-3 h-3 mr-1" />
-                      Live
-                    </Badge>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      <span className="text-gray-400 truncate">
-                        {load.pickupLocation?.city}, {load.pickupLocation?.state}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                      <span className="text-gray-400 truncate">
-                        {load.deliveryLocation?.city}, {load.deliveryLocation?.state}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-3 pt-3 border-t border-gray-800 flex justify-between text-xs">
-                    <span className="text-gray-500">ETA: {calculateETA(load)}</span>
-                    <span className="text-green-400">{getSpeed(load)} mph</span>
-                  </div>
-                </Card>
-              ))
-            )}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30">
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-blue-400 text-sm font-medium">Active</span>
+            <span className="text-blue-400 font-bold">{activeCount}</span>
           </div>
-
-          <div className="col-span-2 space-y-4">
-            <Card className="bg-gray-900/50 border-gray-800 p-0 overflow-hidden">
-              <div className="relative h-96 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDEwIEwgNDAgMTAgTSAxMCAwIEwgMTAgNDAgTSAwIDIwIEwgNDAgMjAgTSAyMCAwIEwgMjAgNDAgTSAwIDMwIEwgNDAgMzAgTSAzMCAwIEwgMzAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjAzKSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-50"></div>
-                <div className="relative z-10 text-center">
-                  <MapPin className="w-16 h-16 text-blue-500 mx-auto mb-4 animate-bounce" />
-                  <p className="text-xl font-semibold mb-2">Interactive Map</p>
-                  <p className="text-gray-400 max-w-md">
-                    Google Maps integration will display real-time GPS tracking, route visualization, and traffic updates
-                  </p>
-                </div>
-                <Button
-                  className="absolute top-4 right-4 bg-gray-900/80 hover:bg-gray-800"
-                  size="sm"
-                >
-                  <Maximize2 className="w-4 h-4 mr-2" />
-                  Fullscreen
-                </Button>
-              </div>
-            </Card>
-
-            {selectedLoad && (
-              <Card className="bg-gray-900/50 border-gray-800 p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div>
-                    <h3 className="text-2xl font-bold mb-1">Load #{selectedLoad.loadNumber}</h3>
-                    <p className="text-gray-400 capitalize">{selectedLoad.cargoType} Freight</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="border-gray-700">
-                      <Phone className="w-4 h-4 mr-2" />
-                      Call Driver
-                    </Button>
-                    <Button variant="outline" size="sm" className="border-gray-700">
-                      <MessageSquare className="w-4 h-4 mr-2" />
-                      Message
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-2">Current Location</p>
-                    <div className="flex items-start gap-2">
-                      <Navigation className="w-5 h-5 text-green-500 mt-0.5" />
-                      <div>
-                        <p className="font-semibold">{getCurrentLocation(selectedLoad)}</p>
-                        <p className="text-sm text-gray-400">Last updated: 2 min ago</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase mb-2">Current Speed</p>
-                    <div className="flex items-start gap-2">
-                      <TrendingUp className="w-5 h-5 text-blue-500 mt-0.5" />
-                      <div>
-                        <p className="font-semibold text-2xl">{getSpeed(selectedLoad)} mph</p>
-                        <p className="text-sm text-gray-400">Within speed limit</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-4 gap-3 mb-6">
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Distance Remaining</p>
-                    <p className="font-semibold">{calculateDistance(selectedLoad)} mi</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">ETA</p>
-                    <p className="font-semibold text-green-400">{calculateETA(selectedLoad)}</p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">On-Time Status</p>
-                    <p className="font-semibold text-green-400 flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      On Time
-                    </p>
-                  </div>
-                  <div className="bg-gray-800/30 rounded-lg p-3">
-                    <p className="text-gray-500 text-xs mb-1">Carrier</p>
-                    <p className="font-semibold">#{selectedLoad.carrierId || "TBD"}</p>
-                  </div>
-                </div>
-
-                <div className="border-t border-gray-800 pt-4">
-                  <h4 className="font-semibold mb-3">Route Timeline</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                        <div className="w-0.5 h-12 bg-green-500"></div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{selectedLoad.pickupLocation?.city}, {selectedLoad.pickupLocation?.state}</p>
-                        <p className="text-sm text-gray-400 flex items-center gap-1">
-                          <CheckCircle className="w-3 h-3 text-green-500" />
-                          Picked up {selectedLoad.pickupDate ? new Date(selectedLoad.pickupDate).toLocaleString() : "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse"></div>
-                        <div className="w-0.5 h-12 bg-gray-700"></div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">In Transit</p>
-                        <p className="text-sm text-gray-400">{getCurrentLocation(selectedLoad)}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-gray-600"></div>
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{selectedLoad.deliveryLocation?.city}, {selectedLoad.deliveryLocation?.state}</p>
-                        <p className="text-sm text-gray-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          Expected {selectedLoad.deliveryDate ? new Date(selectedLoad.deliveryDate).toLocaleString() : "N/A"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            )}
-          </div>
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => shipmentsQuery.refetch()}>
+            <RefreshCw className="w-4 h-4 mr-2" />Refresh
+          </Button>
         </div>
       </div>
+
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search by load number, origin, or destination..."
+          className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+        />
+      </div>
+
+      {/* Shipments List */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardContent className="p-0">
+          {shipmentsQuery.isLoading ? (
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : shipmentsQuery.data?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <Package className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No shipments to track</p>
+              <p className="text-slate-500 text-sm mt-1">Your active shipments will appear here</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {shipmentsQuery.data?.map((shipment: any) => (
+                <div key={shipment.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-start gap-4">
+                      <div className={cn("p-3 rounded-xl", shipment.status === "in_transit" ? "bg-blue-500/20" : shipment.status === "delivered" ? "bg-green-500/20" : "bg-yellow-500/20")}>
+                        <Truck className={cn("w-6 h-6", shipment.status === "in_transit" ? "text-blue-400" : shipment.status === "delivered" ? "text-green-400" : "text-yellow-400")} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-bold">{shipment.loadNumber}</p>
+                          {getStatusBadge(shipment.status)}
+                        </div>
+                        <p className="text-sm text-slate-400">{shipment.commodity}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-slate-400 text-sm">ETA</p>
+                      <p className="text-white font-medium">{shipment.eta}</p>
+                    </div>
+                  </div>
+
+                  {/* Route */}
+                  <div className="p-4 rounded-xl bg-slate-700/30 mb-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                        <div className="w-0.5 h-8 bg-slate-600" />
+                        {shipment.currentLocation && (
+                          <>
+                            <div className="w-3 h-3 rounded-full bg-cyan-400" />
+                            <div className="w-0.5 h-8 bg-slate-600" />
+                          </>
+                        )}
+                        <div className="w-3 h-3 rounded-full bg-red-400" />
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white">{shipment.origin?.city}, {shipment.origin?.state}</p>
+                            <p className="text-xs text-slate-500">{shipment.pickupDate}</p>
+                          </div>
+                          {shipment.status !== "in_transit" && <CheckCircle className="w-4 h-4 text-green-400" />}
+                        </div>
+                        {shipment.currentLocation && (
+                          <div>
+                            <p className="text-cyan-400">Current: {shipment.currentLocation.city}, {shipment.currentLocation.state}</p>
+                            <p className="text-xs text-slate-500">Updated: {shipment.lastUpdate}</p>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-white">{shipment.destination?.city}, {shipment.destination?.state}</p>
+                            <p className="text-xs text-slate-500">{shipment.deliveryDate}</p>
+                          </div>
+                          {shipment.status === "delivered" && <CheckCircle className="w-4 h-4 text-green-400" />}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress */}
+                  {shipment.progress !== undefined && (
+                    <div className="mb-4">
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-slate-400">Progress</span>
+                        <span className="text-white font-medium">{shipment.progress}%</span>
+                      </div>
+                      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all" style={{ width: `${shipment.progress}%` }} />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-lg">
+                      <Navigation className="w-4 h-4 mr-1" />Track
+                    </Button>
+                    <Button variant="outline" size="sm" className="bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-lg">
+                      <Phone className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
