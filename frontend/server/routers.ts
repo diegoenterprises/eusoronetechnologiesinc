@@ -56,6 +56,8 @@ import { routesRouter } from "./routers/routes";
 import { trackingRouter } from "./routers/tracking";
 import { equipmentRouter } from "./routers/equipment";
 import { quotesRouter } from "./routers/quotes";
+import { lanesRouter } from "./routers/lanes";
+import { customersRouter } from "./routers/customers";
 
 export const appRouter = router({
   system: systemRouter,
@@ -226,6 +228,12 @@ export const appRouter = router({
 
   // Freight Quotes
   quotes: quotesRouter,
+
+  // Freight Lanes
+  lanes: lanesRouter,
+
+  // Customer Management
+  customers: customersRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
