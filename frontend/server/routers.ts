@@ -47,6 +47,8 @@ import { settingsRouter } from "./routers/settings";
 import { walletRouter } from "./routers/wallet";
 import { newsfeedRouter } from "./routers/newsfeed";
 import { contactsRouter } from "./routers/contacts";
+import { claimsRouter } from "./routers/claims";
+import { fuelRouter } from "./routers/fuel";
 
 export const appRouter = router({
   system: systemRouter,
@@ -190,6 +192,12 @@ export const appRouter = router({
 
   // Contact Management
   contacts: contactsRouter,
+
+  // Claims & Disputes
+  claims: claimsRouter,
+
+  // Fuel Management
+  fuel: fuelRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
