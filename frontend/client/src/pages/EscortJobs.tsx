@@ -1,6 +1,7 @@
 /**
  * ESCORT JOBS PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
 import React, { useState } from "react";
@@ -8,324 +9,222 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Car, MapPin, Clock, Calendar, DollarSign, Star, Shield,
-  Phone, Navigation, CheckCircle, AlertTriangle, Search,
-  ChevronRight, User, FileText, TrendingUp, Loader2
+  Car, MapPin, DollarSign, Clock, CheckCircle, Search,
+  Plus, Eye, Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 export default function EscortJobs() {
+  const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("available");
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterState, setFilterState] = useState("all");
 
-  const summaryQuery = trpc.escorts.getDashboardSummary.useQuery();
-  const availableJobsQuery = trpc.escorts.getAvailableJobs.useQuery({
-    state: filterState !== "all" ? filterState : undefined,
-  });
-  const myJobsQuery = trpc.escorts.getMyJobs.useQuery({});
-  const certificationsQuery = trpc.escorts.getMyCertifications.useQuery();
+  const jobsQuery = trpc.escorts.getJobs.useQuery({ limit: 50 });
+  const summaryQuery = trpc.escorts.getJobsSummary.useQuery();
 
-  const acceptJobMutation = trpc.escorts.acceptJob.useMutation({
-    onSuccess: () => {
-      toast.success("Job accepted!", { description: "Carrier has been notified" });
-      availableJobsQuery.refetch();
-      myJobsQuery.refetch();
-    },
-    onError: (error) => {
-      toast.error("Failed to accept job", { description: error.message });
-    },
+  const acceptMutation = trpc.escorts.acceptJob.useMutation({
+    onSuccess: () => { toast.success("Job accepted"); jobsQuery.refetch(); },
+    onError: (error) => toast.error("Failed to accept job", { description: error.message }),
   });
 
-  if (summaryQuery.error) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-red-400">Error loading escort data</p>
-        <p className="text-sm text-slate-500 mt-2">{summaryQuery.error.message}</p>
-        <Button className="mt-4" onClick={() => summaryQuery.refetch()}>Retry</Button>
-      </div>
-    );
-  }
+  const summary = summaryQuery.data;
 
-  const getPositionBadge = (position: string) => {
-    switch (position) {
-      case "lead": return "bg-blue-500/20 text-blue-400";
-      case "chase": return "bg-purple-500/20 text-purple-400";
-      case "both": return "bg-green-500/20 text-green-400";
-      default: return "bg-slate-500/20 text-slate-400";
-    }
-  };
-
-  const getCertStatusColor = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active": return "bg-green-500/20 text-green-400";
-      case "expired": return "bg-red-500/20 text-red-400";
-      case "pending": return "bg-yellow-500/20 text-yellow-400";
-      default: return "bg-slate-500/20 text-slate-400";
+      case "available": return <Badge className="bg-green-500/20 text-green-400 border-0">Available</Badge>;
+      case "assigned": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Assigned</Badge>;
+      case "in_progress": return <Badge className="bg-purple-500/20 text-purple-400 border-0">In Progress</Badge>;
+      case "completed": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">Completed</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };
+
+  const getUrgencyBadge = (urgency: string) => {
+    switch (urgency) {
+      case "urgent": return <Badge className="bg-red-500/20 text-red-400 border-0">Urgent</Badge>;
+      case "high": return <Badge className="bg-orange-500/20 text-orange-400 border-0">High Priority</Badge>;
+      default: return null;
+    }
+  };
+
+  const filteredJobs = jobsQuery.data?.filter((job: any) => {
+    const matchesSearch = !searchTerm || 
+      job.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      job.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab = activeTab === "all" || job.status === activeTab;
+    return matchesSearch && matchesTab;
+  });
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Escort Jobs</h1>
-          <p className="text-slate-400 text-sm">Find and manage pilot car assignments</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Escort Jobs
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Available escort and pilot car assignments</p>
         </div>
-        <Button className="bg-purple-600 hover:bg-purple-700">
-          <FileText className="w-4 h-4 mr-2" />
-          My Certifications
-        </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-white">{summaryQuery.data?.completedThisMonth ?? 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Jobs Completed</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-green-500/10 border-green-500/30">
-          <CardContent className="p-4 text-center">
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">${summaryQuery.data?.monthlyEarnings?.toLocaleString() ?? 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Monthly Earnings</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-yellow-500/10 border-yellow-500/30">
-          <CardContent className="p-4 text-center">
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <div className="flex items-center justify-center gap-1">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <p className="text-2xl font-bold text-yellow-400">{summaryQuery.data?.rating ?? 0}</p>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <Car className="w-6 h-6 text-green-400" />
               </div>
-            )}
-            <p className="text-xs text-slate-400">Rating</p>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{summary?.available || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Available</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-blue-500/10 border-blue-500/30">
-          <CardContent className="p-4 text-center">
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-blue-400">{summaryQuery.data?.activeJobs ?? 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Active Jobs</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Car className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{summary?.assigned || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Assigned</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-orange-500/10 border-orange-500/30">
-          <CardContent className="p-4 text-center">
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-orange-400">{summaryQuery.data?.certifications?.expiringSoon ?? 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Expiring Certs</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <Clock className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-purple-400">{summary?.inProgress || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">In Progress</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-emerald-500/20">
+                <DollarSign className="w-6 h-6 text-emerald-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-emerald-400">${(summary?.weeklyEarnings || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">This Week</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Certifications Quick View */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-white text-base flex items-center gap-2">
-            <Shield className="w-4 h-4 text-purple-400" />
-            State Certifications
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {certificationsQuery.isLoading ? (
-            <div className="flex gap-2">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-6 w-24" />)}
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              {certificationsQuery.data?.map((cert) => (
-                <Badge key={cert.state} className={cn("px-3 py-1", getCertStatusColor(cert.status))}>
-                  {cert.state} - {cert.status === "active" ? `Exp ${cert.expirationDate}` : cert.status}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Search jobs..."
+          className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+        />
+      </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="available" className="data-[state=active]:bg-purple-600">
-            Available Jobs ({availableJobsQuery.data?.total ?? 0})
-          </TabsTrigger>
-          <TabsTrigger value="my-jobs" className="data-[state=active]:bg-purple-600">
-            My Jobs ({myJobsQuery.data?.length ?? 0})
-          </TabsTrigger>
+        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+          <TabsTrigger value="available" className="data-[state=active]:bg-slate-700 rounded-md">Available</TabsTrigger>
+          <TabsTrigger value="assigned" className="data-[state=active]:bg-slate-700 rounded-md">Assigned</TabsTrigger>
+          <TabsTrigger value="in_progress" className="data-[state=active]:bg-slate-700 rounded-md">In Progress</TabsTrigger>
+          <TabsTrigger value="all" className="data-[state=active]:bg-slate-700 rounded-md">All</TabsTrigger>
         </TabsList>
 
-        {/* Available Jobs Tab */}
-        <TabsContent value="available" className="mt-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by location..."
-                className="pl-9 bg-slate-700/50 border-slate-600"
-              />
-            </div>
-            <Select value={filterState} onValueChange={setFilterState}>
-              <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600">
-                <SelectValue placeholder="State" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All States</SelectItem>
-                <SelectItem value="TX">Texas</SelectItem>
-                <SelectItem value="LA">Louisiana</SelectItem>
-                <SelectItem value="OK">Oklahoma</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {availableJobsQuery.isLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
-                <Card key={i} className="bg-slate-800/50 border-slate-700">
-                  <CardContent className="p-4"><Skeleton className="h-24 w-full" /></CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : availableJobsQuery.data?.jobs?.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-12 text-center">
-                <Car className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">No available jobs</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {availableJobsQuery.data?.jobs?.map((job) => (
-                <Card key={job.id} className={cn(
-                  "bg-slate-800/50 border-slate-700 transition-all hover:border-slate-600",
-                  job.urgency === "high" && "border-orange-500/50"
-                )}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Badge className={getPositionBadge(job.position)}>
-                            {job.position === "both" ? "Lead + Chase" : job.position}
-                          </Badge>
-                          {job.urgency === "high" && (
-                            <Badge className="bg-orange-500/20 text-orange-400">
-                              <AlertTriangle className="w-3 h-3 mr-1" />Urgent
-                            </Badge>
+        <TabsContent value={activeTab} className="mt-6">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardContent className="p-0">
+              {jobsQuery.isLoading ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+              ) : filteredJobs?.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                    <Car className="w-10 h-10 text-slate-500" />
+                  </div>
+                  <p className="text-slate-400 text-lg">No jobs found</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-700/50">
+                  {filteredJobs?.map((job: any) => (
+                    <div key={job.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors", job.urgency === "urgent" && "bg-red-500/5 border-l-2 border-red-500")}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
+                          <div className={cn("p-3 rounded-xl", job.status === "available" ? "bg-green-500/20" : job.status === "in_progress" ? "bg-purple-500/20" : "bg-blue-500/20")}>
+                            <Car className={cn("w-6 h-6", job.status === "available" ? "text-green-400" : job.status === "in_progress" ? "text-purple-400" : "text-blue-400")} />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-white font-medium">{job.loadNumber}</p>
+                              {getStatusBadge(job.status)}
+                              {getUrgencyBadge(job.urgency)}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-slate-400 mb-1">
+                              <MapPin className="w-3 h-3 text-green-400" />
+                              <span>{job.origin?.city}, {job.origin?.state}</span>
+                              <span>→</span>
+                              <MapPin className="w-3 h-3 text-red-400" />
+                              <span>{job.destination?.city}, {job.destination?.state}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {job.startDate}
+                              </span>
+                              <span>{job.distance} miles</span>
+                              <span>Position: {job.position}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-emerald-400 font-bold text-lg">${(job.rate || 0).toLocaleString()}</p>
+                            <p className="text-xs text-slate-500">${job.ratePerMile?.toFixed(2)}/mi</p>
+                          </div>
+                          {job.status === "available" ? (
+                            <Button size="sm" className="bg-green-600 hover:bg-green-700 rounded-lg" onClick={() => acceptMutation.mutate({ jobId: job.id })} disabled={acceptMutation.isPending}>
+                              <CheckCircle className="w-4 h-4 mr-1" />Accept
+                            </Button>
+                          ) : (
+                            <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation(`/escort-jobs/${job.id}`)}>
+                              <Eye className="w-4 h-4 mr-1" />View
+                            </Button>
                           )}
                         </div>
-                        <p className="text-white font-medium mb-2">{job.title}</p>
-                        <div className="flex items-center gap-2 mb-3">
-                          <MapPin className="w-4 h-4 text-green-400" />
-                          <span className="text-white">{job.origin.city}, {job.origin.state}</span>
-                          <ChevronRight className="w-4 h-4 text-slate-500" />
-                          <MapPin className="w-4 h-4 text-red-400" />
-                          <span className="text-white">{job.destination.city}, {job.destination.state}</span>
-                        </div>
-                        <div className="flex items-center gap-6 text-sm text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />{job.estimatedDuration}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />{job.startDate}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <User className="w-4 h-4" />{job.carrier}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right ml-4">
-                        <p className="text-2xl font-bold text-green-400">${job.pay}</p>
-                        <Button
-                          className="mt-3 bg-purple-600 hover:bg-purple-700"
-                          onClick={() => acceptJobMutation.mutate({ jobId: job.id })}
-                          disabled={acceptJobMutation.isPending}
-                        >
-                          {acceptJobMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Accept Job"}
-                        </Button>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* My Jobs Tab */}
-        <TabsContent value="my-jobs" className="mt-6">
-          {myJobsQuery.isLoading ? (
-            <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <Card key={i} className="bg-slate-800/50 border-slate-700">
-                  <CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : myJobsQuery.data?.length === 0 ? (
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-12 text-center">
-                <Car className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">No active jobs</p>
-                <p className="text-sm text-slate-500 mt-1">Browse available jobs to get started</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {myJobsQuery.data?.map((job) => (
-                <Card key={job.id} className="bg-slate-800/50 border-slate-700">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-3 mb-3">
-                          <Badge className={job.status === "in_progress" ? "bg-blue-500/20 text-blue-400" : "bg-green-500/20 text-green-400"}>
-                            {job.status.replace("_", " ")}
-                          </Badge>
-                          <Badge className={getPositionBadge(job.position)}>{job.position}</Badge>
-                        </div>
-                        <p className="text-white font-medium mb-2">{job.title}</p>
-                        <div className="flex items-center gap-6 text-sm text-slate-400">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />{job.startDate}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <User className="w-4 h-4" />{job.carrier}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" className="border-slate-600">
-                          <Phone className="w-4 h-4 mr-2" />Call
-                        </Button>
-                        <Button variant="outline" className="border-slate-600">
-                          <Navigation className="w-4 h-4 mr-2" />Navigate
-                        </Button>
-                        {job.status === "assigned" && (
-                          <Button className="bg-green-600 hover:bg-green-700">
-                            <CheckCircle className="w-4 h-4 mr-2" />Start Job
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
