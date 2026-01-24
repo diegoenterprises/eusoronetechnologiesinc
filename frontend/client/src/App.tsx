@@ -98,6 +98,7 @@ import ClearinghouseDashboard from "./pages/ClearinghouseDashboard";
 import TerminalSCADA from "./pages/TerminalSCADA";
 import Leaderboard from "./pages/Leaderboard";
 import DriverOnboarding from "./pages/DriverOnboarding";
+import AccidentReport from "./pages/AccidentReport";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -354,6 +355,16 @@ function Router() {
       <Route path={"/driver/onboarding"} component={() => (
         <DashboardLayout>
           <DriverOnboarding />
+        </DashboardLayout>
+      )} />
+      <Route path={"/accident-report"} component={() => (
+        <DashboardLayout>
+          <AccidentReport />
+        </DashboardLayout>
+      )} />
+      <Route path={"/safety/incident"} component={() => (
+        <DashboardLayout>
+          <AccidentReport />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
