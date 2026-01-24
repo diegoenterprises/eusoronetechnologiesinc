@@ -1,634 +1,204 @@
 /**
- * EUSOALLET PAGE
- * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
- * 
- * Comprehensive payment and wallet management system.
- * Features:
- * - Balance management
- * - Deposit and withdrawal
- * - Transaction history with filtering
- * - Payment methods management
- * - Transfer functionality
- * - Role-specific features
- * - Export transaction history
+ * WALLET PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import { useState } from "react";
-import { useAuth } from "@/_core/hooks/useAuth";
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  DollarSign,
-  Plus,
-  Send,
-  TrendingUp,
-  CreditCard,
-  Download,
-  Filter,
-  Eye,
-  EyeOff,
-  ArrowUpRight,
-  ArrowDownLeft,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Wallet,
+  Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Plus,
+  CreditCard, DollarSign, TrendingUp, Clock
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-interface Transaction {
-  id: string;
-  type: "deposit" | "withdrawal" | "payment" | "earning" | "refund" | "fee";
-  description: string;
-  amount: number;
-  date: Date;
-  status: "completed" | "pending" | "failed";
-  reference: string;
-  paymentMethod?: string;
-}
+export default function Wallet() {
+  const [activeTab, setActiveTab] = useState("all");
 
-interface PaymentMethod {
-  id: string;
-  type: "bank" | "card" | "wallet";
-  name: string;
-  last4: string;
-  isDefault: boolean;
-}
+  const balanceQuery = trpc.wallet.getBalance.useQuery();
+  const transactionsQuery = trpc.wallet.getTransactions.useQuery({ limit: 50 });
 
-export default function WalletPage() {
-  const { user } = useAuth();
-  const [showBalance, setShowBalance] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
-
-  // Real data from tRPC
-  const { data: balanceData } = trpc.payments.getBalance.useQuery(undefined, {
-    enabled: !!user,
-  });
-  const { data: transactionsData } = trpc.payments.getTransactions.useQuery(
-    { limit: 50, type: selectedFilter as any },
-    { enabled: !!user }
-  );
-
-  const balance = balanceData ? parseFloat(balanceData.balance) : 47250.0;
-  const monthlyEarnings = 12450.0; // TODO: Calculate from transactions
-  const pendingPayments = 2100.0; // TODO: Calculate from pending transactions
-  const totalSpent = 18500.0; // TODO: Calculate from payment transactions
-
-  const transactions: Transaction[] = [
-    {
-      id: "tx-1",
-      type: "deposit",
-      description: "Deposit from Bank Account",
-      amount: 5000,
-      date: new Date("2024-12-15"),
-      status: "completed",
-      reference: "DEP-2024-001",
-      paymentMethod: "Bank Transfer",
-    },
-    {
-      id: "tx-2",
-      type: "withdrawal",
-      description: "Withdrawal to Bank Account",
-      amount: 2500,
-      date: new Date("2024-12-14"),
-      status: "completed",
-      reference: "WTH-2024-001",
-      paymentMethod: "Bank Transfer",
-    },
-    {
-      id: "tx-3",
-      type: "payment",
-      description: "Payment for Shipment SH-001",
-      amount: 4250,
-      date: new Date("2024-12-13"),
-      status: "completed",
-      reference: "PAY-2024-001",
-      paymentMethod: "Wallet",
-    },
-    {
-      id: "tx-4",
-      type: "earning",
-      description: "Earning from Job JOB-002",
-      amount: 3800,
-      date: new Date("2024-12-12"),
-      status: "completed",
-      reference: "EAR-2024-001",
-    },
-    {
-      id: "tx-5",
-      type: "earning",
-      description: "Earning from Load LO-045",
-      amount: 2850,
-      date: new Date("2024-12-11"),
-      status: "completed",
-      reference: "EAR-2024-002",
-    },
-    {
-      id: "tx-6",
-      type: "fee",
-      description: "Platform Service Fee",
-      amount: 125,
-      date: new Date("2024-12-10"),
-      status: "completed",
-      reference: "FEE-2024-001",
-    },
-    {
-      id: "tx-7",
-      type: "refund",
-      description: "Refund - Cancelled Load",
-      amount: 1500,
-      date: new Date("2024-12-09"),
-      status: "completed",
-      reference: "REF-2024-001",
-    },
-    {
-      id: "tx-8",
-      type: "payment",
-      description: "Payment for Shipment SH-002",
-      amount: 3200,
-      date: new Date("2024-12-08"),
-      status: "pending",
-      reference: "PAY-2024-002",
-      paymentMethod: "Wallet",
-    },
-  ];
-
-  const paymentMethods: PaymentMethod[] = [
-    {
-      id: "pm-1",
-      type: "card",
-      name: "Visa",
-      last4: "4242",
-      isDefault: true,
-    },
-    {
-      id: "pm-2",
-      type: "bank",
-      name: "Chase Bank",
-      last4: "1234",
-      isDefault: false,
-    },
-    {
-      id: "pm-3",
-      type: "card",
-      name: "Mastercard",
-      last4: "5555",
-      isDefault: false,
-    },
-  ];
-
-  const filteredTransactions = transactions.filter((tx) => {
-    if (selectedFilter === "all") return true;
-    return tx.type === selectedFilter;
-  });
+  const balance = balanceQuery.data;
 
   const getTransactionIcon = (type: string) => {
-    switch (type) {
-      case "deposit":
-      case "earning":
-      case "refund":
-        return <ArrowDownLeft className="text-green-500" size={20} />;
-      case "withdrawal":
-      case "payment":
-      case "fee":
-        return <ArrowUpRight className="text-red-500" size={20} />;
-      default:
-        return <DollarSign className="text-gray-500" size={20} />;
-    }
+    return type === "credit" ? (
+      <div className="p-2 rounded-full bg-green-500/20">
+        <ArrowDownLeft className="w-4 h-4 text-green-400" />
+      </div>
+    ) : (
+      <div className="p-2 rounded-full bg-red-500/20">
+        <ArrowUpRight className="w-4 h-4 text-red-400" />
+      </div>
+    );
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "completed":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-green-900/20 border border-green-800 text-green-400">
-            <CheckCircle size={14} />
-            Completed
-          </span>
-        );
-      case "pending":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-yellow-900/20 border border-yellow-800 text-yellow-400">
-            <Clock size={14} />
-            Pending
-          </span>
-        );
-      case "failed":
-        return (
-          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-red-900/20 border border-red-800 text-red-400">
-            <AlertCircle size={14} />
-            Failed
-          </span>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount);
-  };
-
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const filteredTransactions = transactionsQuery.data?.filter((t: any) => {
+    if (activeTab === "all") return true;
+    return t.type === activeTab;
+  });
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="p-4 md:p-6 space-y-6">
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">EusoWallet</h1>
-          <p className="text-gray-400 mt-1">Manage your payments and transactions</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Wallet
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Manage your funds and transactions</p>
         </div>
-
-        <Button
-          onClick={() => setShowBalance(!showBalance)}
-          variant="outline"
-          className="border-gray-700 text-gray-400 hover:bg-gray-800"
-        >
-          {showBalance ? <EyeOff size={18} /> : <Eye size={18} />}
-        </Button>
-      </div>
-
-      {/* Main Balance Card */}
-      <Card className="bg-gradient-to-r from-blue-600 to-purple-600 border-0 p-8 text-white">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-blue-100 mb-2">Total Balance</p>
-            <h2 className="text-5xl font-bold mb-8">
-              {showBalance ? formatCurrency(balance) : "••••••"}
-            </h2>
-
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setShowDepositModal(true)}
-                className="bg-white text-blue-600 hover:bg-gray-100 gap-2"
-              >
-                <Plus size={18} />
-                Deposit
-              </Button>
-              <Button
-                onClick={() => setShowWithdrawModal(true)}
-                variant="outline"
-                className="border-white text-white hover:bg-white/10 gap-2"
-              >
-                <Send size={18} />
-                Withdraw
-              </Button>
-              <Button
-                onClick={() => setShowTransferModal(true)}
-                variant="outline"
-                className="border-white text-white hover:bg-white/10 gap-2"
-              >
-                <Wallet size={18} />
-                Transfer
-              </Button>
-            </div>
-          </div>
-
-          <Wallet className="text-white/30" size={80} />
-        </div>
-      </Card>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="bg-gray-900 border-gray-800 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Monthly Earnings</p>
-              <p className="text-2xl font-bold text-green-400 mt-2">
-                {formatCurrency(monthlyEarnings)}
-              </p>
-            </div>
-            <TrendingUp className="text-green-500" size={32} />
-          </div>
-        </Card>
-
-        <Card className="bg-gray-900 border-gray-800 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Pending Payments</p>
-              <p className="text-2xl font-bold text-yellow-400 mt-2">
-                {formatCurrency(pendingPayments)}
-              </p>
-            </div>
-            <Clock className="text-yellow-500" size={32} />
-          </div>
-        </Card>
-
-        <Card className="bg-gray-900 border-gray-800 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Total Spent</p>
-              <p className="text-2xl font-bold text-red-400 mt-2">
-                {formatCurrency(totalSpent)}
-              </p>
-            </div>
-            <ArrowUpRight className="text-red-500" size={32} />
-          </div>
-        </Card>
-
-        <Card className="bg-gray-900 border-gray-800 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">Account Status</p>
-              <p className="text-2xl font-bold text-blue-400 mt-2">Active</p>
-            </div>
-            <CheckCircle className="text-blue-500" size={32} />
-          </div>
-        </Card>
-      </div>
-
-      {/* Payment Methods */}
-      <Card className="bg-gray-900 border-gray-800 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-white">Payment Methods</h3>
-          <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
-            <Plus size={18} />
-            Add Method
+        <div className="flex items-center gap-3">
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+            <ArrowUpRight className="w-4 h-4 mr-2" />Withdraw
+          </Button>
+          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+            <Plus className="w-4 h-4 mr-2" />Add Funds
           </Button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {paymentMethods.map((method) => (
-            <div
-              key={method.id}
-              className={`p-4 rounded border ${
-                method.isDefault
-                  ? "bg-blue-900/20 border-blue-800"
-                  : "bg-gray-800 border-gray-700"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <CreditCard className="text-gray-400" size={24} />
-                  <div>
-                    <p className="text-white font-semibold">{method.name}</p>
-                    <p className="text-gray-400 text-sm">•••• {method.last4}</p>
-                  </div>
-                </div>
-                {method.isDefault && (
-                  <span className="px-2 py-1 text-xs font-semibold rounded bg-blue-600 text-white">
-                    Default
-                  </span>
-                )}
-              </div>
+      {/* Balance Card */}
+      <Card className="bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 border-cyan-500/30 rounded-xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Available Balance</p>
+              {balanceQuery.isLoading ? <Skeleton className="h-12 w-48" /> : (
+                <p className="text-4xl font-bold text-white">${(balance?.available || 0).toLocaleString()}</p>
+              )}
             </div>
-          ))}
-        </div>
+            <div className="p-4 rounded-full bg-cyan-500/20">
+              <WalletIcon className="w-10 h-10 text-cyan-400" />
+            </div>
+          </div>
+        </CardContent>
       </Card>
 
-      {/* Transaction History */}
-      <Card className="bg-gray-900 border-gray-800 overflow-hidden">
-        <div className="p-6 border-b border-gray-800 flex items-center justify-between">
-          <h3 className="text-lg font-bold text-white">Transaction History</h3>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <ArrowDownLeft className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {balanceQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-green-400">${(balance?.totalReceived || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Total Received</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          <div className="flex items-center gap-3">
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              className="px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white text-sm focus:outline-none focus:border-blue-600"
-            >
-              <option value="all">All Transactions</option>
-              <option value="deposit">Deposits</option>
-              <option value="withdrawal">Withdrawals</option>
-              <option value="payment">Payments</option>
-              <option value="earning">Earnings</option>
-              <option value="refund">Refunds</option>
-              <option value="fee">Fees</option>
-            </select>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-red-500/20">
+                <ArrowUpRight className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                {balanceQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-red-400">${(balance?.totalSpent || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Total Spent</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            <Button
-              variant="outline"
-              className="border-gray-700 text-gray-400 hover:bg-gray-800 gap-2"
-            >
-              <Download size={18} />
-              Export
-            </Button>
-          </div>
-        </div>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Clock className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                {balanceQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">${(balance?.pending || 0).toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Pending</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="divide-y divide-gray-800">
-          {filteredTransactions.length > 0 ? (
-            filteredTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="p-6 hover:bg-gray-800/50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="p-3 bg-gray-800 rounded">
-                      {getTransactionIcon(tx.type)}
-                    </div>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <CreditCard className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                {balanceQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-purple-400">{balance?.paymentMethods || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Payment Methods</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-                    <div className="flex-1">
-                      <p className="text-white font-semibold">
-                        {tx.description}
-                      </p>
-                      <div className="flex items-center gap-4 mt-1 text-sm text-gray-400">
-                        <span>{formatDate(tx.date)}</span>
-                        <span>Ref: {tx.reference}</span>
-                        {tx.paymentMethod && (
-                          <span>{tx.paymentMethod}</span>
-                        )}
+      {/* Transactions */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
+          <TabsTrigger value="all" className="data-[state=active]:bg-slate-700 rounded-md">All</TabsTrigger>
+          <TabsTrigger value="credit" className="data-[state=active]:bg-slate-700 rounded-md">Received</TabsTrigger>
+          <TabsTrigger value="debit" className="data-[state=active]:bg-slate-700 rounded-md">Sent</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="mt-6">
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg">Transaction History</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {transactionsQuery.isLoading ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : filteredTransactions?.length === 0 ? (
+                <div className="text-center py-16">
+                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                    <DollarSign className="w-10 h-10 text-slate-500" />
+                  </div>
+                  <p className="text-slate-400 text-lg">No transactions yet</p>
+                  <p className="text-slate-500 text-sm mt-1">Your transaction history will appear here</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-700/50">
+                  {filteredTransactions?.map((transaction: any) => (
+                    <div key={transaction.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          {getTransactionIcon(transaction.type)}
+                          <div>
+                            <p className="text-white font-medium">{transaction.description}</p>
+                            <p className="text-sm text-slate-400">{transaction.date}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={cn("font-bold text-lg", transaction.type === "credit" ? "text-green-400" : "text-red-400")}>
+                            {transaction.type === "credit" ? "+" : "-"}${Math.abs(transaction.amount).toLocaleString()}
+                          </p>
+                          <Badge className={transaction.status === "completed" ? "bg-green-500/20 text-green-400 border-0" : "bg-yellow-500/20 text-yellow-400 border-0"}>
+                            {transaction.status}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  <div className="text-right">
-                    <p
-                      className={`text-lg font-bold ${
-                        tx.type === "deposit" ||
-                        tx.type === "earning" ||
-                        tx.type === "refund"
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {tx.type === "deposit" ||
-                      tx.type === "earning" ||
-                      tx.type === "refund"
-                        ? "+"
-                        : "-"}
-                      {formatCurrency(tx.amount)}
-                    </p>
-                    <div className="mt-2">{getStatusBadge(tx.status)}</div>
-                  </div>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="p-12 text-center">
-              <DollarSign className="w-12 h-12 text-gray-700 mx-auto mb-4" />
-              <p className="text-gray-400">No transactions found</p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Modals */}
-      {showDepositModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="bg-gray-900 border-gray-700 p-6 w-96">
-            <h2 className="text-xl font-bold text-white mb-4">Deposit Funds</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Payment Method
-                </label>
-                <select className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600">
-                  {paymentMethods.map((method) => (
-                    <option key={method.id}>
-                      {method.name} •••• {method.last4}
-                    </option>
                   ))}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={() => setShowDepositModal(false)}
-                  variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => setShowDepositModal(false)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  Deposit
-                </Button>
-              </div>
-            </div>
+                </div>
+              )}
+            </CardContent>
           </Card>
-        </div>
-      )}
-
-      {showWithdrawModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="bg-gray-900 border-gray-700 p-6 w-96">
-            <h2 className="text-xl font-bold text-white mb-4">Withdraw Funds</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Recipient Bank
-                </label>
-                <select className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600">
-                  {paymentMethods
-                    .filter((m) => m.type === "bank")
-                    .map((method) => (
-                      <option key={method.id}>
-                        {method.name} •••• {method.last4}
-                      </option>
-                    ))}
-                </select>
-              </div>
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={() => setShowWithdrawModal(false)}
-                  variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => setShowWithdrawModal(false)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  Withdraw
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {showTransferModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="bg-gray-900 border-gray-700 p-6 w-96">
-            <h2 className="text-xl font-bold text-white mb-4">Transfer Funds</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Recipient Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="user@example.com"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Amount
-                </label>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
-                  Note (Optional)
-                </label>
-                <textarea
-                  placeholder="Add a note..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600 resize-none"
-                  rows={3}
-                />
-              </div>
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={() => setShowTransferModal(false)}
-                  variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => setShowTransferModal(false)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  Transfer
-                </Button>
-              </div>
-            </div>
-          </Card>
-        </div>
-      )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
-
