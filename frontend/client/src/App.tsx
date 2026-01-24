@@ -112,6 +112,7 @@ import DriverPerformance from "./pages/DriverPerformance";
 import SettlementDetails from "./pages/SettlementDetails";
 import AppointmentScheduler from "./pages/AppointmentScheduler";
 import NotificationCenter from "./pages/NotificationCenter";
+import UserManagement from "./pages/UserManagement";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -508,6 +509,16 @@ function Router() {
       <Route path={"/alerts"} component={() => (
         <DashboardLayout>
           <NotificationCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/admin/users"} component={() => (
+        <DashboardLayout>
+          <UserManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/users"} component={() => (
+        <DashboardLayout>
+          <UserManagement />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
