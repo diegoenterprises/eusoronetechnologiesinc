@@ -1,6 +1,7 @@
 /**
  * COMPANY PROFILE PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
 import React, { useState } from "react";
@@ -8,304 +9,187 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Building, MapPin, Phone, Mail, Globe, FileText, Shield,
-  CreditCard, Truck, Users, Settings, Save, Upload, Edit,
-  CheckCircle, AlertTriangle, DollarSign, Loader2
+  Building, MapPin, Phone, Mail, Globe, Edit,
+  CheckCircle, Upload, Users
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function CompanyProfile() {
-  const [activeTab, setActiveTab] = useState("general");
   const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<any>({});
 
-  const companyQuery = trpc.companies.getMyCompany.useQuery();
-  const insuranceQuery = trpc.companies.getInsurance.useQuery();
-  const certificationsQuery = trpc.companies.getCertifications.useQuery();
-  const billingQuery = trpc.companies.getBillingSettings.useQuery();
-  const operationsQuery = trpc.companies.getOperationalSettings.useQuery();
+  const companyQuery = trpc.company.getProfile.useQuery();
+  const statsQuery = trpc.company.getStats.useQuery();
 
-  const updateCompanyMutation = trpc.companies.update.useMutation({
-    onSuccess: () => { toast.success("Company profile updated"); setIsEditing(false); companyQuery.refetch(); },
+  const updateMutation = trpc.company.updateProfile.useMutation({
+    onSuccess: () => { toast.success("Company profile updated"); companyQuery.refetch(); setIsEditing(false); },
     onError: (error) => toast.error("Failed to update", { description: error.message }),
   });
-
-  const updateBillingMutation = trpc.companies.updateBillingSettings.useMutation({
-    onSuccess: () => { toast.success("Billing settings updated"); billingQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
-  });
-
-  const updateOperationsMutation = trpc.companies.updateOperationalSettings.useMutation({
-    onSuccess: () => { toast.success("Operational settings updated"); operationsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
-  });
-
-  if (companyQuery.error) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-red-400">Error loading company data</p>
-        <Button className="mt-4" onClick={() => companyQuery.refetch()}>Retry</Button>
-      </div>
-    );
-  }
 
   const company = companyQuery.data;
+  const stats = statsQuery.data;
 
-  const getDaysUntilExpiry = (dateStr: string) => {
-    const expiry = new Date(dateStr);
-    const now = new Date();
-    const diff = expiry.getTime() - now.getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const handleEdit = () => {
+    setFormData(company || {});
+    setIsEditing(true);
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-lg bg-slate-700 flex items-center justify-center">
-            <Building className="w-8 h-8 text-slate-400" />
-          </div>
-          <div>
-            {companyQuery.isLoading ? <Skeleton className="h-8 w-48" /> : (
-              <h1 className="text-2xl font-bold text-white">{company?.name}</h1>
-            )}
-            <div className="flex items-center gap-3 mt-1">
-              {companyQuery.isLoading ? <Skeleton className="h-6 w-32" /> : (
-                <>
-                  <Badge className="bg-blue-500/20 text-blue-400">{company?.mcNumber}</Badge>
-                  <Badge className="bg-slate-500/20 text-slate-400">{company?.dotNumber}</Badge>
-                  <Badge className="bg-green-500/20 text-green-400">{company?.status}</Badge>
-                </>
-              )}
-            </div>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Company Profile
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Manage your company information</p>
         </div>
-        <div className="flex items-center gap-2">
-          {isEditing ? (
-            <>
-              <Button variant="outline" className="border-slate-600" onClick={() => setIsEditing(false)}>Cancel</Button>
-              <Button className="bg-green-600 hover:bg-green-700" onClick={() => updateCompanyMutation.mutate({})} disabled={updateCompanyMutation.isPending}>
-                {updateCompanyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}Save Changes
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" className="border-slate-600" onClick={() => setIsEditing(true)}>
-              <Edit className="w-4 h-4 mr-2" />Edit Profile
-            </Button>
-          )}
-        </div>
+        {!isEditing && (
+          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleEdit}>
+            <Edit className="w-4 h-4 mr-2" />Edit Profile
+          </Button>
+        )}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="general" className="data-[state=active]:bg-blue-600">General</TabsTrigger>
-          <TabsTrigger value="insurance" className="data-[state=active]:bg-blue-600">Insurance</TabsTrigger>
-          <TabsTrigger value="certifications" className="data-[state=active]:bg-blue-600">Certifications</TabsTrigger>
-          <TabsTrigger value="billing" className="data-[state=active]:bg-blue-600">Billing</TabsTrigger>
-          <TabsTrigger value="operations" className="data-[state=active]:bg-blue-600">Operations</TabsTrigger>
-        </TabsList>
-
-        {/* General Tab */}
-        <TabsContent value="general" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><Building className="w-5 h-5 text-blue-400" />Company Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {companyQuery.isLoading ? (
-                  [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)
+      {/* Company Header Card */}
+      {companyQuery.isLoading ? (
+        <Skeleton className="h-40 w-full rounded-xl" />
+      ) : (
+        <Card className="bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border-cyan-500/30 rounded-xl">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-6">
+              <div className="w-24 h-24 rounded-xl bg-slate-700/50 flex items-center justify-center">
+                {company?.logo ? (
+                  <img src={company.logo} alt={company.name} className="w-full h-full object-cover rounded-xl" />
                 ) : (
-                  <>
-                    <div><Label className="text-slate-400">Legal Name</Label><Input defaultValue={company?.legalName} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">DBA</Label><Input defaultValue={company?.dba} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div><Label className="text-slate-400">MC Number</Label><Input defaultValue={company?.mcNumber} disabled className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                      <div><Label className="text-slate-400">DOT Number</Label><Input defaultValue={company?.dotNumber} disabled className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    </div>
-                    <div><Label className="text-slate-400">EIN</Label><Input defaultValue={company?.ein} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Description</Label><Textarea defaultValue={company?.description} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" rows={3} /></div>
-                  </>
+                  <Building className="w-12 h-12 text-slate-400" />
                 )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><MapPin className="w-5 h-5 text-green-400" />Contact Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {companyQuery.isLoading ? (
-                  [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full" />)
-                ) : (
-                  <>
-                    <div><Label className="text-slate-400">Street Address</Label><Input defaultValue={company?.address?.street} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div><Label className="text-slate-400">City</Label><Input defaultValue={company?.address?.city} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                      <div><Label className="text-slate-400">State</Label><Input defaultValue={company?.address?.state} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                      <div><Label className="text-slate-400">ZIP</Label><Input defaultValue={company?.address?.zip} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    </div>
-                    <div><Label className="text-slate-400">Phone</Label><Input defaultValue={company?.phone} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Email</Label><Input defaultValue={company?.email} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Website</Label><Input defaultValue={company?.website} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Insurance Tab */}
-        <TabsContent value="insurance" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {insuranceQuery.isLoading ? (
-              [1, 2, 3].map((i) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>)
-            ) : (
-              insuranceQuery.data?.map((insurance) => (
-                <Card key={insurance.type} className="bg-slate-800/50 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Shield className={cn("w-5 h-5", insurance.type === "liability" ? "text-blue-400" : insurance.type === "cargo" ? "text-green-400" : "text-purple-400")} />
-                      {insurance.type === "liability" ? "Liability" : insurance.type === "cargo" ? "Cargo" : "Workers Comp"}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div><p className="text-xs text-slate-500">Carrier</p><p className="text-white">{insurance.carrier}</p></div>
-                    <div><p className="text-xs text-slate-500">Policy Number</p><p className="text-white">{insurance.policyNumber}</p></div>
-                    {insurance.coverage && <div><p className="text-xs text-slate-500">Coverage</p><p className="text-green-400 font-bold">${(insurance.coverage / 1000000).toFixed(1)}M</p></div>}
-                    <div>
-                      <p className="text-xs text-slate-500">Expires</p>
-                      <div className="flex items-center gap-2">
-                        <p className="text-white">{insurance.expirationDate}</p>
-                        <Badge className={cn(getDaysUntilExpiry(insurance.expirationDate) <= 30 ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400")}>
-                          {getDaysUntilExpiry(insurance.expirationDate)} days
-                        </Badge>
-                      </div>
-                    </div>
-                    <Button variant="outline" size="sm" className="w-full border-slate-600"><Upload className="w-4 h-4 mr-2" />Upload Certificate</Button>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
-        </TabsContent>
-
-        {/* Certifications Tab */}
-        <TabsContent value="certifications" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader><CardTitle className="text-white">Certifications & Authorities</CardTitle></CardHeader>
-            <CardContent>
-              {certificationsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : (
-                <div className="space-y-3">
-                  {certificationsQuery.data?.map((cert) => (
-                    <div key={cert.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-lg bg-green-500/20"><CheckCircle className="w-5 h-5 text-green-400" /></div>
-                        <div>
-                          <p className="text-white font-medium">{cert.name}</p>
-                          <p className="text-sm text-slate-400">{cert.number}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        {cert.expirationDate ? (
-                          <div className="text-right">
-                            <p className="text-xs text-slate-500">Expires</p>
-                            <p className="text-white">{cert.expirationDate}</p>
-                          </div>
-                        ) : (
-                          <p className="text-slate-500 text-sm">No expiration</p>
-                        )}
-                        <Badge className="bg-green-500/20 text-green-400">{cert.status}</Badge>
-                      </div>
-                    </div>
-                  ))}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-white text-2xl font-bold">{company?.name}</p>
+                  {company?.verified && <Badge className="bg-green-500/20 text-green-400 border-0"><CheckCircle className="w-3 h-3 mr-1" />Verified</Badge>}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Billing Tab */}
-        <TabsContent value="billing" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader><CardTitle className="text-white flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-400" />Payment Settings</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                {billingQuery.isLoading ? (
-                  [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)
-                ) : (
-                  <>
-                    <div><Label className="text-slate-400">Payment Terms</Label><Input defaultValue={billingQuery.data?.paymentTerms} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Invoice Email</Label><Input defaultValue={billingQuery.data?.invoiceEmail} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <Separator className="bg-slate-700" />
-                    <div className="flex items-center justify-between">
-                      <div><p className="text-white">Auto-generate Invoices</p><p className="text-xs text-slate-500">Automatically create invoices on delivery</p></div>
-                      <Switch defaultChecked={billingQuery.data?.autoInvoice} disabled={!isEditing} />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div><p className="text-white">Email Payment Reminders</p><p className="text-xs text-slate-500">Send reminders for overdue invoices</p></div>
-                      <Switch defaultChecked={billingQuery.data?.emailReminders} disabled={!isEditing} />
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader><CardTitle className="text-white flex items-center gap-2"><CreditCard className="w-5 h-5 text-blue-400" />Bank Account</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                {billingQuery.isLoading ? (
-                  [1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)
-                ) : (
-                  <>
-                    <div><Label className="text-slate-400">Bank Name</Label><Input defaultValue={billingQuery.data?.bankName} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Account Number</Label><Input defaultValue={`****${billingQuery.data?.accountEnding}`} disabled className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Routing Number</Label><Input defaultValue={`****${billingQuery.data?.routingEnding}`} disabled className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <Button variant="outline" className="w-full border-slate-600">Update Bank Information</Button>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Operations Tab */}
-        <TabsContent value="operations" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader><CardTitle className="text-white flex items-center gap-2"><Settings className="w-5 h-5 text-purple-400" />Operational Settings</CardTitle></CardHeader>
-            <CardContent>
-              {operationsQuery.isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div><Label className="text-slate-400">Default Equipment Type</Label><Input defaultValue={operationsQuery.data?.defaultEquipment} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                    <div><Label className="text-slate-400">Operating Radius (miles)</Label><Input type="number" defaultValue={operationsQuery.data?.operatingRadius} disabled={!isEditing} className="mt-1 bg-slate-700/50 border-slate-600" /></div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between"><div><p className="text-white">Hazmat Operations</p><p className="text-xs text-slate-500">Accept hazmat loads</p></div><Switch defaultChecked={operationsQuery.data?.hazmatEnabled} disabled={!isEditing} /></div>
-                    <div className="flex items-center justify-between"><div><p className="text-white">Tanker Endorsement</p><p className="text-xs text-slate-500">Tanker-qualified drivers</p></div><Switch defaultChecked={operationsQuery.data?.tankerEndorsement} disabled={!isEditing} /></div>
-                    <div className="flex items-center justify-between"><div><p className="text-white">Team Driving</p><p className="text-xs text-slate-500">Support team driver assignments</p></div><Switch defaultChecked={operationsQuery.data?.teamDriving} disabled={!isEditing} /></div>
-                    <div className="flex items-center justify-between"><div><p className="text-white">Weekend Operations</p><p className="text-xs text-slate-500">Accept weekend loads</p></div><Switch defaultChecked={operationsQuery.data?.weekendOperations} disabled={!isEditing} /></div>
-                  </div>
+                <p className="text-slate-400">{company?.type}</p>
+                <div className="flex items-center gap-4 mt-2 text-sm text-slate-400">
+                  <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{company?.city}, {company?.state}</span>
+                  <span>DOT: {company?.dotNumber}</span>
+                  <span>MC: {company?.mcNumber}</span>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Users className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{stats?.employees || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Employees</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <Building className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{stats?.vehicles || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Vehicles</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-cyan-500/20">
+                <CheckCircle className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <p className="text-2xl font-bold text-cyan-400">{stats?.loadsCompleted?.toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Loads Completed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <CheckCircle className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">{stats?.rating}</p>
+                )}
+                <p className="text-xs text-slate-400">Rating</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Company Details */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg">Company Details</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {companyQuery.isLoading ? (
+            <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+          ) : isEditing ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label className="text-sm text-slate-400 mb-1 block">Company Name</label><Input value={formData.name || ""} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Phone</label><Input value={formData.phone || ""} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Email</label><Input value={formData.email || ""} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Website</label><Input value={formData.website || ""} onChange={(e) => setFormData({ ...formData, website: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+              </div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Address</label><Input value={formData.address || ""} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Description</label><Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" /></div>
+              <div className="flex gap-3">
+                <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => updateMutation.mutate(formData)}>Save Changes</Button>
+                <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setIsEditing(false)}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Phone</p><p className="text-white flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" />{company?.phone}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Email</p><p className="text-white flex items-center gap-2"><Mail className="w-4 h-4 text-slate-400" />{company?.email}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Website</p><p className="text-white flex items-center gap-2"><Globe className="w-4 h-4 text-slate-400" />{company?.website}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Address</p><p className="text-white flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400" />{company?.address}</p></div>
+              </div>
+              {company?.description && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Description</p><p className="text-slate-300">{company.description}</p></div>}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
