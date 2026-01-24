@@ -68,6 +68,8 @@ import { driverQualificationRouter } from "./routers/driverQualification";
 import { factoringRouter } from "./routers/factoring";
 import { inspectionFormsRouter } from "./routers/inspectionForms";
 import { loadBoardRouter } from "./routers/loadBoard";
+import { csaScoresRouter } from "./routers/csaScores";
+import { scadaRouter } from "./routers/scada";
 
 export const appRouter = router({
   system: systemRouter,
@@ -274,6 +276,12 @@ export const appRouter = router({
 
   // Load Board
   loadBoard: loadBoardRouter,
+
+  // FMCSA CSA Scores
+  csaScores: csaScoresRouter,
+
+  // Terminal SCADA Integration
+  scada: scadaRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
