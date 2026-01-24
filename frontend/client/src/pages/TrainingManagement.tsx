@@ -1,122 +1,55 @@
 /**
  * TRAINING MANAGEMENT PAGE
- * Driver training and certification tracking
- * For Safety Managers and Compliance Officers
+ * 100% Dynamic - No mock data
  */
 
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  GraduationCap, BookOpen, Clock, CheckCircle, AlertTriangle,
-  Play, Award, Users, Calendar, Search, Filter, Plus,
-  Video, FileText, Target, TrendingUp, ChevronRight
+  BookOpen, Users, CheckCircle, Clock, AlertTriangle,
+  Play, Award, Eye, Calendar, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-interface TrainingCourse {
-  id: string;
-  title: string;
-  category: "safety" | "hazmat" | "compliance" | "equipment" | "customer_service";
-  duration: number;
-  requiredFor: string[];
-  description: string;
-  modules: number;
-  passingScore: number;
-}
-
-interface DriverTraining {
-  driverId: string;
-  driverName: string;
-  courseId: string;
-  courseName: string;
-  status: "not_started" | "in_progress" | "completed" | "expired";
-  progress: number;
-  score?: number;
-  completedDate?: string;
-  expirationDate?: string;
-  dueDate?: string;
-}
-
-const MOCK_COURSES: TrainingCourse[] = [
-  {
-    id: "c1", title: "Hazmat Transportation Safety", category: "hazmat",
-    duration: 120, requiredFor: ["DRIVER"], modules: 8, passingScore: 80,
-    description: "Comprehensive hazmat handling and transportation procedures per 49 CFR 172-180",
-  },
-  {
-    id: "c2", title: "Defensive Driving", category: "safety",
-    duration: 90, requiredFor: ["DRIVER"], modules: 6, passingScore: 75,
-    description: "Advanced defensive driving techniques for commercial vehicle operators",
-  },
-  {
-    id: "c3", title: "Hours of Service Compliance", category: "compliance",
-    duration: 60, requiredFor: ["DRIVER", "CATALYST"], modules: 4, passingScore: 85,
-    description: "ELD regulations and HOS rules per 49 CFR 395",
-  },
-  {
-    id: "c4", title: "Tank Vehicle Operations", category: "equipment",
-    duration: 90, requiredFor: ["DRIVER"], modules: 5, passingScore: 80,
-    description: "Safe operation of tank trailers including loading, unloading, and surge control",
-  },
-  {
-    id: "c5", title: "Spill Response Procedures", category: "hazmat",
-    duration: 45, requiredFor: ["DRIVER"], modules: 3, passingScore: 90,
-    description: "Emergency response procedures for hazmat spills per ERG 2024",
-  },
-];
-
-const MOCK_DRIVER_TRAINING: DriverTraining[] = [
-  { driverId: "d1", driverName: "Mike Johnson", courseId: "c1", courseName: "Hazmat Transportation Safety", status: "completed", progress: 100, score: 92, completedDate: "2024-11-15", expirationDate: "2025-11-15" },
-  { driverId: "d1", driverName: "Mike Johnson", courseId: "c2", courseName: "Defensive Driving", status: "in_progress", progress: 65, dueDate: "2025-02-01" },
-  { driverId: "d1", driverName: "Mike Johnson", courseId: "c3", courseName: "Hours of Service Compliance", status: "completed", progress: 100, score: 88, completedDate: "2024-12-01", expirationDate: "2025-12-01" },
-  { driverId: "d2", driverName: "Sarah Williams", courseId: "c1", courseName: "Hazmat Transportation Safety", status: "expired", progress: 100, score: 85, completedDate: "2024-01-10", expirationDate: "2025-01-10" },
-  { driverId: "d2", driverName: "Sarah Williams", courseId: "c2", courseName: "Defensive Driving", status: "completed", progress: 100, score: 91, completedDate: "2024-10-20", expirationDate: "2026-10-20" },
-  { driverId: "d3", driverName: "Tom Brown", courseId: "c1", courseName: "Hazmat Transportation Safety", status: "not_started", progress: 0, dueDate: "2025-02-15" },
-  { driverId: "d3", driverName: "Tom Brown", courseId: "c4", courseName: "Tank Vehicle Operations", status: "in_progress", progress: 40, dueDate: "2025-01-31" },
-];
-
-const CATEGORY_CONFIG = {
-  safety: { label: "Safety", color: "bg-green-500/20 text-green-400" },
-  hazmat: { label: "Hazmat", color: "bg-orange-500/20 text-orange-400" },
-  compliance: { label: "Compliance", color: "bg-blue-500/20 text-blue-400" },
-  equipment: { label: "Equipment", color: "bg-purple-500/20 text-purple-400" },
-  customer_service: { label: "Customer Service", color: "bg-cyan-500/20 text-cyan-400" },
-};
-
-const STATUS_CONFIG = {
-  not_started: { label: "Not Started", color: "bg-slate-500/20 text-slate-400" },
-  in_progress: { label: "In Progress", color: "bg-blue-500/20 text-blue-400" },
-  completed: { label: "Completed", color: "bg-green-500/20 text-green-400" },
-  expired: { label: "Expired", color: "bg-red-500/20 text-red-400" },
-};
-
 export default function TrainingManagement() {
-  const { user } = useAuth();
-  const [courses] = useState<TrainingCourse[]>(MOCK_COURSES);
-  const [driverTraining] = useState<DriverTraining[]>(MOCK_DRIVER_TRAINING);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"courses" | "assignments" | "reports">("assignments");
+  const [activeTab, setActiveTab] = useState("courses");
 
-  const filteredCourses = courses.filter(c => {
-    if (searchQuery && !c.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    if (selectedCategory !== "all" && c.category !== selectedCategory) return false;
-    return true;
+  const summaryQuery = trpc.training.getSummary.useQuery();
+  const coursesQuery = trpc.training.getCourses.useQuery();
+  const driversQuery = trpc.training.getDriverTraining.useQuery();
+
+  const assignMutation = trpc.training.assignCourse.useMutation({
+    onSuccess: () => { toast.success("Course assigned"); driversQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const stats = {
-    totalDrivers: new Set(driverTraining.map(t => t.driverId)).size,
-    completedThisMonth: driverTraining.filter(t => t.status === "completed").length,
-    inProgress: driverTraining.filter(t => t.status === "in_progress").length,
-    expired: driverTraining.filter(t => t.status === "expired").length,
-    overdue: driverTraining.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== "completed").length,
+  const summary = summaryQuery.data;
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "completed": return "bg-green-500/20 text-green-400";
+      case "in_progress": return "bg-blue-500/20 text-blue-400";
+      case "overdue": return "bg-red-500/20 text-red-400";
+      case "not_started": return "bg-slate-500/20 text-slate-400";
+      default: return "bg-slate-500/20 text-slate-400";
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case "safety": return "bg-red-500/20 text-red-400";
+      case "compliance": return "bg-purple-500/20 text-purple-400";
+      case "hazmat": return "bg-orange-500/20 text-orange-400";
+      case "defensive_driving": return "bg-blue-500/20 text-blue-400";
+      default: return "bg-slate-500/20 text-slate-400";
+    }
   };
 
   return (
@@ -125,239 +58,157 @@ export default function TrainingManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Training Management</h1>
-          <p className="text-slate-400 text-sm">Driver training and certification tracking</p>
+          <p className="text-slate-400 text-sm">Manage driver training and certifications</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Assign Training
+          <BookOpen className="w-4 h-4 mr-2" />Add Course
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20">
-              <Users className="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-white">{stats.totalDrivers}</p>
-              <p className="text-xs text-slate-500">Active Drivers</p>
-            </div>
+          <CardContent className="p-4 text-center">
+            <BookOpen className="w-6 h-6 mx-auto mb-2 text-blue-400" />
+            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
+              <p className="text-2xl font-bold text-blue-400">{summary?.totalCourses || 0}</p>
+            )}
+            <p className="text-xs text-slate-400">Courses</p>
           </CardContent>
         </Card>
         <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/20">
-              <CheckCircle className="w-5 h-5 text-green-400" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-green-400">{stats.completedThisMonth}</p>
-              <p className="text-xs text-slate-500">Completed</p>
-            </div>
+          <CardContent className="p-4 text-center">
+            <Users className="w-6 h-6 mx-auto mb-2 text-purple-400" />
+            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
+              <p className="text-2xl font-bold text-purple-400">{summary?.totalDrivers || 0}</p>
+            )}
+            <p className="text-xs text-slate-400">Drivers</p>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-blue-500/20">
-              <Play className="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-blue-400">{stats.inProgress}</p>
-              <p className="text-xs text-slate-500">In Progress</p>
-            </div>
+        <Card className="bg-green-500/10 border-green-500/30">
+          <CardContent className="p-4 text-center">
+            <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-400" />
+            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
+              <p className="text-2xl font-bold text-green-400">{summary?.completedTrainings || 0}</p>
+            )}
+            <p className="text-xs text-slate-400">Completed</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-blue-500/10 border-blue-500/30">
+          <CardContent className="p-4 text-center">
+            <Clock className="w-6 h-6 mx-auto mb-2 text-blue-400" />
+            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
+              <p className="text-2xl font-bold text-blue-400">{summary?.inProgress || 0}</p>
+            )}
+            <p className="text-xs text-slate-400">In Progress</p>
           </CardContent>
         </Card>
         <Card className="bg-red-500/10 border-red-500/30">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-500/20">
-              <AlertTriangle className="w-5 h-5 text-red-400" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-red-400">{stats.expired}</p>
-              <p className="text-xs text-red-500/70">Expired</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-yellow-500/10 border-yellow-500/30">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-yellow-500/20">
-              <Clock className="w-5 h-5 text-yellow-400" />
-            </div>
-            <div>
-              <p className="text-xl font-bold text-yellow-400">{stats.overdue}</p>
-              <p className="text-xs text-yellow-500/70">Overdue</p>
-            </div>
+          <CardContent className="p-4 text-center">
+            <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-red-400" />
+            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
+              <p className="text-2xl font-bold text-red-400">{summary?.overdue || 0}</p>
+            )}
+            <p className="text-xs text-slate-400">Overdue</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-700 pb-2">
-        {[
-          { id: "assignments", label: "Driver Assignments", icon: Users },
-          { id: "courses", label: "Course Catalog", icon: BookOpen },
-          { id: "reports", label: "Reports", icon: TrendingUp },
-        ].map(tab => (
-          <Button
-            key={tab.id}
-            variant={activeTab === tab.id ? "default" : "ghost"}
-            onClick={() => setActiveTab(tab.id as any)}
-            className={activeTab === tab.id ? "bg-blue-600" : ""}
-          >
-            <tab.icon className="w-4 h-4 mr-2" />
-            {tab.label}
-          </Button>
-        ))}
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="bg-slate-800 border border-slate-700">
+          <TabsTrigger value="courses" className="data-[state=active]:bg-blue-600">Courses</TabsTrigger>
+          <TabsTrigger value="drivers" className="data-[state=active]:bg-blue-600">Driver Progress</TabsTrigger>
+        </TabsList>
 
-      {/* Content */}
-      {activeTab === "assignments" && (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader className="border-b border-slate-700">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-white">Driver Training Status</CardTitle>
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <Input
-                    placeholder="Search driver..."
-                    className="pl-10 w-64 bg-slate-700/50 border-slate-600"
-                  />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            <table className="w-full">
-              <thead className="bg-slate-700/30">
-                <tr>
-                  <th className="text-left text-slate-400 text-xs font-medium p-4">Driver</th>
-                  <th className="text-left text-slate-400 text-xs font-medium p-4">Course</th>
-                  <th className="text-left text-slate-400 text-xs font-medium p-4">Progress</th>
-                  <th className="text-left text-slate-400 text-xs font-medium p-4">Status</th>
-                  <th className="text-left text-slate-400 text-xs font-medium p-4">Due/Expiry</th>
-                  <th className="text-right text-slate-400 text-xs font-medium p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/50">
-                {driverTraining.map((training, idx) => (
-                  <tr key={idx} className="hover:bg-slate-700/20 transition-colors">
-                    <td className="p-4">
-                      <span className="text-white font-medium">{training.driverName}</span>
-                    </td>
-                    <td className="p-4 text-slate-300">{training.courseName}</td>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3 w-32">
-                        <Progress value={training.progress} className="h-2" />
-                        <span className="text-xs text-slate-400">{training.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge className={STATUS_CONFIG[training.status].color}>
-                        {STATUS_CONFIG[training.status].label}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-slate-400 text-sm">
-                      {training.expirationDate ? (
-                        <span className={new Date(training.expirationDate) < new Date() ? "text-red-400" : ""}>
-                          Expires: {new Date(training.expirationDate).toLocaleDateString()}
-                        </span>
-                      ) : training.dueDate ? (
-                        <span className={new Date(training.dueDate) < new Date() ? "text-red-400" : ""}>
-                          Due: {new Date(training.dueDate).toLocaleDateString()}
-                        </span>
-                      ) : "-"}
-                    </td>
-                    <td className="p-4 text-right">
-                      {training.status === "in_progress" && (
-                        <Button size="sm" variant="outline" className="border-slate-600">
-                          <Play className="w-3 h-3 mr-1" />
-                          Resume
-                        </Button>
-                      )}
-                      {training.status === "not_started" && (
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                          Start
-                        </Button>
-                      )}
-                      {training.status === "expired" && (
-                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700">
-                          Renew
-                        </Button>
-                      )}
-                      {training.status === "completed" && (
-                        <Button size="sm" variant="outline" className="border-slate-600">
-                          <Award className="w-3 h-3 mr-1" />
-                          Certificate
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
-      )}
-
-      {activeTab === "courses" && (
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <Button
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedCategory("all")}
-              className={selectedCategory === "all" ? "bg-blue-600" : "border-slate-600"}
-            >
-              All
-            </Button>
-            {Object.entries(CATEGORY_CONFIG).map(([key, config]) => (
-              <Button
-                key={key}
-                variant={selectedCategory === key ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedCategory(key)}
-                className={selectedCategory === key ? "bg-blue-600" : "border-slate-600"}
-              >
-                {config.label}
-              </Button>
-            ))}
-          </div>
+        <TabsContent value="courses" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCourses.map(course => (
-              <Card key={course.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <Badge className={CATEGORY_CONFIG[course.category].color}>
-                      {CATEGORY_CONFIG[course.category].label}
-                    </Badge>
-                    <div className="flex items-center gap-1 text-slate-400 text-xs">
-                      <Clock className="w-3 h-3" />
-                      {course.duration} min
+            {coursesQuery.isLoading ? (
+              [1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-48 w-full" />)
+            ) : coursesQuery.data?.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">No courses available</p>
+              </div>
+            ) : (
+              coursesQuery.data?.map((course) => (
+                <Card key={course.id} className="bg-slate-800/50 border-slate-700">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <p className="text-white font-medium">{course.title}</p>
+                        <Badge className={getCategoryColor(course.category)}>{course.category?.replace("_", " ")}</Badge>
+                      </div>
+                      {course.required && <Badge className="bg-red-500/20 text-red-400">Required</Badge>}
                     </div>
-                  </div>
-                  <h3 className="text-white font-medium mb-2">{course.title}</h3>
-                  <p className="text-slate-400 text-sm mb-4 line-clamp-2">{course.description}</p>
-                  <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{course.modules} modules</span>
-                    <span>Pass: {course.passingScore}%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <p className="text-sm text-slate-400 mb-4 line-clamp-2">{course.description}</p>
+                    <div className="flex items-center justify-between text-sm text-slate-500 mb-4">
+                      <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{course.duration}</span>
+                      <span>{course.completedBy}/{course.assignedTo} completed</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" className="flex-1 border-slate-600"><Eye className="w-4 h-4 mr-1" />View</Button>
+                      <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700"><Play className="w-4 h-4 mr-1" />Start</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
-        </div>
-      )}
+        </TabsContent>
 
-      {activeTab === "reports" && (
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-12 text-center">
-            <TrendingUp className="w-12 h-12 text-slate-500 mx-auto mb-3" />
-            <p className="text-slate-400">Training reports and analytics coming soon</p>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="drivers" className="mt-6">
+          <Card className="bg-slate-800/50 border-slate-700">
+            <CardHeader><CardTitle className="text-white">Driver Training Progress</CardTitle></CardHeader>
+            <CardContent>
+              {driversQuery.isLoading ? (
+                <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+              ) : driversQuery.data?.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                  <p className="text-slate-400">No driver training data</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {driversQuery.data?.map((driver) => (
+                    <div key={driver.id} className="p-4 rounded-lg bg-slate-700/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                            <Users className="w-5 h-5 text-slate-400" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{driver.name}</p>
+                            <p className="text-xs text-slate-500">{driver.completedCourses}/{driver.totalCourses} courses completed</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {driver.overdueCourses > 0 && (
+                            <Badge className="bg-red-500/20 text-red-400">{driver.overdueCourses} overdue</Badge>
+                          )}
+                          <span className={cn("font-bold", driver.completionRate >= 90 ? "text-green-400" : driver.completionRate >= 70 ? "text-yellow-400" : "text-red-400")}>
+                            {driver.completionRate}%
+                          </span>
+                        </div>
+                      </div>
+                      <Progress value={driver.completionRate} className="h-2 mb-3" />
+                      <div className="flex flex-wrap gap-2">
+                        {driver.courses?.slice(0, 4).map((course) => (
+                          <Badge key={course.id} className={getStatusColor(course.status)}>
+                            {course.title}
+                          </Badge>
+                        ))}
+                        {driver.courses?.length > 4 && (
+                          <Badge className="bg-slate-500/20 text-slate-400">+{driver.courses.length - 4} more</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
