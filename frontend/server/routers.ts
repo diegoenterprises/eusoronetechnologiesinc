@@ -27,6 +27,7 @@ import { messagesRouter } from "./routers/messages";
 import { ratesRouter } from "./routers/rates";
 import { terminalsRouter } from "./routers/terminals";
 import { escortsRouter } from "./routers/escorts";
+import { driversRouter } from "./routers/drivers";
 
 export const appRouter = router({
   system: systemRouter,
@@ -110,6 +111,9 @@ export const appRouter = router({
 
   // Escort/Pilot Car Operations
   escorts: escortsRouter,
+
+  // Driver Management
+  drivers: driversRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
