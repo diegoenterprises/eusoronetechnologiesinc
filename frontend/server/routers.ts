@@ -38,6 +38,7 @@ import { geolocationRouter } from "./routers/geolocation";
 import { ergRouter } from "./routers/erg";
 import { appointmentsRouter } from "./routers/appointments";
 import { permitsRouter } from "./routers/permits";
+import { facilitiesRouter } from "./routers/facilities";
 
 export const appRouter = router({
   system: systemRouter,
@@ -154,6 +155,9 @@ export const appRouter = router({
 
   // Oversize/Overweight Permits
   permits: permitsRouter,
+
+  // Facility Management
+  facilities: facilitiesRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
