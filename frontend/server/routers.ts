@@ -45,6 +45,8 @@ import { supportRouter } from "./routers/support";
 import { profileRouter } from "./routers/profile";
 import { settingsRouter } from "./routers/settings";
 import { walletRouter } from "./routers/wallet";
+import { newsfeedRouter } from "./routers/newsfeed";
+import { contactsRouter } from "./routers/contacts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -182,6 +184,12 @@ export const appRouter = router({
 
   // EusoWallet Digital Payments
   wallet: walletRouter,
+
+  // News Feed & Market Data
+  newsfeed: newsfeedRouter,
+
+  // Contact Management
+  contacts: contactsRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
