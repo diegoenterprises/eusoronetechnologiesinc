@@ -32,6 +32,8 @@ import { analyticsRouter } from "./routers/analytics";
 import { carriersRouter } from "./routers/carriers";
 import { brokersRouter } from "./routers/brokers";
 import { shippersRouter } from "./routers/shippers";
+import { incidentsRouter } from "./routers/incidents";
+import { weatherRouter } from "./routers/weather";
 
 export const appRouter = router({
   system: systemRouter,
@@ -130,6 +132,12 @@ export const appRouter = router({
 
   // Shipper Operations
   shippers: shippersRouter,
+
+  // Incident Management
+  incidents: incidentsRouter,
+
+  // Weather & Route Conditions
+  weather: weatherRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
