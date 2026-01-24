@@ -70,6 +70,8 @@ import { inspectionFormsRouter } from "./routers/inspectionForms";
 import { loadBoardRouter } from "./routers/loadBoard";
 import { csaScoresRouter } from "./routers/csaScores";
 import { scadaRouter } from "./routers/scada";
+import { gamificationRouter } from "./routers/gamification";
+import { clearinghouseRouter } from "./routers/clearinghouse";
 
 export const appRouter = router({
   system: systemRouter,
@@ -282,6 +284,12 @@ export const appRouter = router({
 
   // Terminal SCADA Integration
   scada: scadaRouter,
+
+  // Gamification & Rewards
+  gamification: gamificationRouter,
+
+  // FMCSA Clearinghouse
+  clearinghouse: clearinghouseRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
