@@ -94,6 +94,7 @@ import TrainingManagement from "./pages/TrainingManagement";
 import FuelManagement from "./pages/FuelManagement";
 import DriverScorecard from "./pages/DriverScorecard";
 import Rewards from "./pages/Rewards";
+import ClearinghouseDashboard from "./pages/ClearinghouseDashboard";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -315,6 +316,16 @@ function Router() {
       <Route path={"/rewards"} component={() => (
         <DashboardLayout>
           <Rewards />
+        </DashboardLayout>
+      )} />
+      <Route path={"/clearinghouse"} component={() => (
+        <DashboardLayout>
+          <ClearinghouseDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/compliance/clearinghouse"} component={() => (
+        <DashboardLayout>
+          <ClearinghouseDashboard />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
