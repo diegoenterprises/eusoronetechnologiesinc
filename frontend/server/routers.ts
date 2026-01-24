@@ -23,6 +23,8 @@ import { fleetRouter } from "./routers/fleet";
 import { safetyRouter } from "./routers/safety";
 import { complianceRouter } from "./routers/compliance";
 import { trainingRouter } from "./routers/training";
+import { messagesRouter } from "./routers/messages";
+import { ratesRouter } from "./routers/rates";
 
 export const appRouter = router({
   system: systemRouter,
@@ -94,6 +96,12 @@ export const appRouter = router({
 
   // Training Management
   training: trainingRouter,
+
+  // Messaging
+  messages: messagesRouter,
+
+  // Rate Calculator & Market Data
+  rates: ratesRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
