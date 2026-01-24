@@ -113,6 +113,7 @@ import SettlementDetails from "./pages/SettlementDetails";
 import AppointmentScheduler from "./pages/AppointmentScheduler";
 import NotificationCenter from "./pages/NotificationCenter";
 import UserManagement from "./pages/UserManagement";
+import CompanyProfile from "./pages/CompanyProfile";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -519,6 +520,16 @@ function Router() {
       <Route path={"/users"} component={() => (
         <DashboardLayout>
           <UserManagement />
+        </DashboardLayout>
+      )} />
+      <Route path={"/company"} component={() => (
+        <DashboardLayout>
+          <CompanyProfile />
+        </DashboardLayout>
+      )} />
+      <Route path={"/settings/company"} component={() => (
+        <DashboardLayout>
+          <CompanyProfile />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
