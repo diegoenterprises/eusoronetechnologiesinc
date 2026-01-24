@@ -1,188 +1,64 @@
 /**
  * LOAD DETAILS PAGE
- * Comprehensive load management and tracking view
- * Based on 01_SHIPPER_USER_JOURNEY.md and 02_CARRIER_USER_JOURNEY.md
+ * 100% Dynamic - No mock data
  */
 
 import React, { useState } from "react";
+import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import {
-  Truck, MapPin, Clock, Calendar, DollarSign, FileText, User,
-  Phone, Mail, Package, AlertTriangle, CheckCircle, Navigation,
-  Thermometer, Droplets, Shield, ExternalLink, MessageSquare,
-  Camera, Edit, Share2, Download, MoreVertical, ChevronRight
+  Package, MapPin, Clock, Calendar, Truck, User, Building,
+  DollarSign, FileText, Phone, Mail, Navigation, CheckCircle,
+  AlertTriangle, Download, Eye, MessageSquare, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-interface LoadStop {
-  id: string;
-  type: "pickup" | "delivery";
-  status: "pending" | "arrived" | "loading" | "completed";
-  facilityName: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  scheduledTime: string;
-  actualTime?: string;
-  contact: { name: string; phone: string };
-  notes?: string;
-}
-
-interface LoadDocument {
-  id: string;
-  type: string;
-  name: string;
-  uploadedAt: string;
-  uploadedBy: string;
-}
-
-interface LoadEvent {
-  id: string;
-  type: string;
-  description: string;
-  timestamp: string;
-  location?: string;
-  user?: string;
-}
-
 export default function LoadDetails() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const params = useParams<{ loadId: string }>();
+  const [activeTab, setActiveTab] = useState("details");
 
-  // Mock load data - would come from route params and tRPC
-  const load = {
-    id: "LOAD-45850",
-    status: "in_transit",
-    hazmat: true,
-    hazmatClass: "Class 3 - Flammable Liquids",
-    unNumber: "UN1203",
-    product: "Gasoline",
-    quantity: "8,500 gallons",
-    weight: "52,000 lbs",
-    equipment: "MC-306 Tanker",
-    rate: 2850,
-    ratePerMile: 3.25,
-    distance: 877,
-    createdAt: "2025-01-20T08:00:00Z",
-    shipper: {
-      name: "Shell Oil Company",
-      contact: "John Smith",
-      phone: "(555) 123-4567",
-      email: "john.smith@shell.com",
-    },
-    carrier: {
-      name: "ABC Transport LLC",
-      mcNumber: "MC-123456",
-      contact: "Sarah Williams",
-      phone: "(555) 987-6543",
-      email: "sarah@abctransport.com",
-    },
-    driver: {
-      name: "Mike Johnson",
-      phone: "(555) 456-7890",
-      cdlNumber: "TX-12345678",
-      truckNumber: "TRK-4521",
-      trailerNumber: "TRL-8892",
-    },
-    tracking: {
-      currentLocation: "I-45 N near Corsicana, TX",
-      lastUpdate: "2025-01-23T14:30:00Z",
-      eta: "2025-01-23T16:30:00Z",
-      progress: 65,
-      speed: 62,
-      heading: "North",
-    },
-    temperature: {
-      current: 72,
-      min: 65,
-      max: 85,
-      unit: "F",
-    },
-  };
+  const loadQuery = trpc.loads.getById.useQuery({ id: params.loadId || "" }, { enabled: !!params.loadId });
+  const documentsQuery = trpc.loads.getDocuments.useQuery({ loadId: params.loadId || "" }, { enabled: !!params.loadId });
+  const trackingQuery = trpc.tracking.getLoadTracking.useQuery({ loadId: params.loadId || "" }, { enabled: !!params.loadId });
 
-  const stops: LoadStop[] = [
-    {
-      id: "stop_001",
-      type: "pickup",
-      status: "completed",
-      facilityName: "Shell Terminal - Houston",
-      address: "1234 Terminal Road",
-      city: "Houston",
-      state: "TX",
-      zip: "77001",
-      scheduledTime: "2025-01-23T09:00:00Z",
-      actualTime: "2025-01-23T09:15:00Z",
-      contact: { name: "Terminal Dispatch", phone: "(555) 111-2222" },
-      notes: "Gate code: 4521",
-    },
-    {
-      id: "stop_002",
-      type: "delivery",
-      status: "pending",
-      facilityName: "Love's Travel Stop #245",
-      address: "5678 Highway 45",
-      city: "Dallas",
-      state: "TX",
-      zip: "75201",
-      scheduledTime: "2025-01-23T16:00:00Z",
-      contact: { name: "Store Manager", phone: "(555) 333-4444" },
-      notes: "Deliver to underground tanks",
-    },
-  ];
+  const acceptMutation = trpc.loads.accept.useMutation({
+    onSuccess: () => { toast.success("Load accepted"); loadQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  const documents: LoadDocument[] = [
-    { id: "doc_001", type: "BOL", name: "Bill of Lading - BOL-2025-4521", uploadedAt: "2025-01-23T09:30:00Z", uploadedBy: "Mike Johnson" },
-    { id: "doc_002", type: "POD", name: "Proof of Delivery (Pending)", uploadedAt: "", uploadedBy: "" },
-    { id: "doc_003", type: "Inspection", name: "Pre-Trip Inspection Report", uploadedAt: "2025-01-23T08:00:00Z", uploadedBy: "Mike Johnson" },
-    { id: "doc_004", type: "Permit", name: "Hazmat Permit - Texas", uploadedAt: "2025-01-20T10:00:00Z", uploadedBy: "System" },
-  ];
+  const updateStatusMutation = trpc.loads.updateStatus.useMutation({
+    onSuccess: () => { toast.success("Status updated"); loadQuery.refetch(); trackingQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  const events: LoadEvent[] = [
-    { id: "evt_001", type: "status", description: "Load created", timestamp: "2025-01-20T08:00:00Z", user: "John Smith" },
-    { id: "evt_002", type: "status", description: "Carrier assigned - ABC Transport LLC", timestamp: "2025-01-20T14:30:00Z", user: "System" },
-    { id: "evt_003", type: "status", description: "Driver assigned - Mike Johnson", timestamp: "2025-01-22T16:00:00Z", user: "Sarah Williams" },
-    { id: "evt_004", type: "tracking", description: "Driver en route to pickup", timestamp: "2025-01-23T08:30:00Z", location: "Houston, TX" },
-    { id: "evt_005", type: "tracking", description: "Arrived at pickup", timestamp: "2025-01-23T09:15:00Z", location: "Shell Terminal - Houston" },
-    { id: "evt_006", type: "document", description: "BOL uploaded", timestamp: "2025-01-23T09:30:00Z", user: "Mike Johnson" },
-    { id: "evt_007", type: "tracking", description: "Loading complete - Departed", timestamp: "2025-01-23T10:00:00Z", location: "Shell Terminal - Houston" },
-    { id: "evt_008", type: "tracking", description: "GPS update", timestamp: "2025-01-23T14:30:00Z", location: "I-45 N near Corsicana, TX" },
-  ];
+  if (loadQuery.error) {
+    return (
+      <div className="p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-red-400">Error loading load details</p>
+        <Button className="mt-4" onClick={() => loadQuery.refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+  const load = loadQuery.data;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "pending": return "bg-slate-500/20 text-slate-400";
-      case "assigned": return "bg-blue-500/20 text-blue-400";
-      case "in_transit": return "bg-green-500/20 text-green-400";
-      case "at_pickup": return "bg-yellow-500/20 text-yellow-400";
-      case "at_delivery": return "bg-purple-500/20 text-purple-400";
       case "delivered": return "bg-green-500/20 text-green-400";
-      case "completed": return "bg-green-500/20 text-green-400";
+      case "in_transit": return "bg-blue-500/20 text-blue-400";
+      case "at_pickup": case "at_delivery": return "bg-yellow-500/20 text-yellow-400";
+      case "available": return "bg-purple-500/20 text-purple-400";
+      case "cancelled": return "bg-red-500/20 text-red-400";
       default: return "bg-slate-500/20 text-slate-400";
     }
-  };
-
-  const getStopStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed": return <CheckCircle className="w-5 h-5 text-green-400" />;
-      case "arrived": case "loading": return <Clock className="w-5 h-5 text-yellow-400" />;
-      default: return <MapPin className="w-5 h-5 text-slate-400" />;
-    }
-  };
-
-  const formatTime = (timestamp: string) => {
-    if (!timestamp) return "-";
-    return new Date(timestamp).toLocaleString([], {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
@@ -190,87 +66,51 @@ export default function LoadDetails() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white">{load.id}</h1>
-            <Badge className={getStatusColor(load.status)}>
-              {load.status.replace("_", " ")}
-            </Badge>
-            {load.hazmat && (
-              <Badge className="bg-orange-500/20 text-orange-400">
-                <AlertTriangle className="w-3 h-3 mr-1" />
-                HAZMAT
-              </Badge>
-            )}
-          </div>
+          {loadQuery.isLoading ? <Skeleton className="h-8 w-48" /> : (
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-white">{load?.loadNumber}</h1>
+              <Badge className={getStatusColor(load?.status || "")}>{load?.status?.replace("_", " ")}</Badge>
+            </div>
+          )}
           <p className="text-slate-400 mt-1">
-            {load.product} - {load.quantity}
+            {loadQuery.isLoading ? <Skeleton className="h-4 w-64" /> : `${load?.commodity} - ${load?.weight}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="border-slate-600">
-            <MessageSquare className="w-4 h-4 mr-2" />
-            Message
-          </Button>
-          <Button variant="outline" size="sm" className="border-slate-600">
-            <Share2 className="w-4 h-4 mr-2" />
-            Share
-          </Button>
-          <Button variant="outline" size="sm" className="border-slate-600">
-            <Edit className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
+          <Button variant="outline" className="border-slate-600"><Download className="w-4 h-4 mr-2" />BOL</Button>
+          <Button variant="outline" className="border-slate-600"><MessageSquare className="w-4 h-4 mr-2" />Message</Button>
+          {load?.status === "available" && (
+            <Button className="bg-green-600 hover:bg-green-700" onClick={() => params.loadId && acceptMutation.mutate({ loadId: params.loadId })} disabled={acceptMutation.isPending}>
+              {acceptMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4 mr-2" />Accept Load</>}
+            </Button>
+          )}
         </div>
       </div>
-
-      {/* Progress & ETA */}
-      <Card className="bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/30">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-3 rounded-full bg-green-500/20">
-                <Truck className="w-6 h-6 text-green-400" />
-              </div>
-              <div>
-                <p className="text-white font-medium">In Transit</p>
-                <p className="text-sm text-slate-400">{load.tracking.currentLocation}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-400">Estimated Arrival</p>
-              <p className="text-2xl font-bold text-green-400">
-                {new Date(load.tracking.eta).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-              </p>
-            </div>
-          </div>
-          <Progress value={load.tracking.progress} className="h-3 bg-slate-700" />
-          <div className="flex justify-between mt-2 text-xs text-slate-400">
-            <span>Houston, TX</span>
-            <span>{load.tracking.progress}% Complete</span>
-            <span>Dallas, TX</span>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <DollarSign className="w-8 h-8 text-green-400" />
+              <Navigation className="w-8 h-8 text-blue-400" />
               <div>
-                <p className="text-2xl font-bold text-green-400">${load.rate.toLocaleString()}</p>
-                <p className="text-xs text-slate-400">${load.ratePerMile}/mi</p>
+                {loadQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{load?.distance}</p>
+                )}
+                <p className="text-xs text-slate-400">Miles</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
+        <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Navigation className="w-8 h-8 text-blue-400" />
+              <DollarSign className="w-8 h-8 text-green-400" />
               <div>
-                <p className="text-2xl font-bold text-blue-400">{load.distance}</p>
-                <p className="text-xs text-slate-400">Miles</p>
+                {loadQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-green-400">${load?.rate?.toLocaleString()}</p>
+                )}
+                <p className="text-xs text-slate-400">Rate</p>
               </div>
             </div>
           </CardContent>
@@ -280,8 +120,10 @@ export default function LoadDetails() {
             <div className="flex items-center gap-3">
               <Package className="w-8 h-8 text-purple-400" />
               <div>
-                <p className="text-2xl font-bold text-purple-400">{load.weight}</p>
-                <p className="text-xs text-slate-400">Total Weight</p>
+                {loadQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
+                  <p className="text-2xl font-bold text-purple-400">{load?.weight}</p>
+                )}
+                <p className="text-xs text-slate-400">Weight</p>
               </div>
             </div>
           </CardContent>
@@ -289,347 +131,202 @@ export default function LoadDetails() {
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <Thermometer className="w-8 h-8 text-orange-400" />
+              <DollarSign className="w-8 h-8 text-orange-400" />
               <div>
-                <p className="text-2xl font-bold text-orange-400">{load.temperature.current}°F</p>
-                <p className="text-xs text-slate-400">Product Temp</p>
+                {loadQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <p className="text-2xl font-bold text-orange-400">${load?.ratePerMile?.toFixed(2)}</p>
+                )}
+                <p className="text-xs text-slate-400">Per Mile</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Route Card */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-start gap-4">
+                <div className="flex flex-col items-center">
+                  <div className="w-4 h-4 rounded-full bg-green-500" />
+                  <div className="w-0.5 h-16 bg-slate-600" />
+                  <div className="w-4 h-4 rounded-full bg-red-500" />
+                </div>
+                <div className="flex-1 space-y-8">
+                  <div>
+                    <p className="text-xs text-slate-500">PICKUP</p>
+                    {loadQuery.isLoading ? <Skeleton className="h-6 w-48" /> : (
+                      <>
+                        <p className="text-white font-medium">{load?.origin?.facility}</p>
+                        <p className="text-slate-400">{load?.origin?.city}, {load?.origin?.state}</p>
+                        <p className="text-sm text-slate-500">{load?.pickupDate} - {load?.pickupTime}</p>
+                      </>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-500">DELIVERY</p>
+                    {loadQuery.isLoading ? <Skeleton className="h-6 w-48" /> : (
+                      <>
+                        <p className="text-white font-medium">{load?.destination?.facility}</p>
+                        <p className="text-slate-400">{load?.destination?.city}, {load?.destination?.state}</p>
+                        <p className="text-sm text-slate-500">{load?.deliveryDate} - {load?.deliveryTime}</p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="w-64 h-40 bg-slate-700/50 rounded-lg flex items-center justify-center">
+              <Navigation className="w-8 h-8 text-slate-500" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600">Overview</TabsTrigger>
-          <TabsTrigger value="stops" className="data-[state=active]:bg-blue-600">Stops</TabsTrigger>
-          <TabsTrigger value="documents" className="data-[state=active]:bg-blue-600">Documents</TabsTrigger>
+          <TabsTrigger value="details" className="data-[state=active]:bg-blue-600">Details</TabsTrigger>
           <TabsTrigger value="tracking" className="data-[state=active]:bg-blue-600">Tracking</TabsTrigger>
-          <TabsTrigger value="history" className="data-[state=active]:bg-blue-600">History</TabsTrigger>
+          <TabsTrigger value="documents" className="data-[state=active]:bg-blue-600">Documents</TabsTrigger>
+          <TabsTrigger value="contacts" className="data-[state=active]:bg-blue-600">Contacts</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Shipper Info */}
+        <TabsContent value="details" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2 text-base">
-                  <Package className="w-4 h-4 text-blue-400" />
-                  Shipper
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-white font-medium">{load.shipper.name}</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <User className="w-4 h-4" />
-                    {load.shipper.contact}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Phone className="w-4 h-4" />
-                    {load.shipper.phone}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Mail className="w-4 h-4" />
-                    {load.shipper.email}
-                  </div>
-                </div>
+              <CardHeader><CardTitle className="text-white">Load Information</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {loadQuery.isLoading ? (
+                  [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-8 w-full" />)
+                ) : (
+                  <>
+                    <div className="flex justify-between"><span className="text-slate-400">Commodity</span><span className="text-white">{load?.commodity}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Weight</span><span className="text-white">{load?.weight}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Equipment</span><span className="text-white">{load?.equipment}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Temperature</span><span className="text-white">{load?.temperature || "N/A"}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Hazmat</span><Badge className={load?.hazmat ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}>{load?.hazmat ? "Yes" : "No"}</Badge></div>
+                    {load?.hazmat && <div className="flex justify-between"><span className="text-slate-400">UN Number</span><span className="text-white">{load?.unNumber}</span></div>}
+                  </>
+                )}
               </CardContent>
             </Card>
 
-            {/* Carrier Info */}
             <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2 text-base">
-                  <Truck className="w-4 h-4 text-green-400" />
-                  Carrier
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-white font-medium">{load.carrier.name}</p>
-                  <Badge className="bg-slate-500/20 text-slate-400">{load.carrier.mcNumber}</Badge>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <User className="w-4 h-4" />
-                    {load.carrier.contact}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Phone className="w-4 h-4" />
-                    {load.carrier.phone}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Mail className="w-4 h-4" />
-                    {load.carrier.email}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Driver Info */}
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2 text-base">
-                  <User className="w-4 h-4 text-purple-400" />
-                  Driver
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-white font-medium">{load.driver.name}</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Phone className="w-4 h-4" />
-                    {load.driver.phone}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <FileText className="w-4 h-4" />
-                    CDL: {load.driver.cdlNumber}
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <Truck className="w-4 h-4" />
-                    {load.driver.truckNumber} / {load.driver.trailerNumber}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="w-full border-slate-600 mt-2">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Call Driver
-                </Button>
+              <CardHeader><CardTitle className="text-white">Shipper Information</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                {loadQuery.isLoading ? (
+                  [1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full" />)
+                ) : (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <Building className="w-5 h-5 text-slate-400" />
+                      <span className="text-white">{load?.shipper?.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-5 h-5 text-slate-400" />
+                      <span className="text-white">{load?.shipper?.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-slate-400" />
+                      <span className="text-white">{load?.shipper?.email}</span>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>
-
-          {/* Hazmat Info */}
-          {load.hazmat && (
-            <Card className="mt-6 bg-orange-500/10 border-orange-500/30">
-              <CardHeader>
-                <CardTitle className="text-orange-400 flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  Hazmat Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <p className="text-xs text-slate-500">Classification</p>
-                    <p className="text-white font-medium">{load.hazmatClass}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">UN Number</p>
-                    <p className="text-white font-medium">{load.unNumber}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Product</p>
-                    <p className="text-white font-medium">{load.product}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-slate-500">Equipment</p>
-                    <p className="text-white font-medium">{load.equipment}</p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="mt-4 border-orange-500/50 text-orange-400">
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  View ERG 2024 Guide
-                </Button>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
-        {/* Stops Tab */}
-        <TabsContent value="stops" className="mt-6">
+        <TabsContent value="tracking" className="mt-6">
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-6">
-              <div className="space-y-6">
-                {stops.map((stop, idx) => (
-                  <div key={stop.id}>
-                    <div className="flex items-start gap-4">
+            <CardHeader><CardTitle className="text-white">Tracking History</CardTitle></CardHeader>
+            <CardContent>
+              {trackingQuery.isLoading ? (
+                <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : trackingQuery.data?.events?.length === 0 ? (
+                <p className="text-slate-400 text-center py-8">No tracking events yet</p>
+              ) : (
+                <div className="space-y-4">
+                  {trackingQuery.data?.events?.map((event, idx) => (
+                    <div key={event.id} className="flex items-start gap-4">
                       <div className="flex flex-col items-center">
-                        <div className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center",
-                          stop.status === "completed" ? "bg-green-500/20" : "bg-slate-700"
-                        )}>
-                          {getStopStatusIcon(stop.status)}
-                        </div>
-                        {idx < stops.length - 1 && (
-                          <div className="w-0.5 h-16 bg-slate-700 mt-2" />
-                        )}
+                        <div className={cn("w-4 h-4 rounded-full", idx === 0 ? "bg-blue-500" : "bg-slate-600")} />
+                        {idx < (trackingQuery.data?.events?.length || 0) - 1 && <div className="w-0.5 h-12 bg-slate-700 mt-2" />}
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <div>
-                            <Badge className={cn(
-                              stop.type === "pickup" ? "bg-blue-500/20 text-blue-400" : "bg-purple-500/20 text-purple-400"
-                            )}>
-                              {stop.type}
-                            </Badge>
-                            <h3 className="text-white font-medium mt-2">{stop.facilityName}</h3>
-                            <p className="text-sm text-slate-400">
-                              {stop.address}, {stop.city}, {stop.state} {stop.zip}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-slate-500">Scheduled</p>
-                            <p className="text-white">{formatTime(stop.scheduledTime)}</p>
-                            {stop.actualTime && (
-                              <>
-                                <p className="text-xs text-slate-500 mt-1">Actual</p>
-                                <p className="text-green-400">{formatTime(stop.actualTime)}</p>
-                              </>
-                            )}
-                          </div>
+                          <p className="text-white font-medium">{event.status}</p>
+                          <span className="text-xs text-slate-500">{event.timestamp}</span>
                         </div>
-                        <div className="mt-3 flex items-center gap-4 text-sm">
-                          <span className="text-slate-400 flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {stop.contact.name}
-                          </span>
-                          <span className="text-slate-400 flex items-center gap-1">
-                            <Phone className="w-3 h-3" />
-                            {stop.contact.phone}
-                          </span>
-                        </div>
-                        {stop.notes && (
-                          <p className="text-xs text-yellow-400 mt-2">Note: {stop.notes}</p>
-                        )}
+                        <p className="text-sm text-slate-400">{event.location}</p>
+                        {event.notes && <p className="text-sm text-slate-500 mt-1">{event.notes}</p>}
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Documents Tab */}
         <TabsContent value="documents" className="mt-6">
           <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white">Documents</CardTitle>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                  <Camera className="w-4 h-4 mr-2" />
-                  Upload
-                </Button>
-              </div>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-white">Documents</CardTitle></CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {documents.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-slate-600">
-                        <FileText className="w-5 h-5 text-slate-300" />
+              {documentsQuery.isLoading ? (
+                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+              ) : documentsQuery.data?.length === 0 ? (
+                <p className="text-slate-400 text-center py-8">No documents uploaded</p>
+              ) : (
+                <div className="space-y-3">
+                  {documentsQuery.data?.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-blue-400" />
+                        <div>
+                          <p className="text-white">{doc.name}</p>
+                          <p className="text-xs text-slate-500">{doc.type} - {doc.uploadedAt}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-white font-medium">{doc.name}</p>
-                        <p className="text-xs text-slate-500">
-                          {doc.uploadedAt ? `Uploaded by ${doc.uploadedBy} on ${formatTime(doc.uploadedAt)}` : "Not uploaded"}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="sm"><Download className="w-4 h-4" /></Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge className={cn(
-                        doc.uploadedAt ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
-                      )}>
-                        {doc.uploadedAt ? "Uploaded" : "Pending"}
-                      </Badge>
-                      {doc.uploadedAt && (
-                        <Button variant="ghost" size="sm">
-                          <Download className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Tracking Tab */}
-        <TabsContent value="tracking" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Live Tracking</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-slate-700/30 rounded-lg flex items-center justify-center">
-                  <p className="text-slate-500">Map view would display here</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Current Status</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Location</span>
-                  <span className="text-white text-right text-sm">{load.tracking.currentLocation}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Speed</span>
-                  <span className="text-white">{load.tracking.speed} mph</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Heading</span>
-                  <span className="text-white">{load.tracking.heading}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Last Update</span>
-                  <span className="text-white">{formatTime(load.tracking.lastUpdate)}</span>
-                </div>
-                <Separator className="bg-slate-700" />
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Temperature</span>
-                  <span className={cn(
-                    "font-medium",
-                    load.temperature.current >= load.temperature.min && load.temperature.current <= load.temperature.max
-                      ? "text-green-400"
-                      : "text-red-400"
-                  )}>
-                    {load.temperature.current}°{load.temperature.unit}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500">
-                  Range: {load.temperature.min}° - {load.temperature.max}°{load.temperature.unit}
-                </p>
-              </CardContent>
-            </Card>
+        <TabsContent value="contacts" className="mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {loadQuery.isLoading ? (
+              [1, 2].map((i) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-32 w-full" /></CardContent></Card>)
+            ) : (
+              <>
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardHeader><CardTitle className="text-white flex items-center gap-2"><MapPin className="w-5 h-5 text-green-400" />Pickup Contact</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-3"><User className="w-4 h-4 text-slate-400" /><span className="text-white">{load?.origin?.contact?.name}</span></div>
+                    <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-slate-400" /><span className="text-white">{load?.origin?.contact?.phone}</span></div>
+                    <Button variant="outline" className="w-full border-slate-600"><Phone className="w-4 h-4 mr-2" />Call</Button>
+                  </CardContent>
+                </Card>
+                <Card className="bg-slate-800/50 border-slate-700">
+                  <CardHeader><CardTitle className="text-white flex items-center gap-2"><MapPin className="w-5 h-5 text-red-400" />Delivery Contact</CardTitle></CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-3"><User className="w-4 h-4 text-slate-400" /><span className="text-white">{load?.destination?.contact?.name}</span></div>
+                    <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-slate-400" /><span className="text-white">{load?.destination?.contact?.phone}</span></div>
+                    <Button variant="outline" className="w-full border-slate-600"><Phone className="w-4 h-4 mr-2" />Call</Button>
+                  </CardContent>
+                </Card>
+              </>
+            )}
           </div>
-        </TabsContent>
-
-        {/* History Tab */}
-        <TabsContent value="history" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Activity History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {events.slice().reverse().map((event) => (
-                  <div key={event.id} className="flex items-start gap-4">
-                    <div className="w-2 h-2 rounded-full bg-blue-400 mt-2" />
-                    <div className="flex-1">
-                      <p className="text-white">{event.description}</p>
-                      <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                        <span>{formatTime(event.timestamp)}</span>
-                        {event.location && <span>{event.location}</span>}
-                        {event.user && <span>by {event.user}</span>}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

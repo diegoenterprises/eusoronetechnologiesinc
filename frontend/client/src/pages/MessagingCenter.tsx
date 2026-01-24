@@ -1,443 +1,237 @@
 /**
  * MESSAGING CENTER PAGE
- * Real-time messaging and notifications hub
+ * 100% Dynamic - No mock data
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import {
-  MessageSquare, Search, Send, Phone, Video, MoreVertical,
-  Paperclip, Image, FileText, Users, Bell, Check, CheckCheck,
-  Clock, Truck, AlertTriangle, Star, Plus, Filter, Archive
+  MessageSquare, Send, Search, Phone, Video, MoreVertical,
+  User, Users, Paperclip, Image, Smile, Check, CheckCheck,
+  Circle, AlertTriangle, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-interface Message {
-  id: string;
-  senderId: string;
-  senderName: string;
-  content: string;
-  timestamp: string;
-  read: boolean;
-  type: "text" | "image" | "file" | "system";
-}
-
-interface Conversation {
-  id: string;
-  type: "load" | "support" | "dispatch" | "direct";
-  title: string;
-  subtitle?: string;
-  participants: { id: string; name: string; role: string }[];
-  lastMessage: Message;
-  unreadCount: number;
-  pinned: boolean;
-  loadNumber?: string;
-}
-
 export default function MessagingCenter() {
-  const [activeTab, setActiveTab] = useState("all");
-  const [selectedConversation, setSelectedConversation] = useState<string | null>("conv_001");
-  const [messageInput, setMessageInput] = useState("");
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Mock data - would use tRPC in production
-  const conversations: Conversation[] = [
-    {
-      id: "conv_001",
-      type: "load",
-      title: "LOAD-45850",
-      subtitle: "Houston to Dallas",
-      participants: [
-        { id: "d1", name: "Dispatch", role: "dispatcher" },
-        { id: "u1", name: "Mike Johnson", role: "driver" },
-      ],
-      lastMessage: {
-        id: "m1",
-        senderId: "d1",
-        senderName: "Dispatch",
-        content: "ETA update: Arriving at 15:30",
-        timestamp: "2025-01-23T14:30:00Z",
-        read: false,
-        type: "text",
-      },
-      unreadCount: 2,
-      pinned: true,
-      loadNumber: "LOAD-45850",
-    },
-    {
-      id: "conv_002",
-      type: "dispatch",
-      title: "Dispatch Team",
-      participants: [
-        { id: "d1", name: "Sarah Williams", role: "dispatcher" },
-        { id: "d2", name: "John Davis", role: "dispatcher" },
-      ],
-      lastMessage: {
-        id: "m2",
-        senderId: "d1",
-        senderName: "Sarah Williams",
-        content: "New load available for pickup",
-        timestamp: "2025-01-23T13:15:00Z",
-        read: true,
-        type: "text",
-      },
-      unreadCount: 0,
-      pinned: false,
-    },
-    {
-      id: "conv_003",
-      type: "support",
-      title: "Billing Support",
-      subtitle: "Invoice #INV-2024-001",
-      participants: [
-        { id: "s1", name: "Support Team", role: "support" },
-      ],
-      lastMessage: {
-        id: "m3",
-        senderId: "s1",
-        senderName: "Support Team",
-        content: "Your issue has been resolved",
-        timestamp: "2025-01-22T16:00:00Z",
-        read: true,
-        type: "text",
-      },
-      unreadCount: 0,
-      pinned: false,
-    },
-    {
-      id: "conv_004",
-      type: "load",
-      title: "LOAD-45842",
-      subtitle: "Beaumont to Corpus Christi",
-      participants: [
-        { id: "d1", name: "Dispatch", role: "dispatcher" },
-        { id: "u2", name: "David Brown", role: "driver" },
-      ],
-      lastMessage: {
-        id: "m4",
-        senderId: "u2",
-        senderName: "David Brown",
-        content: "Delivered successfully",
-        timestamp: "2025-01-22T11:30:00Z",
-        read: true,
-        type: "text",
-      },
-      unreadCount: 0,
-      pinned: false,
-      loadNumber: "LOAD-45842",
-    },
-    {
-      id: "conv_005",
-      type: "direct",
-      title: "Emily Martinez",
-      participants: [
-        { id: "u3", name: "Emily Martinez", role: "driver" },
-      ],
-      lastMessage: {
-        id: "m5",
-        senderId: "u3",
-        senderName: "Emily Martinez",
-        content: "Thanks for the help!",
-        timestamp: "2025-01-21T09:00:00Z",
-        read: true,
-        type: "text",
-      },
-      unreadCount: 0,
-      pinned: false,
-    },
-  ];
+  const conversationsQuery = trpc.messages.getConversations.useQuery({ search: searchTerm || undefined });
+  const messagesQuery = trpc.messages.getMessages.useQuery(
+    { conversationId: selectedConversation || "" },
+    { enabled: !!selectedConversation, refetchInterval: 5000 }
+  );
 
-  const currentMessages: Message[] = [
-    { id: "m1", senderId: "d1", senderName: "Dispatch", content: "Good morning! Your load LOAD-45850 is ready for pickup.", timestamp: "2025-01-23T08:00:00Z", read: true, type: "text" },
-    { id: "m2", senderId: "u1", senderName: "Mike Johnson", content: "On my way. ETA 30 minutes.", timestamp: "2025-01-23T08:05:00Z", read: true, type: "text" },
-    { id: "m3", senderId: "d1", senderName: "Dispatch", content: "Perfect. Terminal gate code is 4521.", timestamp: "2025-01-23T08:10:00Z", read: true, type: "text" },
-    { id: "m4", senderId: "u1", senderName: "Mike Johnson", content: "Arrived at terminal. Starting load process.", timestamp: "2025-01-23T08:35:00Z", read: true, type: "text" },
-    { id: "m5", senderId: "system", senderName: "System", content: "Load pickup confirmed - BOL #BOL-2025-4521", timestamp: "2025-01-23T09:15:00Z", read: true, type: "system" },
-    { id: "m6", senderId: "u1", senderName: "Mike Johnson", content: "Loaded and sealed. Departing now.", timestamp: "2025-01-23T09:20:00Z", read: true, type: "text" },
-    { id: "m7", senderId: "d1", senderName: "Dispatch", content: "Great! Drive safe. Let me know when you're near Dallas.", timestamp: "2025-01-23T09:25:00Z", read: true, type: "text" },
-    { id: "m8", senderId: "u1", senderName: "Mike Johnson", content: "Will do. Traffic looks clear on I-45.", timestamp: "2025-01-23T09:30:00Z", read: true, type: "text" },
-    { id: "m9", senderId: "d1", senderName: "Dispatch", content: "ETA update: Arriving at 15:30", timestamp: "2025-01-23T14:30:00Z", read: false, type: "text" },
-  ];
+  const sendMessageMutation = trpc.messages.send.useMutation({
+    onSuccess: () => { setMessageText(""); messagesQuery.refetch(); },
+    onError: (error) => toast.error("Failed to send", { description: error.message }),
+  });
 
-  const sendMessage = () => {
-    if (!messageInput.trim()) return;
-    toast.success("Message sent");
-    setMessageInput("");
-  };
+  const markAsReadMutation = trpc.messages.markAsRead.useMutation({
+    onSuccess: () => conversationsQuery.refetch(),
+  });
 
-  const getConversationIcon = (type: string) => {
-    switch (type) {
-      case "load": return Truck;
-      case "support": return Bell;
-      case "dispatch": return Users;
-      case "direct": return MessageSquare;
-      default: return MessageSquare;
+  useEffect(() => {
+    if (selectedConversation) {
+      markAsReadMutation.mutate({ conversationId: selectedConversation });
     }
-  };
+  }, [selectedConversation]);
 
-  const getConversationColor = (type: string) => {
-    switch (type) {
-      case "load": return "bg-blue-500/20 text-blue-400";
-      case "support": return "bg-purple-500/20 text-purple-400";
-      case "dispatch": return "bg-green-500/20 text-green-400";
-      case "direct": return "bg-slate-500/20 text-slate-400";
-      default: return "bg-slate-500/20 text-slate-400";
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messagesQuery.data]);
+
+  // Auto-select first conversation
+  useEffect(() => {
+    if (conversationsQuery.data?.length && !selectedConversation) {
+      setSelectedConversation(conversationsQuery.data[0].id);
     }
+  }, [conversationsQuery.data, selectedConversation]);
+
+  if (conversationsQuery.error) {
+    return (
+      <div className="p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-red-400">Error loading messages</p>
+        <Button className="mt-4" onClick={() => conversationsQuery.refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+  const selectedConv = conversationsQuery.data?.find(c => c.id === selectedConversation);
+
+  const handleSendMessage = () => {
+    if (!messageText.trim() || !selectedConversation) return;
+    sendMessageMutation.mutate({ conversationId: selectedConversation, content: messageText });
   };
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
     const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) {
-      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    } else if (days === 1) {
-      return "Yesterday";
-    } else if (days < 7) {
-      return date.toLocaleDateString([], { weekday: "short" });
-    } else {
-      return date.toLocaleDateString([], { month: "short", day: "numeric" });
-    }
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    if (hours < 1) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    if (hours < 24) return `${hours}h ago`;
+    return date.toLocaleDateString();
   };
 
-  const filteredConversations = conversations.filter(conv => {
-    if (activeTab !== "all" && conv.type !== activeTab) return false;
-    if (searchTerm && !conv.title.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-    return true;
-  });
-
-  const selectedConv = conversations.find(c => c.id === selectedConversation);
-
   return (
-    <div className="p-4 md:p-6 h-[calc(100vh-120px)]">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full">
-        {/* Conversation List */}
-        <Card className="bg-slate-800/50 border-slate-700 lg:col-span-1 flex flex-col">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-white">Messages</CardTitle>
-              <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
-                <Plus className="w-4 h-4" />
-              </Button>
+    <div className="h-[calc(100vh-120px)] flex">
+      {/* Conversations List */}
+      <div className="w-80 border-r border-slate-700 flex flex-col">
+        <div className="p-4 border-b border-slate-700">
+          <h1 className="text-xl font-bold text-white mb-4">Messages</h1>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search conversations..."
+              className="pl-9 bg-slate-700/50 border-slate-600"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {conversationsQuery.isLoading ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+          ) : conversationsQuery.data?.length === 0 ? (
+            <div className="p-8 text-center">
+              <MessageSquare className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-400">No conversations</p>
             </div>
-            <div className="relative mt-3">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search conversations..."
-                className="pl-9 bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="p-0 flex-1 flex flex-col">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
-              <TabsList className="bg-slate-700/50 w-full">
-                <TabsTrigger value="all" className="flex-1 text-xs">All</TabsTrigger>
-                <TabsTrigger value="load" className="flex-1 text-xs">Loads</TabsTrigger>
-                <TabsTrigger value="dispatch" className="flex-1 text-xs">Dispatch</TabsTrigger>
-                <TabsTrigger value="support" className="flex-1 text-xs">Support</TabsTrigger>
-              </TabsList>
-            </Tabs>
-
-            <ScrollArea className="flex-1 mt-3">
-              <div className="space-y-1 px-2">
-                {filteredConversations.map((conv) => {
-                  const Icon = getConversationIcon(conv.type);
-                  const isSelected = selectedConversation === conv.id;
-
-                  return (
-                    <div
-                      key={conv.id}
-                      onClick={() => setSelectedConversation(conv.id)}
-                      className={cn(
-                        "flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors",
-                        isSelected
-                          ? "bg-purple-500/20 border border-purple-500/30"
-                          : "hover:bg-slate-700/50"
-                      )}
-                    >
-                      <div className={cn("p-2 rounded-full", getConversationColor(conv.type))}>
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className={cn(
-                            "font-medium truncate",
-                            conv.unreadCount > 0 ? "text-white" : "text-slate-300"
-                          )}>
-                            {conv.title}
-                          </p>
-                          <span className="text-xs text-slate-500">
-                            {formatTime(conv.lastMessage.timestamp)}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <p className={cn(
-                            "text-sm truncate",
-                            conv.unreadCount > 0 ? "text-slate-300" : "text-slate-500"
-                          )}>
-                            {conv.lastMessage.content}
-                          </p>
-                          {conv.unreadCount > 0 && (
-                            <Badge className="bg-purple-500 text-white text-xs ml-2">
-                              {conv.unreadCount}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        {/* Chat Area */}
-        <Card className="bg-slate-800/50 border-slate-700 lg:col-span-2 flex flex-col">
-          {selectedConv ? (
-            <>
-              {/* Chat Header */}
-              <CardHeader className="border-b border-slate-700 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("p-2 rounded-full", getConversationColor(selectedConv.type))}>
-                      {React.createElement(getConversationIcon(selectedConv.type), { className: "w-5 h-5" })}
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">{selectedConv.title}</p>
-                      {selectedConv.subtitle && (
-                        <p className="text-xs text-slate-400">{selectedConv.subtitle}</p>
-                      )}
-                    </div>
-                    {selectedConv.loadNumber && (
-                      <Badge className="bg-blue-500/20 text-blue-400">
-                        {selectedConv.loadNumber}
-                      </Badge>
+          ) : (
+            conversationsQuery.data?.map((conv) => (
+              <div
+                key={conv.id}
+                className={cn(
+                  "flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-700/30 transition-colors border-b border-slate-700/50",
+                  selectedConversation === conv.id && "bg-slate-700/50"
+                )}
+                onClick={() => setSelectedConversation(conv.id)}
+              >
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">
+                    {conv.type === "group" ? <Users className="w-6 h-6 text-slate-400" /> : <User className="w-6 h-6 text-slate-400" />}
+                  </div>
+                  {conv.online && <div className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-slate-800" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className={cn("font-medium truncate", conv.unreadCount > 0 ? "text-white" : "text-slate-300")}>{conv.name}</p>
+                    <span className="text-xs text-slate-500">{formatTime(conv.lastMessageAt)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className={cn("text-sm truncate", conv.unreadCount > 0 ? "text-slate-300" : "text-slate-500")}>{conv.lastMessage}</p>
+                    {conv.unreadCount > 0 && (
+                      <Badge className="bg-blue-500 text-white text-xs ml-2">{conv.unreadCount}</Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm">
-                      <Phone className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Video className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
-                  {currentMessages.map((message) => {
-                    const isOwnMessage = message.senderId === "u1";
-                    const isSystem = message.type === "system";
-
-                    if (isSystem) {
-                      return (
-                        <div key={message.id} className="flex justify-center">
-                          <Badge className="bg-slate-700 text-slate-400">
-                            {message.content}
-                          </Badge>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          "flex",
-                          isOwnMessage ? "justify-end" : "justify-start"
-                        )}
-                      >
-                        <div className={cn(
-                          "max-w-[70%]",
-                          isOwnMessage ? "items-end" : "items-start"
-                        )}>
-                          {!isOwnMessage && (
-                            <p className="text-xs text-slate-500 mb-1 ml-1">
-                              {message.senderName}
-                            </p>
-                          )}
-                          <div className={cn(
-                            "px-4 py-2 rounded-2xl",
-                            isOwnMessage
-                              ? "bg-purple-600 text-white rounded-br-sm"
-                              : "bg-slate-700 text-white rounded-bl-sm"
-                          )}>
-                            <p className="text-sm">{message.content}</p>
-                          </div>
-                          <div className={cn(
-                            "flex items-center gap-1 mt-1",
-                            isOwnMessage ? "justify-end mr-1" : "ml-1"
-                          )}>
-                            <span className="text-xs text-slate-500">
-                              {formatTime(message.timestamp)}
-                            </span>
-                            {isOwnMessage && (
-                              message.read ? (
-                                <CheckCheck className="w-3 h-3 text-blue-400" />
-                              ) : (
-                                <Check className="w-3 h-3 text-slate-500" />
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-
-              {/* Message Input */}
-              <div className="p-4 border-t border-slate-700">
-                <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm">
-                    <Paperclip className="w-5 h-5 text-slate-400" />
-                  </Button>
-                  <Button variant="ghost" size="sm">
-                    <Image className="w-5 h-5 text-slate-400" />
-                  </Button>
-                  <Input
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                    placeholder="Type a message..."
-                    className="flex-1 bg-slate-700/50 border-slate-600 text-white"
-                  />
-                  <Button
-                    onClick={sendMessage}
-                    disabled={!messageInput.trim()}
-                    className="bg-purple-600 hover:bg-purple-700"
-                  >
-                    <Send className="w-5 h-5" />
-                  </Button>
                 </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <MessageSquare className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">Select a conversation to start messaging</p>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Chat Area */}
+      <div className="flex-1 flex flex-col">
+        {!selectedConversation ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <MessageSquare className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+              <p className="text-slate-400">Select a conversation to start messaging</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Chat Header */}
+            <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">
+                  {selectedConv?.type === "group" ? <Users className="w-5 h-5 text-slate-400" /> : <User className="w-5 h-5 text-slate-400" />}
+                </div>
+                <div>
+                  <p className="text-white font-medium">{selectedConv?.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {selectedConv?.online ? <span className="text-green-400">Online</span> : "Offline"}
+                    {selectedConv?.role && ` - ${selectedConv.role}`}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm"><Phone className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="sm"><Video className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="sm"><MoreVertical className="w-4 h-4" /></Button>
               </div>
             </div>
-          )}
-        </Card>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messagesQuery.isLoading ? (
+                <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-3/4" />)}</div>
+              ) : messagesQuery.data?.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-slate-500">No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                messagesQuery.data?.map((message) => (
+                  <div key={message.id} className={cn("flex", message.isOwn ? "justify-end" : "justify-start")}>
+                    <div className={cn("max-w-[70%]", message.isOwn ? "order-2" : "order-1")}>
+                      {!message.isOwn && (
+                        <p className="text-xs text-slate-500 mb-1">{message.senderName}</p>
+                      )}
+                      <div className={cn(
+                        "rounded-2xl px-4 py-2",
+                        message.isOwn ? "bg-blue-600 text-white rounded-br-sm" : "bg-slate-700 text-white rounded-bl-sm"
+                      )}>
+                        <p>{message.content}</p>
+                      </div>
+                      <div className={cn("flex items-center gap-1 mt-1", message.isOwn ? "justify-end" : "justify-start")}>
+                        <span className="text-xs text-slate-500">{formatTime(message.timestamp)}</span>
+                        {message.isOwn && (
+                          message.read ? <CheckCheck className="w-3 h-3 text-blue-400" /> : <Check className="w-3 h-3 text-slate-500" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message Input */}
+            <div className="p-4 border-t border-slate-700">
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="sm"><Paperclip className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="sm"><Image className="w-4 h-4" /></Button>
+                <Input
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-slate-700/50 border-slate-600"
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                />
+                <Button variant="ghost" size="sm"><Smile className="w-4 h-4" /></Button>
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleSendMessage}
+                  disabled={!messageText.trim() || sendMessageMutation.isPending}
+                >
+                  {sendMessageMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

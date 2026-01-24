@@ -1,6 +1,6 @@
 /**
  * NOTIFICATION CENTER PAGE
- * Centralized notification and alert management
+ * 100% Dynamic - No mock data
  */
 
 import React, { useState } from "react";
@@ -10,94 +10,93 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import {
   Bell, BellOff, Check, CheckCheck, Trash2, Settings,
   AlertTriangle, Info, CheckCircle, XCircle, Clock,
-  Truck, FileText, DollarSign, Shield, User, Calendar,
-  MessageSquare, Filter, MoreVertical, Eye
+  Truck, FileText, DollarSign, Shield, MessageSquare, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
-type NotificationType = "alert" | "info" | "success" | "warning" | "error";
-type NotificationCategory = "load" | "compliance" | "payment" | "safety" | "system" | "message";
-
-interface Notification {
-  id: string;
-  type: NotificationType;
-  category: NotificationCategory;
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  actionUrl?: string;
-  actionLabel?: string;
-}
-
-interface NotificationPreference {
-  category: NotificationCategory;
-  label: string;
-  email: boolean;
-  push: boolean;
-  sms: boolean;
-}
 
 export default function NotificationCenter() {
   const [activeTab, setActiveTab] = useState("all");
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
-  const notifications: Notification[] = [
-    { id: "n1", type: "alert", category: "compliance", title: "CDL Expiring Soon", message: "Mike Johnson's CDL expires in 5 days. Please ensure renewal is in progress.", timestamp: "2025-01-24T08:30:00Z", read: false, actionUrl: "/compliance/calendar", actionLabel: "View Details" },
-    { id: "n2", type: "success", category: "load", title: "Load Delivered", message: "LOAD-45842 has been successfully delivered to Dallas, TX.", timestamp: "2025-01-24T07:45:00Z", read: false, actionUrl: "/load/LOAD-45842", actionLabel: "View Load" },
-    { id: "n3", type: "warning", category: "safety", title: "Speeding Event Detected", message: "Driver David Brown exceeded speed limit by 12 mph on I-45.", timestamp: "2025-01-24T06:20:00Z", read: false, actionUrl: "/driver/performance", actionLabel: "Review" },
-    { id: "n4", type: "info", category: "payment", title: "Invoice Paid", message: "Invoice INV-2025-0142 has been paid. Amount: $2,850.00", timestamp: "2025-01-23T16:00:00Z", read: true, actionUrl: "/invoice/INV-2025-0142", actionLabel: "View Invoice" },
-    { id: "n5", type: "alert", category: "compliance", title: "Annual Inspection Due", message: "TRK-4523 annual inspection is due in 3 days.", timestamp: "2025-01-23T14:30:00Z", read: true, actionUrl: "/fleet", actionLabel: "Schedule" },
-    { id: "n6", type: "info", category: "load", title: "New Bid Received", message: "ABC Transport submitted a bid of $2,650 for LOAD-45865.", timestamp: "2025-01-23T12:00:00Z", read: true, actionUrl: "/bid/BID-2025-0892", actionLabel: "Review Bid" },
-    { id: "n7", type: "success", category: "system", title: "Driver Onboarding Complete", message: "Emily Martinez has completed all onboarding requirements.", timestamp: "2025-01-23T10:15:00Z", read: true },
-    { id: "n8", type: "warning", category: "compliance", title: "HOS Violation Warning", message: "Driver approaching 11-hour driving limit. 30 minutes remaining.", timestamp: "2025-01-23T09:00:00Z", read: true },
-    { id: "n9", type: "info", category: "message", title: "New Message", message: "You have a new message from Dispatch regarding LOAD-45850.", timestamp: "2025-01-22T16:45:00Z", read: true, actionUrl: "/messaging", actionLabel: "View Message" },
-    { id: "n10", type: "error", category: "safety", title: "Accident Reported", message: "An incident has been reported involving TRK-4524. No injuries.", timestamp: "2025-01-22T14:20:00Z", read: true, actionUrl: "/accident-report", actionLabel: "View Report" },
-  ];
+  const notificationsQuery = trpc.notifications.list.useQuery({
+    category: activeTab !== "all" && activeTab !== "settings" ? activeTab : undefined,
+    unreadOnly: showUnreadOnly,
+  });
+  const preferencesQuery = trpc.notifications.getPreferences.useQuery();
 
-  const preferences: NotificationPreference[] = [
-    { category: "load", label: "Load Updates", email: true, push: true, sms: false },
-    { category: "compliance", label: "Compliance Alerts", email: true, push: true, sms: true },
-    { category: "payment", label: "Payment Notifications", email: true, push: true, sms: false },
-    { category: "safety", label: "Safety Alerts", email: true, push: true, sms: true },
-    { category: "system", label: "System Updates", email: true, push: false, sms: false },
-    { category: "message", label: "Messages", email: false, push: true, sms: false },
-  ];
+  const markAsReadMutation = trpc.notifications.markAsRead.useMutation({
+    onSuccess: () => { toast.success("Marked as read"); notificationsQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const markAllReadMutation = trpc.notifications.markAllAsRead.useMutation({
+    onSuccess: () => { toast.success("All notifications marked as read"); notificationsQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  const getTypeIcon = (type: NotificationType) => {
+  const deleteMutation = trpc.notifications.delete.useMutation({
+    onSuccess: () => { toast.success("Notification deleted"); notificationsQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
+
+  const clearAllMutation = trpc.notifications.clearAll.useMutation({
+    onSuccess: () => { toast.success("All notifications cleared"); notificationsQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
+
+  const updatePreferencesMutation = trpc.notifications.updatePreferences.useMutation({
+    onSuccess: () => { toast.success("Preferences saved"); preferencesQuery.refetch(); },
+    onError: (error) => toast.error("Failed to save", { description: error.message }),
+  });
+
+  if (notificationsQuery.error) {
+    return (
+      <div className="p-6 text-center">
+        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="text-red-400">Error loading notifications</p>
+        <Button className="mt-4" onClick={() => notificationsQuery.refetch()}>Retry</Button>
+      </div>
+    );
+  }
+
+  const unreadCount = notificationsQuery.data?.filter(n => !n.read).length || 0;
+
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case "alert": return <AlertTriangle className="w-5 h-5 text-orange-400" />;
       case "info": return <Info className="w-5 h-5 text-blue-400" />;
       case "success": return <CheckCircle className="w-5 h-5 text-green-400" />;
       case "warning": return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
       case "error": return <XCircle className="w-5 h-5 text-red-400" />;
+      default: return <Bell className="w-5 h-5 text-slate-400" />;
     }
   };
 
-  const getTypeColor = (type: NotificationType) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
       case "alert": return "bg-orange-500/10 border-orange-500/30";
       case "info": return "bg-blue-500/10 border-blue-500/30";
       case "success": return "bg-green-500/10 border-green-500/30";
       case "warning": return "bg-yellow-500/10 border-yellow-500/30";
       case "error": return "bg-red-500/10 border-red-500/30";
+      default: return "bg-slate-500/10 border-slate-500/30";
     }
   };
 
-  const getCategoryIcon = (category: NotificationCategory) => {
+  const getCategoryIcon = (category: string) => {
     switch (category) {
       case "load": return Truck;
       case "compliance": return FileText;
       case "payment": return DollarSign;
       case "safety": return Shield;
-      case "system": return Settings;
       case "message": return MessageSquare;
+      default: return Bell;
     }
   };
 
@@ -115,27 +114,7 @@ export default function NotificationCenter() {
     return date.toLocaleDateString();
   };
 
-  const markAsRead = (id: string) => {
-    toast.success("Marked as read");
-  };
-
-  const markAllAsRead = () => {
-    toast.success("All notifications marked as read");
-  };
-
-  const deleteNotification = (id: string) => {
-    toast.success("Notification deleted");
-  };
-
-  const clearAll = () => {
-    toast.success("All notifications cleared");
-  };
-
-  const filteredNotifications = notifications.filter(n => {
-    if (showUnreadOnly && n.read) return false;
-    if (activeTab !== "all" && n.category !== activeTab) return false;
-    return true;
-  });
+  const notifications = notificationsQuery.data || [];
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -148,61 +127,32 @@ export default function NotificationCenter() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="border-slate-600" onClick={markAllAsRead}>
-            <CheckCheck className="w-4 h-4 mr-2" />
-            Mark All Read
+          <Button variant="outline" size="sm" className="border-slate-600" onClick={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending}>
+            {markAllReadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCheck className="w-4 h-4 mr-2" />Mark All Read</>}
           </Button>
-          <Button variant="outline" size="sm" className="border-slate-600" onClick={clearAll}>
-            <Trash2 className="w-4 h-4 mr-2" />
-            Clear All
+          <Button variant="outline" size="sm" className="border-slate-600" onClick={() => clearAllMutation.mutate()} disabled={clearAllMutation.isPending}>
+            {clearAllMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Trash2 className="w-4 h-4 mr-2" />Clear All</>}
           </Button>
         </div>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === "all" && "border-blue-500")}>
-          <CardContent className="p-4 text-center" onClick={() => setActiveTab("all")}>
-            <Bell className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-            <p className="text-2xl font-bold text-white">{notifications.length}</p>
-            <p className="text-xs text-slate-400">All</p>
-          </CardContent>
-        </Card>
-        <Card className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === "load" && "border-blue-500")}>
-          <CardContent className="p-4 text-center" onClick={() => setActiveTab("load")}>
-            <Truck className="w-6 h-6 mx-auto mb-2 text-green-400" />
-            <p className="text-2xl font-bold text-green-400">{notifications.filter(n => n.category === "load").length}</p>
-            <p className="text-xs text-slate-400">Loads</p>
-          </CardContent>
-        </Card>
-        <Card className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === "compliance" && "border-blue-500")}>
-          <CardContent className="p-4 text-center" onClick={() => setActiveTab("compliance")}>
-            <FileText className="w-6 h-6 mx-auto mb-2 text-orange-400" />
-            <p className="text-2xl font-bold text-orange-400">{notifications.filter(n => n.category === "compliance").length}</p>
-            <p className="text-xs text-slate-400">Compliance</p>
-          </CardContent>
-        </Card>
-        <Card className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === "payment" && "border-blue-500")}>
-          <CardContent className="p-4 text-center" onClick={() => setActiveTab("payment")}>
-            <DollarSign className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-            <p className="text-2xl font-bold text-purple-400">{notifications.filter(n => n.category === "payment").length}</p>
-            <p className="text-xs text-slate-400">Payments</p>
-          </CardContent>
-        </Card>
-        <Card className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === "safety" && "border-blue-500")}>
-          <CardContent className="p-4 text-center" onClick={() => setActiveTab("safety")}>
-            <Shield className="w-6 h-6 mx-auto mb-2 text-red-400" />
-            <p className="text-2xl font-bold text-red-400">{notifications.filter(n => n.category === "safety").length}</p>
-            <p className="text-xs text-slate-400">Safety</p>
-          </CardContent>
-        </Card>
-        <Card className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === "message" && "border-blue-500")}>
-          <CardContent className="p-4 text-center" onClick={() => setActiveTab("message")}>
-            <MessageSquare className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-            <p className="text-2xl font-bold text-blue-400">{notifications.filter(n => n.category === "message").length}</p>
-            <p className="text-xs text-slate-400">Messages</p>
-          </CardContent>
-        </Card>
+        {["all", "load", "compliance", "payment", "safety", "message"].map((cat) => {
+          const CategoryIcon = getCategoryIcon(cat);
+          const count = cat === "all" ? notifications.length : notifications.filter(n => n.category === cat).length;
+          return (
+            <Card key={cat} className={cn("bg-slate-800/50 border-slate-700 cursor-pointer", activeTab === cat && "border-blue-500")} onClick={() => setActiveTab(cat)}>
+              <CardContent className="p-4 text-center">
+                <CategoryIcon className="w-6 h-6 mx-auto mb-2 text-blue-400" />
+                {notificationsQuery.isLoading ? <Skeleton className="h-8 w-8 mx-auto" /> : (
+                  <p className="text-2xl font-bold text-white">{count}</p>
+                )}
+                <p className="text-xs text-slate-400 capitalize">{cat}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -216,105 +166,108 @@ export default function NotificationCenter() {
           </TabsList>
 
           <div className="flex items-center gap-2">
-            <Switch
-              id="unread-only"
-              checked={showUnreadOnly}
-              onCheckedChange={setShowUnreadOnly}
-            />
+            <Switch id="unread-only" checked={showUnreadOnly} onCheckedChange={setShowUnreadOnly} />
             <Label htmlFor="unread-only" className="text-slate-400 text-sm">Unread only</Label>
           </div>
         </div>
 
         {/* Notifications List */}
-        <TabsContent value="all" className="mt-6">
-          <NotificationList
-            notifications={filteredNotifications}
-            getTypeIcon={getTypeIcon}
-            getTypeColor={getTypeColor}
-            getCategoryIcon={getCategoryIcon}
-            formatTime={formatTime}
-            markAsRead={markAsRead}
-            deleteNotification={deleteNotification}
-          />
-        </TabsContent>
-
-        <TabsContent value="load" className="mt-6">
-          <NotificationList
-            notifications={filteredNotifications}
-            getTypeIcon={getTypeIcon}
-            getTypeColor={getTypeColor}
-            getCategoryIcon={getCategoryIcon}
-            formatTime={formatTime}
-            markAsRead={markAsRead}
-            deleteNotification={deleteNotification}
-          />
-        </TabsContent>
-
-        <TabsContent value="compliance" className="mt-6">
-          <NotificationList
-            notifications={filteredNotifications}
-            getTypeIcon={getTypeIcon}
-            getTypeColor={getTypeColor}
-            getCategoryIcon={getCategoryIcon}
-            formatTime={formatTime}
-            markAsRead={markAsRead}
-            deleteNotification={deleteNotification}
-          />
-        </TabsContent>
-
-        <TabsContent value="safety" className="mt-6">
-          <NotificationList
-            notifications={filteredNotifications}
-            getTypeIcon={getTypeIcon}
-            getTypeColor={getTypeColor}
-            getCategoryIcon={getCategoryIcon}
-            formatTime={formatTime}
-            markAsRead={markAsRead}
-            deleteNotification={deleteNotification}
-          />
-        </TabsContent>
+        {["all", "load", "compliance", "safety"].map((tab) => (
+          <TabsContent key={tab} value={tab} className="mt-6">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="p-0">
+                {notificationsQuery.isLoading ? (
+                  <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+                ) : notifications.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <BellOff className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400">No notifications</p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-700">
+                    {notifications.map((notification) => {
+                      const CategoryIcon = getCategoryIcon(notification.category);
+                      return (
+                        <div key={notification.id} className={cn("flex items-start gap-4 p-4 hover:bg-slate-700/30 transition-colors", !notification.read && "bg-slate-700/20")}>
+                          <div className={cn("p-2 rounded-lg", getTypeColor(notification.type))}>
+                            {getTypeIcon(notification.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className={cn("font-medium", notification.read ? "text-slate-300" : "text-white")}>{notification.title}</p>
+                              {!notification.read && <div className="w-2 h-2 rounded-full bg-blue-500" />}
+                            </div>
+                            <p className="text-sm text-slate-400 mt-1">{notification.message}</p>
+                            <div className="flex items-center gap-4 mt-2">
+                              <span className="text-xs text-slate-500 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />{formatTime(notification.timestamp)}
+                              </span>
+                              <Badge variant="outline" className="text-xs border-slate-600">
+                                <CategoryIcon className="w-3 h-3 mr-1" />{notification.category}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {notification.actionUrl && (
+                              <Button variant="outline" size="sm" className="border-slate-600">{notification.actionLabel || "View"}</Button>
+                            )}
+                            {!notification.read && (
+                              <Button variant="ghost" size="sm" onClick={() => markAsReadMutation.mutate({ id: notification.id })} disabled={markAsReadMutation.isPending}>
+                                {markAsReadMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                              </Button>
+                            )}
+                            <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate({ id: notification.id })} disabled={deleteMutation.isPending}>
+                              {deleteMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4 text-slate-500" />}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
 
         {/* Settings Tab */}
         <TabsContent value="settings" className="mt-6">
           <Card className="bg-slate-800/50 border-slate-700">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <Settings className="w-5 h-5 text-slate-400" />
-                Notification Preferences
+                <Settings className="w-5 h-5 text-slate-400" />Notification Preferences
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-4 gap-4 pb-2 border-b border-slate-700">
-                  <div className="text-slate-400 text-sm">Category</div>
-                  <div className="text-slate-400 text-sm text-center">Email</div>
-                  <div className="text-slate-400 text-sm text-center">Push</div>
-                  <div className="text-slate-400 text-sm text-center">SMS</div>
+              {preferencesQuery.isLoading ? (
+                <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-4 gap-4 pb-2 border-b border-slate-700">
+                    <div className="text-slate-400 text-sm">Category</div>
+                    <div className="text-slate-400 text-sm text-center">Email</div>
+                    <div className="text-slate-400 text-sm text-center">Push</div>
+                    <div className="text-slate-400 text-sm text-center">SMS</div>
+                  </div>
+                  {preferencesQuery.data?.map((pref) => {
+                    const CategoryIcon = getCategoryIcon(pref.category);
+                    return (
+                      <div key={pref.category} className="grid grid-cols-4 gap-4 items-center py-2">
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon className="w-4 h-4 text-slate-400" />
+                          <span className="text-white">{pref.label}</span>
+                        </div>
+                        <div className="flex justify-center"><Switch defaultChecked={pref.email} /></div>
+                        <div className="flex justify-center"><Switch defaultChecked={pref.push} /></div>
+                        <div className="flex justify-center"><Switch defaultChecked={pref.sms} /></div>
+                      </div>
+                    );
+                  })}
                 </div>
-                {preferences.map((pref) => {
-                  const CategoryIcon = getCategoryIcon(pref.category);
-                  return (
-                    <div key={pref.category} className="grid grid-cols-4 gap-4 items-center py-2">
-                      <div className="flex items-center gap-2">
-                        <CategoryIcon className="w-4 h-4 text-slate-400" />
-                        <span className="text-white">{pref.label}</span>
-                      </div>
-                      <div className="flex justify-center">
-                        <Switch defaultChecked={pref.email} />
-                      </div>
-                      <div className="flex justify-center">
-                        <Switch defaultChecked={pref.push} />
-                      </div>
-                      <div className="flex justify-center">
-                        <Switch defaultChecked={pref.sms} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              )}
               <div className="mt-6 pt-4 border-t border-slate-700">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  Save Preferences
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => updatePreferencesMutation.mutate({})} disabled={updatePreferencesMutation.isPending}>
+                  {updatePreferencesMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Save Preferences
                 </Button>
               </div>
             </CardContent>
@@ -322,100 +275,5 @@ export default function NotificationCenter() {
         </TabsContent>
       </Tabs>
     </div>
-  );
-}
-
-interface NotificationListProps {
-  notifications: Notification[];
-  getTypeIcon: (type: NotificationType) => React.ReactNode;
-  getTypeColor: (type: NotificationType) => string;
-  getCategoryIcon: (category: NotificationCategory) => React.ElementType;
-  formatTime: (timestamp: string) => string;
-  markAsRead: (id: string) => void;
-  deleteNotification: (id: string) => void;
-}
-
-function NotificationList({
-  notifications,
-  getTypeIcon,
-  getTypeColor,
-  getCategoryIcon,
-  formatTime,
-  markAsRead,
-  deleteNotification,
-}: NotificationListProps) {
-  if (notifications.length === 0) {
-    return (
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardContent className="p-12 text-center">
-          <BellOff className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400">No notifications</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card className="bg-slate-800/50 border-slate-700">
-      <CardContent className="p-0">
-        <div className="divide-y divide-slate-700">
-          {notifications.map((notification) => {
-            const CategoryIcon = getCategoryIcon(notification.category);
-            return (
-              <div
-                key={notification.id}
-                className={cn(
-                  "flex items-start gap-4 p-4 hover:bg-slate-700/30 transition-colors",
-                  !notification.read && "bg-slate-700/20"
-                )}
-              >
-                <div className={cn("p-2 rounded-lg", getTypeColor(notification.type))}>
-                  {getTypeIcon(notification.type)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className={cn(
-                      "font-medium",
-                      notification.read ? "text-slate-300" : "text-white"
-                    )}>
-                      {notification.title}
-                    </p>
-                    {!notification.read && (
-                      <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    )}
-                  </div>
-                  <p className="text-sm text-slate-400 mt-1">{notification.message}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatTime(notification.timestamp)}
-                    </span>
-                    <Badge variant="outline" className="text-xs border-slate-600">
-                      <CategoryIcon className="w-3 h-3 mr-1" />
-                      {notification.category}
-                    </Badge>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {notification.actionUrl && (
-                    <Button variant="outline" size="sm" className="border-slate-600">
-                      {notification.actionLabel || "View"}
-                    </Button>
-                  )}
-                  {!notification.read && (
-                    <Button variant="ghost" size="sm" onClick={() => markAsRead(notification.id)}>
-                      <Check className="w-4 h-4" />
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={() => deleteNotification(notification.id)}>
-                    <Trash2 className="w-4 h-4 text-slate-500" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
   );
 }
