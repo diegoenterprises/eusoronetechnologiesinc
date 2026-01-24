@@ -95,6 +95,7 @@ import FuelManagement from "./pages/FuelManagement";
 import DriverScorecard from "./pages/DriverScorecard";
 import Rewards from "./pages/Rewards";
 import ClearinghouseDashboard from "./pages/ClearinghouseDashboard";
+import TerminalSCADA from "./pages/TerminalSCADA";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -326,6 +327,16 @@ function Router() {
       <Route path={"/compliance/clearinghouse"} component={() => (
         <DashboardLayout>
           <ClearinghouseDashboard />
+        </DashboardLayout>
+      )} />
+      <Route path={"/terminal/scada"} component={() => (
+        <DashboardLayout>
+          <TerminalSCADA />
+        </DashboardLayout>
+      )} />
+      <Route path={"/scada"} component={() => (
+        <DashboardLayout>
+          <TerminalSCADA />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
