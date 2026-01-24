@@ -31,6 +31,7 @@ import { driversRouter } from "./routers/drivers";
 import { analyticsRouter } from "./routers/analytics";
 import { carriersRouter } from "./routers/carriers";
 import { brokersRouter } from "./routers/brokers";
+import { shippersRouter } from "./routers/shippers";
 
 export const appRouter = router({
   system: systemRouter,
@@ -126,6 +127,9 @@ export const appRouter = router({
 
   // Broker Operations
   brokers: brokersRouter,
+
+  // Shipper Operations
+  shippers: shippersRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
