@@ -25,6 +25,8 @@ import { complianceRouter } from "./routers/compliance";
 import { trainingRouter } from "./routers/training";
 import { messagesRouter } from "./routers/messages";
 import { ratesRouter } from "./routers/rates";
+import { terminalsRouter } from "./routers/terminals";
+import { escortsRouter } from "./routers/escorts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -102,6 +104,12 @@ export const appRouter = router({
 
   // Rate Calculator & Market Data
   rates: ratesRouter,
+
+  // Terminal Operations
+  terminals: terminalsRouter,
+
+  // Escort/Pilot Car Operations
+  escorts: escortsRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,

@@ -1,0 +1,320 @@
+/**
+ * ESCORTS ROUTER
+ * tRPC procedures for escort/pilot car operations
+ * Based on 06_ESCORT_USER_JOURNEY.md
+ */
+
+import { z } from "zod";
+import { protectedProcedure, router } from "../_core/trpc";
+
+const jobStatusSchema = z.enum(["available", "assigned", "in_progress", "completed", "cancelled"]);
+const positionSchema = z.enum(["lead", "chase", "both"]);
+
+export const escortsRouter = router({
+  /**
+   * Get escort dashboard summary
+   */
+  getDashboardSummary: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        activeJobs: 2,
+        upcomingJobs: 5,
+        completedThisMonth: 18,
+        monthlyEarnings: 8450,
+        rating: 4.9,
+        certifications: {
+          total: 12,
+          expiringSoon: 2,
+        },
+      };
+    }),
+
+  /**
+   * Get available jobs (marketplace)
+   */
+  getAvailableJobs: protectedProcedure
+    .input(z.object({
+      state: z.string().optional(),
+      position: positionSchema.optional(),
+      startDate: z.string().optional(),
+      minPay: z.number().optional(),
+      limit: z.number().default(20),
+      offset: z.number().default(0),
+    }))
+    .query(async ({ input }) => {
+      const jobs = [
+        {
+          id: "job_001",
+          title: "Oversize Load Escort - Houston to Dallas",
+          carrier: "Heavy Haul Specialists",
+          origin: { city: "Houston", state: "TX" },
+          destination: { city: "Dallas", state: "TX" },
+          startDate: "2025-01-25",
+          estimatedDuration: "8 hours",
+          position: "lead",
+          pay: 650,
+          loadDetails: {
+            type: "Wind Turbine Blade",
+            dimensions: "180' L x 14' W x 16' H",
+            weight: "95,000 lbs",
+          },
+          urgency: "normal",
+          postedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "job_002",
+          title: "Superload Escort - Port Arthur to Austin",
+          carrier: "ABC Transport",
+          origin: { city: "Port Arthur", state: "TX" },
+          destination: { city: "Austin", state: "TX" },
+          startDate: "2025-01-26",
+          estimatedDuration: "12 hours",
+          position: "both",
+          pay: 1200,
+          loadDetails: {
+            type: "Industrial Transformer",
+            dimensions: "45' L x 18' W x 18' H",
+            weight: "250,000 lbs",
+          },
+          urgency: "high",
+          postedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "job_003",
+          title: "Wide Load Escort - San Antonio to El Paso",
+          carrier: "Southwest Heavy Transport",
+          origin: { city: "San Antonio", state: "TX" },
+          destination: { city: "El Paso", state: "TX" },
+          startDate: "2025-01-27",
+          estimatedDuration: "10 hours",
+          position: "chase",
+          pay: 800,
+          loadDetails: {
+            type: "Modular Building Section",
+            dimensions: "60' L x 16' W x 14' H",
+            weight: "78,000 lbs",
+          },
+          urgency: "normal",
+          postedAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        },
+      ];
+
+      let filtered = jobs;
+      if (input.state) {
+        filtered = filtered.filter(j => 
+          j.origin.state === input.state || j.destination.state === input.state
+        );
+      }
+      if (input.position) {
+        filtered = filtered.filter(j => j.position === input.position || j.position === "both");
+      }
+      if (input.minPay !== undefined) {
+        const minPayValue = input.minPay;
+        filtered = filtered.filter(j => j.pay >= minPayValue);
+      }
+
+      return {
+        jobs: filtered.slice(input.offset, input.offset + input.limit),
+        total: filtered.length,
+      };
+    }),
+
+  /**
+   * Get my jobs (assigned to me)
+   */
+  getMyJobs: protectedProcedure
+    .input(z.object({
+      status: jobStatusSchema.optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const jobs = [
+        {
+          id: "myjob_001",
+          title: "Oversize Load Escort - Beaumont to Houston",
+          carrier: "Gulf Coast Transport",
+          status: "in_progress",
+          startDate: "2025-01-23",
+          position: "lead",
+          pay: 450,
+          currentLocation: { lat: 29.95, lng: -94.05 },
+          eta: "2 hours",
+        },
+        {
+          id: "myjob_002",
+          title: "Wide Load Escort - Houston to Corpus Christi",
+          carrier: "ABC Transport",
+          status: "assigned",
+          startDate: "2025-01-24",
+          position: "chase",
+          pay: 550,
+        },
+      ];
+
+      let filtered = jobs;
+      if (input.status) {
+        filtered = filtered.filter(j => j.status === input.status);
+      }
+
+      return jobs;
+    }),
+
+  /**
+   * Apply for job
+   */
+  applyForJob: protectedProcedure
+    .input(z.object({
+      jobId: z.string(),
+      position: positionSchema,
+      message: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        applicationId: `app_${Date.now()}`,
+        jobId: input.jobId,
+        status: "pending",
+        appliedAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Update job status
+   */
+  updateJobStatus: protectedProcedure
+    .input(z.object({
+      jobId: z.string(),
+      status: jobStatusSchema,
+      notes: z.string().optional(),
+      location: z.object({
+        lat: z.number(),
+        lng: z.number(),
+      }).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return {
+        success: true,
+        jobId: input.jobId,
+        newStatus: input.status,
+        updatedAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Get certifications
+   */
+  getCertifications: protectedProcedure
+    .query(async ({ ctx }) => {
+      return [
+        {
+          id: "cert_001",
+          state: "TX",
+          type: "Pilot/Escort Vehicle Operator",
+          issueDate: "2024-03-15",
+          expirationDate: "2026-03-15",
+          status: "valid",
+          certNumber: "TX-PEV-12345",
+        },
+        {
+          id: "cert_002",
+          state: "LA",
+          type: "Oversize Load Escort",
+          issueDate: "2024-06-01",
+          expirationDate: "2025-06-01",
+          status: "valid",
+          certNumber: "LA-OLE-67890",
+          reciprocity: ["MS", "AR"],
+        },
+        {
+          id: "cert_003",
+          state: "OK",
+          type: "Pilot Car Operator",
+          issueDate: "2023-09-01",
+          expirationDate: "2025-02-01",
+          status: "expiring_soon",
+          certNumber: "OK-PCO-11111",
+        },
+      ];
+    }),
+
+  /**
+   * Get earnings history
+   */
+  getEarningsHistory: protectedProcedure
+    .input(z.object({
+      period: z.enum(["week", "month", "quarter", "year"]).default("month"),
+    }))
+    .query(async ({ input }) => {
+      return {
+        period: input.period,
+        totalEarnings: 8450,
+        jobCount: 18,
+        avgPerJob: 469.44,
+        breakdown: [
+          { week: "Jan 1-7", earnings: 1850, jobs: 4 },
+          { week: "Jan 8-14", earnings: 2100, jobs: 5 },
+          { week: "Jan 15-21", earnings: 2250, jobs: 5 },
+          { week: "Jan 22-28", earnings: 2250, jobs: 4 },
+        ],
+      };
+    }),
+
+  /**
+   * Get job details
+   */
+  getJobDetails: protectedProcedure
+    .input(z.object({ jobId: z.string() }))
+    .query(async ({ input }) => {
+      return {
+        id: input.jobId,
+        title: "Superload Escort - Port Arthur to Austin",
+        carrier: {
+          name: "ABC Transport",
+          contact: "John Dispatcher",
+          phone: "555-0101",
+        },
+        origin: { city: "Port Arthur", state: "TX", address: "1234 Refinery Rd" },
+        destination: { city: "Austin", state: "TX", address: "5678 Industrial Blvd" },
+        route: {
+          distance: 280,
+          estimatedTime: "12 hours",
+          restrictions: ["No travel after dark", "Avoid downtown areas"],
+          permits: ["TX Superload Permit #SL-2025-0045"],
+        },
+        load: {
+          type: "Industrial Transformer",
+          dimensions: "45' L x 18' W x 18' H",
+          weight: "250,000 lbs",
+          hazmat: false,
+        },
+        requirements: {
+          position: "both",
+          equipment: ["Height pole", "Wide load signs", "Two-way radio"],
+          certifications: ["TX Pilot/Escort"],
+        },
+        pay: 1200,
+        startDate: "2025-01-26",
+        startTime: "06:00",
+      };
+    }),
+
+  /**
+   * Submit location update
+   */
+  submitLocationUpdate: protectedProcedure
+    .input(z.object({
+      jobId: z.string(),
+      location: z.object({
+        lat: z.number(),
+        lng: z.number(),
+      }),
+      heading: z.number().optional(),
+      speed: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return {
+        success: true,
+        timestamp: new Date().toISOString(),
+      };
+    }),
+});
