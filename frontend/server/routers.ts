@@ -54,6 +54,8 @@ import { inventoryRouter } from "./routers/inventory";
 import { reportsRouter } from "./routers/reports";
 import { routesRouter } from "./routers/routes";
 import { trackingRouter } from "./routers/tracking";
+import { equipmentRouter } from "./routers/equipment";
+import { quotesRouter } from "./routers/quotes";
 
 export const appRouter = router({
   system: systemRouter,
@@ -218,6 +220,12 @@ export const appRouter = router({
 
   // Real-Time Tracking
   tracking: trackingRouter,
+
+  // Equipment/Trailer Management
+  equipment: equipmentRouter,
+
+  // Freight Quotes
+  quotes: quotesRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,
