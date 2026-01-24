@@ -105,6 +105,7 @@ import LoadDetails from "./pages/LoadDetails";
 import ELDLogs from "./pages/ELDLogs";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import EscortJobs from "./pages/EscortJobs";
+import BidDetails from "./pages/BidDetails";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -431,6 +432,16 @@ function Router() {
       <Route path={"/pilot-car"} component={() => (
         <DashboardLayout>
           <EscortJobs />
+        </DashboardLayout>
+      )} />
+      <Route path={"/bid/:bidId"} component={() => (
+        <DashboardLayout>
+          <BidDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/bids/:bidId/details"} component={() => (
+        <DashboardLayout>
+          <BidDetails />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
