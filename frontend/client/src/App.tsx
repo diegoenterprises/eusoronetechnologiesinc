@@ -104,6 +104,7 @@ import MessagingCenter from "./pages/MessagingCenter";
 import LoadDetails from "./pages/LoadDetails";
 import ELDLogs from "./pages/ELDLogs";
 import InvoiceDetails from "./pages/InvoiceDetails";
+import EscortJobs from "./pages/EscortJobs";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -420,6 +421,16 @@ function Router() {
       <Route path={"/accounting/invoice/:invoiceId"} component={() => (
         <DashboardLayout>
           <InvoiceDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/escort/jobs"} component={() => (
+        <DashboardLayout>
+          <EscortJobs />
+        </DashboardLayout>
+      )} />
+      <Route path={"/pilot-car"} component={() => (
+        <DashboardLayout>
+          <EscortJobs />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
