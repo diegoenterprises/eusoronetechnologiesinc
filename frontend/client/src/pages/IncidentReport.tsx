@@ -1,6 +1,7 @@
 /**
  * INCIDENT REPORT PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
 import React, { useState } from "react";
@@ -8,222 +9,229 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  AlertTriangle, FileText, Calendar, MapPin, User,
-  Clock, Eye, Plus, Send, Loader2
+  AlertTriangle, FileText, Send, Loader2, Clock, CheckCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function IncidentReport() {
-  const [activeTab, setActiveTab] = useState("list");
   const [incidentType, setIncidentType] = useState("");
   const [severity, setSeverity] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
 
-  const incidentsQuery = trpc.safety.getIncidents.useQuery();
+  const recentQuery = trpc.safety.getRecentIncidents.useQuery({ limit: 5 });
   const summaryQuery = trpc.safety.getIncidentSummary.useQuery();
 
-  const submitMutation = trpc.safety.submitIncident.useMutation({
+  const submitMutation = trpc.safety.reportIncident.useMutation({
     onSuccess: () => {
-      toast.success("Incident reported");
+      toast.success("Incident reported successfully");
       setIncidentType("");
       setSeverity("");
       setDescription("");
       setLocation("");
-      incidentsQuery.refetch();
+      recentQuery.refetch();
       summaryQuery.refetch();
-      setActiveTab("list");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error) => toast.error("Failed to submit", { description: error.message }),
   });
 
-  const getSeverityColor = (sev: string) => {
-    switch (sev) {
-      case "critical": return "bg-red-500/20 text-red-400 border-red-500/50";
-      case "major": return "bg-orange-500/20 text-orange-400 border-orange-500/50";
-      case "minor": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-      default: return "bg-slate-500/20 text-slate-400";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "closed": return "bg-green-500/20 text-green-400";
-      case "investigating": return "bg-blue-500/20 text-blue-400";
-      case "open": return "bg-yellow-500/20 text-yellow-400";
-      default: return "bg-slate-500/20 text-slate-400";
-    }
-  };
+  const summary = summaryQuery.data;
 
   const handleSubmit = () => {
-    if (!incidentType || !severity || !description || !location) {
+    if (!incidentType || !severity || !description) {
       toast.error("Please fill in all required fields");
       return;
     }
     submitMutation.mutate({ type: incidentType, severity, description, location });
   };
 
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "resolved": return <Badge className="bg-green-500/20 text-green-400 border-0">Resolved</Badge>;
+      case "investigating": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Investigating</Badge>;
+      case "open": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Open</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Incident Reports</h1>
-          <p className="text-slate-400 text-sm">Report and track safety incidents</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Incident Report
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Report and track safety incidents</p>
         </div>
-        <Button className="bg-red-600 hover:bg-red-700" onClick={() => setActiveTab("new")}>
-          <Plus className="w-4 h-4 mr-2" />Report Incident
-        </Button>
       </div>
 
-      {/* Stats */}
+      {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            <AlertTriangle className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-blue-400">{summaryQuery.data?.total || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Total Incidents</p>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <FileText className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{summary?.total || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Total</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-yellow-500/10 border-yellow-500/30">
-          <CardContent className="p-4 text-center">
-            <Clock className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-yellow-400">{summaryQuery.data?.open || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Open</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Clock className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">{summary?.open || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Open</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-blue-500/10 border-blue-500/30">
-          <CardContent className="p-4 text-center">
-            <FileText className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-blue-400">{summaryQuery.data?.investigating || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Investigating</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-red-500/20">
+                <AlertTriangle className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-red-400">{summary?.critical || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Critical</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-green-500/10 border-green-500/30">
-          <CardContent className="p-4 text-center">
-            <FileText className="w-6 h-6 mx-auto mb-2 text-green-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">{summaryQuery.data?.closed || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Closed</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{summary?.resolved || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Resolved</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="list" className="data-[state=active]:bg-blue-600">All Incidents</TabsTrigger>
-          <TabsTrigger value="new" className="data-[state=active]:bg-blue-600">Report New</TabsTrigger>
-        </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Report Form */}
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-400" />
+              Report New Incident
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-slate-400 text-sm">Incident Type *</label>
+                <Select value={incidentType} onValueChange={setIncidentType}>
+                  <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="accident">Accident</SelectItem>
+                    <SelectItem value="near_miss">Near Miss</SelectItem>
+                    <SelectItem value="injury">Injury</SelectItem>
+                    <SelectItem value="property_damage">Property Damage</SelectItem>
+                    <SelectItem value="spill">Spill/Leak</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <TabsContent value="list" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardContent className="p-0">
-              {incidentsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-              ) : incidentsQuery.data?.length === 0 ? (
-                <div className="p-12 text-center">
-                  <AlertTriangle className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                  <p className="text-slate-400">No incidents reported</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-700">
-                  {incidentsQuery.data?.map((incident) => (
-                    <div key={incident.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className={cn("p-2 rounded-lg", getSeverityColor(incident.severity))}>
-                          <AlertTriangle className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-white font-medium">{incident.type}</p>
-                            <Badge className={getSeverityColor(incident.severity)}>{incident.severity}</Badge>
-                          </div>
-                          <p className="text-sm text-slate-400">{incident.description?.substring(0, 100)}...</p>
-                          <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
-                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{incident.date}</span>
-                            <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{incident.location}</span>
-                            <span className="flex items-center gap-1"><User className="w-3 h-3" />{incident.reportedBy}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Badge className={getStatusColor(incident.status)}>{incident.status}</Badge>
-                        <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div className="space-y-2">
+                <label className="text-slate-400 text-sm">Severity *</label>
+                <Select value={severity} onValueChange={setSeverity}>
+                  <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg">
+                    <SelectValue placeholder="Select severity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="critical">Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <TabsContent value="new" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-400" />Report New Incident
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-slate-400">Incident Type</Label>
-                  <Select value={incidentType} onValueChange={setIncidentType}>
-                    <SelectTrigger className="mt-1 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Select type" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="accident">Accident</SelectItem>
-                      <SelectItem value="near_miss">Near Miss</SelectItem>
-                      <SelectItem value="injury">Injury</SelectItem>
-                      <SelectItem value="property_damage">Property Damage</SelectItem>
-                      <SelectItem value="spill">Spill/Release</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-slate-400">Severity</Label>
-                  <Select value={severity} onValueChange={setSeverity}>
-                    <SelectTrigger className="mt-1 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Select severity" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="minor">Minor</SelectItem>
-                      <SelectItem value="major">Major</SelectItem>
-                      <SelectItem value="critical">Critical</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <label className="text-slate-400 text-sm">Location</label>
+                <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Enter location" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
-              <div>
-                <Label className="text-slate-400">Location</Label>
-                <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Where did this occur?" className="mt-1 bg-slate-700/50 border-slate-600" />
+
+              <div className="space-y-2">
+                <label className="text-slate-400 text-sm">Description *</label>
+                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the incident in detail..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[120px]" />
               </div>
-              <div>
-                <Label className="text-slate-400">Description</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe what happened..." className="mt-1 bg-slate-700/50 border-slate-600" rows={5} />
-              </div>
-              <Button className="w-full bg-red-600 hover:bg-red-700" onClick={handleSubmit} disabled={submitMutation.isPending}>
-                {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+
+              <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl h-12" onClick={handleSubmit} disabled={submitMutation.isPending}>
+                {submitMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
                 Submit Report
               </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Incidents */}
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-lg">Recent Incidents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentQuery.isLoading ? (
+              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : recentQuery.data?.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="p-4 rounded-full bg-green-500/20 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                  <CheckCircle className="w-8 h-8 text-green-400" />
+                </div>
+                <p className="text-slate-400">No recent incidents</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentQuery.data?.map((incident: any) => (
+                  <div key={incident.id} className={cn("p-4 rounded-xl border", incident.severity === "critical" || incident.severity === "high" ? "bg-red-500/10 border-red-500/30" : "bg-slate-700/30 border-slate-600/30")}>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-white font-medium">{incident.type}</p>
+                      {getStatusBadge(incident.status)}
+                    </div>
+                    <p className="text-sm text-slate-400 line-clamp-2">{incident.description}</p>
+                    <p className="text-xs text-slate-500 mt-2">{incident.date}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
