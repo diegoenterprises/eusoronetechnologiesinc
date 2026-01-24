@@ -149,7 +149,7 @@ export const permitsRouter = router({
   /**
    * Apply for permit
    */
-  apply: protectedProcedure
+  submitApplication: protectedProcedure
     .input(z.object({
       type: permitTypeSchema,
       states: z.array(z.string()),

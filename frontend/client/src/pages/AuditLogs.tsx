@@ -1,6 +1,7 @@
 /**
  * AUDIT LOGS PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
 import React, { useState } from "react";
@@ -37,9 +38,11 @@ export default function AuditLogs() {
   if (logsQuery.error) {
     return (
       <div className="p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-red-400">Error loading audit logs</p>
-        <Button className="mt-4" onClick={() => logsQuery.refetch()}>Retry</Button>
+        <div className="p-4 rounded-full bg-red-500/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+          <AlertTriangle className="w-8 h-8 text-red-400" />
+        </div>
+        <p className="text-red-400 mb-4">Error loading audit logs</p>
+        <Button className="bg-slate-700 hover:bg-slate-600" onClick={() => logsQuery.refetch()}>Retry</Button>
       </div>
     );
   }
@@ -69,53 +72,82 @@ export default function AuditLogs() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Audit Logs</h1>
-          <p className="text-slate-400 text-sm">Track all system activities and changes</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Audit Logs
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Track all system activities and changes</p>
         </div>
-        <Button variant="outline" className="border-slate-600">
+        <Button className="bg-slate-700 hover:bg-slate-600 border border-slate-600">
           <Download className="w-4 h-4 mr-2" />Export Logs
         </Button>
       </div>
 
-      {/* Stats */}
+      {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            <Activity className="w-6 h-6 mx-auto mb-2 text-blue-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-blue-400">{summaryQuery.data?.totalEvents?.toLocaleString() || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Total Events</p>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <Activity className="w-6 h-6 text-blue-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
+                  <p className="text-2xl font-bold text-blue-400">{summaryQuery.data?.totalEvents?.toLocaleString() || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Total Events</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            <Clock className="w-6 h-6 mx-auto mb-2 text-green-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">{summaryQuery.data?.todayEvents || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Today</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <Clock className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{summaryQuery.data?.todayEvents || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Today</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            <User className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-purple-400">{summaryQuery.data?.activeUsers || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Active Users</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20">
+                <User className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-purple-400">{summaryQuery.data?.activeUsers || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Active Users</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            <Shield className="w-6 h-6 mx-auto mb-2 text-orange-400" />
-            {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-orange-400">{summaryQuery.data?.securityEvents || 0}</p>
-            )}
-            <p className="text-xs text-slate-400">Security Events</p>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-orange-500/20">
+                <Shield className="w-6 h-6 text-orange-400" />
+              </div>
+              <div>
+                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-orange-400">{summaryQuery.data?.securityEvents || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">Security Events</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -124,10 +156,15 @@ export default function AuditLogs() {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search logs..." className="pl-9 bg-slate-700/50 border-slate-600" />
+          <Input 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            placeholder="Search logs..." 
+            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50" 
+          />
         </div>
         <Select value={actionFilter} onValueChange={setActionFilter}>
-          <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Action" /></SelectTrigger>
+          <SelectTrigger className="w-36 bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue placeholder="Action" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Actions</SelectItem>
             <SelectItem value="create">Create</SelectItem>
@@ -139,7 +176,7 @@ export default function AuditLogs() {
           </SelectContent>
         </Select>
         <Select value={userFilter} onValueChange={setUserFilter}>
-          <SelectTrigger className="w-48 bg-slate-700/50 border-slate-600"><SelectValue placeholder="User" /></SelectTrigger>
+          <SelectTrigger className="w-48 bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue placeholder="User" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Users</SelectItem>
             {usersQuery.data?.map(u => (
@@ -150,23 +187,26 @@ export default function AuditLogs() {
       </div>
 
       {/* Logs List */}
-      <Card className="bg-slate-800/50 border-slate-700">
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {logsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : logsQuery.data?.logs?.length === 0 ? (
             <div className="p-12 text-center">
-              <Activity className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                <Activity className="w-8 h-8 text-slate-500" />
+              </div>
               <p className="text-slate-400">No audit logs found</p>
+              <p className="text-slate-500 text-sm mt-1">Try adjusting your filters</p>
             </div>
           ) : (
-            <div className="divide-y divide-slate-700">
+            <div className="divide-y divide-slate-700/50">
               {logsQuery.data?.logs?.map((log) => {
                 const ActionIcon = getActionIcon(log.action);
                 return (
-                  <div key={log.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
+                  <div key={log.id} className="flex items-center justify-between p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className={cn("p-2 rounded-lg", getActionColor(log.action))}>
+                      <div className={cn("p-2 rounded-full", getActionColor(log.action))}>
                         <ActionIcon className="w-5 h-5" />
                       </div>
                       <div>
@@ -179,11 +219,9 @@ export default function AuditLogs() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <Badge className={getActionColor(log.action)}>{log.action}</Badge>
-                      <div className="text-right">
-                        <p className="text-sm text-slate-400">{log.timestamp}</p>
-                      </div>
-                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                      <Badge className={cn("border-0", getActionColor(log.action))}>{log.action}</Badge>
+                      <span className="text-sm text-slate-500">{log.timestamp}</span>
+                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white"><Eye className="w-4 h-4" /></Button>
                     </div>
                   </div>
                 );
@@ -196,11 +234,11 @@ export default function AuditLogs() {
       {/* Pagination */}
       {logsQuery.data?.totalPages && logsQuery.data.totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" className="border-slate-600" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
+          <Button variant="outline" size="sm" className="bg-slate-800/50 border-slate-700/50 rounded-lg" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          <span className="text-slate-400">Page {page} of {logsQuery.data.totalPages}</span>
-          <Button variant="outline" size="sm" className="border-slate-600" onClick={() => setPage(p => p + 1)} disabled={page >= logsQuery.data.totalPages}>
+          <span className="text-slate-400 px-4">Page {page} of {logsQuery.data.totalPages}</span>
+          <Button variant="outline" size="sm" className="bg-slate-800/50 border-slate-700/50 rounded-lg" onClick={() => setPage(p => p + 1)} disabled={page >= logsQuery.data.totalPages}>
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
