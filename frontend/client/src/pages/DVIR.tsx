@@ -1,53 +1,38 @@
 /**
- * DVIR PAGE - Driver Vehicle Inspection Report
+ * DVIR PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  CheckCircle, XCircle, AlertTriangle, Truck, FileText,
-  Calendar, Clock, MapPin, User, Send, History, Eye,
-  Wrench, Shield, Loader2
+  FileText, CheckCircle, XCircle, AlertTriangle, Truck,
+  Send, Loader2, Clock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DVIR() {
-  const [activeTab, setActiveTab] = useState("new");
-  const [inspectionType, setInspectionType] = useState<"pre-trip" | "post-trip">("pre-trip");
   const [selectedDefects, setSelectedDefects] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
-  const categoriesQuery = trpc.dvir.getCategories.useQuery();
-  const historyQuery = trpc.dvir.getHistory.useQuery({ limit: 20 });
-  const pendingDefectsQuery = trpc.dvir.getPendingDefects.useQuery();
-  const vehicleQuery = trpc.dvir.getCurrentVehicle.useQuery();
+  const templateQuery = trpc.inspections.getTemplate.useQuery({ type: "dvir" });
+  const recentQuery = trpc.inspections.getRecent.useQuery({ type: "dvir", limit: 5 });
 
-  const submitMutation = trpc.dvir.submit.useMutation({
+  const submitMutation = trpc.inspections.submit.useMutation({
     onSuccess: () => {
       toast.success("DVIR submitted successfully");
       setSelectedDefects([]);
       setNotes("");
-      historyQuery.refetch();
+      recentQuery.refetch();
     },
-    onError: (error) => toast.error("Submission failed", { description: error.message }),
-  });
-
-  const certifySafeMutation = trpc.dvir.certifySafe.useMutation({
-    onSuccess: () => {
-      toast.success("Vehicle certified safe");
-      pendingDefectsQuery.refetch();
-    },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: { message: string }) => toast.error("Submission failed", { description: error.message }),
   });
 
   const toggleDefect = (defectId: string) => {
@@ -57,231 +42,233 @@ export default function DVIR() {
   };
 
   const handleSubmit = () => {
+    const items = templateQuery.data?.categories?.flatMap((cat: any) =>
+      cat.items.map((item: any) => ({
+        id: item.id,
+        category: cat.id,
+        name: item.name,
+        status: selectedDefects.includes(item.id) ? "fail" as const : "pass" as const,
+        notes: "",
+      }))
+    ) || [];
+
     submitMutation.mutate({
-      type: inspectionType,
-      defects: selectedDefects,
-      notes,
+      vehicleId: "current",
+      type: "dvir",
+      odometer: 0,
+      items,
       defectsFound: selectedDefects.length > 0,
+      safeToOperate: selectedDefects.length === 0,
+      driverSignature: "digital",
+      notes,
     });
   };
 
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "critical": return "bg-red-500/20 text-red-400 border-red-500/50";
-      case "major": return "bg-orange-500/20 text-orange-400 border-orange-500/50";
-      case "minor": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-      default: return "bg-slate-500/20 text-slate-400";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "repaired": return "bg-green-500/20 text-green-400";
-      case "acknowledged": return "bg-blue-500/20 text-blue-400";
-      case "reported": return "bg-yellow-500/20 text-yellow-400";
-      case "deferred": return "bg-orange-500/20 text-orange-400";
-      default: return "bg-slate-500/20 text-slate-400";
-    }
-  };
+  const totalItems = templateQuery.data?.categories?.reduce((acc: number, cat: any) => acc + cat.items.length, 0) || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">DVIR</h1>
-          <p className="text-slate-400 text-sm">Driver Vehicle Inspection Report</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Driver Vehicle Inspection Report
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Complete your daily vehicle inspection</p>
+        </div>
+        <div className="flex items-center gap-2 text-slate-400">
+          <Clock className="w-4 h-4" />
+          <span className="text-sm">{new Date().toLocaleDateString()}</span>
         </div>
       </div>
 
-      {/* Current Vehicle */}
-      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+      {/* Stats Row */}
+      <div className="grid grid-cols-3 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-blue-500/20">
-                <Truck className="w-8 h-8 text-blue-400" />
+              <div className="p-3 rounded-full bg-blue-500/20">
+                <FileText className="w-6 h-6 text-blue-400" />
               </div>
-              {vehicleQuery.isLoading ? (
-                <div><Skeleton className="h-6 w-32 mb-2" /><Skeleton className="h-4 w-48" /></div>
-              ) : (
-                <div>
-                  <p className="text-white font-bold text-lg">{vehicleQuery.data?.truckNumber}</p>
-                  <p className="text-slate-400">Trailer: {vehicleQuery.data?.trailerNumber || "None"}</p>
-                  <p className="text-sm text-slate-500">Odometer: {vehicleQuery.data?.odometer?.toLocaleString()} mi</p>
-                </div>
-              )}
+              <div>
+                <p className="text-2xl font-bold text-blue-400">{totalItems}</p>
+                <p className="text-xs text-slate-400">Total Items</p>
+              </div>
             </div>
-            <div className="text-right">
-              {vehicleQuery.isLoading ? <Skeleton className="h-6 w-24" /> : (
-                <Badge className={vehicleQuery.data?.lastInspectionStatus === "pass" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}>
-                  Last: {vehicleQuery.data?.lastInspectionDate}
-                </Badge>
-              )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20">
+                <CheckCircle className="w-6 h-6 text-green-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-green-400">{totalItems - selectedDefects.length}</p>
+                <p className="text-xs text-slate-400">Passed</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-red-500/20">
+                <XCircle className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-red-400">{selectedDefects.length}</p>
+                <p className="text-xs text-slate-400">Defects</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Current Vehicle */}
+      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30 rounded-xl">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-full bg-blue-500/20">
+              <Truck className="w-8 h-8 text-blue-400" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-lg">Current Vehicle</p>
+              <p className="text-slate-400 text-sm">Complete DVIR before and after each trip</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Pending Defects Alert */}
-      {pendingDefectsQuery.data && pendingDefectsQuery.data.length > 0 && (
-        <Card className="bg-red-500/10 border-red-500/30">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-red-400 flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />Outstanding Defects ({pendingDefectsQuery.data.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pendingDefectsQuery.data.map((defect) => (
-                <div key={defect.id} className="flex items-center justify-between p-3 rounded-lg bg-red-500/10">
-                  <div>
-                    <p className="text-white font-medium">{defect.category}: {defect.description}</p>
-                    <p className="text-xs text-slate-500">Reported: {defect.reportedAt}</p>
+      {/* Inspection Checklist */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-cyan-400" />
+            Inspection Checklist
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-slate-400 mb-4 text-sm">Select any defects found during inspection:</p>
+
+          {templateQuery.isLoading ? (
+            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (
+            <div className="space-y-6 mb-6">
+              {templateQuery.data?.categories?.map((category: any) => (
+                <div key={category.id}>
+                  <h3 className="text-white font-medium mb-3 text-sm uppercase tracking-wide">{category.name}</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {category.items.map((item: any) => (
+                      <Button
+                        key={item.id}
+                        variant="outline"
+                        className={cn(
+                          "h-auto py-3 justify-start text-sm rounded-xl transition-all",
+                          selectedDefects.includes(item.id)
+                            ? "bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30"
+                            : "bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 text-slate-300"
+                        )}
+                        onClick={() => toggleDefect(item.id)}
+                      >
+                        {selectedDefects.includes(item.id) ? (
+                          <XCircle className="w-4 h-4 mr-2 text-red-400 flex-shrink-0" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2 text-green-400 flex-shrink-0" />
+                        )}
+                        <span className="truncate">{item.name}</span>
+                      </Button>
+                    ))}
                   </div>
-                  <Badge className={getSeverityColor(defect.severity)}>{defect.severity}</Badge>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800 border border-slate-700">
-          <TabsTrigger value="new" className="data-[state=active]:bg-blue-600">New Inspection</TabsTrigger>
-          <TabsTrigger value="history" className="data-[state=active]:bg-blue-600">History</TabsTrigger>
-        </TabsList>
+          <div className="mb-6">
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Additional notes or defect details..."
+              className="bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-cyan-500/50"
+              rows={3}
+            />
+          </div>
 
-        <TabsContent value="new" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-blue-400" />New Inspection
-                </CardTitle>
-                <div className="flex gap-2">
-                  <Button variant={inspectionType === "pre-trip" ? "default" : "outline"} size="sm" className={inspectionType === "pre-trip" ? "bg-blue-600" : "border-slate-600"} onClick={() => setInspectionType("pre-trip")}>Pre-Trip</Button>
-                  <Button variant={inspectionType === "post-trip" ? "default" : "outline"} size="sm" className={inspectionType === "post-trip" ? "bg-blue-600" : "border-slate-600"} onClick={() => setInspectionType("post-trip")}>Post-Trip</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-400 mb-4">Select any defects found during inspection:</p>
-
-              {categoriesQuery.isLoading ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-              ) : (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                  {categoriesQuery.data?.map((category) => (
-                    <Button
-                      key={category.id}
-                      variant="outline"
-                      className={cn(
-                        "h-auto py-3 justify-start",
-                        selectedDefects.includes(category.id)
-                          ? "bg-red-500/20 border-red-500 text-red-400"
-                          : "border-slate-600 hover:border-slate-500"
-                      )}
-                      onClick={() => toggleDefect(category.id)}
-                    >
-                      {selectedDefects.includes(category.id) ? (
-                        <XCircle className="w-4 h-4 mr-2 text-red-400" />
-                      ) : (
-                        <CheckCircle className="w-4 h-4 mr-2 text-green-400" />
-                      )}
-                      {category.label}
-                    </Button>
-                  ))}
-                </div>
-              )}
-
-              <div className="mb-6">
-                <Label className="text-slate-400">Additional Notes</Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Describe any defects or observations..."
-                  className="mt-1 bg-slate-700/50 border-slate-600"
-                  rows={3}
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 mb-6">
-                <div className="flex items-center gap-3">
-                  <Shield className={cn("w-6 h-6", selectedDefects.length === 0 ? "text-green-400" : "text-yellow-400")} />
-                  <div>
-                    <p className="text-white font-medium">
-                      {selectedDefects.length === 0 ? "No Defects Found" : `${selectedDefects.length} Defect(s) Found`}
-                    </p>
-                    <p className="text-sm text-slate-400">
-                      {selectedDefects.length === 0 ? "Vehicle is safe to operate" : "Defects will be reported to maintenance"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                {selectedDefects.length === 0 && (
-                  <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => certifySafeMutation.mutate({})} disabled={certifySafeMutation.isPending}>
-                    {certifySafeMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    Certify Safe
-                  </Button>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30 mb-6">
+            <div className="flex items-center gap-4">
+              <div className={cn("p-3 rounded-full", selectedDefects.length === 0 ? "bg-green-500/20" : "bg-yellow-500/20")}>
+                {selectedDefects.length === 0 ? (
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                ) : (
+                  <AlertTriangle className="w-6 h-6 text-yellow-400" />
                 )}
-                <Button className="flex-1 bg-blue-600 hover:bg-blue-700" onClick={handleSubmit} disabled={submitMutation.isPending}>
-                  {submitMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                  Submit DVIR
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div>
+                <p className="text-white font-medium">
+                  {selectedDefects.length === 0 ? "No Defects Found" : `${selectedDefects.length} Defect(s) Found`}
+                </p>
+                <p className="text-sm text-slate-400">
+                  {selectedDefects.length === 0 ? "Vehicle is safe to operate" : "Defects will be reported to maintenance"}
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <TabsContent value="history" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-2"><History className="w-5 h-5 text-purple-400" />Inspection History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {historyQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-              ) : historyQuery.data?.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400">No inspection history</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {historyQuery.data?.map((report) => (
-                    <div key={report.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
-                      <div className="flex items-center gap-4">
-                        <div className={cn("p-2 rounded-lg", report.defectsFound ? "bg-yellow-500/20" : "bg-green-500/20")}>
-                          {report.defectsFound ? <AlertTriangle className="w-5 h-5 text-yellow-400" /> : <CheckCircle className="w-5 h-5 text-green-400" />}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="text-white font-medium capitalize">{report.type}</p>
-                            <Badge className={report.defectsFound ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"}>
-                              {report.defectsFound ? `${report.defectCount} Defects` : "No Defects"}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-slate-400">{report.truckNumber} | {report.trailerNumber || "No Trailer"}</p>
-                          <p className="text-xs text-slate-500 flex items-center gap-2">
-                            <Calendar className="w-3 h-3" />{report.date}
-                            <Clock className="w-3 h-3 ml-2" />{report.time}
-                            <MapPin className="w-3 h-3 ml-2" />{report.location}
-                          </p>
-                        </div>
-                      </div>
-                      <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+          <Button 
+            className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl h-12 text-base font-medium" 
+            onClick={handleSubmit} 
+            disabled={submitMutation.isPending}
+          >
+            {submitMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-5 h-5 mr-2" />}
+            Submit DVIR
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Recent DVIRs */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg">Recent Inspections</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentQuery.isLoading ? (
+            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : recentQuery.data?.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-slate-500" />
+              </div>
+              <p className="text-slate-400">No recent inspections</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentQuery.data?.map((inspection: any) => (
+                <div key={inspection.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("p-2 rounded-full", inspection.defectsFound ? "bg-yellow-500/20" : "bg-green-500/20")}>
+                      {inspection.defectsFound ? (
+                        <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 text-green-400" />
+                      )}
                     </div>
-                  ))}
+                    <div>
+                      <p className="text-white font-medium">{inspection.vehicleNumber}</p>
+                      <p className="text-xs text-slate-500">{inspection.date}</p>
+                    </div>
+                  </div>
+                  <Badge className={inspection.defectsFound ? "bg-yellow-500/20 text-yellow-400 border-0" : "bg-green-500/20 text-green-400 border-0"}>
+                    {inspection.defectsFound ? `${inspection.defectCount} defects` : "No defects"}
+                  </Badge>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

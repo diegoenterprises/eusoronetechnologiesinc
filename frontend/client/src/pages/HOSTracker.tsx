@@ -1,9 +1,10 @@
 /**
  * HOS TRACKER PAGE
  * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,263 +12,212 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Clock, Play, Pause, Coffee, Moon, AlertTriangle,
-  CheckCircle, MapPin, Truck, Calendar, Activity,
-  ChevronLeft, ChevronRight, Loader2
+  Clock, AlertTriangle, CheckCircle, Play, Pause,
+  Coffee, Moon, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function HOSTracker() {
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const hosQuery = trpc.drivers.getMyHOS.useQuery();
 
-  const statusQuery = trpc.hos.getCurrentStatus.useQuery({});
-  const limitsQuery = trpc.hos.getLimits.useQuery({});
-  const todayLogQuery = trpc.hos.getTodayLog.useQuery({});
-
-  const changeStatusMutation = trpc.hos.changeStatus.useMutation({
-    onSuccess: () => { toast.success("Status updated"); statusQuery.refetch(); todayLogQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update status", { description: error.message }),
+  const startDrivingMutation = trpc.drivers.startDriving.useMutation({
+    onSuccess: () => { toast.success("Driving started"); hosQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const stopDrivingMutation = trpc.drivers.stopDriving.useMutation({
+    onSuccess: () => { toast.success("Driving stopped"); hosQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
 
-  if (statusQuery.error) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-red-400">Error loading HOS data</p>
-        <Button className="mt-4" onClick={() => statusQuery.refetch()}>Retry</Button>
-      </div>
-    );
-  }
+  const hos = hosQuery.data;
 
-  const status = statusQuery.data;
-  const limits = limitsQuery.data;
-
-  const formatDuration = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return `${hours}h ${mins}m`;
-  };
-
-  const getStatusColor = (s: string) => {
-    switch (s) {
-      case "driving": return "bg-green-500";
-      case "on_duty": return "bg-blue-500";
-      case "sleeper": return "bg-purple-500";
-      case "off_duty": return "bg-slate-500";
-      default: return "bg-slate-500";
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "driving": return "from-green-500/20 to-green-500/10 border-green-500/30";
+      case "on_duty": return "from-blue-500/20 to-blue-500/10 border-blue-500/30";
+      case "sleeper": return "from-purple-500/20 to-purple-500/10 border-purple-500/30";
+      case "off_duty": return "from-slate-500/20 to-slate-500/10 border-slate-500/30";
+      default: return "from-slate-500/20 to-slate-500/10 border-slate-500/30";
     }
   };
 
-  const getStatusIcon = (s: string) => {
-    switch (s) {
-      case "driving": return <Truck className="w-6 h-6" />;
-      case "on_duty": return <Clock className="w-6 h-6" />;
-      case "sleeper": return <Moon className="w-6 h-6" />;
-      case "off_duty": return <Coffee className="w-6 h-6" />;
-      default: return <Clock className="w-6 h-6" />;
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "driving": return <Badge className="bg-green-500/20 text-green-400 border-0">Driving</Badge>;
+      case "on_duty": return <Badge className="bg-blue-500/20 text-blue-400 border-0">On Duty</Badge>;
+      case "sleeper": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Sleeper</Badge>;
+      case "off_duty": return <Badge className="bg-slate-500/20 text-slate-400 border-0">Off Duty</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
-  };
-
-  const handleStatusChange = (newStatus: string) => {
-    changeStatusMutation.mutate({ status: newStatus });
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
+      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">HOS Tracker</h1>
-          <p className="text-slate-400 text-sm">Hours of Service - Real-time tracking</p>
-        </div>
-        <div className="text-right">
-          <p className="text-3xl font-mono text-white">{currentTime.toLocaleTimeString()}</p>
-          <p className="text-sm text-slate-400">{currentTime.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })}</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            HOS Tracker
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Hours of Service compliance tracking</p>
         </div>
       </div>
 
-      {/* Current Status Card */}
-      <Card className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border-blue-500/30">
+      {/* Current Status */}
+      <Card className={cn("bg-gradient-to-r border-2 rounded-xl", getStatusColor(hos?.currentStatus || "off_duty"))}>
         <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              {statusQuery.isLoading ? (
-                <Skeleton className="w-20 h-20 rounded-full" />
-              ) : (
-                <div className={cn("w-20 h-20 rounded-full flex items-center justify-center text-white", getStatusColor(status?.currentStatus || ""))}>
-                  {getStatusIcon(status?.currentStatus || "")}
-                </div>
-              )}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-4 rounded-full bg-slate-700/50">
+                <Clock className="w-10 h-10 text-cyan-400" />
+              </div>
               <div>
-                {statusQuery.isLoading ? (
-                  <>
-                    <Skeleton className="h-8 w-32 mb-2" />
-                    <Skeleton className="h-6 w-48" />
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-2xl font-bold text-white capitalize">{status?.currentStatus?.replace("_", " ")}</h2>
-                    <p className="text-slate-400">Since {status?.statusSince}</p>
-                    <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
-                      <MapPin className="w-4 h-4" />{status?.currentLocation}
-                    </p>
-                  </>
+                <p className="text-slate-400 text-sm">Current Status</p>
+                {hosQuery.isLoading ? <Skeleton className="h-10 w-32" /> : (
+                  <div className="flex items-center gap-3">
+                    <p className="text-3xl font-bold text-white capitalize">{hos?.currentStatus?.replace("_", " ")}</p>
+                    {getStatusBadge(hos?.currentStatus || "off_duty")}
+                  </div>
                 )}
               </div>
             </div>
-
-            {/* Status Buttons */}
             <div className="flex gap-2">
-              <Button
-                className={cn("flex-col h-16 w-16", status?.currentStatus === "driving" ? "bg-green-600" : "bg-slate-700 hover:bg-green-600")}
-                onClick={() => handleStatusChange("driving")}
-                disabled={changeStatusMutation.isPending}
-              >
-                <Truck className="w-5 h-5" />
-                <span className="text-xs">Drive</span>
-              </Button>
-              <Button
-                className={cn("flex-col h-16 w-16", status?.currentStatus === "on_duty" ? "bg-blue-600" : "bg-slate-700 hover:bg-blue-600")}
-                onClick={() => handleStatusChange("on_duty")}
-                disabled={changeStatusMutation.isPending}
-              >
-                <Clock className="w-5 h-5" />
-                <span className="text-xs">On Duty</span>
-              </Button>
-              <Button
-                className={cn("flex-col h-16 w-16", status?.currentStatus === "sleeper" ? "bg-purple-600" : "bg-slate-700 hover:bg-purple-600")}
-                onClick={() => handleStatusChange("sleeper")}
-                disabled={changeStatusMutation.isPending}
-              >
-                <Moon className="w-5 h-5" />
-                <span className="text-xs">Sleeper</span>
-              </Button>
-              <Button
-                className={cn("flex-col h-16 w-16", status?.currentStatus === "off_duty" ? "bg-slate-600" : "bg-slate-700 hover:bg-slate-600")}
-                onClick={() => handleStatusChange("off_duty")}
-                disabled={changeStatusMutation.isPending}
-              >
-                <Coffee className="w-5 h-5" />
-                <span className="text-xs">Off Duty</span>
-              </Button>
+              {hos?.currentStatus === "driving" ? (
+                <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/20 rounded-lg" onClick={() => stopDrivingMutation.mutate()} disabled={stopDrivingMutation.isPending}>
+                  {stopDrivingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
+                  Stop Driving
+                </Button>
+              ) : (
+                <Button className="bg-green-600 hover:bg-green-700 rounded-lg" onClick={() => startDrivingMutation.mutate()} disabled={startDrivingMutation.isPending}>
+                  {startDrivingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}
+                  Start Driving
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* HOS Gauges */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-4 rounded-xl bg-slate-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-slate-400">Driving Time</span>
+                {hosQuery.isLoading ? <Skeleton className="h-5 w-16" /> : (
+                  <span className="text-white font-bold">{hos?.drivingHours || 0}h / 11h</span>
+                )}
+              </div>
+              <Progress value={((hos?.drivingHours || 0) / 11) * 100} className="h-3" />
+              <p className="text-xs text-slate-500 mt-2">{11 - (hos?.drivingHours || 0)}h remaining</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-slate-400">On-Duty Time</span>
+                {hosQuery.isLoading ? <Skeleton className="h-5 w-16" /> : (
+                  <span className="text-white font-bold">{hos?.onDutyHours || 0}h / 14h</span>
+                )}
+              </div>
+              <Progress value={((hos?.onDutyHours || 0) / 14) * 100} className="h-3" />
+              <p className="text-xs text-slate-500 mt-2">{14 - (hos?.onDutyHours || 0)}h remaining</p>
+            </div>
+
+            <div className="p-4 rounded-xl bg-slate-800/50">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-slate-400">70hr Cycle</span>
+                {hosQuery.isLoading ? <Skeleton className="h-5 w-16" /> : (
+                  <span className="text-white font-bold">{hos?.cycleHours || 0}h / 70h</span>
+                )}
+              </div>
+              <Progress value={((hos?.cycleHours || 0) / 70) * 100} className="h-3" />
+              <p className="text-xs text-slate-500 mt-2">{70 - (hos?.cycleHours || 0)}h remaining</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* HOS Limits */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {limitsQuery.isLoading ? (
-          [1, 2, 3, 4].map((i) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>)
-        ) : (
-          <>
-            <Card className={cn("border-slate-700", (limits?.driving?.remaining || 0) < 60 ? "bg-red-500/10 border-red-500/30" : "bg-slate-800/50")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-sm">11-Hour Driving</span>
-                  <span className={cn("font-bold", (limits?.driving?.remaining || 0) < 60 ? "text-red-400" : "text-green-400")}>
-                    {formatDuration(limits?.driving?.remaining || 0)}
-                  </span>
-                </div>
-                <Progress value={((limits?.driving?.used || 0) / 660) * 100} className="h-2" />
-                <p className="text-xs text-slate-500 mt-1">{formatDuration(limits?.driving?.used || 0)} used</p>
-              </CardContent>
-            </Card>
+      {/* Alerts */}
+      {hos?.breakRequired && (
+        <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20">
+                <Coffee className="w-6 h-6 text-yellow-400" />
+              </div>
+              <div>
+                <p className="text-yellow-400 font-bold">Break Required</p>
+                <p className="text-sm text-slate-400">30-minute break required in {hos.breakDueIn}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-            <Card className={cn("border-slate-700", (limits?.window?.remaining || 0) < 60 ? "bg-red-500/10 border-red-500/30" : "bg-slate-800/50")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-sm">14-Hour Window</span>
-                  <span className={cn("font-bold", (limits?.window?.remaining || 0) < 60 ? "text-red-400" : "text-blue-400")}>
-                    {formatDuration(limits?.window?.remaining || 0)}
-                  </span>
-                </div>
-                <Progress value={((limits?.window?.used || 0) / 840) * 100} className="h-2" />
-                <p className="text-xs text-slate-500 mt-1">{formatDuration(limits?.window?.used || 0)} used</p>
-              </CardContent>
-            </Card>
+      {/* Quick Actions */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+          <CardContent className="p-5 text-center">
+            <div className="p-3 rounded-full bg-green-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+              <Play className="w-6 h-6 text-green-400" />
+            </div>
+            <p className="text-white font-medium">Driving</p>
+          </CardContent>
+        </Card>
 
-            <Card className={cn("border-slate-700", limits?.breakRequired ? "bg-yellow-500/10 border-yellow-500/30" : "bg-slate-800/50")}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-sm">30-Min Break</span>
-                  <span className={cn("font-bold", limits?.breakRequired ? "text-yellow-400" : "text-green-400")}>
-                    {limits?.breakRequired ? "Required" : "OK"}
-                  </span>
-                </div>
-                <Progress value={limits?.breakRequired ? 100 : 0} className="h-2" />
-                <p className="text-xs text-slate-500 mt-1">{limits?.timeSinceBreak ? `${formatDuration(limits.timeSinceBreak)} since break` : "Break taken"}</p>
-              </CardContent>
-            </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+          <CardContent className="p-5 text-center">
+            <div className="p-3 rounded-full bg-blue-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+              <Clock className="w-6 h-6 text-blue-400" />
+            </div>
+            <p className="text-white font-medium">On Duty</p>
+          </CardContent>
+        </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-sm">70-Hour Cycle</span>
-                  <span className="text-purple-400 font-bold">{formatDuration(limits?.cycle?.remaining || 0)}</span>
-                </div>
-                <Progress value={((limits?.cycle?.used || 0) / 4200) * 100} className="h-2" />
-                <p className="text-xs text-slate-500 mt-1">{formatDuration(limits?.cycle?.used || 0)} used (8 days)</p>
-              </CardContent>
-            </Card>
-          </>
-        )}
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+          <CardContent className="p-5 text-center">
+            <div className="p-3 rounded-full bg-purple-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+              <Moon className="w-6 h-6 text-purple-400" />
+            </div>
+            <p className="text-white font-medium">Sleeper</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl cursor-pointer hover:bg-slate-700/50 transition-colors">
+          <CardContent className="p-5 text-center">
+            <div className="p-3 rounded-full bg-slate-500/20 w-12 h-12 mx-auto mb-3 flex items-center justify-center">
+              <Coffee className="w-6 h-6 text-slate-400" />
+            </div>
+            <p className="text-white font-medium">Off Duty</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Today's Log */}
-      <Card className="bg-slate-800/50 border-slate-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-400" />
-            Today's Log
-          </CardTitle>
+      {/* Recent Logs */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg">Today's Log</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Graph Placeholder */}
-          <div className="h-32 bg-slate-700/30 rounded-lg mb-4 relative overflow-hidden">
-            <div className="absolute inset-0 flex">
-              {Array.from({ length: 24 }, (_, i) => (
-                <div key={i} className="flex-1 border-r border-slate-600/30 relative">
-                  {i % 4 === 0 && <span className="absolute bottom-0 left-0 text-xs text-slate-500">{i}:00</span>}
-                </div>
-              ))}
+          {hosQuery.isLoading ? (
+            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+          ) : hos?.todayLog?.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <Clock className="w-8 h-8 text-slate-500" />
+              </div>
+              <p className="text-slate-400">No log entries today</p>
             </div>
-            {/* Status bars would be rendered here based on todayLogQuery.data */}
-          </div>
-
-          {/* Legend */}
-          <div className="flex items-center justify-center gap-6 mb-4">
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-slate-500" /><span className="text-sm text-slate-400">Off Duty</span></div>
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-purple-500" /><span className="text-sm text-slate-400">Sleeper</span></div>
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-green-500" /><span className="text-sm text-slate-400">Driving</span></div>
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-blue-500" /><span className="text-sm text-slate-400">On Duty</span></div>
-          </div>
-
-          {/* Log Entries */}
-          {todayLogQuery.isLoading ? (
-            <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-          ) : todayLogQuery.data?.entries?.length === 0 ? (
-            <p className="text-slate-400 text-center py-4">No log entries today</p>
           ) : (
-            <div className="space-y-2">
-              {todayLogQuery.data?.entries?.map((entry) => (
-                <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
+            <div className="space-y-3">
+              {hos?.todayLog?.map((entry: any, idx: number) => (
+                <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-700/30">
                   <div className="flex items-center gap-3">
-                    <div className={cn("w-3 h-3 rounded-full", getStatusColor(entry.status))} />
-                    <div>
-                      <p className="text-white capitalize">{entry.status?.replace("_", " ")}</p>
-                      <p className="text-xs text-slate-500">{entry.startTime} - {entry.endTime || "Current"}</p>
-                    </div>
+                    <div className={cn("w-2 h-2 rounded-full", entry.status === "driving" ? "bg-green-400" : entry.status === "on_duty" ? "bg-blue-400" : entry.status === "sleeper" ? "bg-purple-400" : "bg-slate-400")} />
+                    <span className="text-white capitalize">{entry.status?.replace("_", " ")}</span>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-white font-medium">{formatDuration(entry.duration)}</span>
-                    {entry.location && <span className="text-sm text-slate-400 flex items-center gap-1"><MapPin className="w-3 h-3" />{entry.location}</span>}
+                  <div className="text-right">
+                    <p className="text-slate-400 text-sm">{entry.startTime} - {entry.endTime || "Now"}</p>
+                    <p className="text-xs text-slate-500">{entry.duration}</p>
                   </div>
                 </div>
               ))}
@@ -275,42 +225,6 @@ export default function HOSTracker() {
           )}
         </CardContent>
       </Card>
-
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            {todayLogQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">{formatDuration(todayLogQuery.data?.summary?.driving || 0)}</p>
-            )}
-            <p className="text-xs text-slate-400">Driving Today</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            {todayLogQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-blue-400">{formatDuration(todayLogQuery.data?.summary?.onDuty || 0)}</p>
-            )}
-            <p className="text-xs text-slate-400">On Duty Today</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            {todayLogQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-purple-400">{formatDuration(todayLogQuery.data?.summary?.sleeper || 0)}</p>
-            )}
-            <p className="text-xs text-slate-400">Sleeper Today</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardContent className="p-4 text-center">
-            {todayLogQuery.isLoading ? <Skeleton className="h-8 w-16 mx-auto" /> : (
-              <p className="text-2xl font-bold text-slate-400">{formatDuration(todayLogQuery.data?.summary?.offDuty || 0)}</p>
-            )}
-            <p className="text-xs text-slate-400">Off Duty Today</p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }
