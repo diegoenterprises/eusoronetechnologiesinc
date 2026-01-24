@@ -110,6 +110,7 @@ import FleetOverview from "./pages/FleetOverview";
 import ComplianceCalendar from "./pages/ComplianceCalendar";
 import DriverPerformance from "./pages/DriverPerformance";
 import SettlementDetails from "./pages/SettlementDetails";
+import AppointmentScheduler from "./pages/AppointmentScheduler";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -486,6 +487,16 @@ function Router() {
       <Route path={"/accounting/settlement/:settlementId"} component={() => (
         <DashboardLayout>
           <SettlementDetails />
+        </DashboardLayout>
+      )} />
+      <Route path={"/terminal/appointments"} component={() => (
+        <DashboardLayout>
+          <AppointmentScheduler />
+        </DashboardLayout>
+      )} />
+      <Route path={"/appointments"} component={() => (
+        <DashboardLayout>
+          <AppointmentScheduler />
         </DashboardLayout>
       )} />
       <Route path={"/shipments"} component={() => (
