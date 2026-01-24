@@ -13,6 +13,17 @@ from .erg_module_seed import seed_erg_from_json
 from .erg_api import router as erg_api_router
 from .embeddings import embed_text
 
+# Import new routers
+from .routers.drivers import router as drivers_router
+from .routers.fleet import router as fleet_router
+from .routers.compliance import router as compliance_router
+from .routers.loads import router as loads_router
+from .routers.accounting import router as accounting_router
+from .routers.terminals import router as terminals_router
+from .routers.gamification import router as gamification_router
+from .routers.analytics import router as analytics_router
+from .routers.messaging import router as messaging_router
+
 # Initialize FastAPI application
 app = FastAPI(
     title="EusoTrip Core Platform API (Team Alpha - Production Ready)",
@@ -25,6 +36,17 @@ ensure_erg_schema(engine)
 Base.metadata.create_all(bind=engine)
 
 app.include_router(erg_api_router)
+
+# Include new API routers
+app.include_router(drivers_router)
+app.include_router(fleet_router)
+app.include_router(compliance_router)
+app.include_router(loads_router)
+app.include_router(accounting_router)
+app.include_router(terminals_router)
+app.include_router(gamification_router)
+app.include_router(analytics_router)
+app.include_router(messaging_router)
 
 # --- 1. CORE API ENDPOINTS (User, Company, Load Management) ---
 
