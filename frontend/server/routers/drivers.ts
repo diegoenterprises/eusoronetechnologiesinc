@@ -749,7 +749,7 @@ export const driversRouter = router({
   submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })) })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
-  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30" }]),
+  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", description: "Driver logged in", category: "system" }]),
 
   // Terminations
   getTerminations: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "t1", driverId: "d1", reason: "voluntary", date: "2025-01-20" }]),
