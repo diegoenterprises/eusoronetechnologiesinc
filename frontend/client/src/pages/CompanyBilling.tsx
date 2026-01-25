@@ -21,8 +21,8 @@ import { useLocation } from "wouter";
 export default function CompanyBilling() {
   const [, setLocation] = useLocation();
 
-  const billingQuery = trpc.company.getBilling.useQuery();
-  const invoicesQuery = trpc.company.getRecentInvoices.useQuery({ limit: 5 });
+  const billingQuery = trpc.companies.getBilling.useQuery();
+  const invoicesQuery = trpc.companies.getRecentInvoices.useQuery({ limit: 5 });
 
   const billing = billingQuery.data;
 

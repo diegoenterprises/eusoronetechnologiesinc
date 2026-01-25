@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function EscortEarnings() {
   const [period, setPeriod] = useState("month");
 
-  const earningsQuery = trpc.escort.getEarnings.useQuery({ period });
-  const jobsQuery = trpc.escort.getCompletedJobs.useQuery({ period, limit: 10 });
-  const statsQuery = trpc.escort.getEarningsStats.useQuery({ period });
+  const earningsQuery = trpc.escorts.getEarnings.useQuery({ period });
+  const jobsQuery = trpc.escorts.getCompletedJobs.useQuery({ period, limit: 10 });
+  const statsQuery = trpc.escorts.getEarningsStats.useQuery({ period });
 
   const stats = statsQuery.data;
 

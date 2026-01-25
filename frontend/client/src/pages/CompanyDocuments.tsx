@@ -20,10 +20,10 @@ import { toast } from "sonner";
 export default function CompanyDocuments() {
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const documentsQuery = trpc.company.getDocuments.useQuery({ category: categoryFilter === "all" ? undefined : categoryFilter });
-  const categoriesQuery = trpc.company.getDocumentCategories.useQuery();
+  const documentsQuery = trpc.companies.getDocuments.useQuery({ category: categoryFilter === "all" ? undefined : categoryFilter });
+  const categoriesQuery = trpc.companies.getDocumentCategories.useQuery();
 
-  const deleteMutation = trpc.company.deleteDocument.useMutation({
+  const deleteMutation = trpc.companies.deleteDocument.useMutation({
     onSuccess: () => { toast.success("Document deleted"); documentsQuery.refetch(); },
     onError: (error) => toast.error("Failed to delete", { description: error.message }),
   });

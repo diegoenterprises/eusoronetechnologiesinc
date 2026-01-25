@@ -23,10 +23,10 @@ export default function CompanyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
 
-  const companyQuery = trpc.company.getProfile.useQuery();
-  const statsQuery = trpc.company.getStats.useQuery();
+  const companyQuery = trpc.companies.getProfile.useQuery();
+  const statsQuery = trpc.companies.getStats.useQuery();
 
-  const updateMutation = trpc.company.updateProfile.useMutation({
+  const updateMutation = trpc.companies.updateProfile.useMutation({
     onSuccess: () => { toast.success("Company profile updated"); companyQuery.refetch(); setIsEditing(false); },
     onError: (error) => toast.error("Failed to update", { description: error.message }),
   });

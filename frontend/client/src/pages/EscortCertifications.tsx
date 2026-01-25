@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function EscortCertifications() {
-  const certsQuery = trpc.escort.getMyCertifications.useQuery();
-  const statesQuery = trpc.escort.getStateRequirements.useQuery();
-  const statsQuery = trpc.escort.getCertificationStats.useQuery();
+  const certsQuery = trpc.escorts.getMyCertifications.useQuery();
+  const statesQuery = trpc.escorts.getStateRequirements.useQuery();
+  const statsQuery = trpc.escorts.getCertificationStats.useQuery();
 
-  const uploadMutation = trpc.escort.uploadCertification.useMutation({
+  const uploadMutation = trpc.escorts.uploadCertification.useMutation({
     onSuccess: () => { toast.success("Certification uploaded"); certsQuery.refetch(); statsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

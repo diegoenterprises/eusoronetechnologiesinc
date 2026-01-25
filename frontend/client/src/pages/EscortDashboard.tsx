@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function EscortDashboard() {
-  const statsQuery = trpc.escort.getDashboardStats.useQuery();
-  const activeJobsQuery = trpc.escort.getActiveJobs.useQuery();
-  const upcomingQuery = trpc.escort.getUpcomingJobs.useQuery({ limit: 5 });
-  const certificationsQuery = trpc.escort.getCertificationStatus.useQuery();
+  const statsQuery = trpc.escorts.getDashboardStats.useQuery();
+  const activeJobsQuery = trpc.escorts.getActiveJobs.useQuery();
+  const upcomingQuery = trpc.escorts.getUpcomingJobs.useQuery({ limit: 5 });
+  const certificationsQuery = trpc.escorts.getCertificationStatus.useQuery();
 
   const stats = statsQuery.data;
 

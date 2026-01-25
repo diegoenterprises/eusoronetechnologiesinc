@@ -23,10 +23,10 @@ export default function EscortJobMarketplace() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const jobsQuery = trpc.escort.getAvailableJobs.useQuery({ filter, search });
-  const statsQuery = trpc.escort.getMarketplaceStats.useQuery();
+  const jobsQuery = trpc.escorts.getAvailableJobs.useQuery({ filter, search });
+  const statsQuery = trpc.escorts.getMarketplaceStats.useQuery();
 
-  const applyMutation = trpc.escort.applyForJob.useMutation({
+  const applyMutation = trpc.escorts.applyForJob.useMutation({
     onSuccess: () => { toast.success("Application submitted"); jobsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
