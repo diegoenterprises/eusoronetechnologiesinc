@@ -18,10 +18,15 @@ export const complianceRouter = router({
     .query(async () => {
       return {
         complianceScore: 94,
+        overallScore: 94,
         expiringDocs: 5,
         overdueItems: 2,
         pendingAudits: 1,
         violations: 0,
+        trend: "up",
+        expiring: 5,
+        compliant: 18,
+        nonCompliant: 2,
       };
     }),
 
