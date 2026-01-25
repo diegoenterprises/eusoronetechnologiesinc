@@ -973,7 +973,20 @@ export const terminalsRouter = router({
   getOperationStats: protectedProcedure
     .input(z.object({ timeframe: z.string().optional() }))
     .query(async () => {
-      return { totalOperations: 24, completed: 18, inProgress: 4, pending: 2, totalGallons: 185000 };
+      return { 
+        totalOperations: 24, 
+        completed: 18, 
+        inProgress: 4, 
+        pending: 2, 
+        totalGallons: 185000,
+        trucksProcessed: 24,
+        loadsCompleted: 18,
+        avgDwellTime: 42,
+        utilization: 78,
+        incidents: 0,
+        onTimeDepartures: 95,
+        dockEfficiency: 88,
+      };
     }),
 
   /**
