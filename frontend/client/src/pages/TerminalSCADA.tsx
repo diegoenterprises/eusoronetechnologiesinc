@@ -14,7 +14,8 @@ import { trpc } from "@/lib/trpc";
 import {
   Gauge, Fuel, Thermometer, Droplets, AlertTriangle, CheckCircle,
   Play, Square, Clock, Truck, RefreshCw, Activity, BarChart3,
-  Bell, Settings, Eye, ArrowUp, ArrowDown, Zap, Calendar
+  Bell, Settings, Eye, ArrowUp, ArrowDown, Zap, Calendar,
+  Beaker, Target, FileText, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -89,6 +90,7 @@ export default function TerminalSCADA() {
     { terminalId: selectedTerminal, active: true }
   );
   const { data: throughputData } = trpc.scada.getDailyThroughput.useQuery({ terminalId: selectedTerminal });
+  const { data: spectraMatchHistory } = trpc.spectraMatch.getHistory.useQuery({ terminalId: selectedTerminal, limit: 10 });
 
   const acknowledgeMutation = trpc.scada.acknowledgeAlarm.useMutation({
     onSuccess: () => {
@@ -306,6 +308,10 @@ export default function TerminalSCADA() {
           <TabsTrigger value="tanks" className="data-[state=active]:bg-blue-600">Tank Levels</TabsTrigger>
           <TabsTrigger value="alarms" className="data-[state=active]:bg-blue-600">Alarms</TabsTrigger>
           <TabsTrigger value="throughput" className="data-[state=active]:bg-blue-600">Throughput</TabsTrigger>
+          <TabsTrigger value="spectra" className="data-[state=active]:bg-purple-600">
+            <Beaker className="w-4 h-4 mr-1" />
+            Oil ID
+          </TabsTrigger>
         </TabsList>
 
         {/* Rack Status Tab */}
@@ -586,6 +592,118 @@ export default function TerminalSCADA() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* SpectraMatch / Oil ID Tab */}
+        <TabsContent value="spectra" className="mt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Quick Actions */}
+            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  SPECTRA-MATCH™
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-slate-400">
+                  Multi-modal crude oil identification system powered by ESANG AI™
+                </p>
+                <Button 
+                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  onClick={() => window.location.href = '/spectra-match'}
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  New Oil Identification
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-purple-500/30 text-purple-400"
+                  onClick={() => window.location.href = '/euso-ticket'}
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Run Tickets & BOL
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Recent Identifications */}
+            <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Beaker className="w-5 h-5 text-cyan-400" />
+                  Recent Oil Identifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {spectraMatchHistory?.identifications && spectraMatchHistory.identifications.length > 0 ? (
+                  <div className="space-y-3">
+                    {spectraMatchHistory.identifications.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 rounded-lg bg-purple-500/20">
+                            <Beaker className="w-5 h-5 text-purple-400" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{item.crudeType}</p>
+                            <p className="text-xs text-slate-400">
+                              API: {item.apiGravity}° | BS&W: {item.bsw}% | Load: {item.loadId}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Badge className="bg-green-500/20 text-green-400">
+                            {item.confidence}% match
+                          </Badge>
+                          <p className="text-xs text-slate-500 mt-1">
+                            {new Date(item.timestamp).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Beaker className="w-12 h-12 text-slate-500 mx-auto mb-3" />
+                    <p className="text-slate-400">No recent identifications</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Use SPECTRA-MATCH™ to identify crude oil origins
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Oil Identification Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="p-4 text-center">
+                <p className="text-3xl font-bold text-purple-400">
+                  {spectraMatchHistory?.total || 0}
+                </p>
+                <p className="text-sm text-slate-400">Total IDs Today</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="p-4 text-center">
+                <p className="text-3xl font-bold text-green-400">94%</p>
+                <p className="text-sm text-slate-400">Avg Confidence</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="p-4 text-center">
+                <p className="text-3xl font-bold text-cyan-400">WTI</p>
+                <p className="text-sm text-slate-400">Most Common</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardContent className="p-4 text-center">
+                <p className="text-3xl font-bold text-yellow-400">40.2°</p>
+                <p className="text-sm text-slate-400">Avg API Gravity</p>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </div>
