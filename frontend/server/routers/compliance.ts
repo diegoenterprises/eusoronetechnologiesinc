@@ -90,6 +90,37 @@ export const complianceRouter = router({
     }),
 
   /**
+   * Get permits for PermitManagement page
+   */
+  getPermits: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const permits = [
+        { id: "pmt_001", type: "oversize", states: ["TX", "OK", "LA"], status: "active", expiresAt: "2025-12-31", vehicle: "TRK-101" },
+        { id: "pmt_002", type: "overweight", states: ["TX"], status: "expiring", expiresAt: "2025-02-15", vehicle: "TRK-102" },
+        { id: "pmt_003", type: "hazmat", states: ["TX", "OK", "LA", "AR"], status: "active", expiresAt: "2025-08-20", vehicle: "All" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return permits.filter(p => p.type.includes(q) || p.vehicle.toLowerCase().includes(q));
+      }
+      return permits;
+    }),
+
+  /**
+   * Get permit stats for PermitManagement page
+   */
+  getPermitStats: protectedProcedure
+    .query(async () => {
+      return {
+        totalPermits: 12,
+        activePermits: 10,
+        expiringPermits: 2,
+        expiredPermits: 0,
+      };
+    }),
+
+  /**
    * Get DQ file status for all drivers
    */
   getDQFileStatus: protectedProcedure
