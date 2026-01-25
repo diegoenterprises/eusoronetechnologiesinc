@@ -12,6 +12,71 @@ const rackStatusSchema = z.enum(["available", "in_use", "maintenance", "offline"
 
 export const terminalsRouter = router({
   /**
+   * Get summary for TerminalDashboard
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return {
+        todayAppointments: 24,
+        trucksCheckedIn: 8,
+        currentlyLoading: 5,
+        rackUtilization: 65,
+        totalInventory: 425000,
+        avgLoadTime: 42,
+      };
+    }),
+
+  /**
+   * Get racks status
+   */
+  getRacks: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "r1", name: "Rack 1", status: "loading", product: "Unleaded", currentLoad: "LOAD-45920", progress: 65 },
+        { id: "r2", name: "Rack 2", status: "available", product: null, currentLoad: null },
+        { id: "r3", name: "Rack 3", status: "maintenance", product: null, currentLoad: null },
+        { id: "r4", name: "Rack 4", status: "loading", product: "Diesel", currentLoad: "LOAD-45918", progress: 30 },
+      ];
+    }),
+
+  /**
+   * Get tanks status
+   */
+  getTanks: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "t1", name: "Tank 1", product: "Unleaded", level: 82, capacity: 50000, status: "normal" },
+        { id: "t2", name: "Tank 2", product: "Premium", level: 45, capacity: 30000, status: "low" },
+        { id: "t3", name: "Tank 3", product: "Diesel", level: 78, capacity: 75000, status: "normal" },
+        { id: "t4", name: "Tank 4", product: "Jet Fuel", level: 90, capacity: 40000, status: "high" },
+      ];
+    }),
+
+  /**
+   * Get today's appointments
+   */
+  getTodayAppointments: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "apt_001", time: "08:00", carrier: "ABC Transport", driver: "Mike Johnson", product: "Unleaded", status: "completed" },
+        { id: "apt_002", time: "09:00", carrier: "XYZ Carriers", driver: "Sarah Williams", product: "Diesel", status: "loading" },
+        { id: "apt_003", time: "10:00", carrier: "FastHaul LLC", driver: "Tom Brown", product: "Premium", status: "checked_in" },
+        { id: "apt_004", time: "11:00", carrier: "QuickLoad Inc", driver: "Lisa Chen", product: "Unleaded", status: "scheduled" },
+      ];
+    }),
+
+  /**
+   * Get terminal alerts
+   */
+  getAlerts: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "alert_001", type: "maintenance", severity: "info", message: "Rack 3 scheduled maintenance at 2:00 PM" },
+        { id: "alert_002", type: "inventory", severity: "warning", message: "Tank 2 (Premium) below 50% capacity" },
+      ];
+    }),
+
+  /**
    * Get terminal dashboard summary
    */
   getDashboardSummary: protectedProcedure
