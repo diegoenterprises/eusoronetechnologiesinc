@@ -336,4 +336,255 @@ export const safetyRouter = router({
         },
       ];
     }),
+
+  /**
+   * Get incidents with search/filter for SafetyIncidents page
+   */
+  getIncidents: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      type: z.string().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const incidents = [
+        {
+          id: "inc1",
+          type: "accident",
+          severity: "major",
+          status: "investigating",
+          description: "Minor collision with another vehicle at I-45 intersection",
+          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "John Smith",
+          vehicle: "Unit 2847",
+          location: "Houston, TX",
+        },
+        {
+          id: "inc2",
+          type: "spill",
+          severity: "critical",
+          status: "open",
+          description: "Diesel fuel spill during unloading at Terminal B - 50 gallons",
+          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Mike Johnson",
+          vehicle: "Unit 1923",
+          location: "Beaumont Terminal",
+        },
+        {
+          id: "inc3",
+          type: "injury",
+          severity: "minor",
+          status: "closed",
+          description: "Driver minor back strain during loading operations",
+          date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Sarah Williams",
+          vehicle: null,
+          location: "Houston Terminal",
+        },
+        {
+          id: "inc4",
+          type: "equipment",
+          severity: "minor",
+          status: "resolved",
+          description: "Tanker valve malfunction - repaired on-site",
+          date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Tom Brown",
+          vehicle: "Unit 3456",
+          location: "Dallas, TX",
+        },
+        {
+          id: "inc5",
+          type: "near_miss",
+          severity: "minor",
+          status: "closed",
+          description: "Vehicle cut off driver, emergency braking prevented collision",
+          date: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Lisa Chen",
+          vehicle: "Unit 2156",
+          location: "Austin, TX",
+        },
+      ];
+
+      let filtered = incidents;
+      if (input.search) {
+        const s = input.search.toLowerCase();
+        filtered = filtered.filter(i => 
+          i.description.toLowerCase().includes(s) ||
+          i.driver?.toLowerCase().includes(s) ||
+          i.location?.toLowerCase().includes(s)
+        );
+      }
+      if (input.status) {
+        filtered = filtered.filter(i => i.status === input.status);
+      }
+      if (input.type) {
+        filtered = filtered.filter(i => i.type === input.type);
+      }
+
+      return filtered;
+    }),
+
+  /**
+   * Get incident statistics for SafetyIncidents page
+   */
+  getIncidentStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        open: 2,
+        investigating: 1,
+        thisMonth: 5,
+        resolved: 12,
+        daysWithoutIncident: 8,
+        yearToDate: 23,
+      };
+    }),
+
+  /**
+   * Close an incident
+   */
+  closeIncident: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      resolution: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        id: input.id,
+        closedAt: new Date().toISOString(),
+        closedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Get safety metrics for SafetyMetrics page
+   */
+  getMetrics: protectedProcedure
+    .input(z.object({
+      timeframe: z.string().default("30d"),
+    }))
+    .query(async ({ ctx, input }) => {
+      return {
+        overallScore: 92,
+        scoreTrend: 3.5,
+        activeDrivers: 18,
+        driversInCompliance: 16,
+        openIncidents: 3,
+        incidentsThisMonth: 5,
+        daysWithoutIncident: 8,
+        recordDays: 45,
+        goals: [
+          { name: "Zero Accidents", target: 0, current: 1, progress: 90, achieved: false },
+          { name: "CSA Score < 50%", target: 50, current: 42, progress: 100, achieved: true },
+          { name: "Training Completion", target: 100, current: 95, progress: 95, achieved: false },
+          { name: "Inspection Pass Rate", target: 95, current: 97, progress: 100, achieved: true },
+        ],
+      };
+    }),
+
+  /**
+   * Get safety trends for SafetyMetrics page
+   */
+  getTrends: protectedProcedure
+    .input(z.object({
+      timeframe: z.string().default("30d"),
+    }))
+    .query(async ({ ctx, input }) => {
+      return [
+        { metric: "Incidents", current: 3, previous: 5, change: -40, positive: true },
+        { metric: "Near Misses", current: 2, previous: 4, change: -50, positive: true },
+        { metric: "Inspection Pass Rate", current: 97, previous: 94, change: 3.2, positive: true },
+        { metric: "Training Completion", current: 95, previous: 88, change: 8, positive: true },
+        { metric: "HOS Violations", current: 1, previous: 2, change: -50, positive: true },
+      ];
+    }),
+
+  /**
+   * Get vehicle inspections
+   */
+  getVehicleInspections: protectedProcedure
+    .input(z.object({
+      vehicleId: z.string().optional(),
+      status: z.string().optional(),
+      type: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const inspections = [
+        {
+          id: "vi1",
+          vehicleId: "v1",
+          vehicleNumber: "Unit 2847",
+          type: "pre_trip",
+          status: "passed",
+          date: new Date().toISOString(),
+          inspector: "Mike Johnson",
+          defects: [],
+          nextDue: null,
+        },
+        {
+          id: "vi2",
+          vehicleId: "v2",
+          vehicleNumber: "Unit 1923",
+          type: "dot_annual",
+          status: "passed",
+          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          inspector: "Third Party Inspector",
+          defects: [],
+          nextDue: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "vi3",
+          vehicleId: "v3",
+          vehicleNumber: "Unit 3456",
+          type: "tank_test",
+          status: "due",
+          date: null,
+          inspector: null,
+          defects: [],
+          nextDue: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      ];
+
+      let filtered = inspections;
+      if (input.vehicleId) {
+        filtered = filtered.filter(i => i.vehicleId === input.vehicleId);
+      }
+      if (input.status) {
+        filtered = filtered.filter(i => i.status === input.status);
+      }
+      if (input.type) {
+        filtered = filtered.filter(i => i.type === input.type);
+      }
+
+      return filtered;
+    }),
+
+  /**
+   * Submit vehicle inspection
+   */
+  submitInspection: protectedProcedure
+    .input(z.object({
+      vehicleId: z.string(),
+      type: z.enum(["pre_trip", "post_trip", "dot_annual", "tank_test", "hazmat"]),
+      passed: z.boolean(),
+      defects: z.array(z.object({
+        category: z.string(),
+        description: z.string(),
+        severity: z.enum(["minor", "major", "out_of_service"]),
+      })).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        id: `vi_${Date.now()}`,
+        vehicleId: input.vehicleId,
+        status: input.passed ? "passed" : "failed",
+        submittedAt: new Date().toISOString(),
+        submittedBy: ctx.user?.id,
+      };
+    }),
 });

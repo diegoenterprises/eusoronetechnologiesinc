@@ -274,4 +274,380 @@ export const complianceRouter = router({
         estimatedCompletion: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       };
     }),
+
+  /**
+   * Get violations list with filtering
+   */
+  getViolations: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      severity: z.string().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const violations = [
+        {
+          id: "v1",
+          code: "395.8",
+          description: "Driver failed to maintain accurate log of duty status",
+          severity: "major",
+          status: "open",
+          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Tom Brown",
+          vehicle: "Unit 2847",
+          location: "Houston, TX",
+          fineAmount: 1500,
+        },
+        {
+          id: "v2",
+          code: "393.47",
+          description: "Brake adjustment out of specification",
+          severity: "minor",
+          status: "in_progress",
+          date: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Mike Johnson",
+          vehicle: "Unit 1923",
+          location: "Dallas, TX",
+          fineAmount: 500,
+        },
+        {
+          id: "v3",
+          code: "172.704",
+          description: "Hazmat shipping papers not properly annotated",
+          severity: "critical",
+          status: "open",
+          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Sarah Williams",
+          vehicle: "Unit 3456",
+          location: "San Antonio, TX",
+          fineAmount: 2500,
+        },
+        {
+          id: "v4",
+          code: "382.305",
+          description: "Random drug test not completed within required timeframe",
+          severity: "major",
+          status: "resolved",
+          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Lisa Chen",
+          vehicle: null,
+          location: "Houston Terminal",
+          fineAmount: 1000,
+          resolvedDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "v5",
+          code: "177.817",
+          description: "Placarding not visible from all four sides",
+          severity: "minor",
+          status: "resolved",
+          date: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+          driver: "Robert Davis",
+          vehicle: "Unit 2156",
+          location: "Austin, TX",
+          fineAmount: 750,
+          resolvedDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      ];
+
+      let filtered = violations;
+      if (input.search) {
+        const s = input.search.toLowerCase();
+        filtered = filtered.filter(v => 
+          v.code.toLowerCase().includes(s) || 
+          v.description.toLowerCase().includes(s) ||
+          v.driver?.toLowerCase().includes(s)
+        );
+      }
+      if (input.status) {
+        filtered = filtered.filter(v => v.status === input.status);
+      }
+      if (input.severity) {
+        filtered = filtered.filter(v => v.severity === input.severity);
+      }
+
+      return filtered;
+    }),
+
+  /**
+   * Get violation statistics
+   */
+  getViolationStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        open: 2,
+        critical: 1,
+        inProgress: 1,
+        resolved: 8,
+        totalFines: 6250,
+        avgResolutionDays: 12,
+      };
+    }),
+
+  /**
+   * Resolve a violation
+   */
+  resolveViolation: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      resolution: z.string().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        id: input.id,
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Get audits list with filtering
+   */
+  getAudits: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      type: z.string().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const audits = [
+        {
+          id: "a1",
+          name: "Q1 2025 DOT Compliance Audit",
+          type: "dot",
+          status: "scheduled",
+          scheduledDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+          description: "Quarterly DOT compliance review covering all driver qualification files",
+          auditor: "DOT Regional Office",
+          location: "Houston Terminal",
+          progress: 0,
+        },
+        {
+          id: "a2",
+          name: "Hazmat Certification Review",
+          type: "hazmat",
+          status: "in_progress",
+          scheduledDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          description: "Annual hazmat certification verification for all certified drivers",
+          auditor: "John Safety Manager",
+          location: "All Terminals",
+          progress: 65,
+          findings: 2,
+        },
+        {
+          id: "a3",
+          name: "FMCSA Safety Audit",
+          type: "fmcsa",
+          status: "completed",
+          scheduledDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          completedDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
+          description: "Comprehensive safety management controls audit",
+          auditor: "FMCSA Field Office",
+          location: "Houston Terminal",
+          progress: 100,
+          findings: 3,
+          result: "satisfactory",
+        },
+        {
+          id: "a4",
+          name: "Internal Driver File Audit",
+          type: "internal",
+          status: "completed",
+          scheduledDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+          completedDate: new Date(Date.now() - 58 * 24 * 60 * 60 * 1000).toISOString(),
+          description: "Monthly review of driver qualification files for compliance",
+          auditor: "Compliance Team",
+          location: "Houston Terminal",
+          progress: 100,
+          findings: 1,
+          result: "passed",
+        },
+        {
+          id: "a5",
+          name: "Tank Wagon Inspection Audit",
+          type: "hazmat",
+          status: "scheduled",
+          scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          description: "DOT-required tank wagon inspection and certification review",
+          auditor: "Third Party Inspector",
+          location: "Equipment Yard",
+          progress: 0,
+        },
+      ];
+
+      let filtered = audits;
+      if (input.search) {
+        const s = input.search.toLowerCase();
+        filtered = filtered.filter(a => 
+          a.name.toLowerCase().includes(s) || 
+          a.description?.toLowerCase().includes(s)
+        );
+      }
+      if (input.status) {
+        filtered = filtered.filter(a => a.status === input.status);
+      }
+      if (input.type) {
+        filtered = filtered.filter(a => a.type === input.type);
+      }
+
+      return filtered;
+    }),
+
+  /**
+   * Get audit statistics
+   */
+  getAuditStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        scheduled: 2,
+        inProgress: 1,
+        passed: 15,
+        failed: 1,
+        passRate: 94,
+        upcomingThisMonth: 2,
+      };
+    }),
+
+  /**
+   * Schedule a new audit
+   */
+  scheduleAudit: protectedProcedure
+    .input(z.object({
+      name: z.string(),
+      type: z.enum(["dot", "fmcsa", "internal", "hazmat"]),
+      scheduledDate: z.string(),
+      location: z.string(),
+      description: z.string().optional(),
+      auditor: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        id: `a_${Date.now()}`,
+        ...input,
+        status: "scheduled",
+        createdAt: new Date().toISOString(),
+        createdBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Get compliance training records
+   */
+  getTrainingRecords: protectedProcedure
+    .input(z.object({
+      driverId: z.string().optional(),
+      type: z.string().optional(),
+      status: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const records = [
+        {
+          id: "t1",
+          driverId: "d1",
+          driverName: "Mike Johnson",
+          trainingType: "hazmat_awareness",
+          trainingName: "Hazmat General Awareness Training",
+          status: "completed",
+          completedDate: "2024-12-15",
+          expirationDate: "2027-12-15",
+          score: 95,
+          certificateId: "CERT-HAZ-001",
+        },
+        {
+          id: "t2",
+          driverId: "d1",
+          driverName: "Mike Johnson",
+          trainingType: "hazmat_function",
+          trainingName: "Hazmat Function-Specific Training",
+          status: "completed",
+          completedDate: "2024-12-15",
+          expirationDate: "2027-12-15",
+          score: 92,
+          certificateId: "CERT-HAZ-002",
+        },
+        {
+          id: "t3",
+          driverId: "d2",
+          driverName: "Sarah Williams",
+          trainingType: "hazmat_security",
+          trainingName: "Hazmat Security Awareness Training",
+          status: "in_progress",
+          assignedDate: "2025-01-10",
+          dueDate: "2025-02-10",
+          progress: 60,
+        },
+        {
+          id: "t4",
+          driverId: "d3",
+          driverName: "Tom Brown",
+          trainingType: "defensive_driving",
+          trainingName: "Defensive Driving Certification",
+          status: "overdue",
+          assignedDate: "2024-11-01",
+          dueDate: "2025-01-01",
+          progress: 30,
+        },
+        {
+          id: "t5",
+          driverId: "d4",
+          driverName: "Lisa Chen",
+          trainingType: "tanker_endorsement",
+          trainingName: "Tanker Endorsement Training",
+          status: "completed",
+          completedDate: "2024-10-20",
+          expirationDate: "2027-10-20",
+          score: 98,
+          certificateId: "CERT-TANK-001",
+        },
+      ];
+
+      let filtered = records;
+      if (input.driverId) {
+        filtered = filtered.filter(r => r.driverId === input.driverId);
+      }
+      if (input.type) {
+        filtered = filtered.filter(r => r.trainingType === input.type);
+      }
+      if (input.status) {
+        filtered = filtered.filter(r => r.status === input.status);
+      }
+
+      return {
+        records: filtered,
+        summary: {
+          completed: records.filter(r => r.status === "completed").length,
+          inProgress: records.filter(r => r.status === "in_progress").length,
+          overdue: records.filter(r => r.status === "overdue").length,
+          upcoming: records.filter(r => r.status === "assigned").length,
+        },
+      };
+    }),
+
+  /**
+   * Assign training to driver
+   */
+  assignTraining: protectedProcedure
+    .input(z.object({
+      driverId: z.string(),
+      trainingType: z.string(),
+      dueDate: z.string(),
+      priority: z.enum(["low", "medium", "high"]).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        id: `t_${Date.now()}`,
+        ...input,
+        status: "assigned",
+        assignedAt: new Date().toISOString(),
+        assignedBy: ctx.user?.id,
+      };
+    }),
 });
