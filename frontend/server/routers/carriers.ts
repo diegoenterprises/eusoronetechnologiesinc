@@ -280,6 +280,12 @@ export const carriersRouter = router({
         insuranceValid: true,
         insuranceExpiry: "2025-12-31",
         authorityActive: true,
+        vettingStatus: "approved",
+        yearsInBusiness: 8,
+        legalName: "ABC Transport LLC",
+        dba: "ABC Transport",
+        authorityStatus: "active",
+        primaryContact: { name: "John Manager", phone: "555-0100", email: "john@abctransport.com" },
       };
     }),
 
