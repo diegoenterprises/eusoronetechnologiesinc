@@ -44,12 +44,19 @@ export const ratesRouter = router({
     .query(async ({ input }) => {
       const distance = 350;
       const baseRate = 3.25;
+      const estimatedRate = Math.round(distance * baseRate);
       return {
         distance,
-        estimatedRate: Math.round(distance * baseRate),
+        estimatedRate,
+        recommendedRate: estimatedRate,
         ratePerMile: baseRate,
         fuelSurcharge: Math.round(distance * 0.20),
         total: Math.round(distance * baseRate + distance * 0.20),
+        driveTime: "5h 30m",
+        fuelCost: 245,
+        estimatedProfit: 580,
+        lowRate: Math.round(estimatedRate * 0.85),
+        highRate: Math.round(estimatedRate * 1.15),
       };
     }),
 
