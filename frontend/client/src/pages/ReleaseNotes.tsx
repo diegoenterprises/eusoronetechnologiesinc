@@ -6,121 +6,141 @@
 
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Rocket, Sparkles, Bug, Wrench, ChevronDown,
-  ChevronUp, Calendar
+  FileText, Sparkles, Bug, Wrench, AlertTriangle,
+  Clock, Tag, ChevronDown, ChevronUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ReleaseNotes() {
+  const [filter, setFilter] = useState("all");
   const [expandedRelease, setExpandedRelease] = useState<string | null>(null);
 
-  const releasesQuery = trpc.releases.list.useQuery({ limit: 20 });
-  const latestQuery = trpc.releases.getLatest.useQuery();
+  const releasesQuery = trpc.system.getReleaseNotes.useQuery({ filter, limit: 20 });
+  const latestQuery = trpc.system.getLatestVersion.useQuery();
 
-  const getChangeIcon = (type: string) => {
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case "feature": return <Sparkles className="w-4 h-4 text-cyan-400" />;
       case "bugfix": return <Bug className="w-4 h-4 text-red-400" />;
-      case "improvement": return <Wrench className="w-4 h-4 text-yellow-400" />;
-      default: return <Rocket className="w-4 h-4 text-purple-400" />;
+      case "improvement": return <Wrench className="w-4 h-4 text-purple-400" />;
+      case "security": return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
+      default: return <FileText className="w-4 h-4 text-slate-400" />;
     }
   };
 
-  const getChangeBadge = (type: string) => {
+  const getTypeBadge = (type: string) => {
     switch (type) {
-      case "feature": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">Feature</Badge>;
-      case "bugfix": return <Badge className="bg-red-500/20 text-red-400 border-0">Bug Fix</Badge>;
-      case "improvement": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Improvement</Badge>;
-      default: return <Badge className="bg-purple-500/20 text-purple-400 border-0">{type}</Badge>;
+      case "feature": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0"><Sparkles className="w-3 h-3 mr-1" />Feature</Badge>;
+      case "bugfix": return <Badge className="bg-red-500/20 text-red-400 border-0"><Bug className="w-3 h-3 mr-1" />Bug Fix</Badge>;
+      case "improvement": return <Badge className="bg-purple-500/20 text-purple-400 border-0"><Wrench className="w-3 h-3 mr-1" />Improvement</Badge>;
+      case "security": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0"><AlertTriangle className="w-3 h-3 mr-1" />Security</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{type}</Badge>;
     }
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header with Gradient Title */}
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-          Release Notes
-        </h1>
-        <p className="text-slate-400 text-sm mt-1">Stay updated with the latest changes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+            Release Notes
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">Stay updated with the latest changes</p>
+        </div>
+        <Select value={filter} onValueChange={setFilter}>
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Updates</SelectItem>
+            <SelectItem value="feature">Features</SelectItem>
+            <SelectItem value="bugfix">Bug Fixes</SelectItem>
+            <SelectItem value="improvement">Improvements</SelectItem>
+            <SelectItem value="security">Security</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Latest Release */}
+      {/* Latest Version */}
       {latestQuery.isLoading ? (
-        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-24 w-full rounded-xl" />
       ) : (
         <Card className="bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border-cyan-500/30 rounded-xl">
           <CardContent className="p-6">
-            <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20">
-                <Rocket className="w-6 h-6 text-cyan-400" />
+                <Tag className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-white text-xl font-bold">Version {latestQuery.data?.version}</p>
-                  <Badge className="bg-green-500/20 text-green-400 border-0">Latest</Badge>
-                </div>
-                <p className="text-slate-400 flex items-center gap-1"><Calendar className="w-4 h-4" />{latestQuery.data?.date}</p>
+                <p className="text-slate-400 text-sm">Current Version</p>
+                <p className="text-white text-2xl font-bold">{latestQuery.data?.version}</p>
+              </div>
+              <div className="ml-auto text-right">
+                <p className="text-slate-400 text-sm">Released</p>
+                <p className="text-white">{latestQuery.data?.releasedAt}</p>
               </div>
             </div>
-            <p className="text-slate-300">{latestQuery.data?.summary}</p>
           </CardContent>
         </Card>
       )}
 
-      {/* All Releases */}
+      {/* Release List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
-          <CardTitle className="text-white text-lg">All Releases</CardTitle>
+          <CardTitle className="text-white text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-purple-400" />
+            Version History
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {releasesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : releasesQuery.data?.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                <Rocket className="w-10 h-10 text-slate-500" />
-              </div>
-              <p className="text-slate-400 text-lg">No releases found</p>
+            <div className="text-center py-12">
+              <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+              <p className="text-slate-400">No release notes found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
               {releasesQuery.data?.map((release: any) => (
                 <div key={release.id} className="p-4">
-                  <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedRelease(expandedRelease === release.id ? null : release.id)}>
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedRelease(expandedRelease === release.id ? null : release.id)}>
+                    <div className="flex items-start gap-4">
                       <div className="p-2 rounded-lg bg-slate-700/50">
-                        <Rocket className="w-5 h-5 text-slate-400" />
+                        <Tag className="w-5 h-5 text-cyan-400" />
                       </div>
                       <div>
-                        <p className="text-white font-medium">Version {release.version}</p>
-                        <p className="text-xs text-slate-500">{release.date}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-bold text-lg">{release.version}</p>
+                          {release.isLatest && <Badge className="bg-green-500/20 text-green-400 border-0">Latest</Badge>}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-slate-500">
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{release.releasedAt}</span>
+                          <span>{release.changes?.length || 0} changes</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1">
-                        <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">{release.featuresCount} features</Badge>
-                        <Badge className="bg-red-500/20 text-red-400 border-0 text-xs">{release.bugfixesCount} fixes</Badge>
-                      </div>
-                      {expandedRelease === release.id ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
-                    </div>
+                    {expandedRelease === release.id ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
                   </div>
+
                   {expandedRelease === release.id && (
-                    <div className="mt-4 pl-12 space-y-3">
+                    <div className="mt-4 ml-12 space-y-3">
+                      {release.summary && <p className="text-slate-400 text-sm mb-4">{release.summary}</p>}
                       {release.changes?.map((change: any, idx: number) => (
-                        <div key={idx} className="flex items-start gap-3">
-                          {getChangeIcon(change.type)}
-                          <div>
+                        <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-slate-700/30">
+                          {getTypeIcon(change.type)}
+                          <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
-                              <p className="text-white">{change.title}</p>
-                              {getChangeBadge(change.type)}
+                              <p className="text-white text-sm">{change.title}</p>
+                              {getTypeBadge(change.type)}
                             </div>
-                            {change.description && <p className="text-sm text-slate-400">{change.description}</p>}
+                            {change.description && <p className="text-xs text-slate-500">{change.description}</p>}
                           </div>
                         </div>
                       ))}
