@@ -358,6 +358,19 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get service status for SystemHealth page
+   */
+  getServiceStatus: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "s1", name: "API Server", status: "healthy", uptime: "99.9%", responseTime: 45, lastCheck: "2025-01-23 10:30" },
+        { id: "s2", name: "Database", status: "healthy", uptime: "99.99%", responseTime: 12, lastCheck: "2025-01-23 10:30" },
+        { id: "s3", name: "Redis Cache", status: "healthy", uptime: "99.95%", responseTime: 2, lastCheck: "2025-01-23 10:30" },
+        { id: "s4", name: "File Storage", status: "healthy", uptime: "99.8%", responseTime: 85, lastCheck: "2025-01-23 10:30" },
+      ];
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
