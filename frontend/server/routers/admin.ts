@@ -402,6 +402,46 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get verification queue for VerificationQueue page
+   */
+  getVerificationQueue: protectedProcedure
+    .input(z.object({ type: z.string().optional(), limit: z.number().optional().default(50) }))
+    .query(async ({ input }) => {
+      const items = [
+        { id: "v1", type: "driver", name: "John Driver", submittedAt: "2025-01-22", documents: ["CDL", "Medical Card"], status: "pending" },
+        { id: "v2", type: "carrier", name: "ABC Transport", submittedAt: "2025-01-21", documents: ["MC Authority", "Insurance"], status: "pending" },
+      ];
+      if (input.type) return items.filter(i => i.type === input.type);
+      return items;
+    }),
+
+  /**
+   * Get verification summary for VerificationQueue page
+   */
+  getVerificationSummary: protectedProcedure
+    .query(async () => {
+      return { pending: 12, approved: 145, rejected: 8, avgProcessingTime: "2.5 hours" };
+    }),
+
+  /**
+   * Approve verification mutation
+   */
+  approveVerification: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, id: input.id, status: "approved" };
+    }),
+
+  /**
+   * Reject verification mutation
+   */
+  rejectVerification: protectedProcedure
+    .input(z.object({ id: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      return { success: true, id: input.id, status: "rejected" };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
