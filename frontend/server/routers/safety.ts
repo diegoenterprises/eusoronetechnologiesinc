@@ -121,6 +121,33 @@ export const safetyRouter = router({
     }),
 
   /**
+   * Get accident incidents for AccidentInvestigation page
+   */
+  getAccidentIncidents: protectedProcedure
+    .input(z.object({ filter: z.string().optional(), search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const incidents = [
+        { id: "a1", number: "ACC-2025-0012", status: "investigating", date: "2025-01-22", driver: "John Smith", vehicle: "TRK-101", severity: "major" },
+        { id: "a2", number: "ACC-2025-0011", status: "closed", date: "2025-01-18", driver: "Tom Brown", vehicle: "TRK-103", severity: "minor" },
+      ];
+      let filtered = incidents;
+      if (input.filter && input.filter !== "all") filtered = filtered.filter(i => i.status === input.filter);
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(i => i.driver.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
+      }
+      return filtered;
+    }),
+
+  /**
+   * Get accident stats for AccidentInvestigation page
+   */
+  getAccidentStats: protectedProcedure
+    .query(async () => {
+      return { total: 8, investigating: 2, closed: 6, thisYear: 3, avgResolutionDays: 14 };
+    }),
+
+  /**
    * Get incidents for SafetyIncidents page
    */
   getIncidents: protectedProcedure
