@@ -92,6 +92,8 @@ import { securityRouter } from "./routers/security";
 import { tollsRouter } from "./routers/tolls";
 import { trafficRouter } from "./routers/traffic";
 import { shipperContractsRouter } from "./routers/shipperContracts";
+import { legalRouter } from "./routers/legal";
+import { smsRouter } from "./routers/sms";
 
 export const appRouter = router({
   system: systemRouter,
@@ -376,6 +378,12 @@ export const appRouter = router({
 
   // Shipper Contracts
   shipperContracts: shipperContractsRouter,
+
+  // Legal & Privacy
+  legal: legalRouter,
+
+  // SMS
+  sms: smsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
