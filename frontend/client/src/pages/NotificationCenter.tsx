@@ -113,11 +113,11 @@ export default function NotificationCenter() {
         <CardContent className="p-0">
           {notificationsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : notificationsQuery.data?.length === 0 ? (
+          ) : !notificationsQuery.data || (Array.isArray(notificationsQuery.data) && notificationsQuery.data.length === 0) || (notificationsQuery.data?.notifications && notificationsQuery.data.notifications.length === 0) ? (
             <div className="text-center py-16"><Bell className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No notifications</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {notificationsQuery.data?.map((notification: any) => (
+              {(Array.isArray(notificationsQuery.data) ? notificationsQuery.data : notificationsQuery.data?.notifications || [])?.map((notification: any) => (
                 <div key={notification.id} className={cn("p-4 flex items-start gap-4 cursor-pointer hover:bg-slate-700/30 transition-colors", !notification.read && "bg-cyan-500/5 border-l-2 border-cyan-500")} onClick={() => !notification.read && markReadMutation.mutate({ id: notification.id })}>
                   <div className={cn("p-2 rounded-lg mt-1", notification.type === "success" ? "bg-green-500/20" : notification.type === "warning" ? "bg-yellow-500/20" : notification.type === "error" ? "bg-red-500/20" : "bg-blue-500/20")}>
                     {getTypeIcon(notification.type)}
