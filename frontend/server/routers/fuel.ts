@@ -377,7 +377,7 @@ export const fuelRouter = router({
     }),
 
   // Additional fuel procedures
-  getAverages: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => ({ avgPrice: 3.45, trend: "up", change: 0.05 })),
+  getAverages: protectedProcedure.input(z.object({ period: z.string().optional(), fuelType: z.string().optional() })).query(async () => ({ avgPrice: 3.45, trend: "up", change: 0.05, national: 3.45, lowest: 3.15, highest: 3.85, weekChange: 0.05 })),
   getTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ date: "2025-01-20", price: 3.40 }]),
   getNearbyStations: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number() })).query(async () => [{ id: "s1", name: "Pilot Flying J", distance: 2.5, dieselPrice: 3.45 }]),
 });
