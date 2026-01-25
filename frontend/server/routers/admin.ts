@@ -319,6 +319,45 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get integrations for IntegrationSettings page
+   */
+  getIntegrations: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "i1", name: "QuickBooks", type: "accounting", status: "connected", lastSync: "2025-01-23 10:00" },
+        { id: "i2", name: "Samsara", type: "eld", status: "connected", lastSync: "2025-01-23 09:45" },
+        { id: "i3", name: "Stripe", type: "payment", status: "connected", lastSync: "2025-01-23 08:30" },
+        { id: "i4", name: "Twilio", type: "communication", status: "disconnected", lastSync: null },
+      ];
+    }),
+
+  /**
+   * Get integration stats for IntegrationSettings page
+   */
+  getIntegrationStats: protectedProcedure
+    .query(async () => {
+      return { total: 8, connected: 6, disconnected: 2, syncedToday: 45 };
+    }),
+
+  /**
+   * Toggle integration mutation
+   */
+  toggleIntegration: protectedProcedure
+    .input(z.object({ id: z.string(), enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      return { success: true, integrationId: input.id, enabled: input.enabled };
+    }),
+
+  /**
+   * Sync integration mutation
+   */
+  syncIntegration: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, integrationId: input.id, syncedAt: new Date().toISOString() };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
