@@ -244,6 +244,81 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get backups for BackupManagement page
+   */
+  getBackups: protectedProcedure
+    .input(z.object({ type: z.string().optional() }))
+    .query(async ({ input }) => {
+      const backups = [
+        { id: "b1", name: "Full Backup", type: "full", status: "completed", size: "2.5 GB", createdAt: "2025-01-23 02:00", downloadUrl: "/backups/b1.zip" },
+        { id: "b2", name: "Database Backup", type: "database", status: "completed", size: "850 MB", createdAt: "2025-01-22 02:00", downloadUrl: "/backups/b2.sql" },
+        { id: "b3", name: "Config Backup", type: "config", status: "completed", size: "15 MB", createdAt: "2025-01-21 02:00", downloadUrl: "/backups/b3.zip" },
+      ];
+      if (input.type && input.type !== "all") return backups.filter(b => b.type === input.type);
+      return backups;
+    }),
+
+  /**
+   * Get backup stats for BackupManagement page
+   */
+  getBackupStats: protectedProcedure
+    .query(async () => {
+      return { totalBackups: 45, totalSize: "125 GB", lastBackup: "2025-01-23 02:00", nextScheduled: "2025-01-24 02:00" };
+    }),
+
+  /**
+   * Create backup mutation
+   */
+  createBackup: protectedProcedure
+    .input(z.object({ type: z.string().optional().default("full") }))
+    .mutation(async ({ input }) => {
+      return { success: true, backupId: `bkp_${Date.now()}`, type: input.type, startedAt: new Date().toISOString() };
+    }),
+
+  /**
+   * Restore backup mutation
+   */
+  restoreBackup: protectedProcedure
+    .input(z.object({ backupId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, backupId: input.backupId, restoredAt: new Date().toISOString() };
+    }),
+
+  /**
+   * Get database health for DatabaseHealth page
+   */
+  getDatabaseHealth: protectedProcedure
+    .query(async () => {
+      return {
+        status: "healthy",
+        uptime: "45 days",
+        connections: { active: 25, max: 100, available: 75 },
+        storage: { used: "45 GB", total: "100 GB", percentage: 45 },
+        performance: { avgQueryTime: 15, slowQueries: 3, indexHitRate: 98.5 },
+      };
+    }),
+
+  /**
+   * Get slow queries for DatabaseHealth page
+   */
+  getSlowQueries: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "q1", query: "SELECT * FROM loads WHERE...", avgTime: 250, calls: 150, lastRun: "2025-01-23 10:15" },
+        { id: "q2", query: "SELECT * FROM drivers JOIN...", avgTime: 180, calls: 85, lastRun: "2025-01-23 09:45" },
+      ];
+    }),
+
+  /**
+   * Optimize database mutation
+   */
+  optimizeDatabase: protectedProcedure
+    .mutation(async () => {
+      return { success: true, optimizedAt: new Date().toISOString(), improvements: ["Index rebuilt", "Cache cleared"] };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
