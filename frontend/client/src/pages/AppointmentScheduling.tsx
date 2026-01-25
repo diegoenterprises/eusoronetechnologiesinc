@@ -23,17 +23,17 @@ export default function AppointmentScheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const appointmentsQuery = trpc.terminal.getAppointments.useQuery({ date: selectedDate, terminal: selectedTerminal });
-  const terminalsQuery = trpc.terminal.getTerminals.useQuery();
-  const slotsQuery = trpc.terminal.getAvailableSlots.useQuery({ date: selectedDate, terminal: selectedTerminal }, { enabled: selectedTerminal !== "all" });
-  const statsQuery = trpc.terminal.getAppointmentStats.useQuery({ date: selectedDate });
+  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate, terminal: selectedTerminal });
+  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
+  const slotsQuery = trpc.terminals.getAvailableSlots.useQuery({ date: selectedDate, terminal: selectedTerminal }, { enabled: selectedTerminal !== "all" });
+  const statsQuery = trpc.terminals.getAppointmentStats.useQuery({ date: selectedDate });
 
-  const bookMutation = trpc.terminal.bookAppointment.useMutation({
+  const bookMutation = trpc.terminals.bookAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment booked"); appointmentsQuery.refetch(); slotsQuery.refetch(); statsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const cancelMutation = trpc.terminal.cancelAppointment.useMutation({
+  const cancelMutation = trpc.terminals.cancelAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment cancelled"); appointmentsQuery.refetch(); statsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

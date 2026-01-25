@@ -24,10 +24,10 @@ export default function PreTripChecklist() {
   const [notes, setNotes] = useState("");
   const [defects, setDefects] = useState<string[]>([]);
 
-  const checklistQuery = trpc.driver.getPreTripChecklist.useQuery();
-  const vehicleQuery = trpc.driver.getCurrentVehicle.useQuery();
+  const checklistQuery = trpc.drivers.getPreTripChecklist.useQuery();
+  const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
 
-  const submitMutation = trpc.driver.submitPreTripInspection.useMutation({
+  const submitMutation = trpc.drivers.submitPreTripInspection.useMutation({
     onSuccess: () => { toast.success("Pre-trip inspection submitted"); setCheckedItems({}); setNotes(""); setDefects([]); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

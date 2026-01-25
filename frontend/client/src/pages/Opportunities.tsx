@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function Opportunities() {
   const [category, setCategory] = useState("all");
 
-  const opportunitiesQuery = trpc.catalyst.getOpportunities.useQuery({ category });
-  const statsQuery = trpc.catalyst.getOpportunityStats.useQuery();
+  const opportunitiesQuery = trpc.catalysts.getOpportunities.useQuery({ category });
+  const statsQuery = trpc.catalysts.getOpportunityStats.useQuery();
 
-  const applyMutation = trpc.catalyst.applyToOpportunity.useMutation({
+  const applyMutation = trpc.catalysts.applyToOpportunity.useMutation({
     onSuccess: () => { toast.success("Application submitted"); opportunitiesQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });

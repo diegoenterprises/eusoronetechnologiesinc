@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ShipperDashboard() {
-  const statsQuery = trpc.shipper.getDashboardStats.useQuery();
-  const activeLoadsQuery = trpc.shipper.getActiveLoads.useQuery({ limit: 5 });
-  const attentionQuery = trpc.shipper.getLoadsRequiringAttention.useQuery();
-  const recentQuery = trpc.shipper.getRecentLoads.useQuery({ limit: 5 });
+  const statsQuery = trpc.shippers.getDashboardStats.useQuery();
+  const activeLoadsQuery = trpc.shippers.getActiveLoads.useQuery({ limit: 5 });
+  const attentionQuery = trpc.shippers.getLoadsRequiringAttention.useQuery();
+  const recentQuery = trpc.shippers.getRecentLoads.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 

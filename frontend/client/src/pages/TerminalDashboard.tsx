@@ -20,11 +20,11 @@ import { cn } from "@/lib/utils";
 export default function TerminalDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  const summaryQuery = trpc.terminal.getSummary.useQuery();
-  const racksQuery = trpc.terminal.getRacks.useQuery();
-  const tanksQuery = trpc.terminal.getTanks.useQuery();
-  const appointmentsQuery = trpc.terminal.getTodayAppointments.useQuery();
-  const alertsQuery = trpc.terminal.getAlerts.useQuery();
+  const summaryQuery = trpc.terminals.getSummary.useQuery();
+  const racksQuery = trpc.terminals.getRacks.useQuery();
+  const tanksQuery = trpc.terminals.getTanks.useQuery();
+  const appointmentsQuery = trpc.terminals.getTodayAppointments.useQuery();
+  const alertsQuery = trpc.terminals.getAlerts.useQuery();
 
   const summary = summaryQuery.data;
 

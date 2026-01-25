@@ -22,8 +22,8 @@ export default function EscortIncidents() {
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("all");
 
-  const incidentsQuery = trpc.escort.getIncidents.useQuery({ search, severity });
-  const statsQuery = trpc.escort.getIncidentStats.useQuery();
+  const incidentsQuery = trpc.escorts.getIncidents.useQuery({ search, severity });
+  const statsQuery = trpc.escorts.getIncidentStats.useQuery();
 
   const stats = statsQuery.data;
 

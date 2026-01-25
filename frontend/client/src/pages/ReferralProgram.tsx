@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ReferralProgram() {
-  const referralQuery = trpc.user.getReferralInfo.useQuery();
-  const referralsQuery = trpc.user.getReferrals.useQuery();
+  const referralQuery = trpc.users.getReferralInfo.useQuery();
+  const referralsQuery = trpc.users.getReferrals.useQuery();
 
   const referral = referralQuery.data;
 

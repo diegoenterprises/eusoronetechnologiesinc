@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CatalystPerformance() {
-  const statsQuery = trpc.catalyst.getPerformanceStats.useQuery();
-  const metricsQuery = trpc.catalyst.getPerformanceMetrics.useQuery();
-  const historyQuery = trpc.catalyst.getPerformanceHistory.useQuery({ limit: 10 });
+  const statsQuery = trpc.catalysts.getPerformanceStats.useQuery();
+  const metricsQuery = trpc.catalysts.getPerformanceMetrics.useQuery();
+  const historyQuery = trpc.catalysts.getPerformanceHistory.useQuery({ limit: 10 });
 
   const stats = statsQuery.data;
 

@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function OutgoingShipments() {
   const [search, setSearch] = useState("");
 
-  const shipmentsQuery = trpc.terminal.getOutgoingShipments.useQuery({ search });
-  const statsQuery = trpc.terminal.getOutgoingStats.useQuery();
+  const shipmentsQuery = trpc.terminals.getOutgoingShipments.useQuery({ search });
+  const statsQuery = trpc.terminals.getOutgoingStats.useQuery();
 
-  const dispatchMutation = trpc.terminal.dispatchShipment.useMutation({
+  const dispatchMutation = trpc.terminals.dispatchShipment.useMutation({
     onSuccess: () => { toast.success("Shipment dispatched"); shipmentsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });

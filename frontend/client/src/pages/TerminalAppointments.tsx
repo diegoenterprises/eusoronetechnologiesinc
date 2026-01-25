@@ -23,16 +23,16 @@ export default function TerminalAppointments() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const appointmentsQuery = trpc.terminal.getAppointments.useQuery({ date: selectedDate, terminalId: selectedTerminal === "all" ? undefined : selectedTerminal });
-  const terminalsQuery = trpc.terminal.getTerminals.useQuery();
-  const statsQuery = trpc.terminal.getAppointmentStats.useQuery({ date: selectedDate });
+  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate, terminalId: selectedTerminal === "all" ? undefined : selectedTerminal });
+  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
+  const statsQuery = trpc.terminals.getAppointmentStats.useQuery({ date: selectedDate });
 
-  const cancelMutation = trpc.terminal.cancelAppointment.useMutation({
+  const cancelMutation = trpc.terminals.cancelAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment cancelled"); appointmentsQuery.refetch(); statsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const reschedMutation = trpc.terminal.rescheduleAppointment.useMutation({
+  const reschedMutation = trpc.terminals.rescheduleAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment rescheduled"); appointmentsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

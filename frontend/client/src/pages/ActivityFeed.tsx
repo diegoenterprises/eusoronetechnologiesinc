@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function ActivityFeed() {
   const [filter, setFilter] = useState("all");
 
-  const activityQuery = trpc.user.getActivityFeed.useQuery({ filter, limit: 50 });
-  const statsQuery = trpc.user.getActivityStats.useQuery();
+  const activityQuery = trpc.users.getActivityFeed.useQuery({ filter, limit: 50 });
+  const statsQuery = trpc.users.getActivityStats.useQuery();
 
   const stats = statsQuery.data;
 

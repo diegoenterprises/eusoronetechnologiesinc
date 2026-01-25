@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CarrierDashboard() {
-  const statsQuery = trpc.carrier.getDashboardStats.useQuery();
-  const driversQuery = trpc.carrier.getMyDrivers.useQuery({ limit: 5 });
-  const activeLoadsQuery = trpc.carrier.getActiveLoads.useQuery({ limit: 5 });
-  const alertsQuery = trpc.carrier.getAlerts.useQuery();
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
+  const driversQuery = trpc.carriers.getMyDrivers.useQuery({ limit: 5 });
+  const activeLoadsQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 5 });
+  const alertsQuery = trpc.carriers.getAlerts.useQuery();
 
   const stats = statsQuery.data;
 

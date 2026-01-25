@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function MatchedLoads() {
   const [search, setSearch] = useState("");
 
-  const loadsQuery = trpc.catalyst.getMatchedLoads.useQuery({ search });
-  const statsQuery = trpc.catalyst.getMatchStats.useQuery();
+  const loadsQuery = trpc.catalysts.getMatchedLoads.useQuery({ search });
+  const statsQuery = trpc.catalysts.getMatchStats.useQuery();
 
-  const acceptMutation = trpc.catalyst.acceptLoad.useMutation({
+  const acceptMutation = trpc.catalysts.acceptLoad.useMutation({
     onSuccess: () => { toast.success("Load accepted"); loadsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });

@@ -22,8 +22,8 @@ export default function TerminalDirectory() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const terminalsQuery = trpc.terminal.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.terminal.getDirectorySummary.useQuery();
+  const terminalsQuery = trpc.terminals.list.useQuery({ limit: 50 });
+  const summaryQuery = trpc.terminals.getDirectorySummary.useQuery();
 
   const summary = summaryQuery.data;
 

@@ -17,8 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
-  const profileQuery = trpc.user.getProfile.useQuery();
-  const statsQuery = trpc.user.getProfileStats.useQuery();
+  const profileQuery = trpc.users.getProfile.useQuery();
+  const statsQuery = trpc.users.getProfileStats.useQuery();
 
   const profile = profileQuery.data;
   const stats = statsQuery.data;

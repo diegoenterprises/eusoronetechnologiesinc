@@ -21,9 +21,9 @@ import { toast } from "sonner";
 export default function SettingsPage() {
   const [settings, setSettings] = useState<any>({});
 
-  const settingsQuery = trpc.user.getSettings.useQuery();
+  const settingsQuery = trpc.users.getSettings.useQuery();
 
-  const updateMutation = trpc.user.updateSettings.useMutation({
+  const updateMutation = trpc.users.updateSettings.useMutation({
     onSuccess: () => toast.success("Settings saved"),
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

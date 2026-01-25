@@ -22,8 +22,8 @@ export default function EscortReports() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
 
-  const reportsQuery = trpc.escort.getReports.useQuery({ search, status });
-  const statsQuery = trpc.escort.getReportStats.useQuery();
+  const reportsQuery = trpc.escorts.getReports.useQuery({ search, status });
+  const statsQuery = trpc.escorts.getReportStats.useQuery();
 
   const stats = statsQuery.data;
 

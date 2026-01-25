@@ -18,14 +18,14 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ConnectedApps() {
-  const appsQuery = trpc.user.getConnectedApps.useQuery();
+  const appsQuery = trpc.users.getConnectedApps.useQuery();
 
-  const disconnectMutation = trpc.user.disconnectApp.useMutation({
+  const disconnectMutation = trpc.users.disconnectApp.useMutation({
     onSuccess: () => { toast.success("App disconnected"); appsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const refreshMutation = trpc.user.refreshAppConnection.useMutation({
+  const refreshMutation = trpc.users.refreshAppConnection.useMutation({
     onSuccess: () => { toast.success("Connection refreshed"); appsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

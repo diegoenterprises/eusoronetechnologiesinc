@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 export default function SCADAMonitor() {
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const terminalsQuery = trpc.terminal.getTerminals.useQuery();
-  const racksQuery = trpc.terminal.getRackStatus.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
-  const tanksQuery = trpc.terminal.getTankLevels.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
-  const alertsQuery = trpc.terminal.getActiveAlerts.useQuery({ terminal: selectedTerminal });
+  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
+  const racksQuery = trpc.terminals.getRackStatus.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
+  const tanksQuery = trpc.terminals.getTankLevels.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
+  const alertsQuery = trpc.terminals.getActiveAlerts.useQuery({ terminal: selectedTerminal });
 
   const getStatusColor = (status: string) => {
     switch (status) {

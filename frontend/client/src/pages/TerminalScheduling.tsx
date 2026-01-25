@@ -22,10 +22,10 @@ export default function TerminalScheduling() {
   const [activeTab, setActiveTab] = useState("schedule");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const racksQuery = trpc.terminal.getRacks.useQuery();
-  const tanksQuery = trpc.terminal.getTanks.useQuery();
-  const appointmentsQuery = trpc.terminal.getAppointments.useQuery({ date: selectedDate });
-  const summaryQuery = trpc.terminal.getSummary.useQuery();
+  const racksQuery = trpc.terminals.getRacks.useQuery();
+  const tanksQuery = trpc.terminals.getTanks.useQuery();
+  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate });
+  const summaryQuery = trpc.terminals.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 

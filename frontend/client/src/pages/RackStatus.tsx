@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function RackStatus() {
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const racksQuery = trpc.terminal.getRackStatus.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal }, { refetchInterval: 30000 });
-  const terminalsQuery = trpc.terminal.getTerminals.useQuery();
-  const statsQuery = trpc.terminal.getRackStats.useQuery();
+  const racksQuery = trpc.terminals.getRackStatus.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal }, { refetchInterval: 30000 });
+  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
+  const statsQuery = trpc.terminals.getRackStats.useQuery();
 
   const stats = statsQuery.data;
 

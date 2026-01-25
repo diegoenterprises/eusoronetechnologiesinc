@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function TerminalManagerDashboard() {
-  const statsQuery = trpc.terminal.getDashboardStats.useQuery();
-  const appointmentsQuery = trpc.terminal.getTodayAppointments.useQuery({ limit: 5 });
-  const racksQuery = trpc.terminal.getRackStatus.useQuery({});
-  const inventoryQuery = trpc.terminal.getInventorySummary.useQuery();
+  const statsQuery = trpc.terminals.getDashboardStats.useQuery();
+  const appointmentsQuery = trpc.terminals.getTodayAppointments.useQuery({ limit: 5 });
+  const racksQuery = trpc.terminals.getRackStatus.useQuery({});
+  const inventoryQuery = trpc.terminals.getInventorySummary.useQuery();
 
   const stats = statsQuery.data;
 

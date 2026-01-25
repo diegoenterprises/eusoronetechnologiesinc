@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function EIAReporting() {
   const [period, setPeriod] = useState("weekly");
 
-  const reportQuery = trpc.terminal.getEIAReport.useQuery({ period });
-  const statsQuery = trpc.terminal.getEIAStats.useQuery({ period });
+  const reportQuery = trpc.terminals.getEIAReport.useQuery({ period });
+  const statsQuery = trpc.terminals.getEIAStats.useQuery({ period });
 
-  const submitMutation = trpc.terminal.submitEIAReport.useMutation({
+  const submitMutation = trpc.terminals.submitEIAReport.useMutation({
     onSuccess: () => { toast.success("Report submitted"); reportQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

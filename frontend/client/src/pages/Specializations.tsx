@@ -17,8 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Specializations() {
-  const specializationsQuery = trpc.catalyst.getSpecializations.useQuery();
-  const statsQuery = trpc.catalyst.getSpecializationStats.useQuery();
+  const specializationsQuery = trpc.catalysts.getSpecializations.useQuery();
+  const statsQuery = trpc.catalysts.getSpecializationStats.useQuery();
 
   const stats = statsQuery.data;
 

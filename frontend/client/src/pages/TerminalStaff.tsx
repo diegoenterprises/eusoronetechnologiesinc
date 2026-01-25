@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function TerminalStaff() {
   const [search, setSearch] = useState("");
 
-  const staffQuery = trpc.terminal.getStaff.useQuery({ search });
-  const statsQuery = trpc.terminal.getStaffStats.useQuery();
+  const staffQuery = trpc.terminals.getStaff.useQuery({ search });
+  const statsQuery = trpc.terminals.getStaffStats.useQuery();
 
   const stats = statsQuery.data;
 

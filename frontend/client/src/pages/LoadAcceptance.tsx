@@ -18,15 +18,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function LoadAcceptance() {
-  const pendingQuery = trpc.driver.getPendingLoads.useQuery();
-  const hosQuery = trpc.driver.getHOSAvailability.useQuery();
+  const pendingQuery = trpc.drivers.getPendingLoads.useQuery();
+  const hosQuery = trpc.drivers.getHOSAvailability.useQuery();
 
-  const acceptMutation = trpc.driver.acceptLoad.useMutation({
+  const acceptMutation = trpc.drivers.acceptLoad.useMutation({
     onSuccess: () => { toast.success("Load accepted"); pendingQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const declineMutation = trpc.driver.declineLoad.useMutation({
+  const declineMutation = trpc.drivers.declineLoad.useMutation({
     onSuccess: () => { toast.success("Load declined"); pendingQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

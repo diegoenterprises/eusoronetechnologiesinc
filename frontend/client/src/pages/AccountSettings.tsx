@@ -22,15 +22,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function AccountSettings() {
-  const profileQuery = trpc.user.getProfile.useQuery();
-  const preferencesQuery = trpc.user.getPreferences.useQuery();
+  const profileQuery = trpc.users.getProfile.useQuery();
+  const preferencesQuery = trpc.users.getPreferences.useQuery();
 
-  const updateProfileMutation = trpc.user.updateProfile.useMutation({
+  const updateProfileMutation = trpc.users.updateProfile.useMutation({
     onSuccess: () => { toast.success("Profile updated"); profileQuery.refetch(); },
     onError: (error) => toast.error("Failed to update profile", { description: error.message }),
   });
 
-  const updatePreferencesMutation = trpc.user.updatePreferences.useMutation({
+  const updatePreferencesMutation = trpc.users.updatePreferences.useMutation({
     onSuccess: () => { toast.success("Preferences updated"); preferencesQuery.refetch(); },
     onError: (error) => toast.error("Failed to update preferences", { description: error.message }),
   });

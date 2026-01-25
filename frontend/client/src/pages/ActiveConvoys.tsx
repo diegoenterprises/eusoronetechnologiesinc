@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 export default function ActiveConvoys() {
   const [search, setSearch] = useState("");
 
-  const convoysQuery = trpc.escort.getActiveConvoys.useQuery({ search });
-  const statsQuery = trpc.escort.getConvoyStats.useQuery();
+  const convoysQuery = trpc.escorts.getActiveConvoys.useQuery({ search });
+  const statsQuery = trpc.escorts.getConvoyStats.useQuery();
 
   const stats = statsQuery.data;
 

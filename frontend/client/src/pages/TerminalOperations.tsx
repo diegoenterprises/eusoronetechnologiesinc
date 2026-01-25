@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function TerminalOperations() {
   const [timeframe, setTimeframe] = useState("today");
 
-  const operationsQuery = trpc.terminal.getOperations.useQuery({ timeframe });
-  const statsQuery = trpc.terminal.getOperationStats.useQuery({ timeframe });
-  const docksQuery = trpc.terminal.getDockStatus.useQuery();
+  const operationsQuery = trpc.terminals.getOperations.useQuery({ timeframe });
+  const statsQuery = trpc.terminals.getOperationStats.useQuery({ timeframe });
+  const docksQuery = trpc.terminals.getDockStatus.useQuery();
 
   const stats = statsQuery.data;
 

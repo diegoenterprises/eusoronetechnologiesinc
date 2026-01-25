@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function AchievementsBadges() {
-  const achievementsQuery = trpc.user.getAchievements.useQuery();
-  const badgesQuery = trpc.user.getBadges.useQuery();
-  const statsQuery = trpc.user.getAchievementStats.useQuery();
+  const achievementsQuery = trpc.users.getAchievements.useQuery();
+  const badgesQuery = trpc.users.getBadges.useQuery();
+  const statsQuery = trpc.users.getAchievementStats.useQuery();
 
   const stats = statsQuery.data;
 

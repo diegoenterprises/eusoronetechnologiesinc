@@ -23,11 +23,11 @@ export default function BidManagement() {
   const [filter, setFilter] = useState("pending");
   const [bidAmount, setBidAmount] = useState<Record<string, string>>({});
 
-  const bidsQuery = trpc.carrier.getBids.useQuery({ filter });
-  const statsQuery = trpc.carrier.getBidStats.useQuery();
-  const availableLoadsQuery = trpc.carrier.getAvailableLoads.useQuery({ limit: 5 });
+  const bidsQuery = trpc.carriers.getBids.useQuery({ filter });
+  const statsQuery = trpc.carriers.getBidStats.useQuery();
+  const availableLoadsQuery = trpc.carriers.getAvailableLoads.useQuery({ limit: 5 });
 
-  const submitBidMutation = trpc.carrier.submitBid.useMutation({
+  const submitBidMutation = trpc.carriers.submitBid.useMutation({
     onSuccess: () => { toast.success("Bid submitted"); bidsQuery.refetch(); availableLoadsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

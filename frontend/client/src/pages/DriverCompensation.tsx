@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function DriverCompensation() {
   const [period, setPeriod] = useState("week");
 
-  const earningsQuery = trpc.driver.getEarnings.useQuery({ period });
-  const tripsQuery = trpc.driver.getCompletedTrips.useQuery({ period, limit: 10 });
-  const statsQuery = trpc.driver.getEarningsStats.useQuery({ period });
+  const earningsQuery = trpc.drivers.getEarnings.useQuery({ period });
+  const tripsQuery = trpc.drivers.getCompletedTrips.useQuery({ period, limit: 10 });
+  const statsQuery = trpc.drivers.getEarningsStats.useQuery({ period });
 
   const stats = statsQuery.data;
 

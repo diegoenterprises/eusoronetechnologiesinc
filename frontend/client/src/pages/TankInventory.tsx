@@ -22,10 +22,10 @@ export default function TankInventory() {
   const [selectedTerminal, setSelectedTerminal] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState("all");
 
-  const tanksQuery = trpc.terminal.getTankInventory.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal, product: selectedProduct === "all" ? undefined : selectedProduct }, { refetchInterval: 60000 });
-  const terminalsQuery = trpc.terminal.getTerminals.useQuery();
-  const productsQuery = trpc.terminal.getProducts.useQuery();
-  const statsQuery = trpc.terminal.getInventoryStats.useQuery();
+  const tanksQuery = trpc.terminals.getTankInventory.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal, product: selectedProduct === "all" ? undefined : selectedProduct }, { refetchInterval: 60000 });
+  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
+  const productsQuery = trpc.terminals.getProducts.useQuery();
+  const statsQuery = trpc.terminals.getInventoryStats.useQuery();
 
   const stats = statsQuery.data;
 

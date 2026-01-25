@@ -22,14 +22,14 @@ export default function AccountDeletion() {
   const [confirmText, setConfirmText] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const accountQuery = trpc.user.getAccountInfo.useQuery();
+  const accountQuery = trpc.users.getAccountInfo.useQuery();
 
-  const deleteMutation = trpc.user.requestAccountDeletion.useMutation({
+  const deleteMutation = trpc.users.requestAccountDeletion.useMutation({
     onSuccess: () => { toast.success("Account deletion requested", { description: "You will receive a confirmation email" }); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const cancelMutation = trpc.user.cancelAccountDeletion.useMutation({
+  const cancelMutation = trpc.users.cancelAccountDeletion.useMutation({
     onSuccess: () => { toast.success("Deletion cancelled"); accountQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

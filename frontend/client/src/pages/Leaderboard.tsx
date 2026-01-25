@@ -20,8 +20,8 @@ export default function Leaderboard() {
   const [timeRange, setTimeRange] = useState("weekly");
   const [category, setCategory] = useState("overall");
 
-  const leaderboardQuery = trpc.user.getLeaderboard.useQuery({ timeRange, category, limit: 50 });
-  const myRankQuery = trpc.user.getMyRank.useQuery({ timeRange, category });
+  const leaderboardQuery = trpc.users.getLeaderboard.useQuery({ timeRange, category, limit: 50 });
+  const myRankQuery = trpc.users.getMyRank.useQuery({ timeRange, category });
 
   const myRank = myRankQuery.data;
 
