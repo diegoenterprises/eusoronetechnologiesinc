@@ -688,8 +688,17 @@ export const driversRouter = router({
     trainingsCompleted: 8,
   })),
   getOnboardingDrivers: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ([
-    { id: "d1", name: "Mike Johnson", step: 3, totalSteps: 5, status: "in_progress", startedAt: "2025-01-20" },
-    { id: "d2", name: "Sarah Williams", step: 5, totalSteps: 5, status: "completed", startedAt: "2025-01-18" },
+    { id: "d1", name: "Mike Johnson", step: 3, totalSteps: 5, status: "in_progress", startedAt: "2025-01-20", type: "new_hire" },
+    { id: "d2", name: "Sarah Williams", step: 5, totalSteps: 5, status: "completed", startedAt: "2025-01-18", type: "new_hire" },
+  ])),
+  getOnboardingDocuments: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([
+    { id: "doc1", type: "cdl", name: "CDL License", required: true, uploaded: true, status: "approved" },
+    { id: "doc2", type: "medical", name: "Medical Card", required: true, uploaded: false, status: "pending" },
+  ])),
+  getOnboardingSteps: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([
+    { id: "s1", name: "Personal Info", status: "completed", order: 1, type: "form" },
+    { id: "s2", name: "Documents", status: "in_progress", order: 2, type: "upload" },
+    { id: "s3", name: "Training", status: "pending", order: 3, type: "training" },
   ])),
 
   // Performance
