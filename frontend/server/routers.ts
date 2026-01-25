@@ -75,6 +75,7 @@ import { clearinghouseRouter } from "./routers/clearinghouse";
 import { spectraMatchRouter } from "./routers/spectraMatch";
 import { eusoTicketRouter } from "./routers/eusoTicket";
 import { payrollRouter } from "./routers/payroll";
+import { alertsRouter } from "./routers/alerts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -308,6 +309,9 @@ export const appRouter = router({
 
   // Payroll Management
   payroll: payrollRouter,
+
+  // System Alerts
+  alerts: alertsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
