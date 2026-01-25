@@ -360,4 +360,21 @@ export const usersRouter = router({
     .mutation(async () => {
       return { success: true, disabledAt: new Date().toISOString() };
     }),
+
+  // 2FA shortcuts (aliases for pages using different naming)
+  get: protectedProcedure.query(async () => ({ enabled: false, method: "authenticator" })),
+  setup: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
+  enable: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
+  disable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
+  regenerateBackupCodes: protectedProcedure.mutation(async () => ({ success: true, backupCodes: ["11111111", "22222222", "33333333"] })),
+
+  // Password
+  changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
+  getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false })),
+
+  // Rewards
+  getRewardsInfo: protectedProcedure.query(async () => ({ points: 2500, tier: "gold", nextTier: "platinum", pointsToNext: 500 })),
+  getRewardsHistory: protectedProcedure.query(async () => [{ id: "r1", type: "earned", points: 100, description: "Load completed", date: "2025-01-22" }]),
+  getAvailableRewards: protectedProcedure.query(async () => [{ id: "rew1", name: "Free Fuel Card", points: 1000, available: true }]),
+  redeemReward: protectedProcedure.input(z.object({ rewardId: z.string() })).mutation(async ({ input }) => ({ success: true, rewardId: input.rewardId })),
 });

@@ -432,4 +432,21 @@ export const analyticsRouter = router({
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       };
     }),
+
+  // Benchmarks & Market
+  getBenchmarks: protectedProcedure.query(async () => ({ industryAvg: { ratePerMile: 2.85, onTimeRate: 92 }, yourMetrics: { ratePerMile: 3.05, onTimeRate: 96 } })),
+  getCompetitors: protectedProcedure.query(async () => [{ name: "Industry Average", ratePerMile: 2.85, marketShare: 100 }]),
+  getMarketShare: protectedProcedure.query(async () => ({ yourShare: 2.5, topCompetitor: 8.2, marketSize: 850000000 })),
+
+  // Deadhead analysis
+  getDeadheadSummary: protectedProcedure.query(async () => ({ totalMiles: 12500, percentage: 18, cost: 8750 })),
+  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ month: "Jan", percentage: 18 }, { month: "Dec", percentage: 20 }]),
+  getDeadheadByDriver: protectedProcedure.query(async () => [{ driverId: "d1", name: "Mike Johnson", deadheadPct: 15 }]),
+  getDeadheadByLane: protectedProcedure.query(async () => [{ lane: "Houston-Dallas", deadheadPct: 12, loads: 45 }]),
+
+  // On-time analysis
+  getOnTimeSummary: protectedProcedure.query(async () => ({ rate: 96, onTime: 450, late: 18, early: 32 })),
+  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ month: "Jan", rate: 96 }, { month: "Dec", rate: 94 }]),
+  getOnTimeByCustomer: protectedProcedure.query(async () => [{ customerId: "c1", name: "Shell Oil", rate: 98, loads: 120 }]),
+  getOnTimeByLane: protectedProcedure.query(async () => [{ lane: "Houston-Dallas", rate: 97, loads: 85 }]),
 });
