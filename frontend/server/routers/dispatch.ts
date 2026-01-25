@@ -20,15 +20,19 @@ export const dispatchRouter = router({
    * Get dashboard stats for CatalystDashboard
    */
   getDashboardStats: protectedProcedure
+    .input(z.object({ filters: z.any().optional() }).optional())
     .query(async () => {
       return {
         active: 12,
+        activeLoads: 12,
         unassigned: 3,
         enRoute: 5,
         loading: 2,
         inTransit: 4,
         issues: 1,
         completedToday: 8,
+        totalDrivers: 25,
+        availableDrivers: 8,
       };
     }),
 
