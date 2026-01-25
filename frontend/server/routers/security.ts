@@ -15,10 +15,12 @@ export const securityRouter = router({
       return {
         twoFactorEnabled: true,
         loginAlerts: true,
+        loginNotifications: true,
         sessionTimeout: 30,
         ipWhitelist: ["192.168.1.0/24"],
         passwordLastChanged: "2024-12-15",
         recoveryEmailVerified: true,
+        score: 85,
       };
     }),
 
