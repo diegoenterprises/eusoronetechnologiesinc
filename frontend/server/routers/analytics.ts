@@ -136,7 +136,7 @@ export const analyticsRouter = router({
    * Get trends for Analytics page
    */
   getTrends: protectedProcedure
-    .input(z.object({ period: z.string().optional().default("month") }))
+    .input(z.object({ period: z.string().optional() }).optional())
     .query(async ({ input }) => {
       return {
         revenue: [
