@@ -936,4 +936,53 @@ export const terminalsRouter = router({
     .query(async () => {
       return { total: 8, operational: 6, maintenance: 1, offline: 1, totalRacks: 45, totalTanks: 82 };
     }),
+
+  /**
+   * Get dashboard stats for TerminalManagerDashboard page
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return { appointmentsToday: 24, loadsCompleted: 18, throughputToday: 125000, alertsActive: 2 };
+    }),
+
+  /**
+   * Get inventory summary for TerminalManagerDashboard page
+   */
+  getInventorySummary: protectedProcedure
+    .query(async () => {
+      return { totalCapacity: 500000, currentInventory: 375000, utilizationPercent: 75, lowStockProducts: 1 };
+    }),
+
+  /**
+   * Get operations for TerminalOperations page
+   */
+  getOperations: protectedProcedure
+    .input(z.object({ timeframe: z.string().optional() }))
+    .query(async () => {
+      return [
+        { id: "op1", type: "load", carrier: "ABC Transport", product: "Unleaded", gallons: 8500, status: "completed", time: "09:15" },
+        { id: "op2", type: "load", carrier: "XYZ Logistics", product: "Diesel", gallons: 7200, status: "in_progress", time: "10:30" },
+      ];
+    }),
+
+  /**
+   * Get operation stats for TerminalOperations page
+   */
+  getOperationStats: protectedProcedure
+    .input(z.object({ timeframe: z.string().optional() }))
+    .query(async () => {
+      return { totalOperations: 24, completed: 18, inProgress: 4, pending: 2, totalGallons: 185000 };
+    }),
+
+  /**
+   * Get dock status for TerminalOperations page
+   */
+  getDockStatus: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "d1", number: "Dock 1", status: "active", carrier: "ABC Transport", startTime: "10:30" },
+        { id: "d2", number: "Dock 2", status: "available", carrier: null, startTime: null },
+        { id: "d3", number: "Dock 3", status: "maintenance", carrier: null, startTime: null },
+      ];
+    }),
 });
