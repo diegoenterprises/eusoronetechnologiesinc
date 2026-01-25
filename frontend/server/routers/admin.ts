@@ -92,6 +92,61 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get feature flags for FeatureFlags page
+   */
+  getFeatureFlags: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "f1", name: "new_dashboard", description: "Enable new dashboard UI", enabled: true, rollout: 100 },
+        { id: "f2", name: "ai_load_matching", description: "AI-powered load matching", enabled: true, rollout: 50 },
+        { id: "f3", name: "mobile_app_v2", description: "Mobile app version 2", enabled: false, rollout: 0 },
+      ];
+    }),
+
+  /**
+   * Toggle feature flag mutation
+   */
+  toggleFeatureFlag: protectedProcedure
+    .input(z.object({ id: z.string(), enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      return { success: true, flagId: input.id, enabled: input.enabled };
+    }),
+
+  /**
+   * Get API keys for APIManagement page
+   */
+  getAPIKeys: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const keys = [
+        { id: "k1", name: "Production API", key: "pk_live_****abc", status: "active", lastUsed: "2025-01-23", requests: 12500 },
+        { id: "k2", name: "Development API", key: "pk_test_****xyz", status: "active", lastUsed: "2025-01-22", requests: 3200 },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return keys.filter(k => k.name.toLowerCase().includes(q));
+      }
+      return keys;
+    }),
+
+  /**
+   * Get API stats for APIManagement page
+   */
+  getAPIStats: protectedProcedure
+    .query(async () => {
+      return { totalKeys: 5, activeKeys: 4, totalRequests: 45000, avgLatency: 125 };
+    }),
+
+  /**
+   * Revoke API key mutation
+   */
+  revokeAPIKey: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, revokedId: input.id };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
