@@ -463,7 +463,25 @@ export const fleetRouter = router({
   getGPSStats: protectedProcedure.query(async () => ({ totalVehicles: 25, tracking: 24, offline: 1 })),
 
   // IFTA
-  getIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number() })).query(async ({ input }) => ({ quarter: input.quarter, year: input.year, totalMiles: 125000, totalGallons: 18500, fuelTax: 2850 })),
-  getIFTAStats: protectedProcedure.query(async () => ({ totalMiles: 500000, totalGallons: 74000, taxesDue: 11400 })),
-  generateIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number() })).mutation(async ({ input }) => ({ success: true, reportId: "ifta_123" })),
+  getIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).query(async ({ input }) => ({ 
+    quarter: input.quarter, 
+    year: input.year || 2025, 
+    totalMiles: 125000, 
+    totalGallons: 18500, 
+    fuelTax: 2850,
+    status: "pending",
+    jurisdictions: [
+      { state: "TX", miles: 45000, gallons: 6600, taxRate: 0.20, taxDue: 1320 },
+      { state: "LA", miles: 32000, gallons: 4700, taxRate: 0.20, taxDue: 940 },
+      { state: "OK", miles: 28000, gallons: 4100, taxRate: 0.19, taxDue: 779 },
+    ],
+  })),
+  getIFTAStats: protectedProcedure.input(z.object({ quarter: z.string().optional() }).optional()).query(async () => ({ 
+    totalMiles: 500000, 
+    totalGallons: 74000, 
+    taxesDue: 11400,
+    taxOwed: 11400,
+    jurisdictions: 12,
+  })),
+  generateIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "ifta_123" })),
 });
