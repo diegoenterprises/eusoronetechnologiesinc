@@ -14,15 +14,21 @@ export const systemRouter = router({
     })),
 
   getStatus: publicProcedure
+    .input(z.object({ timeRange: z.string().optional() }).optional())
     .query(() => ({
       overall: "operational",
       services: [
-        { name: "API", status: "operational", latency: 45 },
-        { name: "Database", status: "operational", latency: 12 },
-        { name: "Authentication", status: "operational", latency: 25 },
-        { name: "Storage", status: "operational", latency: 85 },
+        { name: "API", status: "operational", uptime: 99.99, latency: 45 },
+        { name: "Database", status: "operational", uptime: 99.98, latency: 12 },
+        { name: "Authentication", status: "operational", uptime: 99.95, latency: 25 },
+        { name: "Storage", status: "operational", uptime: 99.92, latency: 85 },
       ],
       lastUpdated: new Date().toISOString(),
+      lastCheck: new Date().toISOString(),
+      uptime: 99.95,
+      cpuUsage: 42,
+      memoryUsage: 68,
+      diskUsage: 55,
     })),
 
   getIncidents: publicProcedure
