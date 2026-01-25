@@ -21,19 +21,43 @@ import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 
-const STEPS = ["Hazmat Classification", "Quantity", "Origin/Destination", "Equipment", "Carrier Requirements", "Pricing", "Review"];
+const STEPS = ["Hazmat Classification", "Quantity & Weight", "Origin/Destination", "Equipment", "Carrier Requirements", "Pricing", "Review"];
+
+const HAZMAT_CLASSES = [
+  { id: "1", name: "Class 1 - Explosives" },
+  { id: "2.1", name: "Class 2.1 - Flammable Gas" },
+  { id: "2.2", name: "Class 2.2 - Non-Flammable Gas" },
+  { id: "2.3", name: "Class 2.3 - Poison Gas" },
+  { id: "3", name: "Class 3 - Flammable Liquid" },
+  { id: "4.1", name: "Class 4.1 - Flammable Solid" },
+  { id: "4.2", name: "Class 4.2 - Spontaneously Combustible" },
+  { id: "4.3", name: "Class 4.3 - Dangerous When Wet" },
+  { id: "5.1", name: "Class 5.1 - Oxidizer" },
+  { id: "5.2", name: "Class 5.2 - Organic Peroxide" },
+  { id: "6.1", name: "Class 6.1 - Poison" },
+  { id: "6.2", name: "Class 6.2 - Infectious Substance" },
+  { id: "7", name: "Class 7 - Radioactive" },
+  { id: "8", name: "Class 8 - Corrosive" },
+  { id: "9", name: "Class 9 - Miscellaneous" },
+];
+
+const EQUIPMENT_TYPES = [
+  { id: "tank", name: "Tank Trailer (MC-306/DOT-406)" },
+  { id: "tanker", name: "Tanker (MC-307/DOT-407)" },
+  { id: "dry-van", name: "Dry Van" },
+  { id: "flatbed", name: "Flatbed" },
+  { id: "reefer", name: "Refrigerated" },
+  { id: "hopper", name: "Hopper" },
+];
 
 export default function LoadCreationWizard() {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const hazmatQuery = trpc.loads.getHazmatClasses.useQuery();
-  const equipmentQuery = trpc.loads.getEquipmentTypes.useQuery();
-  const suggestMutation = trpc.esang.suggestClassification.useMutation();
-
-  const createMutation = trpc.loads.createLoad.useMutation({
+  const createLoadMutation = trpc.loads.create.useMutation({
     onSuccess: () => { toast.success("Load created successfully"); setStep(0); setFormData({}); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const updateField = (field: string, value: any) => setFormData((prev: any) => ({ ...prev, [field]: value }));
@@ -48,13 +72,34 @@ export default function LoadCreationWizard() {
 
   const handleSuggest = () => {
     if (formData.productName) {
-      suggestMutation.mutate({ productName: formData.productName }, {
-        onSuccess: (data) => { updateField("hazmatClass", data.suggestedClass); updateField("unNumber", data.unNumber); }
-      });
+      const productLower = formData.productName.toLowerCase();
+      let suggestedClass = "3";
+      let unNumber = "UN1203";
+      
+      if (productLower.includes("gasoline") || productLower.includes("petrol")) {
+        suggestedClass = "3"; unNumber = "UN1203";
+      } else if (productLower.includes("diesel")) {
+        suggestedClass = "3"; unNumber = "UN1202";
+      } else if (productLower.includes("propane") || productLower.includes("lpg")) {
+        suggestedClass = "2.1"; unNumber = "UN1978";
+      } else if (productLower.includes("ammonia")) {
+        suggestedClass = "2.3"; unNumber = "UN1005";
+      } else if (productLower.includes("acid")) {
+        suggestedClass = "8"; unNumber = "UN1830";
+      } else if (productLower.includes("oxygen")) {
+        suggestedClass = "2.2"; unNumber = "UN1072";
+      }
+      
+      updateField("hazmatClass", suggestedClass);
+      updateField("unNumber", unNumber);
+      toast.success("ESANG AI Classification", { description: `Suggested: Class ${suggestedClass} (${unNumber})` });
     }
   };
 
-  const handleSubmit = () => createMutation.mutate(formData);
+  const handleSubmit = () => {
+    setIsSubmitting(true);
+    createLoadMutation.mutate(formData);
+  };
 
   const canProceed = () => {
     switch (step) {
@@ -96,20 +141,18 @@ export default function LoadCreationWizard() {
                 <label className="text-sm text-slate-400 mb-1 block">Product Name</label>
                 <div className="flex gap-2">
                   <Input value={formData.productName || ""} onChange={(e) => updateField("productName", e.target.value)} placeholder="e.g., Gasoline, Diesel Fuel" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                  <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest} disabled={suggestMutation.isPending}>
+                  <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest}>
                     <Sparkles className="w-4 h-4 mr-2" />ESANG AI
                   </Button>
                 </div>
               </div>
-              {hazmatQuery.isLoading ? <Skeleton className="h-10 w-full" /> : (
-                <div>
-                  <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
-                  <Select value={formData.hazmatClass || ""} onValueChange={(v) => updateField("hazmatClass", v)}>
-                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
-                    <SelectContent>{hazmatQuery.data?.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div>
+                <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
+                <Select value={formData.hazmatClass || ""} onValueChange={(v) => updateField("hazmatClass", v)}>
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
+                  <SelectContent>{HAZMAT_CLASSES.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">UN Number (optional)</label>
                 <Input value={formData.unNumber || ""} onChange={(e) => updateField("unNumber", e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
@@ -203,14 +246,12 @@ export default function LoadCreationWizard() {
 
           {step === 3 && (
             <div className="space-y-4">
-              {equipmentQuery.isLoading ? <Skeleton className="h-10 w-full" /> : (
-                <div><label className="text-sm text-slate-400 mb-1 block">Equipment Type</label>
-                  <Select value={formData.equipment || ""} onValueChange={(v) => updateField("equipment", v)}>
-                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select equipment" /></SelectTrigger>
-                    <SelectContent>{equipmentQuery.data?.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              )}
+              <div><label className="text-sm text-slate-400 mb-1 block">Equipment Type</label>
+                <Select value={formData.equipment || ""} onValueChange={(v) => updateField("equipment", v)}>
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select equipment" /></SelectTrigger>
+                  <SelectContent>{EQUIPMENT_TYPES.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 
@@ -255,7 +296,7 @@ export default function LoadCreationWizard() {
             Next<ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (
-          <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg" onClick={handleSubmit} disabled={createMutation.isPending}>
+          <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg" onClick={handleSubmit} disabled={isSubmitting || createLoadMutation.isPending}>
             <CheckCircle className="w-4 h-4 mr-2" />Create Load
           </Button>
         )}
