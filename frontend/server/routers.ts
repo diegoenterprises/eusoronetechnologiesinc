@@ -74,6 +74,7 @@ import { gamificationRouter } from "./routers/gamification";
 import { clearinghouseRouter } from "./routers/clearinghouse";
 import { spectraMatchRouter } from "./routers/spectraMatch";
 import { eusoTicketRouter } from "./routers/eusoTicket";
+import { payrollRouter } from "./routers/payroll";
 
 export const appRouter = router({
   system: systemRouter,
@@ -304,6 +305,9 @@ export const appRouter = router({
 
   // ESANG AI™ Intelligence Layer
   esang: esangRouter,
+
+  // Payroll Management
+  payroll: payrollRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
