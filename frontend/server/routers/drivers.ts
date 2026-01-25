@@ -684,6 +684,9 @@ export const driversRouter = router({
     stats: {
       loadsCompleted: 45,
       milesDriver: 12500,
+      milesThisMonth: 12500,
+      hoursThisWeek: 48,
+      fuelEfficiency: 6.8,
       revenue: 28500,
       onTimeDeliveries: 43,
     },
