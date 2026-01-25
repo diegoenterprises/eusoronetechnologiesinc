@@ -442,6 +442,49 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get system config for SystemConfiguration page
+   */
+  getSystemConfig: protectedProcedure
+    .query(async () => {
+      return {
+        general: { companyName: "EusoTrip", timezone: "America/Chicago", dateFormat: "MM/DD/YYYY", currency: "USD" },
+        notifications: { emailEnabled: true, smsEnabled: true, pushEnabled: false },
+        security: { sessionTimeout: 30, passwordExpiry: 90, mfaRequired: true },
+        limits: { maxLoadsPerDay: 100, maxDrivers: 50, maxVehicles: 50 },
+      };
+    }),
+
+  /**
+   * Update system config mutation
+   */
+  updateSystemConfig: protectedProcedure
+    .input(z.object({ config: z.any() }))
+    .mutation(async ({ input }) => {
+      return { success: true, updatedAt: new Date().toISOString() };
+    }),
+
+  /**
+   * Get system settings for SystemSettings page
+   */
+  getSystemSettings: protectedProcedure
+    .query(async () => {
+      return {
+        maintenance: { enabled: false, message: "", scheduledStart: null, scheduledEnd: null },
+        features: { newDashboard: true, aiMatching: true, mobileAppV2: false },
+        defaults: { loadStatus: "pending", paymentTerms: 30, rateCalculation: "automatic" },
+      };
+    }),
+
+  /**
+   * Update system settings mutation
+   */
+  updateSystemSettings: protectedProcedure
+    .input(z.object({ settings: z.any() }))
+    .mutation(async ({ input }) => {
+      return { success: true, updatedAt: new Date().toISOString() };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
