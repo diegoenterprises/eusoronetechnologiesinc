@@ -657,12 +657,19 @@ export const driversRouter = router({
     pendingSteps: 1,
     estimatedTimeRemaining: "15 minutes",
   })),
-  getOnboardingStats: protectedProcedure.query(async () => ({ 
+  getOnboardingStats: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ({ 
+    step: 3,
+    totalSteps: 5,
+    percentage: 60,
     inProgress: 15, 
     completed: 120, 
     dropped: 8,
     total: 143,
     stalled: 5,
+    completedSteps: 3,
+    inProgressSteps: 1,
+    estimatedTimeRemaining: "15 minutes",
+    trainingsCompleted: 8,
   })),
   getOnboardingDrivers: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ([
     { id: "d1", name: "Mike Johnson", step: 3, totalSteps: 5, status: "in_progress", startedAt: "2025-01-20" },
