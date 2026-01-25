@@ -77,6 +77,7 @@ import { eusoTicketRouter } from "./routers/eusoTicket";
 import { payrollRouter } from "./routers/payroll";
 import { alertsRouter } from "./routers/alerts";
 import { activityRouter } from "./routers/activity";
+import { insuranceRouter } from "./routers/insurance";
 
 export const appRouter = router({
   system: systemRouter,
@@ -316,6 +317,9 @@ export const appRouter = router({
 
   // Activity Timeline
   activity: activityRouter,
+
+  // Insurance Management
+  insurance: insuranceRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
