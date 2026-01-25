@@ -179,4 +179,26 @@ export const payrollRouter = router({
     .mutation(async ({ input }) => {
       return { success: true, requestId: input.requestId, status: "denied" };
     }),
+
+  /**
+   * Get tax documents for TaxDocuments page
+   */
+  getTaxDocuments: protectedProcedure
+    .input(z.object({ year: z.string() }))
+    .query(async ({ input }) => {
+      return [
+        { id: "td1", type: "W-2", year: input.year, status: "available", downloadUrl: "/docs/w2-2024.pdf" },
+        { id: "td2", type: "1099", year: input.year, status: "available", downloadUrl: "/docs/1099-2024.pdf" },
+        { id: "td3", type: "Pay Stubs", year: input.year, status: "available", downloadUrl: "/docs/paystubs-2024.pdf" },
+      ];
+    }),
+
+  /**
+   * Get tax document stats for TaxDocuments page
+   */
+  getTaxDocStats: protectedProcedure
+    .input(z.object({ year: z.string() }))
+    .query(async () => {
+      return { totalDocuments: 15, available: 12, pending: 3, downloadedCount: 8 };
+    }),
 });

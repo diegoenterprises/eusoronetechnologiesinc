@@ -893,4 +893,17 @@ export const terminalsRouter = router({
     .query(async () => {
       return { total: 24, onDuty: 8, offDuty: 14, onBreak: 2 };
     }),
+
+  /**
+   * Get products for TankInventory page
+   */
+  getProducts: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "p1", name: "Unleaded Gasoline", code: "UNL" },
+        { id: "p2", name: "Premium Gasoline", code: "PRM" },
+        { id: "p3", name: "Diesel", code: "DSL" },
+        { id: "p4", name: "Jet Fuel", code: "JET" },
+      ];
+    }),
 });
