@@ -702,3 +702,548 @@ export const achTransfers = mysqlTable(
 export type AchTransfer = typeof achTransfers.$inferSelect;
 export type InsertAchTransfer = typeof achTransfers.$inferInsert;
 
+// ============================================================================
+// COMPLIANCE - VIOLATIONS & AUDITS
+// ============================================================================
+
+export const violations = mysqlTable(
+  "violations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    driverId: int("driverId"),
+    vehicleId: int("vehicleId"),
+    loadId: int("loadId"),
+    violationType: mysqlEnum("violationType", [
+      "hos",
+      "equipment",
+      "hazmat",
+      "driver_qualification",
+      "drug_alcohol",
+      "cargo_securement",
+      "other",
+    ]).notNull(),
+    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
+    status: mysqlEnum("status", ["open", "in_review", "resolved", "escalated"])
+      .default("open")
+      .notNull(),
+    code: varchar("code", { length: 50 }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    source: mysqlEnum("source", ["fmcsa", "state", "internal", "roadside"])
+      .default("internal")
+      .notNull(),
+    inspectionId: varchar("inspectionId", { length: 100 }),
+    fineAmount: decimal("fineAmount", { precision: 10, scale: 2 }),
+    dueDate: timestamp("dueDate"),
+    resolvedAt: timestamp("resolvedAt"),
+    resolvedBy: int("resolvedBy"),
+    resolutionNotes: text("resolutionNotes"),
+    documents: json("documents").$type<string[]>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("violation_company_idx").on(table.companyId),
+    driverIdx: index("violation_driver_idx").on(table.driverId),
+    statusIdx: index("violation_status_idx").on(table.status),
+    severityIdx: index("violation_severity_idx").on(table.severity),
+  })
+);
+
+export type Violation = typeof violations.$inferSelect;
+export type InsertViolation = typeof violations.$inferInsert;
+
+export const audits = mysqlTable(
+  "audits",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    auditType: mysqlEnum("auditType", [
+      "internal",
+      "fmcsa",
+      "dot",
+      "state",
+      "insurance",
+      "customer",
+    ]).notNull(),
+    status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "failed", "cancelled"])
+      .default("scheduled")
+      .notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    scheduledDate: timestamp("scheduledDate"),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    auditorName: varchar("auditorName", { length: 255 }),
+    auditorOrg: varchar("auditorOrg", { length: 255 }),
+    findings: json("findings").$type<Array<{ category: string; finding: string; severity: string }>>(),
+    score: int("score"),
+    maxScore: int("maxScore"),
+    passFailStatus: mysqlEnum("passFailStatus", ["pass", "fail", "conditional"]),
+    correctiveActions: json("correctiveActions").$type<Array<{ action: string; dueDate: string; status: string }>>(),
+    documents: json("documents").$type<string[]>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("audit_company_idx").on(table.companyId),
+    statusIdx: index("audit_status_idx").on(table.status),
+    typeIdx: index("audit_type_idx").on(table.auditType),
+    scheduledIdx: index("audit_scheduled_idx").on(table.scheduledDate),
+  })
+);
+
+export type Audit = typeof audits.$inferSelect;
+export type InsertAudit = typeof audits.$inferInsert;
+
+// ============================================================================
+// SAFETY - INCIDENTS & INSPECTIONS
+// ============================================================================
+
+export const safetyIncidents = mysqlTable(
+  "safety_incidents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    driverId: int("driverId"),
+    vehicleId: int("vehicleId"),
+    loadId: int("loadId"),
+    incidentType: mysqlEnum("incidentType", [
+      "accident",
+      "near_miss",
+      "injury",
+      "spill",
+      "property_damage",
+      "theft",
+      "breakdown",
+      "other",
+    ]).notNull(),
+    severity: mysqlEnum("severity", ["minor", "moderate", "major", "critical"]).notNull(),
+    status: mysqlEnum("status", ["reported", "investigating", "resolved", "closed"])
+      .default("reported")
+      .notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
+    occurredAt: timestamp("occurredAt").notNull(),
+    reportedAt: timestamp("reportedAt").defaultNow().notNull(),
+    reportedBy: int("reportedBy"),
+    weatherConditions: varchar("weatherConditions", { length: 100 }),
+    roadConditions: varchar("roadConditions", { length: 100 }),
+    injuriesCount: int("injuriesCount").default(0),
+    fatalitiesCount: int("fatalitiesCount").default(0),
+    estimatedDamage: decimal("estimatedDamage", { precision: 12, scale: 2 }),
+    insuranceClaim: varchar("insuranceClaim", { length: 100 }),
+    policeReport: varchar("policeReport", { length: 100 }),
+    rootCause: text("rootCause"),
+    correctiveActions: text("correctiveActions"),
+    resolvedAt: timestamp("resolvedAt"),
+    resolvedBy: int("resolvedBy"),
+    documents: json("documents").$type<string[]>(),
+    witnesses: json("witnesses").$type<Array<{ name: string; phone: string; statement: string }>>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("incident_company_idx").on(table.companyId),
+    driverIdx: index("incident_driver_idx").on(table.driverId),
+    statusIdx: index("incident_status_idx").on(table.status),
+    severityIdx: index("incident_severity_idx").on(table.severity),
+    occurredIdx: index("incident_occurred_idx").on(table.occurredAt),
+  })
+);
+
+export type SafetyIncident = typeof safetyIncidents.$inferSelect;
+export type InsertSafetyIncident = typeof safetyIncidents.$inferInsert;
+
+export const vehicleInspections = mysqlTable(
+  "vehicle_inspections",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    vehicleId: int("vehicleId").notNull(),
+    driverId: int("driverId").notNull(),
+    companyId: int("companyId").notNull(),
+    inspectionType: mysqlEnum("inspectionType", ["pre_trip", "post_trip", "dot", "annual", "roadside"])
+      .notNull(),
+    status: mysqlEnum("status", ["pass", "fail", "out_of_service"]).notNull(),
+    inspectorType: mysqlEnum("inspectorType", ["driver", "mechanic", "dot_officer", "third_party"])
+      .notNull(),
+    inspectorName: varchar("inspectorName", { length: 255 }),
+    inspectorBadge: varchar("inspectorBadge", { length: 50 }),
+    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
+    odometer: int("odometer"),
+    defects: json("defects").$type<Array<{ 
+      category: string; 
+      description: string; 
+      severity: string; 
+      repaired: boolean;
+      repairedAt?: string;
+    }>>(),
+    defectCount: int("defectCount").default(0),
+    criticalDefectCount: int("criticalDefectCount").default(0),
+    driverSignature: text("driverSignature"),
+    mechanicSignature: text("mechanicSignature"),
+    notes: text("notes"),
+    documents: json("documents").$type<string[]>(),
+    inspectedAt: timestamp("inspectedAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    vehicleIdx: index("inspection_vehicle_idx").on(table.vehicleId),
+    driverIdx: index("inspection_driver_idx").on(table.driverId),
+    companyIdx: index("inspection_company_idx").on(table.companyId),
+    typeIdx: index("inspection_type_idx").on(table.inspectionType),
+    inspectedIdx: index("inspection_inspected_idx").on(table.inspectedAt),
+  })
+);
+
+export type VehicleInspection = typeof vehicleInspections.$inferSelect;
+export type InsertVehicleInspection = typeof vehicleInspections.$inferInsert;
+
+// ============================================================================
+// TERMINAL OPERATIONS
+// ============================================================================
+
+export const terminals = mysqlTable(
+  "terminals",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    address: text("address"),
+    city: varchar("city", { length: 100 }),
+    state: varchar("state", { length: 50 }),
+    zipCode: varchar("zipCode", { length: 20 }),
+    location: json("location").$type<{ lat: number; lng: number }>(),
+    terminalType: mysqlEnum("terminalType", ["bulk", "petroleum", "chemical", "lpg", "lng", "asphalt", "general"])
+      .notNull(),
+    capacity: decimal("capacity", { precision: 12, scale: 2 }),
+    capacityUnit: varchar("capacityUnit", { length: 20 }).default("barrels"),
+    tankCount: int("tankCount").default(0),
+    rackCount: int("rackCount").default(0),
+    operatingHours: json("operatingHours").$type<{ open: string; close: string; days: string[] }>(),
+    contactName: varchar("contactName", { length: 255 }),
+    contactPhone: varchar("contactPhone", { length: 20 }),
+    contactEmail: varchar("contactEmail", { length: 320 }),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("terminal_company_idx").on(table.companyId),
+    codeIdx: unique("terminal_code_unique").on(table.code),
+    typeIdx: index("terminal_type_idx").on(table.terminalType),
+  })
+);
+
+export type Terminal = typeof terminals.$inferSelect;
+export type InsertTerminal = typeof terminals.$inferInsert;
+
+export const loadingBays = mysqlTable(
+  "loading_bays",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    terminalId: int("terminalId").notNull(),
+    name: varchar("name", { length: 100 }).notNull(),
+    bayNumber: int("bayNumber").notNull(),
+    status: mysqlEnum("status", ["available", "loading", "unloading", "maintenance", "offline"])
+      .default("available")
+      .notNull(),
+    currentLoadId: int("currentLoadId"),
+    currentVehicleId: int("currentVehicleId"),
+    currentDriverId: int("currentDriverId"),
+    productType: varchar("productType", { length: 100 }),
+    flowRate: decimal("flowRate", { precision: 8, scale: 2 }),
+    loadingProgress: int("loadingProgress").default(0),
+    startedAt: timestamp("startedAt"),
+    estimatedCompletion: timestamp("estimatedCompletion"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    terminalIdx: index("bay_terminal_idx").on(table.terminalId),
+    statusIdx: index("bay_status_idx").on(table.status),
+    bayNumberIdx: index("bay_number_idx").on(table.terminalId, table.bayNumber),
+  })
+);
+
+export type LoadingBay = typeof loadingBays.$inferSelect;
+export type InsertLoadingBay = typeof loadingBays.$inferInsert;
+
+export const tankInventory = mysqlTable(
+  "tank_inventory",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    terminalId: int("terminalId").notNull(),
+    tankNumber: varchar("tankNumber", { length: 50 }).notNull(),
+    productName: varchar("productName", { length: 255 }).notNull(),
+    productCode: varchar("productCode", { length: 50 }),
+    capacity: decimal("capacity", { precision: 12, scale: 2 }).notNull(),
+    currentLevel: decimal("currentLevel", { precision: 12, scale: 2 }).notNull(),
+    capacityUnit: varchar("capacityUnit", { length: 20 }).default("gallons"),
+    levelPercent: decimal("levelPercent", { precision: 5, scale: 2 }),
+    temperature: decimal("temperature", { precision: 5, scale: 2 }),
+    temperatureUnit: varchar("temperatureUnit", { length: 5 }).default("F"),
+    lastGaugeReading: timestamp("lastGaugeReading"),
+    lowLevelAlert: decimal("lowLevelAlert", { precision: 5, scale: 2 }).default("20"),
+    highLevelAlert: decimal("highLevelAlert", { precision: 5, scale: 2 }).default("95"),
+    status: mysqlEnum("status", ["normal", "low", "high", "critical", "offline"])
+      .default("normal")
+      .notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    terminalIdx: index("tank_terminal_idx").on(table.terminalId),
+    productIdx: index("tank_product_idx").on(table.productCode),
+    statusIdx: index("tank_status_idx").on(table.status),
+  })
+);
+
+export type TankInventory = typeof tankInventory.$inferSelect;
+export type InsertTankInventory = typeof tankInventory.$inferInsert;
+
+export const billsOfLading = mysqlTable(
+  "bills_of_lading",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    terminalId: int("terminalId").notNull(),
+    loadId: int("loadId"),
+    bolNumber: varchar("bolNumber", { length: 50 }).notNull().unique(),
+    status: mysqlEnum("status", ["draft", "pending", "approved", "printed", "voided"])
+      .default("draft")
+      .notNull(),
+    shipperName: varchar("shipperName", { length: 255 }),
+    shipperId: int("shipperId"),
+    carrierName: varchar("carrierName", { length: 255 }),
+    carrierId: int("carrierId"),
+    driverName: varchar("driverName", { length: 255 }),
+    driverId: int("driverId"),
+    vehicleNumber: varchar("vehicleNumber", { length: 50 }),
+    trailerNumber: varchar("trailerNumber", { length: 50 }),
+    productName: varchar("productName", { length: 255 }).notNull(),
+    productCode: varchar("productCode", { length: 50 }),
+    quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
+    quantityUnit: varchar("quantityUnit", { length: 20 }).default("gallons"),
+    grossWeight: decimal("grossWeight", { precision: 10, scale: 2 }),
+    netWeight: decimal("netWeight", { precision: 10, scale: 2 }),
+    destination: text("destination"),
+    specialInstructions: text("specialInstructions"),
+    hazmatClass: varchar("hazmatClass", { length: 20 }),
+    unNumber: varchar("unNumber", { length: 20 }),
+    temperature: decimal("temperature", { precision: 5, scale: 2 }),
+    sealNumbers: json("sealNumbers").$type<string[]>(),
+    signatures: json("signatures").$type<{ driver?: string; terminal?: string; receiver?: string }>(),
+    printedAt: timestamp("printedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    terminalIdx: index("bol_terminal_idx").on(table.terminalId),
+    loadIdx: index("bol_load_idx").on(table.loadId),
+    bolNumberIdx: unique("bol_number_unique").on(table.bolNumber),
+    statusIdx: index("bol_status_idx").on(table.status),
+  })
+);
+
+export type BillOfLading = typeof billsOfLading.$inferSelect;
+export type InsertBillOfLading = typeof billsOfLading.$inferInsert;
+
+// ============================================================================
+// ESCORT OPERATIONS
+// ============================================================================
+
+export const escortPermits = mysqlTable(
+  "escort_permits",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    state: varchar("state", { length: 50 }).notNull(),
+    permitNumber: varchar("permitNumber", { length: 100 }).notNull(),
+    permitType: varchar("permitType", { length: 100 }),
+    status: mysqlEnum("status", ["active", "expiring_soon", "expired", "pending", "suspended"])
+      .default("active")
+      .notNull(),
+    issuedDate: timestamp("issuedDate").notNull(),
+    expirationDate: timestamp("expirationDate").notNull(),
+    reciprocityStates: json("reciprocityStates").$type<string[]>(),
+    documents: json("documents").$type<string[]>(),
+    renewalSubmittedAt: timestamp("renewalSubmittedAt"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("escort_permit_user_idx").on(table.userId),
+    stateIdx: index("escort_permit_state_idx").on(table.state),
+    statusIdx: index("escort_permit_status_idx").on(table.status),
+    expirationIdx: index("escort_permit_expiration_idx").on(table.expirationDate),
+  })
+);
+
+export type EscortPermit = typeof escortPermits.$inferSelect;
+export type InsertEscortPermit = typeof escortPermits.$inferInsert;
+
+export const escortJobs = mysqlTable(
+  "escort_jobs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    carrierId: int("carrierId").notNull(),
+    escortId: int("escortId"),
+    loadId: int("loadId"),
+    title: varchar("title", { length: 255 }).notNull(),
+    status: mysqlEnum("status", ["posted", "assigned", "in_progress", "completed", "cancelled"])
+      .default("posted")
+      .notNull(),
+    position: mysqlEnum("position", ["lead", "chase", "both"]).notNull(),
+    origin: json("origin").$type<{ city: string; state: string; lat: number; lng: number }>(),
+    destination: json("destination").$type<{ city: string; state: string; lat: number; lng: number }>(),
+    startDate: timestamp("startDate").notNull(),
+    estimatedDuration: varchar("estimatedDuration", { length: 50 }),
+    distance: decimal("distance", { precision: 10, scale: 2 }),
+    rate: decimal("rate", { precision: 10, scale: 2 }).notNull(),
+    rateType: mysqlEnum("rateType", ["flat", "hourly", "per_mile"]).default("flat"),
+    loadDetails: json("loadDetails").$type<{
+      type: string;
+      dimensions: string;
+      weight: string;
+    }>(),
+    requirements: json("requirements").$type<{
+      equipment: string[];
+      certifications: string[];
+    }>(),
+    urgency: mysqlEnum("urgency", ["normal", "high", "urgent"]).default("normal"),
+    notes: text("notes"),
+    completedAt: timestamp("completedAt"),
+    rating: decimal("rating", { precision: 2, scale: 1 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    carrierIdx: index("escort_job_carrier_idx").on(table.carrierId),
+    escortIdx: index("escort_job_escort_idx").on(table.escortId),
+    statusIdx: index("escort_job_status_idx").on(table.status),
+    startDateIdx: index("escort_job_start_date_idx").on(table.startDate),
+  })
+);
+
+export type EscortJob = typeof escortJobs.$inferSelect;
+export type InsertEscortJob = typeof escortJobs.$inferInsert;
+
+export const escortAvailability = mysqlTable(
+  "escort_availability",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    dayOfWeek: int("dayOfWeek").notNull(),
+    available: boolean("available").default(true).notNull(),
+    startTime: varchar("startTime", { length: 10 }),
+    endTime: varchar("endTime", { length: 10 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("escort_availability_user_idx").on(table.userId),
+    userDayIdx: unique("escort_availability_user_day_unique").on(table.userId, table.dayOfWeek),
+  })
+);
+
+export type EscortAvailability = typeof escortAvailability.$inferSelect;
+export type InsertEscortAvailability = typeof escortAvailability.$inferInsert;
+
+// ============================================================================
+// DISPATCH EXCEPTIONS
+// ============================================================================
+
+export const dispatchExceptions = mysqlTable(
+  "dispatch_exceptions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    loadId: int("loadId"),
+    driverId: int("driverId"),
+    vehicleId: int("vehicleId"),
+    exceptionType: mysqlEnum("exceptionType", [
+      "breakdown",
+      "delay",
+      "hos_violation",
+      "weather",
+      "customer_issue",
+      "accident",
+      "other",
+    ]).notNull(),
+    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
+    status: mysqlEnum("status", ["open", "in_progress", "monitoring", "resolved"])
+      .default("open")
+      .notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
+    estimatedDelay: int("estimatedDelay"),
+    actualDelay: int("actualDelay"),
+    reportedBy: int("reportedBy"),
+    reportedAt: timestamp("reportedAt").defaultNow().notNull(),
+    assignedTo: int("assignedTo"),
+    resolution: text("resolution"),
+    resolvedAt: timestamp("resolvedAt"),
+    resolvedBy: int("resolvedBy"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("exception_company_idx").on(table.companyId),
+    loadIdx: index("exception_load_idx").on(table.loadId),
+    statusIdx: index("exception_status_idx").on(table.status),
+    severityIdx: index("exception_severity_idx").on(table.severity),
+    typeIdx: index("exception_type_idx").on(table.exceptionType),
+  })
+);
+
+export type DispatchException = typeof dispatchExceptions.$inferSelect;
+export type InsertDispatchException = typeof dispatchExceptions.$inferInsert;
+
+// ============================================================================
+// HOS (HOURS OF SERVICE) LOGS
+// ============================================================================
+
+export const hosLogs = mysqlTable(
+  "hos_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    driverId: int("driverId").notNull(),
+    companyId: int("companyId").notNull(),
+    logDate: timestamp("logDate").notNull(),
+    status: mysqlEnum("status", ["off_duty", "sleeper", "driving", "on_duty"]).notNull(),
+    startTime: timestamp("startTime").notNull(),
+    endTime: timestamp("endTime"),
+    duration: int("duration"),
+    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
+    vehicleId: int("vehicleId"),
+    loadId: int("loadId"),
+    odometer: int("odometer"),
+    engineHours: decimal("engineHours", { precision: 10, scale: 2 }),
+    notes: text("notes"),
+    editReason: text("editReason"),
+    editedBy: int("editedBy"),
+    editedAt: timestamp("editedAt"),
+    isCertified: boolean("isCertified").default(false),
+    certifiedAt: timestamp("certifiedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("hos_driver_idx").on(table.driverId),
+    companyIdx: index("hos_company_idx").on(table.companyId),
+    logDateIdx: index("hos_log_date_idx").on(table.logDate),
+    statusIdx: index("hos_status_idx").on(table.status),
+  })
+);
+
+export type HosLog = typeof hosLogs.$inferSelect;
+export type InsertHosLog = typeof hosLogs.$inferInsert;
+
