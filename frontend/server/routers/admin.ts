@@ -822,4 +822,30 @@ export const adminRouter = router({
         updatedAt: new Date().toISOString(),
       };
     }),
+
+  /**
+   * Get verification stats for UserVerification page
+   */
+  getVerificationStats: protectedProcedure
+    .query(async () => {
+      return { pending: 8, approved: 245, rejected: 12, avgProcessingTime: "1.5 hours" };
+    }),
+
+  /**
+   * Approve user mutation for UserVerification page
+   */
+  approveUser: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, userId: input.userId, status: "approved", approvedAt: new Date().toISOString() };
+    }),
+
+  /**
+   * Reject user mutation for UserVerification page
+   */
+  rejectUser: protectedProcedure
+    .input(z.object({ userId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      return { success: true, userId: input.userId, status: "rejected" };
+    }),
 });

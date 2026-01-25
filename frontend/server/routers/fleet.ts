@@ -399,4 +399,30 @@ export const fleetRouter = router({
         ],
       };
     }),
+
+  /**
+   * Get maintenance history for VehicleDetails page
+   */
+  getMaintenanceHistory: protectedProcedure
+    .input(z.object({ vehicleId: z.string(), limit: z.number().optional().default(5) }))
+    .query(async ({ input }) => {
+      return [
+        { id: "m1", type: "Oil Change", date: "2025-01-15", cost: 150, mileage: 124500, provider: "FleetServ" },
+        { id: "m2", type: "Tire Rotation", date: "2025-01-01", cost: 80, mileage: 123000, provider: "TireMax" },
+        { id: "m3", type: "Brake Inspection", date: "2024-12-15", cost: 200, mileage: 121500, provider: "FleetServ" },
+      ];
+    }),
+
+  /**
+   * Get inspections for VehicleDetails page
+   */
+  getInspections: protectedProcedure
+    .input(z.object({ vehicleId: z.string(), limit: z.number().optional().default(5) }))
+    .query(async ({ input }) => {
+      return [
+        { id: "i1", type: "Pre-trip", date: "2025-01-23", status: "passed", driver: "Mike Johnson", issues: 0 },
+        { id: "i2", type: "Post-trip", date: "2025-01-22", status: "passed", driver: "Mike Johnson", issues: 0 },
+        { id: "i3", type: "DOT Inspection", date: "2025-01-20", status: "passed", driver: "Mike Johnson", issues: 1 },
+      ];
+    }),
 });
