@@ -22,6 +22,10 @@ export const usersRouter = router({
       loadsCompleted: 142,
       rating: "4.8",
       daysActive: 385,
+      timezone: "America/Chicago",
+      language: "en",
+      pendingDeletion: false,
+      deletionDate: null,
     };
   }),
 
