@@ -201,4 +201,8 @@ export const inspectionsRouter = router({
         },
       ];
     }),
+
+  // Additional inspection procedures
+  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "i1", vehicleId: "v1", type: "pre_trip", date: "2025-01-23", status: "pass" }]),
+  getPrevious: protectedProcedure.input(z.object({ vehicleId: z.string() })).query(async () => [{ id: "i1", type: "pre_trip", date: "2025-01-22", status: "pass", defects: 0 }]),
 });
