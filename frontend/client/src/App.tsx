@@ -135,6 +135,8 @@ import BrokerAnalytics from "./pages/BrokerAnalytics";
 import LoadingBays from "./pages/LoadingBays";
 import TerminalInventory from "./pages/TerminalInventory";
 import BOLGeneration from "./pages/BOLGeneration";
+import DriverCurrentJob from "./pages/DriverCurrentJob";
+import DriverVehicle from "./pages/DriverVehicle";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -741,6 +743,16 @@ function Router() {
       <Route path={"/documents"} component={() => (
         <DashboardLayout>
           <DocumentCenter />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver/current-job"} component={() => (
+        <DashboardLayout>
+          <DriverCurrentJob />
+        </DashboardLayout>
+      )} />
+      <Route path={"/driver/vehicle"} component={() => (
+        <DashboardLayout>
+          <DriverVehicle />
         </DashboardLayout>
       )} />
       

@@ -296,4 +296,230 @@ export const driversRouter = router({
         },
       ];
     }),
+
+  /**
+   * Get current assignment for logged-in driver
+   */
+  getCurrentAssignment: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        loadNumber: "LOAD-45920",
+        status: "in_transit",
+        commodity: "Diesel Fuel",
+        weight: 42000,
+        quantity: 8500,
+        quantityUnit: "gal",
+        equipmentType: "Tanker",
+        hazmat: true,
+        hazmatClass: "3",
+        unNumber: "UN1202",
+        packingGroup: "III",
+        ergGuide: "128",
+        origin: {
+          name: "Shell Houston Terminal",
+          address: "1234 Refinery Rd",
+          city: "Houston",
+          state: "TX",
+        },
+        destination: {
+          name: "Dallas Distribution Center",
+          address: "5678 Industrial Blvd",
+          city: "Dallas",
+          state: "TX",
+        },
+        pickupTime: "08:00 AM",
+        deliveryTime: "02:00 PM",
+        totalMiles: 238,
+        milesCompleted: 165,
+        eta: "1:45 PM",
+        remainingTime: "1h 15m",
+        temperature: {
+          min: 60,
+          max: 80,
+          current: 72,
+        },
+        dispatch: { name: "John Dispatch", phone: "(713) 555-0100" },
+        shipper: { name: "Shell Oil", phone: "(713) 555-0200" },
+        receiver: { name: "Dallas Dist Center", phone: "(214) 555-0300" },
+      };
+    }),
+
+  /**
+   * Get HOS status for logged-in driver
+   */
+  getMyHOSStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        status: "driving",
+        drivingRemaining: "6h 30m",
+        onDutyRemaining: "8h 00m",
+        cycleRemaining: "52h 30m",
+        breakRemaining: "2h 00m",
+        lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      };
+    }),
+
+  /**
+   * Update load status
+   */
+  updateLoadStatus: protectedProcedure
+    .input(z.object({
+      status: z.enum(["assigned", "en_route_pickup", "at_pickup", "loading", "in_transit", "at_delivery", "unloading", "delivered"]),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        newStatus: input.status,
+        updatedAt: new Date().toISOString(),
+        updatedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Get assigned vehicle for logged-in driver
+   */
+  getAssignedVehicle: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        id: "v1",
+        unitNumber: "TRK-101",
+        status: "operational",
+        make: "Peterbilt",
+        model: "579",
+        year: 2022,
+        vin: "1XPWD49X1ED000001",
+        licensePlate: "TX-ABC1234",
+        equipmentType: "Tanker",
+        hazmatCertified: true,
+        odometer: 145678,
+        fuelLevel: 72,
+        defLevel: 85,
+        daysToService: 12,
+        trailer: {
+          unitNumber: "TRL-501",
+          type: "DOT-407 Tank Trailer",
+          capacity: 9000,
+          lastInspection: "2025-01-15",
+        },
+        maintenanceItems: [
+          { name: "Oil Change", lastCompleted: "2024-12-15", nextDue: "2025-02-15", daysRemaining: 22 },
+          { name: "DOT Annual Inspection", lastCompleted: "2024-06-01", nextDue: "2025-06-01", daysRemaining: 128 },
+          { name: "Brake Inspection", lastCompleted: "2024-11-01", nextDue: "2025-02-01", daysRemaining: 8 },
+          { name: "Tank Test", lastCompleted: "2024-01-15", nextDue: "2026-01-15", daysRemaining: 356 },
+        ],
+      };
+    }),
+
+  /**
+   * Get last inspection for assigned vehicle
+   */
+  getLastInspection: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        id: "insp1",
+        date: "2025-01-23",
+        type: "Pre-Trip",
+        passed: true,
+        defects: 0,
+        inspector: ctx.user?.id,
+        duration: 15,
+      };
+    }),
+
+  /**
+   * Start DVIR (Driver Vehicle Inspection Report)
+   */
+  startDVIR: protectedProcedure
+    .input(z.object({
+      type: z.enum(["pre_trip", "post_trip"]),
+      vehicleId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        dvirId: `dvir_${Date.now()}`,
+        type: input.type,
+        startedAt: new Date().toISOString(),
+        startedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Submit DVIR
+   */
+  submitDVIR: protectedProcedure
+    .input(z.object({
+      dvirId: z.string(),
+      passed: z.boolean(),
+      defects: z.array(z.object({
+        category: z.string(),
+        description: z.string(),
+        severity: z.enum(["minor", "major", "out_of_service"]),
+      })).optional(),
+      notes: z.string().optional(),
+      signature: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        dvirId: input.dvirId,
+        result: input.passed ? "passed" : "failed",
+        submittedAt: new Date().toISOString(),
+        submittedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Get route information for navigation
+   */
+  getRouteInfo: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        totalMiles: 238,
+        milesRemaining: 73,
+        eta: "1:45 PM",
+        driveTimeRemaining: "1h 15m",
+        fuelStops: [
+          { name: "Pilot Travel Center", location: "Waco, TX", miles: 25, dieselPrice: 3.29 },
+        ],
+        restAreas: [
+          { name: "I-35 Rest Area", location: "Hillsboro, TX", miles: 45 },
+        ],
+        alerts: [
+          { type: "traffic", message: "Slow traffic ahead near Waco - 15 min delay", severity: "warning" },
+          { type: "weather", message: "Clear conditions through route", severity: "info" },
+        ],
+        hazmatRestrictions: [
+          { location: "Downtown Dallas", restriction: "No hazmat 7AM-9AM, 4PM-7PM", miles: 70 },
+        ],
+      };
+    }),
+
+  /**
+   * Get driver earnings summary
+   */
+  getEarnings: protectedProcedure
+    .input(z.object({
+      period: z.enum(["week", "month", "quarter", "year"]).default("month"),
+    }))
+    .query(async ({ ctx, input }) => {
+      return {
+        period: input.period,
+        totalEarnings: 6776.75,
+        milesPaid: 7245,
+        ratePerMile: 0.55,
+        bonuses: 350,
+        deductions: 125,
+        netPay: 7001.75,
+        breakdown: [
+          { category: "Line Haul", amount: 3985.75 },
+          { category: "Detention", amount: 450 },
+          { category: "Fuel Bonus", amount: 200 },
+          { category: "Safety Bonus", amount: 150 },
+          { category: "Hazmat Premium", amount: 1991 },
+        ],
+      };
+    }),
 });
