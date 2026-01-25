@@ -562,4 +562,15 @@ export const carriersRouter = router({
         nextAuditDue: "2026-01-15",
       };
     }),
+
+  // Additional carrier procedures
+  approve: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
+  reject: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
+  getDrivers: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", cdl: "TX12345678" }]),
+  getCSAScores: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ({ unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12, controlledSubstances: 0 })),
+  getInsurance: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ({ liability: { amount: 1000000, expiration: "2025-12-31" }, cargo: { amount: 100000, expiration: "2025-12-31" } })),
+  getLoadHistory: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "delivered", date: "2025-01-20" }]),
+  getRecentLoads: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "in_transit" }]),
+  getScorecards: protectedProcedure.query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 92, trend: "up" }]),
+  getTopPerformers: protectedProcedure.query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 98, loads: 150 }]),
 });

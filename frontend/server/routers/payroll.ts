@@ -201,4 +201,17 @@ export const payrollRouter = router({
     .query(async () => {
       return { totalDocuments: 15, available: 12, pending: 3, downloadedCount: 8 };
     }),
+
+  // Settlements
+  getSettlements: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "s1", driverId: "d1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
+  getSettlementStats: protectedProcedure.query(async () => ({ totalPaid: 125000, pending: 15000, thisWeek: 28500 })),
+
+  // Expenses
+  getExpenseReports: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "e1", driverId: "d1", amount: 250, category: "fuel", status: "pending" }]),
+  getExpenseStats: protectedProcedure.query(async () => ({ total: 8500, approved: 7200, pending: 1300, denied: 0 })),
+  approveExpense: protectedProcedure.input(z.object({ expenseId: z.string() })).mutation(async ({ input }) => ({ success: true, expenseId: input.expenseId })),
+
+  // Benefits
+  getBenefits: protectedProcedure.query(async () => [{ id: "b1", type: "health", provider: "BlueCross", status: "active", monthlyCost: 450 }]),
+  getBenefitStats: protectedProcedure.query(async () => ({ enrolled: 85, pending: 5, totalMonthlyCost: 38250 })),
 });
