@@ -190,4 +190,25 @@ export const notificationsRouter = router({
   getUnreadCount: protectedProcedure.query(async () => ({ count: 5 })),
   markRead: protectedProcedure.input(z.object({ notificationId: z.string() })).mutation(async ({ input }) => ({ success: true, notificationId: input.notificationId })),
   markAllRead: protectedProcedure.mutation(async () => ({ success: true, markedCount: 5 })),
+
+  // Push notifications
+  getPushStats: protectedProcedure.query(async () => ({ 
+    sent: 1250, 
+    delivered: 1200, 
+    opened: 480, 
+    openRate: 40,
+    registeredDevices: 85,
+    sentThisMonth: 1250,
+    deliveryRate: 96,
+  })),
+  getPushSettings: protectedProcedure.query(async () => ({ 
+    enabled: true, 
+    deviceToken: "abc123",
+    categories: { loads: true, alerts: true, messages: true, system: true },
+  })),
+  getDevices: protectedProcedure.query(async () => ([
+    { id: "d1", name: "iPhone 15", type: "ios", lastActive: "2025-01-23" },
+    { id: "d2", name: "Galaxy S24", type: "android", lastActive: "2025-01-22" },
+  ])),
+  sendPush: protectedProcedure.input(z.object({ userId: z.string(), title: z.string(), body: z.string(), message: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
 });
