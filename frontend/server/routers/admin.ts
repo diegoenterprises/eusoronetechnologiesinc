@@ -218,6 +218,32 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get email templates for EmailTemplates page
+   */
+  getEmailTemplates: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const templates = [
+        { id: "t1", name: "Load Confirmation", category: "transactional", subject: "Load {{loadNumber}} Confirmed", status: "active", lastUsed: "2025-01-23" },
+        { id: "t2", name: "Driver Assignment", category: "notification", subject: "New Load Assignment", status: "active", lastUsed: "2025-01-22" },
+        { id: "t3", name: "Invoice Sent", category: "transactional", subject: "Invoice #{{invoiceNumber}}", status: "active", lastUsed: "2025-01-21" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return templates.filter(t => t.name.toLowerCase().includes(q));
+      }
+      return templates;
+    }),
+
+  /**
+   * Get email template stats for EmailTemplates page
+   */
+  getEmailTemplateStats: protectedProcedure
+    .query(async () => {
+      return { total: 15, active: 12, draft: 3, sentThisMonth: 2450 };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure

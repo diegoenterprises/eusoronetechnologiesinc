@@ -14,6 +14,76 @@ const ticketCategorySchema = z.enum([
 
 export const supportRouter = router({
   /**
+   * Get KB categories for KnowledgeBase page
+   */
+  getKBCategories: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "c1", name: "Getting Started", icon: "rocket", articleCount: 12 },
+        { id: "c2", name: "Load Management", icon: "package", articleCount: 18 },
+        { id: "c3", name: "Billing & Payments", icon: "credit-card", articleCount: 8 },
+        { id: "c4", name: "Compliance", icon: "shield", articleCount: 15 },
+      ];
+    }),
+
+  /**
+   * Get KB articles for KnowledgeBase page
+   */
+  getKBArticles: protectedProcedure
+    .input(z.object({ categoryId: z.string().nullable().optional(), search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const articles = [
+        { id: "a1", title: "How to Create a Load", categoryId: "c2", excerpt: "Step-by-step guide...", views: 1250 },
+        { id: "a2", title: "Understanding HOS Rules", categoryId: "c4", excerpt: "Hours of Service explained...", views: 980 },
+        { id: "a3", title: "Payment Methods", categoryId: "c3", excerpt: "Available payment options...", views: 750 },
+      ];
+      let filtered = articles;
+      if (input.categoryId) filtered = filtered.filter(a => a.categoryId === input.categoryId);
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(a => a.title.toLowerCase().includes(q));
+      }
+      return filtered;
+    }),
+
+  /**
+   * Get KB article detail for KnowledgeBase page
+   */
+  getKBArticle: protectedProcedure
+    .input(z.object({ articleId: z.string() }))
+    .query(async ({ input }) => {
+      return {
+        id: input.articleId,
+        title: "How to Create a Load",
+        content: "## Overview\n\nThis guide walks you through creating a new load...",
+        category: "Load Management",
+        author: "Support Team",
+        updatedAt: "2025-01-15",
+        views: 1250,
+        helpful: 95,
+      };
+    }),
+
+  /**
+   * Get KB bookmarks for KnowledgeBase page
+   */
+  getKBBookmarks: protectedProcedure
+    .query(async () => {
+      return [
+        { articleId: "a1", title: "How to Create a Load", bookmarkedAt: "2025-01-20" },
+      ];
+    }),
+
+  /**
+   * Toggle KB bookmark mutation
+   */
+  toggleKBBookmark: protectedProcedure
+    .input(z.object({ articleId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, articleId: input.articleId, bookmarked: true };
+    }),
+
+  /**
    * Get tickets for Support page
    */
   getTickets: protectedProcedure
