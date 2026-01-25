@@ -472,6 +472,17 @@ export const adminRouter = router({
         maintenance: { enabled: false, message: "", scheduledStart: null, scheduledEnd: null },
         features: { newDashboard: true, aiMatching: true, mobileAppV2: false },
         defaults: { loadStatus: "pending", paymentTerms: 30, rateCalculation: "automatic" },
+        twoFactorRequired: false,
+        sessionTimeout: 30,
+        passwordExpiry: 90,
+        emailNotifications: true,
+        smsNotifications: false,
+        pushNotifications: true,
+        autoBackup: true,
+        dataRetention: 365,
+        timezone: "America/Chicago",
+        dateFormat: "MM/DD/YYYY",
+        currency: "USD",
       };
     }),
 
