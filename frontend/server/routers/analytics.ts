@@ -473,7 +473,7 @@ export const analyticsRouter = router({
   getOnTimeByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ lane: "Houston-Dallas", rate: 97, loads: 85 }]),
 
   // Performance reports
-  getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+  getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => ({
     revenue: 127500,
     revenueChange: 12.5,
     loads: 45,
