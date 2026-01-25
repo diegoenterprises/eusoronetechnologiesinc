@@ -649,4 +649,26 @@ export const escortsRouter = router({
         },
       ];
     }),
+
+  // Jobs
+  acceptJob: protectedProcedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => ({ success: true, jobId: input.jobId })),
+  getJobs: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "j1", convoyName: "Oversized #101", status: "available", rate: 750, date: "2025-01-25" }]),
+  getJobsSummary: protectedProcedure.query(async () => ({ available: 15, accepted: 3, completed: 120, totalEarnings: 85000 })),
+  getCompletedJobs: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "j1", convoyName: "Oversized #99", earnings: 750, completedAt: "2025-01-20" }]),
+
+  // Certifications
+  getMyCertifications: protectedProcedure.query(async () => [{ id: "c1", state: "TX", type: "pilot_car", expiration: "2026-06-15", status: "valid" }]),
+  getCertificationStats: protectedProcedure.query(async () => ({ total: 8, valid: 7, expiring: 1, expired: 0 })),
+  uploadCertification: protectedProcedure.input(z.object({ state: z.string(), type: z.string(), expirationDate: z.string() })).mutation(async ({ input }) => ({ success: true, certId: "cert_123" })),
+  getStateRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => ({ state: input.state, requirements: ["Valid driver license", "Insurance", "Flags and signs"] })),
+
+  // Earnings
+  getEarnings: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ id: "e1", jobId: "j1", amount: 750, date: "2025-01-20" }]),
+  getEarningsStats: protectedProcedure.query(async () => ({ thisWeek: 1500, thisMonth: 6500, thisYear: 85000, avgPerJob: 650 })),
+
+  // Incidents & Reports
+  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inc1", jobId: "j1", type: "near_miss", status: "reported", date: "2025-01-18" }]),
+  getIncidentStats: protectedProcedure.query(async () => ({ total: 5, open: 1, resolved: 4 })),
+  getReports: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "r1", type: "trip_report", jobId: "j1", date: "2025-01-20" }]),
+  getReportStats: protectedProcedure.query(async () => ({ total: 120, thisMonth: 15 })),
 });
