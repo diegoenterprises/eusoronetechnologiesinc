@@ -14,6 +14,29 @@ const ticketCategorySchema = z.enum([
 
 export const supportRouter = router({
   /**
+   * Get tickets for Support page
+   */
+  getTickets: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "t1", number: "TKT-123456", subject: "Load assignment issue", status: "open", priority: "high", createdAt: "2025-01-22" },
+        { id: "t2", number: "TKT-123455", subject: "Billing question", status: "resolved", priority: "normal", createdAt: "2025-01-20" },
+      ];
+    }),
+
+  /**
+   * Get support summary for Support page
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return {
+        openTickets: 2,
+        resolvedThisWeek: 5,
+        avgResponseTime: "2.5 hours",
+      };
+    }),
+
+  /**
    * Create support ticket
    */
   createTicket: protectedProcedure
