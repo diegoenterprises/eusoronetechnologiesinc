@@ -11,6 +11,46 @@ const vehicleTypeSchema = z.enum(["truck", "trailer", "tanker", "flatbed", "reef
 
 export const fleetRouter = router({
   /**
+   * Get vehicles for FleetManagement
+   */
+  getVehicles: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const vehicles = [
+        { id: "v1", unitNumber: "TRK-101", type: "truck", make: "Peterbilt", model: "579", year: 2022, status: "active", driver: "Mike Johnson", location: "Houston, TX" },
+        { id: "v2", unitNumber: "TRK-102", type: "truck", make: "Kenworth", model: "T680", year: 2021, status: "active", driver: "Sarah Williams", location: "Dallas, TX" },
+        { id: "v3", unitNumber: "TRK-103", type: "truck", make: "Freightliner", model: "Cascadia", year: 2023, status: "maintenance", driver: null, location: "Austin, TX" },
+        { id: "v4", unitNumber: "TNK-201", type: "tanker", make: "Heil", model: "8400", year: 2022, status: "active", driver: "Tom Brown", location: "Beaumont, TX" },
+      ];
+      let filtered = vehicles;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(v => v.unitNumber.toLowerCase().includes(q) || v.make.toLowerCase().includes(q));
+      }
+      if (input.status && input.status !== "all") {
+        filtered = filtered.filter(v => v.status === input.status);
+      }
+      return filtered;
+    }),
+
+  /**
+   * Get fleet stats for FleetManagement
+   */
+  getFleetStats: protectedProcedure
+    .query(async () => {
+      return {
+        totalVehicles: 24,
+        active: 18,
+        inMaintenance: 4,
+        outOfService: 2,
+        utilization: 75,
+      };
+    }),
+
+  /**
    * Get fleet summary
    */
   getSummary: protectedProcedure
