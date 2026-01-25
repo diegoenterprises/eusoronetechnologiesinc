@@ -12,6 +12,87 @@ const positionSchema = z.enum(["lead", "chase", "both"]);
 
 export const escortsRouter = router({
   /**
+   * Get escort dashboard stats
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        activeJobs: 2,
+        upcomingJobs: 5,
+        completedThisMonth: 18,
+        monthlyEarnings: 8450,
+        rating: 4.9,
+      };
+    }),
+
+  /**
+   * Get active jobs
+   */
+  getActiveJobs: protectedProcedure
+    .query(async () => {
+      return [
+        {
+          id: "job_active_001",
+          title: "Oversize Load Escort - I-45 Corridor",
+          carrier: "Heavy Haul Specialists",
+          position: "lead",
+          status: "in_progress",
+          currentLocation: "Corsicana, TX",
+          destination: "Dallas, TX",
+          eta: "2 hours",
+          pay: 650,
+        },
+      ];
+    }),
+
+  /**
+   * Get upcoming jobs
+   */
+  getUpcomingJobs: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(5) }))
+    .query(async () => {
+      return [
+        {
+          id: "job_upcoming_001",
+          title: "Superload Escort - Port Arthur to Austin",
+          carrier: "ABC Transport",
+          position: "both",
+          startDate: "2025-01-26",
+          estimatedDuration: "12 hours",
+          pay: 1200,
+        },
+        {
+          id: "job_upcoming_002",
+          title: "Wind Turbine Blade - Corpus Christi",
+          carrier: "Wind Energy Logistics",
+          position: "chase",
+          startDate: "2025-01-27",
+          estimatedDuration: "6 hours",
+          pay: 450,
+        },
+      ];
+    }),
+
+  /**
+   * Get certification status
+   */
+  getCertificationStatus: protectedProcedure
+    .query(async () => {
+      return {
+        total: 12,
+        valid: 10,
+        expiringSoon: 2,
+        expired: 0,
+        certifications: [
+          { state: "TX", status: "valid", expiresAt: "2025-12-15" },
+          { state: "OK", status: "valid", expiresAt: "2025-08-20" },
+          { state: "LA", status: "expiring", expiresAt: "2025-02-15" },
+          { state: "AR", status: "expiring", expiresAt: "2025-02-28" },
+        ],
+      };
+    }),
+
+  /**
    * Get escort dashboard summary
    */
   getDashboardSummary: protectedProcedure
