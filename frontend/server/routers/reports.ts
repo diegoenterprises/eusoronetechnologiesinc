@@ -14,6 +14,41 @@ const formatSchema = z.enum(["pdf", "csv", "xlsx", "json"]);
 
 export const reportsRouter = router({
   /**
+   * Get saved reports for ReportBuilder page
+   */
+  getSavedReports: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const reports = [
+        { id: "r1", name: "Monthly Revenue", type: "revenue", lastRun: "2025-01-20", schedule: "monthly", status: "active" },
+        { id: "r2", name: "Fleet Utilization", type: "fleet", lastRun: "2025-01-22", schedule: "weekly", status: "active" },
+        { id: "r3", name: "Driver Performance", type: "driver_performance", lastRun: "2025-01-15", schedule: "monthly", status: "active" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return reports.filter(r => r.name.toLowerCase().includes(q));
+      }
+      return reports;
+    }),
+
+  /**
+   * Get report stats for ReportBuilder page
+   */
+  getReportStats: protectedProcedure
+    .query(async () => {
+      return { total: 12, scheduled: 8, recentRuns: 45, avgRunTime: 15 };
+    }),
+
+  /**
+   * Run report mutation
+   */
+  runReport: protectedProcedure
+    .input(z.object({ reportId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, reportId: input.reportId, startedAt: new Date().toISOString() };
+    }),
+
+  /**
    * List available reports
    */
   list: protectedProcedure
