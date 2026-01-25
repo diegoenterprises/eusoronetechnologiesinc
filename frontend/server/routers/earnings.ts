@@ -36,6 +36,35 @@ export const earningsRouter = router({
     }),
 
   /**
+   * Get earnings for DriverEarnings page
+   */
+  getEarnings: protectedProcedure
+    .input(z.object({ period: z.string().optional(), offset: z.number().optional().default(0) }))
+    .query(async () => {
+      return [
+        { id: "e1", loadNumber: "LOAD-45920", date: "2025-01-23", origin: "Houston, TX", destination: "Dallas, TX", miles: 240, pay: 876, status: "pending" },
+        { id: "e2", loadNumber: "LOAD-45918", date: "2025-01-22", origin: "Beaumont, TX", destination: "San Antonio, TX", miles: 320, pay: 1243, status: "approved" },
+        { id: "e3", loadNumber: "LOAD-45915", date: "2025-01-21", origin: "Port Arthur, TX", destination: "Austin, TX", miles: 280, pay: 1015, status: "paid" },
+      ];
+    }),
+
+  /**
+   * Get weekly summary for DriverEarnings page
+   */
+  getWeeklySummary: protectedProcedure
+    .input(z.object({ offset: z.number().optional().default(0) }))
+    .query(async ({ input }) => {
+      return {
+        weekStart: "2025-01-20",
+        weekEnd: "2025-01-26",
+        totalEarnings: 3134,
+        totalMiles: 840,
+        totalLoads: 3,
+        avgPerMile: 3.73,
+      };
+    }),
+
+  /**
    * List earnings entries
    */
   list: protectedProcedure
