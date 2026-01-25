@@ -14,6 +14,41 @@ const loadStatusSchema = z.enum([
 
 export const catalystsRouter = router({
   /**
+   * Get matched loads for MatchedLoads page
+   */
+  getMatchedLoads: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const loads = [
+        { id: "l1", loadNumber: "LOAD-45925", shipper: "Shell Oil", origin: "Houston, TX", destination: "Dallas, TX", rate: 2450, matchScore: 95 },
+        { id: "l2", loadNumber: "LOAD-45926", shipper: "ExxonMobil", origin: "Beaumont, TX", destination: "Austin, TX", rate: 2800, matchScore: 88 },
+        { id: "l3", loadNumber: "LOAD-45927", shipper: "Chevron", origin: "Port Arthur, TX", destination: "San Antonio, TX", rate: 2650, matchScore: 82 },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return loads.filter(l => l.loadNumber.toLowerCase().includes(q) || l.shipper.toLowerCase().includes(q));
+      }
+      return loads;
+    }),
+
+  /**
+   * Get match stats for MatchedLoads page
+   */
+  getMatchStats: protectedProcedure
+    .query(async () => {
+      return { totalMatches: 12, highScore: 5, mediumScore: 4, lowScore: 3, avgMatchScore: 85 };
+    }),
+
+  /**
+   * Accept load mutation for MatchedLoads page
+   */
+  acceptLoad: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, loadId: input.loadId, acceptedAt: new Date().toISOString() };
+    }),
+
+  /**
    * Get exceptions for CatalystExceptions page
    */
   getExceptions: protectedProcedure
