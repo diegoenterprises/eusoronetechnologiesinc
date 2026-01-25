@@ -1,7 +1,8 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { z } from "zod";
 import { aggregateAllFeeds, getAllCategories, RSS_FEEDS } from "./services/rssAggregator";
 import { zeunMechanicsRouter } from "./services/zeun_mechanics/integration";
 import { loadsRouter, bidsRouter } from "./routers/loads";
@@ -95,6 +96,11 @@ import { shipperContractsRouter } from "./routers/shipperContracts";
 import { legalRouter } from "./routers/legal";
 import { smsRouter } from "./routers/sms";
 import { pushRouter } from "./routers/push";
+import { fuelCardsRouter } from "./routers/fuelCards";
+import { facilityRouter } from "./routers/facility";
+import { exportsRouter } from "./routers/exports";
+import { eldRouter } from "./routers/eld";
+import { developerRouter } from "./routers/developer";
 
 export const appRouter = router({
   system: systemRouter,
@@ -395,6 +401,21 @@ export const appRouter = router({
 
   // Push Notifications
   push: pushRouter,
+
+  // Fuel Cards
+  fuelCards: fuelCardsRouter,
+
+  // Facility
+  facility: facilityRouter,
+
+  // Exports
+  exports: exportsRouter,
+
+  // ELD
+  eld: eldRouter,
+
+  // Developer
+  developer: developerRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
