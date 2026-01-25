@@ -929,9 +929,9 @@ export const adminRouter = router({
   updateRolePermissions: protectedProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
 
   // Rate limiting
-  getRateLimitStats: protectedProcedure.query(async () => ({ blocked: 25, throttled: 150, total: 50000 })),
-  getRateLimitConfig: protectedProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [] })),
-  updateRateLimitConfig: protectedProcedure.input(z.object({ limit: z.number(), windowMs: z.number() })).mutation(async ({ input }) => ({ success: true })),
+  getRateLimitStats: protectedProcedure.query(async () => ({ blocked: 25, blockedRequests: 25, throttled: 150, total: 50000, totalRequests: 50000, avgLatency: 145, activeUsers: 1250 })),
+  getRateLimitConfig: protectedProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [], enabled: true, anonymousRpm: 30, authenticatedRpm: 100 })),
+  updateRateLimitConfig: protectedProcedure.input(z.object({ limit: z.number().optional(), windowMs: z.number().optional(), enabled: z.boolean().optional(), anonymousRpm: z.number().optional(), authenticatedRpm: z.number().optional() })).mutation(async ({ input }) => ({ success: true })),
 
   // Audit log
   getAuditLog: protectedProcedure.input(z.object({ logId: z.string() })).query(async ({ input }) => ({
