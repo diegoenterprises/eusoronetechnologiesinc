@@ -9,6 +9,21 @@ import { protectedProcedure, router } from "../_core/trpc";
 
 export const brokersRouter = router({
   /**
+   * Get broker dashboard stats (alias for getDashboardSummary)
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        activeLoads: 12,
+        pendingMatches: 8,
+        weeklyVolume: 45,
+        commissionEarned: 4250,
+        marginAverage: 10.2,
+        loadToCarrierRatio: 3.2,
+      };
+    }),
+
+  /**
    * Get broker dashboard summary
    */
   getDashboardSummary: protectedProcedure
