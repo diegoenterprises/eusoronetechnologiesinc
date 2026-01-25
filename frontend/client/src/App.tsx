@@ -129,6 +129,9 @@ import Violations from "./pages/Violations";
 import Audits from "./pages/Audits";
 import SafetyMetrics from "./pages/SafetyMetrics";
 import SafetyIncidents from "./pages/SafetyIncidents";
+import BrokerMarketplace from "./pages/BrokerMarketplace";
+import BrokerCarriers from "./pages/BrokerCarriers";
+import BrokerAnalytics from "./pages/BrokerAnalytics";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -835,6 +838,23 @@ function Router() {
       <Route path={"/safety-incidents"} component={() => (
         <DashboardLayout>
           <SafetyIncidents />
+        </DashboardLayout>
+      )} />
+      
+      {/* Broker-specific routes */}
+      <Route path={"/broker-marketplace"} component={() => (
+        <DashboardLayout>
+          <BrokerMarketplace />
+        </DashboardLayout>
+      )} />
+      <Route path={"/broker-carriers"} component={() => (
+        <DashboardLayout>
+          <BrokerCarriers />
+        </DashboardLayout>
+      )} />
+      <Route path={"/broker-analytics"} component={() => (
+        <DashboardLayout>
+          <BrokerAnalytics />
         </DashboardLayout>
       )} />
       
