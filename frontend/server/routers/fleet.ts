@@ -82,6 +82,7 @@ export const fleetRouter = router({
         total: 24,
         active: 18,
         inMaintenance: 4,
+        maintenance: 4,
         outOfService: 2,
         utilization: 75,
         inTransit: 18,
@@ -91,6 +92,7 @@ export const fleetRouter = router({
         atConsignee: 1,
         offDuty: 0,
         issues: 2,
+        avgMpg: 6.8,
       };
     }),
 
