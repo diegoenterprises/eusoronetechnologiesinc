@@ -632,8 +632,27 @@ export const driversRouter = router({
   stopDriving: protectedProcedure.mutation(async () => ({ success: true, stoppedAt: new Date().toISOString() })),
 
   // Onboarding
-  getOnboarding: protectedProcedure.query(async () => ({ step: 3, totalSteps: 5, completed: ["profile", "documents", "vehicle"] })),
-  getOnboardingStats: protectedProcedure.query(async () => ({ inProgress: 15, completed: 120, dropped: 8 })),
+  getOnboarding: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ({ 
+    step: 3, 
+    totalSteps: 5, 
+    completed: ["profile", "documents", "vehicle"],
+    percentage: 60,
+    completedSteps: 3,
+    inProgressSteps: 1,
+    pendingSteps: 1,
+    estimatedTimeRemaining: "15 minutes",
+  })),
+  getOnboardingStats: protectedProcedure.query(async () => ({ 
+    inProgress: 15, 
+    completed: 120, 
+    dropped: 8,
+    total: 143,
+    stalled: 5,
+  })),
+  getOnboardingDrivers: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ([
+    { id: "d1", name: "Mike Johnson", step: 3, totalSteps: 5, status: "in_progress", startedAt: "2025-01-20" },
+    { id: "d2", name: "Sarah Williams", step: 5, totalSteps: 5, status: "completed", startedAt: "2025-01-18" },
+  ])),
 
   // Performance
   getPerformance: protectedProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({
