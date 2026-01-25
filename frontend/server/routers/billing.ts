@@ -11,6 +11,43 @@ const transactionTypeSchema = z.enum(["payment", "receipt", "refund", "fee", "wi
 
 export const billingRouter = router({
   /**
+   * Get subscription for SubscriptionPlan page
+   */
+  getSubscription: protectedProcedure
+    .query(async () => {
+      return { plan: "Professional", status: "active", billingCycle: "monthly", nextBilling: "2025-02-01", price: 299 };
+    }),
+
+  /**
+   * Get plans for SubscriptionPlan page
+   */
+  getPlans: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "starter", name: "Starter", price: 99, features: ["Up to 10 loads/month", "Basic tracking", "Email support"] },
+        { id: "professional", name: "Professional", price: 299, features: ["Unlimited loads", "Advanced tracking", "Priority support", "API access"] },
+        { id: "enterprise", name: "Enterprise", price: 599, features: ["Everything in Pro", "Dedicated support", "Custom integrations", "SLA guarantee"] },
+      ];
+    }),
+
+  /**
+   * Get usage for SubscriptionPlan page
+   */
+  getUsage: protectedProcedure
+    .query(async () => {
+      return { loadsThisMonth: 45, loadsLimit: null, apiCallsThisMonth: 12500, apiCallsLimit: 50000, storageUsed: "2.5 GB", storageLimit: "10 GB" };
+    }),
+
+  /**
+   * Upgrade plan mutation
+   */
+  upgradePlan: protectedProcedure
+    .input(z.object({ planId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, newPlan: input.planId, effectiveDate: new Date().toISOString() };
+    }),
+
+  /**
    * Get summary for Billing page
    */
   getSummary: protectedProcedure

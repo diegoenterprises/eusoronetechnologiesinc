@@ -644,4 +644,24 @@ export const catalystsRouter = router({
         avgResolutionTime: 45,
       };
     }),
+
+  /**
+   * Get specializations for Specializations page
+   */
+  getSpecializations: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "s1", name: "Hazmat Transport", level: "expert", completedLoads: 245, rating: 4.9, certified: true },
+        { id: "s2", name: "Oversized Loads", level: "advanced", completedLoads: 128, rating: 4.7, certified: true },
+        { id: "s3", name: "Refrigerated Freight", level: "intermediate", completedLoads: 56, rating: 4.5, certified: false },
+      ];
+    }),
+
+  /**
+   * Get specialization stats for Specializations page
+   */
+  getSpecializationStats: protectedProcedure
+    .query(async () => {
+      return { total: 8, expert: 2, advanced: 3, intermediate: 2, beginner: 1, certifiedCount: 5 };
+    }),
 });
