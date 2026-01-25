@@ -442,4 +442,17 @@ If you have trouble accepting a load, please contact support or check that your 
         status: "received",
       };
     }),
+
+  // Live chat
+  startChatSession: protectedProcedure.input(z.object({ topic: z.string().optional() })).mutation(async () => ({ sessionId: "chat_123", agentName: "Support Agent" })),
+  endChatSession: protectedProcedure.input(z.object({ sessionId: z.string() })).mutation(async ({ input }) => ({ success: true, sessionId: input.sessionId })),
+  getChatSession: protectedProcedure.input(z.object({ sessionId: z.string() })).query(async ({ input }) => ({ sessionId: input.sessionId, status: "active", startedAt: "2025-01-23 10:00" })),
+  getChatMessages: protectedProcedure.input(z.object({ sessionId: z.string() })).query(async () => [{ id: "m1", sender: "agent", content: "How can I help?", timestamp: "2025-01-23 10:00" }]),
+  sendChatMessage: protectedProcedure.input(z.object({ sessionId: z.string(), content: z.string() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
+
+  // Surveys
+  getPendingSurveys: protectedProcedure.query(async () => [{ id: "s1", ticketId: "t1", type: "satisfaction", dueBy: "2025-01-25" }]),
+  getCompletedSurveys: protectedProcedure.query(async () => [{ id: "s1", ticketId: "t1", rating: 5, completedAt: "2025-01-22" }]),
+  getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, questions: [{ id: "q1", text: "How was your experience?" }] })),
+  submitSurvey: protectedProcedure.input(z.object({ surveyId: z.string(), responses: z.array(z.object({ questionId: z.string(), answer: z.any() })) })).mutation(async ({ input }) => ({ success: true, surveyId: input.surveyId })),
 });

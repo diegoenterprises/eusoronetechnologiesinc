@@ -347,4 +347,19 @@ export const dispatchRouter = router({
         sentAt: new Date().toISOString(),
       };
     }),
+
+  // Dispatch operations
+  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "available", location: "Houston, TX" }]),
+  getDriverStatusStats: protectedProcedure.query(async () => ({ available: 8, driving: 12, onDuty: 3, offDuty: 2 })),
+  getLoads: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "unassigned", origin: "Houston", destination: "Dallas" }]),
+  getSummary: protectedProcedure.query(async () => ({ activeLoads: 15, unassigned: 3, inTransit: 10, issues: 2 })),
+  getAlerts: protectedProcedure.query(async () => [{ id: "a1", type: "hos_warning", driverId: "d1", message: "Driver approaching HOS limit", severity: "warning" }]),
+
+  // Exceptions
+  getExceptions: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "e1", type: "breakdown", loadId: "l1", status: "open", reportedAt: "2025-01-23 10:00" }]),
+  getExceptionStats: protectedProcedure.query(async () => ({ open: 3, investigating: 2, resolved: 45 })),
+  resolveException: protectedProcedure.input(z.object({ exceptionId: z.string(), resolution: z.string() })).mutation(async ({ input }) => ({ success: true, exceptionId: input.exceptionId })),
+
+  // AI Recommendations
+  getRecommendations: protectedProcedure.input(z.object({ loadId: z.string() })).query(async ({ input }) => [{ driverId: "d1", driverName: "Mike Johnson", score: 95, reason: "Best HOS availability and route match" }]),
 });
