@@ -87,11 +87,22 @@ export const supportRouter = router({
    * Get tickets for Support page
    */
   getTickets: protectedProcedure
-    .query(async () => {
-      return [
+    .input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional())
+    .query(async ({ input }) => {
+      const tickets = [
         { id: "t1", number: "TKT-123456", subject: "Load assignment issue", status: "open", priority: "high", createdAt: "2025-01-22" },
         { id: "t2", number: "TKT-123455", subject: "Billing question", status: "resolved", priority: "normal", createdAt: "2025-01-20" },
       ];
+      if (input?.status && input.status !== "all") return tickets.filter(t => t.status === input.status);
+      return tickets;
+    }),
+
+  /**
+   * Get ticket stats for SupportTickets page
+   */
+  getTicketStats: protectedProcedure
+    .query(async () => {
+      return { total: 45, open: 8, inProgress: 5, resolved: 30, closed: 2, avgResponseTime: "2.5 hours" };
     }),
 
   /**

@@ -13,6 +13,32 @@ export const systemRouter = router({
       ok: true,
     })),
 
+  getStatus: publicProcedure
+    .query(() => ({
+      overall: "operational",
+      services: [
+        { name: "API", status: "operational", latency: 45 },
+        { name: "Database", status: "operational", latency: 12 },
+        { name: "Authentication", status: "operational", latency: 25 },
+        { name: "Storage", status: "operational", latency: 85 },
+      ],
+      lastUpdated: new Date().toISOString(),
+    })),
+
+  getIncidents: publicProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(() => ([
+      { id: "inc1", title: "Scheduled Maintenance", status: "resolved", severity: "info", startedAt: "2025-01-20 02:00", resolvedAt: "2025-01-20 04:00" },
+    ])),
+
+  getUptime: publicProcedure
+    .query(() => ({
+      last24h: 100,
+      last7d: 99.98,
+      last30d: 99.95,
+      last90d: 99.92,
+    })),
+
   notifyOwner: adminProcedure
     .input(
       z.object({
