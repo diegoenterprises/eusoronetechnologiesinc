@@ -74,6 +74,8 @@ export const driversRouter = router({
         {
           id: "d1",
           name: "Mike Johnson",
+          firstName: "Mike",
+          lastName: "Johnson",
           phone: "555-0101",
           email: "mike.j@example.com",
           status: "on_load",
@@ -86,6 +88,8 @@ export const driversRouter = router({
         {
           id: "d2",
           name: "Sarah Williams",
+          firstName: "Sarah",
+          lastName: "Williams",
           phone: "555-0102",
           email: "sarah.w@example.com",
           status: "available",
@@ -97,6 +101,8 @@ export const driversRouter = router({
         {
           id: "d3",
           name: "Tom Brown",
+          firstName: "Tom",
+          lastName: "Brown",
           phone: "555-0103",
           email: "tom.b@example.com",
           status: "off_duty",
@@ -646,12 +652,15 @@ export const driversRouter = router({
       milesDriver: 12500,
       revenue: 28500,
       fuelEfficiency: 6.8,
+      safety: { score: 94, trend: "up", change: 2.1 },
+      efficiency: { score: 88, trend: "stable", change: 0 },
+      compliance: { score: 96, trend: "up", change: 1.5 },
     },
   })),
   getPerformanceReviews: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
   getReviewStats: protectedProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3 })),
   getScorecard: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ safety: 94, efficiency: 88, compliance: 96, customer: 92 })),
-  getLeaderboard: protectedProcedure.query(async () => [{ rank: 1, driverId: "d1", name: "Mike Johnson", score: 98 }]),
+  getLeaderboard: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => [{ rank: 1, driverId: "d1", name: "Mike Johnson", score: 98 }]),
 
   // Pre-trip
   getPreTripChecklist: protectedProcedure.query(async () => [{ id: "c1", item: "Brakes", required: true }, { id: "c2", item: "Lights", required: true }]),
