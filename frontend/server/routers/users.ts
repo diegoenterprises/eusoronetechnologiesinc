@@ -384,6 +384,10 @@ export const usersRouter = router({
   changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
   getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false })),
 
+  // User management stats
+  getStats: protectedProcedure.query(async () => ({ total: 150, active: 125, pending: 15, suspended: 10, admins: 5, newThisMonth: 12 })),
+  updateStatus: protectedProcedure.input(z.object({ userId: z.string().optional(), id: z.string().optional(), status: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId || input.id })),
+
   // Rewards
   getRewardsInfo: protectedProcedure.query(async () => ({ points: 2500, tier: "gold", nextTier: "platinum", pointsToNext: 500 })),
   getRewardsHistory: protectedProcedure.query(async () => [{ id: "r1", type: "earned", points: 100, description: "Load completed", date: "2025-01-22" }]),
