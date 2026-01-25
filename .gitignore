@@ -1,3 +1,23 @@
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Python
 backend/eusotrip.db
 services/gamma/venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Node
+node_modules/
+dist/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
