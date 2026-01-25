@@ -68,4 +68,13 @@ export const onboardingRouter = router({
         { id: "insurance", name: "Insurance Documents", required: true, completed: true },
       ];
     }),
+
+  // Applicants
+  getApplicants: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "a1", name: "John Smith", status: "pending", appliedAt: "2025-01-22" }]),
+  approveApplicant: protectedProcedure.input(z.object({ applicantId: z.string() })).mutation(async ({ input }) => ({ success: true, applicantId: input.applicantId })),
+
+  // Progress & Documents
+  getProgress: protectedProcedure.query(async () => ({ step: 3, totalSteps: 5, percentage: 60 })),
+  getRequiredDocuments: protectedProcedure.query(async () => [{ id: "d1", type: "cdl", name: "CDL License", required: true, uploaded: false }]),
+  uploadDocument: protectedProcedure.input(z.object({ type: z.string(), fileUrl: z.string() })).mutation(async ({ input }) => ({ success: true, documentId: "doc_123" })),
 });
