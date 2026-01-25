@@ -83,6 +83,7 @@ import { maintenanceRouter } from "./routers/maintenance";
 import { announcementsRouter } from "./routers/announcements";
 import { bolRouter } from "./routers/bol";
 import { newsRouter } from "./routers/news";
+import { marketRouter } from "./routers/market";
 
 export const appRouter = router({
   system: systemRouter,
@@ -340,6 +341,9 @@ export const appRouter = router({
 
   // News Articles
   news: newsRouter,
+
+  // Market Intelligence
+  market: marketRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),

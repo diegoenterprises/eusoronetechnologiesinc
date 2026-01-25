@@ -124,6 +124,32 @@ export const complianceRouter = router({
     }),
 
   /**
+   * Get medical certs for MedicalCertifications page
+   */
+  getMedicalCerts: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const certs = [
+        { id: "m1", driver: "Mike Johnson", status: "valid", expiresAt: "2025-11-15", examiner: "Dr. Smith", daysRemaining: 295 },
+        { id: "m2", driver: "Sarah Williams", status: "expiring", expiresAt: "2025-02-15", examiner: "Dr. Brown", daysRemaining: 22 },
+        { id: "m3", driver: "Tom Brown", status: "valid", expiresAt: "2025-08-20", examiner: "Dr. Davis", daysRemaining: 208 },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return certs.filter(c => c.driver.toLowerCase().includes(q));
+      }
+      return certs;
+    }),
+
+  /**
+   * Get medical cert stats for MedicalCertifications page
+   */
+  getMedicalCertStats: protectedProcedure
+    .query(async () => {
+      return { totalDrivers: 18, valid: 15, expiringSoon: 2, expired: 1, complianceRate: 94 };
+    }),
+
+  /**
    * Get compliance scores by category
    */
   getComplianceScores: protectedProcedure
