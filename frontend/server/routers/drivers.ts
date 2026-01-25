@@ -412,6 +412,11 @@ export const driversRouter = router({
         onDutyRemaining: "8h 00m",
         cycleRemaining: "52h 30m",
         breakRemaining: "2h 00m",
+        drivingToday: 4.5,
+        onDutyToday: 6,
+        cycleUsed: 17.5,
+        hoursAvailable: { driving: 6.5, onDuty: 8, cycle: 52.5 },
+        violations: [],
         lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
         nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
       };
