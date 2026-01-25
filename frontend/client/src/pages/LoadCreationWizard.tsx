@@ -292,7 +292,7 @@ export default function LoadCreationWizard() {
           <ArrowLeft className="w-4 h-4 mr-2" />Back
         </Button>
         {step < STEPS.length - 1 ? (
-          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setStep(s => s + 1)} disabled={!canProceed()}>
+          <Button className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 hover:from-blue-600 hover:via-purple-600 hover:to-purple-700 rounded-lg" onClick={() => setStep(s => s + 1)} disabled={!canProceed()}>
             Next<ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (
