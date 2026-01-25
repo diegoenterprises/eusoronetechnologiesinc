@@ -443,7 +443,8 @@ export const fleetRouter = router({
   getEquipmentStats: protectedProcedure.query(async () => ({ trucks: 25, trailers: 30, other: 5 })),
 
   // Fleet Map
-  getFleetMapStats: protectedProcedure.query(async () => ({ moving: 18, stopped: 5, idle: 2, offline: 0, totalVehicles: 25, inTransit: 18, loading: 3, available: 2, atShipper: 1, atConsignee: 1, offDuty: 0, issues: 2, utilization: 92 })),
+  getFleetMapStats: protectedProcedure.input(z.object({ filters: z.any().optional() }).optional()).query(async () => ({ moving: 18, stopped: 5, idle: 2, offline: 0, totalVehicles: 25, total: 25, inTransit: 18, loading: 3, available: 2, atShipper: 1, atConsignee: 1, offDuty: 0, issues: 2, utilization: 92 })),
+  getFleetStats: protectedProcedure.query(async () => ({ totalVehicles: 25, inTransit: 18, loading: 3, available: 2, atShipper: 1, atConsignee: 1, offDuty: 0, issues: 2 })),
   getVehicleLocations: protectedProcedure.query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, heading: 45, speed: 65 }]),
 
   // Fuel
