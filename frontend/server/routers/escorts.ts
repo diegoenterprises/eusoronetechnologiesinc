@@ -93,6 +93,37 @@ export const escortsRouter = router({
     }),
 
   /**
+   * Get active convoys for ActiveConvoys page
+   */
+  getActiveConvoys: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const convoys = [
+        { id: "conv_001", name: "Superload #78", status: "in_progress", origin: "Houston, TX", destination: "Dallas, TX", escorts: 2, eta: "2h 30m", progress: 65 },
+        { id: "conv_002", name: "Wind Blade #45", status: "staging", origin: "Port Arthur, TX", destination: "Austin, TX", escorts: 2, eta: "4h", progress: 0 },
+        { id: "conv_003", name: "Heavy Equipment #12", status: "in_progress", origin: "Beaumont, TX", destination: "San Antonio, TX", escorts: 1, eta: "5h", progress: 25 },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return convoys.filter(c => c.name.toLowerCase().includes(q) || c.origin.toLowerCase().includes(q));
+      }
+      return convoys;
+    }),
+
+  /**
+   * Get convoy stats for ActiveConvoys page
+   */
+  getConvoyStats: protectedProcedure
+    .query(async () => {
+      return {
+        activeConvoys: 3,
+        escortsDeployed: 5,
+        completedToday: 2,
+        scheduledToday: 4,
+      };
+    }),
+
+  /**
    * Get escort dashboard summary
    */
   getDashboardSummary: protectedProcedure

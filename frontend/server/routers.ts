@@ -80,6 +80,7 @@ import { activityRouter } from "./routers/activity";
 import { insuranceRouter } from "./routers/insurance";
 import { onboardingRouter } from "./routers/onboarding";
 import { maintenanceRouter } from "./routers/maintenance";
+import { announcementsRouter } from "./routers/announcements";
 
 export const appRouter = router({
   system: systemRouter,
@@ -328,6 +329,9 @@ export const appRouter = router({
 
   // Vehicle Maintenance
   maintenance: maintenanceRouter,
+
+  // System Announcements
+  announcements: announcementsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
