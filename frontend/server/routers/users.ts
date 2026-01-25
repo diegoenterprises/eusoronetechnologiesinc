@@ -50,6 +50,10 @@ export const usersRouter = router({
       language: z.string().optional(),
       timezone: z.string().optional(),
       theme: z.string().optional(),
+      darkMode: z.boolean().optional(),
+      compactMode: z.boolean().optional(),
+      dateFormat: z.string().optional(),
+      marketingEmails: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
       return { success: true, updatedAt: new Date().toISOString() };
