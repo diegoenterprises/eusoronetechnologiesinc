@@ -375,4 +375,12 @@ export const fuelRouter = router({
         resolvedAt: new Date().toISOString(),
       };
     }),
+
+  // Additional fuel procedures
+  getSummary: protectedProcedure.query(async () => ({ totalSpent: 45000, avgPricePerGallon: 3.45, totalGallons: 13043 })),
+  getPrices: protectedProcedure.query(async () => [{ state: "TX", diesel: 3.45, unleaded: 3.25 }]),
+  getCurrentPrices: protectedProcedure.query(async () => ({ diesel: 3.45, unleaded: 3.25, premium: 3.65 })),
+  getAverages: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => ({ avgPrice: 3.45, trend: "up", change: 0.05 })),
+  getTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ date: "2025-01-20", price: 3.40 }]),
+  getNearbyStations: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number() })).query(async () => [{ id: "s1", name: "Pilot Flying J", distance: 2.5, dieselPrice: 3.45 }]),
 });
