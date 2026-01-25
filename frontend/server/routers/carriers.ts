@@ -311,6 +311,63 @@ export const carriersRouter = router({
     }),
 
   /**
+   * Get bids for BidManagement
+   */
+  getBids: protectedProcedure
+    .input(z.object({ filter: z.string().optional() }))
+    .query(async ({ input }) => {
+      const bids = [
+        { id: "bid_001", loadNumber: "LOAD-45930", origin: "Houston, TX", destination: "Dallas, TX", myBid: 2400, status: "pending", expires: "2h" },
+        { id: "bid_002", loadNumber: "LOAD-45928", origin: "Beaumont, TX", destination: "Austin, TX", myBid: 2800, status: "accepted", expires: null },
+        { id: "bid_003", loadNumber: "LOAD-45925", origin: "Port Arthur, TX", destination: "San Antonio, TX", myBid: 3000, status: "rejected", expires: null },
+      ];
+      if (input.filter && input.filter !== "all") {
+        return bids.filter(b => b.status === input.filter);
+      }
+      return bids;
+    }),
+
+  /**
+   * Get bid stats for BidManagement
+   */
+  getBidStats: protectedProcedure
+    .query(async () => {
+      return {
+        activeBids: 5,
+        wonThisWeek: 3,
+        winRate: 68,
+        avgBidAmount: 2650,
+      };
+    }),
+
+  /**
+   * Get available loads for bidding
+   */
+  getAvailableLoads: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "load_a1", loadNumber: "LOAD-45935", origin: "Houston, TX", destination: "Dallas, TX", rate: 2500, distance: 240, pickupDate: "Jan 26" },
+        { id: "load_a2", loadNumber: "LOAD-45936", origin: "Beaumont, TX", destination: "Austin, TX", rate: 2900, distance: 280, pickupDate: "Jan 27" },
+      ];
+    }),
+
+  /**
+   * Submit a bid
+   */
+  submitBid: protectedProcedure
+    .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      return {
+        success: true,
+        bidId: `bid_${Date.now()}`,
+        loadId: input.loadId,
+        amount: input.amount,
+        submittedAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
    * Get carrier documents
    */
   getDocuments: protectedProcedure

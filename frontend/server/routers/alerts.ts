@@ -127,6 +127,18 @@ export const alertsRouter = router({
     }),
 
   /**
+   * Dismiss all alerts
+   */
+  dismissAll: protectedProcedure
+    .mutation(async () => {
+      return {
+        success: true,
+        count: 12,
+        dismissedAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
    * Get alert stats
    */
   getStats: protectedProcedure
