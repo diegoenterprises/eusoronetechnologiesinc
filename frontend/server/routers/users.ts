@@ -169,6 +169,35 @@ export const usersRouter = router({
     };
   }),
 
+  // Get sessions for SessionManagement page
+  getSessions: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "s1", device: "Chrome on Windows", ip: "192.168.1.1", location: "Houston, TX", lastActive: "2025-01-23 10:30", current: true },
+        { id: "s2", device: "Safari on iPhone", ip: "192.168.1.50", location: "Houston, TX", lastActive: "2025-01-22 18:45", current: false },
+        { id: "s3", device: "Firefox on Mac", ip: "10.0.0.15", location: "Dallas, TX", lastActive: "2025-01-20 14:20", current: false },
+      ];
+    }),
+
+  // Get session summary for SessionManagement page
+  getSessionSummary: protectedProcedure
+    .query(async () => {
+      return { activeSessions: 3, devicesUsed: 3, lastLogin: "2025-01-23 10:30" };
+    }),
+
+  // Terminate session mutation
+  terminateSession: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, terminatedId: input.sessionId };
+    }),
+
+  // Terminate all other sessions mutation
+  terminateAllSessions: protectedProcedure
+    .mutation(async () => {
+      return { success: true, terminatedCount: 2 };
+    }),
+
   // Get referrals list
   getReferrals: protectedProcedure.query(async () => {
     return [
