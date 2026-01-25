@@ -547,9 +547,9 @@ export const escortsRouter = router({
     }),
 
   /**
-   * Get upcoming jobs
+   * Get upcoming jobs (legacy version)
    */
-  getUpcomingJobs: protectedProcedure
+  getUpcomingJobsLegacy: protectedProcedure
     .query(async ({ ctx }) => {
       return [
         {

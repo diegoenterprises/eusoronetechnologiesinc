@@ -12,6 +12,62 @@ const complianceCategorySchema = z.enum(["dq_file", "hos", "drug_alcohol", "vehi
 
 export const complianceRouter = router({
   /**
+   * Get dashboard stats for ComplianceDashboard
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        complianceScore: 94,
+        expiringDocs: 5,
+        overdueItems: 2,
+        pendingAudits: 1,
+        violations: 0,
+      };
+    }),
+
+  /**
+   * Get expiring items
+   */
+  getExpiringItems: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "exp_001", type: "Medical Card", driver: "Sarah Williams", expiresAt: "2025-02-15", daysRemaining: 22 },
+        { id: "exp_002", type: "CDL", driver: "Tom Brown", expiresAt: "2025-02-28", daysRemaining: 35 },
+        { id: "exp_003", type: "Hazmat Endorsement", driver: "Mike Johnson", expiresAt: "2025-03-15", daysRemaining: 50 },
+      ];
+    }),
+
+  /**
+   * Get recent violations
+   */
+  getRecentViolations: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "vio_001", type: "HOS", driver: "Bob Davis", date: "2025-01-20", severity: "minor", status: "resolved" },
+      ];
+    }),
+
+  /**
+   * Get compliance scores by category
+   */
+  getComplianceScores: protectedProcedure
+    .query(async () => {
+      return {
+        overall: 94,
+        categories: [
+          { name: "DQ Files", score: 96, status: "good" },
+          { name: "HOS Compliance", score: 92, status: "good" },
+          { name: "Drug & Alcohol", score: 100, status: "excellent" },
+          { name: "Vehicle Inspections", score: 88, status: "warning" },
+          { name: "Hazmat", score: 95, status: "good" },
+          { name: "Documentation", score: 90, status: "good" },
+        ],
+      };
+    }),
+
+  /**
    * Get compliance dashboard summary
    */
   getDashboardSummary: protectedProcedure
