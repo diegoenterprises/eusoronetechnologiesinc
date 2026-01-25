@@ -425,4 +425,37 @@ export const fleetRouter = router({
         { id: "i3", type: "DOT Inspection", date: "2025-01-20", status: "passed", driver: "Mike Johnson", issues: 1 },
       ];
     }),
+
+  // Maintenance
+  completeMaintenance: protectedProcedure.input(z.object({ maintenanceId: z.string(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, maintenanceId: input.maintenanceId })),
+  getMaintenanceStats: protectedProcedure.query(async () => ({ scheduled: 12, overdue: 2, completed: 150, avgCost: 450 })),
+
+  // DVIRs
+  getDVIRs: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), status: z.string().optional() })).query(async () => [{ id: "dvir1", vehicleId: "v1", driver: "Mike Johnson", status: "passed", date: "2025-01-23" }]),
+  getDVIRStats: protectedProcedure.query(async () => ({ total: 450, passed: 440, defects: 10, openDefects: 2 })),
+
+  // Drivers
+  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", vehicleId: "v1" }]),
+  getDriverStats: protectedProcedure.query(async () => ({ total: 25, active: 22, inactive: 3 })),
+
+  // Equipment
+  getEquipment: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "e1", type: "trailer", number: "TRL-101", status: "active" }]),
+  getEquipmentStats: protectedProcedure.query(async () => ({ trucks: 25, trailers: 30, other: 5 })),
+
+  // Fleet Map
+  getFleetMapStats: protectedProcedure.query(async () => ({ moving: 18, stopped: 5, idle: 2, offline: 0 })),
+  getVehicleLocations: protectedProcedure.query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, heading: 45, speed: 65 }]),
+
+  // Fuel
+  getFuelTransactions: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "f1", vehicleId: "v1", gallons: 125, cost: 437.50, location: "Houston, TX", date: "2025-01-22" }]),
+  getFuelStats: protectedProcedure.query(async () => ({ totalGallons: 2450, totalCost: 8575, avgMPG: 6.8, avgCostPerGallon: 3.50 })),
+
+  // GPS
+  getGPSLocations: protectedProcedure.query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, speed: 65, heading: 45, timestamp: new Date().toISOString() }]),
+  getGPSStats: protectedProcedure.query(async () => ({ totalVehicles: 25, tracking: 24, offline: 1 })),
+
+  // IFTA
+  getIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number() })).query(async ({ input }) => ({ quarter: input.quarter, year: input.year, totalMiles: 125000, totalGallons: 18500, fuelTax: 2850 })),
+  getIFTAStats: protectedProcedure.query(async () => ({ totalMiles: 500000, totalGallons: 74000, taxesDue: 11400 })),
+  generateIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number() })).mutation(async ({ input }) => ({ success: true, reportId: "ifta_123" })),
 });
