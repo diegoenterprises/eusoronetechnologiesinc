@@ -349,4 +349,7 @@ export const factoringRouter = router({
         openedAt: new Date().toISOString(),
       };
     }),
+
+  getSummary: protectedProcedure.query(async () => ({ totalFactored: 125000, pendingPayments: 15000, availableCredit: 75000 })),
+  getRates: protectedProcedure.query(async () => ({ standard: 0.025, quickPay: 0.035, sameDay: 0.045 })),
 });
