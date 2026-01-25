@@ -744,6 +744,10 @@ export const adminRouter = router({
     .query(async () => {
       return {
         overall: "healthy",
+        uptime: 99.97,
+        cpuUsage: 42,
+        memoryUsage: 68,
+        diskUsage: 55,
         services: [
           { name: "API Server", status: "healthy", uptime: 99.99, latency: 45 },
           { name: "Database", status: "healthy", uptime: 99.98, latency: 12 },
