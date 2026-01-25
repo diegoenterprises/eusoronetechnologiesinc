@@ -148,6 +148,35 @@ export const catalystsRouter = router({
     }),
 
   /**
+   * Get fleet positions for CatalystFleetMap
+   */
+  getFleetPositions: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "v1", unitNumber: "TRK-101", driver: "Mike Johnson", status: "in_transit", load: "LOAD-45920", lat: 31.5493, lng: -97.1467, heading: 315, speed: 62 },
+        { id: "v2", unitNumber: "TRK-102", driver: "Sarah Williams", status: "available", load: null, lat: 29.7604, lng: -95.3698, heading: 0, speed: 0 },
+        { id: "v3", unitNumber: "TRK-103", driver: "Tom Brown", status: "loading", load: "LOAD-45918", lat: 30.0802, lng: -94.1266, heading: 90, speed: 0 },
+        { id: "v4", unitNumber: "TRK-104", driver: "Lisa Chen", status: "at_shipper", load: "LOAD-45925", lat: 29.9511, lng: -93.9404, heading: 0, speed: 0 },
+      ];
+    }),
+
+  /**
+   * Get fleet stats for CatalystFleetMap
+   */
+  getFleetStats: protectedProcedure
+    .query(async () => {
+      return {
+        totalVehicles: 20,
+        inTransit: 8,
+        loading: 3,
+        available: 5,
+        atShipper: 2,
+        atConsignee: 1,
+        offDuty: 1,
+      };
+    }),
+
+  /**
    * Get available drivers for assignment
    */
   getAvailableDrivers: protectedProcedure
@@ -401,9 +430,9 @@ export const catalystsRouter = router({
     }),
 
   /**
-   * Get fleet positions for CatalystFleetMap
+   * Get fleet positions for CatalystFleetMap (detailed version)
    */
-  getFleetPositions: protectedProcedure
+  getFleetPositionsDetailed: protectedProcedure
     .query(async ({ ctx }) => {
       return [
         {
@@ -466,9 +495,9 @@ export const catalystsRouter = router({
     }),
 
   /**
-   * Get fleet statistics
+   * Get fleet statistics (detailed version)
    */
-  getFleetStats: protectedProcedure
+  getFleetStatsDetailed: protectedProcedure
     .query(async ({ ctx }) => {
       return {
         inTransit: 8,

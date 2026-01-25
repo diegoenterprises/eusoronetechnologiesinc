@@ -129,6 +129,34 @@ export const brokersRouter = router({
     }),
 
   /**
+   * Get commissions for CommissionTracking page
+   */
+  getCommissions: protectedProcedure
+    .input(z.object({ period: z.string().optional().default("month") }))
+    .query(async () => {
+      return [
+        { id: "com_001", loadNumber: "LOAD-45920", shipper: "Shell Oil", carrier: "ABC Transport", amount: 245, status: "paid", date: "2025-01-23" },
+        { id: "com_002", loadNumber: "LOAD-45918", shipper: "ExxonMobil", carrier: "FastHaul", amount: 280, status: "pending", date: "2025-01-24" },
+        { id: "com_003", loadNumber: "LOAD-45915", shipper: "Chevron", carrier: "SafeHaul", amount: 310, status: "processing", date: "2025-01-24" },
+      ];
+    }),
+
+  /**
+   * Get commission stats for CommissionTracking page
+   */
+  getCommissionStats: protectedProcedure
+    .input(z.object({ period: z.string().optional().default("month") }))
+    .query(async () => {
+      return {
+        totalEarned: 12750,
+        pending: 3200,
+        paid: 9550,
+        avgPerLoad: 283,
+        loadsThisPeriod: 45,
+      };
+    }),
+
+  /**
    * Get performance metrics for BrokerAnalytics
    */
   getPerformanceMetrics: protectedProcedure
