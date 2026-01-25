@@ -147,7 +147,10 @@ export const driversRouter = router({
         location: { lat: 29.7604, lng: -95.3698, city: "Houston", state: "TX" },
         hoursRemaining: 6.5,
         safetyScore: 95,
+        rating: 4.8,
         hireDate: "2022-03-15",
+        truckNumber: "TRK-101",
+        cdlNumber: "TX12345678",
         cdl: {
           number: "TX12345678",
           class: "A",
@@ -591,6 +594,9 @@ export const driversRouter = router({
         cycleRemaining: "52h 30m",
         breakRemaining: "2h 00m",
         lastUpdate: new Date().toISOString(),
+        drivingHours: { used: 4.5, total: 11, remaining: 6.5 },
+        onDutyHours: { used: 6, total: 14, remaining: 8 },
+        cycleHours: { used: 17.5, total: 70, remaining: 52.5 },
       };
     }),
 
