@@ -701,6 +701,13 @@ export const dashboardRouter = router({
   getLoadMatchingResults: protectedProcedure.query(async ({ ctx }) => {
     return getSeedLoadMatchingResults();
   }),
+
+  // Layout & Widgets
+  getLayout: protectedProcedure.query(async () => ({ columns: 3, widgets: ["stats", "loads", "alerts", "map"] })),
+  saveLayout: protectedProcedure.input(z.object({ layout: z.any() })).mutation(async ({ input }) => ({ success: true })),
+  resetLayout: protectedProcedure.mutation(async () => ({ success: true })),
+  getWidgets: protectedProcedure.query(async () => [{ id: "w1", type: "stats", title: "Stats", enabled: true }]),
+  toggleWidget: protectedProcedure.input(z.object({ widgetId: z.string(), enabled: z.boolean() })).mutation(async ({ input }) => ({ success: true, widgetId: input.widgetId })),
 });
 
 // ============================================================================
