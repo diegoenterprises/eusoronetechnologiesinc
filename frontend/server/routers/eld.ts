@@ -14,11 +14,15 @@ export const eldRouter = router({
     complianceRate: 98.5,
   })),
 
-  getStats: protectedProcedure.query(async () => ({
+  getStats: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ({
     avgDriveTime: 8.2,
     avgOnDutyTime: 10.5,
     violationsThisWeek: 2,
     complianceScore: 96,
+    totalDrivers: 25,
+    driving: 12,
+    onDuty: 8,
+    offDuty: 5,
   })),
 
   getLogs: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional() })).query(async () => [
