@@ -13,34 +13,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  ClipboardCheck, Search, Plus, Truck, Calendar,
-  CheckCircle, XCircle, AlertTriangle, Eye
+  Truck, CheckCircle, AlertTriangle, Clock, Search,
+  Plus, FileText, Wrench, Calendar
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLocation } from "wouter";
+import { toast } from "sonner";
 
 export default function VehicleInspections() {
-  const [, setLocation] = useLocation();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [resultFilter, setResultFilter] = useState("all");
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
-  const inspectionsQuery = trpc.inspections.list.useQuery({ result: resultFilter === "all" ? undefined : resultFilter, limit: 50 });
-  const summaryQuery = trpc.inspections.getSummary.useQuery();
+  const inspectionsQuery = trpc.vehicle.getInspections.useQuery({ filter, search });
+  const statsQuery = trpc.vehicle.getInspectionStats.useQuery();
+  const dueQuery = trpc.vehicle.getInspectionsDue.useQuery({ limit: 5 });
 
-  const summary = summaryQuery.data;
+  const stats = statsQuery.data;
 
   const getResultBadge = (result: string) => {
     switch (result) {
       case "pass": return <Badge className="bg-green-500/20 text-green-400 border-0"><CheckCircle className="w-3 h-3 mr-1" />Pass</Badge>;
-      case "fail": return <Badge className="bg-red-500/20 text-red-400 border-0"><XCircle className="w-3 h-3 mr-1" />Fail</Badge>;
-      case "conditional": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0"><AlertTriangle className="w-3 h-3 mr-1" />Conditional</Badge>;
+      case "fail": return <Badge className="bg-red-500/20 text-red-400 border-0"><AlertTriangle className="w-3 h-3 mr-1" />Fail</Badge>;
+      case "pending": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0"><Clock className="w-3 h-3 mr-1" />Pending</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{result}</Badge>;
     }
   };
 
-  const filteredInspections = inspectionsQuery.data?.filter((inspection: any) =>
-    !searchTerm || inspection.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || inspection.inspector?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getTypeBadge = (type: string) => {
+    switch (type) {
+      case "pre_trip": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">Pre-Trip</Badge>;
+      case "post_trip": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Post-Trip</Badge>;
+      case "annual": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Annual</Badge>;
+      case "roadside": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Roadside</Badge>;
+      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{type}</Badge>;
+    }
+  };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -50,10 +56,10 @@ export default function VehicleInspections() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
             Vehicle Inspections
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Track DOT inspections and results</p>
+          <p className="text-slate-400 text-sm mt-1">DVIR and inspection records</p>
         </div>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
-          <Plus className="w-4 h-4 mr-2" />Log Inspection
+          <Plus className="w-4 h-4 mr-2" />New Inspection
         </Button>
       </div>
 
@@ -62,30 +68,14 @@ export default function VehicleInspections() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-500/20">
-                <ClipboardCheck className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{summary?.total || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Total Inspections</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20">
                 <CheckCircle className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{summary?.passRate}%</p>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-green-400">{stats?.passed || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">Pass Rate</p>
+                <p className="text-xs text-slate-400">Passed</p>
               </div>
             </div>
           </CardContent>
@@ -95,13 +85,13 @@ export default function VehicleInspections() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20">
-                <XCircle className="w-6 h-6 text-red-400" />
+                <AlertTriangle className="w-6 h-6 text-red-400" />
               </div>
               <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{summary?.violations || 0}</p>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-red-400">{stats?.failed || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">Violations</p>
+                <p className="text-xs text-slate-400">Failed</p>
               </div>
             </div>
           </CardContent>
@@ -111,85 +101,128 @@ export default function VehicleInspections() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20">
-                <AlertTriangle className="w-6 h-6 text-yellow-400" />
+                <Wrench className="w-6 h-6 text-yellow-400" />
               </div>
               <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{summary?.oosRate}%</p>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-yellow-400">{stats?.defectsOpen || 0}</p>
                 )}
-                <p className="text-xs text-slate-400">OOS Rate</p>
+                <p className="text-xs text-slate-400">Open Defects</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-cyan-500/20">
+                <Truck className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div>
+                {statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
+                  <p className="text-2xl font-bold text-cyan-400">{stats?.totalThisMonth || 0}</p>
+                )}
+                <p className="text-xs text-slate-400">This Month</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Inspections Due */}
+      {dueQuery.data?.length > 0 && (
+        <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-white text-lg flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-yellow-400" />
+              Inspections Due
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-yellow-500/20">
+              {dueQuery.data?.map((item: any) => (
+                <div key={item.id} className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-yellow-500/20">
+                      <Truck className="w-4 h-4 text-yellow-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{item.vehicleNumber}</p>
+                      <p className="text-sm text-slate-400">{item.inspectionType}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={cn("text-sm", item.overdue ? "text-red-400" : "text-yellow-400")}>{item.dueDate}</p>
+                    {item.overdue && <p className="text-xs text-red-400">Overdue</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search inspections..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by vehicle..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
-        <Select value={resultFilter} onValueChange={setResultFilter}>
+        <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
-            <SelectValue placeholder="Result" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Results</SelectItem>
-            <SelectItem value="pass">Pass</SelectItem>
-            <SelectItem value="fail">Fail</SelectItem>
-            <SelectItem value="conditional">Conditional</SelectItem>
+            <SelectItem value="pass">Passed</SelectItem>
+            <SelectItem value="fail">Failed</SelectItem>
+            <SelectItem value="pending">Pending</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Inspections List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg flex items-center gap-2">
+            <FileText className="w-5 h-5 text-cyan-400" />
+            Inspection Records
+          </CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
           {inspectionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : filteredInspections?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : inspectionsQuery.data?.length === 0 ? (
             <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                <ClipboardCheck className="w-10 h-10 text-slate-500" />
-              </div>
-              <p className="text-slate-400 text-lg">No inspections found</p>
+              <Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" />
+              <p className="text-slate-400">No inspection records found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {filteredInspections?.map((inspection: any) => (
-                <div key={inspection.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors cursor-pointer", inspection.result === "fail" && "bg-red-500/5 border-l-2 border-red-500")} onClick={() => setLocation(`/inspections/${inspection.id}`)}>
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-white font-medium">{inspection.reportNumber}</p>
-                        {getResultBadge(inspection.result)}
-                        {inspection.outOfService && <Badge className="bg-red-500/20 text-red-400 border-0">OOS</Badge>}
+              {inspectionsQuery.data?.map((inspection: any) => (
+                <div key={inspection.id} className={cn("p-4", inspection.result === "fail" && "bg-red-500/5 border-l-2 border-red-500")}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className={cn("p-3 rounded-xl", inspection.result === "pass" ? "bg-green-500/20" : inspection.result === "fail" ? "bg-red-500/20" : "bg-slate-700/50")}>
+                        <Truck className={cn("w-5 h-5", inspection.result === "pass" ? "text-green-400" : inspection.result === "fail" ? "text-red-400" : "text-slate-400")} />
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-400">
-                        <Truck className="w-3 h-3" />
-                        <span>{inspection.vehicleNumber} - {inspection.vehicleType}</span>
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-white font-medium">{inspection.vehicleNumber}</p>
+                          {getResultBadge(inspection.result)}
+                          {getTypeBadge(inspection.type)}
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{inspection.date}</span>
+                          <span>Inspector: {inspection.inspector}</span>
+                          {inspection.defectsCount > 0 && <span className="text-yellow-400">{inspection.defectsCount} defects</span>}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-white font-medium">{inspection.level}</p>
-                      <p className="text-xs text-slate-500">Inspection Level</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{inspection.date}</span>
-                      <span>Inspector: {inspection.inspector}</span>
-                      <span>{inspection.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {inspection.violations > 0 && (
-                        <span className="text-xs text-red-400">{inspection.violations} violations</span>
-                      )}
-                      <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+                      <FileText className="w-4 h-4 mr-1" />View
+                    </Button>
                   </div>
                 </div>
               ))}
