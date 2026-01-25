@@ -143,6 +143,17 @@ export const weatherRouter = router({
     }),
 
   /**
+   * Get impacted loads for WeatherAlerts page
+   */
+  getImpactedLoads: protectedProcedure
+    .query(async () => {
+      return [
+        { loadId: "LOAD-45920", route: "Houston to Dallas", impact: "moderate", alert: "Wind Advisory", delay: "1-2 hours" },
+        { loadId: "LOAD-45918", route: "Austin to San Antonio", impact: "low", alert: "Fog Advisory", delay: "30 mins" },
+      ];
+    }),
+
+  /**
    * Get hazardous weather outlook
    */
   getHazardousOutlook: protectedProcedure

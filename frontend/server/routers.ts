@@ -89,6 +89,7 @@ import { routingRouter } from "./routers/routing";
 import { teamRouter } from "./routers/team";
 import { featuresRouter } from "./routers/features";
 import { securityRouter } from "./routers/security";
+import { tollsRouter } from "./routers/tolls";
 
 export const appRouter = router({
   system: systemRouter,
@@ -364,6 +365,9 @@ export const appRouter = router({
 
   // Security Settings
   security: securityRouter,
+
+  // Toll Calculator
+  tolls: tollsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
