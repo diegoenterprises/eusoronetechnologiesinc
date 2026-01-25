@@ -919,7 +919,7 @@ export const adminRouter = router({
   getTopPerformers: protectedProcedure.query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
   // Platform
-  getPlatformHealth: protectedProcedure.query(async () => ({ status: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45 })),
+  getPlatformHealth: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "healthy", overallStatus: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45, cpu: { current: 42, avg: 38, peak: 72 }, memory: { current: 68, avg: 65, peak: 82 }, disk: { current: 55, used: 275, total: 500 }, network: { inbound: 125, outbound: 85 } })),
   getPlatformMetrics: protectedProcedure.query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000 })),
   getPlatformTrends: protectedProcedure.query(async () => ({ userGrowth: 12, loadGrowth: 8, revenueGrowth: 15 })),
 
