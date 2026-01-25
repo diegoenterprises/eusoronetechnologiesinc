@@ -24,15 +24,15 @@ export default function BrokerMarketplace() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const loadsQuery = trpc.broker.getMarketplaceLoads.useQuery({
+  const loadsQuery = trpc.brokers.getMarketplaceLoads.useQuery({
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
   });
 
-  const statsQuery = trpc.broker.getMarketplaceStats.useQuery();
+  const statsQuery = trpc.brokers.getMarketplaceStats.useQuery();
 
-  const matchMutation = trpc.broker.matchLoadToCarrier.useMutation({
+  const matchMutation = trpc.brokers.matchLoadToCarrier.useMutation({
     onSuccess: () => {
       toast.success("Load matched successfully");
       loadsQuery.refetch();

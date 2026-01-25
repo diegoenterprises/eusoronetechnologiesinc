@@ -52,7 +52,7 @@ export default function ShippersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Mock shipper data - TODO: Replace with trpc.broker.shippers.useQuery()
+  // Mock shipper data - TODO: Replace with trpc.brokers.shippers.useQuery()
   const shippers: Shipper[] = [
     {
       id: "S001",

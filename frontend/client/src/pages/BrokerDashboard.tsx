@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function BrokerDashboard() {
-  const statsQuery = trpc.broker.getDashboardStats.useQuery();
-  const shipperLoadsQuery = trpc.broker.getShipperLoads.useQuery({ limit: 5 });
-  const inProgressQuery = trpc.broker.getLoadsInProgress.useQuery({ limit: 5 });
-  const capacityQuery = trpc.broker.getCarrierCapacity.useQuery({ limit: 5 });
+  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
+  const shipperLoadsQuery = trpc.brokers.getShipperLoads.useQuery({ limit: 5 });
+  const inProgressQuery = trpc.brokers.getLoadsInProgress.useQuery({ limit: 5 });
+  const capacityQuery = trpc.brokers.getCarrierCapacity.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 

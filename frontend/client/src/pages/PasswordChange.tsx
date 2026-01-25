@@ -27,9 +27,9 @@ export default function PasswordChange() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const securityQuery = trpc.user.getPasswordSecurity.useQuery();
+  const securityQuery = trpc.users.getPasswordSecurity.useQuery();
 
-  const changeMutation = trpc.user.changePassword.useMutation({
+  const changeMutation = trpc.users.changePassword.useMutation({
     onSuccess: () => {
       toast.success("Password changed successfully");
       setCurrentPassword("");

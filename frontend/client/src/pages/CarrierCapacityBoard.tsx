@@ -22,8 +22,8 @@ export default function CarrierCapacityBoard() {
   const [search, setSearch] = useState("");
   const [equipment, setEquipment] = useState("all");
 
-  const carriersQuery = trpc.broker.getCarrierCapacity.useQuery({ search, equipment });
-  const statsQuery = trpc.broker.getCapacityStats.useQuery();
+  const carriersQuery = trpc.brokers.getCarrierCapacity.useQuery({ search, equipment });
+  const statsQuery = trpc.brokers.getCapacityStats.useQuery();
 
   const stats = statsQuery.data;
 

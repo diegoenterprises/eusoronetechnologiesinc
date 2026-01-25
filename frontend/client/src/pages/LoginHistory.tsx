@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function LoginHistory() {
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const historyQuery = trpc.user.getLoginHistory.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
-  const summaryQuery = trpc.user.getLoginSummary.useQuery();
+  const historyQuery = trpc.users.getLoginHistory.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const summaryQuery = trpc.users.getLoginSummary.useQuery();
 
   const summary = summaryQuery.data;
 

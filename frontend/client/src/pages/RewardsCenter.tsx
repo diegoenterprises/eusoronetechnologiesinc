@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function RewardsCenter() {
-  const rewardsQuery = trpc.user.getRewardsInfo.useQuery();
-  const availableQuery = trpc.user.getAvailableRewards.useQuery();
-  const historyQuery = trpc.user.getRewardsHistory.useQuery({ limit: 10 });
+  const rewardsQuery = trpc.users.getRewardsInfo.useQuery();
+  const availableQuery = trpc.users.getAvailableRewards.useQuery();
+  const historyQuery = trpc.users.getRewardsHistory.useQuery({ limit: 10 });
 
-  const redeemMutation = trpc.user.redeemReward.useMutation({
+  const redeemMutation = trpc.users.redeemReward.useMutation({
     onSuccess: () => { toast.success("Reward redeemed!"); rewardsQuery.refetch(); availableQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

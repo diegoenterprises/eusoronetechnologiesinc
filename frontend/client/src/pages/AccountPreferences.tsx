@@ -18,9 +18,9 @@ import {
 import { toast } from "sonner";
 
 export default function AccountPreferences() {
-  const prefsQuery = trpc.user.getPreferences.useQuery();
+  const prefsQuery = trpc.users.getPreferences.useQuery();
 
-  const updateMutation = trpc.user.updatePreferences.useMutation({
+  const updateMutation = trpc.users.updatePreferences.useMutation({
     onSuccess: () => { toast.success("Preferences saved"); prefsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

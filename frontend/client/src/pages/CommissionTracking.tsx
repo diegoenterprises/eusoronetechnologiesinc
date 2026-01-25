@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 export default function CommissionTracking() {
   const [period, setPeriod] = useState("month");
 
-  const commissionsQuery = trpc.broker.getCommissions.useQuery({ period });
-  const statsQuery = trpc.broker.getCommissionStats.useQuery({ period });
+  const commissionsQuery = trpc.brokers.getCommissions.useQuery({ period });
+  const statsQuery = trpc.brokers.getCommissionStats.useQuery({ period });
 
   const stats = statsQuery.data;
 

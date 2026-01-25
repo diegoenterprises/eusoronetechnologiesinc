@@ -21,20 +21,20 @@ import { toast } from "sonner";
 export default function TwoFactorSetup() {
   const [verificationCode, setVerificationCode] = useState("");
 
-  const statusQuery = trpc.user.get2FAStatus.useQuery();
-  const setupQuery = trpc.user.setup2FA.useQuery(undefined, { enabled: !statusQuery.data?.enabled });
+  const statusQuery = trpc.users.get2FAStatus.useQuery();
+  const setupQuery = trpc.users.setup2FA.useQuery(undefined, { enabled: !statusQuery.data?.enabled });
 
-  const enableMutation = trpc.user.enable2FA.useMutation({
+  const enableMutation = trpc.users.enable2FA.useMutation({
     onSuccess: () => { toast.success("2FA enabled successfully"); statusQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const disableMutation = trpc.user.disable2FA.useMutation({
+  const disableMutation = trpc.users.disable2FA.useMutation({
     onSuccess: () => { toast.success("2FA disabled"); statusQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const regenerateBackupMutation = trpc.user.regenerateBackupCodes.useMutation({
+  const regenerateBackupMutation = trpc.users.regenerateBackupCodes.useMutation({
     onSuccess: () => { toast.success("Backup codes regenerated"); statusQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

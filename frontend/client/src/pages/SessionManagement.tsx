@@ -18,15 +18,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function SessionManagement() {
-  const sessionsQuery = trpc.user.getSessions.useQuery();
-  const summaryQuery = trpc.user.getSessionSummary.useQuery();
+  const sessionsQuery = trpc.users.getSessions.useQuery();
+  const summaryQuery = trpc.users.getSessionSummary.useQuery();
 
-  const terminateMutation = trpc.user.terminateSession.useMutation({
+  const terminateMutation = trpc.users.terminateSession.useMutation({
     onSuccess: () => { toast.success("Session terminated"); sessionsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const terminateAllMutation = trpc.user.terminateAllSessions.useMutation({
+  const terminateAllMutation = trpc.users.terminateAllSessions.useMutation({
     onSuccess: () => { toast.success("All other sessions terminated"); sessionsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });

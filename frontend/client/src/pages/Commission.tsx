@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 export default function Commission() {
   const [period, setPeriod] = useState("month");
 
-  const summaryQuery = trpc.broker.getCommissionSummary.useQuery({ period });
-  const historyQuery = trpc.broker.getCommissionHistory.useQuery({ period, limit: 20 });
+  const summaryQuery = trpc.brokers.getCommissionSummary.useQuery({ period });
+  const historyQuery = trpc.brokers.getCommissionHistory.useQuery({ period, limit: 20 });
 
   const summary = summaryQuery.data;
 

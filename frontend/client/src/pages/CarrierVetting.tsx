@@ -22,15 +22,15 @@ import { toast } from "sonner";
 export default function CarrierVetting() {
   const [search, setSearch] = useState("");
 
-  const carriersQuery = trpc.broker.getPendingVetting.useQuery({ search });
-  const statsQuery = trpc.broker.getVettingStats.useQuery();
+  const carriersQuery = trpc.brokers.getPendingVetting.useQuery({ search });
+  const statsQuery = trpc.brokers.getVettingStats.useQuery();
 
-  const approveMutation = trpc.broker.approveCarrier.useMutation({
+  const approveMutation = trpc.brokers.approveCarrier.useMutation({
     onSuccess: () => { toast.success("Carrier approved"); carriersQuery.refetch(); statsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.broker.rejectCarrier.useMutation({
+  const rejectMutation = trpc.brokers.rejectCarrier.useMutation({
     onSuccess: () => { toast.success("Carrier rejected"); carriersQuery.refetch(); statsQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
