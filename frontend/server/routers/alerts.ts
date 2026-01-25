@@ -147,6 +147,7 @@ export const alertsRouter = router({
         total: 12,
         critical: 2,
         warning: 5,
+        warnings: 5,
         info: 5,
         resolvedToday: 3,
       };
