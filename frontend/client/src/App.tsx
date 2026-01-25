@@ -132,6 +132,9 @@ import SafetyIncidents from "./pages/SafetyIncidents";
 import BrokerMarketplace from "./pages/BrokerMarketplace";
 import BrokerCarriers from "./pages/BrokerCarriers";
 import BrokerAnalytics from "./pages/BrokerAnalytics";
+import LoadingBays from "./pages/LoadingBays";
+import TerminalInventory from "./pages/TerminalInventory";
+import BOLGeneration from "./pages/BOLGeneration";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -809,6 +812,21 @@ function Router() {
       <Route path={"/operations"} component={() => (
         <DashboardLayout>
           <TerminalOperations />
+        </DashboardLayout>
+      )} />
+      <Route path={"/loading-bays"} component={() => (
+        <DashboardLayout>
+          <LoadingBays />
+        </DashboardLayout>
+      )} />
+      <Route path={"/terminal-inventory"} component={() => (
+        <DashboardLayout>
+          <TerminalInventory />
+        </DashboardLayout>
+      )} />
+      <Route path={"/bol"} component={() => (
+        <DashboardLayout>
+          <BOLGeneration />
         </DashboardLayout>
       )} />
       <Route path={"/compliance"} component={() => (

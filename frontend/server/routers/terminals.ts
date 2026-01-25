@@ -342,4 +342,407 @@ export const terminalsRouter = router({
         downloadUrl: `/api/bol/${input.appointmentId}/download`,
       };
     }),
+
+  /**
+   * Get loading bays status
+   */
+  getLoadingBays: protectedProcedure
+    .input(z.object({ terminalId: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      return [
+        {
+          id: "bay1",
+          name: "Bay 1",
+          status: "loading",
+          currentLoad: {
+            loadNumber: "LOAD-45920",
+            product: "Diesel Fuel",
+            carrier: "ABC Transport",
+            driver: "Mike Johnson",
+          },
+          progress: 72,
+          flowRate: 450,
+        },
+        {
+          id: "bay2",
+          name: "Bay 2",
+          status: "available",
+          currentLoad: null,
+          progress: 0,
+          flowRate: 0,
+        },
+        {
+          id: "bay3",
+          name: "Bay 3",
+          status: "unloading",
+          currentLoad: {
+            loadNumber: "LOAD-45918",
+            product: "Gasoline",
+            carrier: "FastHaul LLC",
+            driver: "Sarah Williams",
+          },
+          progress: 45,
+          flowRate: 380,
+        },
+        {
+          id: "bay4",
+          name: "Bay 4",
+          status: "maintenance",
+          currentLoad: null,
+          maintenanceNote: "Pump replacement",
+          progress: 0,
+          flowRate: 0,
+        },
+        {
+          id: "bay5",
+          name: "Bay 5",
+          status: "loading",
+          currentLoad: {
+            loadNumber: "LOAD-45922",
+            product: "Jet Fuel",
+            carrier: "Premium Logistics",
+            driver: "Tom Brown",
+          },
+          progress: 28,
+          flowRate: 420,
+        },
+        {
+          id: "bay6",
+          name: "Bay 6",
+          status: "available",
+          currentLoad: null,
+          progress: 0,
+          flowRate: 0,
+        },
+        {
+          id: "bay7",
+          name: "Bay 7",
+          status: "occupied",
+          currentLoad: {
+            loadNumber: "LOAD-45921",
+            product: "Crude Oil",
+            carrier: "Bulk Carriers Inc",
+            driver: "Lisa Chen",
+          },
+          progress: 100,
+          flowRate: 0,
+        },
+        {
+          id: "bay8",
+          name: "Bay 8",
+          status: "available",
+          currentLoad: null,
+          progress: 0,
+          flowRate: 0,
+        },
+      ];
+    }),
+
+  /**
+   * Get bay statistics
+   */
+  getBayStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        available: 3,
+        loading: 2,
+        unloading: 1,
+        occupied: 1,
+        maintenance: 1,
+        utilization: 62,
+        avgLoadTime: 45,
+        throughputToday: 85000,
+      };
+    }),
+
+  /**
+   * Start loading operation
+   */
+  startLoading: protectedProcedure
+    .input(z.object({
+      bayId: z.string(),
+      loadId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        bayId: input.bayId,
+        startedAt: new Date().toISOString(),
+        startedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Complete loading operation
+   */
+  completeLoading: protectedProcedure
+    .input(z.object({
+      bayId: z.string(),
+      quantity: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        bayId: input.bayId,
+        completedAt: new Date().toISOString(),
+        completedBy: ctx.user?.id,
+      };
+    }),
+
+  /**
+   * Get tank inventory for TerminalInventory page
+   */
+  getTankInventory: protectedProcedure
+    .input(z.object({ terminalId: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      return [
+        {
+          id: "t1",
+          name: "Tank 1A",
+          product: "Unleaded Gasoline",
+          capacity: 150000,
+          currentVolume: 125000,
+          fillPercent: 83,
+          status: "active",
+          temperature: 72,
+          trend: "down",
+          trendValue: 1200,
+        },
+        {
+          id: "t2",
+          name: "Tank 1B",
+          product: "Premium Gasoline",
+          capacity: 100000,
+          currentVolume: 72000,
+          fillPercent: 72,
+          status: "dispensing",
+          temperature: 71,
+          trend: "down",
+          trendValue: 850,
+        },
+        {
+          id: "t3",
+          name: "Tank 2A",
+          product: "Diesel Fuel",
+          capacity: 200000,
+          currentVolume: 185000,
+          fillPercent: 92,
+          status: "receiving",
+          temperature: 68,
+          trend: "up",
+          trendValue: 2500,
+        },
+        {
+          id: "t4",
+          name: "Tank 2B",
+          product: "Ultra Low Sulfur Diesel",
+          capacity: 150000,
+          currentVolume: 98000,
+          fillPercent: 65,
+          status: "active",
+          temperature: 69,
+          trend: "stable",
+          trendValue: 0,
+        },
+        {
+          id: "t5",
+          name: "Tank 3A",
+          product: "Jet Fuel A",
+          capacity: 75000,
+          currentVolume: 12000,
+          fillPercent: 16,
+          status: "active",
+          temperature: 65,
+          trend: "down",
+          trendValue: 400,
+        },
+        {
+          id: "t6",
+          name: "Tank 3B",
+          product: "Kerosene",
+          capacity: 50000,
+          currentVolume: 42000,
+          fillPercent: 84,
+          status: "maintenance",
+          temperature: 66,
+          trend: "stable",
+          trendValue: 0,
+        },
+      ];
+    }),
+
+  /**
+   * Get inventory statistics
+   */
+  getInventoryStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        totalCapacity: 725000,
+        currentInventory: 534000,
+        utilization: 74,
+        lowLevelAlerts: 1,
+        productsCount: 6,
+        lastReceipt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      };
+    }),
+
+  /**
+   * Get BOLs for BOLGeneration page
+   */
+  getBOLs: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      page: z.number().default(1),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      const bols = [
+        {
+          id: "bol1",
+          bolNumber: "BOL-2025-0001",
+          status: "delivered",
+          carrier: "ABC Transport LLC",
+          driver: "Mike Johnson",
+          vehicleNumber: "TRK-101",
+          product: "Diesel Fuel",
+          quantity: 8500,
+          hazmat: true,
+          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          destination: "Houston Terminal B",
+        },
+        {
+          id: "bol2",
+          bolNumber: "BOL-2025-0002",
+          status: "signed",
+          carrier: "FastHaul LLC",
+          driver: "Sarah Williams",
+          vehicleNumber: "TRK-205",
+          product: "Gasoline",
+          quantity: 9000,
+          hazmat: true,
+          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          destination: "Dallas Distribution Center",
+        },
+        {
+          id: "bol3",
+          bolNumber: "BOL-2025-0003",
+          status: "generated",
+          carrier: "Bulk Carriers Inc",
+          driver: "Tom Brown",
+          vehicleNumber: "TRK-312",
+          product: "Jet Fuel A",
+          quantity: 7500,
+          hazmat: true,
+          date: new Date().toISOString(),
+          destination: "DFW Airport",
+        },
+        {
+          id: "bol4",
+          bolNumber: "BOL-2025-0004",
+          status: "pending",
+          carrier: "Premium Logistics",
+          driver: "Lisa Chen",
+          vehicleNumber: "TRK-445",
+          product: "Ultra Low Sulfur Diesel",
+          quantity: 8000,
+          hazmat: false,
+          date: new Date().toISOString(),
+          destination: "San Antonio Depot",
+        },
+      ];
+
+      let filtered = bols;
+      if (input.search) {
+        const s = input.search.toLowerCase();
+        filtered = filtered.filter(b => 
+          b.bolNumber.toLowerCase().includes(s) ||
+          b.carrier.toLowerCase().includes(s) ||
+          b.driver.toLowerCase().includes(s)
+        );
+      }
+      if (input.status) {
+        filtered = filtered.filter(b => b.status === input.status);
+      }
+
+      return filtered;
+    }),
+
+  /**
+   * Get BOL statistics
+   */
+  getBOLStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        generated: 12,
+        pending: 3,
+        signed: 8,
+        delivered: 45,
+        voided: 2,
+        thisMonth: 68,
+      };
+    }),
+
+  /**
+   * Get terminal equipment status
+   */
+  getEquipment: protectedProcedure
+    .input(z.object({ terminalId: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      return [
+        {
+          id: "eq1",
+          name: "Pump Station 1",
+          type: "pump",
+          status: "operational",
+          lastMaintenance: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          nextMaintenance: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+          flowRate: 600,
+          runtime: 4520,
+        },
+        {
+          id: "eq2",
+          name: "Pump Station 2",
+          type: "pump",
+          status: "operational",
+          lastMaintenance: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
+          nextMaintenance: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+          flowRate: 550,
+          runtime: 3890,
+        },
+        {
+          id: "eq3",
+          name: "Flow Meter FM-101",
+          type: "meter",
+          status: "calibration_due",
+          lastCalibration: new Date(Date.now() - 85 * 24 * 60 * 60 * 1000).toISOString(),
+          nextCalibration: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "eq4",
+          name: "Tank Gauge TG-1A",
+          type: "gauge",
+          status: "operational",
+          tankId: "t1",
+          accuracy: 99.8,
+        },
+        {
+          id: "eq5",
+          name: "Loading Arm LA-01",
+          type: "loading_arm",
+          status: "maintenance",
+          maintenanceReason: "Seal replacement",
+          estimatedCompletion: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+        },
+        {
+          id: "eq6",
+          name: "Vapor Recovery Unit",
+          type: "vapor_recovery",
+          status: "operational",
+          recoveryRate: 98.5,
+          lastInspection: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+      ];
+    }),
 });
