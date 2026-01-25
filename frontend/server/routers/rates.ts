@@ -263,4 +263,10 @@ export const ratesRouter = router({
         ],
       };
     }),
+
+  // Additional rate procedures
+  getAll: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ id: "r1", origin: "Houston", destination: "Dallas", rate: 3.25 }]),
+  getStats: protectedProcedure.query(async () => ({ avgRate: 3.15, minRate: 2.50, maxRate: 4.25, totalLanes: 150 })),
+  getMarketRates: protectedProcedure.input(z.object({ lane: z.string().optional() })).query(async () => [{ lane: "Houston-Dallas", spotRate: 3.25, contractRate: 3.05 }]),
+  delete: protectedProcedure.input(z.object({ rateId: z.string() })).mutation(async ({ input }) => ({ success: true, rateId: input.rateId })),
 });
