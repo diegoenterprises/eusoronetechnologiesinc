@@ -12,6 +12,34 @@ const quoteStatusSchema = z.enum([
 
 export const quotesRouter = router({
   /**
+   * Get all quotes for QuoteManagement page
+   */
+  getAll: protectedProcedure
+    .input(z.object({ search: z.string().optional(), status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const quotes = [
+        { id: "q1", number: "QT-2025-0045", customer: "Shell Oil", origin: "Houston, TX", destination: "Dallas, TX", amount: 2850, status: "sent", createdAt: "2025-01-22" },
+        { id: "q2", number: "QT-2025-0044", customer: "ExxonMobil", origin: "Austin, TX", destination: "San Antonio, TX", amount: 1650, status: "accepted", createdAt: "2025-01-20" },
+        { id: "q3", number: "QT-2025-0043", customer: "Valero", origin: "Corpus Christi, TX", destination: "Houston, TX", amount: 2100, status: "expired", createdAt: "2025-01-15" },
+      ];
+      let filtered = quotes;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(qt => qt.customer.toLowerCase().includes(q) || qt.number.toLowerCase().includes(q));
+      }
+      if (input.status && input.status !== "all") filtered = filtered.filter(qt => qt.status === input.status);
+      return filtered;
+    }),
+
+  /**
+   * Get quote stats for QuoteManagement page
+   */
+  getStats: protectedProcedure
+    .query(async () => {
+      return { total: 45, sent: 12, accepted: 28, declined: 3, expired: 2, conversionRate: 62 };
+    }),
+
+  /**
    * Get instant quote
    */
   getInstant: publicProcedure
