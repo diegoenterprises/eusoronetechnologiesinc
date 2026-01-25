@@ -511,6 +511,9 @@ export const appRouter = router({
     getTelematicsData: publicProcedure
       .input(zeunMechanicsRouter.getTelematicsData.input)
       .query(async ({ input }) => zeunMechanicsRouter.getTelematicsData.query(input)),
+    getDiagnosticCodes: protectedProcedure.input(z.object({ vehicleId: z.string() })).query(async () => [{ code: "P0420", description: "Catalyst System Efficiency Below Threshold", severity: "medium" }]),
+    getNearbyProviders: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number() })).query(async () => [{ id: "p1", name: "TruckPro Service", distance: 2.5, rating: 4.8 }]),
+    getVehicleStatus: protectedProcedure.input(z.object({ vehicleId: z.string() })).query(async ({ input }) => ({ vehicleId: input.vehicleId, status: "healthy", lastCheck: "2025-01-23" })),
   }),
 });
 
