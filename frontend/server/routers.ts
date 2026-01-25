@@ -101,6 +101,12 @@ import { facilityRouter } from "./routers/facility";
 import { exportsRouter } from "./routers/exports";
 import { eldRouter } from "./routers/eld";
 import { developerRouter } from "./routers/developer";
+import { rateConfirmationsRouter } from "./routers/rateConfirmations";
+import { quickActionsRouter } from "./routers/quickActions";
+import { laneRatesRouter } from "./routers/laneRates";
+import { helpRouter } from "./routers/help";
+import { feedbackRouter } from "./routers/feedback";
+import { rewardsRouter } from "./routers/rewards";
 
 export const appRouter = router({
   system: systemRouter,
@@ -416,6 +422,24 @@ export const appRouter = router({
 
   // Developer
   developer: developerRouter,
+
+  // Rate Confirmations
+  rateConfirmations: rateConfirmationsRouter,
+
+  // Quick Actions
+  quickActions: quickActionsRouter,
+
+  // Lane Rates
+  laneRates: laneRatesRouter,
+
+  // Help
+  help: helpRouter,
+
+  // Feedback
+  feedback: feedbackRouter,
+
+  // Rewards
+  rewards: rewardsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
