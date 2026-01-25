@@ -28,7 +28,7 @@ export const carriersRouter = router({
    */
   getCapacitySummary: protectedProcedure
     .query(async () => {
-      return { totalAvailable: 45, tankers: 12, dryVans: 18, flatbeds: 8, reefers: 7 };
+      return { totalAvailable: 45, tankers: 12, tanker: 12, dryVans: 18, dryVan: 18, flatbeds: 8, flatbed: 8, reefers: 7, reefer: 7 };
     }),
 
   /**
