@@ -75,6 +75,14 @@ export const safetyRouter = router({
     }),
 
   /**
+   * Get incident summary for safety pages
+   */
+  getIncidentSummary: protectedProcedure
+    .query(async () => {
+      return { total: 12, open: 3, investigating: 2, resolved: 7, thisMonth: 2, severity: { high: 1, medium: 4, low: 7 } };
+    }),
+
+  /**
    * Get safety dashboard summary
    */
   getDashboardSummary: protectedProcedure

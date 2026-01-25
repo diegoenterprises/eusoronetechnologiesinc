@@ -195,4 +195,18 @@ export const paymentsRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Get payments summary
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return {
+        totalReceived: 125000,
+        totalSent: 45000,
+        pendingPayments: 8500,
+        thisMonth: { received: 28500, sent: 12000 },
+        lastMonth: { received: 32000, sent: 15000 },
+      };
+    }),
 });

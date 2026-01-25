@@ -37,6 +37,20 @@ export const usersRouter = router({
     };
   }),
 
+  // Update user preferences
+  updatePreferences: protectedProcedure
+    .input(z.object({
+      emailNotifications: z.boolean().optional(),
+      smsNotifications: z.boolean().optional(),
+      pushNotifications: z.boolean().optional(),
+      language: z.string().optional(),
+      timezone: z.string().optional(),
+      theme: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      return { success: true, updatedAt: new Date().toISOString() };
+    }),
+
   // Get user settings
   getSettings: protectedProcedure.query(async () => {
     return {
