@@ -443,7 +443,7 @@ export const analyticsRouter = router({
   // Benchmarks & Market
   getBenchmarks: protectedProcedure.query(async () => ({ industryAvg: { ratePerMile: 2.85, onTimeRate: 92 }, yourMetrics: { ratePerMile: 3.05, onTimeRate: 96 } })),
   getCompetitors: protectedProcedure.query(async () => [{ name: "Industry Average", ratePerMile: 2.85, marketShare: 100 }]),
-  getMarketShare: protectedProcedure.query(async () => ({ yourShare: 2.5, topCompetitor: 8.2, marketSize: 850000000 })),
+  getMarketShare: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ yourShare: 2.5, ourShare: 2.5, topCompetitor: 8.2, marketSize: 850000000, shareChange: 0.3 })),
 
   // Deadhead analysis
   getDeadheadSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ 
