@@ -17,6 +17,94 @@ const driverStatusSchema = z.enum([
 
 export const dispatchRouter = router({
   /**
+   * Get dashboard stats for CatalystDashboard
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        active: 12,
+        unassigned: 3,
+        enRoute: 5,
+        loading: 2,
+        inTransit: 4,
+        issues: 1,
+        completedToday: 8,
+      };
+    }),
+
+  /**
+   * Get driver statuses
+   */
+  getDriverStatuses: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "d1", name: "Mike Johnson", status: "driving", load: "LOAD-45920", location: "Waco, TX", hoursRemaining: 6.5 },
+        { id: "d2", name: "Sarah Williams", status: "available", load: null, location: "Houston, TX", hoursRemaining: 10 },
+        { id: "d3", name: "Tom Brown", status: "on_duty", load: "LOAD-45918", location: "Beaumont, TX", hoursRemaining: 8 },
+        { id: "d4", name: "Lisa Chen", status: "sleeper", load: null, location: "Dallas, TX", hoursRemaining: 11 },
+        { id: "d5", name: "Bob Davis", status: "off_duty", load: null, location: "Austin, TX", hoursRemaining: 11 },
+      ];
+    }),
+
+  /**
+   * Get active issues
+   */
+  getActiveIssues: protectedProcedure
+    .query(async () => {
+      return [
+        {
+          id: "issue_001",
+          type: "breakdown",
+          severity: "high",
+          load: "LOAD-45915",
+          driver: "James Wilson",
+          location: "I-35 near Temple, TX",
+          reportedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          status: "pending",
+          description: "Flat tire - awaiting roadside assistance",
+        },
+      ];
+    }),
+
+  /**
+   * Get unassigned loads
+   */
+  getUnassignedLoads: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        {
+          id: "load_u1",
+          loadNumber: "LOAD-45925",
+          origin: "Houston, TX",
+          destination: "Dallas, TX",
+          pickupTime: "2025-01-25 08:00",
+          rate: 2450,
+          urgency: "normal",
+        },
+        {
+          id: "load_u2",
+          loadNumber: "LOAD-45926",
+          origin: "Beaumont, TX",
+          destination: "Austin, TX",
+          pickupTime: "2025-01-25 10:00",
+          rate: 2800,
+          urgency: "high",
+        },
+        {
+          id: "load_u3",
+          loadNumber: "LOAD-45927",
+          origin: "Port Arthur, TX",
+          destination: "San Antonio, TX",
+          pickupTime: "2025-01-25 14:00",
+          rate: 3100,
+          urgency: "normal",
+        },
+      ];
+    }),
+
+  /**
    * Get dispatch board data
    */
   getBoard: protectedProcedure
