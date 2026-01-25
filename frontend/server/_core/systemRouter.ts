@@ -58,4 +58,25 @@ export const systemRouter = router({
   getReleaseNotes: publicProcedure.input(z.object({ version: z.string().optional() })).query(async () => ([
     { version: "2.5.0", date: "2025-01-20", notes: ["New dashboard widgets", "Performance improvements", "Bug fixes"] },
   ])),
+
+  // System health stats
+  getHealth: publicProcedure.query(async () => ({
+    overall: "healthy",
+    services: [
+      { name: "API", status: "operational", uptime: 99.99, latency: 45 },
+      { name: "Database", status: "operational", uptime: 99.98, latency: 12 },
+      { name: "Cache", status: "operational", uptime: 100, latency: 5 },
+    ],
+    lastCheck: new Date().toISOString(),
+    uptime: 99.95,
+    cpuUsage: 42,
+    memoryUsage: 68,
+    diskUsage: 55,
+  })),
+  getMetrics: publicProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+    cpu: [42, 45, 38, 52, 48, 44, 41],
+    memory: [68, 70, 65, 72, 69, 67, 68],
+    disk: [55, 55, 55, 56, 56, 56, 55],
+    requests: [1250, 1380, 1420, 1100, 1550, 1620, 1480],
+  })),
 });
