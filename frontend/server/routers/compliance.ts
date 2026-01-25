@@ -863,10 +863,10 @@ export const complianceRouter = router({
   getDQFiles: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ driverId: "d1", name: "Mike Johnson", dqStatus: "complete", cdlNumber: "TX12345678", hireDate: "2022-01-15", completionPercent: 95, documents: [{ type: "cdl", status: "valid" }] }]),
 
   // Drug & Alcohol
-  getDrugAlcoholTests: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "da1", driverId: "d1", type: "random", status: "negative", date: "2025-01-15" }]),
-  getDrugAlcoholStats: protectedProcedure.query(async () => ({ totalTests: 450, negative: 445, positive: 3, pending: 2 })),
-  getUpcomingTests: protectedProcedure.query(async () => [{ id: "ut1", driverId: "d1", type: "random", scheduledDate: "2025-02-01" }]),
-  scheduleTest: protectedProcedure.input(z.object({ driverId: z.string(), type: z.string(), date: z.string() })).mutation(async ({ input }) => ({ success: true, testId: "test_123" })),
+  getDrugAlcoholTests: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional() })).query(async () => [{ id: "da1", driverId: "d1", type: "random", status: "negative", date: "2025-01-15" }]),
+  getDrugAlcoholStats: protectedProcedure.query(async () => ({ totalTests: 450, negative: 445, positive: 3, pending: 2, scheduled: 5, totalYTD: 450 })),
+  getUpcomingTests: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "ut1", driverId: "d1", type: "random", scheduledDate: "2025-02-01" }]),
+  scheduleTest: protectedProcedure.input(z.object({ driverId: z.string().optional(), type: z.string().optional(), date: z.string().optional() }).optional()).mutation(async ({ input }) => ({ success: true, testId: "test_123" })),
 
   // Employment History
   getEmploymentHistory: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => [{ id: "eh1", employer: "ABC Transport", startDate: "2020-01-15", endDate: "2024-12-31" }]),
