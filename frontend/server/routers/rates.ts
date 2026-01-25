@@ -28,7 +28,7 @@ export const ratesRouter = router({
    */
   getLaneStats: protectedProcedure
     .query(async () => {
-      return { totalLanes: 45, avgRate: 2.78, hotLanes: 8, coldLanes: 5 };
+      return { totalLanes: 45, avgRate: 2.78, hotLanes: 8, coldLanes: 5, loadsThisMonth: 125, topLaneVolume: 45 };
     }),
 
   /**
