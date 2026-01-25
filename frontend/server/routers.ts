@@ -109,6 +109,15 @@ import { feedbackRouter } from "./routers/feedback";
 import { rewardsRouter } from "./routers/rewards";
 import { bookmarksRouter } from "./routers/bookmarks";
 import { carrierPacketsRouter } from "./routers/carrierPackets";
+import { hazmatRouter } from "./routers/hazmat";
+import { podRouter } from "./routers/pod";
+import { mileageRouter } from "./routers/mileage";
+import { preferencesRouter } from "./routers/preferences";
+import { proceduresRouter } from "./routers/procedures";
+import { restStopsRouter } from "./routers/restStops";
+import { scalesRouter } from "./routers/scales";
+import { searchRouter } from "./routers/search";
+import { vehiclesRouter } from "./routers/vehicles";
 
 export const appRouter = router({
   system: systemRouter,
@@ -448,6 +457,33 @@ export const appRouter = router({
 
   // Carrier Packets
   carrierPackets: carrierPacketsRouter,
+
+  // Hazmat
+  hazmat: hazmatRouter,
+
+  // POD
+  pod: podRouter,
+
+  // Mileage
+  mileage: mileageRouter,
+
+  // Preferences
+  preferences: preferencesRouter,
+
+  // Procedures
+  procedures: proceduresRouter,
+
+  // Rest Stops
+  restStops: restStopsRouter,
+
+  // Scales
+  scales: scalesRouter,
+
+  // Search
+  search: searchRouter,
+
+  // Vehicles
+  vehicles: vehiclesRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
