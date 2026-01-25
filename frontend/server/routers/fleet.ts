@@ -457,7 +457,7 @@ export const fleetRouter = router({
 
   // Fuel
   getFuelTransactions: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "f1", vehicleId: "v1", gallons: 125, cost: 437.50, location: "Houston, TX", date: "2025-01-22" }]),
-  getFuelStats: protectedProcedure.query(async () => ({ totalGallons: 2450, totalCost: 8575, avgMPG: 6.8, avgCostPerGallon: 3.50 })),
+  getFuelStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalGallons: 2450, totalCost: 8575, avgMPG: 6.8, avgMpg: 6.8, avgCostPerGallon: 3.50, avgPricePerGallon: 3.50 })),
 
   // GPS
   getGPSLocations: protectedProcedure.query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, speed: 65, heading: 45, timestamp: new Date().toISOString() }]),
