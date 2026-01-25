@@ -240,4 +240,6 @@ export const maintenanceRouter = router({
         },
       ];
     }),
+
+  list: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "m1", vehicleId: "v1", type: "oil_change", status: "scheduled", dueDate: "2025-01-28" }]),
 });
