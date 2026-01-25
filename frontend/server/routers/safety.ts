@@ -727,7 +727,14 @@ export const safetyRouter = router({
 
   // CSA
   getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() })).query(async () => [{ month: "Jan 2025", scores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12 } }]),
-  getCSASummary: protectedProcedure.query(async () => ({ overallRisk: "low", alertCount: 0, improvementAreas: ["Vehicle Maintenance"] })),
+  getCSASummary: protectedProcedure.query(async () => ({ 
+    overallRisk: "low", 
+    overallScore: 85,
+    alertCount: 0, 
+    improvementAreas: ["Vehicle Maintenance"],
+    trend: "up",
+    trendPercent: 2.5,
+  })),
 
   // Driver safety
   getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ avgScore: 92, incidents: 2, inspections: 15, violations: 1 })),
