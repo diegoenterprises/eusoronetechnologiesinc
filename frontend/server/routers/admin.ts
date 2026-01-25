@@ -848,4 +848,84 @@ export const adminRouter = router({
     .mutation(async ({ input }) => {
       return { success: true, userId: input.userId, status: "rejected" };
     }),
+
+  // Content moderation
+  approveContent: protectedProcedure.input(z.object({ contentId: z.string() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId })),
+  removeContent: protectedProcedure.input(z.object({ contentId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId })),
+  getContentReports: protectedProcedure.query(async () => [{ id: "r1", contentId: "c1", reason: "spam", status: "pending", reportedAt: "2025-01-23" }]),
+  getModerationSummary: protectedProcedure.query(async () => ({ pending: 5, approved: 120, rejected: 8, totalReports: 133 })),
+
+  // Cache management
+  getCacheStats: protectedProcedure.query(async () => ({ hitRate: 94, totalKeys: 1250, memoryUsed: "128MB", uptime: "5d 12h" })),
+  getCacheKeys: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ key: "user:123", ttl: 3600, size: "2KB" }]),
+  clearCacheKey: protectedProcedure.input(z.object({ key: z.string() })).mutation(async ({ input }) => ({ success: true, key: input.key })),
+  clearAllCache: protectedProcedure.mutation(async () => ({ success: true, clearedKeys: 1250 })),
+
+  // Queue management
+  getQueues: protectedProcedure.query(async () => [{ name: "emails", pending: 25, processing: 2, failed: 1 }, { name: "notifications", pending: 12, processing: 1, failed: 0 }]),
+  clearQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName })),
+  pauseQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: true })),
+  resumeQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: false })),
+  getRecentJobs: protectedProcedure.input(z.object({ queueName: z.string().optional() })).query(async () => [{ id: "j1", queue: "emails", status: "completed", completedAt: "2025-01-23" }]),
+
+  // API keys management
+  getApiKeys: protectedProcedure.query(async () => [{ id: "k1", name: "Production", prefix: "pk_live_", status: "active", lastUsed: "2025-01-23" }]),
+  createApiKey: protectedProcedure.input(z.object({ name: z.string(), permissions: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, key: "pk_live_abc123", name: input.name })),
+  revokeApiKey: protectedProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ input }) => ({ success: true, keyId: input.keyId })),
+
+  // Audit logs
+  getAuditLogs: protectedProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
+  getAuditStats: protectedProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"] })),
+
+  // Broadcasts
+  getBroadcasts: protectedProcedure.query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
+  sendBroadcast: protectedProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
+  deleteBroadcast: protectedProcedure.input(z.object({ broadcastId: z.string() })).mutation(async ({ input }) => ({ success: true, broadcastId: input.broadcastId })),
+  getAudiences: protectedProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
+
+  // Company management
+  getCompanies: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "c1", name: "ABC Transport", status: "active", verified: true }]),
+  getCompanyStats: protectedProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5 })),
+  getPendingCompanies: protectedProcedure.query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
+  verifyCompany: protectedProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
+  rejectCompany: protectedProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
+  getCompanyVerificationSummary: protectedProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours" })),
+
+  // Disputes
+  getDisputes: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
+  getDisputeSummary: protectedProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000 })),
+  resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.string(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
+
+  // Email logs
+  getEmailLogs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", to: "user@example.com", subject: "Welcome", status: "delivered", sentAt: "2025-01-23" }]),
+  getEmailSummary: protectedProcedure.query(async () => ({ sent: 5000, delivered: 4850, bounced: 100, opened: 3200, openRate: 66 })),
+  resendEmail: protectedProcedure.input(z.object({ emailId: z.string() })).mutation(async ({ input }) => ({ success: true, emailId: input.emailId })),
+
+  // Error logs
+  getErrorLogs: protectedProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "err1", message: "Connection timeout", severity: "warning", count: 5, lastOccurred: "2025-01-23" }]),
+  getErrorSummary: protectedProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203 })),
+
+  // Imports
+  getImports: protectedProcedure.query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
+  getImportStats: protectedProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1 })),
+
+  // Performance
+  getPerformanceMetrics: protectedProcedure.query(async () => ({ avgResponseTime: 125, p95ResponseTime: 350, requestsPerSecond: 45, errorRate: 0.5 })),
+  getSlowEndpoints: protectedProcedure.query(async () => [{ endpoint: "/api/loads", avgTime: 450, calls: 1200 }]),
+  getTopPerformers: protectedProcedure.query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
+
+  // Platform
+  getPlatformHealth: protectedProcedure.query(async () => ({ status: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45 })),
+  getPlatformMetrics: protectedProcedure.query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000 })),
+  getPlatformTrends: protectedProcedure.query(async () => ({ userGrowth: 12, loadGrowth: 8, revenueGrowth: 15 })),
+
+  // Permissions & Roles
+  getPermissions: protectedProcedure.query(async () => [{ id: "p1", name: "loads.create", description: "Create loads" }]),
+  getRoleStats: protectedProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500 })),
+  updateRolePermissions: protectedProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
+
+  // Rate limiting
+  getRateLimitStats: protectedProcedure.query(async () => ({ blocked: 25, throttled: 150, total: 50000 })),
+  getRateLimitConfig: protectedProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [] })),
+  updateRateLimitConfig: protectedProcedure.input(z.object({ limit: z.number(), windowMs: z.number() })).mutation(async ({ input }) => ({ success: true })),
 });
