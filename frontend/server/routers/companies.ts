@@ -134,4 +134,9 @@ export const companiesRouter = router({
 
       return { success: true };
     }),
+
+  // Additional company procedures
+  getStats: protectedProcedure.query(async () => ({ totalDrivers: 25, totalVehicles: 30, activeLoads: 15, revenue: 125000 })),
+  getBilling: protectedProcedure.query(async () => ({ balance: 2500, nextDue: "2025-02-01", plan: "premium" })),
+  getRecentInvoices: protectedProcedure.query(async () => [{ id: "inv1", amount: 500, status: "paid", date: "2025-01-15" }]),
 });
