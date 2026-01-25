@@ -737,9 +737,9 @@ export const safetyRouter = router({
   })),
 
   // Driver safety
-  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ avgScore: 92, incidents: 2, inspections: 15, violations: 1 })),
+  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ({ avgScore: 92, incidents: 2, inspections: 15, violations: 1, excellent: 18, good: 4, needsImprovement: 2 })),
   getDriverScores: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ driverId: "d1", name: "Mike Johnson", score: 98, trend: "up" }]),
-  getDriverScoreDetail: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => ({ driverId: input.driverId, overall: 92, categories: { safety: 94, compliance: 90, efficiency: 92 } })),
+  getDriverScoreDetail: protectedProcedure.input(z.object({ driverId: z.string() }).optional()).query(async ({ input }) => ({ driverId: input?.driverId || "d1", name: "Mike Johnson", overall: 92, overallScore: 92, categories: { safety: 94, compliance: 90, efficiency: 92 } })),
   getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 88, topPerformer: "Mike Johnson", improvementNeeded: 3 })),
 
   // Meetings
