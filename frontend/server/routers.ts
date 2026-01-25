@@ -81,6 +81,7 @@ import { insuranceRouter } from "./routers/insurance";
 import { onboardingRouter } from "./routers/onboarding";
 import { maintenanceRouter } from "./routers/maintenance";
 import { announcementsRouter } from "./routers/announcements";
+import { bolRouter } from "./routers/bol";
 
 export const appRouter = router({
   system: systemRouter,
@@ -332,6 +333,9 @@ export const appRouter = router({
 
   // System Announcements
   announcements: announcementsRouter,
+
+  // Bill of Lading Management
+  bol: bolRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),

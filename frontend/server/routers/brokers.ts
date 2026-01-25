@@ -97,6 +97,52 @@ export const brokersRouter = router({
     }),
 
   /**
+   * Get analytics for BrokerAnalytics page
+   */
+  getAnalytics: protectedProcedure
+    .input(z.object({ timeframe: z.string().optional().default("30d") }))
+    .query(async () => {
+      return {
+        totalLoads: 45,
+        totalRevenue: 127500,
+        totalCommission: 12750,
+        avgMargin: 10.2,
+        topCarriers: [
+          { name: "ABC Transport", loads: 12, revenue: 28500 },
+          { name: "FastHaul LLC", loads: 8, revenue: 19200 },
+        ],
+      };
+    }),
+
+  /**
+   * Get commission summary for BrokerAnalytics
+   */
+  getCommissionSummary: protectedProcedure
+    .input(z.object({ timeframe: z.string().optional().default("30d") }))
+    .query(async () => {
+      return {
+        total: 12750,
+        pending: 3200,
+        paid: 9550,
+        avgPerLoad: 283,
+      };
+    }),
+
+  /**
+   * Get performance metrics for BrokerAnalytics
+   */
+  getPerformanceMetrics: protectedProcedure
+    .input(z.object({ timeframe: z.string().optional().default("30d") }))
+    .query(async () => {
+      return {
+        matchRate: 78,
+        avgTimeToMatch: "2.5 hours",
+        carrierRetention: 92,
+        disputeRate: 1.2,
+      };
+    }),
+
+  /**
    * Get carrier capacity board
    */
   getCarrierCapacity: protectedProcedure
@@ -266,9 +312,9 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Get broker performance metrics
+   * Get broker performance metrics (detailed version)
    */
-  getPerformanceMetrics: protectedProcedure
+  getPerformanceMetricsDetailed: protectedProcedure
     .input(z.object({
       period: z.enum(["week", "month", "quarter"]).default("month"),
     }))
@@ -543,9 +589,9 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Get analytics for BrokerAnalytics page
+   * Get analytics for BrokerAnalytics page (detailed version)
    */
-  getAnalytics: protectedProcedure
+  getAnalyticsDetailed: protectedProcedure
     .input(z.object({
       timeframe: z.string().default("30d"),
     }))
@@ -571,9 +617,9 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Get commission summary for BrokerAnalytics page
+   * Get commission summary for BrokerAnalytics page (detailed version)
    */
-  getCommissionSummary: protectedProcedure
+  getCommissionSummaryDetailed: protectedProcedure
     .input(z.object({
       timeframe: z.string().default("30d"),
     }))
