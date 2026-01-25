@@ -198,6 +198,25 @@ export const usersRouter = router({
       return { success: true, terminatedCount: 2 };
     }),
 
+  // Get login history for LoginHistory page
+  getLoginHistory: protectedProcedure
+    .input(z.object({ status: z.string().optional(), limit: z.number().optional().default(50) }))
+    .query(async ({ input }) => {
+      const history = [
+        { id: "l1", timestamp: "2025-01-23 10:30", ip: "192.168.1.1", location: "Houston, TX", device: "Chrome/Windows", status: "success" },
+        { id: "l2", timestamp: "2025-01-22 18:45", ip: "192.168.1.50", location: "Houston, TX", device: "Safari/iPhone", status: "success" },
+        { id: "l3", timestamp: "2025-01-21 09:15", ip: "10.0.0.100", location: "Unknown", device: "Firefox/Linux", status: "failed" },
+      ];
+      if (input.status) return history.filter(h => h.status === input.status);
+      return history;
+    }),
+
+  // Get login summary for LoginHistory page
+  getLoginSummary: protectedProcedure
+    .query(async () => {
+      return { totalLogins: 45, successfulLogins: 42, failedAttempts: 3, lastLogin: "2025-01-23 10:30" };
+    }),
+
   // Get referrals list
   getReferrals: protectedProcedure.query(async () => {
     return [

@@ -88,6 +88,7 @@ import { vehicleRouter } from "./routers/vehicle";
 import { routingRouter } from "./routers/routing";
 import { teamRouter } from "./routers/team";
 import { featuresRouter } from "./routers/features";
+import { securityRouter } from "./routers/security";
 
 export const appRouter = router({
   system: systemRouter,
@@ -360,6 +361,9 @@ export const appRouter = router({
 
   // Feature Requests
   features: featuresRouter,
+
+  // Security Settings
+  security: securityRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
