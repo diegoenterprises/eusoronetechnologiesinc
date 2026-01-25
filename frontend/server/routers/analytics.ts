@@ -15,7 +15,7 @@ export const analyticsRouter = router({
   getRevenue: protectedProcedure
     .input(z.object({ dateRange: z.string().optional() }))
     .query(async () => {
-      return { total: 127500, change: 12.5, avgPerLoad: 2833, topCustomer: "Shell Oil" };
+      return { total: 127500, change: 12.5, growth: 12.5, avgPerLoad: 2833, topCustomer: "Shell Oil", margin: 18.5 };
     }),
 
   /**
