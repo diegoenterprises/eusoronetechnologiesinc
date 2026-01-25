@@ -12,6 +12,46 @@ const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
 
 export const driversRouter = router({
   /**
+   * Get driver dashboard stats for logged-in driver
+   */
+  getDashboardStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        currentStatus: "on_load",
+        hoursAvailable: 6.5,
+        milesThisWeek: 1850,
+        earningsThisWeek: 1017.50,
+        loadsCompleted: 2,
+        safetyScore: 95,
+        onTimeRate: 96,
+        rating: 4.8,
+      };
+    }),
+
+  /**
+   * Get HOS status (no input required for logged-in driver)
+   */
+  getHOSStatus: protectedProcedure
+    .input(z.object({}).optional())
+    .query(async ({ ctx }) => {
+      return {
+        status: "driving",
+        drivingRemaining: "6h 30m",
+        onDutyRemaining: "8h 00m",
+        cycleRemaining: "52h 30m",
+        breakRemaining: "2h 00m",
+        hoursAvailable: {
+          driving: 6.5,
+          onDuty: 8.0,
+          cycle: 52.5,
+        },
+        violations: [],
+        lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+        nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      };
+    }),
+
+  /**
    * List all drivers
    */
   list: protectedProcedure
@@ -119,9 +159,9 @@ export const driversRouter = router({
     }),
 
   /**
-   * Get driver HOS status
+   * Get driver HOS status by driver ID
    */
-  getHOSStatus: protectedProcedure
+  getHOSStatusByDriver: protectedProcedure
     .input(z.object({ driverId: z.string() }))
     .query(async ({ input }) => {
       return {
