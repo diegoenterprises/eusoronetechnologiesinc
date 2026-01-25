@@ -18,6 +18,8 @@ export const notificationsRouter = router({
       return {
         total: 12,
         unread: 4,
+        read: 8,
+        alerts: 3,
         byCategory: {
           loads: 5,
           compliance: 3,
