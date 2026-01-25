@@ -35,7 +35,7 @@ export const documentsRouter = router({
    */
   getStats: protectedProcedure
     .query(async () => {
-      return { total: 45, active: 40, expiring: 3, expired: 2 };
+      return { total: 45, active: 40, valid: 40, expiring: 3, expired: 2 };
     }),
 
   /**
