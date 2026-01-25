@@ -531,4 +531,27 @@ export const analyticsRouter = router({
     { timestamp: "10:05", cpu: 45, memory: 70, responseTime: 152 },
     { timestamp: "10:10", cpu: 38, memory: 65, responseTime: 138 },
   ])),
+
+  // Platform analytics
+  getPlatformStats: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({
+    dailyActiveUsers: 1250,
+    monthlyActiveUsers: 8500,
+    totalLoads: 45,
+    totalRevenue: 127500,
+    totalUsers: 2500,
+    usersChange: 12.5,
+    usersChangeType: "up",
+    loadsChange: 8.2,
+    loadsChangeType: "up",
+    revenueChange: 15.3,
+    revenueChangeType: "up",
+  })),
+  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ([
+    { date: "Jan 1", users: 1200, loads: 40, revenue: 115000 },
+    { date: "Jan 8", users: 1250, loads: 45, revenue: 127500 },
+  ])),
+  getPlatformTopUsers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
+    { id: "u1", name: "Shell Oil", loads: 18, revenue: 54000 },
+    { id: "u2", name: "ExxonMobil", loads: 12, revenue: 36000 },
+  ])),
 });
