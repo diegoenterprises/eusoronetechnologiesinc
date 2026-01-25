@@ -717,8 +717,9 @@ export const safetyRouter = router({
   ]),
   getAccidentSummary: protectedProcedure.query(async () => ({ 
     total: 8, totalReports: 8, thisYear: 2, investigating: 1, closed: 7, open: 1, openReports: 1,
-    daysSinceLastIncident: 45,
-    bySeverity: { critical: 0, major: 1, minor: 7 }
+    daysSinceLastIncident: 45, avgResolutionDays: 12, severe: 1, resolved: 7, thisMonth: 1,
+    bySeverity: { critical: 0, major: 1, minor: 7, nearMiss: 3 },
+    severity: { high: 1, medium: 2, low: 5 }
   })),
   submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string(), date: z.string(), description: z.string(), severity: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: "ar_123" })),
   updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: input.reportId })),
