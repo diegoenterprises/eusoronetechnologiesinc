@@ -50,6 +50,80 @@ export const complianceRouter = router({
     }),
 
   /**
+   * Get HOS drivers for HOSCompliance page
+   */
+  getHOSDrivers: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const drivers = [
+        { id: "d1", name: "Mike Johnson", status: "compliant", driveRemaining: 8.5, dutyRemaining: 11, cycleRemaining: 55 },
+        { id: "d2", name: "Sarah Williams", status: "warning", driveRemaining: 2.0, dutyRemaining: 4, cycleRemaining: 45 },
+        { id: "d3", name: "Tom Brown", status: "violation", driveRemaining: 0, dutyRemaining: 0, cycleRemaining: 38 },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return drivers.filter(d => d.name.toLowerCase().includes(q));
+      }
+      return drivers;
+    }),
+
+  /**
+   * Get HOS stats for HOSCompliance page
+   */
+  getHOSStats: protectedProcedure
+    .query(async () => {
+      return { totalDrivers: 18, compliant: 15, warnings: 2, violations: 1, complianceRate: 94 };
+    }),
+
+  /**
+   * Get recent HOS violations for HOSCompliance page
+   */
+  getRecentHOSViolations: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "v1", driver: "Tom Brown", type: "Drive Time Exceeded", date: "2025-01-22", duration: "45 min" },
+      ];
+    }),
+
+  /**
+   * Get hazmat drivers for HazmatCertifications page
+   */
+  getHazmatDrivers: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const drivers = [
+        { id: "d1", name: "Mike Johnson", status: "valid", endorsement: "H", expiresAt: "2026-03-15", trainedAt: "2024-03-15" },
+        { id: "d2", name: "Sarah Williams", status: "expiring", endorsement: "H", expiresAt: "2025-02-15", trainedAt: "2023-02-15" },
+        { id: "d3", name: "Tom Brown", status: "valid", endorsement: "H,X", expiresAt: "2026-08-20", trainedAt: "2024-08-20" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return drivers.filter(d => d.name.toLowerCase().includes(q));
+      }
+      return drivers;
+    }),
+
+  /**
+   * Get hazmat stats for HazmatCertifications page
+   */
+  getHazmatStats: protectedProcedure
+    .query(async () => {
+      return { totalCertified: 12, valid: 10, expiringSoon: 2, expired: 0, trainingDue: 1 };
+    }),
+
+  /**
+   * Get expiring hazmat certs for HazmatCertifications page
+   */
+  getExpiringHazmat: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(5) }))
+    .query(async () => {
+      return [
+        { id: "h1", driver: "Sarah Williams", endorsement: "H", expiresAt: "2025-02-15", daysRemaining: 22 },
+      ];
+    }),
+
+  /**
    * Get compliance scores by category
    */
   getComplianceScores: protectedProcedure
