@@ -813,7 +813,7 @@ function Router() {
       {/* Admin-specific routes */}
       <Route path={"/admin/users"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <UserManagement />
         </DashboardLayout>
       )} />
       <Route path={"/admin/companies"} component={() => (
@@ -823,7 +823,7 @@ function Router() {
       )} />
       <Route path={"/admin/loads"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <MyLoadsPage />
         </DashboardLayout>
       )} />
       <Route path={"/admin/payments"} component={() => (
@@ -833,17 +833,17 @@ function Router() {
       )} />
       <Route path={"/admin/disputes"} component={() => (
         <DashboardLayout>
-          <MessagesPage />
+          <MessagingCenter />
         </DashboardLayout>
       )} />
       <Route path={"/admin/documents"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <DocumentCenter />
         </DashboardLayout>
       )} />
       <Route path={"/admin/analytics"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <Analytics />
         </DashboardLayout>
       )} />
       <Route path={"/admin/settings"} component={() => (
@@ -855,7 +855,7 @@ function Router() {
       {/* Super Admin-specific routes */}
       <Route path={"/super-admin/users"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <UserManagement />
         </DashboardLayout>
       )} />
       <Route path={"/super-admin/companies"} component={() => (
@@ -865,7 +865,7 @@ function Router() {
       )} />
       <Route path={"/super-admin/loads"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <MyLoadsPage />
         </DashboardLayout>
       )} />
       <Route path={"/super-admin/config"} component={() => (
@@ -875,7 +875,7 @@ function Router() {
       )} />
       <Route path={"/super-admin/database"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <Analytics />
         </DashboardLayout>
       )} />
       <Route path={"/super-admin/security"} component={() => (
@@ -885,12 +885,12 @@ function Router() {
       )} />
       <Route path={"/super-admin/logs"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <AuditLogs />
         </DashboardLayout>
       )} />
       <Route path={"/super-admin/monitoring"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <Analytics />
         </DashboardLayout>
       )} />
       <Route path={"/super-admin/settings"} component={() => (
