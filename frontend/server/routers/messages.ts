@@ -258,4 +258,6 @@ export const messagesRouter = router({
     .mutation(async ({ input }) => {
       return { success: true, conversationId: input.conversationId };
     }),
+
+  send: protectedProcedure.input(z.object({ conversationId: z.string(), content: z.string() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
 });
