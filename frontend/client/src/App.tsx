@@ -720,7 +720,7 @@ function Router() {
       )} />
       <Route path={"/navigation"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <LoadTracking />
         </DashboardLayout>
       )} />
       <Route path={"/vehicle"} component={() => (
@@ -730,7 +730,7 @@ function Router() {
       )} />
       <Route path={"/documents"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <DocumentCenter />
         </DashboardLayout>
       )} />
       
@@ -757,7 +757,7 @@ function Router() {
       )} />
       <Route path={"/ai-assistant"} component={() => (
         <DashboardLayout>
-          <MessagesPage />
+          <ESANGChat />
         </DashboardLayout>
       )} />
       
