@@ -34,6 +34,10 @@ export const usersRouter = router({
       language: "en",
       timezone: "America/Chicago",
       theme: "dark",
+      darkMode: true,
+      compactMode: false,
+      dateFormat: "MM/DD/YYYY",
+      marketingEmails: false,
     };
   }),
 
