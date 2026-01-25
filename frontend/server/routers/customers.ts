@@ -374,4 +374,8 @@ export const customersRouter = router({
         expiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       };
     }),
+
+  // Additional customer procedures
+  getAll: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ id: "c1", name: "Shell Oil", type: "shipper", status: "active" }]),
+  getStats: protectedProcedure.query(async () => ({ total: 45, newThisMonth: 5, avgRevenue: 28000 })),
 });
