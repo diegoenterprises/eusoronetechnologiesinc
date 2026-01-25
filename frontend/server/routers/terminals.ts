@@ -19,7 +19,9 @@ export const terminalsRouter = router({
       return {
         todayAppointments: 24,
         trucksCheckedIn: 8,
+        checkedIn: 8,
         currentlyLoading: 5,
+        loading: 5,
         rackUtilization: 65,
         totalInventory: 425000,
         avgLoadTime: 42,
@@ -32,10 +34,10 @@ export const terminalsRouter = router({
   getRacks: protectedProcedure
     .query(async () => {
       return [
-        { id: "r1", name: "Rack 1", status: "loading", product: "Unleaded", currentLoad: "LOAD-45920", progress: 65 },
-        { id: "r2", name: "Rack 2", status: "available", product: null, currentLoad: null },
-        { id: "r3", name: "Rack 3", status: "maintenance", product: null, currentLoad: null },
-        { id: "r4", name: "Rack 4", status: "loading", product: "Diesel", currentLoad: "LOAD-45918", progress: 30 },
+        { id: "r1", name: "Rack 1", number: 1, status: "loading", product: "Unleaded", currentLoad: "LOAD-45920", currentTruck: "TRK-101", progress: 65, eta: "15 min" },
+        { id: "r2", name: "Rack 2", number: 2, status: "available", product: null, currentLoad: null, currentTruck: null, progress: 0, eta: null },
+        { id: "r3", name: "Rack 3", number: 3, status: "maintenance", product: null, currentLoad: null, currentTruck: null, progress: 0, eta: null },
+        { id: "r4", name: "Rack 4", number: 4, status: "loading", product: "Diesel", currentLoad: "LOAD-45918", currentTruck: "TRK-102", progress: 30, eta: "25 min" },
       ];
     }),
 
@@ -45,10 +47,10 @@ export const terminalsRouter = router({
   getTanks: protectedProcedure
     .query(async () => {
       return [
-        { id: "t1", name: "Tank 1", product: "Unleaded", level: 82, capacity: 50000, status: "normal" },
-        { id: "t2", name: "Tank 2", product: "Premium", level: 45, capacity: 30000, status: "low" },
-        { id: "t3", name: "Tank 3", product: "Diesel", level: 78, capacity: 75000, status: "normal" },
-        { id: "t4", name: "Tank 4", product: "Jet Fuel", level: 90, capacity: 40000, status: "high" },
+        { id: "t1", name: "Tank 1", number: 1, product: "Unleaded", level: 82, capacity: 50000, status: "normal" },
+        { id: "t2", name: "Tank 2", number: 2, product: "Premium", level: 45, capacity: 30000, status: "low" },
+        { id: "t3", name: "Tank 3", number: 3, product: "Diesel", level: 78, capacity: 75000, status: "normal" },
+        { id: "t4", name: "Tank 4", number: 4, product: "Jet Fuel", level: 90, capacity: 40000, status: "high" },
       ];
     }),
 
