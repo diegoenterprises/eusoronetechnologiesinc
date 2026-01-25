@@ -26,17 +26,41 @@ export const billingRouter = router({
     }),
 
   /**
-   * Get invoices for Billing page
+   * Get invoices for Billing page and InvoiceManagement
    */
   getInvoices: protectedProcedure
-    .input(z.object({ limit: z.number().optional().default(20) }))
-    .query(async () => {
-      return [
+    .input(z.object({ limit: z.number().optional().default(20), search: z.string().optional(), status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const invoices = [
         { id: "inv_001", number: "INV-2025-0234", customer: "Shell Oil", amount: 4200, status: "paid", date: "2025-01-23" },
         { id: "inv_002", number: "INV-2025-0235", customer: "ExxonMobil", amount: 3800, status: "pending", date: "2025-01-23" },
         { id: "inv_003", number: "INV-2025-0230", customer: "Chevron", amount: 2950, status: "overdue", date: "2025-01-10" },
         { id: "inv_004", number: "INV-2025-0236", customer: "BP", amount: 4950, status: "pending", date: "2025-01-24" },
       ];
+      let filtered = invoices;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(i => i.customer.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
+      }
+      if (input.status && input.status !== "all") filtered = filtered.filter(i => i.status === input.status);
+      return filtered;
+    }),
+
+  /**
+   * Get invoice stats for InvoiceManagement
+   */
+  getInvoiceStats: protectedProcedure
+    .query(async () => {
+      return { total: 45, paid: 38, pending: 5, overdue: 2, totalAmount: 156750 };
+    }),
+
+  /**
+   * Send invoice mutation
+   */
+  sendInvoice: protectedProcedure
+    .input(z.object({ invoiceId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, invoiceId: input.invoiceId, sentAt: new Date().toISOString() };
     }),
 
   /**

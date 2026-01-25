@@ -26,6 +26,26 @@ export const loadsRouter = router({
     }),
 
   /**
+   * Track load by number for LoadTracking page
+   */
+  trackLoad: protectedProcedure
+    .input(z.object({ loadNumber: z.string() }))
+    .mutation(async ({ input }) => {
+      return {
+        loadNumber: input.loadNumber,
+        status: "in_transit",
+        origin: { city: "Houston", state: "TX" },
+        destination: { city: "Dallas", state: "TX" },
+        currentLocation: { city: "Waco", state: "TX", lat: 31.5493, lng: -97.1467 },
+        driver: "Mike Johnson",
+        carrier: "ABC Transport",
+        eta: "2:30 PM",
+        progress: 65,
+        lastUpdate: new Date().toISOString(),
+      };
+    }),
+
+  /**
    * Get all loads with filtering and pagination
    */
   list: protectedProcedure
