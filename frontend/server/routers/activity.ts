@@ -59,6 +59,11 @@ export const activityRouter = router({
       return {
         totalActivities: 156,
         todayActivities: 23,
+        weekActivities: 89,
+        totalToday: 23,
+        loadsToday: 12,
+        bidsToday: 8,
+        thisWeek: 89,
         loadsCreated: 12,
         driversAssigned: 8,
         documentsUploaded: 45,
