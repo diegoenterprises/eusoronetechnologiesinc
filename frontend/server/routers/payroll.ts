@@ -139,4 +139,44 @@ export const payrollRouter = router({
         message: `Processed ${input.payrollIds.length} payroll records`,
       };
     }),
+
+  /**
+   * Get time off requests for TimeOffRequests page
+   */
+  getTimeOffRequests: protectedProcedure
+    .input(z.object({ status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const requests = [
+        { id: "to1", driver: "Mike Johnson", type: "vacation", startDate: "2025-02-01", endDate: "2025-02-05", status: "pending", requestedAt: "2025-01-20" },
+        { id: "to2", driver: "Sarah Williams", type: "sick", startDate: "2025-01-25", endDate: "2025-01-26", status: "approved", requestedAt: "2025-01-22" },
+      ];
+      if (input.status && input.status !== "all") return requests.filter(r => r.status === input.status);
+      return requests;
+    }),
+
+  /**
+   * Get time off stats for TimeOffRequests page
+   */
+  getTimeOffStats: protectedProcedure
+    .query(async () => {
+      return { pending: 3, approved: 12, denied: 2, thisMonth: 8 };
+    }),
+
+  /**
+   * Approve time off mutation
+   */
+  approveTimeOff: protectedProcedure
+    .input(z.object({ requestId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, requestId: input.requestId, status: "approved" };
+    }),
+
+  /**
+   * Deny time off mutation
+   */
+  denyTimeOff: protectedProcedure
+    .input(z.object({ requestId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      return { success: true, requestId: input.requestId, status: "denied" };
+    }),
 });

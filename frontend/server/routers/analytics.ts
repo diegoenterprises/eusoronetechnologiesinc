@@ -55,6 +55,56 @@ export const analyticsRouter = router({
     }),
 
   /**
+   * Get utilization summary for UtilizationReport page
+   */
+  getUtilizationSummary: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional() }))
+    .query(async () => {
+      return { fleetUtilization: 78, avgMilesPerVehicle: 2450, avgHoursPerDriver: 42, idleTime: 12 };
+    }),
+
+  /**
+   * Get utilization by vehicle for UtilizationReport page
+   */
+  getUtilizationByVehicle: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }))
+    .query(async () => {
+      return [
+        { vehicleId: "v1", unitNumber: "TRK-101", utilization: 85, miles: 2850, hours: 48 },
+        { vehicleId: "v2", unitNumber: "TRK-102", utilization: 72, miles: 2100, hours: 38 },
+      ];
+    }),
+
+  /**
+   * Get utilization by driver for UtilizationReport page
+   */
+  getUtilizationByDriver: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }))
+    .query(async () => {
+      return [
+        { driverId: "d1", name: "Mike Johnson", utilization: 82, miles: 2650, hours: 45 },
+        { driverId: "d2", name: "Sarah Williams", utilization: 78, miles: 2400, hours: 42 },
+      ];
+    }),
+
+  /**
+   * Get utilization trends for UtilizationReport page
+   */
+  getUtilizationTrends: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional() }))
+    .query(async () => {
+      return [
+        { date: "2025-01-17", utilization: 75 },
+        { date: "2025-01-18", utilization: 78 },
+        { date: "2025-01-19", utilization: 72 },
+        { date: "2025-01-20", utilization: 80 },
+        { date: "2025-01-21", utilization: 82 },
+        { date: "2025-01-22", utilization: 78 },
+        { date: "2025-01-23", utilization: 76 },
+      ];
+    }),
+
+  /**
    * Get summary for Analytics page
    */
   getSummary: protectedProcedure
