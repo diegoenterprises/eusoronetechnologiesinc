@@ -466,4 +466,100 @@ export const carriersRouter = router({
         createdAt: new Date().toISOString(),
       };
     }),
+
+  /**
+   * Get carrier directory for CarrierDirectory page
+   */
+  getDirectory: protectedProcedure
+    .input(z.object({ search: z.string().optional(), equipment: z.string().optional() }))
+    .query(async ({ input }) => {
+      const carriers = [
+        { id: "c1", name: "ABC Transport", mcNumber: "MC-123456", equipment: ["tanker", "dry_van"], rating: 4.8, trucks: 25, location: "Houston, TX", verified: true },
+        { id: "c2", name: "Fast Freight", mcNumber: "MC-234567", equipment: ["dry_van", "flatbed"], rating: 4.5, trucks: 18, location: "Dallas, TX", verified: true },
+        { id: "c3", name: "Pro Haulers", mcNumber: "MC-345678", equipment: ["flatbed", "tanker"], rating: 4.7, trucks: 32, location: "Austin, TX", verified: true },
+      ];
+      let filtered = carriers;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(c => c.name.toLowerCase().includes(q) || c.mcNumber.toLowerCase().includes(q));
+      }
+      if (input.equipment && input.equipment !== "all") {
+        filtered = filtered.filter(c => c.equipment.includes(input.equipment!));
+      }
+      return filtered;
+    }),
+
+  /**
+   * Get directory stats for CarrierDirectory page
+   */
+  getDirectoryStats: protectedProcedure
+    .query(async () => {
+      return { total: 245, verified: 220, active: 198, newThisMonth: 12 };
+    }),
+
+  /**
+   * Get carrier profile for CarrierProfile page
+   */
+  getProfile: protectedProcedure
+    .query(async () => {
+      return {
+        id: "c1",
+        companyName: "ABC Transport LLC",
+        mcNumber: "MC-123456",
+        dotNumber: "1234567",
+        contactName: "John Carrier",
+        email: "john@abctransport.com",
+        phone: "555-0200",
+        address: "456 Trucking Lane, Houston, TX 77002",
+        verified: true,
+        memberSince: "2023-06-15",
+      };
+    }),
+
+  /**
+   * Get carrier stats for CarrierProfile page
+   */
+  getStats: protectedProcedure
+    .query(async () => {
+      return {
+        totalLoads: 1250,
+        totalRevenue: 3750000,
+        avgRatePerMile: 2.85,
+        onTimeDeliveryRate: 96,
+        safetyScore: 92,
+        avgPaymentReceived: 12,
+      };
+    }),
+
+  /**
+   * Get fleet summary for CarrierProfile page
+   */
+  getFleetSummary: protectedProcedure
+    .query(async () => {
+      return {
+        totalTrucks: 25,
+        activeTrucks: 22,
+        inMaintenance: 2,
+        available: 8,
+        drivers: 28,
+        activeDrivers: 24,
+      };
+    }),
+
+  /**
+   * Get safety rating for CarrierProfile page
+   */
+  getSafetyRating: protectedProcedure
+    .query(async () => {
+      return {
+        overallScore: 92,
+        unsafeDriving: 15,
+        hosCompliance: 8,
+        vehicleMaintenance: 12,
+        controlledSubstances: 0,
+        driverFitness: 5,
+        lastAudit: "2025-01-15",
+        nextAuditDue: "2026-01-15",
+      };
+    }),
 });
