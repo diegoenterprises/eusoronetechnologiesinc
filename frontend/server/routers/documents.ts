@@ -249,4 +249,6 @@ export const documentsRouter = router({
         },
       ];
     }),
+
+  getSummary: protectedProcedure.query(async () => ({ total: 45, pending: 5, expiring: 3, categories: 6 })),
 });
