@@ -11,6 +11,104 @@ const loadStatusSchema = z.enum(["draft", "posted", "assigned", "in_transit", "d
 
 export const shippersRouter = router({
   /**
+   * Get shipper dashboard stats
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        activeLoads: 8,
+        pendingBids: 12,
+        deliveredThisWeek: 15,
+        ratePerMile: 3.45,
+        onTimeRate: 96,
+        totalSpendThisMonth: 89500,
+      };
+    }),
+
+  /**
+   * Get active loads
+   */
+  getActiveLoads: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        {
+          id: "load_001",
+          loadNumber: "LOAD-45920",
+          status: "in_transit",
+          origin: "Houston, TX",
+          destination: "Dallas, TX",
+          carrier: "ABC Transport",
+          driver: "Mike Johnson",
+          eta: "2 hours",
+          rate: 2450,
+        },
+        {
+          id: "load_002",
+          loadNumber: "LOAD-45919",
+          status: "loading",
+          origin: "Beaumont, TX",
+          destination: "Austin, TX",
+          carrier: "FastHaul LLC",
+          driver: "Tom Brown",
+          eta: "6 hours",
+          rate: 2800,
+        },
+      ];
+    }),
+
+  /**
+   * Get loads requiring attention
+   */
+  getLoadsRequiringAttention: protectedProcedure
+    .query(async () => {
+      return [
+        {
+          id: "load_003",
+          loadNumber: "LOAD-45918",
+          issue: "Delayed pickup",
+          severity: "warning",
+          message: "Carrier delayed 30 minutes at origin",
+        },
+        {
+          id: "load_004",
+          loadNumber: "LOAD-45915",
+          issue: "Missing documentation",
+          severity: "critical",
+          message: "BOL not uploaded",
+        },
+      ];
+    }),
+
+  /**
+   * Get recent loads
+   */
+  getRecentLoads: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(5) }))
+    .query(async () => {
+      return [
+        {
+          id: "load_010",
+          loadNumber: "LOAD-45910",
+          status: "delivered",
+          origin: "Houston, TX",
+          destination: "Dallas, TX",
+          deliveredAt: "2025-01-23",
+          rate: 2300,
+        },
+        {
+          id: "load_011",
+          loadNumber: "LOAD-45908",
+          status: "delivered",
+          origin: "Port Arthur, TX",
+          destination: "Austin, TX",
+          deliveredAt: "2025-01-22",
+          rate: 2650,
+        },
+      ];
+    }),
+
+  /**
    * Get shipper dashboard summary
    */
   getDashboardSummary: protectedProcedure
@@ -102,9 +200,9 @@ export const shippersRouter = router({
     }),
 
   /**
-   * Get loads requiring attention
+   * Get loads requiring attention (detailed version)
    */
-  getLoadsRequiringAttention: protectedProcedure
+  getLoadsAttentionDetails: protectedProcedure
     .query(async ({ ctx }) => {
       return [
         {
