@@ -11,6 +11,14 @@ const customerStatusSchema = z.enum(["active", "inactive", "pending", "blocked"]
 
 export const customersRouter = router({
   /**
+   * Get summary for CustomerDirectory page
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return { total: 45, active: 38, pending: 5, blocked: 2, totalRevenue: 1250000 };
+    }),
+
+  /**
    * List customers
    */
   list: protectedProcedure

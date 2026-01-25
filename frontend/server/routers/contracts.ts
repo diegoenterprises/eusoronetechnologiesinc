@@ -15,6 +15,34 @@ const contractStatusSchema = z.enum([
 
 export const contractsRouter = router({
   /**
+   * Get all contracts for ContractManagement page
+   */
+  getAll: protectedProcedure
+    .input(z.object({ search: z.string().optional(), status: z.string().optional() }))
+    .query(async ({ input }) => {
+      const contracts = [
+        { id: "c1", number: "CTR-2025-0045", customer: "Shell Oil", type: "volume", status: "active", value: 500000, endDate: "2025-12-31" },
+        { id: "c2", number: "CTR-2024-0089", customer: "ExxonMobil", type: "dedicated", status: "active", value: 750000, endDate: "2025-06-30" },
+        { id: "c3", number: "CTR-2024-0075", customer: "Valero", type: "lane", status: "expiring", value: 320000, endDate: "2025-02-28" },
+      ];
+      let filtered = contracts;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(c => c.customer.toLowerCase().includes(q) || c.number.toLowerCase().includes(q));
+      }
+      if (input.status && input.status !== "all") filtered = filtered.filter(c => c.status === input.status);
+      return filtered;
+    }),
+
+  /**
+   * Get contract stats for ContractManagement page
+   */
+  getStats: protectedProcedure
+    .query(async () => {
+      return { total: 12, active: 9, expiring: 2, expired: 1, totalValue: 4250000 };
+    }),
+
+  /**
    * List contracts
    */
   list: protectedProcedure

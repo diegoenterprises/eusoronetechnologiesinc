@@ -12,6 +12,14 @@ const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
 
 export const driversRouter = router({
   /**
+   * Get summary for DriverDirectory page
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return { total: 24, available: 8, onLoad: 12, offDuty: 4, avgSafetyScore: 94 };
+    }),
+
+  /**
    * Get driver dashboard stats for logged-in driver
    */
   getDashboardStats: protectedProcedure
