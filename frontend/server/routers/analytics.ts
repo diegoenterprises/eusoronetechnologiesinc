@@ -459,10 +459,18 @@ export const analyticsRouter = router({
   getDeadheadByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ lane: "Houston-Dallas", deadheadPct: 12, loads: 45 }]),
 
   // On-time analysis
-  getOnTimeSummary: protectedProcedure.query(async () => ({ rate: 96, onTime: 450, late: 18, early: 32 })),
-  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ month: "Jan", rate: 96 }, { month: "Dec", rate: 94 }]),
-  getOnTimeByCustomer: protectedProcedure.query(async () => [{ customerId: "c1", name: "Shell Oil", rate: 98, loads: 120 }]),
-  getOnTimeByLane: protectedProcedure.query(async () => [{ lane: "Houston-Dallas", rate: 97, loads: 85 }]),
+  getOnTimeSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ 
+    rate: 96, 
+    onTime: 450, 
+    late: 18, 
+    early: 32,
+    onTimeRate: 96,
+    onTimeDeliveries: 450,
+    trendPercent: 2.1,
+  })),
+  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => [{ month: "Jan", rate: 96 }, { month: "Dec", rate: 94 }]),
+  getOnTimeByCustomer: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ customerId: "c1", name: "Shell Oil", rate: 98, loads: 120 }]),
+  getOnTimeByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ lane: "Houston-Dallas", rate: 97, loads: 85 }]),
 
   // Performance reports
   getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
