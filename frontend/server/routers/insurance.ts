@@ -8,6 +8,36 @@ import { protectedProcedure, router } from "../_core/trpc";
 
 export const insuranceRouter = router({
   /**
+   * Get claims for ClaimsManagement page
+   */
+  getClaims: protectedProcedure
+    .input(z.object({ filter: z.string().optional() }))
+    .query(async ({ input }) => {
+      const claims = [
+        { id: "clm_001", number: "CLM-2025-0012", type: "cargo_damage", status: "open", amount: 4500, load: "LOAD-45910", date: "2025-01-22" },
+        { id: "clm_002", number: "CLM-2025-0011", type: "accident", status: "investigating", amount: 12000, load: "LOAD-45895", date: "2025-01-18" },
+        { id: "clm_003", number: "CLM-2025-0010", type: "cargo_loss", status: "approved", amount: 8200, load: "LOAD-45880", date: "2025-01-15" },
+      ];
+      if (input.filter && input.filter !== "all") {
+        return claims.filter(c => c.status === input.filter);
+      }
+      return claims;
+    }),
+
+  /**
+   * Get claim stats for ClaimsManagement page
+   */
+  getClaimStats: protectedProcedure
+    .query(async () => {
+      return {
+        openClaims: 2,
+        totalAmount: 24700,
+        avgResolutionDays: 14,
+        approvalRate: 85,
+      };
+    }),
+
+  /**
    * Get insurance policies
    */
   getPolicies: protectedProcedure

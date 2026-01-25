@@ -14,6 +14,31 @@ const loadStatusSchema = z.enum([
 
 export const catalystsRouter = router({
   /**
+   * Get exceptions for CatalystExceptions page
+   */
+  getExceptions: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      type: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const exceptions = [
+        { id: "exc_001", loadNumber: "LOAD-45915", type: "breakdown", status: "open", driver: "James Wilson", location: "I-35 Temple, TX", reportedAt: "2025-01-24T10:30:00Z", severity: "high" },
+        { id: "exc_002", loadNumber: "LOAD-45918", type: "delay", status: "resolved", driver: "Tom Brown", location: "Beaumont, TX", reportedAt: "2025-01-24T08:00:00Z", severity: "medium" },
+        { id: "exc_003", loadNumber: "LOAD-45920", type: "hos", status: "open", driver: "Mike Johnson", location: "Waco, TX", reportedAt: "2025-01-24T14:00:00Z", severity: "low" },
+      ];
+      let filtered = exceptions;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(e => e.loadNumber.toLowerCase().includes(q) || e.driver.toLowerCase().includes(q));
+      }
+      if (input.status) filtered = filtered.filter(e => e.status === input.status);
+      if (input.type) filtered = filtered.filter(e => e.type === input.type);
+      return filtered;
+    }),
+
+  /**
    * Get dispatch dashboard summary
    */
   getDashboardSummary: protectedProcedure
@@ -457,9 +482,9 @@ export const catalystsRouter = router({
     }),
 
   /**
-   * Get exceptions list for CatalystExceptions page
+   * Get exceptions list for CatalystExceptions page (detailed version)
    */
-  getExceptions: protectedProcedure
+  getExceptionsDetailed: protectedProcedure
     .input(z.object({
       search: z.string().optional(),
       status: z.string().optional(),
