@@ -686,7 +686,23 @@ export const driversRouter = router({
   })),
   getPerformanceReviews: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
   getReviewStats: protectedProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3 })),
-  getScorecard: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ safety: 94, efficiency: 88, compliance: 96, customer: 92 })),
+  getScorecard: protectedProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() })).query(async () => ({ 
+    safety: 94, 
+    efficiency: 88, 
+    compliance: 96, 
+    customer: 92,
+    overallScore: 92,
+    driverName: "Mike Johnson",
+    rank: 3,
+    totalDrivers: 24,
+    trend: "up",
+    metrics: {
+      loadsCompleted: 45,
+      milesDriver: 12500,
+      revenue: 28500,
+      fuelEfficiency: 6.8,
+    },
+  })),
   getLeaderboard: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => [{ rank: 1, driverId: "d1", name: "Mike Johnson", score: 98 }]),
 
   // Pre-trip
