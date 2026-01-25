@@ -11,6 +11,24 @@ const notificationCategorySchema = z.enum(["loads", "compliance", "safety", "bil
 
 export const notificationsRouter = router({
   /**
+   * Get notifications summary
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return {
+        total: 12,
+        unread: 4,
+        byCategory: {
+          loads: 5,
+          compliance: 3,
+          safety: 2,
+          billing: 1,
+          system: 1,
+        },
+      };
+    }),
+
+  /**
    * Get all notifications for current user
    */
   list: protectedProcedure
