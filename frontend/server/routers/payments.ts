@@ -216,7 +216,26 @@ export const paymentsRouter = router({
   getInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inv1", amount: 2500, status: "paid", date: "2025-01-22" }]),
   getPaymentStats: protectedProcedure.query(async () => ({ totalProcessed: 250000, avgPaymentTime: 12, successRate: 99.5 })),
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "p1", amount: 2500, type: "received", date: "2025-01-22" }]),
-  getInvoice: protectedProcedure.input(z.object({ invoiceId: z.string() })).query(async ({ input }) => ({ id: input.invoiceId, amount: 2500, status: "paid", items: [] })),
-  sendInvoice: protectedProcedure.input(z.object({ invoiceId: z.string(), email: z.string() })).mutation(async ({ input }) => ({ success: true, sentAt: new Date().toISOString() })),
+  getInvoice: protectedProcedure.input(z.object({ invoiceId: z.string(), id: z.string().optional() })).query(async ({ input }) => ({ 
+    id: input.invoiceId || input.id, 
+    invoiceNumber: "INV-2025-0042",
+    amount: 2500, 
+    total: 2500,
+    status: "paid", 
+    createdAt: "2025-01-20T10:00:00Z",
+    dueDate: "2025-02-20",
+    daysOverdue: 0,
+    billTo: {
+      name: "Shell Oil Company",
+      address: "1234 Energy Way",
+      city: "Houston",
+      state: "TX",
+      zip: "77001",
+    },
+    items: [
+      { description: "Load LOAD-45920 - Houston to Dallas", quantity: 1, rate: 2500, amount: 2500 }
+    ],
+  })),
+  sendInvoice: protectedProcedure.input(z.object({ invoiceId: z.string(), email: z.string().optional() })).mutation(async ({ input }) => ({ success: true, sentAt: new Date().toISOString() })),
   markInvoicePaid: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async ({ input }) => ({ success: true, invoiceId: input.invoiceId })),
 });
