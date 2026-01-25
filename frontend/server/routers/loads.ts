@@ -12,6 +12,20 @@ import { eq, and, desc, sql } from "drizzle-orm";
 
 export const loadsRouter = router({
   /**
+   * Get shipper summary for ShipperLoads page
+   */
+  getShipperSummary: protectedProcedure
+    .query(async () => {
+      return {
+        totalLoads: 156,
+        activeLoads: 12,
+        inTransit: 8,
+        delivered: 142,
+        pendingBids: 4,
+      };
+    }),
+
+  /**
    * Get all loads with filtering and pagination
    */
   list: protectedProcedure

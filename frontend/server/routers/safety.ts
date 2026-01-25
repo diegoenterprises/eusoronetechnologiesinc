@@ -121,6 +121,31 @@ export const safetyRouter = router({
     }),
 
   /**
+   * Get incidents for SafetyIncidents page
+   */
+  getIncidents: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      type: z.string().optional(),
+    }))
+    .query(async ({ input }) => {
+      const incidents = [
+        { id: "i1", number: "INC-2025-0045", type: "accident", status: "investigating", date: "2025-01-22", driver: "John Smith", severity: "major" },
+        { id: "i2", number: "INC-2025-0044", type: "near_miss", status: "closed", date: "2025-01-20", driver: "Sarah Williams", severity: "minor" },
+        { id: "i3", number: "INC-2025-0043", type: "violation", status: "open", date: "2025-01-18", driver: "Tom Brown", severity: "moderate" },
+      ];
+      let filtered = incidents;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(i => i.driver.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
+      }
+      if (input.status) filtered = filtered.filter(i => i.status === input.status);
+      if (input.type) filtered = filtered.filter(i => i.type === input.type);
+      return filtered;
+    }),
+
+  /**
    * List incidents
    */
   listIncidents: protectedProcedure
@@ -399,9 +424,9 @@ export const safetyRouter = router({
     }),
 
   /**
-   * Get incidents with search/filter for SafetyIncidents page
+   * Get incidents with search/filter for SafetyIncidents page (detailed version)
    */
-  getIncidents: protectedProcedure
+  getIncidentsDetailed: protectedProcedure
     .input(z.object({
       search: z.string().optional(),
       status: z.string().optional(),
