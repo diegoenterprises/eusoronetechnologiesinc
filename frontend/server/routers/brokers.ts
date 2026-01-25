@@ -104,9 +104,14 @@ export const brokersRouter = router({
     .query(async () => {
       return {
         totalLoads: 45,
+        loadsBrokered: 45,
         totalRevenue: 127500,
         totalCommission: 12750,
         avgMargin: 10.2,
+        avgMarginPercent: 10.2,
+        commissionTrend: 5.2,
+        loadsTrend: 8.5,
+        revenueTrend: 12.3,
         topCarriers: [
           { name: "ABC Transport", loads: 12, revenue: 28500 },
           { name: "FastHaul LLC", loads: 8, revenue: 19200 },
