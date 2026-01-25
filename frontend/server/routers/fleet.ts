@@ -75,6 +75,7 @@ export const fleetRouter = router({
    * Get fleet stats for FleetManagement
    */
   getFleetStats: protectedProcedure
+    .input(z.object({ filters: z.any().optional() }).optional())
     .query(async () => {
       return {
         totalVehicles: 24,
