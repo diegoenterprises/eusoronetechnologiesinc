@@ -11,6 +11,38 @@ const courseCategorySchema = z.enum(["safety", "hazmat", "compliance", "equipmen
 
 export const trainingRouter = router({
   /**
+   * Get all trainings for TrainingManagement page
+   */
+  getAll: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const trainings = [
+        { id: "t1", title: "Hazmat Safety", driver: "Mike Johnson", status: "completed", progress: 100, dueDate: "2025-01-20" },
+        { id: "t2", title: "Defensive Driving", driver: "Sarah Williams", status: "in_progress", progress: 65, dueDate: "2025-02-15" },
+        { id: "t3", title: "HOS Compliance", driver: "Tom Brown", status: "overdue", progress: 30, dueDate: "2025-01-10" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return trainings.filter(t => t.title.toLowerCase().includes(q) || t.driver.toLowerCase().includes(q));
+      }
+      return trainings;
+    }),
+
+  /**
+   * Get training stats for TrainingManagement page
+   */
+  getStats: protectedProcedure
+    .query(async () => {
+      return {
+        totalTrainings: 45,
+        completed: 32,
+        inProgress: 8,
+        overdue: 5,
+        completionRate: 71,
+      };
+    }),
+
+  /**
    * Get training dashboard summary
    */
   getDashboardSummary: protectedProcedure
