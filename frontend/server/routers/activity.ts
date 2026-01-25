@@ -58,16 +58,19 @@ export const activityRouter = router({
     .query(async () => {
       return {
         totalActivities: 156,
-        todayActivities: 23,
+        todayActivities: 24,
         weekActivities: 89,
-        totalToday: 23,
-        loadsToday: 12,
-        bidsToday: 8,
+        totalToday: 24,
+        loadsToday: 8,
+        bidsToday: 12,
         thisWeek: 89,
-        loadsCreated: 12,
-        driversAssigned: 8,
-        documentsUploaded: 45,
-        messagesExchanged: 67,
+        loadsCreated: 45,
+        driversAssigned: 38,
+        documentsUploaded: 28,
+        messagesExchanged: 156,
+        loadActivities: 45,
+        userActivities: 28,
+        paymentActivities: 15,
       };
     }),
 
