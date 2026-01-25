@@ -429,4 +429,38 @@ export const shippersRouter = router({
         submittedAt: new Date().toISOString(),
       };
     }),
+
+  /**
+   * Get shipper profile for ShipperProfile page
+   */
+  getProfile: protectedProcedure
+    .query(async () => {
+      return {
+        id: "s1",
+        companyName: "Shell Oil Company",
+        contactName: "John Smith",
+        email: "john.smith@shell.com",
+        phone: "555-0100",
+        address: "123 Energy Way, Houston, TX 77001",
+        dotNumber: "1234567",
+        mcNumber: "MC-123456",
+        verified: true,
+        memberSince: "2024-01-15",
+      };
+    }),
+
+  /**
+   * Get shipper stats for ShipperProfile page
+   */
+  getStats: protectedProcedure
+    .query(async () => {
+      return {
+        totalLoads: 245,
+        totalSpend: 875000,
+        avgRatePerMile: 3.45,
+        onTimeDeliveryRate: 96,
+        preferredCarriers: 12,
+        avgPaymentTime: 15,
+      };
+    }),
 });
