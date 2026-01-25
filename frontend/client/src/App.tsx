@@ -125,6 +125,10 @@ import IncomingShipments from "./pages/IncomingShipments";
 import OutgoingShipments from "./pages/OutgoingShipments";
 import TerminalStaff from "./pages/TerminalStaff";
 import TerminalOperations from "./pages/TerminalOperations";
+import Violations from "./pages/Violations";
+import Audits from "./pages/Audits";
+import SafetyMetrics from "./pages/SafetyMetrics";
+import SafetyIncidents from "./pages/SafetyIncidents";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -807,6 +811,30 @@ function Router() {
       <Route path={"/compliance"} component={() => (
         <DashboardLayout>
           <ComplianceDashboard />
+        </DashboardLayout>
+      )} />
+      
+      {/* Compliance Officer-specific routes */}
+      <Route path={"/violations"} component={() => (
+        <DashboardLayout>
+          <Violations />
+        </DashboardLayout>
+      )} />
+      <Route path={"/audits"} component={() => (
+        <DashboardLayout>
+          <Audits />
+        </DashboardLayout>
+      )} />
+      
+      {/* Safety Manager-specific routes */}
+      <Route path={"/safety-metrics"} component={() => (
+        <DashboardLayout>
+          <SafetyMetrics />
+        </DashboardLayout>
+      )} />
+      <Route path={"/safety-incidents"} component={() => (
+        <DashboardLayout>
+          <SafetyIncidents />
         </DashboardLayout>
       )} />
       
