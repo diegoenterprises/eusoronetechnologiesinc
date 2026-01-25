@@ -599,4 +599,51 @@ export const driversRouter = router({
         { id: "l2", loadNumber: "LOAD-45915", origin: "Austin, TX", destination: "San Antonio, TX", status: "delivered", deliveredAt: "2025-01-20" },
       ];
     }),
+
+  // Load acceptance
+  acceptLoad: protectedProcedure.input(z.object({ loadId: z.string() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
+  declineLoad: protectedProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
+  getPendingLoads: protectedProcedure.query(async () => [{ id: "l1", loadNumber: "LOAD-45930", origin: "Houston, TX", destination: "Dallas, TX", rate: 2450 }]),
+
+  // Driver applications
+  getApplications: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "a1", name: "John Smith", status: "pending", appliedAt: "2025-01-22" }]),
+  getApplicationStats: protectedProcedure.query(async () => ({ pending: 12, approved: 150, rejected: 25 })),
+  approveApplication: protectedProcedure.input(z.object({ applicationId: z.string() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId })),
+  rejectApplication: protectedProcedure.input(z.object({ applicationId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId })),
+
+  // Current driver info
+  getCurrentDriver: protectedProcedure.query(async () => ({ id: "d1", name: "Mike Johnson", status: "active", cdlNumber: "TX12345678" })),
+  getCurrentVehicle: protectedProcedure.query(async () => ({ id: "v1", unitNumber: "TRK-101", make: "Peterbilt", model: "579", year: 2022 })),
+
+  // Earnings
+  getEarningsStats: protectedProcedure.query(async () => ({ thisWeek: 2850, lastWeek: 3100, thisMonth: 12500, avgPerLoad: 450 })),
+  getCompletedTrips: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "t1", loadNumber: "LOAD-45920", earnings: 850, completedAt: "2025-01-22" }]),
+
+  // HOS
+  getHOSAvailability: protectedProcedure.query(async () => ({ canDrive: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m" })),
+  getMyHOS: protectedProcedure.query(async () => ({ status: "driving", drivingRemaining: "6h 30m", onDutyRemaining: "8h 00m", cycleRemaining: "52h 30m" })),
+  startDriving: protectedProcedure.mutation(async () => ({ success: true, startedAt: new Date().toISOString() })),
+  stopDriving: protectedProcedure.mutation(async () => ({ success: true, stoppedAt: new Date().toISOString() })),
+
+  // Onboarding
+  getOnboarding: protectedProcedure.query(async () => ({ step: 3, totalSteps: 5, completed: ["profile", "documents", "vehicle"] })),
+  getOnboardingStats: protectedProcedure.query(async () => ({ inProgress: 15, completed: 120, dropped: 8 })),
+
+  // Performance
+  getPerformance: protectedProcedure.query(async () => ({ score: 92, onTimeRate: 96, safetyScore: 94, customerRating: 4.8 })),
+  getPerformanceReviews: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
+  getReviewStats: protectedProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3 })),
+  getScorecard: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ safety: 94, efficiency: 88, compliance: 96, customer: 92 })),
+  getLeaderboard: protectedProcedure.query(async () => [{ rank: 1, driverId: "d1", name: "Mike Johnson", score: 98 }]),
+
+  // Pre-trip
+  getPreTripChecklist: protectedProcedure.query(async () => [{ id: "c1", item: "Brakes", required: true }, { id: "c2", item: "Lights", required: true }]),
+  submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })) })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
+
+  // Events
+  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30" }]),
+
+  // Terminations
+  getTerminations: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "t1", driverId: "d1", reason: "voluntary", date: "2025-01-20" }]),
+  getTerminationStats: protectedProcedure.query(async () => ({ total: 25, voluntary: 18, involuntary: 7 })),
 });
