@@ -384,7 +384,7 @@ export const bidsRouter = router({
     }),
 
   // Additional bid procedures
-  getById: protectedProcedure.input(z.object({ bidId: z.string(), id: z.string().optional() })).query(async ({ input }) => ({ 
+  getById: protectedProcedure.input(z.object({ bidId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
     id: input.bidId || input.id, 
     loadId: "l1", 
     loadNumber: "LOAD-45920",
@@ -399,7 +399,9 @@ export const bidsRouter = router({
     distance: 860,
     weight: 42000,
     equipment: "Dry Van",
+    equipmentType: "Dry Van",
     carrierName: "ABC Transport",
+    mcNumber: "MC-987654",
     notes: "Flexible on pickup time",
   })),
   getByLoad: protectedProcedure.input(z.object({ loadId: z.string() })).query(async () => [{ id: "b1", carrierId: "c1", carrierName: "ABC Transport", amount: 2450, status: "pending" }]),
