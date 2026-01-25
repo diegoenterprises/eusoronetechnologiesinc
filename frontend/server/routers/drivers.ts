@@ -630,7 +630,24 @@ export const driversRouter = router({
   getOnboardingStats: protectedProcedure.query(async () => ({ inProgress: 15, completed: 120, dropped: 8 })),
 
   // Performance
-  getPerformance: protectedProcedure.query(async () => ({ score: 92, onTimeRate: 96, safetyScore: 94, customerRating: 4.8 })),
+  getPerformance: protectedProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({
+    score: 92,
+    overallScore: 92,
+    onTimeRate: 96,
+    safetyScore: 94,
+    customerRating: 4.8,
+    name: "Mike Johnson",
+    rank: 3,
+    totalDrivers: 24,
+    trend: "up",
+    achievements: [{ id: "a1", name: "Perfect Week", earnedAt: "2025-01-20" }],
+    metrics: {
+      loadsCompleted: 45,
+      milesDriver: 12500,
+      revenue: 28500,
+      fuelEfficiency: 6.8,
+    },
+  })),
   getPerformanceReviews: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
   getReviewStats: protectedProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3 })),
   getScorecard: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ safety: 94, efficiency: 88, compliance: 96, customer: 92 })),
