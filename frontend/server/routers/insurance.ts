@@ -75,8 +75,11 @@ export const insuranceRouter = router({
     .query(async () => {
       return {
         totalPolicies: 5,
+        total: 5,
         activePolicies: 4,
+        active: 4,
         expiringPolicies: 1,
+        expiringSoon: 1,
         totalCoverage: 2500000,
         annualPremium: 45000,
       };
