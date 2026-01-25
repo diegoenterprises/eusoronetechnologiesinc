@@ -60,8 +60,10 @@ export const systemRouter = router({
   ])),
 
   // System health stats
-  getHealth: publicProcedure.query(async () => ({
+  getHealth: publicProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({
     overall: "healthy",
+    overallStatus: "healthy",
+    status: "operational",
     services: [
       { name: "API", status: "operational", uptime: 99.99, latency: 45 },
       { name: "Database", status: "operational", uptime: 99.98, latency: 12 },
@@ -69,11 +71,16 @@ export const systemRouter = router({
     ],
     lastCheck: new Date().toISOString(),
     uptime: 99.95,
+    activeUsers: 1250,
+    loadAvg: 0.42,
+    cpu: { current: 42, avg: 38, peak: 72 },
+    memory: { current: 68, avg: 65, peak: 82 },
+    disk: { current: 55, used: 275, total: 500 },
     cpuUsage: 42,
     memoryUsage: 68,
     diskUsage: 55,
   })),
-  getMetrics: publicProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+  getMetrics: publicProcedure.input(z.object({ period: z.string().optional(), timeRange: z.string().optional() }).optional()).query(async () => ({
     cpu: [42, 45, 38, 52, 48, 44, 41],
     memory: [68, 70, 65, 72, 69, 67, 68],
     disk: [55, 55, 55, 56, 56, 56, 55],
