@@ -985,4 +985,25 @@ export const terminalsRouter = router({
         { id: "d3", number: "Dock 3", status: "maintenance", carrier: null, startTime: null },
       ];
     }),
+
+  // Shipments
+  checkInShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, checkedInAt: new Date().toISOString() })),
+  dispatchShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, dispatchedAt: new Date().toISOString() })),
+  getIncomingShipments: protectedProcedure.input(z.object({ date: z.string().optional() })).query(async () => [{ id: "s1", carrier: "ABC Transport", product: "Diesel", volume: 8500, eta: "10:30" }]),
+  getIncomingStats: protectedProcedure.query(async () => ({ expected: 12, arrived: 8, late: 1 })),
+  getOutgoingShipments: protectedProcedure.input(z.object({ date: z.string().optional() })).query(async () => [{ id: "s2", carrier: "XYZ Logistics", product: "Unleaded", volume: 7200, scheduledTime: "14:00" }]),
+  getOutgoingStats: protectedProcedure.query(async () => ({ scheduled: 15, dispatched: 10, pending: 5 })),
+
+  // Alerts & Tanks
+  getActiveAlerts: protectedProcedure.query(async () => [{ id: "a1", type: "low_level", tank: "Tank 3", message: "Level below 20%", severity: "warning" }]),
+  getTankLevels: protectedProcedure.query(async () => [{ tankId: "t1", name: "Tank 1", product: "Diesel", level: 75, capacity: 50000 }]),
+  getRackStats: protectedProcedure.query(async () => ({ total: 8, active: 6, idle: 1, maintenance: 1 })),
+
+  // Appointments
+  rescheduleAppointment: protectedProcedure.input(z.object({ appointmentId: z.string(), newDate: z.string(), newTime: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
+
+  // EIA Reporting
+  getEIAReport: protectedProcedure.input(z.object({ period: z.string() })).query(async ({ input }) => ({ period: input.period, totalReceived: 125000, totalDispatched: 118000, inventory: 375000 })),
+  getEIAStats: protectedProcedure.query(async () => ({ reportsSubmitted: 52, lastSubmission: "2025-01-15", nextDue: "2025-01-22" })),
+  submitEIAReport: protectedProcedure.input(z.object({ period: z.string(), data: z.any() })).mutation(async ({ input }) => ({ success: true, reportId: "eia_123", submittedAt: new Date().toISOString() })),
 });
