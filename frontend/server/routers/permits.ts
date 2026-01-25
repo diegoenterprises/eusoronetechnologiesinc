@@ -323,4 +323,10 @@ export const permitsRouter = router({
         uploadedAt: new Date().toISOString(),
       };
     }),
+
+  // Additional permit procedures
+  getActive: protectedProcedure.query(async () => [{ id: "p1", number: "TX-2025-001", state: "TX", expiresAt: "2025-03-15" }]),
+  getSummary: protectedProcedure.query(async () => ({ total: 15, active: 12, expiring: 2, expired: 1 })),
+  getStates: protectedProcedure.query(async () => [{ code: "TX", name: "Texas", permitsRequired: true }, { code: "OK", name: "Oklahoma", permitsRequired: true }]),
+  getRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => ({ state: input.state, requirements: ["Oversize permit", "Route survey"], fees: 150 })),
 });

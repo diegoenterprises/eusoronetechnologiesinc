@@ -283,4 +283,10 @@ export const trainingRouter = router({
         },
       ];
     }),
+
+  // Additional training procedures
+  getCourses: protectedProcedure.query(async () => [{ id: "c1", title: "Hazmat Safety", category: "hazmat", duration: 120, required: true }]),
+  getCertifications: protectedProcedure.query(async () => [{ id: "cert1", name: "Hazmat Certification", status: "active", expiresAt: "2025-12-31" }]),
+  getProgress: protectedProcedure.input(z.object({ courseId: z.string() })).query(async ({ input }) => ({ courseId: input.courseId, progress: 65, lastAccessed: "2025-01-22" })),
+  startCourse: protectedProcedure.input(z.object({ courseId: z.string() })).mutation(async ({ input }) => ({ success: true, enrollmentId: "enroll_123" })),
 });

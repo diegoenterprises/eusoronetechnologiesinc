@@ -306,4 +306,9 @@ export const reportsRouter = router({
         },
       };
     }),
+
+  // Additional report procedures
+  getPerformanceMetrics: protectedProcedure.query(async () => ({ avgLoadTime: 2.5, totalReports: 150, mostPopular: "revenue" })),
+  getTopPerformers: protectedProcedure.query(async () => [{ id: "d1", name: "Mike Johnson", score: 98, loads: 45 }]),
+  getTrends: protectedProcedure.input(z.object({ metric: z.string(), period: z.string().optional() })).query(async () => [{ date: "2025-01-20", value: 125 }]),
 });
