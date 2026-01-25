@@ -317,4 +317,187 @@ export const escortsRouter = router({
         timestamp: new Date().toISOString(),
       };
     }),
+
+  /**
+   * Get permits for EscortPermits page
+   */
+  getPermits: protectedProcedure
+    .query(async ({ ctx }) => {
+      return [
+        {
+          id: "permit1",
+          state: "Texas",
+          permitNumber: "TX-ESC-2024-45678",
+          status: "active",
+          issuedDate: "2024-03-15",
+          expirationDate: "2026-03-15",
+          reciprocityStates: ["OK", "LA", "NM", "AR"],
+        },
+        {
+          id: "permit2",
+          state: "Louisiana",
+          permitNumber: "LA-PCV-2024-12345",
+          status: "active",
+          issuedDate: "2024-06-01",
+          expirationDate: "2025-06-01",
+          reciprocityStates: ["TX", "MS", "AR"],
+        },
+        {
+          id: "permit3",
+          state: "Oklahoma",
+          permitNumber: "OK-PCO-2023-98765",
+          status: "expiring_soon",
+          issuedDate: "2023-09-01",
+          expirationDate: "2025-02-15",
+          reciprocityStates: ["TX", "KS"],
+        },
+        {
+          id: "permit4",
+          state: "New Mexico",
+          permitNumber: "NM-ESC-2024-11111",
+          status: "active",
+          issuedDate: "2024-08-15",
+          expirationDate: "2025-08-15",
+          reciprocityStates: ["TX", "AZ", "CO"],
+        },
+      ];
+    }),
+
+  /**
+   * Get permit statistics
+   */
+  getPermitStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        activePermits: 4,
+        expiringSoon: 1,
+        statesCovered: 8,
+        certifications: 5,
+      };
+    }),
+
+  /**
+   * Renew permit
+   */
+  renewPermit: protectedProcedure
+    .input(z.object({
+      permitId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        permitId: input.permitId,
+        renewalSubmittedAt: new Date().toISOString(),
+        status: "pending_renewal",
+      };
+    }),
+
+  /**
+   * Get schedule for EscortSchedule page
+   */
+  getSchedule: protectedProcedure
+    .input(z.object({ date: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return [
+        {
+          id: "sched1",
+          convoyName: "Wind Turbine Transport #45",
+          status: "confirmed",
+          position: "lead",
+          loadDescription: "180ft wind turbine blade from Houston to Dallas",
+          startTime: "06:00 AM",
+          endTime: "06:00 PM",
+          origin: "Houston, TX",
+          destination: "Dallas, TX",
+          miles: 238,
+          rate: 850,
+          rateType: "flat rate",
+          specialRequirements: "Height pole required",
+        },
+        {
+          id: "sched2",
+          convoyName: "Industrial Equipment Move",
+          status: "pending",
+          position: "chase",
+          loadDescription: "45ft industrial transformer to Austin facility",
+          startTime: "07:00 PM",
+          endTime: "11:00 PM",
+          origin: "Houston, TX",
+          destination: "Austin, TX",
+          miles: 162,
+          rate: 450,
+          rateType: "flat rate",
+          specialRequirements: null,
+        },
+      ];
+    }),
+
+  /**
+   * Get availability settings
+   */
+  getAvailability: protectedProcedure
+    .query(async ({ ctx }) => {
+      return [
+        { dayOfWeek: 0, dayName: "Sunday", available: false },
+        { dayOfWeek: 1, dayName: "Monday", available: true },
+        { dayOfWeek: 2, dayName: "Tuesday", available: true },
+        { dayOfWeek: 3, dayName: "Wednesday", available: true },
+        { dayOfWeek: 4, dayName: "Thursday", available: true },
+        { dayOfWeek: 5, dayName: "Friday", available: true },
+        { dayOfWeek: 6, dayName: "Saturday", available: true },
+      ];
+    }),
+
+  /**
+   * Update availability
+   */
+  updateAvailability: protectedProcedure
+    .input(z.object({
+      dayOfWeek: z.number(),
+      available: z.boolean(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return {
+        success: true,
+        dayOfWeek: input.dayOfWeek,
+        available: input.available,
+        updatedAt: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Get upcoming jobs
+   */
+  getUpcomingJobs: protectedProcedure
+    .query(async ({ ctx }) => {
+      return [
+        {
+          id: "up1",
+          convoyName: "Superload #78",
+          position: "both",
+          date: "Jan 25",
+          route: "Port Arthur to Austin",
+          rate: 1200,
+          miles: 280,
+        },
+        {
+          id: "up2",
+          convoyName: "Wide Load #92",
+          position: "lead",
+          date: "Jan 26",
+          route: "San Antonio to El Paso",
+          rate: 950,
+          miles: 550,
+        },
+        {
+          id: "up3",
+          convoyName: "Oversized #105",
+          position: "chase",
+          date: "Jan 27",
+          route: "Dallas to Oklahoma City",
+          rate: 650,
+          miles: 210,
+        },
+      ];
+    }),
 });

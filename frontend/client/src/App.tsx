@@ -139,6 +139,8 @@ import DriverCurrentJob from "./pages/DriverCurrentJob";
 import DriverVehicle from "./pages/DriverVehicle";
 import CatalystFleetMap from "./pages/CatalystFleetMap";
 import CatalystExceptions from "./pages/CatalystExceptions";
+import EscortPermits from "./pages/EscortPermits";
+import EscortSchedule from "./pages/EscortSchedule";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -814,6 +816,16 @@ function Router() {
       <Route path={"/reports"} component={() => (
         <DashboardLayout>
           <EscortReports />
+        </DashboardLayout>
+      )} />
+      <Route path={"/escort/permits"} component={() => (
+        <DashboardLayout>
+          <EscortPermits />
+        </DashboardLayout>
+      )} />
+      <Route path={"/escort/schedule"} component={() => (
+        <DashboardLayout>
+          <EscortSchedule />
         </DashboardLayout>
       )} />
       
