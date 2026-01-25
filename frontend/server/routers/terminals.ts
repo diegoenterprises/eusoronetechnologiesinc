@@ -867,4 +867,30 @@ export const terminalsRouter = router({
         },
       ];
     }),
+
+  /**
+   * Get staff for TerminalStaff page
+   */
+  getStaff: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const staff = [
+        { id: "s1", name: "John Supervisor", role: "Terminal Supervisor", status: "on_duty", shift: "Day", phone: "555-0101" },
+        { id: "s2", name: "Mike Operator", role: "Rack Operator", status: "on_duty", shift: "Day", phone: "555-0102" },
+        { id: "s3", name: "Sarah Tech", role: "Lab Technician", status: "break", shift: "Day", phone: "555-0103" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return staff.filter(s => s.name.toLowerCase().includes(q) || s.role.toLowerCase().includes(q));
+      }
+      return staff;
+    }),
+
+  /**
+   * Get staff stats for TerminalStaff page
+   */
+  getStaffStats: protectedProcedure
+    .query(async () => {
+      return { total: 24, onDuty: 8, offDuty: 14, onBreak: 2 };
+    }),
 });
