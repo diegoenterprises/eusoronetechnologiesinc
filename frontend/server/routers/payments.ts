@@ -215,4 +215,8 @@ export const paymentsRouter = router({
   processRefund: protectedProcedure.input(z.object({ paymentId: z.string(), amount: z.number() })).mutation(async ({ input }) => ({ success: true, refundId: "ref_123" })),
   getInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inv1", amount: 2500, status: "paid", date: "2025-01-22" }]),
   getPaymentStats: protectedProcedure.query(async () => ({ totalProcessed: 250000, avgPaymentTime: 12, successRate: 99.5 })),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "p1", amount: 2500, type: "received", date: "2025-01-22" }]),
+  getInvoice: protectedProcedure.input(z.object({ invoiceId: z.string() })).query(async ({ input }) => ({ id: input.invoiceId, amount: 2500, status: "paid", items: [] })),
+  sendInvoice: protectedProcedure.input(z.object({ invoiceId: z.string(), email: z.string() })).mutation(async ({ input }) => ({ success: true, sentAt: new Date().toISOString() })),
+  markInvoicePaid: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async ({ input }) => ({ success: true, invoiceId: input.invoiceId })),
 });
