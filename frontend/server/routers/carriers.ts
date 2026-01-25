@@ -11,6 +11,27 @@ const carrierStatusSchema = z.enum(["active", "pending", "suspended", "inactive"
 
 export const carriersRouter = router({
   /**
+   * Get available capacity for CapacityBoard page
+   */
+  getAvailableCapacity: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(50) }))
+    .query(async () => {
+      return [
+        { id: "c1", carrier: "ABC Transport", equipment: "tanker", available: 3, location: "Houston, TX", rate: 2.85 },
+        { id: "c2", carrier: "Fast Freight", equipment: "dry_van", available: 5, location: "Dallas, TX", rate: 2.45 },
+        { id: "c3", carrier: "Pro Haulers", equipment: "flatbed", available: 2, location: "Austin, TX", rate: 3.15 },
+      ];
+    }),
+
+  /**
+   * Get capacity summary for CapacityBoard page
+   */
+  getCapacitySummary: protectedProcedure
+    .query(async () => {
+      return { totalAvailable: 45, tankers: 12, dryVans: 18, flatbeds: 8, reefers: 7 };
+    }),
+
+  /**
    * Get carrier dashboard stats
    */
   getDashboardStats: protectedProcedure

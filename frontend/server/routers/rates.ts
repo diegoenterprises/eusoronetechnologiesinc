@@ -11,6 +11,27 @@ const hazmatClassSchema = z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9", "
 
 export const ratesRouter = router({
   /**
+   * Get lane analysis for LaneAnalysis page
+   */
+  getLaneAnalysis: protectedProcedure
+    .input(z.object({ origin: z.string().optional(), destination: z.string().optional() }))
+    .query(async ({ input }) => {
+      return [
+        { id: "l1", origin: "Houston, TX", destination: "Dallas, TX", avgRate: 2.85, volume: 120, trend: "up" },
+        { id: "l2", origin: "Austin, TX", destination: "San Antonio, TX", avgRate: 2.65, volume: 85, trend: "stable" },
+        { id: "l3", origin: "Houston, TX", destination: "Austin, TX", avgRate: 2.95, volume: 95, trend: "down" },
+      ];
+    }),
+
+  /**
+   * Get lane stats for LaneAnalysis page
+   */
+  getLaneStats: protectedProcedure
+    .query(async () => {
+      return { totalLanes: 45, avgRate: 2.78, hotLanes: 8, coldLanes: 5 };
+    }),
+
+  /**
    * Calculate rate for RateCalculator page (simple input)
    */
   calculate: protectedProcedure
