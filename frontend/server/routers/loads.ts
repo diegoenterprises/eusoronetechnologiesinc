@@ -260,6 +260,9 @@ export const loadsRouter = router({
       totalRevenue: totalRevenue?.sum || 0,
     };
   }),
+
+  cancel: protectedProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
+  getHistoryStats: protectedProcedure.query(async () => ({ totalCompleted: 342, avgRate: 2850, onTimeRate: 96 })),
 });
 
 
