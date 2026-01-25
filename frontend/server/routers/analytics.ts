@@ -514,4 +514,21 @@ export const analyticsRouter = router({
     { id: "d2", name: "Sarah Williams", score: 96, revenue: 26000, loads: 11 },
     { id: "d3", name: "Tom Brown", score: 94, revenue: 24500, loads: 10 },
   ])),
+
+  // Performance monitoring
+  getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({
+    avgResponseTime: 145,
+    p95ResponseTime: 320,
+    requestsPerSecond: 1250,
+    errorRate: 0.02,
+    cpu: { current: 42, avg: 38, peak: 72 },
+    memory: { current: 68, avg: 65, peak: 82 },
+    disk: { current: 55, used: 275, total: 500 },
+    network: { inbound: 125, outbound: 85 },
+  })),
+  getPerformanceHistory: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
+    { timestamp: "10:00", cpu: 42, memory: 68, responseTime: 145 },
+    { timestamp: "10:05", cpu: 45, memory: 70, responseTime: 152 },
+    { timestamp: "10:10", cpu: 38, memory: 65, responseTime: 138 },
+  ])),
 });
