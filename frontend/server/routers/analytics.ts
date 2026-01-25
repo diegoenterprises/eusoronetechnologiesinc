@@ -509,6 +509,28 @@ export const analyticsRouter = router({
       { date: "Jan 22", value: 98 },
     ],
   })),
+  getReportsSummary: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+    avgLoadTime: 2.5,
+    totalReports: 45,
+    mostPopular: "Revenue Report",
+    revenue: 127500,
+    loads: 45,
+    avgMargin: 12.5,
+  })),
+  getReportsTrends: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+    revenue: [
+      { date: "Jan 1", value: 28000 },
+      { date: "Jan 8", value: 32000 },
+      { date: "Jan 15", value: 35000 },
+      { date: "Jan 22", value: 32500 },
+    ],
+    loads: [
+      { date: "Jan 1", value: 10 },
+      { date: "Jan 8", value: 12 },
+      { date: "Jan 15", value: 14 },
+      { date: "Jan 22", value: 9 },
+    ],
+  })),
   getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
     { id: "d1", name: "Mike Johnson", score: 98, revenue: 28500, loads: 12 },
     { id: "d2", name: "Sarah Williams", score: 96, revenue: 26000, loads: 11 },
