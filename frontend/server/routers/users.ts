@@ -75,6 +75,43 @@ export const usersRouter = router({
     };
   }),
 
+  // Get leaderboard for Leaderboard page
+  getLeaderboard: protectedProcedure
+    .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
+    .query(async () => {
+      return [
+        { rank: 1, name: "Mike Johnson", points: 2450, loads: 45, rating: 4.9, change: 0 },
+        { rank: 2, name: "Sarah Williams", points: 2280, loads: 42, rating: 4.8, change: 1 },
+        { rank: 3, name: "Tom Brown", points: 2150, loads: 38, rating: 4.7, change: -1 },
+        { rank: 4, name: "Lisa Chen", points: 1980, loads: 35, rating: 4.9, change: 2 },
+        { rank: 5, name: "James Wilson", points: 1850, loads: 32, rating: 4.6, change: 0 },
+      ];
+    }),
+
+  // Get my rank for Leaderboard page
+  getMyRank: protectedProcedure
+    .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
+    .query(async () => {
+      return { rank: 8, points: 1650, percentile: 85 };
+    }),
+
+  // Get activity feed for ActivityFeed page
+  getActivityFeed: protectedProcedure
+    .input(z.object({ filter: z.string().optional(), limit: z.number().optional() }))
+    .query(async () => {
+      return [
+        { id: "act_001", type: "load", title: "Load Delivered", description: "LOAD-45920 delivered to Dallas, TX", time: "2h ago" },
+        { id: "act_002", type: "bid", title: "Bid Accepted", description: "Your bid on LOAD-45925 was accepted", time: "4h ago" },
+        { id: "act_003", type: "document", title: "Document Uploaded", description: "Insurance certificate uploaded", time: "1d ago" },
+      ];
+    }),
+
+  // Get activity stats for ActivityFeed page
+  getActivityStats: protectedProcedure
+    .query(async () => {
+      return { totalActivities: 156, todayActivities: 12, weekActivities: 45 };
+    }),
+
   // Get account info
   getAccountInfo: protectedProcedure.query(async ({ ctx }) => {
     return {
@@ -140,8 +177,8 @@ export const usersRouter = router({
     ];
   }),
 
-  // Get leaderboard
-  getLeaderboard: protectedProcedure
+  // Get leaderboard (detailed version)
+  getLeaderboardDetailed: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
       return [
@@ -151,15 +188,15 @@ export const usersRouter = router({
       ];
     }),
 
-  // Get my rank
-  getMyRank: protectedProcedure
+  // Get my rank (detailed version)
+  getMyRankDetailed: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
     .query(async () => {
       return { rank: 12, score: 8450, percentile: 88 };
     }),
 
-  // Get activity feed
-  getActivityFeed: protectedProcedure
+  // Get activity feed (detailed version)
+  getActivityFeedDetailed: protectedProcedure
     .input(z.object({ limit: z.number().optional() }))
     .query(async () => {
       return [
@@ -168,8 +205,8 @@ export const usersRouter = router({
       ];
     }),
 
-  // Get activity stats
-  getActivityStats: protectedProcedure.query(async () => {
+  // Get activity stats (detailed version)
+  getActivityStatsDetailed: protectedProcedure.query(async () => {
     return { today: 12, thisWeek: 45, thisMonth: 156 };
   }),
 
