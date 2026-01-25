@@ -701,6 +701,7 @@ export const driversRouter = router({
       fuelEfficiency: 6.8,
       revenue: 28500,
       onTimeDeliveries: 43,
+      incidents: 0,
     },
     metrics: {
       loadsCompleted: 45,
