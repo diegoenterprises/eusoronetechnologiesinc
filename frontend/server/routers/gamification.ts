@@ -412,4 +412,6 @@ export const gamificationRouter = router({
         ],
       };
     }),
+
+  getMyAchievements: protectedProcedure.query(async () => [{ id: "a1", name: "Road Warrior", earned: true, earnedAt: "2025-01-15" }]),
 });
