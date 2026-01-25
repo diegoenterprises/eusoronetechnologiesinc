@@ -928,4 +928,13 @@ export const adminRouter = router({
   getRateLimitStats: protectedProcedure.query(async () => ({ blocked: 25, throttled: 150, total: 50000 })),
   getRateLimitConfig: protectedProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [] })),
   updateRateLimitConfig: protectedProcedure.input(z.object({ limit: z.number(), windowMs: z.number() })).mutation(async ({ input }) => ({ success: true })),
+
+  // Audit log
+  getAuditLog: protectedProcedure.input(z.object({ logId: z.string() })).query(async ({ input }) => ({
+    id: input.logId,
+    userId: "user_123",
+    action: "load.create",
+    timestamp: new Date().toISOString(),
+    details: { loadId: "LOAD-45920", action: "created" },
+  })),
 });
