@@ -748,7 +748,9 @@ export const driversRouter = router({
       hardBraking: 3,
       speeding: 1,
       idling: 12,
+      hosViolations: 0,
     },
+    achievements: [{ id: "a1", name: "Perfect Week", earned: true, unlocked: true, earnedAt: "2025-01-20" }],
   })),
   getLeaderboard: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => [{ rank: 1, driverId: "d1", name: "Mike Johnson", score: 98 }]),
 
@@ -757,7 +759,7 @@ export const driversRouter = router({
   submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })) })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
-  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", description: "Driver logged in", category: "system" }]),
+  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: "neutral" }]),
 
   // Terminations
   getTerminations: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "t1", driverId: "d1", reason: "voluntary", date: "2025-01-20" }]),
