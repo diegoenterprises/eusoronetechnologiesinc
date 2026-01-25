@@ -468,7 +468,7 @@ export const fleetRouter = router({
 
   // GPS
   getGPSLocations: protectedProcedure.query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, speed: 65, heading: 45, timestamp: new Date().toISOString() }]),
-  getGPSStats: protectedProcedure.query(async () => ({ totalVehicles: 25, tracking: 24, offline: 1 })),
+  getGPSStats: protectedProcedure.input(z.object({ vehicleId: z.string().optional() }).optional()).query(async () => ({ totalVehicles: 25, total: 25, tracking: 24, offline: 1, moving: 18, stopped: 6 })),
 
   // IFTA
   getIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).query(async ({ input }) => ({ 
