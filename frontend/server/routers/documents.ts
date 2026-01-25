@@ -11,6 +11,56 @@ const documentStatusSchema = z.enum(["active", "expired", "expiring_soon", "pend
 
 export const documentsRouter = router({
   /**
+   * Get all documents for DocumentCenter
+   */
+  getAll: protectedProcedure
+    .input(z.object({ search: z.string().optional(), category: z.string().optional() }))
+    .query(async ({ input }) => {
+      const docs = [
+        { id: "d1", name: "MC Authority Letter.pdf", category: "permits", status: "active", uploadedAt: "2025-01-15", size: 245000 },
+        { id: "d2", name: "Insurance Certificate.pdf", category: "insurance", status: "active", uploadedAt: "2025-01-10", size: 380000 },
+        { id: "d3", name: "Cargo Policy.pdf", category: "insurance", status: "expiring", uploadedAt: "2025-01-10", size: 520000 },
+      ];
+      let filtered = docs;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(d => d.name.toLowerCase().includes(q));
+      }
+      if (input.category && input.category !== "all") filtered = filtered.filter(d => d.category === input.category);
+      return filtered;
+    }),
+
+  /**
+   * Get document stats for DocumentCenter
+   */
+  getStats: protectedProcedure
+    .query(async () => {
+      return { total: 45, active: 40, expiring: 3, expired: 2 };
+    }),
+
+  /**
+   * Get document categories
+   */
+  getCategories: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "permits", name: "Permits", count: 8 },
+        { id: "insurance", name: "Insurance", count: 12 },
+        { id: "compliance", name: "Compliance", count: 15 },
+        { id: "contracts", name: "Contracts", count: 10 },
+      ];
+    }),
+
+  /**
+   * Delete document mutation
+   */
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, deletedId: input.id };
+    }),
+
+  /**
    * List all documents with filtering
    */
   list: protectedProcedure
@@ -151,9 +201,9 @@ export const documentsRouter = router({
     }),
 
   /**
-   * Delete document
+   * Delete document (detailed version)
    */
-  delete: protectedProcedure
+  deleteDetailed: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, id: input.id };
