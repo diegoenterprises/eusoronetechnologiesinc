@@ -915,4 +915,25 @@ export const terminalsRouter = router({
     .mutation(async ({ input }) => {
       return { success: true, appointmentId: input.appointmentId, cancelledAt: new Date().toISOString() };
     }),
+
+  /**
+   * List terminals for TerminalDirectory page
+   */
+  list: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(50) }))
+    .query(async () => {
+      return [
+        { id: "t1", name: "Houston Terminal", code: "HOU", status: "operational", racks: 8, tanks: 12, throughput: 125000 },
+        { id: "t2", name: "Dallas Terminal", code: "DFW", status: "operational", racks: 6, tanks: 10, throughput: 95000 },
+        { id: "t3", name: "Austin Terminal", code: "AUS", status: "maintenance", racks: 4, tanks: 8, throughput: 0 },
+      ];
+    }),
+
+  /**
+   * Get directory summary for TerminalDirectory page
+   */
+  getDirectorySummary: protectedProcedure
+    .query(async () => {
+      return { total: 8, operational: 6, maintenance: 1, offline: 1, totalRacks: 45, totalTanks: 82 };
+    }),
 });
