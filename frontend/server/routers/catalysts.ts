@@ -374,4 +374,185 @@ export const catalystsRouter = router({
         lastUpdated: new Date().toISOString(),
       };
     }),
+
+  /**
+   * Get fleet positions for CatalystFleetMap
+   */
+  getFleetPositions: protectedProcedure
+    .query(async ({ ctx }) => {
+      return [
+        {
+          id: "v1",
+          unitNumber: "TRK-101",
+          driver: "Mike Johnson",
+          status: "in_transit",
+          location: { city: "Waco", state: "TX", lat: 31.5493, lng: -97.1467 },
+          currentLoad: "LOAD-45920",
+          destination: "Dallas, TX",
+          eta: "2h 15m",
+          speed: 62,
+        },
+        {
+          id: "v2",
+          unitNumber: "TRK-102",
+          driver: "Sarah Williams",
+          status: "available",
+          location: { city: "Dallas", state: "TX", lat: 32.7767, lng: -96.7970 },
+          currentLoad: null,
+          hoursAvailable: 10,
+        },
+        {
+          id: "v3",
+          unitNumber: "TRK-103",
+          driver: "Tom Brown",
+          status: "loading",
+          location: { city: "Port Arthur", state: "TX", lat: 29.95, lng: -93.99 },
+          currentLoad: "LOAD-45922",
+          loadingProgress: 75,
+        },
+        {
+          id: "v4",
+          unitNumber: "TRK-104",
+          driver: "Lisa Chen",
+          status: "breakdown",
+          location: { city: "Temple", state: "TX", lat: 31.1171, lng: -97.3428 },
+          currentLoad: "LOAD-45923",
+          issue: "Flat tire - roadside assistance en route",
+        },
+        {
+          id: "v5",
+          unitNumber: "TRK-105",
+          driver: "James Wilson",
+          status: "available",
+          location: { city: "Austin", state: "TX", lat: 30.2672, lng: -97.7431 },
+          currentLoad: null,
+          hoursAvailable: 11,
+        },
+        {
+          id: "v6",
+          unitNumber: "TRK-106",
+          driver: "Maria Garcia",
+          status: "off_duty",
+          location: { city: "Houston", state: "TX", lat: 29.7604, lng: -95.3698 },
+          currentLoad: null,
+          offDutySince: "10:00 PM",
+        },
+      ];
+    }),
+
+  /**
+   * Get fleet statistics
+   */
+  getFleetStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        inTransit: 8,
+        loading: 3,
+        available: 4,
+        issues: 2,
+        offDuty: 3,
+        totalVehicles: 20,
+        utilization: 65,
+      };
+    }),
+
+  /**
+   * Get exceptions list for CatalystExceptions page
+   */
+  getExceptions: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      status: z.string().optional(),
+      type: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const exceptions = [
+        {
+          id: "exc1",
+          title: "Vehicle Breakdown - Flat Tire",
+          type: "breakdown",
+          severity: "high",
+          status: "in_progress",
+          description: "TRK-104 has a flat tire on I-35 near Temple. Roadside assistance dispatched, ETA 45 minutes.",
+          vehicle: "TRK-104",
+          driver: "Lisa Chen",
+          load: "LOAD-45923",
+          reportedAt: "10:30 AM",
+          estimatedDelay: 90,
+        },
+        {
+          id: "exc2",
+          title: "Customer Delay at Receiver",
+          type: "delay",
+          severity: "medium",
+          status: "open",
+          description: "Receiver facility backed up, 3 trucks in queue. Estimated wait time 2 hours.",
+          vehicle: "TRK-107",
+          driver: "Robert Davis",
+          load: "LOAD-45918",
+          reportedAt: "11:15 AM",
+          estimatedDelay: 120,
+        },
+        {
+          id: "exc3",
+          title: "HOS Violation Risk",
+          type: "hos_violation",
+          severity: "critical",
+          status: "open",
+          description: "Driver approaching 11-hour limit, may not complete delivery without relief driver.",
+          vehicle: "TRK-108",
+          driver: "Kevin Park",
+          load: "LOAD-45925",
+          reportedAt: "11:45 AM",
+          hoursRemaining: 0.5,
+        },
+        {
+          id: "exc4",
+          title: "Weather Advisory",
+          type: "weather",
+          severity: "low",
+          status: "monitoring",
+          description: "Thunderstorm warning for I-10 corridor. Monitoring conditions.",
+          vehicle: null,
+          driver: null,
+          load: null,
+          reportedAt: "09:00 AM",
+          affectedRoutes: ["Houston-San Antonio", "Houston-Beaumont"],
+        },
+      ];
+
+      let filtered = exceptions;
+      if (input.search) {
+        const s = input.search.toLowerCase();
+        filtered = filtered.filter(e => 
+          e.title.toLowerCase().includes(s) ||
+          e.description.toLowerCase().includes(s) ||
+          e.driver?.toLowerCase().includes(s) ||
+          e.vehicle?.toLowerCase().includes(s)
+        );
+      }
+      if (input.status) {
+        filtered = filtered.filter(e => e.status === input.status);
+      }
+      if (input.type) {
+        filtered = filtered.filter(e => e.type === input.type);
+      }
+
+      return filtered;
+    }),
+
+  /**
+   * Get exception statistics
+   */
+  getExceptionStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      return {
+        critical: 1,
+        open: 3,
+        inProgress: 1,
+        monitoring: 1,
+        resolvedToday: 5,
+        avgResolutionTime: 45,
+      };
+    }),
 });

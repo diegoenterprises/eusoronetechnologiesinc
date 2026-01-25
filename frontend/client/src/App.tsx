@@ -137,6 +137,8 @@ import TerminalInventory from "./pages/TerminalInventory";
 import BOLGeneration from "./pages/BOLGeneration";
 import DriverCurrentJob from "./pages/DriverCurrentJob";
 import DriverVehicle from "./pages/DriverVehicle";
+import CatalystFleetMap from "./pages/CatalystFleetMap";
+import CatalystExceptions from "./pages/CatalystExceptions";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -775,6 +777,16 @@ function Router() {
       <Route path={"/performance"} component={() => (
         <DashboardLayout>
           <CatalystPerformance />
+        </DashboardLayout>
+      )} />
+      <Route path={"/catalyst/fleet-map"} component={() => (
+        <DashboardLayout>
+          <CatalystFleetMap />
+        </DashboardLayout>
+      )} />
+      <Route path={"/catalyst/exceptions"} component={() => (
+        <DashboardLayout>
+          <CatalystExceptions />
         </DashboardLayout>
       )} />
       <Route path={"/ai-assistant"} component={() => (
