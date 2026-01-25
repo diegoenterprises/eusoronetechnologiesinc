@@ -78,6 +78,7 @@ import { payrollRouter } from "./routers/payroll";
 import { alertsRouter } from "./routers/alerts";
 import { activityRouter } from "./routers/activity";
 import { insuranceRouter } from "./routers/insurance";
+import { onboardingRouter } from "./routers/onboarding";
 
 export const appRouter = router({
   system: systemRouter,
@@ -320,6 +321,9 @@ export const appRouter = router({
 
   // Insurance Management
   insurance: insuranceRouter,
+
+  // User/Company Onboarding
+  onboarding: onboardingRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
