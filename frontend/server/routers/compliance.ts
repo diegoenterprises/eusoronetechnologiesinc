@@ -837,4 +837,53 @@ export const complianceRouter = router({
         assignedBy: ctx.user?.id,
       };
     }),
+
+  // Background checks
+  getBackgroundChecks: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "bg1", driverId: "d1", driverName: "John Smith", status: "completed", completedAt: "2025-01-20" }]),
+  getBackgroundCheckStats: protectedProcedure.query(async () => ({ total: 150, pending: 5, completed: 140, failed: 5 })),
+  initiateBackgroundCheck: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, checkId: "bg_123", driverId: input.driverId })),
+
+  // Calendar
+  getCalendarEvents: protectedProcedure.input(z.object({ month: z.number().optional(), year: z.number().optional() })).query(async () => [{ id: "ev1", title: "Medical Card Renewal", date: "2025-02-15", type: "renewal" }]),
+  getCalendarSummary: protectedProcedure.query(async () => ({ thisMonth: 12, nextMonth: 8, overdue: 2 })),
+
+  // Clearinghouse
+  getClearinghouseQueries: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "ch1", driverId: "d1", type: "pre-employment", status: "completed", completedAt: "2025-01-18" }]),
+  getClearinghouseStats: protectedProcedure.query(async () => ({ totalQueries: 250, thisMonth: 15, violations: 2 })),
+
+  // DQ File
+  getDQDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "complete", lastUpdated: "2025-01-20" }]),
+  getDQStats: protectedProcedure.query(async () => ({ total: 150, complete: 140, incomplete: 8, missing: 2 })),
+  getDriverDQFile: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => ({ driverId: input.driverId, documents: [{ type: "cdl", status: "valid" }, { type: "medical", status: "valid" }] })),
+
+  // Drug & Alcohol
+  getDrugAlcoholTests: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "da1", driverId: "d1", type: "random", status: "negative", date: "2025-01-15" }]),
+  getDrugAlcoholStats: protectedProcedure.query(async () => ({ totalTests: 450, negative: 445, positive: 3, pending: 2 })),
+  getUpcomingTests: protectedProcedure.query(async () => [{ id: "ut1", driverId: "d1", type: "random", scheduledDate: "2025-02-01" }]),
+  scheduleTest: protectedProcedure.input(z.object({ driverId: z.string(), type: z.string(), date: z.string() })).mutation(async ({ input }) => ({ success: true, testId: "test_123" })),
+
+  // Employment History
+  getEmploymentHistory: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => [{ id: "eh1", employer: "ABC Transport", startDate: "2020-01-15", endDate: "2024-12-31" }]),
+  getEmploymentHistoryStats: protectedProcedure.query(async () => ({ verified: 120, pending: 15, unverifiable: 5 })),
+
+  // Licenses
+  getLicenses: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "lic1", driverId: "d1", type: "CDL-A", state: "TX", expiration: "2026-06-15", status: "valid" }]),
+  getLicenseStats: protectedProcedure.query(async () => ({ total: 150, valid: 145, expiring: 3, expired: 2 })),
+
+  // MVR Reports
+  getMVRReports: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "mvr1", driverId: "d1", date: "2025-01-10", status: "clean", violations: 0 }]),
+  getMVRStats: protectedProcedure.query(async () => ({ total: 150, clean: 140, violations: 10 })),
+  requestMVR: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "mvr_123" })),
+
+  // PSP Reports
+  getPSPReports: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "psp1", driverId: "d1", date: "2025-01-10", crashes: 0, inspections: 5 }]),
+  getPSPStats: protectedProcedure.query(async () => ({ total: 150, requested: 145, pending: 5 })),
+  requestPSP: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "psp_123" })),
+
+  // Road Tests
+  getRoadTests: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "rt1", driverId: "d1", date: "2025-01-05", result: "passed", examiner: "John Examiner" }]),
+  getRoadTestStats: protectedProcedure.query(async () => ({ total: 150, passed: 145, failed: 3, scheduled: 2 })),
+
+  // SAFER Lookup
+  saferLookup: protectedProcedure.input(z.object({ dotNumber: z.string().optional(), mcNumber: z.string().optional() })).query(async ({ input }) => ({ dotNumber: input.dotNumber || "1234567", legalName: "ABC Transport LLC", status: "AUTHORIZED", safetyRating: "Satisfactory" })),
 });
