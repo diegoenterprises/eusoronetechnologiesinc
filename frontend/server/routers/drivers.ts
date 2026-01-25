@@ -570,4 +570,33 @@ export const driversRouter = router({
         ],
       };
     }),
+
+  /**
+   * Get HOS for specific driver for DriverDetails page
+   */
+  getHOS: protectedProcedure
+    .input(z.object({ driverId: z.string() }))
+    .query(async ({ input }) => {
+      return {
+        driverId: input.driverId,
+        status: "driving",
+        drivingRemaining: "6h 30m",
+        onDutyRemaining: "8h 00m",
+        cycleRemaining: "52h 30m",
+        breakRemaining: "2h 00m",
+        lastUpdate: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Get recent loads for driver for DriverDetails page
+   */
+  getRecentLoads: protectedProcedure
+    .input(z.object({ driverId: z.string(), limit: z.number().optional().default(5) }))
+    .query(async ({ input }) => {
+      return [
+        { id: "l1", loadNumber: "LOAD-45920", origin: "Houston, TX", destination: "Dallas, TX", status: "delivered", deliveredAt: "2025-01-22" },
+        { id: "l2", loadNumber: "LOAD-45915", origin: "Austin, TX", destination: "San Antonio, TX", status: "delivered", deliveredAt: "2025-01-20" },
+      ];
+    }),
 });
