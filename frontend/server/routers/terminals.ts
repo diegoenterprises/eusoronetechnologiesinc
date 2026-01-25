@@ -995,9 +995,27 @@ export const terminalsRouter = router({
   getOutgoingStats: protectedProcedure.query(async () => ({ scheduled: 15, dispatched: 10, pending: 5 })),
 
   // Alerts & Tanks
-  getActiveAlerts: protectedProcedure.query(async () => [{ id: "a1", type: "low_level", tank: "Tank 3", message: "Level below 20%", severity: "warning" }]),
+  getActiveAlerts: protectedProcedure.query(async () => [{ id: "a1", type: "low_level", tank: "Tank 3", message: "Level below 20%", severity: "warning", acknowledged: false }]),
   getTankLevels: protectedProcedure.query(async () => [{ tankId: "t1", name: "Tank 1", product: "Diesel", level: 75, capacity: 50000 }]),
   getRackStats: protectedProcedure.query(async () => ({ total: 8, active: 6, idle: 1, maintenance: 1 })),
+
+  // SCADA stats
+  getScadaStats: protectedProcedure.query(async () => ({
+    terminals: 5,
+    totalThroughput: 125000,
+    activeRacks: 18,
+    alerts: 3,
+    terminalsOnline: 5,
+    totalTanks: 24,
+    totalInventory: 425000,
+    activeFlows: 8,
+  })),
+  getScadaTerminals: protectedProcedure.query(async () => ([
+    { id: "t1", name: "Houston Terminal", status: "online", racks: 6, tankCount: 8, avgLevel: 72, activeFlows: 3 },
+    { id: "t2", name: "Dallas Terminal", status: "online", racks: 4, tankCount: 6, avgLevel: 65, activeFlows: 2 },
+    { id: "t3", name: "Austin Terminal", status: "online", racks: 4, tankCount: 5, avgLevel: 58, activeFlows: 2 },
+    { id: "t4", name: "San Antonio Terminal", status: "maintenance", racks: 4, tankCount: 5, avgLevel: 45, activeFlows: 1 },
+  ])),
 
   // Appointments
   rescheduleAppointment: protectedProcedure.input(z.object({ appointmentId: z.string(), newDate: z.string(), newTime: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
