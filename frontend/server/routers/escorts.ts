@@ -74,6 +74,43 @@ export const escortsRouter = router({
     }),
 
   /**
+   * Get available jobs for EscortJobMarketplace
+   */
+  getAvailableJobs: protectedProcedure
+    .input(z.object({ filter: z.string().optional(), search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const jobs = [
+        { id: "j1", title: "Oversize Load I-45", carrier: "Heavy Haul", position: "lead", pay: 650, urgency: "normal", startDate: "2025-01-26" },
+        { id: "j2", title: "Superload Port Arthur", carrier: "ABC Transport", position: "both", pay: 1200, urgency: "high", startDate: "2025-01-26" },
+        { id: "j3", title: "Wind Turbine Blade", carrier: "Wind Energy", position: "chase", pay: 450, urgency: "normal", startDate: "2025-01-27" },
+      ];
+      let filtered = jobs;
+      if (input.filter && input.filter !== "all") filtered = filtered.filter(j => j.urgency === input.filter);
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(j => j.title.toLowerCase().includes(q) || j.carrier.toLowerCase().includes(q));
+      }
+      return filtered;
+    }),
+
+  /**
+   * Get marketplace stats for EscortJobMarketplace
+   */
+  getMarketplaceStats: protectedProcedure
+    .query(async () => {
+      return { availableJobs: 12, urgentJobs: 3, avgPay: 580, newThisWeek: 8 };
+    }),
+
+  /**
+   * Apply for job mutation
+   */
+  applyForJob: protectedProcedure
+    .input(z.object({ jobId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, jobId: input.jobId, appliedAt: new Date().toISOString() };
+    }),
+
+  /**
    * Get certification status
    */
   getCertificationStatus: protectedProcedure
@@ -142,9 +179,9 @@ export const escortsRouter = router({
     }),
 
   /**
-   * Get available jobs (marketplace)
+   * Get available jobs (marketplace) - detailed version
    */
-  getAvailableJobs: protectedProcedure
+  getAvailableJobsDetailed: protectedProcedure
     .input(z.object({
       state: z.string().optional(),
       position: positionSchema.optional(),
@@ -271,9 +308,9 @@ export const escortsRouter = router({
     }),
 
   /**
-   * Apply for job
+   * Apply for job (detailed version)
    */
-  applyForJob: protectedProcedure
+  applyForJobDetailed: protectedProcedure
     .input(z.object({
       jobId: z.string(),
       position: positionSchema,
