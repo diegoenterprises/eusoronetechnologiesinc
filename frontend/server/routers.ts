@@ -72,6 +72,8 @@ import { csaScoresRouter } from "./routers/csaScores";
 import { scadaRouter } from "./routers/scada";
 import { gamificationRouter } from "./routers/gamification";
 import { clearinghouseRouter } from "./routers/clearinghouse";
+import { spectraMatchRouter } from "./routers/spectraMatch";
+import { eusoTicketRouter } from "./routers/eusoTicket";
 
 export const appRouter = router({
   system: systemRouter,
@@ -290,6 +292,12 @@ export const appRouter = router({
 
   // FMCSA Clearinghouse
   clearinghouse: clearinghouseRouter,
+
+  // SPECTRA-MATCH™ Oil Identification
+  spectraMatch: spectraMatchRouter,
+
+  // EusoTicket™ Run Ticket & BOL System
+  eusoTicket: eusoTicketRouter,
 
   // In-house APIs (EUSOTRACK, EUSOSMS, EUSOBANK)
   inhouse: inhouseRouter,

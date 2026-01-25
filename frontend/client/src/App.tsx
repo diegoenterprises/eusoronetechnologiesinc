@@ -141,6 +141,8 @@ import CatalystFleetMap from "./pages/CatalystFleetMap";
 import CatalystExceptions from "./pages/CatalystExceptions";
 import EscortPermits from "./pages/EscortPermits";
 import EscortSchedule from "./pages/EscortSchedule";
+import SpectraMatch from "./pages/SpectraMatch";
+import EusoTicket from "./pages/EusoTicket";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -863,6 +865,21 @@ function Router() {
       <Route path={"/bol"} component={() => (
         <DashboardLayout>
           <BOLGeneration />
+        </DashboardLayout>
+      )} />
+      <Route path={"/spectra-match"} component={() => (
+        <DashboardLayout>
+          <SpectraMatch />
+        </DashboardLayout>
+      )} />
+      <Route path={"/euso-ticket"} component={() => (
+        <DashboardLayout>
+          <EusoTicket />
+        </DashboardLayout>
+      )} />
+      <Route path={"/run-tickets"} component={() => (
+        <DashboardLayout>
+          <EusoTicket />
         </DashboardLayout>
       )} />
       <Route path={"/compliance"} component={() => (
