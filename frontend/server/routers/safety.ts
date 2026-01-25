@@ -14,6 +14,67 @@ const incidentStatusSchema = z.enum(["reported", "investigating", "pending_revie
 
 export const safetyRouter = router({
   /**
+   * Get dashboard stats for SafetyDashboard
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        safetyScore: 92,
+        activeDrivers: 18,
+        openIncidents: 3,
+        overdueItems: 2,
+        pendingDrugTests: 1,
+        csaAlert: false,
+      };
+    }),
+
+  /**
+   * Get CSA overview for SafetyDashboard
+   */
+  getCSAOverview: protectedProcedure
+    .query(async () => {
+      return {
+        basics: [
+          { name: "Unsafe Driving", score: 42, threshold: 65, status: "ok" },
+          { name: "Hours of Service", score: 38, threshold: 65, status: "ok" },
+          { name: "Driver Fitness", score: 0, threshold: 80, status: "ok" },
+          { name: "Controlled Substances", score: 0, threshold: 80, status: "ok" },
+          { name: "Vehicle Maintenance", score: 58, threshold: 80, status: "warning" },
+          { name: "Hazmat Compliance", score: 25, threshold: 80, status: "ok" },
+          { name: "Crash Indicator", score: 35, threshold: 65, status: "ok" },
+        ],
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  /**
+   * Get recent incidents
+   */
+  getRecentIncidents: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(5) }))
+    .query(async () => {
+      return [
+        { id: "inc_001", type: "near_miss", driver: "Tom Brown", date: "2025-01-22", severity: "minor", status: "closed" },
+        { id: "inc_002", type: "violation", driver: "Bob Davis", date: "2025-01-20", severity: "minor", status: "investigating" },
+      ];
+    }),
+
+  /**
+   * Get top drivers by safety score
+   */
+  getTopDrivers: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(5) }))
+    .query(async () => {
+      return [
+        { id: "d1", name: "Mike Johnson", score: 98, incidents: 0, inspections: 5 },
+        { id: "d2", name: "Sarah Williams", score: 96, incidents: 0, inspections: 4 },
+        { id: "d3", name: "Tom Brown", score: 94, incidents: 1, inspections: 3 },
+        { id: "d4", name: "Lisa Chen", score: 92, incidents: 0, inspections: 2 },
+        { id: "d5", name: "Bob Davis", score: 88, incidents: 1, inspections: 3 },
+      ];
+    }),
+
+  /**
    * Get safety dashboard summary
    */
   getDashboardSummary: protectedProcedure
