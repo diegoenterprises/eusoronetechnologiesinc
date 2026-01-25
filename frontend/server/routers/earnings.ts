@@ -239,5 +239,5 @@ export const earningsRouter = router({
   })),
   approveSettlement: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, settlementId: input.settlementId })),
   processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentId: "pay_123" })),
-  getSummary: protectedProcedure.query(async () => ({ total: 125000, pending: 8500, paid: 116500, avgPerLoad: 2850, breakdown: { lineHaul: 95000, fuelSurcharge: 18000, accessorials: 12000 } })),
+  getEarningsSummary: protectedProcedure.query(async () => ({ total: 125000, pending: 8500, paid: 116500, avgPerLoad: 2850, breakdown: { lineHaul: 95000, fuelSurcharge: 18000, accessorials: 12000 } })),
 });
