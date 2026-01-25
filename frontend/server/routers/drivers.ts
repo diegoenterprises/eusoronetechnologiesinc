@@ -627,7 +627,16 @@ export const driversRouter = router({
 
   // HOS
   getHOSAvailability: protectedProcedure.query(async () => ({ canDrive: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m" })),
-  getMyHOS: protectedProcedure.query(async () => ({ status: "driving", drivingRemaining: "6h 30m", onDutyRemaining: "8h 00m", cycleRemaining: "52h 30m" })),
+  getMyHOS: protectedProcedure.query(async () => ({ 
+    status: "driving", 
+    currentStatus: "driving",
+    drivingRemaining: "6h 30m", 
+    onDutyRemaining: "8h 00m", 
+    cycleRemaining: "52h 30m",
+    drivingHours: { used: 4.5, total: 11, remaining: 6.5 },
+    onDutyHours: { used: 6, total: 14, remaining: 8 },
+    cycleHours: { used: 17.5, total: 70, remaining: 52.5 },
+  })),
   startDriving: protectedProcedure.mutation(async () => ({ success: true, startedAt: new Date().toISOString() })),
   stopDriving: protectedProcedure.mutation(async () => ({ success: true, stoppedAt: new Date().toISOString() })),
 
