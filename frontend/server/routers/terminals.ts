@@ -906,4 +906,13 @@ export const terminalsRouter = router({
         { id: "p4", name: "Jet Fuel", code: "JET" },
       ];
     }),
+
+  /**
+   * Cancel appointment mutation for TerminalAppointments page
+   */
+  cancelAppointment: protectedProcedure
+    .input(z.object({ appointmentId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      return { success: true, appointmentId: input.appointmentId, cancelledAt: new Date().toISOString() };
+    }),
 });
