@@ -381,4 +381,27 @@ export const billingRouter = router({
         paymentMethodId: `pm_${Date.now()}`,
       };
     }),
+
+  // Accessorial charges
+  getAccessorialCharges: protectedProcedure.input(z.object({ loadId: z.string().optional() })).query(async () => [{ id: "ac1", loadId: "l1", type: "detention", amount: 150, status: "approved" }]),
+  getAccessorialStats: protectedProcedure.query(async () => ({ total: 45, pending: 5, approved: 35, denied: 5 })),
+  deleteAccessorialCharge: protectedProcedure.input(z.object({ chargeId: z.string() })).mutation(async ({ input }) => ({ success: true, chargeId: input.chargeId })),
+
+  // Detention
+  getDetentions: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "det1", loadId: "l1", hours: 2.5, amount: 150, status: "pending" }]),
+  getDetentionStats: protectedProcedure.query(async () => ({ total: 25, claimed: 20, pending: 5, totalAmount: 3750 })),
+  claimDetention: protectedProcedure.input(z.object({ loadId: z.string(), hours: z.number(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, claimId: "det_123" })),
+
+  // Factoring
+  getFactoringInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "fi1", invoiceId: "inv1", amount: 2500, status: "funded", fundedAt: "2025-01-22" }]),
+  getFactoringStats: protectedProcedure.query(async () => ({ totalFactored: 125000, pending: 8500, avgFundingTime: "24 hours" })),
+  submitToFactoring: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async ({ input }) => ({ success: true, factorId: "fact_123" })),
+
+  // Payment methods
+  deletePaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId })),
+  setDefaultPaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId })),
+
+  // History & stats
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "h1", type: "payment", amount: 2500, date: "2025-01-22" }]),
+  getPaymentStats: protectedProcedure.query(async () => ({ totalReceived: 125000, totalPaid: 85000, pending: 15000 })),
 });

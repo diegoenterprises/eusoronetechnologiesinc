@@ -708,4 +708,25 @@ export const safetyRouter = router({
         submittedBy: ctx.user?.id,
       };
     }),
+
+  // Accident reports
+  getAccidentReports: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "ar1", driverId: "d1", date: "2025-01-15", severity: "minor", status: "investigating" }]),
+  getAccidentSummary: protectedProcedure.query(async () => ({ total: 8, thisYear: 2, investigating: 1, closed: 7 })),
+  submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string(), date: z.string(), description: z.string(), severity: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: "ar_123" })),
+  updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: input.reportId })),
+  getPendingReports: protectedProcedure.query(async () => [{ id: "ar1", type: "accident", status: "pending_review", submittedAt: "2025-01-20" }]),
+
+  // CSA
+  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() })).query(async () => [{ month: "Jan 2025", scores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12 } }]),
+  getCSASummary: protectedProcedure.query(async () => ({ overallRisk: "low", alertCount: 0, improvementAreas: ["Vehicle Maintenance"] })),
+
+  // Driver safety
+  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => ({ avgScore: 92, incidents: 2, inspections: 15, violations: 1 })),
+  getDriverScores: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ driverId: "d1", name: "Mike Johnson", score: 98, trend: "up" }]),
+  getDriverScoreDetail: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => ({ driverId: input.driverId, overall: 92, categories: { safety: 94, compliance: 90, efficiency: 92 } })),
+  getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 88, topPerformer: "Mike Johnson", improvementNeeded: 3 })),
+
+  // Meetings
+  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "m1", type: "safety_meeting", date: "2025-01-25", attendees: 15 }]),
+  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 4, attendance: 92, topics: ["HOS Compliance", "Winter Driving"] })),
 });
