@@ -1015,7 +1015,7 @@ export const terminalsRouter = router({
   getRackStats: protectedProcedure.query(async () => ({ total: 8, active: 6, idle: 1, maintenance: 1 })),
 
   // SCADA stats
-  getScadaStats: protectedProcedure.query(async () => ({
+  getScadaStats: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({
     terminals: 5,
     totalThroughput: 125000,
     activeRacks: 18,
@@ -1025,7 +1025,7 @@ export const terminalsRouter = router({
     totalInventory: 425000,
     activeFlows: 8,
   })),
-  getScadaTerminals: protectedProcedure.query(async () => ([
+  getScadaTerminals: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ([
     { id: "t1", name: "Houston Terminal", status: "online", racks: 6, tankCount: 8, avgLevel: 72, activeFlows: 3, lastUpdate: "2 min ago" },
     { id: "t2", name: "Dallas Terminal", status: "online", racks: 4, tankCount: 6, avgLevel: 65, activeFlows: 2, lastUpdate: "1 min ago" },
     { id: "t3", name: "Austin Terminal", status: "online", racks: 4, tankCount: 5, avgLevel: 58, activeFlows: 2, lastUpdate: "3 min ago" },
