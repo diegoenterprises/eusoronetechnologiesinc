@@ -214,16 +214,24 @@ export const carriersRouter = router({
    * Get carrier by ID
    */
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), carrierId: z.string().optional() }))
     .query(async ({ input }) => {
       return {
-        id: input.id,
+        id: input.id || input.carrierId,
         name: "ABC Transport LLC",
         dotNumber: "1234567",
         mcNumber: "MC-987654",
         status: "active",
         safetyRating: "Satisfactory",
         safetyScore: 92,
+        verified: true,
+        rating: 4.7,
+        loadsCompleted: 450,
+        onTimeRate: 96,
+        driverCount: 18,
+        fleetSize: 24,
+        phone: "555-0100",
+        email: "info@abctransport.com",
         address: {
           street: "1234 Industrial Blvd",
           city: "Houston",
