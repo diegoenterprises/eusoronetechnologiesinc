@@ -25,6 +25,8 @@ export const safetyRouter = router({
         overdueItems: 2,
         pendingDrugTests: 1,
         csaAlert: false,
+        trend: "up",
+        trendPercent: 2.5,
       };
     }),
 
