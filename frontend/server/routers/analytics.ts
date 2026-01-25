@@ -123,6 +123,12 @@ export const analyticsRouter = router({
         milesChange: 5.8,
         avgDeliveryTime: 4.2,
         deliveryTimeChange: -8.5,
+        avgRatePerMile: 2.85,
+        fleetUtilization: 78,
+        customerSatisfaction: 4.7,
+        completedLoads: 42,
+        inTransitLoads: 3,
+        pendingLoads: 5,
       };
     }),
 
