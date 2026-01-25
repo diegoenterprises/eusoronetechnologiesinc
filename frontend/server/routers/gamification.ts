@@ -414,4 +414,15 @@ export const gamificationRouter = router({
     }),
 
   getMyAchievements: protectedProcedure.query(async () => [{ id: "a1", name: "Road Warrior", earned: true, earnedAt: "2025-01-15" }]),
+
+  // Stats
+  getStats: protectedProcedure.query(async () => ({
+    totalAchievements: 25,
+    earned: 18,
+    inProgress: 4,
+    points: 4850,
+    totalBadges: 12,
+    totalPoints: 4850,
+    completionRate: 72,
+  })),
 });
