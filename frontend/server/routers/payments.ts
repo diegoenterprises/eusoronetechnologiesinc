@@ -209,4 +209,10 @@ export const paymentsRouter = router({
         lastMonth: { received: 32000, sent: 15000 },
       };
     }),
+
+  // Additional payment procedures
+  getPaymentMethods: protectedProcedure.query(async () => [{ id: "pm1", type: "bank", last4: "1234", isDefault: true }]),
+  processRefund: protectedProcedure.input(z.object({ paymentId: z.string(), amount: z.number() })).mutation(async ({ input }) => ({ success: true, refundId: "ref_123" })),
+  getInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inv1", amount: 2500, status: "paid", date: "2025-01-22" }]),
+  getPaymentStats: protectedProcedure.query(async () => ({ totalProcessed: 250000, avgPaymentTime: 12, successRate: 99.5 })),
 });

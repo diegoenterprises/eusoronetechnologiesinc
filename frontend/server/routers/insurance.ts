@@ -115,4 +115,10 @@ export const insuranceRouter = router({
         message: "Certificate request submitted",
       };
     }),
+
+  // Additional insurance procedures  
+  fileClaim: protectedProcedure.input(z.object({ policyId: z.string(), description: z.string(), amount: z.number() })).mutation(async ({ input }) => ({ success: true, claimId: "claim_123" })),
+  renewPolicy: protectedProcedure.input(z.object({ policyId: z.string() })).mutation(async ({ input }) => ({ success: true, newExpiration: "2026-12-31" })),
+  getQuotes: protectedProcedure.input(z.object({ coverageType: z.string() })).query(async () => [{ id: "q1", provider: "SafeGuard", premium: 2200, coverage: 1000000 }]),
+  acceptQuote: protectedProcedure.input(z.object({ quoteId: z.string() })).mutation(async ({ input }) => ({ success: true, policyId: "policy_123" })),
 });
