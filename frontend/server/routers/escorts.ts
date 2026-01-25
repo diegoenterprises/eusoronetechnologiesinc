@@ -671,4 +671,21 @@ export const escortsRouter = router({
   getIncidentStats: protectedProcedure.query(async () => ({ total: 5, open: 1, resolved: 4 })),
   getReports: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "r1", type: "trip_report", jobId: "j1", date: "2025-01-20" }]),
   getReportStats: protectedProcedure.query(async () => ({ total: 120, thisMonth: 15 })),
+
+  // Convoy stats for ActiveConvoys page
+  getConvoyStats: protectedProcedure.query(async () => ({
+    activeConvoys: 8,
+    escortsDeployed: 12,
+    completedToday: 5,
+    scheduledToday: 15,
+    active: 8,
+    staging: 3,
+    totalMiles: 2450,
+    enRoute: 5,
+    avgSpeed: 52,
+  })),
+  getActiveConvoys: protectedProcedure.query(async () => ([
+    { id: "c1", name: "Oversized #101", status: "active", origin: "Houston", destination: "Dallas", progress: 65, eta: "2:30 PM", escorts: 2 },
+    { id: "c2", name: "Heavy Haul #55", status: "staging", origin: "Austin", destination: "San Antonio", progress: 0, eta: "4:00 PM", escorts: 1 },
+  ])),
 });
