@@ -30,7 +30,7 @@ export const usersRouter = router({
   }),
 
   // Get user preferences
-  getPreferences: protectedProcedure.query(async () => {
+  getPreferences: protectedProcedure.input(z.object({}).optional()).query(async () => {
     return {
       emailNotifications: true,
       smsNotifications: false,
@@ -42,6 +42,7 @@ export const usersRouter = router({
       compactMode: false,
       dateFormat: "MM/DD/YYYY",
       marketingEmails: false,
+      distanceUnit: "miles",
     };
   }),
 
@@ -58,6 +59,7 @@ export const usersRouter = router({
       compactMode: z.boolean().optional(),
       dateFormat: z.string().optional(),
       marketingEmails: z.boolean().optional(),
+      distanceUnit: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       return { success: true, updatedAt: new Date().toISOString() };
