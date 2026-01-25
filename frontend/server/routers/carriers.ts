@@ -275,6 +275,11 @@ export const carriersRouter = router({
           hazmat: 25,
           crash: 35,
         },
+        csaScore: 85,
+        saferScore: 92,
+        insuranceValid: true,
+        insuranceExpiry: "2025-12-31",
+        authorityActive: true,
       };
     }),
 
