@@ -91,6 +91,7 @@ import { featuresRouter } from "./routers/features";
 import { securityRouter } from "./routers/security";
 import { tollsRouter } from "./routers/tolls";
 import { trafficRouter } from "./routers/traffic";
+import { shipperContractsRouter } from "./routers/shipperContracts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -372,6 +373,9 @@ export const appRouter = router({
 
   // Traffic Conditions
   traffic: trafficRouter,
+
+  // Shipper Contracts
+  shipperContracts: shipperContractsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
