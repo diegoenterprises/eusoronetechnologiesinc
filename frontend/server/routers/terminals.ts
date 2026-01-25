@@ -77,6 +77,63 @@ export const terminalsRouter = router({
     }),
 
   /**
+   * Get appointments for AppointmentScheduling
+   */
+  getAppointments: protectedProcedure
+    .input(z.object({ date: z.string().optional(), terminal: z.string().optional() }))
+    .query(async () => {
+      return [
+        { id: "apt_001", time: "08:00", carrier: "ABC Transport", driver: "Mike Johnson", product: "Unleaded", rack: "Rack 1", status: "completed" },
+        { id: "apt_002", time: "09:30", carrier: "XYZ Carriers", driver: "Sarah Williams", product: "Diesel", rack: "Rack 2", status: "scheduled" },
+        { id: "apt_003", time: "11:00", carrier: "FastHaul LLC", driver: "Tom Brown", product: "Premium", rack: "Rack 1", status: "scheduled" },
+      ];
+    }),
+
+  /**
+   * Get terminals list
+   */
+  getTerminals: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "t1", name: "Houston Terminal", location: "Houston, TX", racks: 4, status: "active" },
+        { id: "t2", name: "Dallas Terminal", location: "Dallas, TX", racks: 3, status: "active" },
+        { id: "t3", name: "Austin Terminal", location: "Austin, TX", racks: 2, status: "active" },
+      ];
+    }),
+
+  /**
+   * Get available slots for AppointmentScheduling
+   */
+  getAvailableSlots: protectedProcedure
+    .input(z.object({ date: z.string(), terminal: z.string() }))
+    .query(async () => {
+      return [
+        { time: "10:00", rack: "Rack 1", available: true },
+        { time: "10:30", rack: "Rack 1", available: true },
+        { time: "14:00", rack: "Rack 2", available: true },
+        { time: "15:00", rack: "Rack 2", available: true },
+      ];
+    }),
+
+  /**
+   * Get appointment stats
+   */
+  getAppointmentStats: protectedProcedure
+    .input(z.object({ date: z.string().optional() }))
+    .query(async () => {
+      return { total: 24, completed: 8, inProgress: 3, scheduled: 12, cancelled: 1 };
+    }),
+
+  /**
+   * Book appointment mutation
+   */
+  bookAppointment: protectedProcedure
+    .input(z.object({ date: z.string(), time: z.string(), terminal: z.string(), product: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, appointmentId: `apt_${Date.now()}`, date: input.date, time: input.time };
+    }),
+
+  /**
    * Get terminal dashboard summary
    */
   getDashboardSummary: protectedProcedure
@@ -98,9 +155,9 @@ export const terminalsRouter = router({
     }),
 
   /**
-   * Get today's appointments
+   * Get today's appointments (detailed version)
    */
-  getAppointments: protectedProcedure
+  getAppointmentsDetailed: protectedProcedure
     .input(z.object({
       terminalId: z.string().optional(),
       date: z.string().optional(),
