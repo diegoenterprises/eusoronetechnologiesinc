@@ -18,4 +18,6 @@ export const rateConfirmationsRouter = router({
   send: protectedProcedure.input(z.object({ loadId: z.string(), carrierId: z.string(), rate: z.number() })).mutation(async ({ input }) => ({
     success: true, confirmationId: "rc_123",
   })),
+
+  getSummary: protectedProcedure.query(async () => ({ pending: 8, signed: 45, total: 53 })),
 });
