@@ -560,6 +560,7 @@ export const analyticsRouter = router({
     monthlyActiveUsers: 8500,
     totalLoads: 45,
     totalRevenue: 127500,
+    revenue: 127500,
     totalUsers: 2500,
     usersChange: 12.5,
     usersChangeType: "up",
