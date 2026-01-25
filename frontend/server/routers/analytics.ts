@@ -456,4 +456,47 @@ export const analyticsRouter = router({
   getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ month: "Jan", rate: 96 }, { month: "Dec", rate: 94 }]),
   getOnTimeByCustomer: protectedProcedure.query(async () => [{ customerId: "c1", name: "Shell Oil", rate: 98, loads: 120 }]),
   getOnTimeByLane: protectedProcedure.query(async () => [{ lane: "Houston-Dallas", rate: 97, loads: 85 }]),
+
+  // Performance reports
+  getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+    revenue: 127500,
+    revenueChange: 12.5,
+    loads: 45,
+    loadsChange: 8.2,
+    milesLogged: 125000,
+    avgLoadTime: 4.2,
+    totalReports: 52,
+    mostPopular: "Revenue Analysis",
+  })),
+  getPerformanceTrends: protectedProcedure.input(z.object({ metric: z.string(), period: z.string().optional() })).query(async ({ input }) => ({
+    revenue: [
+      { date: "Jan 1", value: 28000 },
+      { date: "Jan 8", value: 32000 },
+      { date: "Jan 15", value: 35000 },
+      { date: "Jan 22", value: 32500 },
+    ],
+    loads: [
+      { date: "Jan 1", value: 10 },
+      { date: "Jan 8", value: 12 },
+      { date: "Jan 15", value: 14 },
+      { date: "Jan 22", value: 9 },
+    ],
+    miles: [
+      { date: "Jan 1", value: 28000 },
+      { date: "Jan 8", value: 32000 },
+      { date: "Jan 15", value: 35000 },
+      { date: "Jan 22", value: 30000 },
+    ],
+    onTime: [
+      { date: "Jan 1", value: 95 },
+      { date: "Jan 8", value: 97 },
+      { date: "Jan 15", value: 96 },
+      { date: "Jan 22", value: 98 },
+    ],
+  })),
+  getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
+    { id: "d1", name: "Mike Johnson", score: 98, revenue: 28500, loads: 12 },
+    { id: "d2", name: "Sarah Williams", score: 96, revenue: 26000, loads: 11 },
+    { id: "d3", name: "Tom Brown", score: 94, revenue: 24500, loads: 10 },
+  ])),
 });
