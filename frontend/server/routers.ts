@@ -76,6 +76,7 @@ import { spectraMatchRouter } from "./routers/spectraMatch";
 import { eusoTicketRouter } from "./routers/eusoTicket";
 import { payrollRouter } from "./routers/payroll";
 import { alertsRouter } from "./routers/alerts";
+import { activityRouter } from "./routers/activity";
 
 export const appRouter = router({
   system: systemRouter,
@@ -312,6 +313,9 @@ export const appRouter = router({
 
   // System Alerts
   alerts: alertsRouter,
+
+  // Activity Timeline
+  activity: activityRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
