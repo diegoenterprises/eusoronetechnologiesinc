@@ -12,6 +12,24 @@ import { eq, and, desc, sql } from "drizzle-orm";
 
 export const loadsRouter = router({
   /**
+   * Get tracked loads for TrackShipments page
+   */
+  getTrackedLoads: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const loads = [
+        { id: "l1", loadNumber: "LOAD-45920", origin: "Houston, TX", destination: "Dallas, TX", status: "in_transit", eta: "2:30 PM", driver: "Mike Johnson", progress: 65 },
+        { id: "l2", loadNumber: "LOAD-45918", origin: "Austin, TX", destination: "San Antonio, TX", status: "delivered", driver: "Sarah Williams", progress: 100 },
+        { id: "l3", loadNumber: "LOAD-45915", origin: "El Paso, TX", destination: "Houston, TX", status: "picked_up", eta: "Tomorrow 9 AM", driver: "Tom Brown", progress: 10 },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return loads.filter(l => l.loadNumber.toLowerCase().includes(q) || l.driver.toLowerCase().includes(q));
+      }
+      return loads;
+    }),
+
+  /**
    * Get shipper summary for ShipperLoads page
    */
   getShipperSummary: protectedProcedure

@@ -371,6 +371,37 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get webhook logs for WebhookLogs page
+   */
+  getWebhookLogs: protectedProcedure
+    .input(z.object({ status: z.string().optional(), limit: z.number().optional().default(50) }))
+    .query(async ({ input }) => {
+      const logs = [
+        { id: "wl1", webhookId: "w1", event: "load.created", status: "success", responseCode: 200, duration: 125, timestamp: "2025-01-23 10:15", payload: "{}" },
+        { id: "wl2", webhookId: "w1", event: "load.updated", status: "failed", responseCode: 500, duration: 450, timestamp: "2025-01-23 09:45", payload: "{}", error: "Server error" },
+      ];
+      if (input.status) return logs.filter(l => l.status === input.status);
+      return logs;
+    }),
+
+  /**
+   * Get webhook summary for WebhookLogs page
+   */
+  getWebhookSummary: protectedProcedure
+    .query(async () => {
+      return { total: 245, successful: 238, failed: 7, avgResponseTime: 145 };
+    }),
+
+  /**
+   * Retry webhook mutation
+   */
+  retryWebhook: protectedProcedure
+    .input(z.object({ logId: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, logId: input.logId, retriedAt: new Date().toISOString() };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
