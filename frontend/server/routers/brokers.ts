@@ -148,11 +148,17 @@ export const brokersRouter = router({
     .input(z.object({ period: z.string().optional().default("month") }))
     .query(async () => {
       return {
+        total: 12750,
         totalEarned: 12750,
         pending: 3200,
         paid: 9550,
         avgPerLoad: 283,
         loadsThisPeriod: 45,
+        breakdown: [
+          { type: "Brokered Loads", amount: 8500, loads: 30 },
+          { type: "Capacity Matching", amount: 3250, loads: 12 },
+          { type: "Expedited Bonus", amount: 1000, loads: 3 },
+        ],
       };
     }),
 
