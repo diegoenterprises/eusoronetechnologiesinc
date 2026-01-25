@@ -147,6 +147,77 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get scheduled tasks for ScheduledTasks page
+   */
+  getScheduledTasks: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "t1", name: "Daily Report Generation", schedule: "0 6 * * *", status: "active", lastRun: "2025-01-23 06:00", nextRun: "2025-01-24 06:00" },
+        { id: "t2", name: "Compliance Check", schedule: "0 8 * * 1", status: "active", lastRun: "2025-01-20 08:00", nextRun: "2025-01-27 08:00" },
+        { id: "t3", name: "Database Backup", schedule: "0 2 * * *", status: "active", lastRun: "2025-01-23 02:00", nextRun: "2025-01-24 02:00" },
+      ];
+    }),
+
+  /**
+   * Get task history for ScheduledTasks page
+   */
+  getTaskHistory: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        { id: "h1", taskName: "Daily Report Generation", status: "success", startedAt: "2025-01-23 06:00", completedAt: "2025-01-23 06:02", duration: 120 },
+        { id: "h2", taskName: "Database Backup", status: "success", startedAt: "2025-01-23 02:00", completedAt: "2025-01-23 02:15", duration: 900 },
+      ];
+    }),
+
+  /**
+   * Toggle scheduled task mutation
+   */
+  toggleScheduledTask: protectedProcedure
+    .input(z.object({ id: z.string(), enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      return { success: true, taskId: input.id, enabled: input.enabled };
+    }),
+
+  /**
+   * Run task now mutation
+   */
+  runTaskNow: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, taskId: input.id, startedAt: new Date().toISOString() };
+    }),
+
+  /**
+   * Get exports for DataExport page
+   */
+  getExports: protectedProcedure
+    .input(z.object({ dataType: z.string().optional() }))
+    .query(async () => {
+      return [
+        { id: "e1", name: "Loads Export", dataType: "loads", format: "csv", status: "completed", createdAt: "2025-01-22", size: "2.5 MB", downloadUrl: "/exports/e1.csv" },
+        { id: "e2", name: "Drivers Export", dataType: "drivers", format: "xlsx", status: "completed", createdAt: "2025-01-20", size: "850 KB", downloadUrl: "/exports/e2.xlsx" },
+      ];
+    }),
+
+  /**
+   * Get export stats for DataExport page
+   */
+  getExportStats: protectedProcedure
+    .query(async () => {
+      return { totalExports: 25, thisMonth: 8, avgSize: "1.2 MB", storageUsed: "45 MB" };
+    }),
+
+  /**
+   * Create export mutation
+   */
+  createExport: protectedProcedure
+    .input(z.object({ dataType: z.string(), format: z.string().optional().default("csv") }))
+    .mutation(async ({ input }) => {
+      return { success: true, exportId: `exp_${Date.now()}`, dataType: input.dataType, startedAt: new Date().toISOString() };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
