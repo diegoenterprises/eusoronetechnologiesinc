@@ -13,7 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Truck, MapPin, Clock, User, AlertTriangle,
-  CheckCircle, Navigation, RefreshCw, Package
+  CheckCircle, Navigation, RefreshCw, Package,
+  Beaker, Droplets, Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -21,16 +22,15 @@ import { toast } from "sonner";
 export default function DispatchBoard() {
   const [filter, setFilter] = useState("all");
 
-  const loadsQuery = trpc.dispatch.getActiveLoads.useQuery({ filter }, { refetchInterval: 30000 });
-  const driversQuery = trpc.dispatch.getAvailableDrivers.useQuery();
-  const statsQuery = trpc.dispatch.getDispatchStats.useQuery();
+  const boardQuery = trpc.dispatch.getBoard.useQuery({ status: filter === 'all' ? undefined : filter as any }, { refetchInterval: 30000 });
+  const driversQuery = trpc.dispatch.getAvailableDrivers.useQuery({});
 
   const assignMutation = trpc.dispatch.assignDriver.useMutation({
-    onSuccess: () => { toast.success("Driver assigned"); loadsQuery.refetch(); driversQuery.refetch(); },
+    onSuccess: () => { toast.success("Driver assigned"); boardQuery.refetch(); driversQuery.refetch(); },
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const stats = statsQuery.data;
+  const stats = boardQuery.data?.summary;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -53,7 +53,7 @@ export default function DispatchBoard() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage load assignments and tracking</p>
         </div>
-        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => loadsQuery.refetch()}>
+        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => boardQuery.refetch()}>
           <RefreshCw className="w-4 h-4 mr-2" />Refresh
         </Button>
       </div>
@@ -63,7 +63,10 @@ export default function DispatchBoard() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{stats?.unassigned || 0}</p>}<p className="text-xs text-slate-400">Unassigned</p></div>
+              <div>
+                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{stats?.unassigned || 0}</p>}
+                <p className="text-xs text-slate-400">Unassigned</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -71,7 +74,10 @@ export default function DispatchBoard() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Navigation className="w-6 h-6 text-yellow-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.enRoute || 0}</p>}<p className="text-xs text-slate-400">En Route</p></div>
+              <div>
+                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.inTransit || 0}</p>}
+                <p className="text-xs text-slate-400">In Transit</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -79,7 +85,10 @@ export default function DispatchBoard() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><Package className="w-6 h-6 text-purple-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-purple-400">{stats?.loading || 0}</p>}<p className="text-xs text-slate-400">Loading</p></div>
+              <div>
+                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-purple-400">{stats?.assigned || 0}</p>}
+                <p className="text-xs text-slate-400">Assigned</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -87,7 +96,10 @@ export default function DispatchBoard() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Truck className="w-6 h-6 text-cyan-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.inTransit || 0}</p>}<p className="text-xs text-slate-400">In Transit</p></div>
+              <div>
+                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.delivered || 0}</p>}
+                <p className="text-xs text-slate-400">Delivered</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -95,7 +107,10 @@ export default function DispatchBoard() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><User className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.availableDrivers || 0}</p>}<p className="text-xs text-slate-400">Available</p></div>
+              <div>
+                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.total || 0}</p>}
+                <p className="text-xs text-slate-400">Total</p>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -114,13 +129,13 @@ export default function DispatchBoard() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-cyan-400" />Active Loads</CardTitle></CardHeader>
         <CardContent className="p-0">
-          {loadsQuery.isLoading ? (
+          {boardQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
-          ) : loadsQuery.data?.length === 0 ? (
+          ) : boardQuery.data?.loads?.length === 0 ? (
             <div className="text-center py-16"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No active loads</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {loadsQuery.data?.map((load: any) => (
+              {boardQuery.data?.loads?.map((load: any) => (
                 <div key={load.id} className={cn("p-4", load.status === "unassigned" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -129,9 +144,16 @@ export default function DispatchBoard() {
                         <p className="text-white font-bold">{load.shipper}</p>
                         {getStatusBadge(load.status)}
                       </div>
-                      <p className="text-sm text-slate-400">{load.product} - {load.weight}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm text-slate-400">{load.commodity} - {load.weight} lbs</p>
+                        {load.hazmatClass && (
+                          <Badge className="bg-red-500/20 text-red-400 border-0">
+                            <Flame className="w-3 h-3 mr-1" />HazMat {load.hazmatClass}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    {load.status === "unassigned" && driversQuery.data?.length > 0 && (
+                    {load.status === "unassigned" && (driversQuery.data?.length ?? 0) > 0 && (
                       <Select onValueChange={(driverId) => assignMutation.mutate({ loadId: load.id, driverId })}>
                         <SelectTrigger className="w-[180px] bg-slate-700/50 border-slate-600/50 rounded-lg"><User className="w-4 h-4 mr-2" /><SelectValue placeholder="Assign Driver" /></SelectTrigger>
                         <SelectContent>{driversQuery.data?.map((driver: any) => (<SelectItem key={driver.id} value={driver.id}>{driver.name}</SelectItem>))}</SelectContent>
