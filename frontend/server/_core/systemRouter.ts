@@ -52,4 +52,10 @@ export const systemRouter = router({
         success: delivered,
       } as const;
     }),
+
+  // Additional system procedures
+  getLatestVersion: publicProcedure.query(async () => ({ version: "2.5.0", releaseDate: "2025-01-20", required: false })),
+  getReleaseNotes: publicProcedure.input(z.object({ version: z.string().optional() })).query(async () => ([
+    { version: "2.5.0", date: "2025-01-20", notes: ["New dashboard widgets", "Performance improvements", "Bug fixes"] },
+  ])),
 });
