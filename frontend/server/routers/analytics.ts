@@ -446,10 +446,17 @@ export const analyticsRouter = router({
   getMarketShare: protectedProcedure.query(async () => ({ yourShare: 2.5, topCompetitor: 8.2, marketSize: 850000000 })),
 
   // Deadhead analysis
-  getDeadheadSummary: protectedProcedure.query(async () => ({ totalMiles: 12500, percentage: 18, cost: 8750 })),
-  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ month: "Jan", percentage: 18 }, { month: "Dec", percentage: 20 }]),
-  getDeadheadByDriver: protectedProcedure.query(async () => [{ driverId: "d1", name: "Mike Johnson", deadheadPct: 15 }]),
-  getDeadheadByLane: protectedProcedure.query(async () => [{ lane: "Houston-Dallas", deadheadPct: 12, loads: 45 }]),
+  getDeadheadSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ 
+    totalMiles: 12500, 
+    percentage: 18, 
+    cost: 8750,
+    deadheadPercentage: 18,
+    deadheadMiles: 12500,
+    trendPercent: -2.5,
+  })),
+  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => [{ month: "Jan", percentage: 18 }, { month: "Dec", percentage: 20 }]),
+  getDeadheadByDriver: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ driverId: "d1", name: "Mike Johnson", deadheadPct: 15 }]),
+  getDeadheadByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ lane: "Houston-Dallas", deadheadPct: 12, loads: 45 }]),
 
   // On-time analysis
   getOnTimeSummary: protectedProcedure.query(async () => ({ rate: 96, onTime: 450, late: 18, early: 32 })),
