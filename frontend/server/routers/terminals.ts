@@ -1011,10 +1011,19 @@ export const terminalsRouter = router({
     activeFlows: 8,
   })),
   getScadaTerminals: protectedProcedure.query(async () => ([
-    { id: "t1", name: "Houston Terminal", status: "online", racks: 6, tankCount: 8, avgLevel: 72, activeFlows: 3 },
-    { id: "t2", name: "Dallas Terminal", status: "online", racks: 4, tankCount: 6, avgLevel: 65, activeFlows: 2 },
-    { id: "t3", name: "Austin Terminal", status: "online", racks: 4, tankCount: 5, avgLevel: 58, activeFlows: 2 },
-    { id: "t4", name: "San Antonio Terminal", status: "maintenance", racks: 4, tankCount: 5, avgLevel: 45, activeFlows: 1 },
+    { id: "t1", name: "Houston Terminal", status: "online", racks: 6, tankCount: 8, avgLevel: 72, activeFlows: 3, lastUpdate: "2 min ago" },
+    { id: "t2", name: "Dallas Terminal", status: "online", racks: 4, tankCount: 6, avgLevel: 65, activeFlows: 2, lastUpdate: "1 min ago" },
+    { id: "t3", name: "Austin Terminal", status: "online", racks: 4, tankCount: 5, avgLevel: 58, activeFlows: 2, lastUpdate: "3 min ago" },
+    { id: "t4", name: "San Antonio Terminal", status: "maintenance", racks: 4, tankCount: 5, avgLevel: 45, activeFlows: 1, lastUpdate: "5 min ago" },
+  ])),
+  getScadaTanks: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ([
+    { id: "tk1", name: "Tank 1", product: "Diesel", level: 75, capacity: 50000, status: "normal", volume: 37500, temperature: 72 },
+    { id: "tk2", name: "Tank 2", product: "Unleaded", level: 62, capacity: 45000, status: "normal", volume: 27900, temperature: 68 },
+    { id: "tk3", name: "Tank 3", product: "Premium", level: 18, capacity: 35000, status: "low", volume: 6300, temperature: 70 },
+  ])),
+  getScadaAlerts: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ([
+    { id: "a1", type: "low_level", message: "Tank 3 below 20%", severity: "warning", acknowledged: false },
+    { id: "a2", type: "temperature", message: "Tank 5 temp elevated", severity: "info", acknowledged: true },
   ])),
 
   // Appointments
