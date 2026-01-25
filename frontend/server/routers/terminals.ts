@@ -1030,7 +1030,26 @@ export const terminalsRouter = router({
   rescheduleAppointment: protectedProcedure.input(z.object({ appointmentId: z.string(), newDate: z.string(), newTime: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
 
   // EIA Reporting
-  getEIAReport: protectedProcedure.input(z.object({ period: z.string() })).query(async ({ input }) => ({ period: input.period, totalReceived: 125000, totalDispatched: 118000, inventory: 375000 })),
-  getEIAStats: protectedProcedure.query(async () => ({ reportsSubmitted: 52, lastSubmission: "2025-01-15", nextDue: "2025-01-22" })),
-  submitEIAReport: protectedProcedure.input(z.object({ period: z.string(), data: z.any() })).mutation(async ({ input }) => ({ success: true, reportId: "eia_123", submittedAt: new Date().toISOString() })),
+  getEIAReport: protectedProcedure.input(z.object({ period: z.string() })).query(async ({ input }) => ({ 
+    period: input.period, 
+    totalReceived: 125000, 
+    totalDispatched: 118000, 
+    inventory: 375000,
+    status: "pending",
+    products: [
+      { name: "Diesel", received: 65000, dispatched: 62000, inventory: 185000 },
+      { name: "Unleaded", received: 45000, dispatched: 42000, inventory: 140000 },
+      { name: "Premium", received: 15000, dispatched: 14000, inventory: 50000 },
+    ],
+  })),
+  getEIAStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ 
+    reportsSubmitted: 52, 
+    lastSubmission: "2025-01-15", 
+    nextDue: "2025-01-22",
+    totalVolume: 1250000,
+    terminals: 5,
+    products: 8,
+    pendingReports: 2,
+  })),
+  submitEIAReport: protectedProcedure.input(z.object({ period: z.string(), data: z.any().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "eia_123", submittedAt: new Date().toISOString() })),
 });
