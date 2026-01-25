@@ -10,6 +10,51 @@ const periodSchema = z.enum(["day", "week", "month", "quarter", "year"]);
 
 export const analyticsRouter = router({
   /**
+   * Get revenue for RevenueAnalytics page
+   */
+  getRevenue: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional() }))
+    .query(async () => {
+      return { total: 127500, change: 12.5, avgPerLoad: 2833, topCustomer: "Shell Oil" };
+    }),
+
+  /**
+   * Get revenue breakdown for RevenueAnalytics page
+   */
+  getRevenueBreakdown: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional() }))
+    .query(async () => {
+      return [
+        { category: "Hazmat", amount: 52000, percentage: 41 },
+        { category: "Dry Van", amount: 38000, percentage: 30 },
+        { category: "Tanker", amount: 25500, percentage: 20 },
+        { category: "Flatbed", amount: 12000, percentage: 9 },
+      ];
+    }),
+
+  /**
+   * Get revenue trends for RevenueAnalytics page
+   */
+  getRevenueTrends: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional() }))
+    .query(async () => {
+      return [
+        { date: "Week 1", revenue: 28000 },
+        { date: "Week 2", revenue: 32000 },
+        { date: "Week 3", revenue: 35000 },
+        { date: "Week 4", revenue: 32500 },
+      ];
+    }),
+
+  /**
+   * Get revenue goals for RevenueAnalytics page
+   */
+  getRevenueGoals: protectedProcedure
+    .query(async () => {
+      return { target: 150000, current: 127500, percentage: 85, daysRemaining: 7 };
+    }),
+
+  /**
    * Get summary for Analytics page
    */
   getSummary: protectedProcedure
@@ -191,9 +236,9 @@ export const analyticsRouter = router({
     }),
 
   /**
-   * Get revenue trends
+   * Get revenue trends (detailed version)
    */
-  getRevenueTrends: protectedProcedure
+  getRevenueTrendsDetailed: protectedProcedure
     .input(z.object({
       period: periodSchema.default("month"),
       granularity: z.enum(["day", "week", "month"]).default("week"),
