@@ -220,7 +220,24 @@ export const earningsRouter = router({
   // Additional earnings procedures
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "e1", date: "2025-01-22", amount: 2500, type: "settlement" }]),
   getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "s1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
-  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string() })).query(async ({ input }) => ({ id: input.settlementId, period: "Week 3", grossPay: 2850, deductions: 750, netPay: 2100 })),
+  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string() })).query(async ({ input }) => ({ 
+    id: input.settlementId, 
+    settlementNumber: "SET-2025-003",
+    period: "Week 3", 
+    periodStart: "2025-01-13",
+    periodEnd: "2025-01-19",
+    driverId: "d1",
+    driverName: "Mike Johnson",
+    grossPay: 2850, 
+    deductions: 750, 
+    netPay: 2100,
+    status: "paid",
+    paidDate: "2025-01-22",
+    loads: [{ loadNumber: "LOAD-45918", amount: 1425 }, { loadNumber: "LOAD-45919", amount: 1425 }],
+    deductionDetails: [{ type: "fuel_advance", amount: 500 }, { type: "insurance", amount: 250 }],
+    breakdown: { lineHaul: 2400, fuelSurcharge: 300, accessorials: 150 }
+  })),
   approveSettlement: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, settlementId: input.settlementId })),
   processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentId: "pay_123" })),
+  getSummary: protectedProcedure.query(async () => ({ total: 125000, pending: 8500, paid: 116500, avgPerLoad: 2850, breakdown: { lineHaul: 95000, fuelSurcharge: 18000, accessorials: 12000 } })),
 });
