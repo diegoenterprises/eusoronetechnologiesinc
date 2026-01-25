@@ -114,6 +114,17 @@ import AppointmentScheduler from "./pages/AppointmentScheduler";
 import NotificationCenter from "./pages/NotificationCenter";
 import UserManagement from "./pages/UserManagement";
 import CompanyProfile from "./pages/CompanyProfile";
+import ActiveConvoys from "./pages/ActiveConvoys";
+import EscortReports from "./pages/EscortReports";
+import EscortIncidents from "./pages/EscortIncidents";
+import Specializations from "./pages/Specializations";
+import MatchedLoads from "./pages/MatchedLoads";
+import Opportunities from "./pages/Opportunities";
+import CatalystPerformance from "./pages/CatalystPerformance";
+import IncomingShipments from "./pages/IncomingShipments";
+import OutgoingShipments from "./pages/OutgoingShipments";
+import TerminalStaff from "./pages/TerminalStaff";
+import TerminalOperations from "./pages/TerminalOperations";
 
 function Router() {
   // All routes are protected by DashboardLayout which checks authentication
@@ -726,22 +737,22 @@ function Router() {
       {/* Catalyst-specific routes */}
       <Route path={"/specializations"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <Specializations />
         </DashboardLayout>
       )} />
       <Route path={"/matched-loads"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <MatchedLoads />
         </DashboardLayout>
       )} />
       <Route path={"/opportunities"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <Opportunities />
         </DashboardLayout>
       )} />
       <Route path={"/performance"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <CatalystPerformance />
         </DashboardLayout>
       )} />
       <Route path={"/ai-assistant"} component={() => (
@@ -753,7 +764,7 @@ function Router() {
       {/* Escort-specific routes */}
       <Route path={"/convoys"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <ActiveConvoys />
         </DashboardLayout>
       )} />
       <Route path={"/team"} component={() => (
@@ -763,39 +774,39 @@ function Router() {
       )} />
       <Route path={"/incidents"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <EscortIncidents />
         </DashboardLayout>
       )} />
       <Route path={"/reports"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <EscortReports />
         </DashboardLayout>
       )} />
       
       {/* Terminal Manager-specific routes */}
       <Route path={"/incoming"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <IncomingShipments />
         </DashboardLayout>
       )} />
       <Route path={"/outgoing"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <OutgoingShipments />
         </DashboardLayout>
       )} />
       <Route path={"/staff"} component={() => (
         <DashboardLayout>
-          <ProfilePage />
+          <TerminalStaff />
         </DashboardLayout>
       )} />
       <Route path={"/operations"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <TerminalOperations />
         </DashboardLayout>
       )} />
       <Route path={"/compliance"} component={() => (
         <DashboardLayout>
-          <ShipmentPage />
+          <ComplianceDashboard />
         </DashboardLayout>
       )} />
       

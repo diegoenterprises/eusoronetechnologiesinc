@@ -21,25 +21,25 @@ import { toast } from "sonner";
 export default function NotificationCenter() {
   const [filter, setFilter] = useState("all");
 
-  const notificationsQuery = trpc.notifications.getAll.useQuery({ filter });
-  const statsQuery = trpc.notifications.getStats.useQuery();
+  const notificationsQuery = trpc.notifications.list.useQuery({ category: filter === "all" ? undefined : filter as any });
+  const countQuery = trpc.notifications.getUnreadCount.useQuery();
 
-  const markReadMutation = trpc.notifications.markRead.useMutation({
-    onSuccess: () => { notificationsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+  const markReadMutation = trpc.notifications.markAsRead.useMutation({
+    onSuccess: () => { notificationsQuery.refetch(); countQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const markAllReadMutation = trpc.notifications.markAllRead.useMutation({
-    onSuccess: () => { toast.success("All marked as read"); notificationsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+  const markAllReadMutation = trpc.notifications.markAllAsRead.useMutation({
+    onSuccess: () => { toast.success("All marked as read"); notificationsQuery.refetch(); countQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const deleteMutation = trpc.notifications.delete.useMutation({
-    onSuccess: () => { toast.success("Notification deleted"); notificationsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+  const archiveMutation = trpc.notifications.archive.useMutation({
+    onSuccess: () => { toast.success("Notification archived"); notificationsQuery.refetch(); countQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const stats = statsQuery.data;
+  const unreadCount = countQuery.data || 0;
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -67,7 +67,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Bell className="w-6 h-6 text-cyan-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.total || 0}</p>}<p className="text-xs text-slate-400">Total</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{notificationsQuery.data?.length || 0}</p>}<p className="text-xs text-slate-400">Total</p></div>
             </div>
           </CardContent>
         </Card>
@@ -75,7 +75,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><Bell className="w-6 h-6 text-red-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{stats?.unread || 0}</p>}<p className="text-xs text-slate-400">Unread</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{unreadCount}</p>}<p className="text-xs text-slate-400">Unread</p></div>
             </div>
           </CardContent>
         </Card>
@@ -83,7 +83,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><AlertTriangle className="w-6 h-6 text-yellow-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.warnings || 0}</p>}<p className="text-xs text-slate-400">Warnings</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{notificationsQuery.data?.filter((n: any) => n.category === 'safety').length || 0}</p>}<p className="text-xs text-slate-400">Safety</p></div>
             </div>
           </CardContent>
         </Card>
@@ -91,7 +91,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.today || 0}</p>}<p className="text-xs text-slate-400">Today</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{notificationsQuery.data?.filter((n: any) => n.read).length || 0}</p>}<p className="text-xs text-slate-400">Read</p></div>
             </div>
           </CardContent>
         </Card>
@@ -130,7 +130,7 @@ export default function NotificationCenter() {
                     <p className="text-sm text-slate-500">{notification.message}</p>
                     <p className="text-xs text-slate-600 mt-1">{notification.timestamp}</p>
                   </div>
-                  <Button size="sm" variant="ghost" className="text-slate-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate({ id: notification.id }); }}>
+                  <Button size="sm" variant="ghost" className="text-slate-500 hover:text-red-400" onClick={(e) => { e.stopPropagation(); archiveMutation.mutate({ id: notification.id }); }}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
