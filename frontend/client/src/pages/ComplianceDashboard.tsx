@@ -4,41 +4,26 @@
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Shield, AlertTriangle, CheckCircle, Clock, FileText,
-  Users, Eye, TrendingUp
+  Shield, CheckCircle, AlertTriangle, Clock, FileText,
+  User, Truck, TestTube
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function ComplianceDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const statsQuery = trpc.compliance.getDashboardStats.useQuery();
+  const expiringQuery = trpc.compliance.getExpiringItems.useQuery({ limit: 5 });
+  const violationsQuery = trpc.compliance.getRecentViolations.useQuery({ limit: 5 });
+  const scoresQuery = trpc.compliance.getComplianceScores.useQuery();
 
-  const summaryQuery = trpc.compliance.getSummary.useQuery();
-  const driversQuery = trpc.compliance.getDriverCompliance.useQuery();
-  const expiringQuery = trpc.compliance.getExpiringDocuments.useQuery({ days: 30 });
-  const alertsQuery = trpc.compliance.getAlerts.useQuery();
-
-  if (summaryQuery.error) {
-    return (
-      <div className="p-6 text-center">
-        <div className="p-4 rounded-full bg-red-500/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-          <AlertTriangle className="w-8 h-8 text-red-400" />
-        </div>
-        <p className="text-red-400 mb-4">Error loading compliance data</p>
-        <Button className="bg-slate-700 hover:bg-slate-600" onClick={() => summaryQuery.refetch()}>Retry</Button>
-      </div>
-    );
-  }
-
-  const summary = summaryQuery.data;
+  const stats = statsQuery.data;
+  const scores = scoresQuery.data;
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-400";
@@ -46,275 +31,149 @@ export default function ComplianceDashboard() {
     return "text-red-400";
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "compliant": return <Badge className="bg-green-500/20 text-green-400 border-0">Compliant</Badge>;
-      case "expiring": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Expiring</Badge>;
-      case "expired": case "non_compliant": return <Badge className="bg-red-500/20 text-red-400 border-0">Non-Compliant</Badge>;
-      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
-    }
+  const getScoreBg = (score: number) => {
+    if (score >= 90) return "bg-green-500/20";
+    if (score >= 70) return "bg-yellow-500/20";
+    return "bg-red-500/20";
   };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
-            Compliance Dashboard
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">Monitor fleet compliance status</p>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Compliance Dashboard</h1>
+          <p className="text-slate-400 text-sm mt-1">Overview of compliance status</p>
         </div>
       </div>
 
-      {/* Alerts */}
-      {alertsQuery.data && alertsQuery.data.length > 0 && (
-        <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-red-500/20">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
-              </div>
+      {statsQuery.isLoading ? <Skeleton className="h-32 w-full rounded-xl" /> : (
+        <Card className={cn("rounded-xl", stats?.overallScore >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : stats?.overallScore >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-red-400 font-bold">{alertsQuery.data.length} Compliance Alert{alertsQuery.data.length > 1 ? "s" : ""}</p>
-                <p className="text-sm text-slate-400">{alertsQuery.data[0]?.message}</p>
+                <p className="text-slate-400 text-sm">Overall Compliance Score</p>
+                <p className={cn("text-5xl font-bold", getScoreColor(stats?.overallScore || 0))}>{stats?.overallScore}%</p>
+                <p className="text-sm text-slate-400 mt-1">{stats?.trend === "up" ? "Improving" : stats?.trend === "down" ? "Declining" : "Stable"} from last month</p>
+              </div>
+              <div className={cn("p-4 rounded-full", getScoreBg(stats?.overallScore || 0))}>
+                <Shield className={cn("w-12 h-12", getScoreColor(stats?.overallScore || 0))} />
               </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className={cn("rounded-xl border", summary?.overallScore >= 90 ? "bg-green-500/10 border-green-500/30" : summary?.overallScore >= 70 ? "bg-yellow-500/10 border-yellow-500/30" : "bg-red-500/10 border-red-500/30")}>
-          <CardContent className="p-5">
-            <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", summary?.overallScore >= 90 ? "bg-green-500/20" : summary?.overallScore >= 70 ? "bg-yellow-500/20" : "bg-red-500/20")}>
-                <Shield className="w-6 h-6 text-current" style={{ color: summary?.overallScore >= 90 ? '#4ade80' : summary?.overallScore >= 70 ? '#facc15' : '#f87171' }} />
-              </div>
-              <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className={cn("text-2xl font-bold", getScoreColor(summary?.overallScore || 0))}>{summary?.overallScore || 0}%</p>
-                )}
-                <p className="text-xs text-slate-400">Score</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-blue-500/20">
-                <Users className="w-6 h-6 text-blue-400" />
-              </div>
-              <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{summary?.totalDrivers || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Drivers</p>
-              </div>
+              <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{stats?.violations || 0}</p>}<p className="text-xs text-slate-400">Violations</p></div>
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-green-500/20">
-                <CheckCircle className="w-6 h-6 text-green-400" />
-              </div>
-              <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{summary?.compliant || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Compliant</p>
-              </div>
+              <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.expiring || 0}</p>}<p className="text-xs text-slate-400">Expiring</p></div>
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-yellow-500/20">
-                <Clock className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{summary?.expiringSoon || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Expiring</p>
-              </div>
+              <div className="p-3 rounded-full bg-blue-500/20"><FileText className="w-6 h-6 text-blue-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-blue-400">{stats?.pendingAudits || 0}</p>}<p className="text-xs text-slate-400">Audits</p></div>
             </div>
           </CardContent>
         </Card>
-
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-red-500/20">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
-              </div>
-              <div>
-                {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{summary?.nonCompliant || 0}</p>
-                )}
-                <p className="text-xs text-slate-400">Non-Compliant</p>
-              </div>
+              <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.compliant || 0}</p>}<p className="text-xs text-slate-400">Compliant</p></div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-slate-700 rounded-md">Overview</TabsTrigger>
-          <TabsTrigger value="drivers" className="data-[state=active]:bg-slate-700 rounded-md">Drivers</TabsTrigger>
-          <TabsTrigger value="expiring" className="data-[state=active]:bg-slate-700 rounded-md">Expiring</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-              <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Compliance by Category</CardTitle></CardHeader>
-              <CardContent>
-                {summaryQuery.isLoading ? (
-                  <div className="space-y-4">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-                ) : (
-                  <div className="space-y-4">
-                    {summary?.categories?.map((cat) => (
-                      <div key={cat.name} className="p-3 rounded-xl bg-slate-700/30">
-                        <div className="flex justify-between mb-2">
-                          <span className="text-slate-300">{cat.name}</span>
-                          <span className={cn("font-bold", getScoreColor(cat.score))}>{cat.score}%</span>
-                        </div>
-                        <Progress value={cat.score} className="h-2" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-              <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Expiring Documents</CardTitle></CardHeader>
-              <CardContent>
-                {expiringQuery.isLoading ? (
-                  <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-                ) : expiringQuery.data?.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="p-4 rounded-full bg-green-500/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                      <CheckCircle className="w-8 h-8 text-green-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Compliance by Category</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            {scoresQuery.isLoading ? (
+              <div className="space-y-3">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+            ) : (
+              scores?.categories?.map((cat: any) => (
+                <div key={cat.name} className="p-3 rounded-lg bg-slate-700/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {cat.name === "DQ Files" && <User className="w-4 h-4 text-cyan-400" />}
+                      {cat.name === "HOS" && <Clock className="w-4 h-4 text-purple-400" />}
+                      {cat.name === "D&A Testing" && <TestTube className="w-4 h-4 text-green-400" />}
+                      {cat.name === "Vehicle" && <Truck className="w-4 h-4 text-blue-400" />}
+                      {cat.name === "Hazmat" && <AlertTriangle className="w-4 h-4 text-orange-400" />}
+                      {cat.name === "Documents" && <FileText className="w-4 h-4 text-yellow-400" />}
+                      <span className="text-white font-medium">{cat.name}</span>
                     </div>
-                    <p className="text-slate-400">No documents expiring soon</p>
+                    <span className={cn("font-bold", getScoreColor(cat.score))}>{cat.score}%</span>
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {expiringQuery.data?.slice(0, 5).map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-full bg-yellow-500/20">
-                            <FileText className="w-4 h-4 text-yellow-400" />
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">{doc.documentType}</p>
-                            <p className="text-xs text-slate-500">{doc.driverName}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-yellow-400 font-medium">{doc.expirationDate}</p>
-                          <p className="text-xs text-slate-500">{doc.daysUntilExpiration} days</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="drivers" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-            <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Driver Compliance Status</CardTitle></CardHeader>
-            <CardContent>
-              {driversQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : driversQuery.data?.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                    <Users className="w-8 h-8 text-slate-500" />
-                  </div>
-                  <p className="text-slate-400">No driver data</p>
+                  <Progress value={cat.score} className="h-2" />
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  {driversQuery.data?.map((driver) => (
-                    <div key={driver.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-full bg-blue-500/20">
-                          <Users className="w-5 h-5 text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">{driver.name}</p>
-                          <p className="text-xs text-slate-500">{driver.documentsComplete}/{driver.documentsRequired} documents</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <p className={cn("font-bold", getScoreColor(driver.complianceScore))}>{driver.complianceScore}%</p>
-                        {getStatusBadge(driver.status)}
-                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white"><Eye className="w-4 h-4" /></Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              ))
+            )}
+          </CardContent>
+        </Card>
 
-        <TabsContent value="expiring" className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-            <CardHeader className="pb-3"><CardTitle className="text-white text-lg">All Expiring Documents (30 Days)</CardTitle></CardHeader>
-            <CardContent>
+        <div className="space-y-6">
+          <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
+            <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Clock className="w-5 h-5 text-yellow-400" />Expiring Soon</CardTitle></CardHeader>
+            <CardContent className="p-0">
               {expiringQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
               ) : expiringQuery.data?.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="p-4 rounded-full bg-green-500/20 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                    <CheckCircle className="w-8 h-8 text-green-400" />
-                  </div>
-                  <p className="text-slate-400">No documents expiring in the next 30 days</p>
-                </div>
+                <div className="p-4 text-center text-slate-400">No items expiring soon</div>
               ) : (
-                <div className="space-y-3">
-                  {expiringQuery.data?.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
-                      <div className="flex items-center gap-4">
-                        <div className={cn("p-2 rounded-full", doc.daysUntilExpiration <= 7 ? "bg-red-500/20" : "bg-yellow-500/20")}>
-                          <FileText className={cn("w-5 h-5", doc.daysUntilExpiration <= 7 ? "text-red-400" : "text-yellow-400")} />
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">{doc.documentType}</p>
-                          <p className="text-sm text-slate-400">{doc.driverName}</p>
-                        </div>
+                <div className="divide-y divide-yellow-500/20">
+                  {expiringQuery.data?.map((item: any) => (
+                    <div key={item.id} className="p-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">{item.name}</p>
+                        <p className="text-xs text-slate-500">{item.type} | {item.entity}</p>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <p className={cn(doc.daysUntilExpiration <= 7 ? "text-red-400" : "text-yellow-400")}>{doc.expirationDate}</p>
-                          <p className="text-xs text-slate-500">{doc.daysUntilExpiration} days remaining</p>
-                        </div>
-                        <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg">Renew</Button>
-                      </div>
+                      <Badge className={cn("border-0", item.daysRemaining <= 7 ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400")}>{item.daysRemaining} days</Badge>
                     </div>
                   ))}
                 </div>
               )}
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 rounded-xl">
+            <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Recent Violations</CardTitle></CardHeader>
+            <CardContent className="p-0">
+              {violationsQuery.isLoading ? (
+                <div className="p-4 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              ) : violationsQuery.data?.length === 0 ? (
+                <div className="p-4 text-center text-green-400 flex items-center justify-center gap-2"><CheckCircle className="w-5 h-5" />No recent violations</div>
+              ) : (
+                <div className="divide-y divide-red-500/20">
+                  {violationsQuery.data?.map((v: any) => (
+                    <div key={v.id} className="p-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">{v.type}</p>
+                        <p className="text-xs text-slate-500">{v.entity} | {v.date}</p>
+                      </div>
+                      <Badge className={cn("border-0", v.severity === "critical" ? "bg-red-500 text-white" : "bg-orange-500/20 text-orange-400")}>{v.severity}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
