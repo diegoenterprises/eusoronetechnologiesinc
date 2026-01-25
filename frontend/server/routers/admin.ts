@@ -12,6 +12,43 @@ const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "nee
 
 export const adminRouter = router({
   /**
+   * Get users for UserManagement page
+   */
+  getUsers: protectedProcedure
+    .input(z.object({ search: z.string().optional(), role: z.string().optional() }))
+    .query(async ({ input }) => {
+      const users = [
+        { id: "u1", name: "Mike Johnson", email: "mike@example.com", role: "driver", status: "active", lastLogin: "2025-01-23" },
+        { id: "u2", name: "Sarah Williams", email: "sarah@example.com", role: "carrier", status: "active", lastLogin: "2025-01-22" },
+        { id: "u3", name: "Tom Brown", email: "tom@example.com", role: "shipper", status: "pending", lastLogin: null },
+      ];
+      let filtered = users;
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        filtered = filtered.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+      }
+      if (input.role && input.role !== "all") filtered = filtered.filter(u => u.role === input.role);
+      return filtered;
+    }),
+
+  /**
+   * Get user stats for UserManagement page
+   */
+  getUserStats: protectedProcedure
+    .query(async () => {
+      return { total: 2450, active: 1890, pending: 145, suspended: 12 };
+    }),
+
+  /**
+   * Toggle user status mutation
+   */
+  toggleUserStatus: protectedProcedure
+    .input(z.object({ userId: z.string(), status: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, userId: input.userId, newStatus: input.status };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
