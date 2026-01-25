@@ -10,6 +10,34 @@ const fuelTypeSchema = z.enum(["diesel", "def", "gasoline"]);
 
 export const fuelRouter = router({
   /**
+   * Get summary for FuelManagement page
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return {
+        totalGallons: 4250,
+        totalSpent: 15862.50,
+        avgPrice: 3.73,
+        thisMonthGallons: 1850,
+        thisMonthSpent: 6845.50,
+        mpgAvg: 6.8,
+      };
+    }),
+
+  /**
+   * Get current fuel prices
+   */
+  getCurrentPrices: protectedProcedure
+    .query(async () => {
+      return {
+        diesel: { avg: 3.72, low: 3.45, high: 3.98 },
+        gasoline: { avg: 2.89, low: 2.65, high: 3.15 },
+        def: { avg: 3.25, low: 2.95, high: 3.55 },
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
+  /**
    * Get fuel card transactions
    */
   getTransactions: protectedProcedure
@@ -84,9 +112,9 @@ export const fuelRouter = router({
     }),
 
   /**
-   * Get fuel summary
+   * Get fuel summary (detailed version)
    */
-  getSummary: protectedProcedure
+  getSummaryDetailed: protectedProcedure
     .input(z.object({
       period: z.enum(["week", "month", "quarter"]).default("month"),
       vehicleId: z.string().optional(),

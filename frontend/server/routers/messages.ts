@@ -10,6 +10,18 @@ const messageTypeSchema = z.enum(["text", "load_update", "bid_notification", "sy
 
 export const messagesRouter = router({
   /**
+   * Get conversations for Messages page
+   */
+  getConversations: protectedProcedure
+    .query(async () => {
+      return [
+        { id: "conv_001", name: "Mike Johnson", lastMessage: "Load picked up", time: "15m ago", unread: 2, type: "driver" },
+        { id: "conv_002", name: "Shell Oil", lastMessage: "Rate confirmed", time: "1h ago", unread: 0, type: "shipper" },
+        { id: "conv_003", name: "Support", lastMessage: "Document verified", time: "2h ago", unread: 1, type: "support" },
+      ];
+    }),
+
+  /**
    * Get conversations list
    */
   listConversations: protectedProcedure
