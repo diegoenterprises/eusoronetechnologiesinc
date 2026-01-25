@@ -16,4 +16,7 @@ export const laneRatesRouter = router({
   calculate: protectedProcedure.input(z.object({ origin: z.string(), destination: z.string() })).query(async ({ input }) => ({
     origin: input.origin, destination: input.destination, estimatedRate: 3.25, miles: 240,
   })),
+
+  getSummary: protectedProcedure.query(async () => ({ totalLanes: 150, avgRate: 3.18, trending: "up" })),
+  getTopLanes: protectedProcedure.query(async () => [{ origin: "Houston", destination: "Dallas", rate: 3.45, volume: 250 }]),
 });
