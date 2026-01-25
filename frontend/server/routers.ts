@@ -107,6 +107,8 @@ import { laneRatesRouter } from "./routers/laneRates";
 import { helpRouter } from "./routers/help";
 import { feedbackRouter } from "./routers/feedback";
 import { rewardsRouter } from "./routers/rewards";
+import { bookmarksRouter } from "./routers/bookmarks";
+import { carrierPacketsRouter } from "./routers/carrierPackets";
 
 export const appRouter = router({
   system: systemRouter,
@@ -440,6 +442,12 @@ export const appRouter = router({
 
   // Rewards
   rewards: rewardsRouter,
+
+  // Bookmarks
+  bookmarks: bookmarksRouter,
+
+  // Carrier Packets
+  carrierPackets: carrierPacketsRouter,
 
   zeun: router({
     health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),

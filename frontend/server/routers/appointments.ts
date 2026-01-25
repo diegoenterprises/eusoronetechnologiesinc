@@ -313,4 +313,9 @@ export const appointmentsRouter = router({
         sentAt: new Date().toISOString(),
       };
     }),
+
+  // Additional appointment procedures
+  getSummary: protectedProcedure.query(async () => ({ today: 12, completed: 8, inProgress: 2, upcoming: 15 })),
+  startLoading: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
+  complete: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId, completedAt: new Date().toISOString() })),
 });
