@@ -116,6 +116,13 @@ export const analyticsRouter = router({
         drivers: { active: 18, utilization: 78 },
         onTimeRate: 96,
         safetyScore: 92,
+        revenueChange: 12.5,
+        totalLoads: 45,
+        loadsChange: 8.2,
+        milesLogged: 125000,
+        milesChange: 5.8,
+        avgDeliveryTime: 4.2,
+        deliveryTimeChange: -8.5,
       };
     }),
 
