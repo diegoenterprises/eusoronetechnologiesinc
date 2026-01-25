@@ -11,6 +11,106 @@ const carrierStatusSchema = z.enum(["active", "pending", "suspended", "inactive"
 
 export const carriersRouter = router({
   /**
+   * Get carrier dashboard stats
+   */
+  getDashboardStats: protectedProcedure
+    .query(async () => {
+      return {
+        activeLoads: 5,
+        availableCapacity: 8,
+        weeklyRevenue: 28500,
+        fleetUtilization: 72,
+        safetyScore: 92,
+        onTimeRate: 96,
+      };
+    }),
+
+  /**
+   * Get my drivers
+   */
+  getMyDrivers: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        {
+          id: "d1",
+          name: "Mike Johnson",
+          status: "driving",
+          currentLoad: "LOAD-45920",
+          hoursRemaining: 6.5,
+          location: "Waco, TX",
+        },
+        {
+          id: "d2",
+          name: "Sarah Williams",
+          status: "available",
+          hoursRemaining: 10,
+          location: "Dallas, TX",
+        },
+        {
+          id: "d3",
+          name: "Tom Brown",
+          status: "off_duty",
+          hoursRemaining: 11,
+          location: "Austin, TX",
+        },
+      ];
+    }),
+
+  /**
+   * Get active loads for carrier
+   */
+  getActiveLoads: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(10) }))
+    .query(async () => {
+      return [
+        {
+          id: "load_001",
+          loadNumber: "LOAD-45920",
+          status: "in_transit",
+          origin: "Houston, TX",
+          destination: "Dallas, TX",
+          driver: "Mike Johnson",
+          eta: "2 hours",
+          rate: 2450,
+        },
+        {
+          id: "load_002",
+          loadNumber: "LOAD-45918",
+          status: "loading",
+          origin: "Beaumont, TX",
+          destination: "Austin, TX",
+          driver: "Tom Brown",
+          eta: "6 hours",
+          rate: 2800,
+        },
+      ];
+    }),
+
+  /**
+   * Get carrier alerts
+   */
+  getAlerts: protectedProcedure
+    .query(async () => {
+      return [
+        {
+          id: "alert_001",
+          type: "hos",
+          severity: "warning",
+          message: "Driver Mike Johnson: 2 hours drive time remaining",
+          driverId: "d1",
+        },
+        {
+          id: "alert_002",
+          type: "document",
+          severity: "info",
+          message: "Medical certificate expires in 30 days for Sarah Williams",
+          driverId: "d2",
+        },
+      ];
+    }),
+
+  /**
    * List carriers
    */
   list: protectedProcedure
