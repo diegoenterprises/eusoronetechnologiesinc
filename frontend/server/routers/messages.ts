@@ -13,11 +13,12 @@ export const messagesRouter = router({
    * Get conversations for Messages page
    */
   getConversations: protectedProcedure
+    .input(z.object({ search: z.string().optional() }).optional())
     .query(async () => {
       return [
-        { id: "conv_001", name: "Mike Johnson", participantName: "Mike Johnson", lastMessage: "Load picked up", time: "15m ago", unread: 2, type: "driver" },
-        { id: "conv_002", name: "Shell Oil", participantName: "Shell Oil", lastMessage: "Rate confirmed", time: "1h ago", unread: 0, type: "shipper" },
-        { id: "conv_003", name: "Support", participantName: "Support", lastMessage: "Document verified", time: "2h ago", unread: 1, type: "support" },
+        { id: "conv_001", name: "Mike Johnson", participantName: "Mike Johnson", lastMessage: "Load picked up", time: "15m ago", lastMessageAt: "2025-01-23T10:30:00Z", unread: 2, unreadCount: 2, type: "driver", online: true, role: "driver" },
+        { id: "conv_002", name: "Shell Oil", participantName: "Shell Oil", lastMessage: "Rate confirmed", time: "1h ago", lastMessageAt: "2025-01-23T09:00:00Z", unread: 0, unreadCount: 0, type: "shipper", online: false, role: "shipper" },
+        { id: "conv_003", name: "Support", participantName: "Support", lastMessage: "Document verified", time: "2h ago", lastMessageAt: "2025-01-23T08:00:00Z", unread: 1, unreadCount: 1, type: "support", online: true, role: "support" },
       ];
     }),
 
