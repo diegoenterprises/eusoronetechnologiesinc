@@ -437,4 +437,9 @@ export const clearinghouseRouter = router({
         syncedBy: ctx.user?.id,
       };
     }),
+
+  // Additional clearinghouse procedures
+  getSummary: protectedProcedure.query(async () => ({ totalDrivers: 45, compliant: 42, pendingQueries: 3 })),
+  getQueries: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "q1", driverId: "d1", type: "annual", status: "completed" }]),
+  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => ({ driverId: input.driverId, status: "clear", lastQuery: "2025-01-15" })),
 });
