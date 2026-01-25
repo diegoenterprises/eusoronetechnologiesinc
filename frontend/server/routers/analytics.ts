@@ -10,6 +10,43 @@ const periodSchema = z.enum(["day", "week", "month", "quarter", "year"]);
 
 export const analyticsRouter = router({
   /**
+   * Get summary for Analytics page
+   */
+  getSummary: protectedProcedure
+    .input(z.object({ period: z.string().optional().default("month") }))
+    .query(async ({ input }) => {
+      return {
+        revenue: { total: 127500, change: 12.5 },
+        loads: { total: 45, change: 8.2 },
+        drivers: { active: 18, utilization: 78 },
+        onTimeRate: 96,
+        safetyScore: 92,
+      };
+    }),
+
+  /**
+   * Get trends for Analytics page
+   */
+  getTrends: protectedProcedure
+    .input(z.object({ period: z.string().optional().default("month") }))
+    .query(async ({ input }) => {
+      return {
+        revenue: [
+          { date: "Jan 1", value: 28000 },
+          { date: "Jan 8", value: 32000 },
+          { date: "Jan 15", value: 35000 },
+          { date: "Jan 22", value: 32500 },
+        ],
+        loads: [
+          { date: "Jan 1", value: 10 },
+          { date: "Jan 8", value: 12 },
+          { date: "Jan 15", value: 14 },
+          { date: "Jan 22", value: 9 },
+        ],
+      };
+    }),
+
+  /**
    * Get carrier analytics summary
    */
   getCarrierAnalytics: protectedProcedure

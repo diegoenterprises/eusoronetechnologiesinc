@@ -11,6 +11,48 @@ const transactionTypeSchema = z.enum(["payment", "receipt", "refund", "fee", "wi
 
 export const billingRouter = router({
   /**
+   * Get summary for Billing page
+   */
+  getSummary: protectedProcedure
+    .query(async () => {
+      return {
+        totalBalance: 47250,
+        pendingInvoices: 3,
+        pendingAmount: 8750,
+        overdueInvoices: 1,
+        overdueAmount: 2950,
+        thisMonthRevenue: 28500,
+      };
+    }),
+
+  /**
+   * Get invoices for Billing page
+   */
+  getInvoices: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(20) }))
+    .query(async () => {
+      return [
+        { id: "inv_001", number: "INV-2025-0234", customer: "Shell Oil", amount: 4200, status: "paid", date: "2025-01-23" },
+        { id: "inv_002", number: "INV-2025-0235", customer: "ExxonMobil", amount: 3800, status: "pending", date: "2025-01-23" },
+        { id: "inv_003", number: "INV-2025-0230", customer: "Chevron", amount: 2950, status: "overdue", date: "2025-01-10" },
+        { id: "inv_004", number: "INV-2025-0236", customer: "BP", amount: 4950, status: "pending", date: "2025-01-24" },
+      ];
+    }),
+
+  /**
+   * Get payments for Billing page
+   */
+  getPayments: protectedProcedure
+    .input(z.object({ limit: z.number().optional().default(20) }))
+    .query(async () => {
+      return [
+        { id: "pay_001", invoice: "INV-2025-0234", from: "Shell Oil", amount: 4200, date: "2025-01-23", method: "ACH" },
+        { id: "pay_002", invoice: "INV-2025-0228", from: "Valero", amount: 3150, date: "2025-01-21", method: "Wire" },
+        { id: "pay_003", invoice: "INV-2025-0225", from: "Marathon", amount: 2800, date: "2025-01-19", method: "ACH" },
+      ];
+    }),
+
+  /**
    * Get wallet balance and summary
    */
   getWalletSummary: protectedProcedure
