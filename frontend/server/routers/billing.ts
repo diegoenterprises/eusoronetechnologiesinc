@@ -15,7 +15,15 @@ export const billingRouter = router({
    */
   getSubscription: protectedProcedure
     .query(async () => {
-      return { plan: "Professional", status: "active", billingCycle: "monthly", nextBilling: "2025-02-01", price: 299 };
+      return { 
+        plan: "Professional", 
+        planName: "Professional",
+        status: "active", 
+        billingCycle: "monthly", 
+        nextBilling: "2025-02-01",
+        nextBillingDate: "2025-02-01",
+        price: 299 
+      };
     }),
 
   /**
@@ -35,7 +43,18 @@ export const billingRouter = router({
    */
   getUsage: protectedProcedure
     .query(async () => {
-      return { loadsThisMonth: 45, loadsLimit: null, apiCallsThisMonth: 12500, apiCallsLimit: 50000, storageUsed: "2.5 GB", storageLimit: "10 GB" };
+      return { 
+        loadsThisMonth: 45, 
+        loadsLimit: null, 
+        apiCallsThisMonth: 12500, 
+        apiCallsLimit: 50000, 
+        storageUsed: "2.5 GB", 
+        storageLimit: "10 GB",
+        loads: { used: 45, limit: null },
+        users: { used: 8, limit: 25 },
+        apiCalls: { used: 12500, limit: 50000 },
+        storage: { used: 2.5, limit: 10 },
+      };
     }),
 
   /**
