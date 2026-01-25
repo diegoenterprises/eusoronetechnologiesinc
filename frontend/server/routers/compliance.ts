@@ -114,7 +114,7 @@ export const complianceRouter = router({
    */
   getHazmatStats: protectedProcedure
     .query(async () => {
-      return { totalCertified: 12, valid: 10, expiringSoon: 2, expired: 0, trainingDue: 1 };
+      return { totalCertified: 12, valid: 10, expiringSoon: 2, expiring: 2, expired: 0, trainingDue: 1 };
     }),
 
   /**
