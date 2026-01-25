@@ -11,6 +11,41 @@ const vehicleTypeSchema = z.enum(["truck", "trailer", "tanker", "flatbed", "reef
 
 export const fleetRouter = router({
   /**
+   * Get geofences for GeofenceManagement page
+   */
+  getGeofences: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const geofences = [
+        { id: "g1", name: "Houston Terminal", type: "terminal", radius: 500, lat: 29.7604, lng: -95.3698, alerts: true },
+        { id: "g2", name: "Dallas Yard", type: "yard", radius: 300, lat: 32.7767, lng: -96.7970, alerts: true },
+        { id: "g3", name: "Austin Hub", type: "hub", radius: 400, lat: 30.2672, lng: -97.7431, alerts: false },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return geofences.filter(g => g.name.toLowerCase().includes(q));
+      }
+      return geofences;
+    }),
+
+  /**
+   * Get geofence stats for GeofenceManagement page
+   */
+  getGeofenceStats: protectedProcedure
+    .query(async () => {
+      return { total: 12, terminals: 4, yards: 5, hubs: 3, alertsEnabled: 10 };
+    }),
+
+  /**
+   * Delete geofence mutation
+   */
+  deleteGeofence: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, deletedId: input.id };
+    }),
+
+  /**
    * Get vehicles for FleetManagement
    */
   getVehicles: protectedProcedure

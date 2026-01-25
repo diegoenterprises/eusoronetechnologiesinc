@@ -49,6 +49,49 @@ export const adminRouter = router({
     }),
 
   /**
+   * Get webhooks for WebhookManagement page
+   */
+  getWebhooks: protectedProcedure
+    .input(z.object({ search: z.string().optional() }))
+    .query(async ({ input }) => {
+      const webhooks = [
+        { id: "w1", name: "Load Status Updates", url: "https://api.example.com/webhooks/loads", events: ["load.created", "load.updated"], status: "active", lastTriggered: "2025-01-23" },
+        { id: "w2", name: "Driver Alerts", url: "https://api.example.com/webhooks/drivers", events: ["driver.hos_warning"], status: "active", lastTriggered: "2025-01-22" },
+      ];
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        return webhooks.filter(w => w.name.toLowerCase().includes(q));
+      }
+      return webhooks;
+    }),
+
+  /**
+   * Get webhook stats for WebhookManagement page
+   */
+  getWebhookStats: protectedProcedure
+    .query(async () => {
+      return { total: 8, active: 6, failed: 1, disabled: 1, triggeredToday: 45 };
+    }),
+
+  /**
+   * Delete webhook mutation
+   */
+  deleteWebhook: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, deletedId: input.id };
+    }),
+
+  /**
+   * Test webhook mutation
+   */
+  testWebhook: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ input }) => {
+      return { success: true, webhookId: input.id, responseTime: 245, statusCode: 200 };
+    }),
+
+  /**
    * Get admin dashboard summary
    */
   getDashboardSummary: protectedProcedure
