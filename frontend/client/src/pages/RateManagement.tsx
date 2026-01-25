@@ -1,0 +1,146 @@
+/**
+ * RATE MANAGEMENT PAGE
+ * 100% Dynamic - No mock data
+ * UI Style: Gradient headers, stat cards with icons, rounded cards
+ */
+
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
+import {
+  DollarSign, Search, Plus, TrendingUp, MapPin,
+  Edit, Trash2
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+export default function RateManagement() {
+  const [search, setSearch] = useState("");
+  const [type, setType] = useState("all");
+
+  const ratesQuery = trpc.rates.getAll.useQuery({ search, type });
+  const statsQuery = trpc.rates.getStats.useQuery();
+
+  const deleteMutation = trpc.rates.delete.useMutation({
+    onSuccess: () => { toast.success("Rate deleted"); ratesQuery.refetch(); },
+    onError: (error) => toast.error("Failed", { description: error.message }),
+  });
+
+  const stats = statsQuery.data;
+
+  return (
+    <div className="p-4 md:p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Rate Management</h1>
+          <p className="text-slate-400 text-sm mt-1">Manage shipping rates</p>
+        </div>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+          <Plus className="w-4 h-4 mr-2" />Add Rate
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-cyan-500/20"><DollarSign className="w-6 h-6 text-cyan-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.totalRates || 0}</p>}<p className="text-xs text-slate-400">Total Rates</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-green-500/20"><TrendingUp className="w-6 h-6 text-green-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.avgRate}</p>}<p className="text-xs text-slate-400">Avg Rate/Mi</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-purple-500/20"><MapPin className="w-6 h-6 text-purple-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-purple-400">{stats?.lanes || 0}</p>}<p className="text-xs text-slate-400">Lanes</p></div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-full bg-yellow-500/20"><DollarSign className="w-6 h-6 text-yellow-400" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-yellow-400">${stats?.highestRate}</p>}<p className="text-xs text-slate-400">Highest</p></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search rates..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        </div>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="contract">Contract</SelectItem>
+            <SelectItem value="spot">Spot</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-cyan-400" />Rates</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          {ratesQuery.isLoading ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : ratesQuery.data?.length === 0 ? (
+            <div className="text-center py-16"><DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No rates found</p></div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {ratesQuery.data?.map((rate: any) => (
+                <div key={rate.id} className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={cn("p-3 rounded-xl", rate.type === "contract" ? "bg-green-500/20" : "bg-yellow-500/20")}>
+                      <DollarSign className={cn("w-5 h-5", rate.type === "contract" ? "text-green-400" : "text-yellow-400")} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-white font-bold">{rate.origin} → {rate.destination}</p>
+                        <Badge className={cn("border-0", rate.type === "contract" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400")}>{rate.type}</Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-slate-400">
+                        <span>{rate.miles} mi</span>
+                        <span>{rate.equipment}</span>
+                        {rate.customer && <span>Customer: {rate.customer}</span>}
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
+                        <span>Valid: {rate.validFrom} - {rate.validTo}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-xl font-bold text-green-400">${rate.ratePerMile}/mi</p>
+                      <p className="text-sm text-slate-500">Total: ${rate.totalRate?.toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg"><Edit className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 rounded-lg" onClick={() => deleteMutation.mutate({ id: rate.id })}><Trash2 className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
