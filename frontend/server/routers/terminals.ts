@@ -944,7 +944,7 @@ export const terminalsRouter = router({
    */
   getDashboardStats: protectedProcedure
     .query(async () => {
-      return { appointmentsToday: 24, loadsCompleted: 18, throughputToday: 125000, alertsActive: 2 };
+      return { appointmentsToday: 24, loadsCompleted: 18, throughputToday: 125000, alertsActive: 2, todayAppointments: 24, checkedIn: 8, loading: 4, rackUtilization: 75, inventoryLevel: 82 };
     }),
 
   /**
@@ -952,7 +952,7 @@ export const terminalsRouter = router({
    */
   getInventorySummary: protectedProcedure
     .query(async () => {
-      return { totalCapacity: 500000, currentInventory: 375000, utilizationPercent: 75, lowStockProducts: 1 };
+      return { totalCapacity: 500000, currentInventory: 375000, utilizationPercent: 75, lowStockProducts: 1, tanks: [{ id: "t1", name: "Tank 1", product: "Unleaded", level: 82, capacity: 50000 }] };
     }),
 
   /**
