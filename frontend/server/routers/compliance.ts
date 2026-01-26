@@ -853,8 +853,11 @@ export const complianceRouter = router({
   getCalendarSummary: protectedProcedure.query(async () => ({ thisMonth: 12, nextMonth: 8, overdue: 2 })),
 
   // Clearinghouse
-  getClearinghouseQueries: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "ch1", driverId: "d1", type: "pre-employment", status: "completed", completedAt: "2025-01-18" }]),
-  getClearinghouseStats: protectedProcedure.query(async () => ({ totalQueries: 250, thisMonth: 15, violations: 2 })),
+  getClearinghouseQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
+    { id: "ch1", driverId: "d1", driverName: "Mike Johnson", type: "pre-employment", status: "completed", completedAt: "2025-01-18", lastQuery: "2025-01-18" },
+    { id: "ch2", driverId: "d2", driverName: "Sarah Williams", type: "annual", status: "pending", completedAt: null, lastQuery: "2024-12-15" },
+  ]),
+  getClearinghouseStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalDrivers: 45, compliant: 42, pendingQueries: 3, clearDrivers: 42, violations: 2, totalQueries: 250, thisMonth: 15 })),
 
   // DQ File
   getDQDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "complete", lastUpdated: "2025-01-20" }]),
