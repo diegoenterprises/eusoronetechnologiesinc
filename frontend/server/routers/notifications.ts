@@ -36,11 +36,12 @@ export const notificationsRouter = router({
   list: protectedProcedure
     .input(z.object({
       category: notificationCategorySchema.optional(),
+      type: z.string().optional(),
       read: z.boolean().optional(),
-      archived: z.boolean().default(false),
-      limit: z.number().default(50),
-      offset: z.number().default(0),
-    }))
+      archived: z.boolean().default(false).optional(),
+      limit: z.number().default(50).optional(),
+      offset: z.number().default(0).optional(),
+    }).optional())
     .query(async ({ ctx, input }) => {
       const notifications = [
         {
