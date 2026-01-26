@@ -532,6 +532,8 @@ export const carriersRouter = router({
         address: "456 Trucking Lane, Houston, TX 77002",
         verified: true,
         memberSince: "2023-06-15",
+        liabilityInsurance: { amount: 1000000, expiration: "2025-12-31" },
+        cargoInsurance: { amount: 100000, expiration: "2025-12-31" },
       };
     }),
 
@@ -547,6 +549,8 @@ export const carriersRouter = router({
         onTimeDeliveryRate: 96,
         safetyScore: 92,
         avgPaymentReceived: 12,
+        loadsCompleted: 1250,
+        onTimeRate: 96,
       };
     }),
 
@@ -562,6 +566,8 @@ export const carriersRouter = router({
         available: 8,
         drivers: 28,
         activeDrivers: 24,
+        totalDrivers: 28,
+        utilization: 88,
       };
     }),
 
@@ -579,6 +585,7 @@ export const carriersRouter = router({
         driverFitness: 5,
         lastAudit: "2025-01-15",
         nextAuditDue: "2026-01-15",
+        basicScores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12, controlledSubstances: 0, driverFitness: 5, crashIndicator: 3, hazmatCompliance: 2 },
       };
     }),
 
