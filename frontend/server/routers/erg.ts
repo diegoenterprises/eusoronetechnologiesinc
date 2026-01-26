@@ -165,6 +165,8 @@ export const ergRouter = router({
         128: {
           guideNumber: 128,
           title: "Flammable Liquids (Non-Polar/Water-Immiscible)",
+          name: "Flammable Liquids (Non-Polar/Water-Immiscible)",
+          hazardClasses: ["3 - Flammable Liquid"],
           potentialHazards: {
             fire: [
               "HIGHLY FLAMMABLE: Will be easily ignited by heat, sparks or flames",
@@ -342,4 +344,8 @@ export const ergRouter = router({
         timestamp: new Date().toISOString(),
       };
     }),
+  getRecentLookups: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
+    { id: "l1", unNumber: "1203", productName: "Gasoline", guideNumber: 128, timestamp: "2025-01-23 10:00" },
+    { id: "l2", unNumber: "1202", productName: "Diesel Fuel", guideNumber: 128, timestamp: "2025-01-22 15:30" },
+  ]),
 });
