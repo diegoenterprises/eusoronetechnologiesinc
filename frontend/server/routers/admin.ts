@@ -174,9 +174,9 @@ export const adminRouter = router({
    * Toggle scheduled task mutation
    */
   toggleScheduledTask: protectedProcedure
-    .input(z.object({ id: z.string(), enabled: z.boolean() }))
+    .input(z.object({ id: z.string().optional(), taskId: z.string().optional(), enabled: z.boolean() }))
     .mutation(async ({ input }) => {
-      return { success: true, taskId: input.id, enabled: input.enabled };
+      return { success: true, taskId: input.id || input.taskId, enabled: input.enabled };
     }),
 
   /**
