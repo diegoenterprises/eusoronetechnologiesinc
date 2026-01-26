@@ -617,4 +617,11 @@ export const carriersRouter = router({
   getRecentLoads: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "in_transit" }]),
   getScorecards: protectedProcedure.query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 92, trend: "up" }]),
   getTopPerformers: protectedProcedure.query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 98, loads: 150 }]),
+
+  // Vetting
+  getVettingList: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
+    { id: "v1", carrierId: "c1", name: "ABC Transport", dotNumber: "1234567", status: "pending", submittedAt: "2025-01-20" },
+    { id: "v2", carrierId: "c2", name: "FastHaul LLC", dotNumber: "2345678", status: "approved", submittedAt: "2025-01-18" },
+  ]),
+  getVettingStats: protectedProcedure.query(async () => ({ pending: 5, approved: 42, rejected: 3, total: 50 })),
 });
