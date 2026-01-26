@@ -603,4 +603,31 @@ export const analyticsRouter = router({
     { id: "u1", name: "Shell Oil", loads: 18, revenue: 54000 },
     { id: "u2", name: "ExxonMobil", loads: 12, revenue: 36000 },
   ])),
+
+  // Performance Reports
+  getPerformanceData: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+    revenue: [
+      { date: "Jan 1", value: 28000 },
+      { date: "Jan 8", value: 32000 },
+      { date: "Jan 15", value: 35000 },
+    ],
+    loads: [
+      { date: "Jan 1", value: 12 },
+      { date: "Jan 8", value: 15 },
+      { date: "Jan 15", value: 18 },
+    ],
+    onTime: [
+      { date: "Jan 1", value: 95 },
+      { date: "Jan 8", value: 97 },
+      { date: "Jan 15", value: 96 },
+    ],
+  })),
+  getPerformanceStats: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({
+    avgLoadTime: 4.2,
+    totalReports: 156,
+    mostPopular: "Revenue by Lane",
+    revenue: 285000,
+    loads: 125,
+    onTimeRate: 96,
+  })),
 });
