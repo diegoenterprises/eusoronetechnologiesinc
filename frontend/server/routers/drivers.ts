@@ -793,7 +793,13 @@ export const driversRouter = router({
   ]),
 
   // Pre-trip
-  getPreTripChecklist: protectedProcedure.query(async () => [{ id: "c1", item: "Brakes", required: true }, { id: "c2", item: "Lights", required: true }]),
+  getPreTripChecklist: protectedProcedure.query(async () => ({
+    categories: [
+      { name: "Exterior", items: [{ id: "c1", item: "Brakes", required: true }, { id: "c2", item: "Lights", required: true }, { id: "c3", item: "Tires", required: true }] },
+      { name: "Interior", items: [{ id: "c4", item: "Mirrors", required: true }, { id: "c5", item: "Gauges", required: true }] },
+      { name: "Safety", items: [{ id: "c6", item: "Fire Extinguisher", required: true }, { id: "c7", item: "Emergency Kit", required: false }] },
+    ],
+  })),
   submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })) })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
