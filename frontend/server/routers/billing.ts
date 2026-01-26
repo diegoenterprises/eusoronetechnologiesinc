@@ -123,7 +123,7 @@ export const billingRouter = router({
    * Get payments for Billing page
    */
   getPayments: protectedProcedure
-    .input(z.object({ limit: z.number().optional().default(20) }))
+    .input(z.object({ limit: z.number().optional(), search: z.string().optional(), type: z.string().optional() }).optional())
     .query(async () => {
       return [
         { id: "pay_001", invoice: "INV-2025-0234", from: "Shell Oil", amount: 4200, date: "2025-01-23", method: "ACH" },
@@ -331,7 +331,8 @@ export const billingRouter = router({
    */
   processPayment: protectedProcedure
     .input(z.object({
-      invoiceId: z.string(),
+      invoiceId: z.string().optional(),
+      paymentId: z.string().optional(),
       amount: z.number(),
       method: z.enum(["wallet", "card", "ach"]),
     }))
@@ -423,5 +424,5 @@ export const billingRouter = router({
 
   // History & stats
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "h1", type: "payment", amount: 2500, date: "2025-01-22" }]),
-  getPaymentStats: protectedProcedure.query(async () => ({ totalReceived: 125000, totalPaid: 85000, pending: 15000 })),
+  getPaymentStats: protectedProcedure.query(async () => ({ totalReceived: 125000, totalPaid: 85000, pending: 15000, received: 125000, sent: 85000, transactions: 350 })),
 });
