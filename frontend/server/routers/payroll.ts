@@ -211,8 +211,8 @@ export const payrollRouter = router({
     }),
 
   // Settlements
-  getSettlements: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "s1", driverId: "d1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
-  getSettlementStats: protectedProcedure.query(async () => ({ totalPaid: 125000, pending: 15000, thisWeek: 28500 })),
+  getSettlements: protectedProcedure.input(z.object({ status: z.string().optional(), period: z.string().optional() }).optional()).query(async () => [{ id: "s1", driverId: "d1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
+  getSettlementStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalPaid: 125000, pending: 15000, thisWeek: 28500, total: 45, totalRevenue: 140000, totalSettled: 125000 })),
 
   // Expenses
   getExpenseReports: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "e1", driverId: "d1", amount: 250, category: "fuel", status: "pending" }]),
