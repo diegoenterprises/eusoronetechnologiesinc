@@ -186,7 +186,7 @@ export const notificationsRouter = router({
 
   // Additional notification procedures
   getSettings: protectedProcedure.query(async () => ({ email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } })),
-  updateSetting: protectedProcedure.input(z.object({ key: z.string(), value: z.any() })).mutation(async ({ input }) => ({ success: true, key: input.key })),
+  updateSetting: protectedProcedure.input(z.object({ key: z.string(), value: z.any(), setting: z.string().optional() })).mutation(async ({ input }) => ({ success: true, key: input.key || input.setting })),
   getUnreadCount: protectedProcedure.query(async () => ({ count: 5 })),
   markRead: protectedProcedure.input(z.object({ notificationId: z.string() })).mutation(async ({ input }) => ({ success: true, notificationId: input.notificationId })),
   markAllRead: protectedProcedure.mutation(async () => ({ success: true, markedCount: 5 })),
