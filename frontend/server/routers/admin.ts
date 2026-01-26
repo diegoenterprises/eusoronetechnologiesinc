@@ -240,7 +240,7 @@ export const adminRouter = router({
    */
   getEmailTemplateStats: protectedProcedure
     .query(async () => {
-      return { total: 15, active: 12, draft: 3, sentThisMonth: 2450 };
+      return { total: 15, active: 12, draft: 3, sentThisMonth: 2450, categories: 5 };
     }),
 
   /**
