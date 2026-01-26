@@ -663,8 +663,8 @@ export const escortsRouter = router({
   getStateRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => ({ state: input.state, requirements: ["Valid driver license", "Insurance", "Flags and signs"] })),
 
   // Earnings
-  getEarnings: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ id: "e1", jobId: "j1", amount: 750, date: "2025-01-20" }]),
-  getEarningsStats: protectedProcedure.query(async () => ({ thisWeek: 1500, thisMonth: 6500, thisYear: 85000, avgPerJob: 650 })),
+  getEarnings: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() })).query(async () => ({ items: [{ id: "e1", jobId: "j1", amount: 750, date: "2025-01-20" }], total: 85000, trend: "up", trendPercent: 12.5 })),
+  getEarningsStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 1500, thisMonth: 6500, thisYear: 85000, avgPerJob: 650, jobsCompleted: 130, hoursWorked: 520, avgHourlyRate: 163.46 })),
 
   // Incidents & Reports
   getIncidents: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inc1", jobId: "j1", type: "near_miss", status: "reported", date: "2025-01-18" }]),
