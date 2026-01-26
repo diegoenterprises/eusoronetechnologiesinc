@@ -222,9 +222,12 @@ export const paymentsRouter = router({
   getPaymentStats: protectedProcedure.query(async () => ({ totalProcessed: 250000, avgPaymentTime: 12, successRate: 99.5 })),
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "p1", amount: 2500, type: "received", date: "2025-01-22" }]),
   getInvoice: protectedProcedure.input(z.object({ invoiceId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
-    id: input.invoiceId || input.id, 
+    id: input.invoiceId || input.id || "inv1", 
     invoiceNumber: "INV-2025-0042",
     amount: 2500, 
+    subtotal: 2380,
+    tax: 120,
+    discount: 0,
     total: 2500,
     status: "paid", 
     createdAt: "2025-01-20T10:00:00Z",
