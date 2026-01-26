@@ -50,9 +50,10 @@ export const paymentsRouter = router({
   getTransactions: protectedProcedure
     .input(
       z.object({
-        limit: z.number().min(1).max(100).default(50),
+        limit: z.number().min(1).max(100).default(50).optional(),
         type: z.enum(["all", "deposit", "withdrawal", "payment", "refund"]).optional(),
-      })
+        search: z.string().optional(),
+      }).optional()
     )
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -212,6 +213,9 @@ export const paymentsRouter = router({
         thisMonth: { received: 28500, sent: 12000 },
         thisMonthCount: 12,
         lastMonth: { received: 32000, sent: 15000 },
+        received: 125000,
+        sent: 45000,
+        transactions: 156,
       };
     }),
 
@@ -258,4 +262,5 @@ export const paymentsRouter = router({
   })),
   sendInvoice: protectedProcedure.input(z.object({ invoiceId: z.string(), email: z.string().optional() })).mutation(async ({ input }) => ({ success: true, sentAt: new Date().toISOString() })),
   markInvoicePaid: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async ({ input }) => ({ success: true, invoiceId: input.invoiceId })),
+  pay: protectedProcedure.input(z.object({ invoiceId: z.string().optional(), amount: z.number().optional(), method: z.enum(["card", "wallet", "ach"]).optional(), paymentId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, transactionId: "txn_123" })),
 });
