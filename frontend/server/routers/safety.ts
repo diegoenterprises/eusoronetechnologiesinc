@@ -760,6 +760,6 @@ export const safetyRouter = router({
   getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 88, topPerformer: "Mike Johnson", improvementNeeded: 3 })),
 
   // Meetings
-  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "m1", type: "safety_meeting", date: "2025-01-25", attendees: 15 }]),
-  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 4, attendance: 92, topics: ["HOS Compliance", "Winter Driving"] })),
+  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [{ id: "m1", type: "safety_meeting", date: "2025-01-25", attendees: 15 }]),
+  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 4, attendance: 92, topics: ["HOS Compliance", "Winter Driving"], total: 48, upcoming: 2, completed: 46, avgAttendance: 92 })),
 });
