@@ -191,9 +191,14 @@ export const usersRouter = router({
     return {
       referralCode: "JOHN2024",
       referralUrl: "https://eusotrip.com/ref/JOHN2024",
+      referralLink: "https://eusotrip.com/ref/JOHN2024",
       totalReferrals: 5,
       pendingRewards: 250,
       earnedRewards: 500,
+      rewardAmount: 50,
+      completedReferrals: 10,
+      totalEarnings: 500,
+      conversionRate: 35,
     };
   }),
 
