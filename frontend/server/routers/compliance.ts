@@ -892,4 +892,20 @@ export const complianceRouter = router({
 
   // SAFER Lookup
   saferLookup: protectedProcedure.input(z.object({ dotNumber: z.string().optional(), mcNumber: z.string().optional() })).query(async ({ input }) => ({ dotNumber: input.dotNumber || "1234567", legalName: "ABC Transport LLC", status: "AUTHORIZED", safetyRating: "Satisfactory" })),
+
+  // Permit Requirements
+  getPermitRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => [
+    { id: "pr1", type: "oversize", state: input.state, requirements: ["Permit application", "Route survey", "Escort vehicles"], fees: 150, renewalPeriod: "Annual" },
+    { id: "pr2", type: "overweight", state: input.state, requirements: ["Weight certification", "Bridge analysis"], fees: 200, renewalPeriod: "Per trip" },
+  ]),
+  getStatePermits: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async () => ({
+    permits: [
+      { id: "sp1", number: "TX-2025-001", state: "TX", expiresAt: "2025-12-31", status: "valid" },
+      { id: "sp2", number: "OK-2025-002", state: "OK", expiresAt: "2025-02-15", status: "expiring" },
+    ],
+    total: 12,
+    valid: 10,
+    expiringSoon: 2,
+    expired: 0,
+  })),
 });
