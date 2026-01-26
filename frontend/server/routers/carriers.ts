@@ -28,8 +28,12 @@ export const carriersRouter = router({
    */
   getCapacitySummary: protectedProcedure
     .query(async () => {
-      return { totalAvailable: 45, tankers: 12, tanker: 12, dryVans: 18, dryVan: 18, flatbeds: 8, flatbed: 8, reefers: 7, reefer: 7 };
+      return { totalAvailable: 45, totalCapacity: 60, tankers: 12, tanker: 12, dryVans: 18, dryVan: 18, flatbeds: 8, flatbed: 8, reefers: 7, reefer: 7, available: 45, booked: 15, verified: 42, avgRating: 4.7 };
     }),
+  searchCapacity: protectedProcedure.input(z.object({ search: z.string().optional(), origin: z.string().optional(), destination: z.string().optional(), equipment: z.string().optional(), hazmatRequired: z.boolean().optional() }).optional()).query(async () => [
+    { id: "cap1", carrierId: "c1", carrierName: "ABC Transport", equipment: "tanker", origin: "Houston, TX", destination: "Dallas, TX", available: "2025-01-25", rate: 2.50 },
+    { id: "cap2", carrierId: "c2", carrierName: "FastHaul LLC", equipment: "flatbed", origin: "Austin, TX", destination: "San Antonio, TX", available: "2025-01-24", rate: 2.25 },
+  ]),
 
   /**
    * Get carrier dashboard stats
