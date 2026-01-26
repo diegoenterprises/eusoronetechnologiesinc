@@ -395,14 +395,14 @@ export const adminRouter = router({
    */
   getWebhookSummary: protectedProcedure
     .query(async () => {
-      return { total: 245, successful: 238, failed: 7, avgResponseTime: 145 };
+      return { total: 245, successful: 238, failed: 7, avgResponseTime: 145, totalSent: 245, successRate: 97.1, avgLatency: 145 };
     }),
 
   /**
    * Retry webhook mutation
    */
   retryWebhook: protectedProcedure
-    .input(z.object({ logId: z.string() }))
+    .input(z.object({ logId: z.string(), webhookId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, logId: input.logId, retriedAt: new Date().toISOString() };
     }),
