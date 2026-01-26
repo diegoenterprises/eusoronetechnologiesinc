@@ -658,7 +658,12 @@ export const escortsRouter = router({
 
   // Certifications
   getMyCertifications: protectedProcedure.query(async () => [{ id: "c1", state: "TX", type: "pilot_car", expiration: "2026-06-15", status: "valid" }]),
-  getCertificationStats: protectedProcedure.query(async () => ({ total: 8, valid: 7, expiring: 1, expired: 0 })),
+  getCertificationStats: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => ({ total: 8, valid: 7, expiring: 1, expired: 0, statesCovered: 12, reciprocity: 8 })),
+  getStateCertifications: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => [
+    { state: "TX", status: "valid", expiresAt: "2025-12-31", requirements: ["Background check", "Training certificate"] },
+    { state: "OK", status: "valid", expiresAt: "2025-10-15", requirements: ["State permit", "Insurance proof"] },
+    { state: "LA", status: "expiring", expiresAt: "2025-02-28", requirements: ["State license", "Vehicle inspection"] },
+  ]),
   uploadCertification: protectedProcedure.input(z.object({ state: z.string(), type: z.string(), expirationDate: z.string() })).mutation(async ({ input }) => ({ success: true, certId: "cert_123" })),
   getStateRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => ({ state: input.state, requirements: ["Valid driver license", "Insurance", "Flags and signs"] })),
 
