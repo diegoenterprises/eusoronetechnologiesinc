@@ -120,7 +120,7 @@ export const usersRouter = router({
   getMyRank: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
     .query(async () => {
-      return { rank: 8, points: 1650, percentile: 85 };
+      return { rank: 8, points: 1650, percentile: 85, score: 92, trend: "up", trendValue: 2 };
     }),
 
   // Get activity feed for ActivityFeed page
