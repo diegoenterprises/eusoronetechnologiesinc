@@ -387,6 +387,7 @@ export const driversRouter = router({
         pickupTime: "08:00 AM",
         deliveryTime: "02:00 PM",
         totalMiles: 238,
+        distance: 238,
         milesCompleted: 165,
         eta: "1:45 PM",
         remainingTime: "1h 15m",
