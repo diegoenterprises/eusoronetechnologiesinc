@@ -922,7 +922,11 @@ export const adminRouter = router({
 
   // Imports
   getImports: protectedProcedure.query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
-  getImportStats: protectedProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1 })),
+  getImportStats: protectedProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1, recordsImported: 12500 })),
+  getImportHistory: protectedProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [
+    { id: "imp1", dataType: "drivers", fileName: "drivers_jan.csv", status: "completed", recordsImported: 45, createdAt: "2025-01-20" },
+    { id: "imp2", dataType: "vehicles", fileName: "fleet_update.csv", status: "completed", recordsImported: 12, createdAt: "2025-01-18" },
+  ]),
 
   // Performance
   getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p95ResponseTime: 350, requestsPerSecond: 45, errorRate: 0.5, cpu: { current: 42, avg: 38, peak: 72 }, memory: { current: 68, avg: 65, peak: 82 }, disk: { current: 55, used: 275, total: 500 }, uptime: 99.99 })),
