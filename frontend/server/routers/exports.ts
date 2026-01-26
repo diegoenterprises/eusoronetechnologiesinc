@@ -7,7 +7,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 
 export const exportsRouter = router({
-  list: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
     { id: "e1", name: "January Loads Report", type: "loads", format: "csv", status: "completed", createdAt: "2025-01-22" },
     { id: "e2", name: "Driver Performance", type: "drivers", format: "xlsx", status: "processing", createdAt: "2025-01-23" },
   ]),
@@ -18,18 +18,19 @@ export const exportsRouter = router({
   ]),
 
   create: protectedProcedure.input(z.object({
-    name: z.string(),
-    type: z.string(),
-    format: z.enum(["csv", "xlsx", "pdf"]),
+    name: z.string().optional(),
+    type: z.string().optional(),
+    format: z.enum(["csv", "xlsx", "pdf"]).optional(),
     filters: z.any().optional(),
-  })).mutation(async ({ input }) => ({
+    templateId: z.string().optional(),
+  }).optional()).mutation(async ({ input }) => ({
     success: true,
     exportId: "export_123",
     estimatedTime: "2 minutes",
   })),
 
-  delete: protectedProcedure.input(z.object({ exportId: z.string() })).mutation(async ({ input }) => ({
+  delete: protectedProcedure.input(z.object({ exportId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({
     success: true,
-    exportId: input.exportId,
+    exportId: input.exportId || input.id,
   })),
 });
