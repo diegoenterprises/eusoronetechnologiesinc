@@ -192,7 +192,7 @@ export const adminRouter = router({
    * Get exports for DataExport page
    */
   getExports: protectedProcedure
-    .input(z.object({ dataType: z.string().optional() }))
+    .input(z.object({ dataType: z.string().optional(), status: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async () => {
       return [
         { id: "e1", name: "Loads Export", dataType: "loads", format: "csv", status: "completed", createdAt: "2025-01-22", size: "2.5 MB", downloadUrl: "/exports/e1.csv" },
@@ -212,10 +212,11 @@ export const adminRouter = router({
    * Create export mutation
    */
   createExport: protectedProcedure
-    .input(z.object({ dataType: z.string(), format: z.string().optional().default("csv") }))
+    .input(z.object({ name: z.string().optional(), type: z.string().optional(), dataType: z.string().optional(), format: z.enum(["pdf", "csv", "xlsx"]).optional(), filters: z.any().optional(), templateId: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, exportId: `exp_${Date.now()}`, dataType: input.dataType, startedAt: new Date().toISOString() };
+      return { success: true, exportId: `exp_${Date.now()}`, dataType: input.dataType || input.type, startedAt: new Date().toISOString() };
     }),
+  downloadExport: protectedProcedure.input(z.object({ exportId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ url: `/exports/${input.exportId || input.id}.csv`, filename: "export.csv" })),
 
   /**
    * Get email templates for EmailTemplates page
