@@ -393,7 +393,7 @@ export const bidsRouter = router({
 
   // Additional bid procedures
   getById: protectedProcedure.input(z.object({ bidId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
-    id: input.bidId || input.id, 
+    id: input.bidId || input.id || "b1", 
     loadId: "l1", 
     loadNumber: "LOAD-45920",
     amount: 2450, 
@@ -411,6 +411,14 @@ export const bidsRouter = router({
     carrierName: "ABC Transport",
     mcNumber: "MC-987654",
     notes: "Flexible on pickup time",
+    carrierRating: 4.8,
+    carrierLoads: 125,
+    onTimeRate: 96,
+    safetyScore: 94,
+    history: [
+      { action: "submitted", timestamp: "2025-01-23T10:30:00Z", note: "Bid submitted" },
+      { action: "viewed", timestamp: "2025-01-23T11:00:00Z", note: "Shipper viewed bid" },
+    ],
   })),
   getByLoad: protectedProcedure.input(z.object({ loadId: z.string() })).query(async () => [
     { id: "b1", carrierId: "c1", carrierName: "ABC Transport", amount: 2450, status: "pending", carrierRating: 4.8, carrierMC: "MC-123456", ratePerMile: 2.85 },
