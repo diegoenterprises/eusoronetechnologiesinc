@@ -418,8 +418,8 @@ export const billingRouter = router({
   submitToFactoring: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async ({ input }) => ({ success: true, factorId: "fact_123" })),
 
   // Payment methods
-  deletePaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId })),
-  setDefaultPaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId })),
+  deletePaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string().optional(), methodId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId || input.methodId })),
+  setDefaultPaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string().optional(), methodId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId || input.methodId })),
 
   // History & stats
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "h1", type: "payment", amount: 2500, date: "2025-01-22" }]),
