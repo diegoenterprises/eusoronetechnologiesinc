@@ -338,7 +338,7 @@ export const fleetRouter = router({
    * Get maintenance schedule
    */
   getMaintenanceSchedule: protectedProcedure
-    .input(z.object({ vehicleId: z.string().optional() }))
+    .input(z.object({ vehicleId: z.string().optional(), filter: z.string().optional() }).optional())
     .query(async ({ input }) => {
       return [
         {
@@ -443,7 +443,7 @@ export const fleetRouter = router({
     }),
 
   // Maintenance
-  completeMaintenance: protectedProcedure.input(z.object({ maintenanceId: z.string(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, maintenanceId: input.maintenanceId })),
+  completeMaintenance: protectedProcedure.input(z.object({ maintenanceId: z.string().optional(), taskId: z.string().optional(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, maintenanceId: input.maintenanceId || input.taskId })),
   getMaintenanceStats: protectedProcedure.input(z.object({ filter: z.string().optional(), vehicleId: z.string().optional() }).optional()).query(async () => ({ scheduled: 12, overdue: 2, completed: 150, avgCost: 450, upcoming: 8, inProgress: 4, completedThisMonth: 12 })),
 
   // DVIRs
