@@ -167,25 +167,25 @@ export const payrollRouter = router({
    */
   getTimeOffStats: protectedProcedure
     .query(async () => {
-      return { pending: 3, approved: 12, denied: 2, thisMonth: 8 };
+      return { pending: 3, approved: 12, denied: 2, thisMonth: 8, total: 17, daysUsed: 45 };
     }),
 
   /**
    * Approve time off mutation
    */
   approveTimeOff: protectedProcedure
-    .input(z.object({ requestId: z.string() }))
+    .input(z.object({ requestId: z.string().optional(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, requestId: input.requestId, status: "approved" };
+      return { success: true, requestId: input.requestId || input.id, status: "approved" };
     }),
 
   /**
    * Deny time off mutation
    */
   denyTimeOff: protectedProcedure
-    .input(z.object({ requestId: z.string(), reason: z.string().optional() }))
+    .input(z.object({ requestId: z.string().optional(), id: z.string().optional(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, requestId: input.requestId, status: "denied" };
+      return { success: true, requestId: input.requestId || input.id, status: "denied" };
     }),
 
   /**
