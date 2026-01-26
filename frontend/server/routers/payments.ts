@@ -204,8 +204,13 @@ export const paymentsRouter = router({
       return {
         totalReceived: 125000,
         totalSent: 45000,
+        totalPaid: 115000,
+        paidCount: 42,
+        pending: 8500,
         pendingPayments: 8500,
+        pendingCount: 5,
         thisMonth: { received: 28500, sent: 12000 },
+        thisMonthCount: 12,
         lastMonth: { received: 32000, sent: 15000 },
       };
     }),
