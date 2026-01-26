@@ -578,11 +578,14 @@ export const driversRouter = router({
       return {
         period: input.period,
         totalEarnings: 6776.75,
+        total: 6776.75,
         milesPaid: 7245,
         ratePerMile: 0.55,
         bonuses: 350,
         deductions: 125,
         netPay: 7001.75,
+        trend: "up",
+        trendPercent: 8.5,
         breakdown: [
           { category: "Line Haul", amount: 3985.75 },
           { category: "Detention", amount: 450 },
