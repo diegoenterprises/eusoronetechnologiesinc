@@ -48,6 +48,10 @@ export const driversRouter = router({
         onDutyRemaining: "8h 00m",
         cycleRemaining: "52h 30m",
         breakRemaining: "2h 00m",
+        drivingUsed: 4.5,
+        onDutyUsed: 6,
+        cycleUsed: 17.5,
+        violation: false,
         hoursAvailable: {
           driving: 6.5,
           onDuty: 8.0,
