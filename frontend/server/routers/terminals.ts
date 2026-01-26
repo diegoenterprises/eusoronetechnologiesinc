@@ -1036,10 +1036,29 @@ export const terminalsRouter = router({
     { id: "tk2", name: "Tank 2", product: "Unleaded", level: 62, capacity: 45000, status: "normal", volume: 27900, temperature: 68 },
     { id: "tk3", name: "Tank 3", product: "Premium", level: 18, capacity: 35000, status: "low", volume: 6300, temperature: 70 },
   ])),
-  getScadaAlerts: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ([
-    { id: "a1", type: "low_level", message: "Tank 3 below 20%", severity: "warning", acknowledged: false },
-    { id: "a2", type: "temperature", message: "Tank 5 temp elevated", severity: "info", acknowledged: true },
-  ])),
+  getScadaAlerts: protectedProcedure.input(z.object({ terminalId: z.string().optional(), severity: z.string().optional() }).optional()).query(async () => ({
+    alarms: [
+      { id: "a1", type: "low_level", message: "Tank 3 below 20%", severity: "warning", acknowledged: false },
+      { id: "a2", type: "temperature", message: "Tank 5 temp elevated", severity: "info", acknowledged: true },
+    ]
+  })),
+  getScadaLiveData: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({
+    tanks: [
+      { tankId: "tk1", level: 75, capacity: 50000, product: "Diesel" },
+      { tankId: "tk2", level: 62, capacity: 45000, product: "Unleaded" },
+    ]
+  })),
+  getThroughput: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({
+    total: 125000,
+    totalGallons: 125000,
+    transactions: 48,
+    avgLoadTime: 22,
+    byProduct: [
+      { product: "Diesel", gallons: 65000 },
+      { product: "Unleaded", gallons: 45000 },
+      { product: "Premium", gallons: 15000 },
+    ],
+  })),
 
   // Appointments
   rescheduleAppointment: protectedProcedure.input(z.object({ appointmentId: z.string(), newDate: z.string(), newTime: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
