@@ -953,4 +953,20 @@ export const adminRouter = router({
     timestamp: new Date().toISOString(),
     details: { loadId: "LOAD-45920", action: "created" },
   })),
+
+  // API Documentation
+  getAPIUsageStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+    totalRequests: 45000,
+    successfulRequests: 44500,
+    failedRequests: 500,
+    avgResponseTime: 125,
+    successRate: 98.9,
+    avgLatency: 125,
+    remainingQuota: 55000,
+    topEndpoints: [
+      { endpoint: "/api/loads", requests: 15000 },
+      { endpoint: "/api/drivers", requests: 12000 },
+      { endpoint: "/api/tracking", requests: 8000 },
+    ],
+  })),
 });
