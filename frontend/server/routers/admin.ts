@@ -899,8 +899,8 @@ export const adminRouter = router({
   getAudiences: protectedProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
 
   // Company management
-  getCompanies: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "c1", name: "ABC Transport", status: "active", verified: true }]),
-  getCompanyStats: protectedProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5 })),
+  getCompanies: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "c1", name: "ABC Transport", type: "carrier", status: "active", verified: true }]),
+  getCompanyStats: protectedProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5, verified: 410 })),
   getPendingCompanies: protectedProcedure.query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
   verifyCompany: protectedProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   rejectCompany: protectedProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
