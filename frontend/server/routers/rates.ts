@@ -276,4 +276,14 @@ export const ratesRouter = router({
   getStats: protectedProcedure.query(async () => ({ avgRate: 3.15, minRate: 2.50, maxRate: 4.25, totalLanes: 150 })),
   getMarketRates: protectedProcedure.input(z.object({ lane: z.string().optional() })).query(async () => [{ lane: "Houston-Dallas", spotRate: 3.25, contractRate: 3.05 }]),
   delete: protectedProcedure.input(z.object({ rateId: z.string() })).mutation(async ({ input }) => ({ success: true, rateId: input.rateId })),
+
+  // Lane rates for LaneRates.tsx
+  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
+    { id: "lr1", origin: "Houston, TX", destination: "Dallas, TX", miles: 238, avgRate: 3.25, trend: "up", volume: 45 },
+    { id: "lr2", origin: "Austin, TX", destination: "San Antonio, TX", miles: 80, avgRate: 2.85, trend: "stable", volume: 32 },
+  ]),
+  getRecentRates: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
+    { id: "rr1", lane: "Houston-Dallas", rate: 3.25, date: "2025-01-23", loadId: "LOAD-45920" },
+    { id: "rr2", lane: "Austin-San Antonio", rate: 2.85, date: "2025-01-22", loadId: "LOAD-45919" },
+  ]),
 });
