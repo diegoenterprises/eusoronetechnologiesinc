@@ -492,4 +492,18 @@ export const fleetRouter = router({
     jurisdictions: 12,
   })),
   generateIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "ifta_123" })),
+
+  // Vehicle details
+  getVehicleById: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), id: z.string().optional() }).optional()).query(async ({ input }) => ({
+    id: input?.vehicleId || input?.id || "v1",
+    unitNumber: "TRK-101",
+    make: "Peterbilt",
+    model: "579",
+    year: 2022,
+    vin: "1XPWD40X1ED215307",
+    licensePlate: "TX-ABC-1234",
+    odometer: 125000,
+    status: "active",
+    lastInspection: "2025-01-15",
+  })),
 });
