@@ -447,8 +447,8 @@ export const fleetRouter = router({
   getMaintenanceStats: protectedProcedure.input(z.object({ filter: z.string().optional(), vehicleId: z.string().optional() }).optional()).query(async () => ({ scheduled: 12, overdue: 2, completed: 150, avgCost: 450, upcoming: 8, inProgress: 4, completedThisMonth: 12 })),
 
   // DVIRs
-  getDVIRs: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), status: z.string().optional() })).query(async () => [{ id: "dvir1", vehicleId: "v1", driver: "Mike Johnson", status: "passed", date: "2025-01-23" }]),
-  getDVIRStats: protectedProcedure.query(async () => ({ total: 450, passed: 440, defects: 10, openDefects: 2 })),
+  getDVIRs: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [{ id: "dvir1", vehicleId: "v1", vehicleNumber: "TRK-101", driver: "Mike Johnson", status: "passed", date: "2025-01-23", defects: [] }]),
+  getDVIRStats: protectedProcedure.query(async () => ({ total: 450, passed: 440, defects: 10, openDefects: 2, outOfService: 1 })),
 
   // Drivers
   getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", vehicleId: "v1" }]),
