@@ -367,23 +367,32 @@ export const billingRouter = router({
    */
   getPaymentMethods: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        {
-          id: "pm_001",
-          type: "bank",
-          last4: "4521",
-          bankName: "Chase Bank",
-          isDefault: true,
+      return {
+        methods: [
+          {
+            id: "pm_001",
+            type: "bank",
+            last4: "4521",
+            bankName: "Chase Bank",
+            isDefault: true,
+          },
+          {
+            id: "pm_002",
+            type: "card",
+            last4: "8832",
+            brand: "Visa",
+            expiryDate: "12/26",
+            isDefault: false,
+          },
+        ],
+        billingAddress: {
+          street: "123 Main St",
+          city: "Houston",
+          state: "TX",
+          zip: "77001",
+          country: "USA",
         },
-        {
-          id: "pm_002",
-          type: "card",
-          last4: "8832",
-          brand: "Visa",
-          expiryDate: "12/26",
-          isDefault: false,
-        },
-      ];
+      };
     }),
 
   /**
