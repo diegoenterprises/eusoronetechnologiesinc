@@ -786,7 +786,11 @@ export const driversRouter = router({
     },
     achievements: [{ id: "a1", name: "Perfect Week", earned: true, unlocked: true, earnedAt: "2025-01-20" }],
   })),
-  getLeaderboard: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => [{ rank: 1, driverId: "d1", name: "Mike Johnson", score: 98 }]),
+  getLeaderboard: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => [
+    { id: "d1", rank: 1, driverId: "d1", name: "Mike Johnson", score: 98, trend: "up", loadsCompleted: 45, safetyScore: 96, onTimeRate: 98 },
+    { id: "d2", rank: 2, driverId: "d2", name: "Sarah Williams", score: 96, trend: "stable", loadsCompleted: 42, safetyScore: 94, onTimeRate: 97 },
+    { id: "d3", rank: 3, driverId: "d3", name: "Tom Brown", score: 94, trend: "up", loadsCompleted: 38, safetyScore: 92, onTimeRate: 95 },
+  ]),
 
   // Pre-trip
   getPreTripChecklist: protectedProcedure.query(async () => [{ id: "c1", item: "Brakes", required: true }, { id: "c2", item: "Lights", required: true }]),
