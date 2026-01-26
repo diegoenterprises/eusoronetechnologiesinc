@@ -936,7 +936,8 @@ export const adminRouter = router({
 
   // Permissions & Roles
   getPermissions: protectedProcedure.query(async () => [{ id: "p1", name: "loads.create", description: "Create loads" }]),
-  getRoleStats: protectedProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500 })),
+  getRoleStats: protectedProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500, totalRoles: 12, totalPermissions: 85, usersWithRoles: 3555, customRoles: 4 })),
+  getRoles: protectedProcedure.query(async () => [{ id: "r1", name: "Admin", description: "Full access", permissions: ["read", "write", "delete"], userCount: 5, categories: [{ name: "Users", permissions: ["create", "read", "update", "delete"] }] }]),
   updateRolePermissions: protectedProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
 
   // Rate limiting
