@@ -134,6 +134,8 @@ export const loadsRouter = router({
           currentLocation: { lat: 31.5493, lng: -97.1467, city: "Waco", state: "TX" },
           eta: "2:30 PM",
           createdAt: "2025-01-23T10:00:00Z",
+          equipmentType: "tanker",
+          notes: "Temperature-controlled cargo",
         };
       }
 
