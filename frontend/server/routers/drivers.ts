@@ -648,7 +648,7 @@ export const driversRouter = router({
   getCompletedTrips: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "t1", loadNumber: "LOAD-45920", earnings: 850, completedAt: "2025-01-22" }]),
 
   // HOS
-  getHOSAvailability: protectedProcedure.query(async () => ({ canDrive: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m" })),
+  getHOSAvailability: protectedProcedure.query(async () => ({ canDrive: true, canAccept: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m", onDutyRemaining: "8h 00m", cycleRemaining: "34h 00m" })),
   getMyHOS: protectedProcedure.query(async () => ({ 
     status: "driving", 
     currentStatus: "driving",
