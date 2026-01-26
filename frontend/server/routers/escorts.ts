@@ -545,7 +545,7 @@ export const escortsRouter = router({
    * Get schedule for EscortSchedule page
    */
   getSchedule: protectedProcedure
-    .input(z.object({ date: z.string() }))
+    .input(z.object({ date: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       return [
         {
