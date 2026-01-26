@@ -27,6 +27,7 @@ export const earningsRouter = router({
         pendingAmount: 876.00,
         approvedAmount: 1243.00,
         paidAmount: 4657.75,
+        bonuses: 250,
         comparison: {
           previousPeriod: 6125.50,
           percentChange: 10.6,
@@ -42,9 +43,9 @@ export const earningsRouter = router({
     .input(z.object({ period: z.string().optional(), offset: z.number().optional().default(0) }))
     .query(async () => {
       return [
-        { id: "e1", loadNumber: "LOAD-45920", date: "2025-01-23", origin: "Houston, TX", destination: "Dallas, TX", miles: 240, pay: 876, status: "pending" },
-        { id: "e2", loadNumber: "LOAD-45918", date: "2025-01-22", origin: "Beaumont, TX", destination: "San Antonio, TX", miles: 320, pay: 1243, status: "approved" },
-        { id: "e3", loadNumber: "LOAD-45915", date: "2025-01-21", origin: "Port Arthur, TX", destination: "Austin, TX", miles: 280, pay: 1015, status: "paid" },
+        { id: "e1", loadNumber: "LOAD-45920", date: "2025-01-23", origin: "Houston, TX", destination: "Dallas, TX", miles: 240, pay: 876, totalPay: 926, hazmatPremium: 50, fuelBonus: 25, status: "pending" },
+        { id: "e2", loadNumber: "LOAD-45918", date: "2025-01-22", origin: "Beaumont, TX", destination: "San Antonio, TX", miles: 320, pay: 1243, totalPay: 1293, hazmatPremium: 0, fuelBonus: 30, status: "approved" },
+        { id: "e3", loadNumber: "LOAD-45915", date: "2025-01-21", origin: "Port Arthur, TX", destination: "Austin, TX", miles: 280, pay: 1015, totalPay: 1075, hazmatPremium: 35, fuelBonus: 25, status: "paid" },
       ];
     }),
 
