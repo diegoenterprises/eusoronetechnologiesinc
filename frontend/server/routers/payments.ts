@@ -211,7 +211,10 @@ export const paymentsRouter = router({
     }),
 
   // Additional payment procedures
-  getPaymentMethods: protectedProcedure.query(async () => [{ id: "pm1", type: "bank", last4: "1234", bankName: "Chase", isDefault: true, billingAddress: { street: "123 Main St", city: "Houston", state: "TX", zip: "77001" } }]),
+  getPaymentMethods: protectedProcedure.query(async () => [
+    { id: "pm1", type: "bank", last4: "1234", bankName: "Chase", brand: null, expiryDate: null, isDefault: true, billingAddress: { street: "123 Main St", city: "Houston", state: "TX", zip: "77001" } },
+    { id: "pm2", type: "card", last4: "5678", bankName: null, brand: "Visa", expiryDate: "12/26", isDefault: false, billingAddress: { street: "456 Oak Ave", city: "Dallas", state: "TX", zip: "75201" } },
+  ]),
   setDefaultMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string().optional(), methodId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, methodId: input.paymentMethodId || input.methodId })),
   deletePaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string().optional(), methodId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, methodId: input.paymentMethodId || input.methodId })),
   processRefund: protectedProcedure.input(z.object({ paymentId: z.string(), amount: z.number() })).mutation(async ({ input }) => ({ success: true, refundId: "ref_123" })),
