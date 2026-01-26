@@ -706,10 +706,22 @@ export const driversRouter = router({
     { id: "doc2", type: "medical", name: "Medical Card", required: true, uploaded: false, status: "pending" },
   ])),
   getOnboardingSteps: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([
-    { id: "s1", name: "Personal Info", status: "completed", order: 1, type: "form" },
-    { id: "s2", name: "Documents", status: "in_progress", order: 2, type: "upload" },
-    { id: "s3", name: "Training", status: "pending", order: 3, type: "training" },
+    { id: "s1", name: "Personal Info", title: "Personal Information", description: "Enter your basic information", status: "completed", order: 1, type: "form", estimatedTime: 10 },
+    { id: "s2", name: "Documents", title: "Document Upload", description: "Upload required documents", status: "in_progress", order: 2, type: "upload", estimatedTime: 15 },
+    { id: "s3", name: "Training", title: "Safety Training", description: "Complete required training modules", status: "pending", order: 3, type: "training", estimatedTime: 60 },
   ])),
+  getOnboardingProgress: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ({
+    step: 2,
+    totalSteps: 5,
+    completed: ["personal_info"],
+    percentage: 40,
+    completedSteps: 2,
+    inProgressSteps: 1,
+    pendingSteps: 2,
+    estimatedTimeRemaining: "45 min",
+    trainingsCompleted: 2,
+    trainingsTotal: 5,
+  })),
 
   // Performance
   getPerformance: protectedProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({
