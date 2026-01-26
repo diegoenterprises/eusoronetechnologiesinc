@@ -85,9 +85,9 @@ export const terminalsRouter = router({
     .input(z.object({ date: z.string().optional(), terminal: z.string().optional() }))
     .query(async () => {
       return [
-        { id: "apt_001", time: "08:00", carrier: "ABC Transport", driver: "Mike Johnson", product: "Unleaded", rack: "Rack 1", status: "completed" },
-        { id: "apt_002", time: "09:30", carrier: "XYZ Carriers", driver: "Sarah Williams", product: "Diesel", rack: "Rack 2", status: "scheduled" },
-        { id: "apt_003", time: "11:00", carrier: "FastHaul LLC", driver: "Tom Brown", product: "Premium", rack: "Rack 1", status: "scheduled" },
+        { id: "apt_001", time: "08:00", carrier: "ABC Transport", carrierName: "ABC Transport", driver: "Mike Johnson", driverName: "Mike Johnson", truckNumber: "TRK-101", product: "Unleaded", rack: "Rack 1", rackNumber: "1", quantity: 8500, status: "completed" },
+        { id: "apt_002", time: "09:30", carrier: "XYZ Carriers", carrierName: "XYZ Carriers", driver: "Sarah Williams", driverName: "Sarah Williams", truckNumber: "TRK-202", product: "Diesel", rack: "Rack 2", rackNumber: "2", quantity: 9000, status: "scheduled" },
+        { id: "apt_003", time: "11:00", carrier: "FastHaul LLC", carrierName: "FastHaul LLC", driver: "Tom Brown", driverName: "Tom Brown", truckNumber: "TRK-303", product: "Premium", rack: "Rack 1", rackNumber: "1", quantity: 7500, status: "scheduled" },
       ];
     }),
 
