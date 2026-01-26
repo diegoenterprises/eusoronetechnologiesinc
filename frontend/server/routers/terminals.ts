@@ -47,10 +47,10 @@ export const terminalsRouter = router({
   getTanks: protectedProcedure
     .query(async () => {
       return [
-        { id: "t1", name: "Tank 1", number: 1, product: "Unleaded", level: 82, capacity: 50000, status: "normal" },
-        { id: "t2", name: "Tank 2", number: 2, product: "Premium", level: 45, capacity: 30000, status: "low" },
-        { id: "t3", name: "Tank 3", number: 3, product: "Diesel", level: 78, capacity: 75000, status: "normal" },
-        { id: "t4", name: "Tank 4", number: 4, product: "Jet Fuel", level: 90, capacity: 40000, status: "high" },
+        { id: "t1", name: "Tank 1", number: 1, product: "Unleaded", level: 82, capacity: 50000, currentVolume: 41000, status: "normal" },
+        { id: "t2", name: "Tank 2", number: 2, product: "Premium", level: 45, capacity: 30000, currentVolume: 13500, status: "low" },
+        { id: "t3", name: "Tank 3", number: 3, product: "Diesel", level: 78, capacity: 75000, currentVolume: 58500, status: "normal" },
+        { id: "t4", name: "Tank 4", number: 4, product: "Jet Fuel", level: 90, capacity: 40000, currentVolume: 36000, status: "high" },
       ];
     }),
 
@@ -60,10 +60,10 @@ export const terminalsRouter = router({
   getTodayAppointments: protectedProcedure
     .query(async () => {
       return [
-        { id: "apt_001", time: "08:00", carrier: "ABC Transport", driver: "Mike Johnson", product: "Unleaded", status: "completed" },
-        { id: "apt_002", time: "09:00", carrier: "XYZ Carriers", driver: "Sarah Williams", product: "Diesel", status: "loading" },
-        { id: "apt_003", time: "10:00", carrier: "FastHaul LLC", driver: "Tom Brown", product: "Premium", status: "checked_in" },
-        { id: "apt_004", time: "11:00", carrier: "QuickLoad Inc", driver: "Lisa Chen", product: "Unleaded", status: "scheduled" },
+        { id: "apt_001", time: "08:00", carrier: "ABC Transport", carrierName: "ABC Transport", driver: "Mike Johnson", driverName: "Mike Johnson", truckNumber: "TRK-101", product: "Unleaded", quantity: 8500, rackNumber: "Rack 1", status: "completed" },
+        { id: "apt_002", time: "09:00", carrier: "XYZ Carriers", carrierName: "XYZ Carriers", driver: "Sarah Williams", driverName: "Sarah Williams", truckNumber: "TRK-205", product: "Diesel", quantity: 7200, rackNumber: "Rack 2", status: "loading" },
+        { id: "apt_003", time: "10:00", carrier: "FastHaul LLC", carrierName: "FastHaul LLC", driver: "Tom Brown", driverName: "Tom Brown", truckNumber: "TRK-312", product: "Premium", quantity: 6800, rackNumber: "Rack 1", status: "checked_in" },
+        { id: "apt_004", time: "11:00", carrier: "QuickLoad Inc", carrierName: "QuickLoad Inc", driver: "Lisa Chen", driverName: "Lisa Chen", truckNumber: "TRK-418", product: "Unleaded", quantity: 8000, rackNumber: "Rack 3", status: "scheduled" },
       ];
     }),
 
