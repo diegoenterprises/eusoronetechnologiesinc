@@ -871,10 +871,10 @@ export const adminRouter = router({
     }),
 
   // Content moderation
-  approveContent: protectedProcedure.input(z.object({ contentId: z.string() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId })),
+  approveContent: protectedProcedure.input(z.object({ contentId: z.string(), reportId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId })),
   removeContent: protectedProcedure.input(z.object({ contentId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId })),
-  getContentReports: protectedProcedure.query(async () => [{ id: "r1", contentId: "c1", reason: "spam", status: "pending", reportedAt: "2025-01-23" }]),
-  getModerationSummary: protectedProcedure.query(async () => ({ pending: 5, approved: 120, rejected: 8, totalReports: 133 })),
+  getContentReports: protectedProcedure.input(z.object({ type: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "r1", contentId: "c1", reason: "spam", status: "pending", reportedAt: "2025-01-23" }]),
+  getModerationSummary: protectedProcedure.query(async () => ({ pending: 5, approved: 120, rejected: 8, totalReports: 133, approvedToday: 15, removedToday: 3, highSeverity: 2 })),
 
   // Cache management
   getCacheStats: protectedProcedure.query(async () => ({ hitRate: 94, totalKeys: 1250, memoryUsed: "128MB", uptime: "5d 12h", requestsPerSec: 450, memoryLimit: "512MB", memoryPercentage: 25 })),
