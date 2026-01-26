@@ -411,7 +411,7 @@ export const adminRouter = router({
    * Get verification queue for VerificationQueue page
    */
   getVerificationQueue: protectedProcedure
-    .input(z.object({ type: z.string().optional(), limit: z.number().optional().default(50) }))
+    .input(z.object({ type: z.enum(["user", "company", "document", "all"]).optional(), limit: z.number().optional(), filter: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const items = [
         { id: "v1", type: "driver", name: "John Driver", submittedAt: "2025-01-22", documents: ["CDL", "Medical Card"], status: "pending" },
@@ -849,7 +849,7 @@ export const adminRouter = router({
    */
   getVerificationStats: protectedProcedure
     .query(async () => {
-      return { pending: 8, approved: 245, rejected: 12, avgProcessingTime: "1.5 hours" };
+      return { pending: 8, approved: 245, rejected: 12, avgProcessingTime: "1.5 hours", approvedToday: 15, rejectedToday: 2, totalVerified: 257 };
     }),
 
   /**
