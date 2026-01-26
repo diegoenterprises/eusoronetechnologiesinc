@@ -136,7 +136,7 @@ export const companiesRouter = router({
     }),
 
   // Additional company procedures
-  getStats: protectedProcedure.query(async () => ({ totalDrivers: 25, totalVehicles: 30, activeLoads: 15, revenue: 125000 })),
+  getStats: protectedProcedure.query(async () => ({ totalDrivers: 25, totalVehicles: 30, activeLoads: 15, revenue: 125000, employees: 35, vehicles: 30, loadsCompleted: 1250, rating: 4.8 })),
   getBilling: protectedProcedure.query(async () => ({ balance: 2500, currentBalance: 2500, nextDue: "2025-02-01", nextBillingDate: "2025-02-01", plan: "premium", planName: "Premium", status: "active", monthlyPrice: 299, monthToDate: 1850, paymentMethod: "Visa ending in 4242", pendingCharges: 450, usage: { loads: 45, apiCalls: 1250, storage: 2.5 } })),
   getRecentInvoices: protectedProcedure.query(async () => [{ id: "inv1", amount: 500, status: "paid", date: "2025-01-15" }]),
 });
