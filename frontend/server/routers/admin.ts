@@ -183,9 +183,14 @@ export const adminRouter = router({
    * Run task now mutation
    */
   runTaskNow: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string().optional(), taskId: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, taskId: input.id, startedAt: new Date().toISOString() };
+      return { success: true, taskId: input.id || input.taskId, startedAt: new Date().toISOString() };
+    }),
+  toggleTask: protectedProcedure
+    .input(z.object({ id: z.string().optional(), taskId: z.string().optional(), enabled: z.boolean() }))
+    .mutation(async ({ input }) => {
+      return { success: true, taskId: input.id || input.taskId, enabled: input.enabled };
     }),
 
   /**
