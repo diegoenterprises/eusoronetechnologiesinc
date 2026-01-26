@@ -114,6 +114,10 @@ export const supportRouter = router({
         openTickets: 2,
         resolvedThisWeek: 5,
         avgResponseTime: "2.5 hours",
+        total: 47,
+        open: 2,
+        inProgress: 3,
+        resolved: 42,
       };
     }),
 
@@ -124,8 +128,9 @@ export const supportRouter = router({
     .input(z.object({
       subject: z.string(),
       description: z.string(),
+      message: z.string().optional(),
       category: ticketCategorySchema,
-      priority: ticketPrioritySchema.default("normal"),
+      priority: ticketPrioritySchema.optional(),
       loadId: z.string().optional(),
       attachments: z.array(z.string()).optional(),
     }))
