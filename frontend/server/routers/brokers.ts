@@ -130,13 +130,16 @@ export const brokersRouter = router({
    * Get commission summary for BrokerAnalytics
    */
   getCommissionSummary: protectedProcedure
-    .input(z.object({ timeframe: z.string().optional().default("30d") }))
+    .input(z.object({ timeframe: z.string().optional(), period: z.string().optional() }).optional())
     .query(async () => {
       return {
         total: 12750,
         pending: 3200,
         paid: 9550,
         avgPerLoad: 283,
+        totalCommission: 12750,
+        loadsMatched: 45,
+        avgMargin: 8.5,
       };
     }),
 
@@ -736,7 +739,7 @@ export const brokersRouter = router({
 
   // Capacity & Commission
   getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 150, available: 45, booked: 105 })),
-  getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ id: "c1", loadId: "l1", amount: 245, date: "2025-01-22" }]),
+  getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "c1", loadId: "l1", amount: 245, date: "2025-01-22" }]),
 
   // Shippers
   shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ id: "s1", name: "Shell Oil", activeLoads: 5, rating: 4.8 }]),
