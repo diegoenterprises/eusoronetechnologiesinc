@@ -125,7 +125,7 @@ export const insuranceRouter = router({
   getQuotes: protectedProcedure.input(z.object({ coverageType: z.string() })).query(async () => [{ id: "q1", provider: "SafeGuard", premium: 2200, coverage: 1000000 }]),
   acceptQuote: protectedProcedure.input(z.object({ quoteId: z.string() })).mutation(async ({ input }) => ({ success: true, policyId: "policy_123" })),
   getStats: protectedProcedure.query(async () => ({ totalPolicies: 8, activeClaims: 2, totalCoverage: 5000000 })),
-  getCoverage: protectedProcedure.query(async () => [{ type: "liability", amount: 1000000, provider: "SafeGuard" }]),
+  getCoverage: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ totalCoverage: 5000000, insuredVehicles: 25, annualPremium: 45000, breakdown: [{ type: "liability", amount: 1000000, provider: "SafeGuard" }, { type: "cargo", amount: 250000, provider: "Great West" }] })),
   getInsuredVehicles: protectedProcedure.query(async () => [{ id: "v1", unit: "TRK-101", coverage: "full", premium: 250 }]),
-  getClaimsSummary: protectedProcedure.query(async () => ({ open: 2, closed: 15, totalPaid: 45000 })),
+  getClaimsSummary: protectedProcedure.query(async () => ({ open: 2, openClaims: 2, closed: 15, totalPaid: 45000 })),
 });
