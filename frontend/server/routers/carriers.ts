@@ -595,9 +595,9 @@ export const carriersRouter = router({
     { id: "p2", carrierId: "c2", carrierName: "XYZ Logistics", status: "completed", progress: 100, submittedAt: "2025-01-18" },
   ])),
   getPacketStats: protectedProcedure.query(async () => ({ total: 45, pending: 12, completed: 33, complete: 33, avgCompletion: 78 })),
-  getPacketById: protectedProcedure.input(z.object({ carrierId: z.string(), id: z.string().optional() })).query(async ({ input }) => ({
-    id: input.id || "p1",
-    carrierId: input.carrierId,
+  getPacketById: protectedProcedure.input(z.object({ carrierId: z.string(), id: z.string().optional() }).optional()).query(async ({ input }) => ({
+    id: input?.id || "p1",
+    carrierId: input?.carrierId || "c1",
     carrierName: "ABC Transport",
     status: "pending",
     progress: 60,
@@ -606,6 +606,7 @@ export const carriersRouter = router({
       { name: "Certificate of Insurance", status: "pending" },
     ],
   })),
+  resendPacket: protectedProcedure.input(z.object({ carrierId: z.string(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, packetId: input.id || "p1" })),
 
   // Additional carrier procedures
   approve: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
