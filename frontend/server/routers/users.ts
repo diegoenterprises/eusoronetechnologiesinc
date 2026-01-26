@@ -396,7 +396,7 @@ export const usersRouter = router({
   updateStatus: protectedProcedure.input(z.object({ userId: z.string().optional(), id: z.string().optional(), status: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId || input.id })),
 
   // Rewards
-  getRewardsInfo: protectedProcedure.query(async () => ({ points: 2500, tier: "gold", nextTier: "platinum", pointsToNext: 500 })),
+  getRewardsInfo: protectedProcedure.query(async () => ({ points: 2500, tier: "gold", nextTier: "platinum", pointsToNext: 500, pointsToNextTier: 500, lifetimeEarnings: 12500, totalEarned: 15000, redeemed: 2500, rank: 125, nextTierPoints: 3000, tierProgress: 83 })),
   getRewardsHistory: protectedProcedure.query(async () => [{ id: "r1", type: "earned", points: 100, description: "Load completed", date: "2025-01-22" }]),
   getAvailableRewards: protectedProcedure.query(async () => [{ id: "rew1", name: "Free Fuel Card", points: 1000, available: true }]),
   redeemReward: protectedProcedure.input(z.object({ rewardId: z.string() })).mutation(async ({ input }) => ({ success: true, rewardId: input.rewardId })),
