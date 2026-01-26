@@ -808,4 +808,7 @@ export const driversRouter = router({
   // Terminations
   getTerminations: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "t1", driverId: "d1", reason: "voluntary", date: "2025-01-20" }]),
   getTerminationStats: protectedProcedure.query(async () => ({ total: 25, voluntary: 18, involuntary: 7 })),
+
+  // Driver Status
+  getStatusSummary: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => ({ available: 8, driving: 12, onDuty: 3, offDuty: 4, sleeper: 2 })),
 });
