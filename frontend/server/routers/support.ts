@@ -452,7 +452,7 @@ If you have trouble accepting a load, please contact support or check that your 
 
   // Surveys
   getPendingSurveys: protectedProcedure.query(async () => [{ id: "s1", ticketId: "t1", type: "satisfaction", dueBy: "2025-01-25" }]),
-  getCompletedSurveys: protectedProcedure.query(async () => [{ id: "s1", ticketId: "t1", rating: 5, completedAt: "2025-01-22" }]),
-  getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, questions: [{ id: "q1", text: "How was your experience?" }] })),
+  getCompletedSurveys: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ surveys: [{ id: "s1", ticketId: "t1", title: "Support Feedback", rating: 5, completedAt: "2025-01-22" }], total: 25, avgRating: 4.6 })),
+  getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, title: "Service Feedback Survey", description: "Please rate your experience", questions: [{ id: "q1", text: "How was your experience?", type: "rating" }] })),
   submitSurvey: protectedProcedure.input(z.object({ surveyId: z.string(), responses: z.array(z.object({ questionId: z.string(), answer: z.any() })) })).mutation(async ({ input }) => ({ success: true, surveyId: input.surveyId })),
 });
