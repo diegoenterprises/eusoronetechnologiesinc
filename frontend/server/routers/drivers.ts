@@ -636,10 +636,10 @@ export const driversRouter = router({
   getPendingLoads: protectedProcedure.query(async () => [{ id: "l1", loadNumber: "LOAD-45930", origin: "Houston, TX", destination: "Dallas, TX", rate: 2450 }]),
 
   // Driver applications
-  getApplications: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "a1", name: "John Smith", status: "pending", appliedAt: "2025-01-22" }]),
-  getApplicationStats: protectedProcedure.query(async () => ({ pending: 12, approved: 150, rejected: 25 })),
-  approveApplication: protectedProcedure.input(z.object({ applicationId: z.string() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId })),
-  rejectApplication: protectedProcedure.input(z.object({ applicationId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId })),
+  getApplications: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", name: "John Smith", status: "pending", appliedAt: "2025-01-22" }]),
+  getApplicationStats: protectedProcedure.query(async () => ({ pending: 12, approved: 150, rejected: 25, total: 187, thisWeek: 8 })),
+  approveApplication: protectedProcedure.input(z.object({ applicationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId || input.id })),
+  rejectApplication: protectedProcedure.input(z.object({ applicationId: z.string().optional(), id: z.string().optional(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId || input.id })),
 
   // Current driver info
   getCurrentDriver: protectedProcedure.query(async () => ({ id: "d1", name: "Mike Johnson", status: "active", cdlNumber: "TX12345678" })),
