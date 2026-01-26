@@ -19,13 +19,13 @@ export const smsRouter = router({
     { id: "t2", name: "Delivery Reminder", content: "Reminder: Delivery scheduled for {{time}}.", active: true },
   ]),
 
-  toggleTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean() })).mutation(async ({ input }) => ({
+  toggleTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() })).mutation(async ({ input }) => ({
     success: true,
     templateId: input.templateId,
-    active: input.active,
+    active: input.active ?? input.enabled,
   })),
 
-  getLogs: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [
+  getLogs: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
     { id: "l1", to: "+1234567890", template: "Load Assigned", status: "delivered", sentAt: "2025-01-23 10:00" },
   ]),
 
@@ -35,11 +35,13 @@ export const smsRouter = router({
     failed: 5,
     remaining: 550,
     costThisMonth: 22.50,
+    sentThisMonth: 450,
+    deliveryRate: 98.9,
   })),
 
-  sendTest: protectedProcedure.input(z.object({ to: z.string(), message: z.string() })).mutation(async ({ input }) => ({
+  sendTest: protectedProcedure.input(z.object({ to: z.string().optional(), phoneNumber: z.string().optional(), message: z.string() })).mutation(async ({ input }) => ({
     success: true,
     messageId: "msg_123",
-    to: input.to,
+    to: input.to || input.phoneNumber,
   })),
 });
