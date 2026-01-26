@@ -412,7 +412,10 @@ export const bidsRouter = router({
     mcNumber: "MC-987654",
     notes: "Flexible on pickup time",
   })),
-  getByLoad: protectedProcedure.input(z.object({ loadId: z.string() })).query(async () => [{ id: "b1", carrierId: "c1", carrierName: "ABC Transport", amount: 2450, status: "pending", carrierRating: 4.8, carrierMC: "MC-123456" }]),
+  getByLoad: protectedProcedure.input(z.object({ loadId: z.string() })).query(async () => [
+    { id: "b1", carrierId: "c1", carrierName: "ABC Transport", amount: 2450, status: "pending", carrierRating: 4.8, carrierMC: "MC-123456", ratePerMile: 2.85 },
+    { id: "b2", carrierId: "c2", carrierName: "FastHaul LLC", amount: 2380, status: "pending", carrierRating: 4.6, carrierMC: "MC-234567", ratePerMile: 2.77 },
+  ]),
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "b1", loadNumber: "LOAD-45900", amount: 2200, status: "accepted", date: "2025-01-20" }]),
   getHistorySummary: protectedProcedure.query(async () => ({ total: 150, accepted: 85, rejected: 40, pending: 25, winRate: 56.7 })),
   getRecentAnalysis: protectedProcedure.query(async () => ({ avgBid: 2350, marketRate: 2400, competitiveness: "good" })),
