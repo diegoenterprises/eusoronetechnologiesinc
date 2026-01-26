@@ -211,4 +211,21 @@ export const notificationsRouter = router({
     { id: "d2", name: "Galaxy S24", type: "android", lastActive: "2025-01-22" },
   ])),
   sendPush: protectedProcedure.input(z.object({ userId: z.string(), title: z.string(), body: z.string(), message: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
+
+  // SMS notifications
+  getSMSStats: protectedProcedure.query(async () => ({ 
+    sent: 450, 
+    delivered: 440, 
+    failed: 10, 
+    remaining: 550,
+    costThisMonth: 45.50,
+    sentThisMonth: 450,
+    deliveryRate: 97.8,
+  })),
+  sendSMS: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), phoneNumber: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "sms_123" })),
+  getSMSTemplates: protectedProcedure.query(async () => [
+    { id: "st1", name: "Load Assignment", template: "You have been assigned to load {{loadNumber}}", active: true },
+    { id: "st2", name: "Delivery Confirmation", template: "Load {{loadNumber}} delivered successfully", active: true },
+  ]),
+  toggleSMSTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() })).mutation(async ({ input }) => ({ success: true, templateId: input.templateId, active: input.active ?? input.enabled })),
 });
