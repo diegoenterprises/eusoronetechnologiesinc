@@ -446,7 +446,7 @@ If you have trouble accepting a load, please contact support or check that your 
   // Live chat
   startChatSession: protectedProcedure.input(z.object({ topic: z.string().optional() })).mutation(async () => ({ sessionId: "chat_123", agentName: "Support Agent" })),
   endChatSession: protectedProcedure.input(z.object({ sessionId: z.string() })).mutation(async ({ input }) => ({ success: true, sessionId: input.sessionId })),
-  getChatSession: protectedProcedure.input(z.object({ sessionId: z.string() })).query(async ({ input }) => ({ sessionId: input.sessionId, status: "active", startedAt: "2025-01-23 10:00" })),
+  getChatSession: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async ({ input }) => ({ sessionId: input?.sessionId || "session_123", status: "active", startedAt: "2025-01-23 10:00", active: true, agent: { id: "a1", name: "Support Agent", avatar: "/avatars/agent.png", online: true } })),
   getChatMessages: protectedProcedure.input(z.object({ sessionId: z.string() })).query(async () => [{ id: "m1", sender: "agent", content: "How can I help?", timestamp: "2025-01-23 10:00" }]),
   sendChatMessage: protectedProcedure.input(z.object({ sessionId: z.string(), content: z.string() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
 
