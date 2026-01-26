@@ -526,7 +526,10 @@ export const analyticsRouter = router({
     mostPopular: "Revenue Report",
     revenue: 127500,
     loads: 45,
+    loadsCompleted: 45,
     avgMargin: 12.5,
+    onTimeRate: 96.5,
+    milesLogged: 125000,
   })),
   getReportsTrends: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
     revenue: [
@@ -540,6 +543,18 @@ export const analyticsRouter = router({
       { date: "Jan 8", value: 12 },
       { date: "Jan 15", value: 14 },
       { date: "Jan 22", value: 9 },
+    ],
+    onTime: [
+      { date: "Jan 1", value: 95 },
+      { date: "Jan 8", value: 97 },
+      { date: "Jan 15", value: 96 },
+      { date: "Jan 22", value: 98 },
+    ],
+    miles: [
+      { date: "Jan 1", value: 28000 },
+      { date: "Jan 8", value: 32000 },
+      { date: "Jan 15", value: 35000 },
+      { date: "Jan 22", value: 30000 },
     ],
   })),
   getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
