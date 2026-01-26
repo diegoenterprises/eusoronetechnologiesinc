@@ -70,11 +70,11 @@ export const onboardingRouter = router({
     }),
 
   // Applicants
-  getApplicants: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "a1", name: "John Smith", status: "pending", appliedAt: "2025-01-22" }]),
+  getApplicants: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "a1", name: "John Smith", type: "driver", status: "pending", appliedAt: "2025-01-22" }]),
   approveApplicant: protectedProcedure.input(z.object({ applicantId: z.string() })).mutation(async ({ input }) => ({ success: true, applicantId: input.applicantId })),
 
   // Progress & Documents
-  getProgress: protectedProcedure.query(async () => ({ step: 3, totalSteps: 5, percentage: 60 })),
-  getRequiredDocuments: protectedProcedure.query(async () => [{ id: "d1", type: "cdl", name: "CDL License", required: true, uploaded: false }]),
+  getProgress: protectedProcedure.query(async () => ({ step: 3, totalSteps: 5, percentage: 60, completedSteps: 3, inProgressSteps: 1, pendingSteps: 1, estimatedTimeRemaining: "2 days", trainingsCompleted: 4 })),
+  getRequiredDocuments: protectedProcedure.query(async () => [{ id: "d1", type: "cdl", name: "CDL License", required: true, uploaded: false, status: "pending" }]),
   uploadDocument: protectedProcedure.input(z.object({ type: z.string(), fileUrl: z.string() })).mutation(async ({ input }) => ({ success: true, documentId: "doc_123" })),
 });
