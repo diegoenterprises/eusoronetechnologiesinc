@@ -213,7 +213,7 @@ export const loadsRouter = router({
       });
 
       const insertedId = (result as any).insertId || 0;
-      return { success: true, loadId: Number(insertedId) };
+      return { success: true, loadId: Number(insertedId), id: Number(insertedId) };
     }),
 
   /**
