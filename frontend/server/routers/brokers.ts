@@ -116,6 +116,13 @@ export const brokersRouter = router({
           { name: "ABC Transport", loads: 12, revenue: 28500 },
           { name: "FastHaul LLC", loads: 8, revenue: 19200 },
         ],
+        avgMarginDollars: 283,
+        activeCarriers: 25,
+        newCarriers: 5,
+        topLanes: [
+          { origin: "Houston, TX", destination: "Dallas, TX", loads: 15, revenue: 35000 },
+          { origin: "Austin, TX", destination: "San Antonio, TX", loads: 10, revenue: 22000 },
+        ],
       };
     }),
 
@@ -178,6 +185,10 @@ export const brokersRouter = router({
         avgTimeToMatch: "2.5 hours",
         carrierRetention: 92,
         disputeRate: 1.2,
+        metrics: [
+          { name: "Response Time", value: 15, unit: "min" },
+          { name: "Win Rate", value: 68, unit: "%" },
+        ],
       };
     }),
 
