@@ -13,6 +13,11 @@ export const rewardsRouter = router({
     nextTier: "platinum",
     pointsToNextTier: 2500,
     lifetimeEarnings: 45000,
+    totalEarned: 57500,
+    redeemed: 12500,
+    rank: 125,
+    nextTierPoints: 15000,
+    tierProgress: 83,
   })),
 
   getAvailable: protectedProcedure.query(async () => [
