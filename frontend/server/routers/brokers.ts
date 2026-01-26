@@ -144,7 +144,7 @@ export const brokersRouter = router({
    * Get commissions for CommissionTracking page
    */
   getCommissions: protectedProcedure
-    .input(z.object({ period: z.string().optional().default("month") }))
+    .input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async () => {
       return [
         { id: "com_001", loadNumber: "LOAD-45920", shipper: "Shell Oil", carrier: "ABC Transport", amount: 245, status: "paid", date: "2025-01-23" },
@@ -157,14 +157,17 @@ export const brokersRouter = router({
    * Get commission stats for CommissionTracking page
    */
   getCommissionStats: protectedProcedure
-    .input(z.object({ period: z.string().optional().default("month") }))
+    .input(z.object({ timeframe: z.string().optional(), period: z.string().optional() }).optional())
     .query(async () => {
       return {
         total: 12750,
         totalEarned: 12750,
+        totalCommission: 12750,
         pending: 3200,
         paid: 9550,
         avgPerLoad: 283,
+        loadsMatched: 45,
+        avgMargin: 8.5,
         loadsThisPeriod: 45,
         breakdown: [
           { type: "Brokered Loads", amount: 8500, loads: 30 },
