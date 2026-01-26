@@ -36,7 +36,7 @@ export const adminRouter = router({
    */
   getUserStats: protectedProcedure
     .query(async () => {
-      return { total: 2450, active: 1890, pending: 145, suspended: 12 };
+      return { total: 2450, active: 1890, pending: 145, suspended: 12, admins: 8, newThisMonth: 45 };
     }),
 
   /**
@@ -641,8 +641,9 @@ export const adminRouter = router({
    */
   updateUserStatus: protectedProcedure
     .input(z.object({
-      userId: z.string(),
-      status: userStatusSchema,
+      userId: z.string().optional(),
+      id: z.string().optional(),
+      status: z.string(),
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
