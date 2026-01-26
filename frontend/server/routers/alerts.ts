@@ -152,4 +152,30 @@ export const alertsRouter = router({
         resolvedToday: 3,
       };
     }),
+
+  /**
+   * Get weather alerts
+   */
+  getWeatherAlerts: protectedProcedure
+    .input(z.object({ state: z.string().optional() }).optional())
+    .query(async () => [
+      { id: "w1", type: "winter_storm", severity: "warning", headline: "Winter Storm Warning", description: "Heavy snow expected", areas: ["North Texas"], startTime: "2025-01-24T06:00:00Z", endTime: "2025-01-25T18:00:00Z" },
+      { id: "w2", type: "wind", severity: "advisory", headline: "Wind Advisory", description: "Gusts up to 45 mph", areas: ["West Texas"], startTime: "2025-01-24T12:00:00Z", endTime: "2025-01-24T22:00:00Z" },
+    ]),
+
+  /**
+   * Get weather forecast
+   */
+  getWeatherForecast: protectedProcedure
+    .input(z.object({ city: z.string(), state: z.string(), days: z.number().optional() }))
+    .query(async ({ input }) => ({
+      location: `${input.city}, ${input.state}`,
+      avgWindSpeed: 12,
+      days: input.days || 5,
+      forecasts: [
+        { date: "2025-01-24", dayName: "Friday", high: 45, low: 32, condition: "Partly Cloudy", precipChance: 10, humidity: 55, windSpeed: 8 },
+        { date: "2025-01-25", dayName: "Saturday", high: 52, low: 38, condition: "Sunny", precipChance: 0, humidity: 45, windSpeed: 5 },
+        { date: "2025-01-26", dayName: "Sunday", high: 48, low: 35, condition: "Cloudy", precipChance: 30, humidity: 65, windSpeed: 12 },
+      ],
+    })),
 });
