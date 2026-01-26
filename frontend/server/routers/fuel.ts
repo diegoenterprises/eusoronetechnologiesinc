@@ -379,8 +379,8 @@ export const fuelRouter = router({
 
   // Additional fuel procedures
   getAverages: protectedProcedure.input(z.object({ period: z.string().optional(), fuelType: z.string().optional() }).optional()).query(async () => ({ avgPrice: 3.45, trend: "up", change: 0.05, national: 3.45, lowest: 3.15, highest: 3.85, weekChange: 0.05 })),
-  getTrends: protectedProcedure.input(z.object({ period: z.string().optional(), fuelType: z.string().optional() }).optional()).query(async () => [{ date: "2025-01-20", price: 3.40 }]),
-  getNearbyStations: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number(), fuelType: z.string().optional() })).query(async () => [{ id: "s1", name: "Pilot Flying J", distance: 2.5, dieselPrice: 3.45 }]),
+  getTrends: protectedProcedure.input(z.object({ period: z.string().optional(), fuelType: z.string().optional(), days: z.number().optional() }).optional()).query(async () => [{ date: "2025-01-20", price: 3.40 }]),
+  getNearbyStations: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number(), fuelType: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "s1", name: "Pilot Flying J", distance: 2.5, dieselPrice: 3.45 }]),
   getPrices: protectedProcedure.input(z.object({ location: z.object({ lat: z.number(), lng: z.number() }).optional(), radius: z.number().optional(), fuelType: z.string().optional() }).optional()).query(async () => [{ id: "s1", name: "Pilot Flying J", diesel: 3.45, unleaded: 3.25, premium: 3.65, distance: 2.5 }]),
   getFuelCardStats: protectedProcedure.query(async () => ({ totalCards: 25, activeCards: 22, totalSpent: 45000, monthlyLimit: 50000, topStation: "Pilot Flying J", monthlySpend: 12500, gallonsThisMonth: 3500 })),
   toggleCard: protectedProcedure.input(z.object({ cardId: z.string(), active: z.boolean().optional(), status: z.string().optional() })).mutation(async ({ input }) => ({ success: true, cardId: input.cardId, active: input.active })),
