@@ -28,6 +28,9 @@ export const earningsRouter = router({
         approvedAmount: 1243.00,
         paidAmount: 4657.75,
         bonuses: 250,
+        total: 6776.75,
+        paid: 4657.75,
+        change: 10.6,
         comparison: {
           previousPeriod: 6125.50,
           percentChange: 10.6,
@@ -62,6 +65,7 @@ export const earningsRouter = router({
         totalMiles: 840,
         totalLoads: 3,
         avgPerMile: 3.73,
+        avgPerLoad: 1045,
       };
     }),
 
