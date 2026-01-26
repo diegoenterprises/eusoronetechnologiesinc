@@ -176,7 +176,8 @@ export const safetyRouter = router({
       search: z.string().optional(),
       status: z.string().optional(),
       type: z.string().optional(),
-    }))
+      limit: z.number().optional(),
+    }).optional())
     .query(async ({ input }) => {
       const incidents = [
         { id: "i1", number: "INC-2025-0045", type: "accident", status: "investigating", date: "2025-01-22", driver: "John Smith", severity: "major" },
@@ -564,14 +565,19 @@ export const safetyRouter = router({
    * Get incident statistics for SafetyIncidents page
    */
   getIncidentStats: protectedProcedure
+    .input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       return {
+        total: 35,
         open: 2,
         investigating: 1,
         thisMonth: 5,
         resolved: 12,
+        severe: 3,
+        closed: 30,
         daysWithoutIncident: 8,
         yearToDate: 23,
+        severity: { high: 3, medium: 8, low: 24 },
       };
     }),
 
