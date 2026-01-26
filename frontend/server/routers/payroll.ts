@@ -63,6 +63,14 @@ export const payrollRouter = router({
         processedPayments: 7,
         averagePay: 4200.00,
         period: input.period || "2025-01",
+        totalPayroll: 52500.00,
+        driversCount: 10,
+        avgPay: 4200.00,
+        paidCount: 7,
+        periodStart: "2025-01-01",
+        periodEnd: "2025-01-15",
+        payDate: "2025-01-20",
+        status: "pending",
       };
     }),
 
