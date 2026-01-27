@@ -40,6 +40,8 @@ export const loadsRouter = router({
         inTransit: 8,
         delivered: 142,
         pendingBids: 4,
+        pending: 4,
+        totalSpend: 385000,
       };
     }),
 
