@@ -380,7 +380,7 @@ export const safetyRouter = router({
    * Get driver safety scorecards
    */
   getDriverScorecards: protectedProcedure
-    .input(z.object({ limit: z.number().default(20) }))
+    .input(z.object({ limit: z.number().optional(), search: z.string().optional(), sortBy: z.string().optional() }).optional())
     .query(async ({ input }) => {
       return [
         {
