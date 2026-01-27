@@ -11,7 +11,7 @@ export const marketRouter = router({
    * Get market intelligence for MarketIntelligence page
    */
   getIntelligence: protectedProcedure
-    .input(z.object({ region: z.string().optional(), timeframe: z.string().optional() }))
+    .input(z.object({ region: z.string().optional(), timeframe: z.string().optional() }).optional())
     .query(async () => {
       return {
         avgRate: 3.45,
@@ -20,6 +20,9 @@ export const marketRouter = router({
         volumeChange: 8.2,
         capacityIndex: 72,
         demandIndex: 85,
+        avgSpotRate: 3.45,
+        loadToTruckRatio: 4.2,
+        totalLoads: 45000,
       };
     }),
 
@@ -54,13 +57,18 @@ export const marketRouter = router({
    * Get capacity by region
    */
   getCapacity: protectedProcedure
-    .input(z.object({ region: z.string().optional() }))
+    .input(z.object({ region: z.string().optional() }).optional())
     .query(async () => {
       return {
         available: 1250,
         inUse: 3450,
         utilization: 73,
         trend: "up",
+        regions: [
+          { name: "Southwest", available: 450, demand: 520 },
+          { name: "Southeast", available: 380, demand: 410 },
+          { name: "Midwest", available: 420, demand: 390 },
+        ],
       };
     }),
 });
