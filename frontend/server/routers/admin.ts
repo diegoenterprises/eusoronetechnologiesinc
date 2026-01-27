@@ -294,13 +294,22 @@ export const adminRouter = router({
    * Get database health for DatabaseHealth page
    */
   getDatabaseHealth: protectedProcedure
+    .input(z.object({}).optional())
     .query(async () => {
       return {
         status: "healthy",
         uptime: "45 days",
+        version: "MySQL 8.0.32",
         connections: { active: 25, max: 100, available: 75 },
         storage: { used: "45 GB", total: "100 GB", percentage: 45 },
         performance: { avgQueryTime: 15, slowQueries: 3, indexHitRate: 98.5 },
+        queriesPerSec: 125,
+        avgQueryTime: 15,
+        dbSize: "45 GB",
+        tables: [
+          { name: "loads", rows: 125000, size: "12 GB", lastVacuum: "2025-01-22" },
+          { name: "drivers", rows: 450, size: "500 MB", lastVacuum: "2025-01-22" },
+        ],
       };
     }),
 
