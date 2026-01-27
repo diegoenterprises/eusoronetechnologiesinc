@@ -924,9 +924,9 @@ export const adminRouter = router({
   getCompanyVerificationSummary: protectedProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours" })),
 
   // Disputes
-  getDisputes: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
+  getDisputes: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
   getDisputeSummary: protectedProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000 })),
-  resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.string(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
+  resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
 
   // Email logs
   getEmailLogs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", to: "user@example.com", subject: "Welcome", status: "delivered", sentAt: "2025-01-23" }]),
