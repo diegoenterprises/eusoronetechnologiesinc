@@ -70,7 +70,7 @@ export const onboardingRouter = router({
     }),
 
   // Applicants
-  getApplicants: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "a1", name: "John Smith", type: "driver", status: "pending", appliedAt: "2025-01-22", email: "john.smith@email.com", appliedDate: "2025-01-22" }]),
+  getApplicants: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "a1", name: "John Smith", type: "driver", status: "pending", appliedAt: "2025-01-22", email: "john.smith@email.com", appliedDate: "2025-01-22", progress: 45 }]),
   approveApplicant: protectedProcedure.input(z.object({ applicantId: z.string() })).mutation(async ({ input }) => ({ success: true, applicantId: input.applicantId })),
 
   // Progress & Documents
