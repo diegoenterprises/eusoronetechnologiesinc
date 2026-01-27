@@ -951,8 +951,9 @@ export const adminRouter = router({
 
   // Platform
   getPlatformHealth: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "healthy", overallStatus: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45, cpu: { current: 42, avg: 38, peak: 72 }, memory: { current: 68, avg: 65, peak: 82 }, disk: { current: 55, used: 275, total: 500 }, network: { inbound: 125, outbound: 85 } })),
-  getPlatformMetrics: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000, totalUsers: 5500, usersChange: 8.5, usersChangeType: "increase", loadsChange: 12.3, loadsChangeType: "increase", revenue: 2500000, revenueChange: 15.2, revenueChangeType: "increase" })),
-  getPlatformTrends: protectedProcedure.query(async () => ({ userGrowth: 12, loadGrowth: 8, revenueGrowth: 15 })),
+  getPlatformMetrics: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000, totalUsers: 5500, usersChange: 8.5, usersChangeType: "increase", loadsChange: 12.3, loadsChangeType: "increase", revenue: 2500000, revenueChange: 15.2, revenueChangeType: "increase", activeSessions: 850, sessionsChange: 5.2, sessionsChangeType: "increase" })),
+  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => [{ date: "2025-01-20", users: 1200, loads: 450, revenue: 125000 }, { date: "2025-01-21", users: 1250, loads: 470, revenue: 130000 }]),
+  getTopPerformers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
   // Permissions & Roles
   getPermissions: protectedProcedure.query(async () => [{ id: "p1", name: "loads.create", description: "Create loads" }]),
