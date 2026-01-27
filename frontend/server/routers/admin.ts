@@ -376,6 +376,7 @@ export const adminRouter = router({
    * Get service status for SystemHealth page
    */
   getServiceStatus: protectedProcedure
+    .input(z.object({}).optional())
     .query(async () => {
       return [
         { id: "s1", name: "API Server", status: "healthy", uptime: "99.9%", responseTime: 45, lastCheck: "2025-01-23 10:30" },
