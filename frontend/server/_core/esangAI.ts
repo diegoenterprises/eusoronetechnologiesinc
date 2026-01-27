@@ -17,6 +17,12 @@ export interface ESANGResponse {
   suggestions?: string[];
   actions?: ESANGAction[];
   context?: Record<string, unknown>;
+  fairnessScore?: number;
+  recommendation?: "accept" | "negotiate" | "reject" | string;
+  reasoning?: string;
+  marketAverage?: number;
+  difference?: number;
+  factors?: { name: string; impact: string; score: number }[];
 }
 
 export interface ESANGAction {
