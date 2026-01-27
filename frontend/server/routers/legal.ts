@@ -25,7 +25,7 @@ export const legalRouter = router({
     version: "1.0",
     effectiveDate: "2024-01-01",
     content: "Cookie Policy content...",
-    categories: ["essential", "analytics", "marketing"],
+    categories: ["essential", "analytics", "marketing"], lastUpdated: "2024-01-01", sections: [{ title: "What Are Cookies", content: "Cookies are small text files..." }], contactEmail: "privacy@eusotrip.com",
   })),
 
   getDataRetention: protectedProcedure.query(async () => ({
@@ -62,8 +62,8 @@ export const legalRouter = router({
   })),
 
   updateCookiePreferences: protectedProcedure.input(z.object({
-    essential: z.boolean(),
-    analytics: z.boolean(),
-    marketing: z.boolean(),
+    essential: z.boolean().optional(),
+    analytics: z.boolean().optional(),
+    marketing: z.boolean().optional(),
   })).mutation(async ({ input }) => ({ success: true, preferences: input })),
 });
