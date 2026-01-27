@@ -33,6 +33,8 @@ export const driversRouter = router({
         safetyScore: 95,
         onTimeRate: 96,
         rating: 4.8,
+        weeklyEarnings: 1017.50,
+        weeklyMiles: 1850,
       };
     }),
 
