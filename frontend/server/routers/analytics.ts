@@ -58,9 +58,9 @@ export const analyticsRouter = router({
    * Get utilization summary for UtilizationReport page
    */
   getUtilizationSummary: protectedProcedure
-    .input(z.object({ dateRange: z.string().optional() }))
+    .input(z.object({ dateRange: z.string().optional() }).optional())
     .query(async () => {
-      return { fleetUtilization: 78, avgMilesPerVehicle: 2450, avgHoursPerDriver: 42, avgHoursPerDay: 8.5, idleTime: 12, activeDays: 22, trend: "up" };
+      return { fleetUtilization: 78, avgMilesPerVehicle: 2450, avgHoursPerDriver: 42, avgHoursPerDay: 8.5, idleTime: 12, activeDays: 22, trend: 5.2 };
     }),
 
   /**
