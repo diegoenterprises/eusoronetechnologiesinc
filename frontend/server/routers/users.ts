@@ -147,7 +147,7 @@ export const usersRouter = router({
       email: ctx.user?.email,
       createdAt: "2024-01-10",
       lastLogin: new Date().toISOString(),
-      status: "active",
+      status: "active", pendingDeletion: false, deletionDate: null,
     };
   }),
 
@@ -159,7 +159,7 @@ export const usersRouter = router({
     }),
 
   // Cancel account deletion
-  cancelAccountDeletion: protectedProcedure.mutation(async () => {
+  cancelAccountDeletion: protectedProcedure.input(z.object({}).optional()).mutation(async () => {
     return { success: true };
   }),
 
