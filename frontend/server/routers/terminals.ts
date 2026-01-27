@@ -1016,7 +1016,7 @@ export const terminalsRouter = router({
   // Alerts & Tanks
   getActiveAlerts: protectedProcedure.query(async () => [{ id: "a1", type: "low_level", tank: "Tank 3", message: "Level below 20%", severity: "warning", acknowledged: false }]),
   getTankLevels: protectedProcedure.query(async () => [{ tankId: "t1", name: "Tank 1", product: "Diesel", level: 75, capacity: 50000 }]),
-  getRackStats: protectedProcedure.query(async () => ({ total: 8, active: 6, idle: 1, maintenance: 1 })),
+  getRackStats: protectedProcedure.query(async () => ({ total: 8, active: 6, idle: 1, maintenance: 1, available: 2, inUse: 6, utilization: 75 })),
 
   // SCADA stats
   getScadaStats: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({
