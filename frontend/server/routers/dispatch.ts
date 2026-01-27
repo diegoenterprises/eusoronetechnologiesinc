@@ -186,6 +186,7 @@ export const dispatchRouter = router({
    */
   getAvailableDrivers: protectedProcedure
     .input(z.object({
+      loadId: z.string().optional(),
       hazmatRequired: z.boolean().optional(),
       tankerRequired: z.boolean().optional(),
     }))
