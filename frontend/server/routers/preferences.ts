@@ -18,6 +18,7 @@ export const preferencesRouter = router({
     compactMode: false,
     dateFormat: "MM/DD/YYYY",
     marketingEmails: false,
+    distanceUnit: "miles",
   })),
 
   update: protectedProcedure.input(z.object({ 
@@ -31,11 +32,12 @@ export const preferencesRouter = router({
     compactMode: z.boolean().optional(),
     dateFormat: z.string().optional(),
     marketingEmails: z.boolean().optional(),
-  })).mutation(async ({ input }) => ({
+    distanceUnit: z.string().optional(),
+  }).optional()).mutation(async ({ input }) => ({
     success: true,
   })),
 
-  reset: protectedProcedure.mutation(async () => ({
+  reset: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({
     success: true,
   })),
 });
