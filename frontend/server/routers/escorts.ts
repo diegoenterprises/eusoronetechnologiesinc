@@ -98,7 +98,7 @@ export const escortsRouter = router({
    */
   getMarketplaceStats: protectedProcedure
     .query(async () => {
-      return { availableJobs: 12, urgentJobs: 3, avgPay: 580, newThisWeek: 8 };
+      return { availableJobs: 12, urgentJobs: 3, avgPay: 580, newThisWeek: 8, available: 12, urgent: 3, avgRate: 580, myApplications: 2 };
     }),
 
   /**
