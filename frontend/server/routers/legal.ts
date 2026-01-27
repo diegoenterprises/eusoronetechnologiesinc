@@ -31,6 +31,10 @@ export const legalRouter = router({
   getDataRetention: protectedProcedure.query(async () => ({
     retentionPeriod: "7 years",
     dataTypes: [{ type: "loads", retention: "7 years" }, { type: "messages", retention: "2 years" }],
+    categories: [
+      { name: "Load Records", retention: "7 years", description: "Freight and shipment data" },
+      { name: "Messages", retention: "2 years", description: "Communication logs" },
+    ],
   })),
 
   getMyDataSummary: protectedProcedure.query(async () => ({
@@ -39,9 +43,13 @@ export const legalRouter = router({
     messages: 450,
     documents: 25,
     lastExport: null,
+    accountAge: "2 years",
+    dataPoints: 1250,
+    storageUsed: "125 MB",
+    lastActivity: "2025-01-23",
   })),
 
-  requestDataExport: protectedProcedure.mutation(async () => ({
+  requestDataExport: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({
     success: true,
     requestId: "export_123",
     estimatedCompletion: "24 hours",
