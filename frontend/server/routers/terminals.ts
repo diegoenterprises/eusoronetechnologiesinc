@@ -1008,8 +1008,8 @@ export const terminalsRouter = router({
   // Shipments
   checkInShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, checkedInAt: new Date().toISOString() })),
   dispatchShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, dispatchedAt: new Date().toISOString() })),
-  getIncomingShipments: protectedProcedure.input(z.object({ date: z.string().optional() })).query(async () => [{ id: "s1", carrier: "ABC Transport", product: "Diesel", volume: 8500, eta: "10:30" }]),
-  getIncomingStats: protectedProcedure.query(async () => ({ expected: 12, arrived: 8, late: 1 })),
+  getIncomingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "s1", carrier: "ABC Transport", product: "Diesel", volume: 8500, eta: "10:30" }]),
+  getIncomingStats: protectedProcedure.query(async () => ({ expected: 12, arrived: 8, late: 1, total: 20, enRoute: 9, delayed: 2 })),
   getOutgoingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "s2", carrier: "XYZ Logistics", product: "Unleaded", volume: 7200, scheduledTime: "14:00" }]),
   getOutgoingStats: protectedProcedure.query(async () => ({ scheduled: 15, dispatched: 10, pending: 5, total: 30, ready: 12, loading: 3 })),
 
