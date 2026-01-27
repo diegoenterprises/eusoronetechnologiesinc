@@ -146,7 +146,20 @@ export const loadsRouter = router({
         .where(eq(loads.id, loadId))
         .limit(1);
 
-      return result[0] || null;
+      const load = result[0];
+      if (!load) return null;
+      return {
+        ...load,
+        origin: { address: "", city: load.pickupCity || "", state: load.pickupState || "", zip: load.pickupZip || "" },
+        destination: { address: "", city: load.deliveryCity || "", state: load.deliveryState || "", zip: load.deliveryZip || "" },
+        pickupLocation: { city: load.pickupCity || "", state: load.pickupState || "" },
+        deliveryLocation: { city: load.deliveryCity || "", state: load.deliveryState || "" },
+        commodity: load.cargoType || "General",
+        biddingEnds: load.pickupDate || new Date().toISOString(),
+        suggestedRateMin: (load.rate || 0) * 0.9,
+        suggestedRateMax: (load.rate || 0) * 1.1,
+        equipmentType: load.equipmentType || "dry_van",
+      };
     }),
 
   /**
