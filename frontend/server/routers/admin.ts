@@ -918,10 +918,10 @@ export const adminRouter = router({
   // Company management
   getCompanies: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "c1", name: "ABC Transport", type: "carrier", status: "active", verified: true }]),
   getCompanyStats: protectedProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5, verified: 410 })),
-  getPendingCompanies: protectedProcedure.query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
+  getPendingCompanies: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
   verifyCompany: protectedProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   rejectCompany: protectedProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
-  getCompanyVerificationSummary: protectedProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours" })),
+  getCompanyVerificationSummary: protectedProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours", total: 450, verified: 400 })),
 
   // Disputes
   getDisputes: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
