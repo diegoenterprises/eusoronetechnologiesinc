@@ -455,8 +455,8 @@ export const fleetRouter = router({
   getDriverStats: protectedProcedure.query(async () => ({ total: 25, active: 22, inactive: 3 })),
 
   // Equipment
-  getEquipment: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "e1", type: "trailer", number: "TRL-101", status: "active" }]),
-  getEquipmentStats: protectedProcedure.query(async () => ({ trucks: 25, trailers: 30, other: 5 })),
+  getEquipment: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "e1", type: "trailer", number: "TRL-101", status: "active" }]),
+  getEquipmentStats: protectedProcedure.query(async () => ({ trucks: 25, trailers: 30, other: 5, total: 60, available: 45, inUse: 12, maintenance: 3 })),
 
   // Fleet Map
   getFleetMapStats: protectedProcedure.input(z.object({ filters: z.any().optional() }).optional()).query(async () => ({ moving: 18, stopped: 5, idle: 2, offline: 0, totalVehicles: 25, total: 25, inTransit: 18, loading: 3, available: 2, atShipper: 1, atConsignee: 1, offDuty: 0, issues: 2, utilization: 92 })),
