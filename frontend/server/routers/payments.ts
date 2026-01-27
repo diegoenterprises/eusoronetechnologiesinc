@@ -216,6 +216,7 @@ export const paymentsRouter = router({
         received: 125000,
         sent: 45000,
         transactions: 156,
+        paid: 115000,
       };
     }),
 
@@ -229,7 +230,7 @@ export const paymentsRouter = router({
   processRefund: protectedProcedure.input(z.object({ paymentId: z.string(), amount: z.number() })).mutation(async ({ input }) => ({ success: true, refundId: "ref_123" })),
   getInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inv1", amount: 2500, status: "paid", date: "2025-01-22" }]),
   getPaymentStats: protectedProcedure.query(async () => ({ totalProcessed: 250000, avgPaymentTime: 12, successRate: 99.5 })),
-  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "p1", amount: 2500, type: "received", date: "2025-01-22" }]),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), type: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => [{ id: "p1", amount: 2500, type: "received", date: "2025-01-22" }]),
   getInvoice: protectedProcedure.input(z.object({ invoiceId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
     id: input.invoiceId || input.id || "inv1", 
     invoiceNumber: "INV-2025-0042",
