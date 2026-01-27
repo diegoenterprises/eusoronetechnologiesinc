@@ -990,6 +990,8 @@ export const terminalsRouter = router({
         incidents: 0,
         onTimeDepartures: 95,
         dockEfficiency: 88,
+        laborUtilization: 85,
+        safetyScore: 98,
       };
     }),
 

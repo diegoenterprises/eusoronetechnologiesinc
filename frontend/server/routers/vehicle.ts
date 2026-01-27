@@ -32,7 +32,7 @@ export const vehicleRouter = router({
    */
   getInspectionStats: protectedProcedure
     .query(async () => {
-      return { total: 45, passed: 40, failed: 3, pending: 2, dueThisWeek: 5 };
+      return { total: 45, passed: 40, failed: 3, pending: 2, dueThisWeek: 5, defectsOpen: 8, totalThisMonth: 45 };
     }),
 
   /**
