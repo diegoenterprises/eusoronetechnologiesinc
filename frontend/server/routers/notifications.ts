@@ -120,6 +120,7 @@ export const notificationsRouter = router({
    * Mark all notifications as read
    */
   markAllAsRead: protectedProcedure
+    .input(z.object({}).optional())
     .mutation(async ({ ctx }) => {
       return { success: true, count: 5 };
     }),
