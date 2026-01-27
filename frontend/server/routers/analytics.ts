@@ -24,12 +24,19 @@ export const analyticsRouter = router({
   getRevenueBreakdown: protectedProcedure
     .input(z.object({ dateRange: z.string().optional() }))
     .query(async () => {
-      return [
-        { category: "Hazmat", amount: 52000, percentage: 41 },
-        { category: "Dry Van", amount: 38000, percentage: 30 },
-        { category: "Tanker", amount: 25500, percentage: 20 },
-        { category: "Flatbed", amount: 12000, percentage: 9 },
-      ];
+      return {
+        byCategory: [
+          { category: "Hazmat", amount: 52000, percentage: 41 },
+          { category: "Dry Van", amount: 38000, percentage: 30 },
+          { category: "Tanker", amount: 25500, percentage: 20 },
+          { category: "Flatbed", amount: 12000, percentage: 9 },
+        ],
+        topSources: [
+          { source: "ABC Chemicals", amount: 28000 },
+          { source: "XYZ Logistics", amount: 22000 },
+          { source: "Global Transport", amount: 18000 },
+        ],
+      };
     }),
 
   /**
@@ -51,7 +58,7 @@ export const analyticsRouter = router({
    */
   getRevenueGoals: protectedProcedure
     .query(async () => {
-      return { target: 150000, current: 127500, percentage: 85, daysRemaining: 7 };
+      return { target: 150000, current: 127500, percentage: 85, daysRemaining: 7, remaining: 22500 };
     }),
 
   /**
