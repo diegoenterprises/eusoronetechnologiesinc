@@ -40,7 +40,7 @@ export const tollsRouter = router({
           { name: "SH 130", cost: 12.00 },
           { name: "NTTA", cost: 4.00 },
         ],
-        estimatedTime: "3h 45m",
+        estimatedTime: "3h 45m", totalTolls: 24.50, tollBreakdown: [{ name: "Hardy Toll Road", cost: 8.50 }, { name: "SH 130", cost: 12.00 }, { name: "NTTA", cost: 4.00 }],
       };
     }),
 });
