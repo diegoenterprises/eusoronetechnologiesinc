@@ -16,5 +16,5 @@ export const helpRouter = router({
     { id: "a1", title: "How to create a load", category: "Getting Started", views: 1500 },
   ]),
 
-  getStats: protectedProcedure.query(async () => ({ totalArticles: 150, categories: 12, recentSearches: ["loads", "HOS"] })),
+  getStats: protectedProcedure.query(async () => ({ totalArticles: 150, categories: 12, recentSearches: ["loads", "HOS"], articles: 150, guides: 45, videos: 30, faqs: 75 })),
 });
