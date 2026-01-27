@@ -36,7 +36,7 @@ export const quotesRouter = router({
    */
   getStats: protectedProcedure
     .query(async () => {
-      return { total: 45, sent: 12, accepted: 28, declined: 3, expired: 2, conversionRate: 62 };
+      return { total: 45, sent: 12, accepted: 28, declined: 3, expired: 2, conversionRate: 62, totalValue: 285000, quoted: 35 };
     }),
 
   /**

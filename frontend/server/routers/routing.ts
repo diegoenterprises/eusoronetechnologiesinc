@@ -22,6 +22,7 @@ export const routingRouter = router({
         duration: "4h 30m",
         fuelEstimate: 46.2,
         tollCost: 12.50,
+        fuelCost: 168.63,
         segments: [
           { from: input.origin, to: input.destination, distance: 285.4, duration: "4h 30m" },
         ],
