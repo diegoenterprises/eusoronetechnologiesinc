@@ -451,8 +451,8 @@ export const fleetRouter = router({
   getDVIRStats: protectedProcedure.query(async () => ({ total: 450, passed: 440, defects: 10, openDefects: 2, outOfService: 1 })),
 
   // Drivers
-  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", vehicleId: "v1" }]),
-  getDriverStats: protectedProcedure.query(async () => ({ total: 25, active: 22, inactive: 3 })),
+  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", vehicleId: "v1" }]),
+  getDriverStats: protectedProcedure.query(async () => ({ total: 25, active: 22, inactive: 3, expiringDocs: 5, avgSafetyScore: 88 })),
 
   // Equipment
   getEquipment: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "e1", type: "trailer", number: "TRL-101", status: "active" }]),
