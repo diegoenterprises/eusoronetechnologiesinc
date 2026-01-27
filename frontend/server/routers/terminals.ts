@@ -1010,8 +1010,8 @@ export const terminalsRouter = router({
   dispatchShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, dispatchedAt: new Date().toISOString() })),
   getIncomingShipments: protectedProcedure.input(z.object({ date: z.string().optional() })).query(async () => [{ id: "s1", carrier: "ABC Transport", product: "Diesel", volume: 8500, eta: "10:30" }]),
   getIncomingStats: protectedProcedure.query(async () => ({ expected: 12, arrived: 8, late: 1 })),
-  getOutgoingShipments: protectedProcedure.input(z.object({ date: z.string().optional() })).query(async () => [{ id: "s2", carrier: "XYZ Logistics", product: "Unleaded", volume: 7200, scheduledTime: "14:00" }]),
-  getOutgoingStats: protectedProcedure.query(async () => ({ scheduled: 15, dispatched: 10, pending: 5 })),
+  getOutgoingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "s2", carrier: "XYZ Logistics", product: "Unleaded", volume: 7200, scheduledTime: "14:00" }]),
+  getOutgoingStats: protectedProcedure.query(async () => ({ scheduled: 15, dispatched: 10, pending: 5, total: 30, ready: 12, loading: 3 })),
 
   // Alerts & Tanks
   getActiveAlerts: protectedProcedure.query(async () => [{ id: "a1", type: "low_level", tank: "Tank 3", message: "Level below 20%", severity: "warning", acknowledged: false }]),
