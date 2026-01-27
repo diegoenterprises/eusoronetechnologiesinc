@@ -210,7 +210,7 @@ export const adminRouter = router({
    */
   getExportStats: protectedProcedure
     .query(async () => {
-      return { totalExports: 25, thisMonth: 8, avgSize: "1.2 MB", storageUsed: "45 MB" };
+      return { totalExports: 25, thisMonth: 8, avgSize: "1.2 MB", storageUsed: "45 MB", total: 25, completed: 23, processing: 2, totalSize: "45 MB" };
     }),
 
   /**
