@@ -881,8 +881,8 @@ export const complianceRouter = router({
   scheduleTest: protectedProcedure.input(z.object({ driverId: z.string().optional(), type: z.string().optional(), date: z.string().optional() }).optional()).mutation(async ({ input }) => ({ success: true, testId: "test_123" })),
 
   // Employment History
-  getEmploymentHistory: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => [{ id: "eh1", employer: "ABC Transport", startDate: "2020-01-15", endDate: "2024-12-31" }]),
-  getEmploymentHistoryStats: protectedProcedure.query(async () => ({ verified: 120, pending: 15, unverifiable: 5 })),
+  getEmploymentHistory: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input }) => [{ id: "eh1", employer: "ABC Transport", startDate: "2020-01-15", endDate: "2024-12-31" }]),
+  getEmploymentHistoryStats: protectedProcedure.query(async () => ({ verified: 120, pending: 15, unverifiable: 5, total: 140, drivers: 85 })),
 
   // Licenses
   getLicenses: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "lic1", driverId: "d1", type: "CDL-A", state: "TX", expiration: "2026-06-15", status: "valid" }]),

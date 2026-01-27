@@ -36,7 +36,7 @@ export const reportsRouter = router({
    */
   getReportStats: protectedProcedure
     .query(async () => {
-      return { total: 12, scheduled: 8, recentRuns: 45, avgRunTime: 15 };
+      return { total: 12, scheduled: 8, recentRuns: 45, avgRunTime: 15, generatedThisMonth: 28, templates: 6 };
     }),
 
   /**
