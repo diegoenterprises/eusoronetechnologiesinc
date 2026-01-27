@@ -367,32 +367,36 @@ export const billingRouter = router({
    */
   getPaymentMethods: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        methods: [
-          {
-            id: "pm_001",
-            type: "bank",
-            last4: "4521",
-            bankName: "Chase Bank",
-            isDefault: true,
-          },
-          {
-            id: "pm_002",
-            type: "card",
-            last4: "8832",
-            brand: "Visa",
-            expiryDate: "12/26",
-            isDefault: false,
-          },
-        ],
+      const methods = [
+        {
+          id: "pm_001",
+          type: "bank",
+          last4: "4521",
+          bankName: "Chase Bank",
+          isDefault: true,
+        },
+        {
+          id: "pm_002",
+          type: "card",
+          last4: "8832",
+          brand: "Visa",
+          expiryDate: "12/26",
+          expMonth: "12",
+          expYear: "26",
+          isDefault: false,
+        },
+      ];
+      return Object.assign(methods, {
         billingAddress: {
-          street: "123 Main St",
+          name: "John Smith",
+          line1: "123 Main St",
+          line2: "",
           city: "Houston",
           state: "TX",
-          zip: "77001",
+          postalCode: "77001",
           country: "USA",
         },
-      };
+      });
     }),
 
   /**
