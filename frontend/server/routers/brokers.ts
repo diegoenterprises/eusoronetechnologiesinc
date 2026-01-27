@@ -140,6 +140,11 @@ export const brokersRouter = router({
         totalCommission: 12750,
         loadsMatched: 45,
         avgMargin: 8.5,
+        breakdown: [
+          { category: "Hazmat", amount: 4500 },
+          { category: "Dry Van", amount: 5250 },
+          { category: "Flatbed", amount: 3000 },
+        ],
       };
     }),
 
