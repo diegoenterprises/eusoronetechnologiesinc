@@ -34,6 +34,11 @@ export const insuranceRouter = router({
         totalAmount: 24700,
         avgResolutionDays: 14,
         approvalRate: 85,
+        total: 17,
+        open: 2,
+        approved: 12,
+        totalPaid: 45000,
+        pending: 3,
       };
     }),
 
