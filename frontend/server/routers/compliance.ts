@@ -151,7 +151,7 @@ export const complianceRouter = router({
    */
   getMedicalCertStats: protectedProcedure
     .query(async () => {
-      return { totalDrivers: 18, valid: 15, expiringSoon: 2, expired: 1, complianceRate: 94 };
+      return { totalDrivers: 18, valid: 15, expiringSoon: 2, expired: 1, complianceRate: 94, total: 18, expiring: 2 };
     }),
 
   /**
