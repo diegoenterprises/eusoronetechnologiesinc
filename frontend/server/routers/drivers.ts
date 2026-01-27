@@ -641,7 +641,7 @@ export const driversRouter = router({
 
   // Current driver info
   getCurrentDriver: protectedProcedure.query(async () => ({ id: "d1", name: "Mike Johnson", status: "active", cdlNumber: "TX12345678" })),
-  getCurrentVehicle: protectedProcedure.query(async () => ({ id: "v1", unitNumber: "TRK-101", make: "Peterbilt", model: "579", year: 2022 })),
+  getCurrentVehicle: protectedProcedure.query(async () => ({ id: "v1", unitNumber: "TRK-101", make: "Peterbilt", model: "579", year: 2022, number: "TRK-101", vin: "1XPWD40X5ED123456" })),
 
   // Earnings
   getEarningsStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 2850, lastWeek: 3100, thisMonth: 12500, avgPerLoad: 450, tripsCompleted: 28, milesDriven: 7245, perMile: 0.55, hoursWorked: 185 })),
@@ -798,7 +798,7 @@ export const driversRouter = router({
       { name: "Safety", items: [{ id: "c6", item: "Fire Extinguisher", required: true }, { id: "c7", item: "Emergency Kit", required: false }] },
     ],
   })),
-  submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })) })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
+  submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })).optional(), checkedItems: z.record(z.boolean()).optional() })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
   getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: "neutral", points: 0 }]),
