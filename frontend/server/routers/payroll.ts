@@ -211,7 +211,7 @@ export const payrollRouter = router({
   getTaxDocStats: protectedProcedure
     .input(z.object({ year: z.string() }))
     .query(async () => {
-      return { totalDocuments: 15, available: 12, pending: 3, downloadedCount: 8 };
+      return { totalDocuments: 15, available: 12, pending: 3, downloadedCount: 8, total: 15, downloaded: 8 };
     }),
 
   // Settlements
