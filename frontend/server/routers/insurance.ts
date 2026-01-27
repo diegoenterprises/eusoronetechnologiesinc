@@ -88,6 +88,7 @@ export const insuranceRouter = router({
         expiringSoon: 1,
         totalCoverage: 2500000,
         annualPremium: 45000,
+        expired: 0,
       };
     }),
 
@@ -95,6 +96,7 @@ export const insuranceRouter = router({
    * Get insurance certificates
    */
   getCertificates: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
     .query(async () => {
       return [
         {
