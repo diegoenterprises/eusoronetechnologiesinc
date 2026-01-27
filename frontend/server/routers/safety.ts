@@ -81,7 +81,7 @@ export const safetyRouter = router({
    */
   getIncidentSummary: protectedProcedure
     .query(async () => {
-      return { total: 12, open: 3, investigating: 2, resolved: 7, thisMonth: 2, severity: { high: 1, medium: 4, low: 7 } };
+      return { total: 12, open: 3, investigating: 2, resolved: 7, thisMonth: 2, severity: { high: 1, medium: 4, low: 7 }, severe: 1, closed: 7 };
     }),
 
   /**
