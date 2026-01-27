@@ -224,6 +224,6 @@ export const payrollRouter = router({
   approveExpense: protectedProcedure.input(z.object({ expenseId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, expenseId: input.expenseId || input.id })),
 
   // Benefits
-  getBenefits: protectedProcedure.query(async () => [{ id: "b1", type: "health", provider: "BlueCross", status: "active", monthlyCost: 450 }]),
+  getBenefits: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [{ id: "b1", type: "health", provider: "BlueCross", status: "active", monthlyCost: 450 }]),
   getBenefitStats: protectedProcedure.query(async () => ({ enrolled: 85, pending: 5, totalMonthlyCost: 38250 })),
 });
