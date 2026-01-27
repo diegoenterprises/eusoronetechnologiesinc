@@ -421,9 +421,9 @@ export const billingRouter = router({
   deleteAccessorialCharge: protectedProcedure.input(z.object({ chargeId: z.string() })).mutation(async ({ input }) => ({ success: true, chargeId: input.chargeId })),
 
   // Detention
-  getDetentions: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "det1", loadId: "l1", hours: 2.5, amount: 150, status: "pending" }]),
-  getDetentionStats: protectedProcedure.query(async () => ({ total: 25, claimed: 20, pending: 5, totalAmount: 3750 })),
-  claimDetention: protectedProcedure.input(z.object({ loadId: z.string(), hours: z.number(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, claimId: "det_123" })),
+  getDetentions: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "det1", loadId: "l1", hours: 2.5, amount: 150, status: "pending" }]),
+  getDetentionStats: protectedProcedure.query(async () => ({ total: 25, claimed: 20, pending: 5, totalAmount: 3750, active: 5, pendingAmount: 750, collected: 3000, avgHours: 2.5 })),
+  claimDetention: protectedProcedure.input(z.object({ loadId: z.string(), detentionId: z.string().optional(), hours: z.number(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, claimId: "det_123" })),
 
   // Factoring
   getFactoringInvoices: protectedProcedure.input(z.object({ status: z.enum(["pending", "submitted", "approved", "funded", "paid", "rejected", "disputed"]).optional() })).query(async () => ({ invoices: [{ id: "fi1", invoiceNumber: "INV-001", customer: "ABC Corp", loadNumber: "LOAD-45920", invoiceAmount: 2500, advanceAmount: 2250, feeAmount: 75, status: "funded", submittedAt: "2025-01-20", fundedAt: "2025-01-22", expectedPayment: "2025-02-15" }], total: 125000 })),
