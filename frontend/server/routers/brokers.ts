@@ -211,7 +211,7 @@ export const brokersRouter = router({
       origin: z.string().optional(),
       destination: z.string().optional(),
       equipment: z.string().optional(),
-      hazmatRequired: z.boolean().optional(),
+      hazmatRequired: z.boolean().optional(), limit: z.number().optional(),
     }))
     .query(async ({ input }) => {
       return [
@@ -322,7 +322,7 @@ export const brokersRouter = router({
   /**
    * Get loads in progress
    */
-  getLoadsInProgress: protectedProcedure
+  getLoadsInProgress: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       return [
         {
