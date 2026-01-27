@@ -930,7 +930,7 @@ export const adminRouter = router({
 
   // Email logs
   getEmailLogs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", to: "user@example.com", subject: "Welcome", status: "delivered", sentAt: "2025-01-23" }]),
-  getEmailSummary: protectedProcedure.query(async () => ({ sent: 5000, delivered: 4850, bounced: 100, opened: 3200, openRate: 66 })),
+  getEmailSummary: protectedProcedure.query(async () => ({ sent: 5000, delivered: 4850, bounced: 100, opened: 3200, openRate: 66, totalSent: 5000, deliveryRate: 97, failed: 50 })),
   resendEmail: protectedProcedure.input(z.object({ emailId: z.string() })).mutation(async ({ input }) => ({ success: true, emailId: input.emailId })),
 
   // Error logs

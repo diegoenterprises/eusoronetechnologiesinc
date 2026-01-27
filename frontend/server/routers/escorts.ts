@@ -653,7 +653,7 @@ export const escortsRouter = router({
   // Jobs
   acceptJob: protectedProcedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => ({ success: true, jobId: input.jobId })),
   getJobs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "j1", convoyName: "Oversized #101", status: "available", rate: 750, date: "2025-01-25" }]),
-  getJobsSummary: protectedProcedure.query(async () => ({ available: 15, accepted: 3, completed: 120, totalEarnings: 85000 })),
+  getJobsSummary: protectedProcedure.query(async () => ({ available: 15, accepted: 3, completed: 120, totalEarnings: 85000, assigned: 5, inProgress: 2, weeklyEarnings: 3500 })),
   getCompletedJobs: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "j1", convoyName: "Oversized #99", earnings: 750, completedAt: "2025-01-20" }]),
 
   // Certifications
@@ -675,7 +675,7 @@ export const escortsRouter = router({
   getIncidents: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inc1", jobId: "j1", type: "near_miss", status: "reported", date: "2025-01-18" }]),
   getIncidentStats: protectedProcedure.query(async () => ({ total: 5, open: 1, resolved: 4 })),
   getReports: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "r1", type: "trip_report", jobId: "j1", date: "2025-01-20" }]),
-  getReportStats: protectedProcedure.query(async () => ({ total: 120, thisMonth: 15 })),
+  getReportStats: protectedProcedure.query(async () => ({ total: 120, thisMonth: 15, submitted: 110, drafts: 10 })),
 
   // Convoy stats for ActiveConvoys page
   getConvoyStats: protectedProcedure.query(async () => ({
