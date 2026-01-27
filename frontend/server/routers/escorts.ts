@@ -21,7 +21,7 @@ export const escortsRouter = router({
         upcomingJobs: 5,
         completedThisMonth: 18,
         monthlyEarnings: 8450,
-        rating: 4.9,
+        rating: 4.9, upcoming: 5, completed: 18, earnings: 8450,
       };
     }),
 
@@ -119,7 +119,7 @@ export const escortsRouter = router({
         total: 12,
         valid: 10,
         expiringSoon: 2,
-        expired: 0,
+        expired: 0, states: 4,
         certifications: [
           { state: "TX", status: "valid", expiresAt: "2025-12-15" },
           { state: "OK", status: "valid", expiresAt: "2025-08-20" },
@@ -170,7 +170,7 @@ export const escortsRouter = router({
         upcomingJobs: 5,
         completedThisMonth: 18,
         monthlyEarnings: 8450,
-        rating: 4.9,
+        rating: 4.9, upcoming: 5, completed: 18, earnings: 8450,
         certifications: {
           total: 12,
           expiringSoon: 2,
