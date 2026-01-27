@@ -290,6 +290,9 @@ export const carriersRouter = router({
         dba: "ABC Transport",
         authorityStatus: "active",
         primaryContact: { name: "John Manager", phone: "555-0100", email: "john@abctransport.com" },
+        inspections: 24,
+        equipmentTypes: ["Dry Van", "Flatbed", "Tanker"],
+        serviceAreas: ["TX", "LA", "OK", "AR", "NM"],
       };
     }),
 
