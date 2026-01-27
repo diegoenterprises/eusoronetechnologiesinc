@@ -757,8 +757,8 @@ export const driversRouter = router({
       customerRating: { score: 4.8, trend: "stable", change: 0 },
     },
   })),
-  getPerformanceReviews: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
-  getReviewStats: protectedProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3 })),
+  getPerformanceReviews: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
+  getReviewStats: protectedProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3, total: 45, completed: 42, pending: 3, avgRating: 4.5 })),
   getScorecard: protectedProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() })).query(async () => ({ 
     safety: 94, 
     efficiency: 88, 
