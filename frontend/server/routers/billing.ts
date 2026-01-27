@@ -70,6 +70,7 @@ export const billingRouter = router({
    * Get summary for Billing page
    */
   getSummary: protectedProcedure
+    .input(z.object({ year: z.string().optional() }).optional())
     .query(async () => {
       return {
         totalBalance: 47250,
@@ -78,6 +79,9 @@ export const billingRouter = router({
         overdueInvoices: 1,
         overdueAmount: 2950,
         thisMonthRevenue: 28500,
+        totalPaid: 125000,
+        invoiceCount: 85,
+        avgMonthly: 28500,
       };
     }),
 
@@ -436,6 +440,6 @@ export const billingRouter = router({
   setDefaultPaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string().optional(), methodId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, paymentMethodId: input.paymentMethodId || input.methodId })),
 
   // History & stats
-  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "h1", type: "payment", amount: 2500, date: "2025-01-22" }]),
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), year: z.string().optional() }).optional()).query(async () => [{ id: "h1", type: "payment", amount: 2500, date: "2025-01-22" }]),
   getPaymentStats: protectedProcedure.query(async () => ({ totalReceived: 125000, totalPaid: 85000, pending: 15000, received: 125000, sent: 85000, transactions: 350 })),
 });
