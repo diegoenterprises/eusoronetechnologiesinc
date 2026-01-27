@@ -50,10 +50,11 @@ export const billingRouter = router({
         apiCallsLimit: 50000, 
         storageUsed: "2.5 GB", 
         storageLimit: "10 GB",
-        loads: { used: 45, limit: null },
+        loads: { used: 45, limit: 1000 },
         users: { used: 8, limit: 25 },
         apiCalls: { used: 12500, limit: 50000 },
         storage: { used: 2.5, limit: 10 },
+        vehicles: { used: 15, limit: 50 },
       };
     }),
 
