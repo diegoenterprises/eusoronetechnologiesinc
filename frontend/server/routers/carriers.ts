@@ -208,10 +208,7 @@ export const carriersRouter = router({
         filtered = filtered.filter(c => c.hazmatCertified === input.hasHazmat);
       }
 
-      return {
-        carriers: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      return filtered.slice(input.offset, input.offset + input.limit);
     }),
 
   /**
