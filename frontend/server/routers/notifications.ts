@@ -100,11 +100,7 @@ export const notificationsRouter = router({
         filtered = filtered.filter(n => n.read === input.read);
       }
 
-      return {
-        notifications: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-        unreadCount: notifications.filter(n => !n.read && !n.archived).length,
-      };
+      return filtered.slice(input.offset, input.offset + input.limit);
     }),
 
   /**
