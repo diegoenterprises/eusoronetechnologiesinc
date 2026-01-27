@@ -137,7 +137,7 @@ export const usersRouter = router({
   // Get activity stats for ActivityFeed page
   getActivityStats: protectedProcedure
     .query(async () => {
-      return { totalActivities: 156, todayActivities: 12, weekActivities: 45 };
+      return { totalActivities: 156, todayActivities: 12, weekActivities: 45, totalToday: 12, loadsToday: 5, bidsToday: 3, thisWeek: 45 };
     }),
 
   // Get account info
