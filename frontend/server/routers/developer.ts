@@ -20,11 +20,11 @@ export const developerRouter = router({
     createdAt: new Date().toISOString(),
   })),
 
-  getAPIUsage: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => ({
+  getAPIUsage: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
     totalRequests: 12500,
     successfulRequests: 12450,
     failedRequests: 50,
-    avgResponseTime: 125,
+    avgResponseTime: 125, successRate: 99.6, avgLatency: 125, remainingQuota: 87500,
     topEndpoints: [
       { endpoint: "/loads", requests: 5000 },
       { endpoint: "/drivers", requests: 3500 },
