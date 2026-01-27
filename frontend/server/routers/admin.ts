@@ -70,7 +70,7 @@ export const adminRouter = router({
    */
   getWebhookStats: protectedProcedure
     .query(async () => {
-      return { total: 8, active: 6, failed: 1, disabled: 1, triggeredToday: 45 };
+      return { total: 8, active: 6, failed: 1, disabled: 1, triggeredToday: 45, deliveriesToday: 45, failing: 1 };
     }),
 
   /**

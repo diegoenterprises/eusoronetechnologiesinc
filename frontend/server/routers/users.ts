@@ -100,6 +100,9 @@ export const usersRouter = router({
       earned: 12,
       inProgress: 5,
       points: 1250,
+      totalBadges: 25,
+      totalPoints: 1250,
+      completionRate: 48,
     };
   }),
 

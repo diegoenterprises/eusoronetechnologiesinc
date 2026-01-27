@@ -743,7 +743,7 @@ export const brokersRouter = router({
   rejectCarrier: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
 
   // Capacity & Commission
-  getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 150, available: 45, booked: 105 })),
+  getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 150, available: 45, booked: 105, verified: 120, avgRating: 4.6 })),
   getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "c1", loadId: "l1", amount: 245, date: "2025-01-22" }]),
 
   // Shippers
