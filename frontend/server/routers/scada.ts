@@ -486,9 +486,19 @@ export const scadaRouter = router({
   getTerminals: protectedProcedure.query(async () => [{ id: "t1", name: "Houston Terminal", status: "operational", racks: 12, tankCount: 8, avgLevel: 75, activeFlows: 3, lastUpdate: "2025-01-23 10:00" }]),
   getTanks: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => [{ id: "tank1", name: "Tank 1", product: "diesel", level: 75, capacity: 50000 }]),
   getTankLevels: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ tanks: [{ tankId: "t1", level: 75, capacity: 50000, product: "diesel" }] })),
-  getAlarms: protectedProcedure.input(z.object({ severity: z.string().optional(), terminalId: z.string().optional() }).optional()).query(async () => ({ alarms: [{ id: "a1", type: "low_level", severity: "warning", message: "Tank 3 below 20%" }] })),
+  getAlarms: protectedProcedure.input(z.object({ severity: z.string().optional(), terminalId: z.string().optional(), active: z.boolean().optional() }).optional()).query(async () => ({ alarms: [{ id: "a1", type: "low_level", severity: "warning", message: "Tank 3 below 20%" }] })),
   getActiveAlarms: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => [{ id: "a1", type: "low_level", severity: "warning", acknowledged: false }]),
   getAlarmHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), terminalId: z.string().optional() }).optional()).query(async () => [{ id: "a1", type: "low_level", resolvedAt: "2025-01-22 15:00" }]),
   acknowledgeAlarm: protectedProcedure.input(z.object({ alarmId: z.string() })).mutation(async ({ input }) => ({ success: true, alarmId: input.alarmId })),
-  getDailyThroughput: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ total: 450000, byProduct: { diesel: 200000, unleaded: 180000, premium: 70000 } })),
+  getDailyThroughput: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ 
+    total: 450000, 
+    totalGallons: 450000,
+    transactions: 156,
+    avgLoadTime: 22,
+    byProduct: [
+      { product: "Diesel", gallons: 200000 },
+      { product: "Unleaded", gallons: 180000 },
+      { product: "Premium", gallons: 70000 },
+    ],
+  })),
 });
