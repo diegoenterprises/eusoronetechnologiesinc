@@ -11,9 +11,12 @@ export const podRouter = router({
     pending: 5,
     completed: 150,
     avgUploadTime: 15,
+    total: 155,
+    received: 150,
+    missing: 5,
   })),
 
-  list: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
     { id: "p1", loadNumber: "LOAD-45918", status: "completed", uploadedAt: "2025-01-22", signedBy: "John Smith" },
   ]),
 });
