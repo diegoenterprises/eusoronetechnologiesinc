@@ -616,7 +616,7 @@ export const carriersRouter = router({
   approve: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
   reject: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
   getDrivers: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", cdl: "TX12345678" }]),
-  getCSAScores: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ([{ name: "Unsafe Driving", score: 15 }, { name: "HOS Compliance", score: 8 }, { name: "Vehicle Maintenance", score: 12 }, { name: "Controlled Substances", score: 0 }])),
+  getCSAScores: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ([{ name: "Unsafe Driving", score: 15, category: "unsafe_driving", threshold: 65 }, { name: "HOS Compliance", score: 8, category: "hos", threshold: 65 }, { name: "Vehicle Maintenance", score: 12, category: "vehicle", threshold: 80 }, { name: "Controlled Substances", score: 0, category: "drugs", threshold: 80 }])),
   getCSAScoresList: protectedProcedure.input(z.object({ carrierId: z.string().optional() }).optional()).query(async () => [
     { name: "Unsafe Driving", score: 15, threshold: 65, status: "ok" },
     { name: "HOS Compliance", score: 8, threshold: 65, status: "ok" },
@@ -626,7 +626,7 @@ export const carriersRouter = router({
     { name: "Crash Indicator", score: 3, threshold: 65, status: "ok" },
     { name: "Hazmat Compliance", score: 2, threshold: 80, status: "ok" },
   ]),
-  getInsurance: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ([{ type: "Liability", amount: 1000000, expiration: "2025-12-31" }, { type: "Cargo", amount: 100000, expiration: "2025-12-31" }])),
+  getInsurance: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ([{ type: "Liability", amount: 1000000, expiration: "2025-12-31", carrier: "Progressive", policyNumber: "POL-123456", coverage: 1000000, expirationDate: "2025-12-31", verified: true }, { type: "Cargo", amount: 100000, expiration: "2025-12-31", carrier: "Progressive", policyNumber: "POL-123457", coverage: 100000, expirationDate: "2025-12-31", verified: true }])),
   getLoadHistory: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "delivered", date: "2025-01-20", route: "Houston, TX - Dallas, TX", rate: 2450 }]),
   getRecentLoads: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "in_transit" }]),
   getScorecards: protectedProcedure.query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 92, trend: "up" }]),
