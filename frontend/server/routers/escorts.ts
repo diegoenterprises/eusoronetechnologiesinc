@@ -652,7 +652,7 @@ export const escortsRouter = router({
 
   // Jobs
   acceptJob: protectedProcedure.input(z.object({ jobId: z.string() })).mutation(async ({ input }) => ({ success: true, jobId: input.jobId })),
-  getJobs: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "j1", convoyName: "Oversized #101", status: "available", rate: 750, date: "2025-01-25" }]),
+  getJobs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "j1", convoyName: "Oversized #101", status: "available", rate: 750, date: "2025-01-25" }]),
   getJobsSummary: protectedProcedure.query(async () => ({ available: 15, accepted: 3, completed: 120, totalEarnings: 85000 })),
   getCompletedJobs: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "j1", convoyName: "Oversized #99", earnings: 750, completedAt: "2025-01-20" }]),
 
