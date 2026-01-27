@@ -34,9 +34,12 @@ export const trafficRouter = router({
    */
   getDelays: protectedProcedure
     .query(async () => {
-      return [
-        { id: "d1", route: "I-10 W", from: "Downtown Houston", to: "Katy", normalTime: 25, currentTime: 55, delay: 30, severity: "major" },
-        { id: "d2", route: "I-45 N", from: "Downtown Houston", to: "The Woodlands", normalTime: 35, currentTime: 50, delay: 15, severity: "moderate" },
-      ];
+      return {
+        avgDelay: 22,
+        routes: [
+          { id: "d1", route: "I-10 W", from: "Downtown Houston", to: "Katy", normalTime: 25, currentTime: 55, delay: 30, severity: "major" },
+          { id: "d2", route: "I-45 N", from: "Downtown Houston", to: "The Woodlands", normalTime: 35, currentTime: 50, delay: 15, severity: "moderate" },
+        ],
+      };
     }),
 });
