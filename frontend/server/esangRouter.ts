@@ -83,7 +83,7 @@ export const esangRouter = router({
         bidAmount: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .query(async ({ input }) => {
       return esangAI.analyzeBid(
         {
           origin: input.origin,
