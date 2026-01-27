@@ -703,9 +703,15 @@ export const dashboardRouter = router({
   }),
 
   // Layout & Widgets
-  getLayout: protectedProcedure.query(async () => ({ columns: 3, widgets: ["stats", "loads", "alerts", "map"] })),
-  saveLayout: protectedProcedure.input(z.object({ layout: z.any() })).mutation(async ({ input }) => ({ success: true })),
-  resetLayout: protectedProcedure.mutation(async () => ({ success: true })),
+  getLayout: protectedProcedure.query(async () => ({ 
+    columns: 3, 
+    widgets: ["stats", "loads", "alerts", "map"],
+    statsWidgets: ["activeLoads", "revenue", "drivers", "alerts"],
+    mainWidgets: ["loadBoard", "map", "recentLoads"],
+    sidebarWidgets: ["quickActions", "notifications", "weather"],
+  })),
+  saveLayout: protectedProcedure.input(z.object({ layout: z.any().optional() }).optional()).mutation(async ({ input }) => ({ success: true })),
+  resetLayout: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true })),
   getWidgets: protectedProcedure.query(async () => [{ id: "w1", type: "stats", title: "Stats", enabled: true }]),
   toggleWidget: protectedProcedure.input(z.object({ widgetId: z.string(), enabled: z.boolean() })).mutation(async ({ input }) => ({ success: true, widgetId: input.widgetId })),
 });
