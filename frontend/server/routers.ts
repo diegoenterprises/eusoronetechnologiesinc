@@ -138,6 +138,10 @@ export const appRouter = router({
     disable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
     regenerateBackupCodes: protectedProcedure.mutation(async () => ({ success: true, backupCodes: ["11111111", "22222222", "33333333"] })),
     changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
+    get2FAStatus: protectedProcedure.query(async () => ({ enabled: false, method: "authenticator", backupCodesRemaining: 8 })),
+    setup2FA: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
+    enable2FA: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
+    disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
   }),
 
   rss: router({
