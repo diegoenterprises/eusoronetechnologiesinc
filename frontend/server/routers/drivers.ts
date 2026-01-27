@@ -332,12 +332,14 @@ export const driversRouter = router({
       origin: z.string().optional(),
       equipmentType: z.string().optional(),
       hazmatRequired: z.boolean().optional(),
-    }))
+    }).optional())
     .query(async ({ input }) => {
       return [
         {
           id: "d2",
           name: "Sarah Williams",
+          firstName: "Sarah",
+          lastName: "Williams",
           location: { city: "Dallas", state: "TX" },
           hoursRemaining: 10,
           currentVehicle: "TRK-102",
@@ -348,6 +350,8 @@ export const driversRouter = router({
         {
           id: "d4",
           name: "Lisa Chen",
+          firstName: "Lisa",
+          lastName: "Chen",
           location: { city: "Fort Worth", state: "TX" },
           hoursRemaining: 11,
           currentVehicle: "TRK-104",
