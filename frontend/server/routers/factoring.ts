@@ -350,6 +350,6 @@ export const factoringRouter = router({
       };
     }),
 
-  getSummary: protectedProcedure.query(async () => ({ totalFactored: 125000, pendingPayments: 15000, availableCredit: 75000 })),
-  getRates: protectedProcedure.query(async () => ({ standard: 0.025, quickPay: 0.035, sameDay: 0.045 })),
+  getSummary: protectedProcedure.query(async () => ({ totalFactored: 125000, pendingPayments: 15000, availableCredit: 75000, totalFunded: 110000, pending: 15000, invoicesFactored: 45 })),
+  getRates: protectedProcedure.query(async () => ({ standard: 0.025, quickPay: 0.035, sameDay: 0.045, currentRate: 0.025, advanceRate: 0.95 })),
 });
