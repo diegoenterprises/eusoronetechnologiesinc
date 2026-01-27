@@ -446,6 +446,7 @@ export const shippersRouter = router({
         mcNumber: "MC-123456",
         verified: true,
         memberSince: "2024-01-15",
+        website: "https://www.shell.com",
       };
     }),
 
@@ -461,6 +462,9 @@ export const shippersRouter = router({
         onTimeDeliveryRate: 96,
         preferredCarriers: 12,
         avgPaymentTime: 15,
+        onTimeRate: 96,
+        monthlyVolume: 28,
+        maxMonthlyLoads: 50,
       };
     }),
 });
