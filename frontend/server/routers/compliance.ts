@@ -222,6 +222,10 @@ export const complianceRouter = router({
         activePermits: 10,
         expiringPermits: 2,
         expiredPermits: 0,
+        total: 12,
+        active: 10,
+        expiring: 2,
+        states: 8,
       };
     }),
 
