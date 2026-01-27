@@ -132,12 +132,17 @@ export const loadsRouter = router({
           distance: 240,
           shipper: { id: "s1", name: "Shell Oil Company" },
           carrier: { id: "c1", name: "ABC Transport LLC" },
-          driver: { id: "d1", name: "Mike Johnson", phone: "(713) 555-0101" },
+          driver: { id: "d1", name: "Mike Johnson", phone: "(713) 555-0101", truckNumber: "TRK-101" },
           currentLocation: { lat: 31.5493, lng: -97.1467, city: "Waco", state: "TX" },
           eta: "2:30 PM",
           createdAt: "2025-01-23T10:00:00Z",
           equipmentType: "tanker",
           notes: "Temperature-controlled cargo",
+          timeline: [
+            { status: "created", timestamp: "2025-01-23T10:00:00Z", note: "Load created" },
+            { status: "assigned", timestamp: "2025-01-23T12:00:00Z", note: "Assigned to driver" },
+            { status: "in_transit", timestamp: "2025-01-24T08:00:00Z", note: "Pickup completed" },
+          ],
         };
       }
 
