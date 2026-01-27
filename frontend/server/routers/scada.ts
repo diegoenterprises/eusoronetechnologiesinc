@@ -488,7 +488,7 @@ export const scadaRouter = router({
   getTankLevels: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ tanks: [{ tankId: "t1", level: 75, capacity: 50000, product: "diesel" }] })),
   getAlarms: protectedProcedure.input(z.object({ severity: z.string().optional(), terminalId: z.string().optional(), active: z.boolean().optional() }).optional()).query(async () => ({ alarms: [{ id: "a1", type: "low_level", severity: "warning", message: "Tank 3 below 20%" }] })),
   getActiveAlarms: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => [{ id: "a1", type: "low_level", severity: "warning", acknowledged: false, message: "Tank 1 level below 25%", source: "Tank 1", terminal: "Terminal A", timestamp: new Date().toISOString() }]),
-  getAlarmHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), terminalId: z.string().optional() }).optional()).query(async () => [{ id: "a1", type: "low_level", resolvedAt: "2025-01-22 15:00", severity: "warning" }]),
+  getAlarmHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), terminalId: z.string().optional() }).optional()).query(async () => [{ id: "a1", type: "low_level", resolvedAt: "2025-01-22 15:00", severity: "warning", message: "Tank T-101 low level", source: "Tank T-101", resolved: true }]),
   acknowledgeAlarm: protectedProcedure.input(z.object({ alarmId: z.string() })).mutation(async ({ input }) => ({ success: true, alarmId: input.alarmId })),
   getDailyThroughput: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ 
     total: 450000, 
