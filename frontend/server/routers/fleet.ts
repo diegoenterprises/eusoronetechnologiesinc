@@ -33,7 +33,7 @@ export const fleetRouter = router({
    */
   getGeofenceStats: protectedProcedure
     .query(async () => {
-      return { total: 12, terminals: 4, yards: 5, hubs: 3, alertsEnabled: 10 };
+      return { total: 12, terminals: 4, yards: 5, hubs: 3, alertsEnabled: 10, active: 10, alertsToday: 5, vehiclesInside: 8 };
     }),
 
   /**
