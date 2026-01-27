@@ -131,10 +131,8 @@ export const driversRouter = router({
         );
       }
 
-      return {
-        drivers: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      const result = filtered.slice(input.offset, input.offset + input.limit);
+      return Object.assign(result, { total: filtered.length, drivers: result });
     }),
 
   /**
