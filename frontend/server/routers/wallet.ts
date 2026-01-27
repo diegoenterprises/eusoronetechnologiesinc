@@ -26,6 +26,9 @@ export const walletRouter = router({
         total: 5775.75,
         currency: "USD",
         lastUpdated: new Date().toISOString(),
+        totalReceived: 125000,
+        totalSpent: 85000,
+        paymentMethods: 3,
       };
     }),
 
