@@ -208,7 +208,7 @@ export const notificationsRouter = router({
     { id: "d1", name: "iPhone 15", type: "ios", lastActive: "2025-01-23" },
     { id: "d2", name: "Galaxy S24", type: "android", lastActive: "2025-01-22" },
   ])),
-  sendPush: protectedProcedure.input(z.object({ userId: z.string(), title: z.string(), body: z.string(), message: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
+  sendPush: protectedProcedure.input(z.object({ userId: z.string().optional(), title: z.string(), body: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
 
   // SMS notifications
   getSMSStats: protectedProcedure.query(async () => ({ 
