@@ -854,7 +854,7 @@ export const complianceRouter = router({
 
   // Calendar
   getCalendarEvents: protectedProcedure.input(z.object({ month: z.number().optional(), year: z.number().optional() })).query(async () => [{ id: "ev1", title: "Medical Card Renewal", date: "2025-02-15", type: "renewal" }]),
-  getCalendarSummary: protectedProcedure.query(async () => ({ thisMonth: 12, nextMonth: 8, overdue: 2 })),
+  getCalendarSummary: protectedProcedure.query(async () => ({ thisMonth: 12, nextMonth: 8, overdue: 2, totalEvents: 22, upcoming: 8, completed: 10 })),
 
   // Clearinghouse
   getClearinghouseQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional(), filter: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [

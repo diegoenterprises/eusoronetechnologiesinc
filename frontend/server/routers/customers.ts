@@ -15,7 +15,7 @@ export const customersRouter = router({
    */
   getSummary: protectedProcedure
     .query(async () => {
-      return { total: 45, active: 38, pending: 5, blocked: 2, totalRevenue: 1250000 };
+      return { total: 45, active: 38, pending: 5, blocked: 2, totalRevenue: 1250000, activeCustomers: 38, avgRating: 4.7 };
     }),
 
   /**
@@ -377,5 +377,5 @@ export const customersRouter = router({
 
   // Additional customer procedures
   getAll: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ id: "c1", name: "Shell Oil", type: "shipper", status: "active" }]),
-  getStats: protectedProcedure.query(async () => ({ total: 45, newThisMonth: 5, avgRevenue: 28000 })),
+  getStats: protectedProcedure.query(async () => ({ total: 45, newThisMonth: 5, avgRevenue: 28000, active: 38, totalRevenue: 1260000, loadsThisMonth: 125 })),
 });
