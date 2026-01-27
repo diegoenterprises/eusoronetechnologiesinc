@@ -11,7 +11,7 @@ export const eldRouter = router({
     totalDevices: 45,
     activeDevices: 42,
     offlineDevices: 3,
-    complianceRate: 98.5,
+    complianceRate: 98.5, totalLogs: 1250, certified: 1200, pending: 45, violations: 5,
   })),
 
   getStats: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ({
