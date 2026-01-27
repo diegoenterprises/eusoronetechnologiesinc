@@ -23,6 +23,8 @@ export const eldRouter = router({
     driving: 12,
     onDuty: 8,
     offDuty: 5,
+    violations: 2,
+    complianceRate: 96,
   })),
 
   getLogs: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional() })).query(async () => [
@@ -30,12 +32,8 @@ export const eldRouter = router({
     { id: "l2", driverId: "d1", status: "on_duty", startTime: "12:00", duration: 60, location: "Dallas, TX" },
   ]),
 
-  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string() })).query(async ({ input }) => ({
-    driverId: input.driverId,
-    currentStatus: "driving",
-    driveTimeRemaining: 420,
-    onDutyTimeRemaining: 600,
-    cycleTimeRemaining: 2400,
-    lastUpdate: "2025-01-23 10:30",
-  })),
+  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [
+    { driverId: "d1", name: "Mike Johnson", currentStatus: "driving", driveTimeRemaining: 420, onDutyTimeRemaining: 600, cycleTimeRemaining: 2400, lastUpdate: "2025-01-23 10:30" },
+    { driverId: "d2", name: "Sarah Williams", currentStatus: "on_duty", driveTimeRemaining: 540, onDutyTimeRemaining: 720, cycleTimeRemaining: 2800, lastUpdate: "2025-01-23 10:25" },
+  ]),
 });
