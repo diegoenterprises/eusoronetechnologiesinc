@@ -615,7 +615,7 @@ export const carriersRouter = router({
   // Additional carrier procedures
   approve: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
   reject: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
-  getDrivers: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", cdl: "TX12345678" }]),
+  getDrivers: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", cdl: "TX12345678" }]),
   getCSAScores: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ({ unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12, controlledSubstances: 0 })),
   getCSAScoresList: protectedProcedure.input(z.object({ carrierId: z.string().optional() }).optional()).query(async () => [
     { name: "Unsafe Driving", score: 15, threshold: 65, status: "ok" },
