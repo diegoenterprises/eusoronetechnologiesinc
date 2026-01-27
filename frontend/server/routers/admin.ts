@@ -436,7 +436,7 @@ export const adminRouter = router({
    */
   getVerificationSummary: protectedProcedure
     .query(async () => {
-      return { pending: 12, approved: 145, rejected: 8, avgProcessingTime: "2.5 hours" };
+      return { pending: 12, approved: 145, rejected: 8, avgProcessingTime: "2.5 hours", approvedToday: 8, rejectedToday: 2, avgWaitTime: "2.5 hours" };
     }),
 
   /**
