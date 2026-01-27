@@ -946,7 +946,7 @@ export const adminRouter = router({
   ]),
 
   // Performance
-  getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p95ResponseTime: 350, requestsPerSecond: 45, errorRate: 0.5, cpu: { current: 42, avg: 38, peak: 72 }, memory: { current: 68, avg: 65, peak: 82 }, disk: { current: 55, used: 275, total: 500 }, uptime: 99.99 })),
+  getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p95ResponseTime: 350, requestsPerSecond: 45, errorRate: 0.5, cpu: 42, memory: 68, disk: 55, uptime: 99.99 })),
   getSlowEndpoints: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/loads", avgTime: 450, calls: 1200 }]),
   getTopPerformers: protectedProcedure.query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
