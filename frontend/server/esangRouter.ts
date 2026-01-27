@@ -76,20 +76,21 @@ export const esangRouter = router({
   analyzeBid: protectedProcedure
     .input(
       z.object({
-        origin: z.string(),
-        destination: z.string(),
-        miles: z.number(),
-        cargoType: z.string(),
+        loadId: z.string().optional(),
+        origin: z.string().optional(),
+        destination: z.string().optional(),
+        miles: z.number().optional(),
+        cargoType: z.string().optional(),
         bidAmount: z.number(),
       })
     )
     .query(async ({ input }) => {
       return esangAI.analyzeBid(
         {
-          origin: input.origin,
-          destination: input.destination,
-          miles: input.miles,
-          cargoType: input.cargoType,
+          origin: input.origin || "Houston, TX",
+          destination: input.destination || "Dallas, TX",
+          miles: input.miles || 250,
+          cargoType: input.cargoType || "general",
         },
         input.bidAmount
       );
