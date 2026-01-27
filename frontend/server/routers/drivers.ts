@@ -646,8 +646,8 @@ export const driversRouter = router({
   getCurrentVehicle: protectedProcedure.query(async () => ({ id: "v1", unitNumber: "TRK-101", make: "Peterbilt", model: "579", year: 2022 })),
 
   // Earnings
-  getEarningsStats: protectedProcedure.query(async () => ({ thisWeek: 2850, lastWeek: 3100, thisMonth: 12500, avgPerLoad: 450 })),
-  getCompletedTrips: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "t1", loadNumber: "LOAD-45920", earnings: 850, completedAt: "2025-01-22" }]),
+  getEarningsStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 2850, lastWeek: 3100, thisMonth: 12500, avgPerLoad: 450, tripsCompleted: 28, milesDriven: 7245, perMile: 0.55, hoursWorked: 185 })),
+  getCompletedTrips: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "t1", loadNumber: "LOAD-45920", earnings: 850, completedAt: "2025-01-22" }]),
 
   // HOS
   getHOSAvailability: protectedProcedure.query(async () => ({ canDrive: true, canAccept: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m", onDutyRemaining: "8h 00m", cycleRemaining: "34h 00m" })),
