@@ -21,6 +21,8 @@ export const fuelRouter = router({
         thisMonthGallons: 1850,
         thisMonthSpent: 6845.50,
         mpgAvg: 6.8,
+        avgMpg: 6.8,
+        avgPricePerGallon: 3.73,
       };
     }),
 
@@ -29,12 +31,11 @@ export const fuelRouter = router({
    */
   getCurrentPrices: protectedProcedure
     .query(async () => {
-      return {
-        diesel: { avg: 3.72, low: 3.45, high: 3.98 },
-        gasoline: { avg: 2.89, low: 2.65, high: 3.15 },
-        def: { avg: 3.25, low: 2.95, high: 3.55 },
-        lastUpdated: new Date().toISOString(),
-      };
+      return [
+        { fuelType: "Diesel", avg: 3.72, low: 3.45, high: 3.98 },
+        { fuelType: "Gasoline", avg: 2.89, low: 2.65, high: 3.15 },
+        { fuelType: "DEF", avg: 3.25, low: 2.95, high: 3.55 },
+      ];
     }),
 
   /**
