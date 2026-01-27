@@ -36,7 +36,7 @@ export const catalystsRouter = router({
    */
   getMatchStats: protectedProcedure
     .query(async () => {
-      return { totalMatches: 12, highScore: 5, mediumScore: 4, lowScore: 3, avgMatchScore: 85 };
+      return { totalMatches: 12, highScore: 5, mediumScore: 4, lowScore: 3, avgMatchScore: 85, matched: 12, highMatch: 5, avgRate: 3.45, acceptRate: 78 };
     }),
 
   /**
