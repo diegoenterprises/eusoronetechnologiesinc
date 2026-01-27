@@ -148,17 +148,18 @@ export const loadsRouter = router({
 
       const load = result[0];
       if (!load) return null;
+      const rateNum = typeof load.rate === 'number' ? load.rate : Number(load.rate) || 0;
       return {
         ...load,
-        origin: { address: load.pickupAddress || "", city: load.pickupAddress || "Houston", state: "TX", zip: "77001" },
-        destination: { address: load.deliveryAddress || "", city: load.deliveryAddress || "Dallas", state: "TX", zip: "75201" },
+        origin: { address: "", city: "Houston", state: "TX", zip: "77001" },
+        destination: { address: "", city: "Dallas", state: "TX", zip: "75201" },
         pickupLocation: { city: "Houston", state: "TX" },
         deliveryLocation: { city: "Dallas", state: "TX" },
         commodity: load.cargoType || "General",
         biddingEnds: load.pickupDate || new Date().toISOString(),
-        suggestedRateMin: (load.rate || 0) * 0.9,
-        suggestedRateMax: (load.rate || 0) * 1.1,
-        equipmentType: load.equipmentType || "dry_van",
+        suggestedRateMin: rateNum * 0.9,
+        suggestedRateMax: rateNum * 1.1,
+        equipmentType: "dry_van",
       };
     }),
 
