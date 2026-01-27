@@ -7,7 +7,7 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 
 export const legalRouter = router({
-  getTermsOfService: publicProcedure.query(async () => ({
+  getTermsOfService: publicProcedure.query(async () => ({ sections: [{ title: "Introduction", content: "Welcome to our service..." }, { title: "Terms", content: "By using our service..." }], contactEmail: "legal@eusoronetech.com",
     version: "1.0",
     effectiveDate: "2024-01-01",
     content: "Terms of Service content...",
