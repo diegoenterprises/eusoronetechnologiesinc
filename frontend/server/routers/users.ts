@@ -108,11 +108,11 @@ export const usersRouter = router({
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
       return [
-        { rank: 1, name: "Mike Johnson", points: 2450, loads: 45, rating: 4.9, change: 0 },
-        { rank: 2, name: "Sarah Williams", points: 2280, loads: 42, rating: 4.8, change: 1 },
-        { rank: 3, name: "Tom Brown", points: 2150, loads: 38, rating: 4.7, change: -1 },
-        { rank: 4, name: "Lisa Chen", points: 1980, loads: 35, rating: 4.9, change: 2 },
-        { rank: 5, name: "James Wilson", points: 1850, loads: 32, rating: 4.6, change: 0 },
+        { rank: 1, name: "Mike Johnson", points: 2450, loads: 45, rating: 4.9, change: 0, score: 2450 },
+        { rank: 2, name: "Sarah Williams", points: 2280, loads: 42, rating: 4.8, change: 1, score: 2280 },
+        { rank: 3, name: "Tom Brown", points: 2150, loads: 38, rating: 4.7, change: -1, score: 2150 },
+        { rank: 4, name: "Lisa Chen", points: 1980, loads: 35, rating: 4.9, change: 2, score: 1980 },
+        { rank: 5, name: "James Wilson", points: 1850, loads: 32, rating: 4.6, change: 0, score: 1850 },
       ];
     }),
 
