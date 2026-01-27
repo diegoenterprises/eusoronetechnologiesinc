@@ -666,8 +666,8 @@ export const catalystsRouter = router({
     }),
 
   // Opportunities
-  getOpportunities: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "o1", title: "Hazmat Specialist", type: "dispatch", requirements: ["Hazmat cert"], status: "open" }]),
-  getOpportunityStats: protectedProcedure.query(async () => ({ open: 5, applied: 2, accepted: 1 })),
+  getOpportunities: protectedProcedure.input(z.object({ status: z.string().optional(), category: z.string().optional() }).optional()).query(async () => [{ id: "o1", title: "Hazmat Specialist", type: "dispatch", requirements: ["Hazmat cert"], status: "open" }]),
+  getOpportunityStats: protectedProcedure.query(async () => ({ open: 5, applied: 2, accepted: 1, total: 8, urgent: 2, totalValue: 125000, premium: 3 })),
   applyToOpportunity: protectedProcedure.input(z.object({ opportunityId: z.string() })).mutation(async ({ input }) => ({ success: true, applicationId: "app_123" })),
 
   // Performance
