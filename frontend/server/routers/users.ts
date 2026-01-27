@@ -392,7 +392,7 @@ export const usersRouter = router({
 
   // Password
   changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
-  getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false })),
+  getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false, expiresIn: 60 })),
 
   // User management stats
   getStats: protectedProcedure.query(async () => ({ total: 150, active: 125, pending: 15, suspended: 10, admins: 5, newThisMonth: 12 })),

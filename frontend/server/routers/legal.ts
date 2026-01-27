@@ -19,6 +19,8 @@ export const legalRouter = router({
     effectiveDate: "2024-01-01",
     content: "Privacy Policy content...",
     lastUpdated: "2024-01-01",
+    sections: [{ title: "Data Collection", content: "We collect..." }, { title: "Data Usage", content: "We use your data..." }],
+    dpoEmail: "dpo@eusoronetech.com",
   })),
 
   getCookiePolicy: publicProcedure.query(async () => ({
