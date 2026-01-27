@@ -176,7 +176,7 @@ export const brokersRouter = router({
         avgPerLoad: 283,
         loadsMatched: 45,
         avgMargin: 8.5,
-        loadsThisPeriod: 45,
+        loadsThisPeriod: 45, trend: "up", trendPercent: 12.5, loadsCompleted: 45,
         breakdown: [
           { type: "Brokered Loads", amount: 8500, loads: 30 },
           { type: "Capacity Matching", amount: 3250, loads: 12 },
