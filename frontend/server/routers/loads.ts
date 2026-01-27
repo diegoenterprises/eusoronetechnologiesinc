@@ -450,7 +450,7 @@ export const bidsRouter = router({
     { id: "b2", carrierId: "c2", carrierName: "FastHaul LLC", amount: 2380, status: "pending", carrierRating: 4.6, carrierMC: "MC-234567", ratePerMile: 2.77 },
   ]),
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => [{ id: "b1", loadNumber: "LOAD-45900", amount: 2200, status: "accepted", date: "2025-01-20" }]),
-  getHistorySummary: protectedProcedure.query(async () => ({ total: 150, accepted: 85, rejected: 40, pending: 25, winRate: 56.7 })),
+  getHistorySummary: protectedProcedure.query(async () => ({ total: 150, accepted: 85, rejected: 40, pending: 25, winRate: 56.7, totalBids: 150, totalValue: 425000 })),
   getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", loadId: "L-001", origin: "Houston", destination: "Dallas", amount: 2350, analysis: "good", createdAt: "2025-01-22" }]),
   submit: protectedProcedure.input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() })).mutation(async () => ({ success: true, bidId: "bid_123" })),
   accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),

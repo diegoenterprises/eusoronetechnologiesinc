@@ -384,6 +384,9 @@ export const carriersRouter = router({
         wonThisWeek: 3,
         winRate: 68,
         avgBidAmount: 2650,
+        pending: 5,
+        accepted: 3,
+        avgBid: 2650,
       };
     }),
 

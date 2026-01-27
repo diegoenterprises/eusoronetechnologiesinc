@@ -269,7 +269,7 @@ export const adminRouter = router({
    */
   getBackupStats: protectedProcedure
     .query(async () => {
-      return { totalBackups: 45, totalSize: "125 GB", lastBackup: "2025-01-23 02:00", nextScheduled: "2025-01-24 02:00" };
+      return { totalBackups: 45, totalSize: "125 GB", lastBackup: "2025-01-23 02:00", nextScheduled: "2025-01-24 02:00", total: 45, successful: 42 };
     }),
 
   /**
