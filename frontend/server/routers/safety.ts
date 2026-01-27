@@ -751,6 +751,10 @@ export const safetyRouter = router({
     improvementAreas: ["Vehicle Maintenance"],
     trend: "up",
     trendPercent: 2.5,
+    satisfactory: 42,
+    conditional: 3,
+    unsatisfactory: 0,
+    inspections: 28,
   })),
 
   // Driver safety
