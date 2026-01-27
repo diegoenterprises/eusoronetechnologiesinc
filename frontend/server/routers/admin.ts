@@ -784,6 +784,8 @@ export const adminRouter = router({
           { name: "File Storage", status: "healthy", uptime: 99.99, latency: 35 },
         ],
         lastCheck: new Date().toISOString(),
+        networkIO: 85,
+        networkUsage: 85,
       };
     }),
 

@@ -664,7 +664,7 @@ export const catalystsRouter = router({
    */
   getSpecializationStats: protectedProcedure
     .query(async () => {
-      return { total: 8, expert: 2, advanced: 3, intermediate: 2, beginner: 1, certifiedCount: 5 };
+      return { total: 8, expert: 2, advanced: 3, intermediate: 2, beginner: 1, certifiedCount: 5, certified: 5, matchRate: 92 };
     }),
 
   // Opportunities
