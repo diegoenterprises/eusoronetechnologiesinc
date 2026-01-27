@@ -208,6 +208,8 @@ export const catalystsRouter = router({
         atShipper: 2,
         atConsignee: 1,
         offDuty: 1,
+        issues: 2,
+        utilization: 85,
       };
     }),
 
