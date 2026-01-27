@@ -776,7 +776,7 @@ export const safetyRouter = router({
       { id: "e2", type: "training", result: "completed", date: "2025-01-18" },
     ],
   })),
-  getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 88, topPerformer: "Mike Johnson", improvementNeeded: 3 })),
+  getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 88, topPerformer: "Mike Johnson", improvementNeeded: 3, totalDrivers: 25, improving: 18, needsAttention: 3 })),
 
   // Meetings
   getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [{ id: "m1", type: "safety_meeting", date: "2025-01-25", attendees: 15 }]),
