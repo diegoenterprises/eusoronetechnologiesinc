@@ -36,15 +36,16 @@ export const weatherRouter = router({
    */
   getForecast: publicProcedure
     .input(z.object({
-      city: z.string(),
-      state: z.string(),
-      days: z.number().default(5),
-    }))
+      city: z.string().optional(),
+      state: z.string().optional(),
+      days: z.number().optional(),
+    }).optional())
     .query(async ({ input }) => {
       const forecasts = [];
       const conditions = ["Sunny", "Partly Cloudy", "Cloudy", "Light Rain", "Thunderstorms"];
+      const numDays = input?.days || 5;
       
-      for (let i = 0; i < input.days; i++) {
+      for (let i = 0; i < numDays; i++) {
         const date = new Date();
         date.setDate(date.getDate() + i);
         
@@ -61,8 +62,10 @@ export const weatherRouter = router({
       }
 
       return {
-        location: `${input.city}, ${input.state}`,
+        location: `${input?.city || "Houston"}, ${input?.state || "TX"}`,
         forecasts,
+        days: numDays,
+        avgWindSpeed: 12,
       };
     }),
 
@@ -120,26 +123,22 @@ export const weatherRouter = router({
    */
   getAlerts: publicProcedure
     .input(z.object({
-      state: z.string(),
+      state: z.string().optional(),
       county: z.string().optional(),
-    }))
+    }).optional())
     .query(async ({ input }) => {
-      return {
-        state: input.state,
-        alerts: [
-          {
-            id: "alert_001",
-            type: "Wind Advisory",
-            severity: "minor",
-            headline: "Wind Advisory until 6 PM CST",
-            description: "Southwest winds 20-30 mph with gusts up to 45 mph",
-            areas: ["Harris County", "Fort Bend County"],
-            startTime: new Date().toISOString(),
-            endTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-          },
-        ],
-        lastUpdated: new Date().toISOString(),
-      };
+      return [
+        {
+          id: "alert_001",
+          type: "Wind Advisory",
+          severity: "minor",
+          headline: "Wind Advisory until 6 PM CST",
+          description: "Southwest winds 20-30 mph with gusts up to 45 mph",
+          areas: ["Harris County", "Fort Bend County"],
+          startTime: new Date().toISOString(),
+          endTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
+        },
+      ];
     }),
 
   /**
