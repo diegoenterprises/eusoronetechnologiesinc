@@ -906,7 +906,7 @@ export const adminRouter = router({
   revokeApiKey: protectedProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ input }) => ({ success: true, keyId: input.keyId })),
 
   // Audit logs
-  getAuditLogs: protectedProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
+  getAuditLogs: protectedProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
   getAuditStats: protectedProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"] })),
 
   // Broadcasts
