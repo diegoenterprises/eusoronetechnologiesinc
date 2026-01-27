@@ -708,6 +708,10 @@ export const terminalsRouter = router({
         lowLevelAlerts: 1,
         productsCount: 6,
         lastReceipt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        totalTanks: 12,
+        totalVolume: 534000,
+        lowLevel: 1,
+        avgFillLevel: 74,
       };
     }),
 
