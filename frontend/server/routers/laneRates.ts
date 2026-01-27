@@ -7,7 +7,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 
 export const laneRatesRouter = router({
-  list: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [
+  list: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
     { id: "lr1", origin: "Houston, TX", destination: "Dallas, TX", rate: 3.25, volume: 150 },
   ]),
 
@@ -17,6 +17,6 @@ export const laneRatesRouter = router({
     origin: input.origin, destination: input.destination, estimatedRate: 3.25, miles: 240,
   })),
 
-  getSummary: protectedProcedure.query(async () => ({ totalLanes: 150, avgRate: 3.18, trending: "up" })),
-  getTopLanes: protectedProcedure.query(async () => [{ origin: "Houston", destination: "Dallas", rate: 3.45, volume: 250 }]),
+  getSummary: protectedProcedure.query(async () => ({ totalLanes: 150, avgRate: 3.18, trending: "up", rateChange: 2.5, avgMiles: 350 })),
+  getTopLanes: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ origin: "Houston", destination: "Dallas", rate: 3.45, volume: 250 }]),
 });
