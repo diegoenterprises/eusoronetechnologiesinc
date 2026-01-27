@@ -894,8 +894,8 @@ export const complianceRouter = router({
   requestMVR: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "mvr_123" })),
 
   // PSP Reports
-  getPSPReports: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "psp1", driverId: "d1", date: "2025-01-10", crashes: 0, inspections: 5 }]),
-  getPSPStats: protectedProcedure.query(async () => ({ total: 150, requested: 145, pending: 5 })),
+  getPSPReports: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "psp1", driverId: "d1", date: "2025-01-10", crashes: 0, inspections: 5 }]),
+  getPSPStats: protectedProcedure.query(async () => ({ total: 150, requested: 145, pending: 5, clear: 140, issues: 5, thisMonth: 12 })),
   requestPSP: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "psp_123" })),
 
   // Road Tests
