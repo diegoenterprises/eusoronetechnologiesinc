@@ -51,7 +51,7 @@ export const esangRouter = router({
         unNumber: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .query(async ({ input }) => {
       return esangAI.getLoadRecommendations(input);
     }),
 
@@ -83,7 +83,7 @@ export const esangRouter = router({
         bidAmount: z.number(),
       })
     )
-    .mutation(async ({ input }) => {
+    .query(async ({ input }) => {
       return esangAI.analyzeBid(
         {
           origin: input.origin,
@@ -105,7 +105,7 @@ export const esangRouter = router({
         entityId: z.string(),
       })
     )
-    .mutation(async ({ input }) => {
+    .query(async ({ input }) => {
       return esangAI.checkCompliance(input.entityType, input.entityId);
     }),
 
