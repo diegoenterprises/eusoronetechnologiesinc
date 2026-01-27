@@ -907,7 +907,7 @@ export const adminRouter = router({
 
   // Audit logs
   getAuditLogs: protectedProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
-  getAuditStats: protectedProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"] })),
+  getAuditStats: protectedProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"], total: 15000, today: 250, criticalActions: 12 })),
 
   // Broadcasts
   getBroadcasts: protectedProcedure.query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),

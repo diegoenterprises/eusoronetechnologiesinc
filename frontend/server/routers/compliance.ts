@@ -849,7 +849,7 @@ export const complianceRouter = router({
 
   // Background checks
   getBackgroundChecks: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "bg1", driverId: "d1", driverName: "John Smith", status: "completed", completedAt: "2025-01-20" }]),
-  getBackgroundCheckStats: protectedProcedure.query(async () => ({ total: 150, pending: 5, completed: 140, failed: 5 })),
+  getBackgroundCheckStats: protectedProcedure.query(async () => ({ total: 150, pending: 5, completed: 140, failed: 5, clear: 130, review: 10 })),
   initiateBackgroundCheck: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, checkId: "bg_123", driverId: input.driverId })),
 
   // Calendar

@@ -225,5 +225,5 @@ export const payrollRouter = router({
 
   // Benefits
   getBenefits: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [{ id: "b1", type: "health", provider: "BlueCross", status: "active", monthlyCost: 450 }]),
-  getBenefitStats: protectedProcedure.query(async () => ({ enrolled: 85, pending: 5, totalMonthlyCost: 38250 })),
+  getBenefitStats: protectedProcedure.query(async () => ({ enrolled: 85, pending: 5, totalMonthlyCost: 38250, totalEmployees: 100, plans: 4, monthlyCost: 38250 })),
 });
