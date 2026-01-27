@@ -50,6 +50,8 @@ export const companiesRouter = router({
           mcNumber: "MC-123456",
           type: "carrier",
           verified: true,
+          logo: "/logos/abc-transport.png",
+          website: "https://abctransport.com",
           description: "Full-service transportation company specializing in petroleum products",
           address: "123 Main St",
           city: "Houston",
@@ -67,7 +69,16 @@ export const companiesRouter = router({
         .where(eq(companies.id, companyId))
         .limit(1);
 
-      return result[0] || null;
+      const company = result[0];
+      if (!company) return null;
+      return {
+        ...company,
+        type: "carrier",
+        verified: true,
+        logo: "/logos/default.png",
+        website: company.website || "",
+        description: "Transportation company",
+      };
     }),
 
   // Update company profile
