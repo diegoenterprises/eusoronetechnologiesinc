@@ -461,6 +461,7 @@ export const analyticsRouter = router({
     trendPercent: -2.5,
     trend: -2.5,
     lostRevenue: 15000,
+    targetPercentage: 15,
   })),
   getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => [{ month: "Jan", percentage: 18 }, { month: "Dec", percentage: 20 }]),
   getDeadheadByDriver: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ driverId: "d1", name: "Mike Johnson", deadheadPct: 15 }]),
