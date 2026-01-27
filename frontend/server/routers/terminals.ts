@@ -123,7 +123,7 @@ export const terminalsRouter = router({
   getAppointmentStats: protectedProcedure
     .input(z.object({ date: z.string().optional() }))
     .query(async () => {
-      return { total: 24, completed: 8, inProgress: 3, scheduled: 12, cancelled: 1 };
+      return { total: 24, completed: 8, inProgress: 3, scheduled: 12, cancelled: 1, confirmed: 12, pending: 5, checkedIn: 3 };
     }),
 
   /**
