@@ -215,7 +215,7 @@ export const usersRouter = router({
   // Get session summary for SessionManagement page
   getSessionSummary: protectedProcedure
     .query(async () => {
-      return { activeSessions: 3, devicesUsed: 3, lastLogin: "2025-01-23 10:30" };
+      return { activeSessions: 3, devicesUsed: 3, lastLogin: "2025-01-23 10:30", totalSessions: 15, uniqueLocations: 2, mobileDevices: 1, lastActivity: "2025-01-23 10:30" };
     }),
 
   // Terminate session mutation
