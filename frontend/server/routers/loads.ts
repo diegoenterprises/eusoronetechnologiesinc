@@ -150,10 +150,10 @@ export const loadsRouter = router({
       if (!load) return null;
       return {
         ...load,
-        origin: { address: "", city: load.pickupCity || "", state: load.pickupState || "", zip: load.pickupZip || "" },
-        destination: { address: "", city: load.deliveryCity || "", state: load.deliveryState || "", zip: load.deliveryZip || "" },
-        pickupLocation: { city: load.pickupCity || "", state: load.pickupState || "" },
-        deliveryLocation: { city: load.deliveryCity || "", state: load.deliveryState || "" },
+        origin: { address: load.pickupAddress || "", city: load.pickupAddress || "Houston", state: "TX", zip: "77001" },
+        destination: { address: load.deliveryAddress || "", city: load.deliveryAddress || "Dallas", state: "TX", zip: "75201" },
+        pickupLocation: { city: "Houston", state: "TX" },
+        deliveryLocation: { city: "Dallas", state: "TX" },
         commodity: load.cargoType || "General",
         biddingEnds: load.pickupDate || new Date().toISOString(),
         suggestedRateMin: (load.rate || 0) * 0.9,
