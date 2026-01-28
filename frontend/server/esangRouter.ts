@@ -130,7 +130,7 @@ export const esangRouter = router({
 
   // Additional ESANG AI procedures
   analyzeBidFairness: protectedProcedure.input(z.object({ loadId: z.string(), bidAmount: z.number() })).mutation(async ({ input }) => ({ fair: true, marketRate: input.bidAmount * 1.05, recommendation: "Competitive bid" })),
-  classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => ({ unNumber: "UN1203", class: "3", packingGroup: "II", properName: input.productName })),
+  classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => ({ unNumber: "UN1203", class: "3", hazmatClass: "3", packingGroup: "II", properName: input.productName })),
   getChatHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "m1", role: "user", content: "Hello", response: "Hi! How can I help you?", timestamp: "2025-01-23 10:00" }]),
   getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ input }) => ({
     guideNumber: input.guideNumber,
