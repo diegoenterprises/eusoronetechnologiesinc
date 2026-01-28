@@ -459,7 +459,7 @@ export const analyticsRouter = router({
     }),
 
   // Benchmarks & Market
-  getBenchmarks: protectedProcedure.query(async () => ({ industryAvg: { ratePerMile: 2.85, onTimeRate: 92 }, yourMetrics: { ratePerMile: 3.05, onTimeRate: 96 } })),
+  getBenchmarks: protectedProcedure.query(async () => [{ metric: "Rate per Mile", ourValue: 3.05, industryAvg: 2.85 }, { metric: "On-Time Rate", ourValue: 96, industryAvg: 92 }, { metric: "Customer Satisfaction", ourValue: 4.8, industryAvg: 4.2 }, { metric: "Load Acceptance", ourValue: 88, industryAvg: 75 }]),
   getCompetitors: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ name: "Industry Average", ratePerMile: 2.85, marketShare: 100 }]),
   getMarketShare: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ yourShare: 2.5, ourShare: 2.5, topCompetitor: 8.2, marketSize: 850000000, shareChange: 0.3, marketRank: 15 })),
 
