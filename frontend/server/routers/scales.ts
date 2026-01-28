@@ -11,7 +11,7 @@ export const scalesRouter = router({
     { id: "s1", name: "I-45 Weigh Station", mile: 85, status: "open", prepassEnabled: true },
   ]),
 
-  getNearby: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number(), limit: z.number().optional() })).query(async () => [
+  getNearby: protectedProcedure.input(z.object({ lat: z.number().optional(), lng: z.number().optional(), limit: z.number().optional() })).query(async () => [
     { id: "s1", name: "I-45 Weigh Station", distance: 12.5, status: "open" },
   ]),
 });
