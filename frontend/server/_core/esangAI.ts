@@ -14,6 +14,7 @@ export interface ChatMessage {
 
 export interface ESANGResponse {
   message: string;
+  response?: string;
   suggestions?: string[];
   actions?: ESANGAction[];
   context?: Record<string, unknown>;
