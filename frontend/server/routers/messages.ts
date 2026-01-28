@@ -139,9 +139,7 @@ export const messagesRouter = router({
         },
       ];
 
-      return {
-        messages,
-        hasMore: false,
+      return messages;
       };
     }),
 
