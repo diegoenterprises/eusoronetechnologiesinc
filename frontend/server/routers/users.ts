@@ -251,7 +251,7 @@ export const usersRouter = router({
   // Get login summary for LoginHistory page
   getLoginSummary: protectedProcedure
     .query(async () => {
-      return { totalLogins: 45, successfulLogins: 42, failedAttempts: 3, lastLogin: "2025-01-23 10:30" };
+      return { totalLogins: 45, successfulLogins: 42, failedAttempts: 3, failedLogins: 3, lastLogin: "2025-01-23 10:30" };
     }),
 
   // Get referrals list
