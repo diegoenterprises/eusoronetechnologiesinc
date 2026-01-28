@@ -43,6 +43,7 @@ export const systemRouter = router({
       last7d: 99.98,
       last30d: 99.95,
       last90d: 99.92,
+      responseTime: 145,
     })),
 
   notifyOwner: adminProcedure
