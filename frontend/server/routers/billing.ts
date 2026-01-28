@@ -431,7 +431,7 @@ export const billingRouter = router({
   claimDetention: protectedProcedure.input(z.object({ loadId: z.string(), detentionId: z.string().optional(), hours: z.number(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, claimId: "det_123" })),
 
   // Factoring
-  getFactoringInvoices: protectedProcedure.input(z.object({ status: z.enum(["pending", "submitted", "approved", "funded", "paid", "rejected", "disputed"]).optional() })).query(async () => ({ invoices: [{ id: "fi1", invoiceNumber: "INV-001", customer: "ABC Corp", loadNumber: "LOAD-45920", invoiceAmount: 2500, advanceAmount: 2250, feeAmount: 75, status: "funded", submittedAt: "2025-01-20", fundedAt: "2025-01-22", expectedPayment: "2025-02-15" }], total: 125000 })),
+  getFactoringInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "fi1", invoiceNumber: "INV-001", customer: "ABC Corp", loadNumber: "LOAD-45920", invoiceAmount: 2500, advanceAmount: 2250, feeAmount: 75, status: "funded", submittedAt: "2025-01-20", fundedAt: "2025-01-22", expectedPayment: "2025-02-15" }]),
   getFactoringStats: protectedProcedure.query(async () => ({ totalFactored: 125000, pendingPayments: 8500, availableCredit: 50000, totalFunded: 115000, pending: 3, submitted: 5, funded: 42, avgDays: 2.5, invoicesFactored: 45 })),
   getFactoringRates: protectedProcedure.query(async () => ({ standard: 3.0, quickPay: 4.5, sameDay: 6.0, currentRate: 3.0, advanceRate: 90 })),
   submitToFactoring: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async ({ input }) => ({ success: true, factorId: "fact_123" })),
