@@ -105,6 +105,7 @@ export const messagesRouter = router({
           type: "text",
           timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
           read: true,
+          isOwn: true,
         },
         {
           id: "msg_002",
@@ -115,6 +116,7 @@ export const messagesRouter = router({
           type: "text",
           timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
           read: true,
+          isOwn: false,
         },
         {
           id: "msg_003",
@@ -125,6 +127,7 @@ export const messagesRouter = router({
           type: "load_update",
           timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
           read: true,
+          isOwn: false,
           metadata: { loadNumber: "LOAD-45920", status: "loading" },
         },
         {
@@ -136,6 +139,7 @@ export const messagesRouter = router({
           type: "text",
           timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
           read: false,
+          isOwn: true,
         },
       ];
 
