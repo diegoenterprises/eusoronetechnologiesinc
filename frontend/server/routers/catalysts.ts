@@ -674,6 +674,6 @@ export const catalystsRouter = router({
 
   // Performance
   getPerformanceMetrics: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ score: 92, loadsDispatched: 150, onTime: 96, efficiency: 88 }]),
-  getPerformanceHistory: protectedProcedure.input(z.object({ period: z.string().optional() })).query(async () => [{ month: "Jan", score: 92, loads: 45 }]),
+  getPerformanceHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() })).query(async () => [{ month: "Jan", score: 92, loads: 45 }]),
   getPerformanceStats: protectedProcedure.query(async () => ({ avgScore: 90, topScore: 98, trend: "up", loadsCompleted: 1250, successRate: 96.5, rating: 4.8, onTimeRate: 94.2, totalEarnings: 125000, achievements: [{ id: "a1", name: "Top Dispatcher", icon: "Award", date: "2025-01-15" }] })),
 });

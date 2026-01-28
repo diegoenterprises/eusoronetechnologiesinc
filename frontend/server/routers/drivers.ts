@@ -825,7 +825,7 @@ export const driversRouter = router({
   getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: "neutral", points: 0 }]),
 
   // Terminations
-  getTerminations: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "t1", driverId: "d1", driverName: "Mike Johnson", reason: "voluntary", date: "2025-01-20", status: "completed" }]),
+  getTerminations: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), reason: z.string().optional() }).optional()).query(async () => [{ id: "t1", driverId: "d1", driverName: "Mike Johnson", reason: "voluntary", date: "2025-01-20", status: "completed" }]),
   getTerminationStats: protectedProcedure.query(async () => ({ total: 25, voluntary: 18, involuntary: 7, thisMonth: 3 })),
 
   // Driver Status

@@ -55,7 +55,7 @@ export const documentsRouter = router({
    * Delete document mutation
    */
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), documentId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, deletedId: input.id };
     }),
@@ -156,7 +156,7 @@ export const documentsRouter = router({
    * Get single document by ID
    */
   getById: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), documentId: z.string().optional() }))
     .query(async ({ input }) => {
       return {
         id: input.id,
@@ -204,7 +204,7 @@ export const documentsRouter = router({
    * Delete document (detailed version)
    */
   deleteDetailed: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), documentId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, id: input.id };
     }),

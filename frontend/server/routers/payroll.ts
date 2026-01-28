@@ -78,7 +78,7 @@ export const payrollRouter = router({
    * Process payroll
    */
   process: protectedProcedure
-    .input(z.object({ driverIds: z.array(z.string()).optional() }))
+    .input(z.object({ driverIds: z.array(z.string()).optional(), period: z.string().optional() }))
     .mutation(async ({ input }) => {
       return {
         success: true,
