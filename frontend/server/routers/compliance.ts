@@ -903,7 +903,7 @@ export const complianceRouter = router({
   getRoadTestStats: protectedProcedure.query(async () => ({ total: 150, passed: 145, failed: 3, scheduled: 2 })),
 
   // SAFER Lookup
-  saferLookup: protectedProcedure.input(z.object({ dotNumber: z.string().optional(), mcNumber: z.string().optional() })).query(async ({ input }) => ({ dotNumber: input.dotNumber || "1234567", legalName: "ABC Transport LLC", status: "AUTHORIZED", safetyRating: "Satisfactory" })),
+  saferLookup: protectedProcedure.input(z.object({ dotNumber: z.string().optional(), mcNumber: z.string().optional() })).mutation(async ({ input }) => ({ dotNumber: input.dotNumber || "1234567", legalName: "ABC Transport LLC", status: "AUTHORIZED", safetyRating: "Satisfactory" })),
 
   // Permit Requirements
   getPermitRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => [
