@@ -106,10 +106,10 @@ export const fuelRouter = router({
       if (input.vehicleId) filtered = filtered.filter(t => t.vehicleId === input.vehicleId);
       if (input.driverId) filtered = filtered.filter(t => t.driverId === input.driverId);
 
-      return {
-        transactions: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
+      result.transactions = result;
+      result.total = filtered.length;
+      return result;
     }),
 
   /**
