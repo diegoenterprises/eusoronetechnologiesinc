@@ -38,6 +38,7 @@ export const bolRouter = router({
         inTransit: 12,
         completed: 136,
         thisWeek: 24,
+        issues: 3,
       };
     }),
 
