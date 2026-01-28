@@ -892,9 +892,9 @@ export const adminRouter = router({
 
   // Cache management
   getCacheStats: protectedProcedure.query(async () => ({ hitRate: 94, totalKeys: 1250, memoryUsed: "128MB", uptime: "5d 12h", requestsPerSec: 450, memoryLimit: "512MB", memoryPercentage: 25 })),
-  getCacheKeys: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ key: "user:123", ttl: 3600, size: "2KB" }]),
+  getCacheKeys: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ key: "user:123", ttl: 3600, size: "2KB" }]),
   clearCacheKey: protectedProcedure.input(z.object({ key: z.string() })).mutation(async ({ input }) => ({ success: true, key: input.key })),
-  clearAllCache: protectedProcedure.mutation(async () => ({ success: true, clearedKeys: 1250 })),
+  clearAllCache: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, clearedKeys: 1250 })),
 
   // Queue management
   getQueues: protectedProcedure.query(async () => [{ name: "emails", pending: 25, processing: 2, failed: 1 }, { name: "notifications", pending: 12, processing: 1, failed: 0 }]),
