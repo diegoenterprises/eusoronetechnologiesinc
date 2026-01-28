@@ -899,7 +899,7 @@ export const complianceRouter = router({
   requestPSP: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "psp_123" })),
 
   // Road Tests
-  getRoadTests: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "rt1", driverId: "d1", date: "2025-01-05", result: "passed", examiner: "John Examiner" }]),
+  getRoadTests: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "rt1", driverId: "d1", date: "2025-01-05", result: "passed", examiner: "John Examiner" }]),
   getRoadTestStats: protectedProcedure.query(async () => ({ total: 150, passed: 145, failed: 3, scheduled: 2 })),
 
   // SAFER Lookup
