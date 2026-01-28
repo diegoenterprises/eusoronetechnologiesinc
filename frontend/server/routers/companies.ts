@@ -31,7 +31,7 @@ export const companiesRouter = router({
 
   // Delete company document
   deleteDocument: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string(), documentId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, deletedId: input.id };
     }),
