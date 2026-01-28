@@ -937,7 +937,7 @@ export const adminRouter = router({
 
   // Error logs
   getErrorLogs: protectedProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "err1", message: "Connection timeout", severity: "warning", count: 5, lastOccurred: "2025-01-23" }]),
-  getErrorSummary: protectedProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203 })),
+  getErrorSummary: protectedProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203, errors: 2, warnings: 45, lastError: "2025-01-23 14:30" })),
 
   // Imports
   getImports: protectedProcedure.query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
