@@ -85,15 +85,18 @@ export const esangRouter = router({
       })
     )
     .query(async ({ input }) => {
-      return esangAI.analyzeBid(
-        {
-          origin: input.origin || "Houston, TX",
-          destination: input.destination || "Dallas, TX",
-          miles: input.miles || 250,
-          cargoType: input.cargoType || "general",
-        },
-        input.bidAmount
-      );
+      const marketRate = (input.miles || 250) * 2.50;
+      const difference = input.bidAmount - marketRate;
+      const fairnessScore = Math.max(0, Math.min(100, 100 - Math.abs(difference / marketRate) * 100));
+      return {
+        fairnessScore,
+        marketRate,
+        difference,
+        recommendation: fairnessScore >= 80 ? "accept" : fairnessScore >= 60 ? "negotiate" : "reject",
+        analysis: `Bid of $${input.bidAmount} for ${input.miles || 250} miles ($${(input.bidAmount / (input.miles || 250)).toFixed(2)}/mile). Market rate: $${marketRate.toFixed(2)}`,
+        ratePerMile: input.bidAmount / (input.miles || 250),
+        marketRatePerMile: 2.50,
+      };
     }),
 
   /**
