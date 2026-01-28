@@ -329,6 +329,7 @@ export const adminRouter = router({
    * Optimize database mutation
    */
   optimizeDatabase: protectedProcedure
+    .input(z.object({}).optional())
     .mutation(async () => {
       return { success: true, optimizedAt: new Date().toISOString(), improvements: ["Index rebuilt", "Cache cleared"] };
     }),
