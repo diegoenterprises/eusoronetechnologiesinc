@@ -140,7 +140,6 @@ export const messagesRouter = router({
       ];
 
       return messages;
-      };
     }),
 
   /**
