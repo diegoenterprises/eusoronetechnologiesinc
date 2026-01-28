@@ -689,7 +689,7 @@ export const escortsRouter = router({
     enRoute: 5,
     avgSpeed: 52,
   })),
-  getActiveConvoys: protectedProcedure.query(async () => ([
+  getActiveConvoys: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ([
     { id: "c1", name: "Oversized #101", status: "active", origin: "Houston", destination: "Dallas", progress: 65, eta: "2:30 PM", escorts: 2 },
     { id: "c2", name: "Heavy Haul #55", status: "staging", origin: "Austin", destination: "San Antonio", progress: 0, eta: "4:00 PM", escorts: 1 },
   ])),

@@ -156,7 +156,7 @@ export const safetyRouter = router({
    */
   getAccidentStats: protectedProcedure
     .query(async () => {
-      return { total: 8, investigating: 2, closed: 6, thisYear: 3, avgResolutionDays: 14 };
+      return { total: 8, open: 2, investigating: 2, closed: 6, thisYear: 3, avgResolutionDays: 14 };
     }),
 
   /**
