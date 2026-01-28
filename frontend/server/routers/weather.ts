@@ -64,7 +64,8 @@ export const weatherRouter = router({
       return {
         location: `${input?.city || "Houston"}, ${input?.state || "TX"}`,
         forecasts,
-        days: numDays,
+        days: forecasts,
+        numDays,
         avgWindSpeed: 12,
       };
     }),
