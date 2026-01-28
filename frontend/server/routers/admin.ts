@@ -134,7 +134,7 @@ export const adminRouter = router({
    */
   getAPIStats: protectedProcedure
     .query(async () => {
-      return { totalKeys: 5, activeKeys: 4, totalRequests: 45000, avgLatency: 125 };
+      return { totalKeys: 5, activeKeys: 4, totalRequests: 45000, avgLatency: 125, requestsToday: 1250, revokedKeys: 1 };
     }),
 
   /**
