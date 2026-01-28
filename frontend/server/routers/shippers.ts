@@ -463,7 +463,14 @@ export const shippersRouter = router({
         preferredCarriers: 12,
         avgPaymentTime: 15,
         onTimeRate: 96,
-        monthlyVolume: 28,
+        monthlyVolume: [
+          { month: "Jan", loads: 22 },
+          { month: "Feb", loads: 28 },
+          { month: "Mar", loads: 35 },
+          { month: "Apr", loads: 42 },
+          { month: "May", loads: 38 },
+          { month: "Jun", loads: 45 },
+        ],
         maxMonthlyLoads: 50,
       };
     }),
