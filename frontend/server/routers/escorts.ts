@@ -119,7 +119,13 @@ export const escortsRouter = router({
         total: 12,
         valid: 10,
         expiringSoon: 2,
-        expired: 0, states: 4,
+        expired: 0,
+        states: [
+          { code: "TX", name: "Texas", status: "active", expirationDate: "2025-12-15" },
+          { code: "OK", name: "Oklahoma", status: "active", expirationDate: "2025-08-20" },
+          { code: "LA", name: "Louisiana", status: "expiring", expirationDate: "2025-02-15" },
+          { code: "AR", name: "Arkansas", status: "expiring", expirationDate: "2025-02-28" },
+        ],
         certifications: [
           { state: "TX", status: "valid", expiresAt: "2025-12-15" },
           { state: "OK", status: "valid", expiresAt: "2025-08-20" },
