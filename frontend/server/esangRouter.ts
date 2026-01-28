@@ -66,7 +66,7 @@ export const esangRouter = router({
         guideNumber: z.number().optional(),
       })
     )
-    .query(async ({ input }) => {
+    .mutation(async ({ input }) => {
       return esangAI.ergLookup(input);
     }),
 
