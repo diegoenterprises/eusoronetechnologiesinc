@@ -602,7 +602,7 @@ export const carriersRouter = router({
     { id: "p2", carrierId: "c2", carrierName: "XYZ Logistics", status: "completed", progress: 100, submittedAt: "2025-01-18" },
   ])),
   getPacketStats: protectedProcedure.query(async () => ({ total: 45, pending: 12, completed: 33, complete: 33, avgCompletion: 78 })),
-  getPacketById: protectedProcedure.input(z.object({ carrierId: z.string(), id: z.string().optional() }).optional()).query(async ({ input }) => ({
+  getPacketById: protectedProcedure.input(z.object({ carrierId: z.string().optional(), id: z.string().optional() }).optional()).query(async ({ input }) => ({
     id: input?.id || "p1",
     carrierId: input?.carrierId || "c1",
     carrierName: "ABC Transport",

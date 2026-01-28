@@ -64,7 +64,7 @@ export const announcementsRouter = router({
   /**
    * Mark all as read
    */
-  markAllRead: protectedProcedure
+  markAllRead: protectedProcedure.input(z.object({}).optional())
     .mutation(async () => {
       return { success: true, count: 1 };
     }),

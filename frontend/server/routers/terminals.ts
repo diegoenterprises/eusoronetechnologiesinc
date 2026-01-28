@@ -132,7 +132,7 @@ export const terminalsRouter = router({
    * Book appointment mutation
    */
   bookAppointment: protectedProcedure
-    .input(z.object({ date: z.string(), time: z.string(), terminal: z.string(), product: z.string() }))
+    .input(z.object({ date: z.string(), time: z.string().optional(), terminal: z.string(), product: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, appointmentId: `apt_${Date.now()}`, date: input.date, time: input.time };
     }),
