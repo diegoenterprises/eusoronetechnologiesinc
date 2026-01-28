@@ -43,6 +43,7 @@ export const usersRouter = router({
       dateFormat: "MM/DD/YYYY",
       marketingEmails: false,
       distanceUnit: "miles",
+      smsAlerts: true,
     };
   }),
 
