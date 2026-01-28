@@ -144,7 +144,7 @@ export const esangRouter = router({
     emergencyResponse: { fire: ["Use dry chemical, CO2, or foam", "Do not use water"], spill: ["Eliminate ignition sources", "Contain spill"], firstAid: ["Move to fresh air", "Seek medical attention"] },
   })),
   getRecentERGLookups: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ guideNumber: "128", product: "Gasoline", date: "2025-01-23" }]),
-  getSuggestions: protectedProcedure.input(z.object({ context: z.string().optional() })).query(async () => ["Check driver HOS", "Review load details", "Contact dispatch"]),
+  getSuggestions: protectedProcedure.input(z.object({ context: z.string().optional() }).optional()).query(async () => ["Check driver HOS", "Review load details", "Contact dispatch"]),
   searchERG: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => [{ guideNumber: "128", product: "Gasoline", unNumber: "UN1203" }]),
 });
 

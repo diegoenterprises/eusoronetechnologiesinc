@@ -354,7 +354,7 @@ export const dispatchRouter = router({
     }),
 
   // Dispatch operations
-  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "available", location: "Houston, TX" }]),
+  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", status: "available", location: "Houston, TX" }]),
   getDriverStatusStats: protectedProcedure.query(async () => ({ available: 8, driving: 12, onDuty: 3, offDuty: 2, sleeper: 2 })),
   getLoads: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "unassigned", origin: "Houston", destination: "Dallas" }]),
   getSummary: protectedProcedure.input(z.object({ timeframe: z.string().optional() }).optional()).query(async () => ({ activeLoads: 15, unassigned: 3, unassignedLoads: 3, inTransit: 10, issues: 2, totalDrivers: 24, availableDrivers: 8 })),

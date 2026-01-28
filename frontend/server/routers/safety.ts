@@ -745,7 +745,7 @@ export const safetyRouter = router({
   getPendingReports: protectedProcedure.query(async () => [{ id: "ar1", type: "accident", status: "pending_review", submittedAt: "2025-01-20" }]),
 
   // CSA
-  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() })).query(async () => [{ month: "Jan 2025", scores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12 } }]),
+  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() }).optional()).query(async () => [{ month: "Jan 2025", scores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12 } }]),
   getCSASummary: protectedProcedure.query(async () => ({ 
     overallRisk: "low", 
     overallScore: 85,
