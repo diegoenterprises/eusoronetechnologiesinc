@@ -812,7 +812,7 @@ export const driversRouter = router({
       { name: "Safety", items: [{ id: "c6", item: "Fire Extinguisher", required: true }, { id: "c7", item: "Emergency Kit", required: false }] },
     ],
   })),
-  submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })).optional(), checkedItems: z.record(z.unknown()).optional(), notes: z.string().optional(), defects: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
+  submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })).optional(), checkedItems: z.record(z.unknown()).optional(), notes: z.string().optional(), defects: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
   getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: "neutral", points: 0 }]),
