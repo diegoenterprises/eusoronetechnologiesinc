@@ -382,6 +382,6 @@ export const quotesRouter = router({
     }),
 
   // Additional quote procedures
-  getSummary: protectedProcedure.query(async () => ({ pending: 12, accepted: 28, total: 45, avgValue: 2150 })),
+  getSummary: protectedProcedure.query(async () => ({ pending: 12, accepted: 28, total: 45, avgValue: 2150, quoted: 35 })),
   respond: protectedProcedure.input(z.object({ quoteId: z.string(), action: z.enum(["accept", "decline"]), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, quoteId: input.quoteId })),
 });
