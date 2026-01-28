@@ -43,7 +43,7 @@ export const adminRouter = router({
    * Toggle user status mutation
    */
   toggleUserStatus: protectedProcedure
-    .input(z.object({ userId: z.string(), status: z.string() }))
+    .input(z.object({ userId: z.string(), status: z.string(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, userId: input.userId, newStatus: input.status };
     }),

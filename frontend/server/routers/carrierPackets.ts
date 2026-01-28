@@ -13,7 +13,7 @@ export const carrierPacketsRouter = router({
 
   getSummary: protectedProcedure.query(async () => ({ total: 25, pending: 8, completed: 17, complete: 17, avgCompletion: 85 })),
 
-  send: protectedProcedure.input(z.object({ carrierId: z.string(), id: z.string().optional() })).mutation(async ({ input }) => ({
+  send: protectedProcedure.input(z.object({ carrierId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({
     success: true, packetId: "packet_123",
   })),
 });
