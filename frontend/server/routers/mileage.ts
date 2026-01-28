@@ -7,7 +7,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 
 export const mileageRouter = router({
-  calculate: protectedProcedure.input(z.object({ origin: z.string(), destination: z.string(), stops: z.array(z.string()).optional() })).mutation(async ({ input }) => ({
+  calculate: protectedProcedure.input(z.object({ origin: z.string().optional(), destination: z.string().optional(), stops: z.array(z.string()).optional() })).mutation(async ({ input }) => ({
     origin: input.origin,
     destination: input.destination,
     miles: 240,

@@ -248,8 +248,9 @@ export const brokersRouter = router({
   matchLoadToCarrier: protectedProcedure
     .input(z.object({
       loadId: z.string(),
-      carrierId: z.string(),
-      negotiatedRate: z.number(),
+      carrierId: z.string().optional(),
+      carrierId: z.string().optional(),
+      negotiatedRate: z.number().optional(),
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -357,8 +358,9 @@ export const brokersRouter = router({
    */
   sendCarrierInquiry: protectedProcedure
     .input(z.object({
-      carrierId: z.string(),
+      carrierId: z.string().optional(),
       loadId: z.string(),
+      carrierId: z.string().optional(),
       message: z.string(),
       requestedRate: z.number().optional(),
     }))
@@ -700,7 +702,7 @@ export const brokersRouter = router({
    */
   vetCarrier: protectedProcedure
     .input(z.object({
-      carrierId: z.string(),
+      carrierId: z.string().optional(),
       mcNumber: z.string(),
       dotNumber: z.string(),
     }))
@@ -720,7 +722,7 @@ export const brokersRouter = router({
    */
   updateCarrierTier: protectedProcedure
     .input(z.object({
-      carrierId: z.string(),
+      carrierId: z.string().optional(),
       tier: z.enum(["platinum", "gold", "silver", "bronze"]),
       reason: z.string().optional(),
     }))
