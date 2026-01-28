@@ -669,6 +669,9 @@ export const driversRouter = router({
   getMyHOS: protectedProcedure.query(async () => ({ 
     status: "driving", 
     currentStatus: "driving",
+    driving: 6.5,
+    onDuty: 8,
+    cycle: 52.5,
     drivingRemaining: "6h 30m", 
     onDutyRemaining: "8h 00m", 
     cycleRemaining: "52h 30m",
