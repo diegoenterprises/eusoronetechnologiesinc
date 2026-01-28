@@ -731,7 +731,7 @@ export const safetyRouter = router({
     bySeverity: { critical: 0, major: 1, minor: 7, nearMiss: 3 },
     severity: { high: 1, medium: 2, low: 5 }
   })),
-  submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string(), date: z.string(), description: z.string(), severity: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: "ar_123" })),
+  submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional(), description: z.string().optional(), severity: z.string().optional() }).optional()).mutation(async ({ input }) => ({ success: true, reportId: "ar_123" })),
   updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: input.reportId })),
   getPendingReports: protectedProcedure.query(async () => [{ id: "ar1", type: "accident", status: "pending_review", submittedAt: "2025-01-20" }]),
 

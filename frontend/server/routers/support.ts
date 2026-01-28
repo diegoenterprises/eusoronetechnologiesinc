@@ -130,7 +130,7 @@ export const supportRouter = router({
       description: z.string().optional(),
       message: z.string().optional(),
       category: ticketCategorySchema.optional(),
-      priority: ticketPrioritySchema.optional(),
+      priority: z.string().optional(),
       loadId: z.string().optional(),
       attachments: z.array(z.string()).optional(),
     }))
