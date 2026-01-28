@@ -168,6 +168,7 @@ export const safetyRouter = router({
       status: z.string().optional(),
       type: z.string().optional(),
       limit: z.number().optional(),
+      filter: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
       const incidents = [

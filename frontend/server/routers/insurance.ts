@@ -115,10 +115,10 @@ export const insuranceRouter = router({
    */
   requestCertificate: protectedProcedure
     .input(z.object({
-      policyId: z.string(),
-      holderName: z.string(),
-      holderAddress: z.string(),
-    }))
+      policyId: z.string().optional(),
+      holderName: z.string().optional(),
+      holderAddress: z.string().optional(),
+    }).optional())
     .mutation(async ({ input }) => {
       return {
         success: true,
