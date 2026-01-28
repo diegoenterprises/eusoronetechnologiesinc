@@ -166,7 +166,7 @@ export const companiesRouter = router({
 
   // Additional company procedures
   getStats: protectedProcedure.query(async () => ({ totalDrivers: 25, totalVehicles: 30, activeLoads: 15, revenue: 125000, employees: 35, vehicles: 30, loadsCompleted: 1250, rating: 4.8 })),
-  getBilling: protectedProcedure.query(async () => ({ balance: 2500, currentBalance: 2500, nextDue: "2025-02-01", nextBillingDate: "2025-02-01", plan: "premium", planName: "Premium", status: "active", monthlyPrice: 299, monthToDate: 1850, paymentMethod: "Visa ending in 4242", pendingCharges: 450, usage: { loads: 45, apiCalls: 1250, storage: 2.5 } })),
+  getBilling: protectedProcedure.query(async () => ({ balance: 2500, currentBalance: 2500, nextDue: "2025-02-01", nextBillingDate: "2025-02-01", plan: "premium", planName: "Premium", status: "active", monthlyPrice: 299, monthToDate: 1850, paymentMethod: "Visa ending in 4242", pendingCharges: 450, usage: [{ name: "Loads", used: 45, limit: 100 }, { name: "API Calls", used: 1250, limit: 5000 }, { name: "Storage", used: 2.5, limit: 10 }] })),
   getRecentInvoices: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "inv1", amount: 500, status: "paid", date: "2025-01-15" }]),
   getUsageBreakdown: protectedProcedure.query(async () => [
     { name: "Loads", value: 45, limit: 100 },
