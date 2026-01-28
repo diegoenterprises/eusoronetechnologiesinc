@@ -333,9 +333,9 @@ export const safetyRouter = router({
       driverId: z.string().optional(),
       vehicleId: z.string().optional(),
       loadNumber: z.string().optional(),
-      injuries: z.boolean().default(false),
+      injuries: z.union([z.boolean(), z.string()]).optional(),
       hazmatRelease: z.boolean().default(false),
-      propertyDamage: z.boolean().default(false),
+      propertyDamage: z.union([z.boolean(), z.string()]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const incidentNumber = `INC-2025-${String(Date.now()).slice(-4)}`;
