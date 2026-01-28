@@ -1046,8 +1046,8 @@ export const terminalsRouter = router({
   ])),
   getScadaAlerts: protectedProcedure.input(z.object({ terminalId: z.string().optional(), severity: z.string().optional() }).optional()).query(async () => ({
     alarms: [
-      { id: "a1", type: "low_level", message: "Tank 3 below 20%", severity: "warning", acknowledged: false },
-      { id: "a2", type: "temperature", message: "Tank 5 temp elevated", severity: "info", acknowledged: true },
+      { id: "a1", type: "low_level", message: "Tank 3 below 20%", severity: "warning", acknowledged: false, timestamp: new Date().toISOString(), resolvedAt: "", source: "Tank 3", resolved: false },
+      { id: "a2", type: "temperature", message: "Tank 5 temp elevated", severity: "info", acknowledged: true, timestamp: new Date().toISOString(), resolvedAt: new Date().toISOString(), source: "Tank 5", resolved: true },
     ]
   })),
   getScadaLiveData: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({
