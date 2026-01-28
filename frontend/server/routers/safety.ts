@@ -127,6 +127,7 @@ export const safetyRouter = router({
         trend: "up",
         trendPercent: 5.2,
         carrier: { dotNumber: "1234567", name: "ABC Transport LLC", mcNumber: "MC-987654" },
+        basics: { unsafeDriving: 42, hoursOfService: 38, driverFitness: 0, controlledSubstances: 0, vehicleMaintenance: 58, hazmatCompliance: 25, crashIndicator: 35 },
         categories,
         map: (fn: any) => categories.map(fn),
       };
