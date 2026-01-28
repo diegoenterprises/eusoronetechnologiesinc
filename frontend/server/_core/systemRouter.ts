@@ -61,9 +61,9 @@ export const systemRouter = router({
     }),
 
   // Additional system procedures
-  getLatestVersion: publicProcedure.query(async () => ({ version: "2.5.0", releaseDate: "2025-01-20", required: false })),
-  getReleaseNotes: publicProcedure.input(z.object({ version: z.string().optional() })).query(async () => ([
-    { version: "2.5.0", date: "2025-01-20", notes: ["New dashboard widgets", "Performance improvements", "Bug fixes"] },
+  getLatestVersion: publicProcedure.query(async () => ({ version: "2.5.0", releaseDate: "2025-01-20", releasedAt: "2025-01-20", required: false })),
+  getReleaseNotes: publicProcedure.input(z.object({ version: z.string().optional(), filter: z.string().optional(), limit: z.number().optional() })).query(async () => ([
+    { version: "2.5.0", date: "2025-01-20", releasedAt: "2025-01-20", notes: ["New dashboard widgets", "Performance improvements", "Bug fixes"] },
   ])),
 
   // System health stats
