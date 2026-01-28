@@ -941,7 +941,7 @@ export const terminalsRouter = router({
    */
   getDirectorySummary: protectedProcedure
     .query(async () => {
-      return { total: 8, operational: 6, maintenance: 1, offline: 1, totalRacks: 45, totalTanks: 82 };
+      return { total: 8, operational: 6, maintenance: 1, offline: 1, totalRacks: 45, totalTanks: 82, avgWaitTime: 25 };
     }),
 
   /**
