@@ -14,7 +14,7 @@ export const pushRouter = router({
     { id: "s4", category: "system", enabled: false, label: "System" },
   ])),
 
-  toggleSetting: protectedProcedure.input(z.object({ category: z.string(), enabled: z.boolean() })).mutation(async ({ input }) => ({
+  toggleSetting: protectedProcedure.input(z.object({ category: z.string(), enabled: z.boolean(), settingId: z.string().optional() })).mutation(async ({ input }) => ({
     success: true,
     category: input.category,
     enabled: input.enabled,
@@ -35,7 +35,7 @@ export const pushRouter = router({
     deliveryRate: 96.7,
   })),
 
-  send: protectedProcedure.input(z.object({ userId: z.string(), title: z.string(), body: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({
+  send: protectedProcedure.input(z.object({ userId: z.string().optional(), title: z.string(), body: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({
     success: true,
     notificationId: "notif_123",
   })),
