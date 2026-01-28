@@ -104,7 +104,9 @@ export const notificationsRouter = router({
         filtered = filtered.filter(n => n.read === input.read);
       }
 
-      return filtered.slice(input.offset, input.offset + input.limit);
+      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
+      result.notifications = result;
+      return result;
     }),
 
   /**
