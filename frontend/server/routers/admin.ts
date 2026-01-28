@@ -413,9 +413,9 @@ export const adminRouter = router({
    * Retry webhook mutation
    */
   retryWebhook: protectedProcedure
-    .input(z.object({ logId: z.string(), webhookId: z.string().optional() }))
+    .input(z.object({ logId: z.string().optional(), webhookId: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, logId: input.logId, retriedAt: new Date().toISOString() };
+      return { success: true, logId: input.logId || input.webhookId, retriedAt: new Date().toISOString() };
     }),
 
   /**
