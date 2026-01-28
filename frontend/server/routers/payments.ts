@@ -69,7 +69,7 @@ export const paymentsRouter = router({
           )
         )
         .orderBy(desc(payments.createdAt))
-        .limit(input.limit);
+        .limit(input?.limit || 50);
 
       const transactions = allPayments;
 
