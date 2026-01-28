@@ -90,10 +90,7 @@ export const brokersRouter = router({
         filtered = filtered.filter(l => l.status === input.status);
       }
 
-      return {
-        loads: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      return filtered.slice(input.offset, input.offset + input.limit);
     }),
 
   /**
