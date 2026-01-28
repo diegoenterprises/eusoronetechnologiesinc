@@ -160,6 +160,7 @@ export const loadsRouter = router({
       const rateNum = typeof load.rate === 'number' ? load.rate : Number(load.rate) || 0;
       return {
         ...load,
+        id: String(load.id),
         origin: { address: "", city: "Houston", state: "TX", zip: "77001" },
         destination: { address: "", city: "Dallas", state: "TX", zip: "75201" },
         pickupLocation: { city: "Houston", state: "TX" },
