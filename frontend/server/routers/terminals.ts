@@ -59,6 +59,7 @@ export const terminalsRouter = router({
    * Get today's appointments
    */
   getTodayAppointments: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
     .query(async () => {
       return [
         { id: "apt_001", time: "08:00", carrier: "ABC Transport", carrierName: "ABC Transport", driver: "Mike Johnson", driverName: "Mike Johnson", truckNumber: "TRK-101", product: "Unleaded", quantity: 8500, rackNumber: "Rack 1", status: "completed" },
