@@ -275,7 +275,7 @@ export const ratesRouter = router({
   getAll: protectedProcedure.input(z.object({ search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "r1", origin: "Houston", destination: "Dallas", rate: 3.25 }]),
   getStats: protectedProcedure.query(async () => ({ avgRate: 3.15, minRate: 2.50, maxRate: 4.25, totalLanes: 150, totalRates: 150, lanes: 150, highestRate: 4.25 })),
   delete: protectedProcedure.input(z.object({ rateId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, rateId: input.rateId || input.id })),
-  getMarketRates: protectedProcedure.input(z.object({ lane: z.string().optional() })).query(async () => [{ lane: "Houston-Dallas", spotRate: 3.25, contractRate: 3.05 }]),
+  getMarketRates: protectedProcedure.input(z.object({ lane: z.string().optional(), equipmentType: z.string().optional() })).query(async () => [{ lane: "Houston-Dallas", spotRate: 3.25, contractRate: 3.05 }]),
 
   // Lane rates for LaneRates.tsx
   getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
