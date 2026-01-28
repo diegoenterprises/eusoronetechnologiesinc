@@ -39,7 +39,7 @@ export const smsRouter = router({
     deliveryRate: 98.9,
   })),
 
-  sendTest: protectedProcedure.input(z.object({ to: z.string().optional(), phoneNumber: z.string().optional(), message: z.string() })).mutation(async ({ input }) => ({
+  sendTest: protectedProcedure.input(z.object({ to: z.string().optional(), phoneNumber: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({
     success: true,
     messageId: "msg_123",
     to: input.to || input.phoneNumber,
