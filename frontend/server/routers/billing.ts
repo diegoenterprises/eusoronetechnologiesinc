@@ -348,8 +348,8 @@ export const billingRouter = router({
     .input(z.object({
       invoiceId: z.string().optional(),
       paymentId: z.string().optional(),
-      amount: z.number(),
-      method: z.enum(["wallet", "card", "ach"]),
+      amount: z.number().optional(),
+      method: z.enum(["wallet", "card", "ach"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       return {
