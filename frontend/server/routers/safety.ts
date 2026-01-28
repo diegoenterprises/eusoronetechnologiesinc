@@ -324,8 +324,8 @@ export const safetyRouter = router({
    */
   reportIncident: protectedProcedure
     .input(z.object({
-      type: incidentTypeSchema,
-      severity: incidentSeveritySchema,
+      type: z.string(),
+      severity: z.string(),
       date: z.string(),
       time: z.string(),
       location: z.string(),
