@@ -412,6 +412,8 @@ export const driversRouter = router({
         dispatch: { name: "John Dispatch", phone: "(713) 555-0100" },
         shipper: { name: "Shell Oil", phone: "(713) 555-0200" },
         receiver: { name: "Dallas Dist Center", phone: "(214) 555-0300" },
+        rate: 2850,
+        dispatchPhone: "(713) 555-0100",
       };
     }),
 
