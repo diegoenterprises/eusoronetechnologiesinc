@@ -103,7 +103,7 @@ export const loadsRouter = router({
    * Get single load by ID with full details (supports string or number ID)
    */
   getById: protectedProcedure
-    .input(z.object({ id: z.union([z.string(), z.number()]) }))
+    .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) {
