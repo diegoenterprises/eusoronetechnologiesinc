@@ -285,7 +285,7 @@ export const adminRouter = router({
    * Restore backup mutation
    */
   restoreBackup: protectedProcedure
-    .input(z.object({ backupId: z.string() }))
+    .input(z.object({ backupId: z.string().optional(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, backupId: input.backupId, restoredAt: new Date().toISOString() };
     }),
@@ -915,7 +915,7 @@ export const adminRouter = router({
   getAuditStats: protectedProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"], total: 15000, today: 250, criticalActions: 12 })),
 
   // Broadcasts
-  getBroadcasts: protectedProcedure.query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
+  getBroadcasts: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
   sendBroadcast: protectedProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
   deleteBroadcast: protectedProcedure.input(z.object({ broadcastId: z.string() })).mutation(async ({ input }) => ({ success: true, broadcastId: input.broadcastId })),
   getAudiences: protectedProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
@@ -943,7 +943,7 @@ export const adminRouter = router({
   getErrorSummary: protectedProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203, errors: 2, warnings: 45, lastError: "2025-01-23 14:30" })),
 
   // Imports
-  getImports: protectedProcedure.query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
+  getImports: protectedProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
   getImportStats: protectedProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1, recordsImported: 12500 })),
   getImportHistory: protectedProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [
     { id: "imp1", dataType: "drivers", fileName: "drivers_jan.csv", status: "completed", recordsImported: 45, createdAt: "2025-01-20" },

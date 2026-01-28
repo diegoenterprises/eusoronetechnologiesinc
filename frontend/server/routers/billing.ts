@@ -433,7 +433,7 @@ export const billingRouter = router({
   // Accessorial charges
   getAccessorialCharges: protectedProcedure.input(z.object({ loadId: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "ac1", loadId: "l1", type: "detention", amount: 150, status: "approved" }]),
   getAccessorialStats: protectedProcedure.query(async () => ({ total: 45, pending: 5, approved: 35, denied: 5, totalTypes: 8, totalCollected: 12500, loadsWithCharges: 32, avgCharge: 285 })),
-  deleteAccessorialCharge: protectedProcedure.input(z.object({ chargeId: z.string() })).mutation(async ({ input }) => ({ success: true, chargeId: input.chargeId })),
+  deleteAccessorialCharge: protectedProcedure.input(z.object({ chargeId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, chargeId: input.chargeId })),
 
   // Detention
   getDetentions: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "det1", loadId: "l1", hours: 2.5, amount: 150, status: "pending" }]),

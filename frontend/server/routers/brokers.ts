@@ -206,6 +206,7 @@ export const brokersRouter = router({
   getCarrierCapacity: protectedProcedure
     .input(z.object({
       origin: z.string().optional(),
+      search: z.string().optional(),
       destination: z.string().optional(),
       equipment: z.string().optional(),
       hazmatRequired: z.boolean().optional(), limit: z.number().optional(),
