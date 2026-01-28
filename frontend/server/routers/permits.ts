@@ -72,10 +72,13 @@ export const permitsRouter = router({
       if (input.type) filtered = filtered.filter(p => p.type === input.type);
       if (input.state) filtered = filtered.filter(p => p.states.includes(input.state!));
 
-      return {
-        permits: filtered.slice(input.offset, input.offset + input.limit),
+      const result = filtered.slice(input.offset, input.offset + input.limit);
+      // Add filter method for frontend compatibility
+      return Object.assign(result, {
+        permits: result,
         total: filtered.length,
-      };
+        filter: result.filter.bind(result),
+      });
     }),
 
   /**
