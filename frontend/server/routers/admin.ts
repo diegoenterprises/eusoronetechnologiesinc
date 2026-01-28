@@ -903,7 +903,7 @@ export const adminRouter = router({
   clearQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName })),
   pauseQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: true })),
   resumeQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: false })),
-  getRecentJobs: protectedProcedure.input(z.object({ queueName: z.string().optional() })).query(async () => [{ id: "j1", queue: "emails", status: "completed", completedAt: "2025-01-23" }]),
+  getRecentJobs: protectedProcedure.input(z.object({ queueName: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "j1", queue: "emails", status: "completed", completedAt: "2025-01-23" }]),
 
   // API keys management
   getApiKeys: protectedProcedure.query(async () => [{ id: "k1", name: "Production", prefix: "pk_live_", status: "active", lastUsed: "2025-01-23" }]),
