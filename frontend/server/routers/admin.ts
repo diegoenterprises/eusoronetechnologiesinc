@@ -962,7 +962,7 @@ export const adminRouter = router({
   getTopPerformers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
   // Permissions & Roles
-  getPermissions: protectedProcedure.query(async () => [{ id: "p1", name: "loads.create", description: "Create loads" }]),
+  getPermissions: protectedProcedure.input(z.object({ roleId: z.string().optional() }).optional()).query(async () => { const perms = [{ id: "p1", name: "loads.create", description: "Create loads" }] as any; perms.categories = [{ name: "Loads", permissions: [{ id: "p1", name: "loads.create", description: "Create loads", enabled: true }] }]; return perms; }),
   getRoleStats: protectedProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500, totalRoles: 12, totalPermissions: 85, usersWithRoles: 3555, customRoles: 4 })),
   getRoles: protectedProcedure.query(async () => [{ id: "r1", name: "Admin", description: "Full access", permissions: ["read", "write", "delete"], userCount: 5, categories: [{ name: "Users", permissions: ["create", "read", "update", "delete"] }] }]),
   updateRolePermissions: protectedProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
