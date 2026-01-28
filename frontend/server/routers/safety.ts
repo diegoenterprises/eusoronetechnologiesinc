@@ -109,7 +109,7 @@ export const safetyRouter = router({
   getCSAScores: protectedProcedure
     .input(z.object({ carrierId: z.string().optional() }).optional())
     .query(async ({ ctx }) => {
-      return [
+      const categories = [
         { id: "csa1", name: "Unsafe Driving", score: 42, threshold: 65, percentile: 42, status: "ok", inspections: 12, violations: 3 },
         { id: "csa2", name: "Hours of Service", score: 38, threshold: 65, percentile: 38, status: "ok", inspections: 12, violations: 2 },
         { id: "csa3", name: "Driver Fitness", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
@@ -118,6 +118,18 @@ export const safetyRouter = router({
         { id: "csa6", name: "Hazmat Compliance", score: 25, threshold: 80, percentile: 25, status: "ok", inspections: 6, violations: 1 },
         { id: "csa7", name: "Crash Indicator", score: 35, threshold: 65, percentile: 35, status: "ok", inspections: 3, violations: 1 },
       ];
+      return {
+        lastUpdated: new Date().toISOString(),
+        overallScore: 85,
+        categoriesPassing: 6,
+        alertsCount: 1,
+        alerts: [{ type: "warning", message: "Vehicle Maintenance score approaching threshold" }],
+        trend: "up",
+        trendPercent: 5.2,
+        carrier: { dotNumber: "1234567", name: "ABC Transport LLC", mcNumber: "MC-987654" },
+        categories,
+        map: (fn: any) => categories.map(fn),
+      };
     }),
 
   /**
