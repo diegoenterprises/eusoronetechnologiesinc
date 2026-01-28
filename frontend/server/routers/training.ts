@@ -35,6 +35,7 @@ export const trainingRouter = router({
     .query(async () => {
       return {
         totalTrainings: 45,
+        totalCourses: 12,
         completed: 32,
         inProgress: 8,
         overdue: 5,
