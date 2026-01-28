@@ -389,7 +389,7 @@ export const usersRouter = router({
   setup: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
   enable: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
   disable: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
-  regenerateBackupCodes: protectedProcedure.mutation(async () => ({ success: true, backupCodes: ["11111111", "22222222", "33333333"] })),
+  regenerateBackupCodes: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, backupCodes: ["11111111", "22222222", "33333333"] })),
 
   // Password
   changePassword: protectedProcedure.input(z.object({ currentPassword: z.string(), newPassword: z.string() })).mutation(async () => ({ success: true })),
