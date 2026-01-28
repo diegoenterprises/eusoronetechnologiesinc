@@ -75,8 +75,8 @@ export const terminalsRouter = router({
   getAlerts: protectedProcedure
     .query(async () => {
       return [
-        { id: "alert_001", type: "maintenance", severity: "info", message: "Rack 3 scheduled maintenance at 2:00 PM" },
-        { id: "alert_002", type: "inventory", severity: "warning", message: "Tank 2 (Premium) below 50% capacity" },
+        { id: "alert_001", type: "maintenance", severity: "info", message: "Rack 3 scheduled maintenance at 2:00 PM", timestamp: "2025-01-25T14:00:00Z", source: "system", resolved: false, resolvedAt: "" },
+        { id: "alert_002", type: "inventory", severity: "warning", message: "Tank 2 (Premium) below 50% capacity", timestamp: "2025-01-25T10:30:00Z", source: "tank-monitor", resolved: false, resolvedAt: "" },
       ];
     }),
 
