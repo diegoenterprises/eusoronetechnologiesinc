@@ -20,7 +20,7 @@ export const rewardsRouter = router({
     tierProgress: 83,
   })),
 
-  getAvailable: protectedProcedure.query(async () => [
+  getAvailable: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
     { id: "r1", name: "Fuel Discount", points: 1000, description: "$10 off fuel", category: "fuel" },
     { id: "r2", name: "Gift Card", points: 5000, description: "$50 Amazon gift card", category: "gift" },
   ]),
