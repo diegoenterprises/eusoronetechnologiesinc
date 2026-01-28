@@ -356,7 +356,7 @@ export const usersRouter = router({
    */
   get2FAStatus: protectedProcedure
     .query(async () => {
-      return { enabled: false, method: null, lastUpdated: null, backupCodes: ["123456", "234567", "345678"], usedBackupCodes: 0, remainingBackupCodes: 3 };
+      return { enabled: false, method: null, lastUpdated: null, backupCodes: ["123456", "234567", "345678"], usedBackupCodes: [] as string[], remainingBackupCodes: 3 };
     }),
 
   /**
