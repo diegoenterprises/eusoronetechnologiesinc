@@ -672,8 +672,8 @@ export const escortsRouter = router({
   getEarningsStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 1500, thisMonth: 6500, thisYear: 85000, avgPerJob: 650, jobsCompleted: 130, hoursWorked: 520, avgHourlyRate: 163.46 })),
 
   // Incidents & Reports
-  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "inc1", jobId: "j1", type: "near_miss", status: "reported", date: "2025-01-18" }]),
-  getIncidentStats: protectedProcedure.query(async () => ({ total: 5, open: 1, resolved: 4 })),
+  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "inc1", jobId: "j1", type: "near_miss", status: "reported", date: "2025-01-18" }]),
+  getIncidentStats: protectedProcedure.query(async () => ({ total: 5, open: 1, resolved: 4, critical: 0 })),
   getReports: protectedProcedure.input(z.object({ type: z.string().optional() })).query(async () => [{ id: "r1", type: "trip_report", jobId: "j1", date: "2025-01-20" }]),
   getReportStats: protectedProcedure.query(async () => ({ total: 120, thisMonth: 15, submitted: 110, drafts: 10 })),
 
