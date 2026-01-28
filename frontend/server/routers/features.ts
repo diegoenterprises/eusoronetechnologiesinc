@@ -25,7 +25,7 @@ export const featuresRouter = router({
    */
   getSummary: protectedProcedure
     .query(async () => {
-      return { total: 45, underReview: 12, planned: 8, inProgress: 5, completed: 20 };
+      return { total: 45, underReview: 12, planned: 8, inProgress: 5, completed: 20, totalVotes: 256 };
     }),
 
   /**
