@@ -116,7 +116,8 @@ export const alertsRouter = router({
    */
   dismiss: protectedProcedure
     .input(z.object({
-      alertId: z.string(),
+      alertId: z.string().optional(),
+      id: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       return {
@@ -150,6 +151,7 @@ export const alertsRouter = router({
         warnings: 5,
         info: 5,
         resolvedToday: 3,
+        dismissed: 8,
       };
     }),
 
