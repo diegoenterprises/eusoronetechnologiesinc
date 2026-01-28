@@ -7,7 +7,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 
 export const vehiclesRouter = router({
-  list: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
     { id: "v1", unit: "TRK-101", type: "tanker", status: "active", driver: "Mike Johnson" },
   ]),
 
