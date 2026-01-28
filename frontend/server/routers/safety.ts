@@ -566,6 +566,7 @@ export const safetyRouter = router({
         thisMonth: 5,
         resolved: 12,
         severe: 3,
+        critical: 3,
         closed: 30,
         daysWithoutIncident: 8,
         yearToDate: 23,
