@@ -1072,6 +1072,9 @@ export const terminalsRouter = router({
   // EIA Reporting
   getEIAReport: protectedProcedure.input(z.object({ period: z.string() })).query(async ({ input }) => ({ 
     period: input.period, 
+    periodStart: "2025-01-01",
+    periodEnd: "2025-01-31",
+    dueDate: "2025-02-15",
     totalReceived: 125000, 
     totalDispatched: 118000, 
     inventory: 375000,
