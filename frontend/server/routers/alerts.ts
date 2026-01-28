@@ -93,6 +93,7 @@ export const alertsRouter = router({
         warning: 5,
         info: 5,
         unacknowledged: 4,
+        resolved: 8,
       };
     }),
 
