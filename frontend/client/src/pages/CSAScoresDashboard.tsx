@@ -17,7 +17,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CSAScoresDashboard() {
-  const scoresQuery = trpc.safety.getCSAScores.useQuery();
+  const scoresQuery = trpc.safety.getCSAScoresList.useQuery();
   const summaryQuery = trpc.safety.getCSASummary.useQuery();
 
   const summary = summaryQuery.data;

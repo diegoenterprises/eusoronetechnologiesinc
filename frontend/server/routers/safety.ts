@@ -745,6 +745,15 @@ export const safetyRouter = router({
     unsatisfactory: 0,
     inspections: 28,
   })),
+  getCSAScoresList: protectedProcedure.query(async () => [
+    { id: "csa1", name: "Unsafe Driving", description: "Unsafe driving behaviors", score: 42, threshold: 65, percentile: 42, status: "ok", inspections: 12, violations: 3 },
+    { id: "csa2", name: "Hours of Service", description: "HOS compliance", score: 38, threshold: 65, percentile: 38, status: "ok", inspections: 12, violations: 2 },
+    { id: "csa3", name: "Driver Fitness", description: "Driver fitness requirements", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
+    { id: "csa4", name: "Controlled Substances", description: "Drug and alcohol compliance", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
+    { id: "csa5", name: "Vehicle Maintenance", description: "Vehicle maintenance compliance", score: 58, threshold: 80, percentile: 58, status: "warning", inspections: 15, violations: 5 },
+    { id: "csa6", name: "Hazmat Compliance", description: "Hazmat handling compliance", score: 25, threshold: 80, percentile: 25, status: "ok", inspections: 6, violations: 1 },
+    { id: "csa7", name: "Crash Indicator", description: "Crash history indicator", score: 35, threshold: 65, percentile: 35, status: "ok", inspections: 3, violations: 1 },
+  ]),
 
   // Driver safety
   getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ({ avgScore: 92, incidents: 2, inspections: 15, violations: 1, excellent: 18, good: 4, needsImprovement: 2 })),
