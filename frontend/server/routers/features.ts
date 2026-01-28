@@ -41,7 +41,7 @@ export const featuresRouter = router({
    * Vote for feature mutation
    */
   vote: protectedProcedure
-    .input(z.object({ featureId: z.string(), requestId: z.string().optional() }))
+    .input(z.object({ featureId: z.string().optional(), requestId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, featureId: input.featureId, voted: true };
     }),
