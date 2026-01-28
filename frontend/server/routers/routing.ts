@@ -49,8 +49,8 @@ export const routingRouter = router({
    * Save route mutation
    */
   saveRoute: protectedProcedure
-    .input(z.object({ name: z.string(), origin: z.string(), destination: z.string(), stops: z.array(z.string()).optional() }))
+    .input(z.object({ name: z.string().optional(), origin: z.string(), destination: z.string(), stops: z.array(z.string()).optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, routeId: `route_${Date.now()}`, name: input.name };
+      return { success: true, routeId: `route_${Date.now()}`, name: input.name || "Unnamed Route" };
     }),
 });
