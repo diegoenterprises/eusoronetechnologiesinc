@@ -16,7 +16,7 @@ export const quickActionsRouter = router({
     { id: "qa1", name: "Create Load", icon: "plus", path: "/loads/new" },
   ]),
 
-  getRecent: protectedProcedure.query(async () => [
+  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
     { id: "qa2", name: "Find Driver", usedAt: "2025-01-23 10:00" },
   ]),
 });
