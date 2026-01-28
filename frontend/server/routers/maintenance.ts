@@ -63,6 +63,7 @@ export const maintenanceRouter = router({
         inspectedThisWeek: 8,
         avgDaysSinceService: 12,
         complianceRate: 94,
+        total: 55,
       };
     }),
 
@@ -241,5 +242,5 @@ export const maintenanceRouter = router({
       ];
     }),
 
-  list: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "m1", vehicleId: "v1", type: "oil_change", status: "scheduled", dueDate: "2025-01-28" }]),
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "m1", vehicleId: "v1", type: "oil_change", status: "scheduled", dueDate: "2025-01-28" }]),
 });
