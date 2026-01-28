@@ -84,7 +84,7 @@ export const terminalsRouter = router({
    * Get appointments for AppointmentScheduling
    */
   getAppointments: protectedProcedure
-    .input(z.object({ date: z.string().optional(), terminal: z.string().optional() }))
+    .input(z.object({ date: z.string().optional(), terminal: z.string().optional(), terminalId: z.string().optional() }))
     .query(async () => {
       return [
         { id: "apt_001", time: "08:00", carrier: "ABC Transport", carrierName: "ABC Transport", driver: "Mike Johnson", driverName: "Mike Johnson", truckNumber: "TRK-101", product: "Unleaded", rack: "Rack 1", rackNumber: "1", quantity: 8500, status: "completed" },
@@ -1069,7 +1069,7 @@ export const terminalsRouter = router({
   })),
 
   // Appointments
-  rescheduleAppointment: protectedProcedure.input(z.object({ appointmentId: z.string(), newDate: z.string(), newTime: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
+  rescheduleAppointment: protectedProcedure.input(z.object({ appointmentId: z.string(), newDate: z.string().optional(), newTime: z.string().optional() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
 
   // EIA Reporting
   getEIAReport: protectedProcedure.input(z.object({ period: z.string() })).query(async ({ input }) => ({ 
