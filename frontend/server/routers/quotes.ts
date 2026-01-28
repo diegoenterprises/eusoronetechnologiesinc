@@ -189,10 +189,7 @@ export const quotesRouter = router({
       if (input.status) filtered = filtered.filter(q => q.status === input.status);
       if (input.customerId) filtered = filtered.filter(q => q.customer.id === input.customerId);
 
-      return {
-        quotes: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      return filtered.slice(input.offset, input.offset + input.limit);
     }),
 
   /**
