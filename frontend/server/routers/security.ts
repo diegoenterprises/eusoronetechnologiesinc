@@ -21,6 +21,7 @@ export const securityRouter = router({
         passwordLastChanged: "2024-12-15",
         recoveryEmailVerified: true,
         score: 85,
+        suspiciousActivityAlerts: true,
       };
     }),
 
