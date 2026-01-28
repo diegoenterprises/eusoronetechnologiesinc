@@ -94,7 +94,9 @@ export const loadsRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      return results;
+      const result = results as any;
+      result.loads = results;
+      return result;
     }),
 
   /**
