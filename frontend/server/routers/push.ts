@@ -14,7 +14,7 @@ export const pushRouter = router({
     { id: "s4", category: "system", enabled: false, label: "System" },
   ])),
 
-  toggleSetting: protectedProcedure.input(z.object({ category: z.string(), enabled: z.boolean(), settingId: z.string().optional() })).mutation(async ({ input }) => ({
+  toggleSetting: protectedProcedure.input(z.object({ category: z.string().optional(), enabled: z.boolean(), settingId: z.string().optional() })).mutation(async ({ input }) => ({
     success: true,
     category: input.category,
     enabled: input.enabled,
