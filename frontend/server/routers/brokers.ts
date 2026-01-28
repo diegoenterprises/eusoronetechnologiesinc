@@ -737,8 +737,8 @@ export const brokersRouter = router({
     }),
 
   // Carrier vetting
-  getPendingVetting: protectedProcedure.query(async () => [{ id: "v1", carrierId: "c1", carrierName: "ABC Transport", submittedAt: "2025-01-22" }]),
-  getVettingStats: protectedProcedure.query(async () => ({ pending: 8, approved: 120, rejected: 15 })),
+  getPendingVetting: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [{ id: "v1", carrierId: "c1", carrierName: "ABC Transport", submittedAt: "2025-01-22" }]),
+  getVettingStats: protectedProcedure.query(async () => ({ pending: 8, approved: 120, rejected: 15, total: 143 })),
   approveCarrier: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
   rejectCarrier: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
 
