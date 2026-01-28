@@ -51,6 +51,7 @@ export const notificationsRouter = router({
           title: "Medical Card Expiring",
           message: "Driver Mike Johnson's medical card expires in 14 days.",
           timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
           read: false,
           archived: false,
           actionUrl: "/compliance/dq-files",
@@ -63,6 +64,7 @@ export const notificationsRouter = router({
           title: "New Bid Received",
           message: "ABC Transport submitted a bid of $2,450 for Load #45921",
           timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
           read: false,
           archived: false,
           actionUrl: "/bids",
@@ -75,9 +77,11 @@ export const notificationsRouter = router({
           title: "CSA Score Alert",
           message: "Vehicle Maintenance BASIC score increased to 58%.",
           timestamp: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
+          createdAt: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
           read: false,
           archived: false,
           actionUrl: "/safety/csa-scores",
+          actionLabel: "View CSA Scores",
         },
         {
           id: "n4",
@@ -107,9 +111,9 @@ export const notificationsRouter = router({
    * Mark notification as read
    */
   markAsRead: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ id: z.string().optional(), notificationId: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input.id };
+      return { success: true, id: input.id || input.notificationId };
     }),
 
   /**
