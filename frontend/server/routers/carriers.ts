@@ -520,7 +520,7 @@ export const carriersRouter = router({
    */
   getDirectoryStats: protectedProcedure
     .query(async () => {
-      return { total: 245, verified: 220, active: 198, newThisMonth: 12 };
+      return { total: 245, verified: 220, active: 198, newThisMonth: 12, avgRating: 4.6, totalTrucks: 850 };
     }),
 
   /**
