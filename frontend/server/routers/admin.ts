@@ -927,7 +927,7 @@ export const adminRouter = router({
 
   // Disputes
   getDisputes: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
-  getDisputeSummary: protectedProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000 })),
+  getDisputeSummary: protectedProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000, inReview: 5, resolvedThisMonth: 12 })),
   resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
 
   // Email logs
