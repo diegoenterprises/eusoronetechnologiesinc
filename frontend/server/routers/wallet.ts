@@ -134,10 +134,7 @@ export const walletRouter = router({
       if (input.type) filtered = filtered.filter(t => t.type === input.type);
       if (input.status) filtered = filtered.filter(t => t.status === input.status);
 
-      return {
-        transactions: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      return filtered.slice(input.offset, input.offset + input.limit);
     }),
 
   /**
