@@ -230,6 +230,7 @@ export const usersRouter = router({
 
   // Terminate all other sessions mutation
   terminateAllSessions: protectedProcedure
+    .input(z.object({}).optional())
     .mutation(async () => {
       return { success: true, terminatedCount: 2 };
     }),
