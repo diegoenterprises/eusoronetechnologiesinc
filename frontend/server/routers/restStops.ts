@@ -11,7 +11,7 @@ export const restStopsRouter = router({
     { id: "rs1", name: "Texas Rest Area I-45", mile: 125, amenities: ["restrooms", "parking", "wifi"] },
   ]),
 
-  getNearby: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number(), limit: z.number().optional() })).query(async () => [
+  getNearby: protectedProcedure.input(z.object({ lat: z.number().optional(), lng: z.number().optional(), limit: z.number().optional() })).query(async () => [
     { id: "rs1", name: "Pilot Flying J", distance: 5.2, parking: 50 },
   ]),
 });
