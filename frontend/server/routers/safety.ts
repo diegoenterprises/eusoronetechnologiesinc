@@ -324,14 +324,14 @@ export const safetyRouter = router({
    */
   reportIncident: protectedProcedure
     .input(z.object({
-      type: z.string(),
-      severity: z.string(),
-      date: z.string(),
-      time: z.string(),
-      location: z.string(),
-      description: z.string(),
-      driverId: z.string(),
-      vehicleId: z.string(),
+      type: z.string().optional(),
+      severity: z.string().optional(),
+      date: z.string().optional(),
+      time: z.string().optional(),
+      location: z.string().optional(),
+      description: z.string().optional(),
+      driverId: z.string().optional(),
+      vehicleId: z.string().optional(),
       loadNumber: z.string().optional(),
       injuries: z.boolean().default(false),
       hazmatRelease: z.boolean().default(false),
@@ -700,12 +700,12 @@ export const safetyRouter = router({
    */
   submitInspection: protectedProcedure
     .input(z.object({
-      vehicleId: z.string(),
+      vehicleId: z.string().optional(),
       type: z.enum(["pre_trip", "post_trip", "dot_annual", "tank_test", "hazmat"]),
       passed: z.boolean(),
       defects: z.array(z.object({
         category: z.string(),
-        description: z.string(),
+        description: z.string().optional(),
         severity: z.enum(["minor", "major", "out_of_service"]),
       })).optional(),
       notes: z.string().optional(),
