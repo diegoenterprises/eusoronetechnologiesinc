@@ -181,6 +181,9 @@ export const driversRouter = router({
           earningsThisMonth: 6776.75,
           onTimeRate: 96,
         },
+        loadsCompleted: 245,
+        onTimeRate: 96,
+        milesLogged: 125000,
       };
     }),
 
@@ -616,6 +619,9 @@ export const driversRouter = router({
       return {
         driverId: input.driverId,
         status: "driving",
+        driving: 6.5,
+        onDuty: 8,
+        cycle: 52.5,
         drivingRemaining: "6h 30m",
         onDutyRemaining: "8h 00m",
         cycleRemaining: "52h 30m",
