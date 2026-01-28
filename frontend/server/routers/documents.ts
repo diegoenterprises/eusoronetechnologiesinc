@@ -140,16 +140,17 @@ export const documentsRouter = router({
         );
       }
 
-      return {
-        documents: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-        stats: {
-          total: documents.length,
-          expired: documents.filter(d => d.status === "expired").length,
-          expiringSoon: documents.filter(d => d.status === "expiring_soon").length,
-          storageUsed: documents.reduce((sum, d) => sum + d.size, 0),
-        },
+      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
+      result.documents = result;
+      result.total = filtered.length;
+      result.stats = {
+        total: documents.length,
+        expired: documents.filter(d => d.status === "expired").length,
+        expiringSoon: documents.filter(d => d.status === "expiring_soon").length,
+        storageUsed: documents.reduce((sum, d) => sum + d.size, 0),
       };
+      result.filter = (fn: any) => result.filter(fn);
+      return result;
     }),
 
   /**
