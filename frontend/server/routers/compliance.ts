@@ -885,7 +885,7 @@ export const complianceRouter = router({
   getEmploymentHistoryStats: protectedProcedure.query(async () => ({ verified: 120, pending: 15, unverifiable: 5, total: 140, drivers: 85 })),
 
   // Licenses
-  getLicenses: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "lic1", driverId: "d1", type: "CDL-A", state: "TX", expiration: "2026-06-15", status: "valid" }]),
+  getLicenses: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "lic1", driverId: "d1", type: "CDL-A", state: "TX", expiration: "2026-06-15", status: "valid" }]),
   getLicenseStats: protectedProcedure.query(async () => ({ total: 150, valid: 145, expiring: 3, expired: 2 })),
 
   // MVR Reports
