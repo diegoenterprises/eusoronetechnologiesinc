@@ -898,7 +898,7 @@ export const terminalsRouter = router({
    */
   getStaffStats: protectedProcedure
     .query(async () => {
-      return { total: 24, onDuty: 8, offDuty: 14, onBreak: 2 };
+      return { total: 24, onDuty: 8, offDuty: 14, onBreak: 2, supervisors: 4 };
     }),
 
   /**
