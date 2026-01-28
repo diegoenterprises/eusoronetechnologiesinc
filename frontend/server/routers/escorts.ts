@@ -671,7 +671,7 @@ export const escortsRouter = router({
     { state: "LA", status: "expiring", expiresAt: "2025-02-28", requirements: ["State license", "Vehicle inspection"] },
   ]),
   uploadCertification: protectedProcedure.input(z.object({ state: z.string(), type: z.string(), expirationDate: z.string() })).mutation(async ({ input }) => ({ success: true, certId: "cert_123" })),
-  getStateRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => { const reqs = [{ label: "Valid driver license", value: "required" }, { label: "Insurance", value: "required" }, { label: "Flags and signs", value: "required" }] as any; reqs.state = input.state; reqs.requirements = ["Valid driver license", "Insurance", "Flags and signs"]; return reqs; }),
+  getStateRequirements: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async ({ input }) => { const reqs = [{ label: "Valid driver license", value: "required" }, { label: "Insurance", value: "required" }, { label: "Flags and signs", value: "required" }] as any; reqs.state = input.state; reqs.requirements = ["Valid driver license", "Insurance", "Flags and signs"]; return reqs; }),
 
   // Earnings
   getEarnings: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() })).query(async () => ({ items: [{ id: "e1", jobId: "j1", amount: 750, date: "2025-01-20" }], total: 85000, trend: "up", trendPercent: 12.5 })),
