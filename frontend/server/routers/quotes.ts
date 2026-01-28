@@ -285,7 +285,7 @@ export const quotesRouter = router({
   send: protectedProcedure
     .input(z.object({
       quoteId: z.string(),
-      recipientEmail: z.string().email(),
+      recipientEmail: z.string().email().optional(),
       message: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
