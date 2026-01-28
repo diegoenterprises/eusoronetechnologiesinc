@@ -141,7 +141,7 @@ export const appRouter = router({
     get2FAStatus: protectedProcedure.query(async () => ({ enabled: false, method: "authenticator", backupCodesRemaining: 8, backupCodes: ["ABC123", "DEF456", "GHI789", "JKL012", "MNO345", "PQR678", "STU901", "VWX234"] })),
     setup2FA: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
     enable2FA: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
-    disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() })).mutation(async () => ({ success: true })),
+    disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async () => ({ success: true })),
   }),
 
   rss: router({
