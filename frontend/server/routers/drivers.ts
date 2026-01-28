@@ -381,6 +381,7 @@ export const driversRouter = router({
         loadNumber: "LOAD-45920",
         status: "in_transit",
         commodity: "Diesel Fuel",
+        product: "Diesel Fuel",
         weight: 42000,
         quantity: 8500,
         quantityUnit: "gal",
