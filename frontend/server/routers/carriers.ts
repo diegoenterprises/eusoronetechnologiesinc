@@ -592,7 +592,15 @@ export const carriersRouter = router({
         driverFitness: 5,
         lastAudit: "2025-01-15",
         nextAuditDue: "2026-01-15",
-        basicScores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12, controlledSubstances: 0, driverFitness: 5, crashIndicator: 3, hazmatCompliance: 2 },
+        basicScores: [
+          { name: "Unsafe Driving", score: 15, threshold: 65 },
+          { name: "HOS Compliance", score: 8, threshold: 65 },
+          { name: "Vehicle Maintenance", score: 12, threshold: 80 },
+          { name: "Controlled Substances", score: 0, threshold: 80 },
+          { name: "Driver Fitness", score: 5, threshold: 80 },
+          { name: "Crash Indicator", score: 3, threshold: 65 },
+          { name: "Hazmat Compliance", score: 2, threshold: 80 },
+        ],
       };
     }),
 
