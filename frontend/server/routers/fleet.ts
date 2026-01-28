@@ -478,6 +478,8 @@ export const fleetRouter = router({
     totalGallons: 18500, 
     fuelTax: 2850,
     status: "pending",
+    dueDate: "2025-04-30",
+    filedDate: null,
     jurisdictions: [
       { state: "TX", miles: 45000, gallons: 6600, taxRate: 0.20, taxDue: 1320 },
       { state: "LA", miles: 32000, gallons: 4700, taxRate: 0.20, taxDue: 940 },
