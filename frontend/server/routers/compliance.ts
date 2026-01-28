@@ -889,8 +889,8 @@ export const complianceRouter = router({
   getLicenseStats: protectedProcedure.query(async () => ({ total: 150, valid: 145, expiring: 3, expired: 2 })),
 
   // MVR Reports
-  getMVRReports: protectedProcedure.input(z.object({ driverId: z.string().optional() })).query(async () => [{ id: "mvr1", driverId: "d1", date: "2025-01-10", status: "clean", violations: 0 }]),
-  getMVRStats: protectedProcedure.query(async () => ({ total: 150, clean: 140, violations: 10 })),
+  getMVRReports: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "mvr1", driverId: "d1", date: "2025-01-10", status: "clean", violations: 0 }]),
+  getMVRStats: protectedProcedure.query(async () => ({ total: 150, clean: 140, violations: 10, clear: 140, dueForRenewal: 5 })),
   requestMVR: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "mvr_123" })),
 
   // PSP Reports
