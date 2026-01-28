@@ -27,7 +27,7 @@ export const shipperContractsRouter = router({
    */
   getSummary: protectedProcedure
     .query(async () => {
-      return { total: 12, active: 8, pending: 2, expired: 2, totalValue: 1250000 };
+      return { total: 12, active: 8, pending: 2, expired: 2, expiringSoon: 3, totalValue: 1250000 };
     }),
 
   /**
