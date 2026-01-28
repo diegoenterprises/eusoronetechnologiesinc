@@ -308,7 +308,7 @@ export const reportsRouter = router({
     }),
 
   // Additional report procedures
-  getPerformanceMetrics: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ avgLoadTime: 2.5, totalReports: 150, mostPopular: "revenue", revenue: 125000, loads: 450, drivers: 24, avgScore: 92, loadsCompleted: 450, onTimeRate: 96.5, avgDeliveryTime: 2.5, acceptanceRate: 92, satisfaction: 4.8, fleetUtilization: 78, driverRetention: 95 })),
+  getPerformanceMetrics: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ avgLoadTime: 2.5, totalReports: 150, mostPopular: "revenue", revenue: 125000, loads: 450, drivers: 24, avgScore: 92, loadsCompleted: 450, onTimeRate: 96.5, avgDeliveryTime: 2.5, acceptanceRate: 92, satisfaction: 4.8, fleetUtilization: 78, driverRetention: 95, revenueByCategory: [{ name: "Fuel", value: 65000 }, { name: "Chemicals", value: 35000 }, { name: "LPG", value: 25000 }] })),
   getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", score: 98, loads: 45 }]),
   getTrends: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({ 
     revenue: 125000, 
