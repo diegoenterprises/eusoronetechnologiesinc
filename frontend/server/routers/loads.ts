@@ -107,7 +107,7 @@ export const loadsRouter = router({
       if (!db) {
         // Return mock data when database is not available
         return {
-          id: input.id,
+          id: String(input.id),
           loadNumber: "LOAD-45920",
           status: "in_transit",
           cargoType: "petroleum",
