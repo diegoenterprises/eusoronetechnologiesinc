@@ -32,6 +32,7 @@ export const terminalsRouter = router({
    * Get racks status
    */
   getRacks: protectedProcedure
+    .input(z.object({}).optional())
     .query(async () => {
       return [
         { id: "r1", name: "Rack 1", number: 1, status: "loading", product: "Unleaded", currentLoad: "LOAD-45920", currentTruck: "TRK-101", progress: 65, eta: "15 min" },

@@ -211,8 +211,8 @@ export const appointmentsRouter = router({
   checkIn: protectedProcedure
     .input(z.object({
       appointmentId: z.string(),
-      driverId: z.string(),
-      vehicleId: z.string(),
+      driverId: z.string().optional(),
+      vehicleId: z.string().optional(),
       trailerNumber: z.string().optional(),
       notes: z.string().optional(),
     }))
