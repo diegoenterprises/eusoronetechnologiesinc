@@ -673,7 +673,9 @@ export const adminRouter = router({
   getPendingVerifications: protectedProcedure
     .input(z.object({
       type: z.enum(["user", "company", "document", "all"]).optional(),
-      limit: z.number().default(20),
+      limit: z.number().optional(),
+      filter: z.string().optional(),
+      search: z.string().optional(),
     }))
     .query(async ({ input }) => {
       return [
