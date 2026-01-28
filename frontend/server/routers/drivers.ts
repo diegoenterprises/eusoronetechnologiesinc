@@ -16,7 +16,7 @@ export const driversRouter = router({
    */
   getSummary: protectedProcedure
     .query(async () => {
-      return { total: 24, available: 8, onLoad: 12, offDuty: 4, avgSafetyScore: 94 };
+      return { total: 24, available: 8, onLoad: 12, offDuty: 4, driving: 12, avgSafetyScore: 94 };
     }),
 
   /**
