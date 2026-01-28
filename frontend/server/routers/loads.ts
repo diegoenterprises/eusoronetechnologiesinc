@@ -292,7 +292,7 @@ export const loadsRouter = router({
 
   cancel: protectedProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
   getHistoryStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalCompleted: 342, avgRate: 2850, onTimeRate: 96, totalLoads: 342, delivered: 342, totalRevenue: 975300, totalMiles: 125000 })),
-  getHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
+  getHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [
     { id: "h1", loadNumber: "LOAD-45900", origin: "Houston, TX", destination: "Dallas, TX", deliveredAt: "2025-01-20", rate: 2200, status: "delivered" },
     { id: "h2", loadNumber: "LOAD-45890", origin: "Austin, TX", destination: "San Antonio, TX", deliveredAt: "2025-01-18", rate: 1850, status: "delivered" },
   ]),
