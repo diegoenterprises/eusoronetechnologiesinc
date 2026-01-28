@@ -361,6 +361,7 @@ export const usersRouter = router({
    * Setup 2FA for TwoFactorSetup page
    */
   setup2FA: protectedProcedure
+    .input(z.object({}).optional())
     .query(async () => {
       return { qrCode: "data:image/png;base64,iVBORw0KGgo...", secret: "JBSWY3DPEHPK3PXP", backupCodes: ["123456", "234567", "345678"] };
     }),
