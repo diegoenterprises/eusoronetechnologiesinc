@@ -507,7 +507,7 @@ export const adminRouter = router({
    * Update system settings mutation
    */
   updateSystemSettings: protectedProcedure
-    .input(z.object({ settings: z.any() }))
+    .input(z.any())
     .mutation(async ({ input }) => {
       return { success: true, updatedAt: new Date().toISOString() };
     }),
