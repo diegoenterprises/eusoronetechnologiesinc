@@ -359,9 +359,9 @@ export const adminRouter = router({
    * Toggle integration mutation
    */
   toggleIntegration: protectedProcedure
-    .input(z.object({ id: z.string(), enabled: z.boolean() }))
+    .input(z.object({ id: z.string(), enabled: z.boolean().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, integrationId: input.id, enabled: input.enabled };
+      return { success: true, integrationId: input.id, enabled: input.enabled ?? true };
     }),
 
   /**
