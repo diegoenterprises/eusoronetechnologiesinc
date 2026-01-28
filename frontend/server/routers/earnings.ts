@@ -227,7 +227,7 @@ export const earningsRouter = router({
   // Additional earnings procedures
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), period: z.string().optional() }).optional()).query(async () => [{ id: "e1", date: "2025-01-22", amount: 2500, type: "settlement" }]),
   getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "s1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
-  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() }).optional()).query(async ({ input }) => ({ 
+  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
     id: input?.settlementId || input?.id || "s1", 
     settlementNumber: "SET-2025-003",
     period: "Week 3", 
@@ -247,6 +247,8 @@ export const earningsRouter = router({
     status: "paid",
     paidDate: "2025-01-22",
     loads: [{ loadNumber: "LOAD-45918", amount: 1425 }, { loadNumber: "LOAD-45919", amount: 1425 }],
+    revenueItems: [{ description: "Line Haul", amount: 2400 }, { description: "Fuel Surcharge", amount: 300 }, { description: "Accessorials", amount: 150 }],
+    deductionItems: [{ description: "Fuel Advance", amount: 500 }, { description: "Insurance", amount: 250 }],
     deductionDetails: [{ type: "fuel_advance", amount: 500 }, { type: "insurance", amount: 250 }],
     breakdown: { lineHaul: 2400, fuelSurcharge: 300, accessorials: 150 }
   })),
