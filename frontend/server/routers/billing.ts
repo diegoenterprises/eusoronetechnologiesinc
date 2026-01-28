@@ -22,6 +22,7 @@ export const billingRouter = router({
         billingCycle: "monthly", 
         nextBilling: "2025-02-01",
         nextBillingDate: "2025-02-01",
+        renewalDate: "2025-02-01",
         price: 299 
       };
     }),
@@ -55,6 +56,13 @@ export const billingRouter = router({
         apiCalls: { used: 12500, limit: 50000 },
         storage: { used: 2.5, limit: 10 },
         vehicles: { used: 15, limit: 50 },
+        items: [
+          { name: "Loads", used: 45, limit: 1000, unit: "loads" },
+          { name: "Users", used: 8, limit: 25, unit: "users" },
+          { name: "API Calls", used: 12500, limit: 50000, unit: "calls" },
+          { name: "Storage", used: 2.5, limit: 10, unit: "GB" },
+          { name: "Vehicles", used: 15, limit: 50, unit: "vehicles" },
+        ],
       };
     }),
 
