@@ -96,10 +96,10 @@ export const factoringRouter = router({
       let filtered = invoices;
       if (input.status) filtered = filtered.filter(i => i.status === input.status);
 
-      return {
-        invoices: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
+      result.invoices = result;
+      result.total = filtered.length;
+      return result;
     }),
 
   /**
