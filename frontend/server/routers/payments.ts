@@ -201,6 +201,7 @@ export const paymentsRouter = router({
    * Get payments summary
    */
   getSummary: protectedProcedure
+    .input(z.object({ dateRange: z.string().optional() }).optional())
     .query(async () => {
       return {
         totalReceived: 125000,
