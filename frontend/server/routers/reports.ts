@@ -43,9 +43,9 @@ export const reportsRouter = router({
    * Run report mutation
    */
   runReport: protectedProcedure
-    .input(z.object({ reportId: z.string() }))
+    .input(z.object({ reportId: z.string().optional(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, reportId: input.reportId, startedAt: new Date().toISOString() };
+      return { success: true, reportId: input.reportId || input.id, startedAt: new Date().toISOString() };
     }),
 
   /**
