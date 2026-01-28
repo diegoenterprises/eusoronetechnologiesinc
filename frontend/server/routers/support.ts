@@ -127,9 +127,9 @@ export const supportRouter = router({
   createTicket: protectedProcedure
     .input(z.object({
       subject: z.string(),
-      description: z.string(),
+      description: z.string().optional(),
       message: z.string().optional(),
-      category: ticketCategorySchema,
+      category: ticketCategorySchema.optional(),
       priority: ticketPrioritySchema.optional(),
       loadId: z.string().optional(),
       attachments: z.array(z.string()).optional(),
