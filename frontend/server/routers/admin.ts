@@ -351,7 +351,7 @@ export const adminRouter = router({
    */
   getIntegrationStats: protectedProcedure
     .query(async () => {
-      return { total: 8, connected: 6, disconnected: 2, syncedToday: 45 };
+      return { total: 8, connected: 6, disconnected: 2, syncedToday: 45, syncsToday: 45, errors: 2 };
     }),
 
   /**
