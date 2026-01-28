@@ -106,6 +106,7 @@ export const driversRouter = router({
           status: "available",
           location: { city: "Dallas", state: "TX" },
           hoursRemaining: 10,
+          hoursAvailable: 10,
           safetyScore: 92,
           hireDate: "2021-06-01",
         },
@@ -350,6 +351,7 @@ export const driversRouter = router({
           lastName: "Williams",
           location: { city: "Dallas", state: "TX" },
           hoursRemaining: 10,
+          hoursAvailable: 10,
           currentVehicle: "TRK-102",
           endorsements: ["H", "N", "T"],
           safetyScore: 92,
@@ -834,7 +836,8 @@ export const driversRouter = router({
   // Get all drivers as array for Drivers.tsx
   getAll: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [
     { id: "d1", name: "Mike Johnson", firstName: "Mike", lastName: "Johnson", phone: "555-0101", email: "mike.j@example.com", status: "on_load", currentLoad: "LOAD-45920", location: { city: "Houston", state: "TX" }, hoursRemaining: 6.5, safetyScore: 95, hireDate: "2022-03-15" },
-    { id: "d2", name: "Sarah Williams", firstName: "Sarah", lastName: "Williams", phone: "555-0102", email: "sarah.w@example.com", status: "available", location: { city: "Dallas", state: "TX" }, hoursRemaining: 10, safetyScore: 92, hireDate: "2021-06-01" },
+    { id: "d2", name: "Sarah Williams", firstName: "Sarah", lastName: "Williams", phone: "555-0102", email: "sarah.w@example.com", status: "available", location: { city: "Dallas", state: "TX" }, hoursRemaining: 10,
+          hoursAvailable: 10, safetyScore: 92, hireDate: "2021-06-01" },
     { id: "d3", name: "Tom Brown", firstName: "Tom", lastName: "Brown", phone: "555-0103", email: "tom.b@example.com", status: "off_duty", location: { city: "Austin", state: "TX" }, hoursRemaining: 11, safetyScore: 88, hireDate: "2023-01-10" },
   ]),
 });
