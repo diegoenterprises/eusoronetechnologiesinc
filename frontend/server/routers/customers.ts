@@ -96,10 +96,11 @@ export const customersRouter = router({
         );
       }
 
-      return {
-        customers: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
+      result.customers = result;
+      result.total = filtered.length;
+      result.filter = (fn: any) => result.filter(fn);
+      return result;
     }),
 
   /**
