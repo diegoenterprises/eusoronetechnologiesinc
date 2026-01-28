@@ -107,7 +107,7 @@ export const adminRouter = router({
    * Toggle feature flag mutation
    */
   toggleFeatureFlag: protectedProcedure
-    .input(z.object({ id: z.string(), enabled: z.boolean() }))
+    .input(z.object({ id: z.string(), enabled: z.boolean(), flagId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, flagId: input.id, enabled: input.enabled };
     }),
