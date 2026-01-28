@@ -363,7 +363,7 @@ export const dispatchRouter = router({
   // Exceptions
   getExceptions: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [{ id: "e1", type: "breakdown", loadId: "l1", status: "open", reportedAt: "2025-01-23 10:00" }]),
   getExceptionStats: protectedProcedure.query(async () => ({ open: 3, investigating: 2, resolved: 45, critical: 1, inProgress: 2, resolvedToday: 5 })),
-  resolveException: protectedProcedure.input(z.object({ exceptionId: z.string().optional(), id: z.string().optional(), resolution: z.string() })).mutation(async ({ input }) => ({ success: true, exceptionId: input.exceptionId || input.id })),
+  resolveException: protectedProcedure.input(z.object({ exceptionId: z.string().optional(), id: z.string().optional(), resolution: z.string().optional() })).mutation(async ({ input }) => ({ success: true, exceptionId: input.exceptionId || input.id })),
 
   // AI Recommendations
   getRecommendations: protectedProcedure.input(z.object({ loadId: z.string() })).query(async ({ input }) => [{ driverId: "d1", driverName: "Mike Johnson", score: 95, reason: "Best HOS availability and route match" }]),
