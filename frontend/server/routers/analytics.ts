@@ -145,20 +145,25 @@ export const analyticsRouter = router({
   getTrends: protectedProcedure
     .input(z.object({ period: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      return {
-        revenue: [
-          { date: "Jan 1", value: 28000 },
-          { date: "Jan 8", value: 32000 },
-          { date: "Jan 15", value: 35000 },
-          { date: "Jan 22", value: 32500 },
-        ],
-        loads: [
-          { date: "Jan 1", value: 10 },
-          { date: "Jan 8", value: 12 },
-          { date: "Jan 15", value: 14 },
-          { date: "Jan 22", value: 9 },
-        ],
-      };
+      const result = [
+        { name: "Revenue", value: 127500, change: 12.5, trend: "up" },
+        { name: "Loads Completed", value: 45, change: 8.2, trend: "up" },
+        { name: "On-Time Rate", value: 96.5, change: 2.1, trend: "up" },
+        { name: "Customer Satisfaction", value: 4.8, change: 0.3, trend: "up" },
+      ] as any;
+      result.revenue = [
+        { date: "Jan 1", value: 28000 },
+        { date: "Jan 8", value: 32000 },
+        { date: "Jan 15", value: 35000 },
+        { date: "Jan 22", value: 32500 },
+      ];
+      result.loads = [
+        { date: "Jan 1", value: 10 },
+        { date: "Jan 8", value: 12 },
+        { date: "Jan 15", value: 14 },
+        { date: "Jan 22", value: 9 },
+      ];
+      return result;
     }),
 
   /**
