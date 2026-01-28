@@ -91,11 +91,18 @@ export const esangRouter = router({
       return {
         fairnessScore,
         marketRate,
+        marketAverage: marketRate,
         difference,
         recommendation: fairnessScore >= 80 ? "accept" : fairnessScore >= 60 ? "negotiate" : "reject",
+        reasoning: `Based on current market conditions for this lane, the bid is ${fairnessScore >= 80 ? "competitive" : "below market rate"}.`,
         analysis: `Bid of $${input.bidAmount} for ${input.miles || 250} miles ($${(input.bidAmount / (input.miles || 250)).toFixed(2)}/mile). Market rate: $${marketRate.toFixed(2)}`,
         ratePerMile: input.bidAmount / (input.miles || 250),
         marketRatePerMile: 2.50,
+        factors: [
+          { name: "Distance", impact: "neutral", description: `${input.miles || 250} miles` },
+          { name: "Market Rate", impact: difference >= 0 ? "positive" : "negative", description: `$${marketRate.toFixed(2)}` },
+          { name: "Rate per Mile", impact: "neutral", description: `$${(input.bidAmount / (input.miles || 250)).toFixed(2)}/mile` },
+        ],
       };
     }),
 
