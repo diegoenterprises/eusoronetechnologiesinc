@@ -110,7 +110,7 @@ export default function Leaderboard() {
       {/* Top 3 Podium */}
       {leaderboardQuery.isLoading ? (
         <div className="grid grid-cols-3 gap-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-      ) : leaderboardQuery.data?.length >= 3 && (
+      ) : (leaderboardQuery.data?.length ?? 0) >= 3 && (
         <div className="grid grid-cols-3 gap-4">
           {/* 2nd Place */}
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl mt-8">
@@ -118,8 +118,8 @@ export default function Leaderboard() {
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center mb-3">
                 <Medal className="w-8 h-8 text-white" />
               </div>
-              <p className="text-white font-bold">{leaderboardQuery.data[1]?.name}</p>
-              <p className="text-sm text-slate-400">{leaderboardQuery.data[1]?.score?.toLocaleString()} pts</p>
+              <p className="text-white font-bold">{leaderboardQuery.data?.[1]?.name}</p>
+              <p className="text-sm text-slate-400">{leaderboardQuery.data?.[1]?.score?.toLocaleString()} pts</p>
               <Badge className="mt-2 bg-slate-500/20 text-slate-300 border-0">2nd Place</Badge>
             </CardContent>
           </Card>
@@ -130,8 +130,8 @@ export default function Leaderboard() {
               <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center mb-3">
                 <Crown className="w-10 h-10 text-white" />
               </div>
-              <p className="text-white font-bold text-lg">{leaderboardQuery.data[0]?.name}</p>
-              <p className="text-yellow-400 font-bold">{leaderboardQuery.data[0]?.score?.toLocaleString()} pts</p>
+              <p className="text-white font-bold text-lg">{leaderboardQuery.data?.[0]?.name}</p>
+              <p className="text-yellow-400 font-bold">{leaderboardQuery.data?.[0]?.score?.toLocaleString()} pts</p>
               <Badge className="mt-2 bg-yellow-500/20 text-yellow-400 border-0">1st Place</Badge>
             </CardContent>
           </Card>
@@ -142,8 +142,8 @@ export default function Leaderboard() {
               <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-amber-600 to-amber-700 flex items-center justify-center mb-3">
                 <Medal className="w-8 h-8 text-white" />
               </div>
-              <p className="text-white font-bold">{leaderboardQuery.data[2]?.name}</p>
-              <p className="text-sm text-slate-400">{leaderboardQuery.data[2]?.score?.toLocaleString()} pts</p>
+              <p className="text-white font-bold">{leaderboardQuery.data?.[2]?.name}</p>
+              <p className="text-sm text-slate-400">{leaderboardQuery.data?.[2]?.score?.toLocaleString()} pts</p>
               <Badge className="mt-2 bg-amber-500/20 text-amber-400 border-0">3rd Place</Badge>
             </CardContent>
           </Card>
