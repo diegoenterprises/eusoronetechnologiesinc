@@ -98,7 +98,7 @@ export default function LoadBids() {
                 <p className="text-white font-bold text-lg">{load?.loadNumber}</p>
                 {load?.biddingEnds && (
                   <p className="text-xs text-yellow-400 flex items-center gap-1 mt-1">
-                    <Clock className="w-3 h-3" />Bidding ends in {load.biddingEnds}
+                    <Clock className="w-3 h-3" />Bidding ends in {String(load.biddingEnds)}
                   </p>
                 )}
               </div>
@@ -157,7 +157,7 @@ export default function LoadBids() {
                 <div className="p-3 rounded-lg bg-slate-700/30">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">Rate per mile</span>
-                    <span className="text-white">${(parseFloat(bidAmount) / load.distance).toFixed(2)}/mi</span>
+                    <span className="text-white">${(parseFloat(bidAmount) / (Number(load.distance) || 1)).toFixed(2)}/mi</span>
                   </div>
                 </div>
               )}

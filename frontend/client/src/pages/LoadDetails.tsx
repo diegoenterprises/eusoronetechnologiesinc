@@ -98,7 +98,7 @@ export default function LoadDetails() {
             <div>
               <p className="text-slate-400 text-sm mb-1">Load Rate</p>
               <p className="text-4xl font-bold text-white">${(load.rate || 0).toLocaleString()}</p>
-              <p className="text-emerald-400 text-sm mt-1">${((load.rate || 0) / Math.max(load.distance || 1, 1)).toFixed(2)}/mile</p>
+              <p className="text-emerald-400 text-sm mt-1">${((Number(load.rate) || 0) / Math.max(Number(load.distance) || 1, 1)).toFixed(2)}/mile</p>
             </div>
             <div className="p-4 rounded-full bg-emerald-500/20">
               <DollarSign className="w-10 h-10 text-emerald-400" />
@@ -126,7 +126,7 @@ export default function LoadDetails() {
                   <p className="text-sm text-slate-400">{load.origin?.address}</p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                     <Calendar className="w-3 h-3" />
-                    <span>Pickup: {load.pickupDate}</span>
+                    <span>Pickup: {String(load.pickupDate || "")}</span>
                   </div>
                 </div>
                 <div>
@@ -134,7 +134,7 @@ export default function LoadDetails() {
                   <p className="text-sm text-slate-400">{load.destination?.address}</p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                     <Calendar className="w-3 h-3" />
-                    <span>Delivery: {load.deliveryDate}</span>
+                    <span>Delivery: {String(load.deliveryDate || "")}</span>
                   </div>
                 </div>
               </div>

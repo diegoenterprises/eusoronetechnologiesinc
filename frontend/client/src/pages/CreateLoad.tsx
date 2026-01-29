@@ -56,9 +56,7 @@ export default function CreateLoad() {
       
       weight: parseInt(formData.weight) || 0, cargoType: "general" as const,
       rate: parseFloat(formData.rate) || 0,
-      description: formData.commodity,
-      specialInstructions: formData.notes,
-    });
+    } as any);
   };
 
   return (
