@@ -46,15 +46,15 @@ export default function SecuritySettings() {
       {securityQuery.isLoading ? (
         <Skeleton className="h-32 w-full rounded-xl" />
       ) : (
-        <Card className={cn("rounded-xl", settings?.score >= 80 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : settings?.score >= 50 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
+        <Card className={cn("rounded-xl", (settings?.score ?? 0) >= 80 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : (settings?.score ?? 0) >= 50 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
           <CardContent className="p-6">
             <div className="flex items-center gap-4">
-              <div className={cn("p-4 rounded-full", settings?.score >= 80 ? "bg-green-500/20" : settings?.score >= 50 ? "bg-yellow-500/20" : "bg-red-500/20")}>
-                <Shield className={cn("w-8 h-8", settings?.score >= 80 ? "text-green-400" : settings?.score >= 50 ? "text-yellow-400" : "text-red-400")} />
+              <div className={cn("p-4 rounded-full", (settings?.score ?? 0) >= 80 ? "bg-green-500/20" : (settings?.score ?? 0) >= 50 ? "bg-yellow-500/20" : "bg-red-500/20")}>
+                <Shield className={cn("w-8 h-8", (settings?.score ?? 0) >= 80 ? "text-green-400" : (settings?.score ?? 0) >= 50 ? "text-yellow-400" : "text-red-400")} />
               </div>
               <div>
                 <p className="text-white text-2xl font-bold">Security Score: {settings?.score}%</p>
-                <p className="text-slate-400">{settings?.score >= 80 ? "Your account is well protected" : settings?.score >= 50 ? "Some improvements recommended" : "Your account needs attention"}</p>
+                <p className="text-slate-400">{(settings?.score ?? 0) >= 80 ? "Your account is well protected" : (settings?.score ?? 0) >= 50 ? "Some improvements recommended" : "Your account needs attention"}</p>
               </div>
             </div>
           </CardContent>

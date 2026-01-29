@@ -89,7 +89,7 @@ export default function SubscriptionPlan() {
                   </div>
                   <span className="text-slate-400">{usage?.loads?.used} / {usage?.loads?.limit}</span>
                 </div>
-                <Progress value={(usage?.loads?.used / usage?.loads?.limit) * 100} className={cn("h-2", usage?.loads?.used / usage?.loads?.limit > 0.9 && "[&>div]:bg-red-500")} />
+                <Progress value={((usage?.loads?.used ?? 0) / (usage?.loads?.limit ?? 1)) * 100} className={cn("h-2", (usage?.loads?.used ?? 0) / (usage?.loads?.limit ?? 1) > 0.9 && "[&>div]:bg-red-500")} />
               </div>
               <div className="p-4 rounded-xl bg-slate-700/30">
                 <div className="flex items-center justify-between mb-2">
@@ -99,7 +99,7 @@ export default function SubscriptionPlan() {
                   </div>
                   <span className="text-slate-400">{usage?.users?.used} / {usage?.users?.limit}</span>
                 </div>
-                <Progress value={(usage?.users?.used / usage?.users?.limit) * 100} className="h-2" />
+                <Progress value={((usage?.users?.used ?? 0) / (usage?.users?.limit ?? 1)) * 100} className="h-2" />
               </div>
               <div className="p-4 rounded-xl bg-slate-700/30">
                 <div className="flex items-center justify-between mb-2">
@@ -109,7 +109,7 @@ export default function SubscriptionPlan() {
                   </div>
                   <span className="text-slate-400">{usage?.vehicles?.used} / {usage?.vehicles?.limit}</span>
                 </div>
-                <Progress value={(usage?.vehicles?.used / usage?.vehicles?.limit) * 100} className="h-2" />
+                <Progress value={((usage?.vehicles?.used ?? 0) / (usage?.vehicles?.limit ?? 1)) * 100} className="h-2" />
               </div>
             </div>
           )}
@@ -145,8 +145,8 @@ export default function SubscriptionPlan() {
                   {plan.id === subscription?.planId ? (
                     <Button disabled className="w-full rounded-lg">Current Plan</Button>
                   ) : (
-                    <Button className={cn("w-full rounded-lg", plan.price > subscription?.price ? "bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700" : "bg-slate-600 hover:bg-slate-500")} onClick={() => upgradeMutation.mutate({ planId: plan.id })}>
-                      {plan.price > subscription?.price ? "Upgrade" : "Downgrade"} <ArrowRight className="w-4 h-4 ml-1" />
+                    <Button className={cn("w-full rounded-lg", plan.price > (subscription?.price ?? 0) ? "bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700" : "bg-slate-600 hover:bg-slate-500")} onClick={() => upgradeMutation.mutate({ planId: plan.id })}>
+                      {plan.price > (subscription?.price ?? 0) ? "Upgrade" : "Downgrade"} <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   )}
                 </div>

@@ -89,7 +89,7 @@ export default function ShipperDashboard() {
         </Card>
       </div>
 
-      {attentionQuery.data?.length > 0 && (
+      {(attentionQuery.data?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Loads Requiring Attention</CardTitle></CardHeader>
           <CardContent className="space-y-2">
