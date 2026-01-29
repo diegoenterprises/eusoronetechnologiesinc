@@ -24,7 +24,9 @@ export const safetyRouter = router({
         openIncidents: 3,
         overdueItems: 2,
         pendingDrugTests: 1,
+        pendingTests: 1,
         csaAlert: false,
+        csaAlerts: 0,
         trend: "up",
         trendPercent: 2.5,
       };
