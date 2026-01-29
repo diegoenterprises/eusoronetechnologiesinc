@@ -66,7 +66,7 @@ export default function ActiveConvoys() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.staging || 0}</p>}<p className="text-xs text-slate-400">Staging</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.scheduledToday || 0}</p>}<p className="text-xs text-slate-400">Staging</p></div>
             </div>
           </CardContent>
         </Card>
