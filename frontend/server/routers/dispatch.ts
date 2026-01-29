@@ -40,7 +40,7 @@ export const dispatchRouter = router({
    * Get driver statuses
    */
   getDriverStatuses: protectedProcedure
-    .input(z.object({ limit: z.number().optional().default(10) }))
+    .input(z.object({ limit: z.number().optional().default(10), filter: z.string().optional(), search: z.string().optional() }))
     .query(async () => {
       return [
         { id: "d1", name: "Mike Johnson", status: "driving", load: "LOAD-45920", location: "Waco, TX", hoursRemaining: 6.5 },
