@@ -139,7 +139,7 @@ export default function DrugAlcoholTesting() {
       </div>
 
       {/* Upcoming Tests */}
-      {upcomingQuery.data?.length > 0 && (
+      {(upcomingQuery.data?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">

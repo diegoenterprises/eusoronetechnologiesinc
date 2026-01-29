@@ -156,7 +156,7 @@ export default function DQFileManagement() {
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-400">Completion</p>
-                    <p className={cn("text-2xl font-bold", driverDQQuery.data?.completionPercent >= 100 ? "text-green-400" : driverDQQuery.data?.completionPercent >= 80 ? "text-yellow-400" : "text-red-400")}>
+                    <p className={cn("text-2xl font-bold", (driverDQQuery.data?.completionPercent ?? 0) >= 100 ? "text-green-400" : (driverDQQuery.data?.completionPercent ?? 0) >= 80 ? "text-yellow-400" : "text-red-400")}>
                       {driverDQQuery.data?.completionPercent}%
                     </p>
                   </div>
