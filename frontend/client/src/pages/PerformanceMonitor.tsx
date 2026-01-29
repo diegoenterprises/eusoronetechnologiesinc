@@ -64,11 +64,11 @@ export default function PerformanceMonitor() {
                 <Cpu className="w-5 h-5 text-blue-400" />
               </div>
               {metricsQuery.isLoading ? <Skeleton className="h-6 w-12" /> : (
-                <span className={cn("text-lg font-bold", metrics?.cpu > 80 ? "text-red-400" : metrics?.cpu > 60 ? "text-yellow-400" : "text-green-400")}>{metrics?.cpu}%</span>
+                <span className={cn("text-lg font-bold", (metrics?.cpu ?? 0) > 80 ? "text-red-400" : (metrics?.cpu ?? 0) > 60 ? "text-yellow-400" : "text-green-400")}>{metrics?.cpu}%</span>
               )}
             </div>
             <p className="text-white font-medium">CPU Usage</p>
-            {!metricsQuery.isLoading && <Progress value={metrics?.cpu} className={cn("h-2 mt-2", metrics?.cpu > 80 && "[&>div]:bg-red-500")} />}
+            {!metricsQuery.isLoading && <Progress value={metrics?.cpu ?? 0} className={cn("h-2 mt-2", (metrics?.cpu ?? 0) > 80 && "[&>div]:bg-red-500")} />}
           </CardContent>
         </Card>
 
@@ -79,11 +79,11 @@ export default function PerformanceMonitor() {
                 <Server className="w-5 h-5 text-purple-400" />
               </div>
               {metricsQuery.isLoading ? <Skeleton className="h-6 w-12" /> : (
-                <span className={cn("text-lg font-bold", metrics?.memory > 80 ? "text-red-400" : metrics?.memory > 60 ? "text-yellow-400" : "text-green-400")}>{metrics?.memory}%</span>
+                <span className={cn("text-lg font-bold", (metrics?.memory ?? 0) > 80 ? "text-red-400" : (metrics?.memory ?? 0) > 60 ? "text-yellow-400" : "text-green-400")}>{metrics?.memory}%</span>
               )}
             </div>
             <p className="text-white font-medium">Memory Usage</p>
-            {!metricsQuery.isLoading && <Progress value={metrics?.memory} className={cn("h-2 mt-2", metrics?.memory > 80 && "[&>div]:bg-red-500")} />}
+            {!metricsQuery.isLoading && <Progress value={metrics?.memory ?? 0} className={cn("h-2 mt-2", (metrics?.memory ?? 0) > 80 && "[&>div]:bg-red-500")} />}
           </CardContent>
         </Card>
 
@@ -94,11 +94,11 @@ export default function PerformanceMonitor() {
                 <HardDrive className="w-5 h-5 text-green-400" />
               </div>
               {metricsQuery.isLoading ? <Skeleton className="h-6 w-12" /> : (
-                <span className={cn("text-lg font-bold", metrics?.disk > 80 ? "text-red-400" : metrics?.disk > 60 ? "text-yellow-400" : "text-green-400")}>{metrics?.disk}%</span>
+                <span className={cn("text-lg font-bold", (metrics?.disk ?? 0) > 80 ? "text-red-400" : (metrics?.disk ?? 0) > 60 ? "text-yellow-400" : "text-green-400")}>{metrics?.disk}%</span>
               )}
             </div>
             <p className="text-white font-medium">Disk Usage</p>
-            {!metricsQuery.isLoading && <Progress value={metrics?.disk} className={cn("h-2 mt-2", metrics?.disk > 80 && "[&>div]:bg-red-500")} />}
+            {!metricsQuery.isLoading && <Progress value={metrics?.disk ?? 0} className={cn("h-2 mt-2", (metrics?.disk ?? 0) > 80 && "[&>div]:bg-red-500")} />}
           </CardContent>
         </Card>
 
