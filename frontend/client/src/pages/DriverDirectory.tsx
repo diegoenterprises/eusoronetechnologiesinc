@@ -24,7 +24,7 @@ export default function DriverDirectory() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const driversQuery = trpc.drivers.list.useQuery({ status: activeTab === "all" ? undefined : activeTab, limit: 50 });
+  const driversQuery = trpc.drivers.list.useQuery({ status: activeTab === "all" ? undefined : activeTab as "available" | "off_duty" | "inactive" | "on_load", limit: 50 });
   const summaryQuery = trpc.drivers.getSummary.useQuery();
 
   const summary = summaryQuery.data;

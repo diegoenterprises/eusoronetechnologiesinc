@@ -377,7 +377,7 @@ export default function JobsPage() {
     setNegotiationMessage("");
   };
 
-  const filteredLoads = loads.filter((load) => {
+  const filteredLoads = loads.filter((load: any) => {
     // Filter by tab
     if (activeTab === "available" && load.status !== "AVAILABLE") return false;
     if (activeTab === "my-bids" && !load.myBid) return false;
@@ -407,10 +407,10 @@ export default function JobsPage() {
   });
 
   const tabs = [
-    { id: "available" as const, label: "Available Loads", count: loads.filter(l => l.status === "AVAILABLE").length },
-    { id: "my-bids" as const, label: "My Bids", count: loads.filter(l => l.myBid).length },
-    { id: "assigned" as const, label: "Assigned", count: loads.filter(l => l.status === "ASSIGNED").length },
-    { id: "completed" as const, label: "Completed", count: loads.filter(l => l.status === "COMPLETED").length },
+    { id: "available" as const, label: "Available Loads", count: loads.filter((l: any) => l.status === "AVAILABLE").length },
+    { id: "my-bids" as const, label: "My Bids", count: loads.filter((l: any) => l.myBid).length },
+    { id: "assigned" as const, label: "Assigned", count: loads.filter((l: any) => l.status === "ASSIGNED").length },
+    { id: "completed" as const, label: "Completed", count: loads.filter((l: any) => l.status === "COMPLETED").length },
   ];
 
   return (
@@ -445,7 +445,7 @@ export default function JobsPage() {
             <Package size={32} className="text-blue-400" />
             <div>
               <p className="text-gray-300 text-sm">Available Loads</p>
-              <p className="text-white text-2xl font-bold">{loads.filter(l => l.status === "AVAILABLE").length}</p>
+              <p className="text-white text-2xl font-bold">{loads.filter((l: any) => l.status === "AVAILABLE").length}</p>
             </div>
           </div>
         </Card>
@@ -455,7 +455,7 @@ export default function JobsPage() {
             <Activity size={32} className="text-yellow-400" />
             <div>
               <p className="text-gray-300 text-sm">Active Bids</p>
-              <p className="text-white text-2xl font-bold">{loads.filter(l => l.myBid?.status === "PENDING").length}</p>
+              <p className="text-white text-2xl font-bold">{loads.filter((l: any) => l.myBid?.status === "PENDING").length}</p>
             </div>
           </div>
         </Card>
@@ -465,7 +465,7 @@ export default function JobsPage() {
             <CheckCircle size={32} className="text-green-400" />
             <div>
               <p className="text-gray-300 text-sm">Assigned</p>
-              <p className="text-white text-2xl font-bold">{loads.filter(l => l.status === "ASSIGNED").length}</p>
+              <p className="text-white text-2xl font-bold">{loads.filter((l: any) => l.status === "ASSIGNED").length}</p>
             </div>
           </div>
         </Card>
@@ -476,7 +476,7 @@ export default function JobsPage() {
             <div>
               <p className="text-gray-300 text-sm">Potential Earnings</p>
               <p className="text-white text-2xl font-bold">
-                ${loads.filter(l => l.status === "AVAILABLE").reduce((sum, l) => sum + l.pay, 0).toLocaleString()}
+                ${loads.filter((l: any) => l.status === "AVAILABLE").reduce((sum: any, l: any) => sum + l.pay, 0).toLocaleString()}
               </p>
             </div>
           </div>
@@ -550,7 +550,7 @@ export default function JobsPage() {
             <p className="text-gray-500">Try adjusting your filters or check back later</p>
           </Card>
         ) : (
-          filteredLoads.map((load) => (
+          filteredLoads.map((load: any) => (
             <Card key={load.id} className="bg-slate-800 border-slate-700 p-6 hover:border-blue-600 transition-all">
               {/* Load Header */}
               <div className="flex items-start justify-between mb-4">
@@ -664,7 +664,7 @@ export default function JobsPage() {
               <div className="mb-4">
                 <p className="text-xs text-gray-500 mb-2">Required Certifications</p>
                 <div className="flex flex-wrap gap-2">
-                  {load.requiredCerts.map((cert) => (
+                  {load.requiredCerts.map((cert: any) => (
                     <span
                       key={cert}
                       className="px-2 py-1 bg-blue-900/30 text-blue-400 border border-blue-700 rounded text-xs font-semibold flex items-center gap-1"
