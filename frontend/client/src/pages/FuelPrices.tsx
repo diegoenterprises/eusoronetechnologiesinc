@@ -113,13 +113,13 @@ export default function FuelPrices() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", averages?.weekChange < 0 ? "bg-green-500/20" : "bg-red-500/20")}>
-                {averages?.weekChange < 0 ? <TrendingDown className="w-6 h-6 text-green-400" /> : <TrendingUp className="w-6 h-6 text-red-400" />}
+              <div className={cn("p-3 rounded-full", (averages?.weekChange ?? 0) < 0 ? "bg-green-500/20" : "bg-red-500/20")}>
+                {(averages?.weekChange ?? 0) < 0 ? <TrendingDown className="w-6 h-6 text-green-400" /> : <TrendingUp className="w-6 h-6 text-red-400" />}
               </div>
               <div>
                 {averagesQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className={cn("text-2xl font-bold", averages?.weekChange < 0 ? "text-green-400" : "text-red-400")}>
-                    {averages?.weekChange > 0 ? "+" : ""}{averages?.weekChange?.toFixed(1)}%
+                  <p className={cn("text-2xl font-bold", (averages?.weekChange ?? 0) < 0 ? "text-green-400" : "text-red-400")}>
+                    {(averages?.weekChange ?? 0) > 0 ? "+" : ""}{averages?.weekChange?.toFixed(1)}%
                   </p>
                 )}
                 <p className="text-xs text-slate-400">Week Change</p>
