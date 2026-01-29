@@ -70,7 +70,7 @@ export default function CarrierBidSubmission() {
     });
   };
 
-  const ratePerMile = bidAmount && load?.distance ? (parseFloat(bidAmount) / load.distance).toFixed(2) : "0.00";
+  const ratePerMile = bidAmount && load?.distance ? (parseFloat(bidAmount) / (load.distance || 1)).toFixed(2) : "0.00";
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -134,11 +134,11 @@ export default function CarrierBidSubmission() {
                   </div>
                   <div>
                     <span className="text-slate-500 text-xs">Pickup Date</span>
-                    <p className="text-white font-medium">{load?.pickupDate}</p>
+                    <p className="text-white font-medium">{String(load?.pickupDate || "")}</p>
                   </div>
                   <div>
                     <span className="text-slate-500 text-xs">Delivery Date</span>
-                    <p className="text-white font-medium">{load?.deliveryDate}</p>
+                    <p className="text-white font-medium">{String(load?.deliveryDate || "")}</p>
                   </div>
                 </div>
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
