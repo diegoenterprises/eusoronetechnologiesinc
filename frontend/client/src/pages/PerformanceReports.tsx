@@ -65,8 +65,8 @@ export default function PerformanceReports() {
                 <DollarSign className="w-6 h-6 text-emerald-400" />
               </div>
               {trends?.revenue !== 0 && (
-                <div className={cn("flex items-center gap-1 text-sm", trends?.revenue > 0 ? "text-green-400" : "text-red-400")}>
-                  {trends?.revenue > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                <div className={cn("flex items-center gap-1 text-sm", (trends?.revenue ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                  {(trends?.revenue ?? 0) > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                   {Math.abs(trends?.revenue || 0)}%
                 </div>
               )}
@@ -85,8 +85,8 @@ export default function PerformanceReports() {
                 <Truck className="w-6 h-6 text-blue-400" />
               </div>
               {trends?.loads !== 0 && (
-                <div className={cn("flex items-center gap-1 text-sm", trends?.loads > 0 ? "text-green-400" : "text-red-400")}>
-                  {trends?.loads > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                <div className={cn("flex items-center gap-1 text-sm", (trends?.loads ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                  {(trends?.loads ?? 0) > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                   {Math.abs(trends?.loads || 0)}%
                 </div>
               )}
@@ -105,8 +105,8 @@ export default function PerformanceReports() {
                 <CheckCircle className="w-6 h-6 text-green-400" />
               </div>
               {trends?.onTime !== 0 && (
-                <div className={cn("flex items-center gap-1 text-sm", trends?.onTime > 0 ? "text-green-400" : "text-red-400")}>
-                  {trends?.onTime > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                <div className={cn("flex items-center gap-1 text-sm", (trends?.onTime ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                  {(trends?.onTime ?? 0) > 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                   {Math.abs(trends?.onTime || 0)}%
                 </div>
               )}
@@ -125,8 +125,8 @@ export default function PerformanceReports() {
                 <Clock className="w-6 h-6 text-purple-400" />
               </div>
               {trends?.avgDelivery !== 0 && (
-                <div className={cn("flex items-center gap-1 text-sm", trends?.avgDelivery < 0 ? "text-green-400" : "text-red-400")}>
-                  {trends?.avgDelivery < 0 ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                <div className={cn("flex items-center gap-1 text-sm", (trends?.avgDelivery ?? 0) < 0 ? "text-green-400" : "text-red-400")}>
+                  {(trends?.avgDelivery ?? 0) < 0 ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
                   {Math.abs(trends?.avgDelivery || 0)}%
                 </div>
               )}
