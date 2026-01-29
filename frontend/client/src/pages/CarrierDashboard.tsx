@@ -91,7 +91,7 @@ export default function CarrierDashboard() {
         </Card>
       </div>
 
-      {alertsQuery.data?.length > 0 && (
+      {(alertsQuery.data?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-400" />Alerts</CardTitle></CardHeader>
           <CardContent className="space-y-2">

@@ -90,7 +90,7 @@ export default function BidManagement() {
         </Card>
       </div>
 
-      {availableLoadsQuery.data?.length > 0 && (
+      {(availableLoadsQuery.data?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Available Loads</CardTitle></CardHeader>
           <CardContent className="space-y-3">
