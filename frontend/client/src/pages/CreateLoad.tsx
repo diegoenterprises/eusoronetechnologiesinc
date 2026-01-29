@@ -49,8 +49,8 @@ export default function CreateLoad() {
       return;
     }
     createMutation.mutate({
-      origin: { city: formData.originCity, state: formData.originState },
-      destination: { city: formData.destinationCity, state: formData.destinationState },
+      pickupLocation: { address: "", city: formData.originCity, state: formData.originState, zipCode: "", lat: 0, lng: 0 },
+      deliveryLocation: { address: "", city: formData.destinationCity, state: formData.destinationState, zipCode: "", lat: 0, lng: 0 },
       pickupDate: new Date(formData.pickupDate),
       deliveryDate: new Date(formData.deliveryDate),
       equipmentType: formData.equipmentType,
