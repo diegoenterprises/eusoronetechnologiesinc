@@ -954,13 +954,12 @@ export const adminRouter = router({
   // Performance
   getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p50ResponseTime: 95, p95ResponseTime: 350, p99ResponseTime: 520, requestsPerSecond: 45, errorRate: 0.5, cpu: 42, memory: 68, disk: 55, uptime: 99.99, bandwidth: 85, bandwidthUsed: 425, bandwidthLimit: 500 })),
   getSlowEndpoints: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/loads", avgTime: 450, calls: 1200 }]),
-  getTopPerformers: protectedProcedure.query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
+  getTopPerformers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
   // Platform
   getPlatformHealth: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "healthy", overallStatus: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45, cpu: 42, memory: 68, disk: 55, network: 125, latency: 45 })),
   getPlatformMetrics: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000, totalUsers: 5500, usersChange: 8.5, usersChangeType: "increase", loadsChange: 12.3, loadsChangeType: "increase", revenue: 2500000, revenueChange: 15.2, revenueChangeType: "increase", activeSessions: 850, sessionsChange: 5.2, sessionsChangeType: "increase" })),
   getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => [{ date: "2025-01-20", users: 1200, loads: 450, revenue: 125000 }, { date: "2025-01-21", users: 1250, loads: 470, revenue: 130000 }]),
-  getTopPerformers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
   // Permissions & Roles
   getPermissions: protectedProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [{ id: "p1", name: "loads.create", description: "Create loads" }] as any; perms.categories = [{ name: "Loads", permissions: [{ id: "p1", name: "loads.create", description: "Create loads", enabled: true }] }]; return perms; }),
