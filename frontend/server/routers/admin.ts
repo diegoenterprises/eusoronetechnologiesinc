@@ -772,6 +772,7 @@ export const adminRouter = router({
    * Get system health
    */
   getSystemHealth: protectedProcedure
+    .input(z.object({}).optional())
     .query(async () => {
       return {
         overall: "healthy",
