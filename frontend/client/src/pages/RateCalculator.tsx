@@ -30,7 +30,7 @@ export default function RateCalculator() {
     { enabled: !!origin && !!destination && !!equipmentType }
   );
 
-  const marketRatesQuery = trpc.rates.getMarketRates.useQuery({ equipment: equipmentType as "tanker" | "flatbed" | "reefer" | "van" | "specialized" });
+  const marketRatesQuery = trpc.rates.getMarketRates.useQuery({ originState: origin || "TX", destState: destination || "TX", equipment: equipmentType as "tanker" | "flatbed" | "reefer" | "van" | "specialized" });
 
   const result = calculateQuery.data;
 

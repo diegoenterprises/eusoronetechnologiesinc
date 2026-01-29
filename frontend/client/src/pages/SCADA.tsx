@@ -336,8 +336,8 @@ export default function SCADA() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <Badge className={alarm.resolved ? "bg-green-500/20 text-green-400" : "bg-slate-500/20 text-slate-400"}>
-                          {alarm.resolved ? "Resolved" : "Acknowledged"}
+                        <Badge className={(alarm as any).resolved ? "bg-green-500/20 text-green-400" : "bg-slate-500/20 text-slate-400"}>
+                          {(alarm as any).resolved ? "Resolved" : "Acknowledged"}
                         </Badge>
                         <p className="text-xs text-slate-500 mt-1">{alarm.timestamp}</p>
                       </div>

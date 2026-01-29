@@ -100,22 +100,14 @@ export default function LoadWizard() {
 
   const handleSubmit = () => {
     createMutation.mutate({
-      productName: formData.productName,
-      hazmatClass: formData.hazmatClass,
-      unNumber: formData.unNumber,
-      packingGroup: formData.packingGroup,
-      quantity: parseFloat(formData.quantity) || 0,
-      weight: parseFloat(formData.weight) || 0,
-      origin: { city: formData.originCity, state: formData.originState, address: formData.originAddress },
-      destination: { city: formData.destinationCity, state: formData.destinationState, address: formData.destinationAddress },
+      cargoType: "hazmat" as const,
+      pickupLocation: { address: formData.originAddress, city: formData.originCity, state: formData.originState, zipCode: "", lat: 0, lng: 0 },
+      deliveryLocation: { address: formData.destinationAddress, city: formData.destinationCity, state: formData.destinationState, zipCode: "", lat: 0, lng: 0 },
       pickupDate: new Date(formData.pickupDate),
       deliveryDate: new Date(formData.deliveryDate),
-      equipmentType: formData.equipmentType,
-      specialRequirements: formData.specialRequirements,
+      weight: parseFloat(formData.weight) || 0,
       rate: parseFloat(formData.rate) || 0,
-      rateType: formData.rateType,
-      notes: formData.notes,
-    });
+    } as any);
   };
 
   const renderStep = () => {

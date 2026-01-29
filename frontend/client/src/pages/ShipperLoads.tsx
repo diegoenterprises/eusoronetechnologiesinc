@@ -30,7 +30,6 @@ export default function ShipperLoads() {
   const summaryQuery = trpc.loads.getShipperSummary.useQuery();
   const loadsQuery = trpc.loads.list.useQuery({
     status: statusFilter !== "all" ? statusFilter as "delivered" | "assigned" | "cancelled" | "in_transit" | "draft" | "posted" | "bidding" | "disputed" : undefined,
-    search: searchTerm || undefined,
   });
 
   const cancelMutation = trpc.loads.cancel.useMutation({

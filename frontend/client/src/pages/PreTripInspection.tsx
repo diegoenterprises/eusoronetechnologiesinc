@@ -62,10 +62,12 @@ export default function PreTripInspection() {
     }
     submitMutation.mutate({
       vehicleId: vehicle?.id || "",
-      results: inspectionResults,
+      type: "pre_trip" as const,
+      odometer: 0,
+      items: Object.entries(inspectionResults).map(([id, status]) => ({ id, category: "general", name: id, status: status as "pass" | "fail" | "na" })),
+      overallStatus: hasDefects ? "fail" as const : "pass" as const,
       notes,
-      hasDefects,
-    });
+    } as any);
   };
 
   return (
