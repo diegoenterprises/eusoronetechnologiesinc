@@ -55,7 +55,7 @@ export default function CreateLoad() {
       deliveryDate: new Date(formData.deliveryDate),
       
       weight: parseInt(formData.weight) || 0, cargoType: "general" as const,
-      rate: parseFloat(formData.rate) || 0, distance: 0,
+      rate: parseFloat(formData.rate) || 0,
       commodity: formData.commodity,
       notes: formData.notes,
     });
