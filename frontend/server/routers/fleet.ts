@@ -460,7 +460,7 @@ export const fleetRouter = router({
 
   // Fleet Map
   getFleetMapStats: protectedProcedure.input(z.object({ filters: z.any().optional() }).optional()).query(async () => ({ moving: 18, stopped: 5, idle: 2, offline: 0, totalVehicles: 25, total: 25, inTransit: 18, loading: 3, available: 2, atShipper: 1, atConsignee: 1, offDuty: 0, issues: 2, utilization: 92 })),
-  getVehicleLocations: protectedProcedure.query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, heading: 45, speed: 65 }]),
+  getVehicleLocations: protectedProcedure.input(z.object({ filter: z.string().optional() }).optional()).query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, heading: 45, speed: 65 }]),
 
   // Fuel
   getFuelTransactions: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), limit: z.number().optional(), period: z.string().optional() })).query(async () => [{ id: "f1", vehicleId: "v1", gallons: 125, cost: 437.50, location: "Houston, TX", date: "2025-01-22" }]),
