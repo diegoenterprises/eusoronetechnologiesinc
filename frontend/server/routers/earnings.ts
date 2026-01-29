@@ -226,7 +226,7 @@ export const earningsRouter = router({
 
   // Additional earnings procedures
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), period: z.string().optional() }).optional()).query(async () => [{ id: "e1", date: "2025-01-22", amount: 2500, type: "settlement" }]),
-  getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => [{ id: "s1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
+  getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional(), driverId: z.string().optional() }).optional()).query(async () => [{ id: "s1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
   getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
     id: input?.settlementId || input?.id || "s1", 
     settlementNumber: "SET-2025-003",
