@@ -62,8 +62,8 @@ export default function Announcements() {
           <p className="text-slate-400 text-sm mt-1">Important updates and notifications</p>
         </div>
         <div className="flex items-center gap-3">
-          {unreadQuery.data?.count > 0 && (
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-0">{unreadQuery.data.count} unread</Badge>
+          {(unreadQuery.data?.count ?? 0) > 0 && (
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-0">{unreadQuery.data?.count} unread</Badge>
           )}
           <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => markAllReadMutation.mutate({})}>
             <CheckCircle className="w-4 h-4 mr-2" />Mark All Read
