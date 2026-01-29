@@ -253,7 +253,7 @@ export const brokersRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const commission = input.negotiatedRate * 0.10;
+      const commission = (input.negotiatedRate || 0) * 0.10;
       
       return {
         success: true,

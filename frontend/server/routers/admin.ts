@@ -428,7 +428,7 @@ export const adminRouter = router({
         { id: "v1", type: "driver", name: "John Driver", submittedAt: "2025-01-22", documents: ["CDL", "Medical Card"], status: "pending" },
         { id: "v2", type: "carrier", name: "ABC Transport", submittedAt: "2025-01-21", documents: ["MC Authority", "Insurance"], status: "pending" },
       ];
-      if (input.type) return items.filter(i => i.type === input.type);
+      if (input?.type) return items.filter(i => i.type === input.type);
       return items;
     }),
 

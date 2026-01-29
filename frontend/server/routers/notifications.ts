@@ -95,16 +95,16 @@ export const notificationsRouter = router({
         },
       ];
 
-      let filtered = notifications.filter(n => n.archived === input.archived);
+      let filtered = notifications.filter(n => n.archived === input?.archived);
       
-      if (input.category) {
-        filtered = filtered.filter(n => n.category === input.category);
+      if (input?.category) {
+        filtered = filtered.filter(n => n.category === input?.category);
       }
-      if (input.read !== undefined) {
-        filtered = filtered.filter(n => n.read === input.read);
+      if (input?.read !== undefined) {
+        filtered = filtered.filter(n => n.read === input?.read);
       }
 
-      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
+      const result = filtered.slice(input?.offset || 0, (input?.offset || 0) + (input?.limit || 20)) as any;
       result.notifications = result;
       return result;
     }),
