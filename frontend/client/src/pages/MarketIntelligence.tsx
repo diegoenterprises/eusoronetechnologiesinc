@@ -105,13 +105,13 @@ export default function MarketIntelligence() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", market?.rateChange > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
-                {market?.rateChange > 0 ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
+              <div className={cn("p-3 rounded-full", (market?.rateChange ?? 0) > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
+                {(market?.rateChange ?? 0) > 0 ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
               </div>
               <div>
                 {marketQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className={cn("text-2xl font-bold", market?.rateChange > 0 ? "text-green-400" : "text-red-400")}>
-                    {market?.rateChange > 0 ? "+" : ""}{market?.rateChange}%
+                  <p className={cn("text-2xl font-bold", (market?.rateChange ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                    {(market?.rateChange ?? 0) > 0 ? "+" : ""}{market?.rateChange}%
                   </p>
                 )}
                 <p className="text-xs text-slate-400">Rate Change</p>

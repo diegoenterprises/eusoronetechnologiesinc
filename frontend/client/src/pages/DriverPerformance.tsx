@@ -137,9 +137,9 @@ export default function DriverPerformance() {
                         </span>
                       </div>
                     </div>
-                    {driver?.achievements?.length > 0 && (
+                    {(driver?.achievements?.length ?? 0) > 0 && (
                       <div className="flex items-center gap-2 mt-3">
-                        {driver.achievements.map((ach: string, idx: number) => (
+                        {driver?.achievements?.map((ach: string, idx: number) => (
                           <Badge key={idx} className="bg-yellow-500/20 text-yellow-400">
                             <Award className="w-3 h-3 mr-1" />{ach}
                           </Badge>
