@@ -53,15 +53,15 @@ export default function DeadheadAnalysis() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className={cn("rounded-xl", summary?.deadheadPercentage > 15 ? "bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30" : "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30")}>
+        <Card className={cn("rounded-xl", (summary?.deadheadPercentage ?? 0) > 15 ? "bg-gradient-to-r from-red-500/20 to-orange-500/20 border-red-500/30" : "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30")}>
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", summary?.deadheadPercentage > 15 ? "bg-red-500/20" : "bg-green-500/20")}>
-                <Truck className={cn("w-6 h-6", summary?.deadheadPercentage > 15 ? "text-red-400" : "text-green-400")} />
+              <div className={cn("p-3 rounded-full", (summary?.deadheadPercentage ?? 0) > 15 ? "bg-red-500/20" : "bg-green-500/20")}>
+                <Truck className={cn("w-6 h-6", (summary?.deadheadPercentage ?? 0) > 15 ? "text-red-400" : "text-green-400")} />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className={cn("text-2xl font-bold", summary?.deadheadPercentage > 15 ? "text-red-400" : "text-green-400")}>{summary?.deadheadPercentage}%</p>
+                  <p className={cn("text-2xl font-bold", (summary?.deadheadPercentage ?? 0) > 15 ? "text-red-400" : "text-green-400")}>{summary?.deadheadPercentage}%</p>
                 )}
                 <p className="text-xs text-slate-400">Deadhead Rate</p>
               </div>
@@ -104,13 +104,13 @@ export default function DeadheadAnalysis() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", summary?.trend < 0 ? "bg-green-500/20" : "bg-red-500/20")}>
-                {summary?.trend < 0 ? <TrendingDown className="w-6 h-6 text-green-400" /> : <TrendingUp className="w-6 h-6 text-red-400" />}
+              <div className={cn("p-3 rounded-full", (summary?.trend ?? 0) < 0 ? "bg-green-500/20" : "bg-red-500/20")}>
+                {(summary?.trend ?? 0) < 0 ? <TrendingDown className="w-6 h-6 text-green-400" /> : <TrendingUp className="w-6 h-6 text-red-400" />}
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className={cn("text-2xl font-bold", summary?.trend < 0 ? "text-green-400" : "text-red-400")}>
-                    {summary?.trend > 0 ? "+" : ""}{summary?.trend}%
+                  <p className={cn("text-2xl font-bold", (summary?.trend ?? 0) < 0 ? "text-green-400" : "text-red-400")}>
+                    {(summary?.trend ?? 0) > 0 ? "+" : ""}{summary?.trend}%
                   </p>
                 )}
                 <p className="text-xs text-slate-400">vs Last Period</p>
@@ -137,9 +137,9 @@ export default function DeadheadAnalysis() {
                 <span className="text-slate-400">Current: {summary?.deadheadPercentage}%</span>
                 <span className="text-emerald-400">Target: {summary?.targetPercentage}%</span>
               </div>
-              <Progress value={100 - ((summary?.deadheadPercentage - summary?.targetPercentage) / summary?.targetPercentage) * 100} className="h-3" />
+              <Progress value={100 - (((summary?.deadheadPercentage ?? 0) - (summary?.targetPercentage ?? 10)) / (summary?.targetPercentage ?? 10)) * 100} className="h-3" />
               <p className="text-sm text-slate-500">
-                {summary?.deadheadPercentage <= summary?.targetPercentage ? "Goal achieved!" : `Reduce by ${(summary?.deadheadPercentage - summary?.targetPercentage).toFixed(1)}% to reach target`}
+                {(summary?.deadheadPercentage ?? 0) <= (summary?.targetPercentage ?? 10) ? "Goal achieved!" : `Reduce by ${((summary?.deadheadPercentage ?? 0) - (summary?.targetPercentage ?? 10)).toFixed(1)}% to reach target`}
               </p>
             </div>
           )}

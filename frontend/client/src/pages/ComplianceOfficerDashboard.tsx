@@ -45,14 +45,14 @@ export default function ComplianceOfficerDashboard() {
       </div>
 
       {statsQuery.isLoading ? <Skeleton className="h-32 w-full rounded-xl" /> : (
-        <Card className={cn("rounded-xl", stats?.overallScore >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : stats?.overallScore >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
+        <Card className={cn("rounded-xl", (stats?.overallScore ?? 0) >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : (stats?.overallScore ?? 0) >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-sm">Compliance Score</p>
                 <p className={cn("text-5xl font-bold", getScoreColor(stats?.overallScore || 0))}>{stats?.overallScore}%</p>
               </div>
-              <div className={cn("p-4 rounded-full", stats?.overallScore >= 90 ? "bg-green-500/20" : stats?.overallScore >= 70 ? "bg-yellow-500/20" : "bg-red-500/20")}>
+              <div className={cn("p-4 rounded-full", (stats?.overallScore ?? 0) >= 90 ? "bg-green-500/20" : (stats?.overallScore ?? 0) >= 70 ? "bg-yellow-500/20" : "bg-red-500/20")}>
                 <Shield className={cn("w-12 h-12", getScoreColor(stats?.overallScore || 0))} />
               </div>
             </div>
