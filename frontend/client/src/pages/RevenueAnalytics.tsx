@@ -101,10 +101,10 @@ export default function RevenueAnalytics() {
               <div>
                 {revenueQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
                   <div className="flex items-center gap-1">
-                    <p className={cn("text-2xl font-bold", revenue?.growth > 0 ? "text-green-400" : "text-red-400")}>
-                      {revenue?.growth > 0 ? "+" : ""}{revenue?.growth}%
+                    <p className={cn("text-2xl font-bold", (revenue?.growth ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                      {(revenue?.growth ?? 0) > 0 ? "+" : ""}{revenue?.growth}%
                     </p>
-                    {revenue?.growth > 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />}
+                    {(revenue?.growth ?? 0) > 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingDown className="w-4 h-4 text-red-400" />}
                   </div>
                 )}
                 <p className="text-xs text-slate-400">Growth</p>
