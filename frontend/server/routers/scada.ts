@@ -485,16 +485,4 @@ export const scadaRouter = router({
   getOverview: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ terminals: 5, totalThroughput: 2250000, activeRacks: 45, alerts: 3, terminalsOnline: 5, totalTanks: 48, totalInventory: 1500000, activeFlows: 12 })),
   getTerminals: protectedProcedure.query(async () => [{ id: "t1", name: "Houston Terminal", status: "operational", racks: 12, tankCount: 8, avgLevel: 75, activeFlows: 3, lastUpdate: "2025-01-23 10:00" }]),
   getTanks: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => [{ id: "tank1", name: "Tank 1", product: "diesel", level: 75, capacity: 50000, status: "normal", volume: 37500, temperature: 68 }]),
-  acknowledgeAlarm: protectedProcedure.input(z.object({ alarmId: z.string() })).mutation(async ({ input }) => ({ success: true, alarmId: input.alarmId })),
-  getDailyThroughput: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ 
-    total: 450000, 
-    totalGallons: 450000,
-    transactions: 156,
-    avgLoadTime: 22,
-    byProduct: [
-      { product: "Diesel", gallons: 200000 },
-      { product: "Unleaded", gallons: 180000 },
-      { product: "Premium", gallons: 70000 },
-    ],
-  })),
 });
