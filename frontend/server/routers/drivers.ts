@@ -825,7 +825,7 @@ export const driversRouter = router({
   submitPreTripInspection: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })).optional(), checkedItems: z.record(z.string(), z.unknown()).optional(), notes: z.string().optional(), defects: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
-  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: "neutral", points: 0 }]),
+  getRecentEvents: protectedProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: 0, points: 0 }]),
 
   // Terminations
   getTerminations: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), reason: z.string().optional() }).optional()).query(async () => [{ id: "t1", driverId: "d1", driverName: "Mike Johnson", reason: "voluntary", date: "2025-01-20", status: "completed" }]),
