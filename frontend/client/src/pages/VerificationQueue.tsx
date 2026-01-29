@@ -21,7 +21,7 @@ import { toast } from "sonner";
 export default function VerificationQueue() {
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const queueQuery = trpc.admin.getVerificationQueue.useQuery({ type: typeFilter === "all" ? undefined : typeFilter, limit: 50 });
+  const queueQuery = trpc.admin.getVerificationQueue.useQuery({ type: typeFilter === "all" ? undefined : typeFilter as "user" | "all" | "company" | "document", limit: 50 });
   const summaryQuery = trpc.admin.getVerificationSummary.useQuery();
 
   const approveMutation = trpc.admin.approveVerification.useMutation({

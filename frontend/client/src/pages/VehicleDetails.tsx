@@ -189,7 +189,7 @@ export default function VehicleDetails() {
             {vehicle.assignedDriver && (
               <div className="p-3 rounded-xl bg-slate-700/30">
                 <p className="text-xs text-slate-500">Assigned Driver</p>
-                <p className="text-white font-medium">{vehicle.assignedDriver}</p>
+                <p className="text-white font-medium">{typeof vehicle.assignedDriver === "object" ? vehicle.assignedDriver.name : vehicle.assignedDriver}</p>
               </div>
             )}
           </CardContent>

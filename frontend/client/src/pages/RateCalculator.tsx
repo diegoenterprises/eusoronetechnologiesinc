@@ -30,7 +30,7 @@ export default function RateCalculator() {
     { enabled: !!origin && !!destination && !!equipmentType }
   );
 
-  const marketRatesQuery = trpc.rates.getMarketRates.useQuery({ equipmentType });
+  const marketRatesQuery = trpc.rates.getMarketRates.useQuery({ equipment: equipmentType as "tanker" | "flatbed" | "reefer" | "van" | "specialized" });
 
   const result = calculateQuery.data;
 
@@ -208,7 +208,7 @@ export default function RateCalculator() {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {marketRatesQuery.data?.map((rate: any) => (
+                {(marketRatesQuery.data as any)?.history?.map((rate: any) => (
                   <div key={rate.lane} className="p-4 rounded-xl bg-slate-700/30">
                     <p className="text-white font-medium mb-1">{rate.lane}</p>
                     <p className="text-2xl font-bold text-emerald-400">${rate.avgRate?.toFixed(2)}</p>

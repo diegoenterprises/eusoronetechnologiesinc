@@ -29,7 +29,7 @@ export default function ShipperLoads() {
 
   const summaryQuery = trpc.loads.getShipperSummary.useQuery();
   const loadsQuery = trpc.loads.list.useQuery({
-    status: statusFilter !== "all" ? statusFilter : undefined,
+    status: statusFilter !== "all" ? statusFilter as "delivered" | "assigned" | "cancelled" | "in_transit" | "draft" | "posted" | "bidding" | "disputed" : undefined,
     search: searchTerm || undefined,
   });
 
@@ -156,7 +156,7 @@ export default function ShipperLoads() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700">
-              {loadsQuery.data?.loads?.map((load) => (
+              {loadsQuery.data?.loads?.map((load: any) => (
                 <div key={load.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", load.status === "in_transit" ? "bg-blue-500/20" : load.status === "delivered" ? "bg-green-500/20" : "bg-yellow-500/20")}>

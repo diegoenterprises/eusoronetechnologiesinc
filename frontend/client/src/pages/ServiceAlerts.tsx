@@ -21,7 +21,7 @@ import { toast } from "sonner";
 export default function ServiceAlerts() {
   const [severityFilter, setSeverityFilter] = useState("all");
 
-  const alertsQuery = trpc.alerts.list.useQuery({ severity: severityFilter === "all" ? undefined : severityFilter, limit: 50 });
+  const alertsQuery = trpc.alerts.list.useQuery({ severity: severityFilter === "all" ? undefined : severityFilter as "error" | "info" | "warning" | "critical", limit: 50 });
   const summaryQuery = trpc.alerts.getSummary.useQuery();
 
   const acknowledgeMutation = trpc.alerts.acknowledge.useMutation({

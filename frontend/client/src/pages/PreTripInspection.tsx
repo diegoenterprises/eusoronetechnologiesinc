@@ -61,7 +61,7 @@ export default function PreTripInspection() {
       return;
     }
     submitMutation.mutate({
-      vehicleId: vehicle?.id,
+      vehicleId: vehicle?.id || "",
       results: inspectionResults,
       notes,
       hasDefects,

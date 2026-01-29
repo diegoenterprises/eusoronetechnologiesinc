@@ -28,8 +28,8 @@ export default function SCADA() {
   const terminalsQuery = trpc.scada.getTerminals.useQuery();
   const overviewQuery = trpc.scada.getOverview.useQuery({ terminalId: selectedTerminal !== "all" ? selectedTerminal : undefined }, { refetchInterval: refreshInterval * 1000 });
   const tanksQuery = trpc.scada.getTanks.useQuery({ terminalId: selectedTerminal !== "all" ? selectedTerminal : undefined }, { refetchInterval: refreshInterval * 1000 });
-  const alarmsQuery = trpc.scada.getActiveAlarms.useQuery({}, { refetchInterval: refreshInterval * 1000 });
-  const historyQuery = trpc.scada.getAlarmHistory.useQuery({ limit: 20 });
+  const alarmsQuery = trpc.scada.getAlarms.useQuery({ terminalId: selectedTerminal !== "all" ? selectedTerminal : "all" }, { refetchInterval: refreshInterval * 1000 });
+  const historyQuery = trpc.scada.getAlarms.useQuery({ terminalId: selectedTerminal !== "all" ? selectedTerminal : "all" });
 
   const acknowledgeAlarmMutation = trpc.scada.acknowledgeAlarm.useMutation({
     onSuccess: () => { toast.success("Alarm acknowledged"); alarmsQuery.refetch(); },
@@ -113,15 +113,15 @@ export default function SCADA() {
       </div>
 
       {/* Active Alarms Banner */}
-      {alarmsQuery.data && alarmsQuery.data.length > 0 && (
+      {alarmsQuery.data && alarmsQuery.data?.alarms?.length > 0 && (
         <Card className="bg-red-500/10 border-red-500/30">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-6 h-6 text-red-400 animate-pulse" />
                 <div>
-                  <p className="text-red-400 font-bold">{alarmsQuery.data.length} Active Alarm{alarmsQuery.data.length > 1 ? "s" : ""}</p>
-                  <p className="text-sm text-slate-400">{alarmsQuery.data.filter(a => a.severity === "critical").length} critical</p>
+                  <p className="text-red-400 font-bold">{alarmsQuery.data?.alarms?.length} Active Alarm{alarmsQuery.data?.alarms?.length > 1 ? "s" : ""}</p>
+                  <p className="text-sm text-slate-400">{alarmsQuery.data?.alarms?.filter((a: any) => a.severity === "critical").length} critical</p>
                 </div>
               </div>
               <Button size="sm" variant="outline" className="border-red-500/50 text-red-400">View All</Button>
@@ -168,11 +168,11 @@ export default function SCADA() {
             <p className="text-xs text-slate-400">Active Flows</p>
           </CardContent>
         </Card>
-        <Card className={cn("border-slate-700", (alarmsQuery.data?.length || 0) > 0 ? "bg-red-500/10 border-red-500/30" : "bg-green-500/10 border-green-500/30")}>
+        <Card className={cn("border-slate-700", (alarmsQuery.data?.alarms?.length || 0) > 0 ? "bg-red-500/10 border-red-500/30" : "bg-green-500/10 border-green-500/30")}>
           <CardContent className="p-4 text-center">
-            <Bell className={cn("w-6 h-6 mx-auto mb-2", (alarmsQuery.data?.length || 0) > 0 ? "text-red-400" : "text-green-400")} />
+            <Bell className={cn("w-6 h-6 mx-auto mb-2", (alarmsQuery.data?.alarms?.length || 0) > 0 ? "text-red-400" : "text-green-400")} />
             {alarmsQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className={cn("text-2xl font-bold", (alarmsQuery.data?.length || 0) > 0 ? "text-red-400" : "text-green-400")}>{alarmsQuery.data?.length || 0}</p>
+              <p className={cn("text-2xl font-bold", (alarmsQuery.data?.alarms?.length || 0) > 0 ? "text-red-400" : "text-green-400")}>{alarmsQuery.data?.alarms?.length || 0}</p>
             )}
             <p className="text-xs text-slate-400">Active Alarms</p>
           </CardContent>
@@ -183,7 +183,7 @@ export default function SCADA() {
         <TabsList className="bg-slate-800 border border-slate-700">
           <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600">Overview</TabsTrigger>
           <TabsTrigger value="tanks" className="data-[state=active]:bg-blue-600">Tanks</TabsTrigger>
-          <TabsTrigger value="alarms" className="data-[state=active]:bg-blue-600">Alarms ({alarmsQuery.data?.length || 0})</TabsTrigger>
+          <TabsTrigger value="alarms" className="data-[state=active]:bg-blue-600">Alarms ({alarmsQuery.data?.alarms?.length || 0})</TabsTrigger>
           <TabsTrigger value="history" className="data-[state=active]:bg-blue-600">History</TabsTrigger>
         </TabsList>
 
@@ -283,14 +283,14 @@ export default function SCADA() {
             <CardContent>
               {alarmsQuery.isLoading ? (
                 <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : alarmsQuery.data?.length === 0 ? (
+              ) : alarmsQuery.data?.alarms?.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
                   <p className="text-slate-400">No active alarms</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {alarmsQuery.data?.map((alarm) => (
+                  {alarmsQuery.data?.alarms?.map((alarm: any) => (
                     <div key={alarm.id} className={cn("flex items-center justify-between p-4 rounded-lg border", getAlarmSeverityColor(alarm.severity))}>
                       <div className="flex items-center gap-4">
                         <AlertTriangle className={cn("w-6 h-6", alarm.severity === "critical" ? "text-red-400 animate-pulse" : "text-yellow-400")} />
@@ -322,11 +322,11 @@ export default function SCADA() {
             <CardContent>
               {historyQuery.isLoading ? (
                 <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-              ) : historyQuery.data?.length === 0 ? (
+              ) : historyQuery.data?.alarms?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No alarm history</p>
               ) : (
                 <div className="space-y-2">
-                  {historyQuery.data?.map((alarm) => (
+                  {historyQuery.data?.alarms?.map((alarm) => (
                     <div key={alarm.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-3">
                         <div className={cn("w-2 h-2 rounded-full", alarm.severity === "critical" ? "bg-red-500" : alarm.severity === "high" ? "bg-orange-500" : "bg-yellow-500")} />

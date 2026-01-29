@@ -169,7 +169,7 @@ export default function SafetyMetrics() {
               </div>
             ) : (
               <div className="space-y-4">
-                {csaScoresQuery.data?.map((basic: any) => (
+                {(csaScoresQuery.data as any)?.basics?.map((basic: any) => (
                   <div key={basic.name} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">{basic.name}</span>
