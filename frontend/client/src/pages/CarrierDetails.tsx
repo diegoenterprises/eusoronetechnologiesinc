@@ -202,7 +202,7 @@ export default function CarrierDetails() {
             </div>
             <div className="p-3 rounded-xl bg-slate-700/30">
               <p className="text-xs text-slate-500">Address</p>
-              <p className="text-white font-medium">{carrier.address}</p>
+              <p className="text-white font-medium">{typeof carrier.address === "object" ? `${carrier.address.street}, ${carrier.address.city}, ${carrier.address.state} ${carrier.address.zip}` : carrier.address}</p>
             </div>
           </CardContent>
         </Card>

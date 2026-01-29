@@ -85,11 +85,11 @@ export default function DriverDashboard() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="p-3 rounded-lg bg-slate-800/50">
                 <div className="flex items-center gap-2 text-green-400 mb-1"><MapPin className="w-4 h-4" /><span className="text-xs">Origin</span></div>
-                <p className="text-white font-medium">{assignment.origin}</p>
+                <p className="text-white font-medium">{typeof assignment.origin === "object" ? `${assignment.origin.name}, ${assignment.origin.city}, ${assignment.origin.state}` : assignment.origin}</p>
               </div>
               <div className="p-3 rounded-lg bg-slate-800/50">
                 <div className="flex items-center gap-2 text-red-400 mb-1"><MapPin className="w-4 h-4" /><span className="text-xs">Destination</span></div>
-                <p className="text-white font-medium">{assignment.destination}</p>
+                <p className="text-white font-medium">{typeof assignment.destination === "object" ? `${assignment.destination.name}, ${assignment.destination.city}, ${assignment.destination.state}` : assignment.destination}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
