@@ -53,9 +53,9 @@ export default function CreateLoad() {
       deliveryLocation: { address: "", city: formData.destinationCity, state: formData.destinationState, zipCode: "", lat: 0, lng: 0 },
       pickupDate: new Date(formData.pickupDate),
       deliveryDate: new Date(formData.deliveryDate),
-      trailerType: formData.equipmentType as any,
+      
       weight: parseInt(formData.weight) || 0, cargoType: "general" as const,
-      rate: parseFloat(formData.rate) || 0,
+      rate: parseFloat(formData.rate) || 0, distance: 0,
       commodity: formData.commodity,
       notes: formData.notes,
     });
