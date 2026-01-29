@@ -3,15 +3,16 @@
  * Single audit log entry view
  */
 
-import { useParams } from "react-router-dom";
-import { trpc } from "../_core/trpc";
+import { useRoute } from "wouter";
+import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { FileText, User, Clock, Activity } from "lucide-react";
 
 export default function AuditLog() {
-  const { id } = useParams<{ id: string }>();
+  const [, params] = useRoute("/audit-log/:id");
+  const id = params?.id;
   const { data: log, isLoading } = trpc.admin.getAuditLog.useQuery({ logId: id || "" });
 
   if (isLoading) {
