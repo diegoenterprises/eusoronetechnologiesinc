@@ -130,7 +130,7 @@ export default function AssignedLoadsPage() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {filteredLoads.map((load) => {
+            {filteredLoads.map((load: any) => {
               const timeRemaining = getPickupTimeRemaining(load.pickupDate);
               const progress = getPreparationProgress();
               const isUrgent = timeRemaining.includes("h") || timeRemaining === "Overdue";
