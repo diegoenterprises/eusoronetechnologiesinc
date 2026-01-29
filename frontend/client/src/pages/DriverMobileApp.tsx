@@ -170,15 +170,15 @@ export default function DriverMobileApp() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "arrived" })}>
+            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "on_load" as any })}>
               <MapPin className="w-6 h-6 mb-1 text-cyan-400" />
               <span>Arrived</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "loading" })}>
+            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "on_load" as any })}>
               <Truck className="w-6 h-6 mb-1 text-yellow-400" />
               <span>Loading</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "departed" })}>
+            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "available" as any })}>
               <CheckCircle className="w-6 h-6 mb-1 text-green-400" />
               <span>Departed</span>
             </Button>

@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function DriverEarnings() {
-  const [period, setPeriod] = useState("week");
+  const [period, setPeriod] = useState<"week" | "month" | "quarter" | "year">("week");
   const [weekOffset, setWeekOffset] = useState(0);
 
   const summaryQuery = trpc.earnings.getSummary.useQuery({ period });

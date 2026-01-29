@@ -88,7 +88,7 @@ export default function InTransitPage() {
     toast.info(`Calling driver #${driverId}...`);
   };
 
-  const filteredLoads = loads?.filter(load => 
+  const filteredLoads = loads?.filter((load: any) => 
     searchQuery === "" || 
     load.loadNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
     load.pickupLocation?.city?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -162,7 +162,7 @@ export default function InTransitPage() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {filteredLoads.map((load) => {
+            {filteredLoads.map((load: any) => {
               const eta = calculateETA(load.deliveryDate);
               const progress = getProgressPercentage(load);
               const speed = getCurrentSpeed();
