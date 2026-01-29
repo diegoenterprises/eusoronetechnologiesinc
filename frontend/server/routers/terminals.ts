@@ -305,7 +305,7 @@ export const terminalsRouter = router({
    * Get rack status
    */
   getRackStatus: protectedProcedure
-    .input(z.object({ terminalId: z.string().optional() }))
+    .input(z.object({ terminalId: z.string().optional(), terminal: z.string().optional() }).optional())
     .query(async ({ input }) => {
       return [
         {
