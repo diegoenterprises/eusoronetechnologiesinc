@@ -249,7 +249,6 @@ export const brokersRouter = router({
     .input(z.object({
       loadId: z.string(),
       carrierId: z.string().optional(),
-      carrierId: z.string().optional(),
       negotiatedRate: z.number().optional(),
       notes: z.string().optional(),
     }))
@@ -360,7 +359,6 @@ export const brokersRouter = router({
     .input(z.object({
       carrierId: z.string().optional(),
       loadId: z.string(),
-      carrierId: z.string().optional(),
       message: z.string(),
       requestedRate: z.number().optional(),
     }))
