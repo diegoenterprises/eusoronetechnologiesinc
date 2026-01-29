@@ -458,8 +458,8 @@ export const complianceRouter = router({
    */
   runClearinghouseQuery: protectedProcedure
     .input(z.object({
-      driverId: z.string(),
-      queryType: z.enum(["pre_employment", "annual"]),
+      driverId: z.string().optional(),
+      queryType: z.enum(["pre_employment", "annual"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       return {
@@ -831,7 +831,7 @@ export const complianceRouter = router({
    */
   assignTraining: protectedProcedure
     .input(z.object({
-      driverId: z.string(),
+      driverId: z.string().optional(),
       trainingType: z.string(),
       dueDate: z.string(),
       priority: z.enum(["low", "medium", "high"]).optional(),
@@ -870,7 +870,7 @@ export const complianceRouter = router({
   // DQ File
   getDQDrivers: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "complete", lastUpdated: "2025-01-20" }]),
   getDQStats: protectedProcedure.query(async () => ({ total: 150, complete: 140, incomplete: 8, missing: 2, expiringSoon: 5, totalDrivers: 25 })),
-  getDriverDQFile: protectedProcedure.input(z.object({ driverId: z.string(), search: z.string().optional() })).query(async ({ input }) => ({ driverId: input.driverId, name: "Mike Johnson", dqStatus: "complete", cdlNumber: "TX12345678", hireDate: "2022-01-15", completionPercent: 95, documents: [{ type: "cdl", status: "valid" }, { type: "medical", status: "valid" }] })),
+  getDriverDQFile: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() })).query(async ({ input }) => ({ driverId: input.driverId, name: "Mike Johnson", dqStatus: "complete", cdlNumber: "TX12345678", hireDate: "2022-01-15", completionPercent: 95, documents: [{ type: "cdl", status: "valid" }, { type: "medical", status: "valid" }] })),
   getDQFiles: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ driverId: "d1", name: "Mike Johnson", dqStatus: "complete", cdlNumber: "TX12345678", hireDate: "2022-01-15", completionPercent: 95, documents: [{ type: "cdl", status: "valid" }] }]),
 
   // Drug & Alcohol
