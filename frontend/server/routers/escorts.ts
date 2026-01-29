@@ -49,7 +49,7 @@ export const escortsRouter = router({
    * Get upcoming jobs
    */
   getUpcomingJobs: protectedProcedure
-    .input(z.object({ limit: z.number().optional().default(5) }))
+    .input(z.object({ limit: z.number().optional().default(5) }).optional())
     .query(async () => {
       return [
         {
