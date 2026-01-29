@@ -55,7 +55,7 @@ export default function AssignedLoadsPage() {
     return Math.floor(Math.random() * 40) + 60; // 60-100%
   };
 
-  const filteredLoads = loads?.filter(load => {
+  const filteredLoads = loads?.filter((load: any) => {
     const pickupCity = load.pickupLocation?.city || "";
     const deliveryCity = load.deliveryLocation?.city || "";
     const matchesSearch = searchQuery === "" || 
