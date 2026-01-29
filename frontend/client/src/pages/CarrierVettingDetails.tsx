@@ -189,10 +189,10 @@ export default function CarrierVettingDetails() {
                   [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-8 w-full" />)
                 ) : (
                   <>
-                    <div className="flex items-center gap-3"><MapPin className="w-4 h-4 text-slate-400" /><span className="text-white">{carrier?.address}</span></div>
+                    <div className="flex items-center gap-3"><MapPin className="w-4 h-4 text-slate-400" /><span className="text-white">{typeof carrier?.address === "object" ? `${carrier.address.street}, ${carrier.address.city}, ${carrier.address.state} ${carrier.address.zip}` : carrier?.address}</span></div>
                     <div className="flex items-center gap-3"><Phone className="w-4 h-4 text-slate-400" /><span className="text-white">{carrier?.phone}</span></div>
                     <div className="flex items-center gap-3"><Mail className="w-4 h-4 text-slate-400" /><span className="text-white">{carrier?.email}</span></div>
-                    <div className="flex items-center gap-3"><User className="w-4 h-4 text-slate-400" /><span className="text-white">{carrier?.primaryContact}</span></div>
+                    <div className="flex items-center gap-3"><User className="w-4 h-4 text-slate-400" /><span className="text-white">{typeof carrier?.primaryContact === "object" ? `${carrier.primaryContact.name} - ${carrier.primaryContact.phone}` : carrier?.primaryContact}</span></div>
                   </>
                 )}
               </CardContent>

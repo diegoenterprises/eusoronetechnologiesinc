@@ -51,8 +51,8 @@ export default function CreateLoad() {
     createMutation.mutate({
       origin: { city: formData.originCity, state: formData.originState },
       destination: { city: formData.destinationCity, state: formData.destinationState },
-      pickupDate: formData.pickupDate,
-      deliveryDate: formData.deliveryDate,
+      pickupDate: new Date(formData.pickupDate),
+      deliveryDate: new Date(formData.deliveryDate),
       equipmentType: formData.equipmentType,
       weight: parseInt(formData.weight) || 0,
       rate: parseFloat(formData.rate) || 0,
