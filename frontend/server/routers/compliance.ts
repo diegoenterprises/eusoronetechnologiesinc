@@ -862,7 +862,6 @@ export const complianceRouter = router({
     { id: "ch2", driverId: "d2", driverName: "Sarah Williams", type: "annual", status: "pending", completedAt: null, lastQuery: "2024-12-15" },
   ]),
   getClearinghouseStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalDrivers: 45, compliant: 42, pendingQueries: 3, clearDrivers: 42, violations: 2, totalQueries: 250, thisMonth: 15, clear: 42, pending: 3, total: 250 })),
-  runClearinghouseQuery: protectedProcedure.input(z.object({ driverId: z.string().optional(), queryType: z.enum(["pre_employment", "annual"]).optional() }).optional()).mutation(async ({ input }) => ({ success: true, queryId: "q_123" })),
   getClearinghouseDrivers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [
     { driverId: "d1", name: "Mike Johnson", status: "clear", lastQuery: "2025-01-18" },
     { driverId: "d2", name: "Sarah Williams", status: "pending", lastQuery: "2024-12-15" },
