@@ -756,7 +756,7 @@ export const driversRouter = router({
     rank: 3,
     totalDrivers: 24,
     trend: "up",
-    achievements: [{ id: "a1", name: "Perfect Week", earnedAt: "2025-01-20" }],
+    achievements: ["Perfect Week", "Safe Driver", "Customer Favorite"],
     stats: {
       loadsCompleted: 45,
       milesDriver: 12500,
