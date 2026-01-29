@@ -136,9 +136,9 @@ export default function CacheManagement() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-white">{stats?.memoryUsed} / {stats?.memoryLimit}</span>
-                <span className={cn("font-bold", stats?.memoryPercentage > 80 ? "text-red-400" : stats?.memoryPercentage > 60 ? "text-yellow-400" : "text-green-400")}>{stats?.memoryPercentage}%</span>
+                <span className={cn("font-bold", (stats?.memoryPercentage ?? 0) > 80 ? "text-red-400" : (stats?.memoryPercentage ?? 0) > 60 ? "text-yellow-400" : "text-green-400")}>{stats?.memoryPercentage}%</span>
               </div>
-              <Progress value={stats?.memoryPercentage} className={cn("h-3", stats?.memoryPercentage > 80 && "[&>div]:bg-red-500")} />
+              <Progress value={stats?.memoryPercentage ?? 0} className={cn("h-3", (stats?.memoryPercentage ?? 0) > 80 && "[&>div]:bg-red-500")} />
             </div>
           )}
         </CardContent>

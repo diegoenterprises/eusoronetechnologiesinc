@@ -78,13 +78,13 @@ export default function CompetitorAnalysis() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", marketShare?.shareChange > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
-                {marketShare?.shareChange > 0 ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
+              <div className={cn("p-3 rounded-full", (marketShare?.shareChange ?? 0) > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
+                {(marketShare?.shareChange ?? 0) > 0 ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
               </div>
               <div>
                 {marketShareQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className={cn("text-2xl font-bold", marketShare?.shareChange > 0 ? "text-green-400" : "text-red-400")}>
-                    {marketShare?.shareChange > 0 ? "+" : ""}{marketShare?.shareChange}%
+                  <p className={cn("text-2xl font-bold", (marketShare?.shareChange ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                    {(marketShare?.shareChange ?? 0) > 0 ? "+" : ""}{marketShare?.shareChange}%
                   </p>
                 )}
                 <p className="text-xs text-slate-400">Share Change</p>

@@ -47,7 +47,7 @@ export default function ComplianceDashboard() {
       </div>
 
       {statsQuery.isLoading ? <Skeleton className="h-32 w-full rounded-xl" /> : (
-        <Card className={cn("rounded-xl", stats?.overallScore >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : stats?.overallScore >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
+        <Card className={cn("rounded-xl", (stats?.overallScore ?? 0) >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : (stats?.overallScore ?? 0) >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
