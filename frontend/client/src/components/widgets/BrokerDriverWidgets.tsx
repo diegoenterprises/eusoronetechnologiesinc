@@ -19,7 +19,7 @@ export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
   // Auto-refresh every 30 seconds
   useAutoRefresh(() => refetch(), 30000);
   
-  const availableLoads = loads?.filter(l => l.status === 'posted').slice(0, compact ? 3 : 5) || [];
+  const availableLoads = loads?.filter((l: any) => l.status === 'posted').slice(0, compact ? 3 : 5) || [];
 
   return (
     <div className="space-y-3">
@@ -29,7 +29,7 @@ export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
           <p>No loads available</p>
         </div>
       ) : (
-        availableLoads.map(load => (
+        availableLoads.map((load: any) => (
           <div 
             key={load.id}
             onClick={() => navigate(`/loads/${load.id}`)}

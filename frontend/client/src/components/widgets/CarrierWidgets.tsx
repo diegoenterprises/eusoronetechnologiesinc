@@ -74,7 +74,7 @@ export const LoadMatchingWidget: React.FC<{ compact?: boolean }> = ({ compact = 
   // Auto-refresh every 30 seconds
   useAutoRefresh(() => refetch(), 30000);
   
-  const availableLoads = loads?.filter(l => l.status === 'posted').slice(0, compact ? 3 : 5) || [];
+  const availableLoads = loads?.filter((l: any) => l.status === 'posted').slice(0, compact ? 3 : 5) || [];
 
   return (
     <div className="space-y-3">
@@ -84,7 +84,7 @@ export const LoadMatchingWidget: React.FC<{ compact?: boolean }> = ({ compact = 
           <p>No matching loads</p>
         </div>
       ) : (
-        availableLoads.map(load => (
+        availableLoads.map((load: any) => (
           <div 
             key={load.id}
             onClick={() => navigate(`/loads/${load.id}`)}
@@ -280,8 +280,8 @@ export const FuelCostsWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
 export const AvailableLoadsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { data: loads } = trpc.loads.list.useQuery({ limit: 100 });
   
-  const available = loads?.filter(l => l.status === 'posted').length || 0;
-  const bidding = loads?.filter(l => l.status === 'bidding').length || 0;
+  const available = loads?.filter((l: any) => l.status === 'posted').length || 0;
+  const bidding = loads?.filter((l: any) => l.status === 'bidding').length || 0;
 
   return (
     <div className="grid grid-cols-2 gap-3">

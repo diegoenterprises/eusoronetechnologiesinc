@@ -19,7 +19,7 @@ export const ShipmentTrackingWidget: React.FC<{ compact?: boolean }> = ({ compac
 
   if (isLoading) return <div className="text-gray-400">Loading...</div>;
 
-  const activeShipments = loads?.filter(l => ['posted', 'accepted', 'in_transit'].includes(l.status)) || [];
+  const activeShipments = loads?.filter((l: any) => ['posted', 'accepted', 'in_transit'].includes(l.status)) || [];
 
   if (compact) {
     return (
@@ -38,7 +38,7 @@ export const ShipmentTrackingWidget: React.FC<{ compact?: boolean }> = ({ compac
           <p>No active shipments</p>
         </div>
       ) : (
-        activeShipments.slice(0, 5).map(load => (
+        activeShipments.slice(0, 5).map((load: any) => (
           <div 
             key={load.id} 
             onClick={() => navigate(`/loads/${load.id}`)}
@@ -168,7 +168,7 @@ export const FreightQuotesWidget: React.FC<{ compact?: boolean }> = ({ compact =
 export const DeliveryPerformanceWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const { data: loads } = trpc.loads.list.useQuery({ limit: 100 });
   
-  const delivered = loads?.filter(l => l.status === 'delivered').length || 0;
+  const delivered = loads?.filter((l: any) => l.status === 'delivered').length || 0;
   const total = loads?.length || 1;
   const onTimeRate = Math.round((delivered / total) * 100);
 
@@ -303,7 +303,7 @@ export const ShipmentHistoryWidget: React.FC<{ compact?: boolean }> = ({ compact
 
   return (
     <div className="space-y-2">
-      {recentLoads.map(load => (
+      {recentLoads.map((load: any) => (
         <div key={load.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-800/50">
           <div className="flex items-center gap-2">
             <Package className="w-4 h-4 text-gray-400" />
