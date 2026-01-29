@@ -140,7 +140,7 @@ export const esangRouter = router({
     actions: ["Evacuate", "No ignition sources"],
     hazardClasses: ["Class 3 - Flammable Liquids"],
     potentialHazards: [{ type: "fire", description: "Highly flammable" }, { type: "health", description: "May cause irritation" }, { type: "environment", description: "Harmful to aquatic life" }],
-    publicSafety: [{ label: "Call Number", value: "911" }, { label: "Isolation Distance", value: "100 meters" }, { label: "Protective Actions", value: "Evacuate area" }],
+    publicSafety: ["Call 911 immediately", "Isolate area for 100 meters", "Evacuate downwind areas"],
     emergencyResponse: { fire: ["Use dry chemical, CO2, or foam", "Do not use water"], spill: ["Eliminate ignition sources", "Contain spill"], firstAid: ["Move to fresh air", "Seek medical attention"] },
   })),
   getRecentERGLookups: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ guideNumber: "128", product: "Gasoline", date: "2025-01-23" }]),
