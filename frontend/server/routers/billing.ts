@@ -16,7 +16,8 @@ export const billingRouter = router({
   getSubscription: protectedProcedure
     .query(async () => {
       return { 
-        plan: "Professional", 
+        plan: "Professional",
+        planId: "professional",
         planName: "Professional",
         status: "active", 
         billingCycle: "monthly", 
