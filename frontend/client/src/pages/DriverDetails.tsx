@@ -144,28 +144,28 @@ export default function DriverDetails() {
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-slate-400">Driving Time</span>
-                    <span className="text-white font-bold">{hos?.drivingHours || 0}h / 11h</span>
+                    <span className="text-white font-bold">{typeof hos?.drivingHours === 'number' ? hos.drivingHours : (hos?.drivingHours as any)?.used || 0}h / 11h</span>
                   </div>
-                  <Progress value={((hos?.drivingHours || 0) / 11) * 100} className="h-3" />
-                  <p className="text-xs text-slate-500 mt-2">{11 - (hos?.drivingHours || 0)}h remaining</p>
+                  <Progress value={((typeof hos?.drivingHours === 'number' ? hos.drivingHours : (hos?.drivingHours as any)?.used || 0) / 11) * 100} className="h-3" />
+                  <p className="text-xs text-slate-500 mt-2">{11 - (typeof hos?.drivingHours === 'number' ? hos.drivingHours : (hos?.drivingHours as any)?.used || 0)}h remaining</p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-slate-400">On-Duty Time</span>
-                    <span className="text-white font-bold">{hos?.onDutyHours || 0}h / 14h</span>
+                    <span className="text-white font-bold">{typeof hos?.onDutyHours === 'number' ? hos.onDutyHours : (hos?.onDutyHours as any)?.used || 0}h / 14h</span>
                   </div>
-                  <Progress value={((hos?.onDutyHours || 0) / 14) * 100} className="h-3" />
-                  <p className="text-xs text-slate-500 mt-2">{14 - (hos?.onDutyHours || 0)}h remaining</p>
+                  <Progress value={((typeof hos?.onDutyHours === 'number' ? hos.onDutyHours : (hos?.onDutyHours as any)?.used || 0) / 14) * 100} className="h-3" />
+                  <p className="text-xs text-slate-500 mt-2">{14 - (typeof hos?.onDutyHours === 'number' ? hos.onDutyHours : (hos?.onDutyHours as any)?.used || 0)}h remaining</p>
                 </div>
 
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-slate-400">70hr Cycle</span>
-                    <span className="text-white font-bold">{hos?.cycleHours || 0}h / 70h</span>
+                    <span className="text-white font-bold">{typeof hos?.cycleHours === 'number' ? hos.cycleHours : (hos?.cycleHours as any)?.used || 0}h / 70h</span>
                   </div>
-                  <Progress value={((hos?.cycleHours || 0) / 70) * 100} className="h-3" />
-                  <p className="text-xs text-slate-500 mt-2">{70 - (hos?.cycleHours || 0)}h remaining</p>
+                  <Progress value={((typeof hos?.cycleHours === 'number' ? hos.cycleHours : (hos?.cycleHours as any)?.used || 0) / 70) * 100} className="h-3" />
+                  <p className="text-xs text-slate-500 mt-2">{70 - (typeof hos?.cycleHours === 'number' ? hos.cycleHours : (hos?.cycleHours as any)?.used || 0)}h remaining</p>
                 </div>
               </>
             )}

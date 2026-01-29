@@ -74,7 +74,7 @@ export default function CSAScores() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-red-500/20"><AlertTriangle className="w-6 h-6 text-red-400" /></div>
-              <div>{scoresQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{scores?.alerts || 0}</p>}<p className="text-xs text-slate-400">Alerts</p></div>
+              <div>{scoresQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-red-400">{typeof scores?.alerts === 'number' ? scores.alerts : (Array.isArray(scores?.alerts) ? scores.alerts.length : 0)}</p>}<p className="text-xs text-slate-400">Alerts</p></div>
             </div>
           </CardContent>
         </Card>
@@ -96,7 +96,7 @@ export default function CSAScores() {
           ) : (
             <div className="space-y-4">
               {basicCategories.map((category) => {
-                const score = scores?.categories?.[category.key] || 0;
+                const score = (scores?.categories as any)?.[category.key] || 0;
                 const isAlert = score >= category.threshold;
                 return (
                   <div key={category.key} className={cn("p-4 rounded-xl", isAlert ? "bg-red-500/10 border border-red-500/30" : "bg-slate-700/30")}>

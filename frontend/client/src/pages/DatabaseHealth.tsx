@@ -71,7 +71,7 @@ export default function DatabaseHealth() {
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-white text-2xl font-bold">Database Status</p>
-                  {getStatusBadge(health?.status)}
+                  {getStatusBadge(health?.status || "")}
                 </div>
                 <p className="text-slate-400">Uptime: {health?.uptime} | Version: {health?.version}</p>
               </div>
@@ -90,7 +90,7 @@ export default function DatabaseHealth() {
               </div>
               <div>
                 {healthQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{health?.connections}</p>
+                  <p className="text-2xl font-bold text-blue-400">{typeof health?.connections === 'object' ? `${(health.connections as any).active}/${(health.connections as any).max}` : health?.connections}</p>
                 )}
                 <p className="text-xs text-slate-400">Connections</p>
               </div>
