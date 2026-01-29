@@ -25,8 +25,9 @@ export default function DriverMobileApp() {
 
   const updateStatusMutation = trpc.drivers.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated"); assignmentQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update status", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update status", { description: error.message }),
   });
+  const currentDriverId = driverQuery.data?.id || "";
 
   const driver = driverQuery.data;
   const assignment = assignmentQuery.data;
@@ -170,15 +171,15 @@ export default function DriverMobileApp() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "on_load" as any })}>
+            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ driverId: currentDriverId, status: "on_load" })}>
               <MapPin className="w-6 h-6 mb-1 text-cyan-400" />
               <span>Arrived</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "on_load" as any })}>
+            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ driverId: currentDriverId, status: "on_load" })}>
               <Truck className="w-6 h-6 mb-1 text-yellow-400" />
               <span>Loading</span>
             </Button>
-            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ status: "available" as any })}>
+            <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => updateStatusMutation.mutate({ driverId: currentDriverId, status: "available" })}>
               <CheckCircle className="w-6 h-6 mb-1 text-green-400" />
               <span>Departed</span>
             </Button>

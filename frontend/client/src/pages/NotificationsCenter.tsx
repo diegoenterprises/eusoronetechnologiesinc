@@ -96,7 +96,7 @@ export default function NotificationsCenter() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700">
-                  {notificationsQuery.data?.map((notification) => {
+                  {notificationsQuery.data?.map((notification: any) => {
                     const TypeIcon = getTypeIcon(notification.type);
                     return (
                       <div

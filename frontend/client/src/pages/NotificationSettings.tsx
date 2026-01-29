@@ -39,19 +39,19 @@ export default function NotificationSettings() {
         {emailKey && (
           <div className="flex items-center gap-2">
             <Mail className="w-4 h-4 text-slate-400" />
-            <Switch checked={settings?.[emailKey]} onCheckedChange={(checked) => updateMutation.mutate({ setting: emailKey, value: checked })} />
+            <Switch checked={(settings as any)?.[emailKey]} onCheckedChange={(checked) => updateMutation.mutate({ setting: emailKey, value: checked })} />
           </div>
         )}
         {pushKey && (
           <div className="flex items-center gap-2">
             <Bell className="w-4 h-4 text-slate-400" />
-            <Switch checked={settings?.[pushKey]} onCheckedChange={(checked) => updateMutation.mutate({ setting: pushKey, value: checked })} />
+            <Switch checked={(settings as any)?.[pushKey]} onCheckedChange={(checked) => updateMutation.mutate({ setting: pushKey, value: checked })} />
           </div>
         )}
         {smsKey && (
           <div className="flex items-center gap-2">
             <Smartphone className="w-4 h-4 text-slate-400" />
-            <Switch checked={settings?.[smsKey]} onCheckedChange={(checked) => updateMutation.mutate({ setting: smsKey, value: checked })} />
+            <Switch checked={(settings as any)?.[smsKey]} onCheckedChange={(checked) => updateMutation.mutate({ setting: smsKey, value: checked })} />
           </div>
         )}
       </div>
