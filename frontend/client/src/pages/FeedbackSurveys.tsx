@@ -151,7 +151,7 @@ export default function FeedbackSurveys() {
                     {renderQuestion(question)}
                   </div>
                 ))}
-                <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => submitMutation.mutate({ surveyId: selectedSurvey, responses })}>
+                <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => submitMutation.mutate({ surveyId: selectedSurvey, responses: Object.entries(responses).map(([questionId, answer]) => ({ questionId, answer })) })}>
                   <Send className="w-4 h-4 mr-2" />Submit Feedback
                 </Button>
               </>

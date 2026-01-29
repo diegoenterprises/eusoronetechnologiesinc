@@ -23,7 +23,7 @@ export default function FactoringServices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const invoicesQuery = trpc.factoring.getInvoices.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const invoicesQuery = trpc.factoring.getInvoices.useQuery({ status: statusFilter === "all" ? undefined : statusFilter as "pending" | "submitted" | "paid" | "approved" | "rejected" | "disputed" | "funded", limit: 50 });
   const summaryQuery = trpc.factoring.getSummary.useQuery();
   const ratesQuery = trpc.factoring.getRates.useQuery();
 

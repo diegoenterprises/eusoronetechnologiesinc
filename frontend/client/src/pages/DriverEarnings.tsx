@@ -56,7 +56,7 @@ export default function DriverEarnings() {
           <p className="text-slate-400 text-sm">Track your compensation and payouts</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={setPeriod}>
+          <Select value={period} onValueChange={(v) => setPeriod(v as "week" | "month" | "quarter" | "year")}>
             <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="week">This Week</SelectItem>

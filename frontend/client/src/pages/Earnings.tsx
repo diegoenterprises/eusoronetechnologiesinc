@@ -21,8 +21,8 @@ export default function Earnings() {
   const [activeTab, setActiveTab] = useState("all");
   const [period, setPeriod] = useState("week");
 
-  const earningsQuery = trpc.earnings.getHistory.useQuery({ period });
-  const summaryQuery = trpc.earnings.getSummary.useQuery({ period });
+  const earningsQuery = trpc.earnings.getHistory.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
+  const summaryQuery = trpc.earnings.getSummary.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
 
   const summary = summaryQuery.data;
 

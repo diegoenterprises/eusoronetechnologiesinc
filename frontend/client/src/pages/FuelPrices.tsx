@@ -22,10 +22,10 @@ export default function FuelPrices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [fuelType, setFuelType] = useState("diesel");
 
-  const pricesQuery = trpc.fuel.getPrices.useQuery({ fuelType });
-  const averagesQuery = trpc.fuel.getAverages.useQuery({ fuelType });
-  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ fuelType, limit: 20 });
-  const trendsQuery = trpc.fuel.getTrends.useQuery({ fuelType, days: 30 });
+  const pricesQuery = trpc.fuel.getPrices.useQuery({});
+  const averagesQuery = trpc.fuel.getAverages.useQuery({});
+  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({});
+  const trendsQuery = trpc.fuel.getTrends.useQuery({ days: 30 });
 
   const averages = averagesQuery.data;
 
@@ -192,7 +192,7 @@ export default function FuelPrices() {
               <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-3">
-                {pricesQuery.data?.regions?.map((region: any) => (
+                {(pricesQuery.data as any)?.regions?.map((region: any) => (
                   <div key={region.name} className="p-3 rounded-xl bg-slate-700/30 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{region.name}</p>
