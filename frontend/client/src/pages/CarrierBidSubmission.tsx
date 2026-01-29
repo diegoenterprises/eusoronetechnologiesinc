@@ -70,7 +70,7 @@ export default function CarrierBidSubmission() {
     });
   };
 
-  const ratePerMile = bidAmount && load?.distance ? (parseFloat(bidAmount) / (load.distance || 1)).toFixed(2) : "0.00";
+  const ratePerMile = bidAmount && load?.distance ? (parseFloat(bidAmount) / (Number(load.distance) || 1)).toFixed(2) : "0.00";
 
   return (
     <div className="p-4 md:p-6 space-y-6">
