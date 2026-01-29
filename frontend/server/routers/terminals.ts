@@ -620,7 +620,7 @@ export const terminalsRouter = router({
    * Get tank inventory for TerminalInventory page
    */
   getTankInventory: protectedProcedure
-    .input(z.object({ terminalId: z.string().optional() }))
+    .input(z.object({ terminalId: z.string().optional(), product: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       return [
         {
