@@ -155,7 +155,7 @@ export const safetyRouter = router({
       ];
       let filtered = incidents;
       if (input.filter && input.filter !== "all") filtered = filtered.filter(i => i.status === input.filter);
-      if (input.search) {
+      if (input?.search) {
         const q = input.search.toLowerCase();
         filtered = filtered.filter(i => i.driver.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
       }
@@ -188,12 +188,12 @@ export const safetyRouter = router({
         { id: "i3", number: "INC-2025-0043", type: "violation", status: "open", date: "2025-01-18", driver: "Tom Brown", severity: "moderate" },
       ];
       let filtered = incidents;
-      if (input.search) {
+      if (input?.search) {
         const q = input.search.toLowerCase();
         filtered = filtered.filter(i => i.driver.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
       }
-      if (input.status) filtered = filtered.filter(i => i.status === input.status);
-      if (input.type) filtered = filtered.filter(i => i.type === input.type);
+      if (input?.status) filtered = filtered.filter(i => i.status === input.status);
+      if (input?.type) filtered = filtered.filter(i => i.type === input.type);
       return filtered;
     }),
 
@@ -546,7 +546,7 @@ export const safetyRouter = router({
       ];
 
       let filtered = incidents;
-      if (input.search) {
+      if (input?.search) {
         const s = input.search.toLowerCase();
         filtered = filtered.filter(i => 
           i.description.toLowerCase().includes(s) ||
