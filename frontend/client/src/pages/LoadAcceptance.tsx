@@ -114,7 +114,7 @@ export default function LoadAcceptance() {
                     </div>
                   </div>
 
-                  {!hos?.canAccept && load.estimatedHours > hos?.drivingRemaining && (
+                  {!hos?.canAccept && load.estimatedHours > (hos?.drivingRemaining ?? 0) && (
                     <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 mb-4 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-red-400" />
                       <p className="text-sm text-red-400">Insufficient HOS for this load. Estimated {load.estimatedHours}h driving required.</p>

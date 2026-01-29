@@ -44,19 +44,19 @@ export default function SafetyManagerDashboard() {
       </div>
 
       {statsQuery.isLoading ? <Skeleton className="h-32 w-full rounded-xl" /> : (
-        <Card className={cn("rounded-xl", stats?.safetyScore >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : stats?.safetyScore >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
+        <Card className={cn("rounded-xl", (stats?.safetyScore ?? 0) >= 90 ? "bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30" : (stats?.safetyScore ?? 0) >= 70 ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30" : "bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30")}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-sm">Safety Score</p>
-                <p className={cn("text-5xl font-bold", stats?.safetyScore >= 90 ? "text-green-400" : stats?.safetyScore >= 70 ? "text-yellow-400" : "text-red-400")}>{stats?.safetyScore}</p>
+                <p className={cn("text-5xl font-bold", (stats?.safetyScore ?? 0) >= 90 ? "text-green-400" : (stats?.safetyScore ?? 0) >= 70 ? "text-yellow-400" : "text-red-400")}>{stats?.safetyScore}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {stats?.trend === "up" ? <TrendingUp className="w-4 h-4 text-green-400" /> : <TrendingUp className="w-4 h-4 text-red-400 rotate-180" />}
                   <span className="text-sm text-slate-400">{stats?.trendPercent}% from last month</span>
                 </div>
               </div>
-              <div className={cn("p-4 rounded-full", stats?.safetyScore >= 90 ? "bg-green-500/20" : stats?.safetyScore >= 70 ? "bg-yellow-500/20" : "bg-red-500/20")}>
-                <Shield className={cn("w-12 h-12", stats?.safetyScore >= 90 ? "text-green-400" : stats?.safetyScore >= 70 ? "text-yellow-400" : "text-red-400")} />
+              <div className={cn("p-4 rounded-full", (stats?.safetyScore ?? 0) >= 90 ? "bg-green-500/20" : (stats?.safetyScore ?? 0) >= 70 ? "bg-yellow-500/20" : "bg-red-500/20")}>
+                <Shield className={cn("w-12 h-12", (stats?.safetyScore ?? 0) >= 90 ? "text-green-400" : (stats?.safetyScore ?? 0) >= 70 ? "text-yellow-400" : "text-red-400")} />
               </div>
             </div>
           </CardContent>
