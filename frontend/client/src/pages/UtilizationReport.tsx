@@ -64,11 +64,11 @@ export default function UtilizationReport() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className={cn("rounded-xl", summary?.fleetUtilization >= 85 ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30" : "bg-slate-800/50 border-slate-700/50")}>
+        <Card className={cn("rounded-xl", (summary?.fleetUtilization ?? 0) >= 85 ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30" : "bg-slate-800/50 border-slate-700/50")}>
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", summary?.fleetUtilization >= 85 ? "bg-green-500/20" : "bg-blue-500/20")}>
-                <Truck className={cn("w-6 h-6", summary?.fleetUtilization >= 85 ? "text-green-400" : "text-blue-400")} />
+              <div className={cn("p-3 rounded-full", (summary?.fleetUtilization ?? 0) >= 85 ? "bg-green-500/20" : "bg-blue-500/20")}>
+                <Truck className={cn("w-6 h-6", (summary?.fleetUtilization ?? 0) >= 85 ? "text-green-400" : "text-blue-400")} />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
@@ -115,13 +115,13 @@ export default function UtilizationReport() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className={cn("p-3 rounded-full", summary?.trend > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
-                {summary?.trend > 0 ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
+              <div className={cn("p-3 rounded-full", (summary?.trend ?? 0) > 0 ? "bg-green-500/20" : "bg-red-500/20")}>
+                {(summary?.trend ?? 0) > 0 ? <TrendingUp className="w-6 h-6 text-green-400" /> : <TrendingDown className="w-6 h-6 text-red-400" />}
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className={cn("text-2xl font-bold", summary?.trend > 0 ? "text-green-400" : "text-red-400")}>
-                    {summary?.trend > 0 ? "+" : ""}{summary?.trend}%
+                  <p className={cn("text-2xl font-bold", (summary?.trend ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
+                    {(summary?.trend ?? 0) > 0 ? "+" : ""}{summary?.trend}%
                   </p>
                 )}
                 <p className="text-xs text-slate-400">vs Last Period</p>
@@ -148,9 +148,9 @@ export default function UtilizationReport() {
                 <span className="text-slate-400">Current: {summary?.fleetUtilization}%</span>
                 <span className="text-emerald-400">Target: {summary?.targetUtilization}%</span>
               </div>
-              <Progress value={(summary?.fleetUtilization / summary?.targetUtilization) * 100} className="h-3" />
+              <Progress value={((summary?.fleetUtilization ?? 0) / (summary?.targetUtilization ?? 1)) * 100} className="h-3" />
               <p className="text-sm text-slate-500">
-                {summary?.fleetUtilization >= summary?.targetUtilization ? "Target achieved!" : `${(summary?.targetUtilization - summary?.fleetUtilization).toFixed(1)}% below target`}
+                {(summary?.fleetUtilization ?? 0) >= (summary?.targetUtilization ?? 0) ? "Target achieved!" : `${((summary?.targetUtilization ?? 0) - (summary?.fleetUtilization ?? 0)).toFixed(1)}% below target`}
               </p>
             </div>
           )}
