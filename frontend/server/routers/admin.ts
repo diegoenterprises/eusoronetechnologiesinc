@@ -916,7 +916,7 @@ export const adminRouter = router({
 
   // Broadcasts
   getBroadcasts: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
-  sendBroadcast: protectedProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
+  sendBroadcast: protectedProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional(), audience: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
   deleteBroadcast: protectedProcedure.input(z.object({ broadcastId: z.string() })).mutation(async ({ input }) => ({ success: true, broadcastId: input.broadcastId })),
   getAudiences: protectedProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
 
