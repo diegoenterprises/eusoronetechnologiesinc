@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { loads } from "../../drizzle/schema";
 
 export const lanesRouter = router({
   /**

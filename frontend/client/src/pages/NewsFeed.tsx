@@ -1,6 +1,6 @@
 /**
  * NEWS FEED PAGE
- * 100% Dynamic - No mock data
+ * Real-time RSS feed aggregation - 100% Dynamic
  */
 
 import React, { useState } from "react";
@@ -12,10 +12,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Newspaper, Clock, Eye, Share2, Bookmark, Search,
-  TrendingUp, AlertTriangle, Truck, DollarSign, Shield
+  Newspaper, Clock, Eye, Share2, Bookmark, Search, ExternalLink,
+  TrendingUp, AlertTriangle, Truck, DollarSign, Shield, Fuel,
+  Snowflake, FlaskConical, Ship, Globe, Zap, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDistanceToNow } from "date-fns";
+
+const CATEGORIES = [
+  { value: "all", label: "All News", icon: Newspaper },
+  { value: "logistics", label: "Logistics", icon: Truck },
+  { value: "oil_gas", label: "Oil & Gas", icon: Fuel },
+  { value: "chemical", label: "Chemical", icon: FlaskConical },
+  { value: "refrigerated", label: "Cold Chain", icon: Snowflake },
+  { value: "bulk", label: "Bulk", icon: Truck },
+  { value: "hazmat", label: "Hazmat", icon: AlertTriangle },
+  { value: "marine", label: "Marine", icon: Ship },
+];
 
 export default function NewsFeed() {
   const [activeTab, setActiveTab] = useState("all");
@@ -24,26 +37,38 @@ export default function NewsFeed() {
   const newsQuery = trpc.news.getArticles.useQuery({
     category: activeTab !== "all" ? activeTab : undefined,
     search: searchTerm || undefined,
+    limit: 50,
   });
   const trendingQuery = trpc.news.getTrending.useQuery();
+  const refreshMutation = trpc.news.refreshFeeds.useMutation({
+    onSuccess: () => newsQuery.refetch(),
+  });
 
   const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "industry": return Truck;
-      case "regulations": return Shield;
-      case "market": return DollarSign;
-      case "safety": return AlertTriangle;
-      default: return Newspaper;
-    }
+    const cat = CATEGORIES.find(c => c.value === category);
+    return cat?.icon || Newspaper;
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case "industry": return "bg-blue-500/20 text-blue-400";
-      case "regulations": return "bg-purple-500/20 text-purple-400";
-      case "market": return "bg-green-500/20 text-green-400";
-      case "safety": return "bg-red-500/20 text-red-400";
+      case "logistics": return "bg-blue-500/20 text-blue-400";
+      case "oil_gas": return "bg-orange-500/20 text-orange-400";
+      case "chemical": return "bg-purple-500/20 text-purple-400";
+      case "refrigerated": return "bg-cyan-500/20 text-cyan-400";
+      case "bulk": return "bg-amber-500/20 text-amber-400";
+      case "hazmat": return "bg-red-500/20 text-red-400";
+      case "marine": return "bg-teal-500/20 text-teal-400";
+      case "supply_chain": return "bg-green-500/20 text-green-400";
+      case "energy": return "bg-yellow-500/20 text-yellow-400";
       default: return "bg-slate-500/20 text-slate-400";
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+    } catch {
+      return dateStr;
     }
   };
 
@@ -53,8 +78,17 @@ export default function NewsFeed() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Industry News</h1>
-          <p className="text-slate-400 text-sm">Stay updated with the latest in trucking and logistics</p>
+          <p className="text-slate-400 text-sm">Real-time RSS feeds from 30+ industry sources</p>
         </div>
+        <Button
+          variant="outline"
+          onClick={() => refreshMutation.mutate()}
+          disabled={refreshMutation.isPending}
+          className="border-slate-600"
+        >
+          <RefreshCw className={cn("w-4 h-4 mr-2", refreshMutation.isPending && "animate-spin")} />
+          Refresh
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -67,12 +101,13 @@ export default function NewsFeed() {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-slate-800 border border-slate-700">
-              <TabsTrigger value="all" className="data-[state=active]:bg-blue-600">All</TabsTrigger>
-              <TabsTrigger value="industry" className="data-[state=active]:bg-blue-600">Industry</TabsTrigger>
-              <TabsTrigger value="regulations" className="data-[state=active]:bg-blue-600">Regulations</TabsTrigger>
-              <TabsTrigger value="market" className="data-[state=active]:bg-blue-600">Market</TabsTrigger>
-              <TabsTrigger value="safety" className="data-[state=active]:bg-blue-600">Safety</TabsTrigger>
+            <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
+              {CATEGORIES.map((cat) => (
+                <TabsTrigger key={cat.value} value={cat.value} className="data-[state=active]:bg-blue-600 text-xs">
+                  <cat.icon className="w-3 h-3 mr-1" />
+                  {cat.label}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             <TabsContent value={activeTab} className="mt-6">
@@ -88,29 +123,35 @@ export default function NewsFeed() {
                   {newsQuery.data?.map((article) => {
                     const CategoryIcon = getCategoryIcon(article.category);
                     return (
-                      <Card key={article.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors cursor-pointer">
+                      <Card key={article.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
                         <CardContent className="p-4">
                           <div className="flex gap-4">
                             {article.imageUrl && (
                               <div className="w-32 h-24 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
-                                <img src={article.imageUrl} alt="" className="w-full h-full object-cover" />
+                                <img src={article.imageUrl} alt="" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
                               </div>
                             )}
                             <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
                                 <Badge className={getCategoryColor(article.category)}>
-                                  <CategoryIcon className="w-3 h-3 mr-1" />{article.category}
+                                  <CategoryIcon className="w-3 h-3 mr-1" />{article.category.replace('_', ' ')}
                                 </Badge>
                                 <span className="text-xs text-slate-500 flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />{article.publishedAt}
+                                  <Clock className="w-3 h-3" />{formatDate(article.publishedAt)}
                                 </span>
                               </div>
-                              <h3 className="text-white font-medium mb-2 line-clamp-2">{article.title}</h3>
+                              <a href={article.link} target="_blank" rel="noopener noreferrer" className="block group">
+                                <h3 className="text-white font-medium mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">{article.title}</h3>
+                              </a>
                               <p className="text-sm text-slate-400 line-clamp-2">{article.summary}</p>
                               <div className="flex items-center justify-between mt-3">
                                 <span className="text-xs text-slate-500">{article.source}</span>
                                 <div className="flex items-center gap-2">
-                                  <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>
+                                  <Button variant="ghost" size="sm" asChild>
+                                    <a href={article.link} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="w-4 h-4" />
+                                    </a>
+                                  </Button>
                                   <Button variant="ghost" size="sm"><Bookmark className="w-4 h-4" /></Button>
                                   <Button variant="ghost" size="sm"><Share2 className="w-4 h-4" /></Button>
                                 </div>

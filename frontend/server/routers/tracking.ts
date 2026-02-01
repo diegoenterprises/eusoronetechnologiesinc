@@ -1,10 +1,14 @@
 /**
  * TRACKING ROUTER
  * tRPC procedures for real-time shipment and vehicle tracking
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
+import { eq, and, desc } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { loads, vehicles, users, companies, gpsTracking } from "../../drizzle/schema";
 
 export const trackingRouter = router({
   /**
@@ -16,42 +20,76 @@ export const trackingRouter = router({
       accessCode: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      return {
-        loadNumber: input.loadNumber,
-        status: "in_transit",
-        origin: {
-          name: "Shell Houston Terminal",
-          address: "1234 Refinery Rd, Houston, TX 77001",
-          departedAt: "2025-01-23T08:00:00Z",
-        },
-        destination: {
-          name: "7-Eleven Distribution Center",
-          address: "5678 Commerce Dr, Dallas, TX 75201",
-          eta: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        },
-        currentLocation: {
-          lat: 31.5493,
-          lng: -97.1467,
-          address: "Near Waco, TX",
-          updatedAt: new Date().toISOString(),
-        },
-        progress: 65,
-        driver: {
-          name: "Mike J.",
-          phone: "555-***-0100",
-        },
-        carrier: {
-          name: "ABC Transport LLC",
-          mcNumber: "MC-123456",
-        },
-        milestones: [
-          { status: "created", timestamp: "2025-01-22T14:00:00Z", completed: true },
-          { status: "dispatched", timestamp: "2025-01-22T16:00:00Z", completed: true },
-          { status: "picked_up", timestamp: "2025-01-23T08:00:00Z", completed: true },
-          { status: "in_transit", timestamp: "2025-01-23T08:30:00Z", completed: true },
-          { status: "delivered", timestamp: null, completed: false },
-        ],
-      };
+      const db = await getDb();
+      if (!db) return null;
+
+      try {
+        const [load] = await db.select()
+          .from(loads)
+          .where(eq(loads.loadNumber, input.loadNumber))
+          .limit(1);
+
+        if (!load) return null;
+
+        const pickup = load.pickupLocation as any || {};
+        const delivery = load.deliveryLocation as any || {};
+
+        // Get driver info if assigned
+        let driverInfo = { name: "Not assigned", phone: "" };
+        if (load.driverId) {
+          const [driver] = await db.select({ name: users.name, phone: users.phone })
+            .from(users).where(eq(users.id, load.driverId)).limit(1);
+          if (driver) {
+            driverInfo = { name: driver.name?.split(' ')[0] + " " + (driver.name?.split(' ')[1]?.[0] || "") + ".", phone: "***-***-" + (driver.phone?.slice(-4) || "0000") };
+          }
+        }
+
+        // Get carrier info
+        let carrierInfo = { name: "Carrier", mcNumber: "" };
+        if (load.carrierId) {
+          const [carrier] = await db.select({ name: companies.name, mcNumber: companies.mcNumber })
+            .from(companies).where(eq(companies.id, load.carrierId)).limit(1);
+          if (carrier) carrierInfo = { name: carrier.name, mcNumber: carrier.mcNumber || "" };
+        }
+
+        // Get current GPS location if available
+        let currentLocation = { lat: 0, lng: 0, address: "Location unavailable", updatedAt: new Date().toISOString() };
+        if (load.driverId) {
+          const [gps] = await db.select()
+            .from(gpsTracking)
+            .where(eq(gpsTracking.driverId, load.driverId))
+            .orderBy(desc(gpsTracking.timestamp))
+            .limit(1);
+          if (gps) {
+            currentLocation = { lat: Number(gps.latitude), lng: Number(gps.longitude), address: "En route", updatedAt: gps.timestamp?.toISOString() || new Date().toISOString() };
+          }
+        }
+
+        const statusOrder = ['posted', 'bidding', 'assigned', 'in_transit', 'delivered'];
+        const currentIdx = statusOrder.indexOf(load.status);
+        const progress = Math.round((currentIdx / (statusOrder.length - 1)) * 100);
+
+        return {
+          loadNumber: load.loadNumber,
+          status: load.status,
+          origin: { name: pickup.city ? `${pickup.city} Terminal` : "Origin", address: pickup.address || "", departedAt: load.pickupDate?.toISOString() || "" },
+          destination: { name: delivery.city ? `${delivery.city} Terminal` : "Destination", address: delivery.address || "", eta: load.deliveryDate?.toISOString() || "" },
+          currentLocation,
+          progress,
+          driver: driverInfo,
+          carrier: carrierInfo,
+          milestones: [
+            { status: "created", timestamp: load.createdAt?.toISOString() || "", completed: true },
+            { status: "dispatched", timestamp: load.status !== 'posted' && load.status !== 'bidding' ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 2 },
+            { status: "picked_up", timestamp: currentIdx >= 3 ? load.pickupDate?.toISOString() : null, completed: currentIdx >= 3 },
+            { status: "in_transit", timestamp: currentIdx >= 3 ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 3 },
+            { status: "delivered", timestamp: currentIdx >= 4 ? load.deliveryDate?.toISOString() : null, completed: currentIdx >= 4 },
+          ],
+        };
+      } catch (error) {
+        console.error('[Tracking] trackShipment error:', error);
+        return null;
+      }
     }),
 
   /**

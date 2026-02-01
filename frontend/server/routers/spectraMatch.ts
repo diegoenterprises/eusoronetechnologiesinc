@@ -12,7 +12,9 @@
  */
 
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
 
 // Crude oil database with known specifications
 const CRUDE_OIL_DATABASE = [

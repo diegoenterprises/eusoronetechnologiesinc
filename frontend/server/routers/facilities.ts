@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { terminals } from "../../drizzle/schema";
 
 const facilityTypeSchema = z.enum([
   "terminal", "refinery", "distribution_center", "truck_stop", "yard", "warehouse", "customer"

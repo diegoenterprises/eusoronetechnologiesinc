@@ -4,7 +4,9 @@
  */
 
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
 
 export const helpRouter = router({
   getCategories: publicProcedure.query(async () => [

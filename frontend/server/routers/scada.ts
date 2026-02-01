@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { terminals } from "../../drizzle/schema";
 
 const rackStatusSchema = z.enum(["available", "loading", "maintenance", "offline", "reserved"]);
 const productTypeSchema = z.enum(["unleaded", "premium", "diesel", "jet_fuel", "ethanol"]);

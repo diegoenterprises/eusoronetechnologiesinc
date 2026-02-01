@@ -17,6 +17,7 @@ import {
   CheckCircle, AlertCircle, Shield, Activity
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface SafetyFormData {
   // Step 1: Personal Information
@@ -102,20 +103,27 @@ export default function RegisterSafety() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting safety manager registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      toast.success("Registration submitted!", {
-        description: "Your account is pending company verification.",
-      });
-      
+  const registerMutation = trpc.registration.registerSafetyManager.useMutation({
+    onSuccess: () => {
+      toast.success("Registration submitted!", { description: "Your account is pending verification." });
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.email,
+      employerCompanyName: formData.companyName,
+      employerUsdotNumber: formData.companyUsdot || "0000000",
+      yearsAsSafetyManager: Number(formData.yearsInSafety) || 1,
+    });
   };
 
   const steps: WizardStep[] = [

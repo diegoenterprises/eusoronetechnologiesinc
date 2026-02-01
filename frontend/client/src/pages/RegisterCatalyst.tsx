@@ -17,6 +17,7 @@ import {
   CheckCircle, AlertCircle, Mail, Phone, MapPin, Award
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface CatalystFormData {
   // Step 1: Personal Information
@@ -101,20 +102,29 @@ export default function RegisterCatalyst() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting catalyst registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+  const registerMutation = trpc.registration.registerCatalyst.useMutation({
+    onSuccess: () => {
       toast.success("Registration submitted!", {
         description: "Your account is pending company verification.",
       });
-      
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.email,
+      employerCompanyName: formData.companyName,
+      jobTitle: formData.jobTitle,
+      hazmatTrainingCompleted: !!formData.hazmatTrainingDate,
+    });
   };
 
   const steps: WizardStep[] = [

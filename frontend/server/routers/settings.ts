@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { users, companies } from "../../drizzle/schema";
 
 export const settingsRouter = router({
   /**

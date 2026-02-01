@@ -190,6 +190,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Manage vehicles"
     },
     { 
+      icon: "MapPin", 
+      label: "Fleet Tracking", 
+      path: "/fleet-tracking", 
+      badge: 0,
+      description: "Real-time fleet GPS tracking"
+    },
+    { 
+      icon: "Wrench", 
+      label: "ZEUN Fleet", 
+      path: "/zeun-fleet", 
+      badge: 0,
+      description: "Fleet breakdown and maintenance"
+    },
+    { 
       icon: "Users", 
       label: "Drivers", 
       path: "/drivers", 
@@ -290,6 +304,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/loads/active", 
       badge: 12,
       description: "In-market loads"
+    },
+    { 
+      icon: "MapPin", 
+      label: "Track Loads", 
+      path: "/fleet-tracking", 
+      badge: 0,
+      description: "Real-time load tracking"
     },
     { 
       icon: "Users", 
@@ -443,6 +464,41 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Account balance"
     },
     { 
+      icon: "Target", 
+      label: "Missions", 
+      path: "/missions", 
+      badge: 3,
+      description: "Complete missions for rewards"
+    },
+    { 
+      icon: "Navigation", 
+      label: "Live Tracking", 
+      path: "/live-tracking", 
+      badge: 0,
+      description: "GPS tracking and navigation"
+    },
+    { 
+      icon: "Wrench", 
+      label: "ZEUN Mechanics", 
+      path: "/zeun-breakdown", 
+      badge: 0,
+      description: "Breakdown reporting and diagnostics"
+    },
+    { 
+      icon: "Trophy", 
+      label: "Leaderboard", 
+      path: "/leaderboard", 
+      badge: 0,
+      description: "Driver rankings"
+    },
+    { 
+      icon: "Gift", 
+      label: "Rewards", 
+      path: "/rewards", 
+      badge: 2,
+      description: "Earned rewards and XP"
+    },
+    { 
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
@@ -515,6 +571,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/performance", 
       badge: 0,
       description: "Success metrics"
+    },
+    { 
+      icon: "MapPin", 
+      label: "Fleet Tracking", 
+      path: "/fleet-tracking", 
+      badge: 0,
+      description: "Real-time fleet positions"
     },
     { 
       icon: "Brain", 
@@ -605,6 +668,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time convoy tracking"
     },
     { 
+      icon: "Navigation", 
+      label: "Live GPS", 
+      path: "/live-tracking", 
+      badge: 0,
+      description: "Your live GPS position"
+    },
+    { 
       icon: "AlertTriangle", 
       label: "Incidents", 
       path: "/incidents", 
@@ -691,6 +761,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/incoming", 
       badge: 5,
       description: "Arriving shipments"
+    },
+    { 
+      icon: "MapPin", 
+      label: "Arrivals Tracking", 
+      path: "/fleet-tracking", 
+      badge: 0,
+      description: "Track incoming vehicles"
     },
     { 
       icon: "Package", 
@@ -985,6 +1062,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Load management"
     },
     { 
+      icon: "Activity", 
+      label: "Telemetry", 
+      path: "/admin/telemetry", 
+      badge: 0,
+      description: "GPS tracking and telemetry dashboard"
+    },
+    { 
+      icon: "Wrench", 
+      label: "ZEUN Mechanics", 
+      path: "/admin/zeun", 
+      badge: 0,
+      description: "Breakdown and repair management"
+    },
+    { 
       icon: "DollarSign", 
       label: "Payments", 
       path: "/admin/payments", 
@@ -1011,6 +1102,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/admin/analytics", 
       badge: 0,
       description: "Platform analytics"
+    },
+    { 
+      icon: "Percent", 
+      label: "Platform Fees", 
+      path: "/admin/platform-fees", 
+      badge: 0,
+      description: "Fee configuration and revenue"
     },
     { 
       icon: "Settings", 
@@ -1071,6 +1169,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/super-admin/loads", 
       badge: 0,
       description: "All loads"
+    },
+    { 
+      icon: "Activity", 
+      label: "Telemetry", 
+      path: "/admin/telemetry", 
+      badge: 0,
+      description: "GPS tracking and telemetry"
+    },
+    { 
+      icon: "MapPin", 
+      label: "Fleet Map", 
+      path: "/fleet-tracking", 
+      badge: 0,
+      description: "System-wide fleet tracking"
     },
     { 
       icon: "Zap", 

@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { documents } from "../../drizzle/schema";
 
 const permitStatusSchema = z.enum(["draft", "pending", "approved", "expired", "revoked"]);
 const permitTypeSchema = z.enum(["oversize", "overweight", "superload", "hazmat_route", "temporary"]);

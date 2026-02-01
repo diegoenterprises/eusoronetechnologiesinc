@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { drivers } from "../../drizzle/schema";
 
 export const fuelCardsRouter = router({
   list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [

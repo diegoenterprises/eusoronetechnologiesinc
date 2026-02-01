@@ -1,10 +1,14 @@
 /**
  * ACTIVITY ROUTER
  * tRPC procedures for activity timeline and user activities
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { auditLogs, users } from "../../drizzle/schema";
 
 export const activityRouter = router({
   /**
@@ -16,36 +20,31 @@ export const activityRouter = router({
       dateRange: z.string().optional(),
       limit: z.number().optional().default(50),
     }))
-    .query(async ({ ctx }) => {
-      return [
-        {
-          id: "act_001",
-          type: "load_created",
-          title: "New Load Created",
-          description: "Load #LOAD-45921 created for Houston to Dallas route",
-          timestamp: new Date().toISOString(),
-          userId: ctx.user?.id,
-          metadata: { loadId: "load_001" },
-        },
-        {
-          id: "act_002",
-          type: "driver_assigned",
-          title: "Driver Assigned",
-          description: "Mike Johnson assigned to Load #LOAD-45920",
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          userId: ctx.user?.id,
-          metadata: { loadId: "load_002", driverId: "drv_001" },
-        },
-        {
-          id: "act_003",
-          type: "document_uploaded",
-          title: "Document Uploaded",
-          description: "BOL uploaded for Load #LOAD-45919",
-          timestamp: new Date(Date.now() - 7200000).toISOString(),
-          userId: ctx.user?.id,
-          metadata: { documentId: "doc_001" },
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const logs = await db.select()
+          .from(auditLogs)
+          .where(eq(auditLogs.userId, userId))
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(input.limit);
+
+        return logs.map(log => ({
+          id: `act_${log.id}`,
+          type: log.action || "activity",
+          title: log.action?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || "Activity",
+          description: log.entityType ? `${log.entityType} ${log.entityId || ''}` : "",
+          timestamp: log.createdAt?.toISOString() || new Date().toISOString(),
+          userId: log.userId,
+          metadata: log.changes || {},
+        }));
+      } catch (error) {
+        console.error('[Activity] getTimeline error:', error);
+        return [];
+      }
     }),
 
   /**

@@ -1,0 +1,56 @@
+{
+  "global_thresholds": {
+    "http_req_duration": {
+      "p50": 200,
+      "p95": 500,
+      "p99": 1000,
+      "max": 3000
+    },
+    "http_req_failed": {
+      "rate": 0.01
+    },
+    "http_reqs": {
+      "rate": 1000
+    }
+  },
+  "scale_specific_thresholds": {
+    "1k_users": {
+      "http_req_duration_p95": 300,
+      "http_req_failed_rate": 0.001,
+      "websocket_connect_duration_p95": 500,
+      "db_query_duration_p95": 50
+    },
+    "10k_users": {
+      "http_req_duration_p95": 400,
+      "http_req_failed_rate": 0.005,
+      "websocket_connect_duration_p95": 750,
+      "db_query_duration_p95": 100
+    },
+    "100k_users": {
+      "http_req_duration_p95": 600,
+      "http_req_failed_rate": 0.01,
+      "websocket_connect_duration_p95": 1000,
+      "db_query_duration_p95": 200
+    },
+    "1m_users": {
+      "http_req_duration_p95": 1000,
+      "http_req_failed_rate": 0.02,
+      "websocket_connect_duration_p95": 1500,
+      "db_query_duration_p95": 500
+    }
+  },
+  "endpoint_specific_thresholds": {
+    "auth_login": { "p95": 300, "p99": 500 },
+    "auth_register": { "p95": 500, "p99": 1000 },
+    "loads_list": { "p95": 400, "p99": 800 },
+    "loads_search": { "p95": 600, "p99": 1200 },
+    "loads_book": { "p95": 800, "p99": 1500 },
+    "wallet_balance": { "p95": 200, "p99": 400 },
+    "wallet_transfer": { "p95": 1000, "p99": 2000 },
+    "messages_send": { "p95": 300, "p99": 600 },
+    "messages_list": { "p95": 400, "p99": 800 },
+    "telemetry_update": { "p95": 100, "p99": 200 },
+    "zeun_diagnose": { "p95": 5000, "p99": 8000 },
+    "dashboard_load": { "p95": 800, "p99": 1500 }
+  }
+}

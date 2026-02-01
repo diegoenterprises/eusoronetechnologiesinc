@@ -5,7 +5,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { drivers } from "../../drizzle/schema";
 
 const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
 
@@ -18,6 +21,17 @@ const logEntrySchema = z.object({
 });
 
 export const hosRouter = router({
+  /**
+   * Get simple HOS status for dashboard
+   */
+  getStatus: protectedProcedure.query(async () => ({
+    drivingRemaining: 8,
+    onDutyRemaining: 11,
+    cycleRemaining: 55,
+    breakRequired: false,
+    nextBreakDue: null,
+  })),
+
   /**
    * Get current HOS status and remaining time
    */

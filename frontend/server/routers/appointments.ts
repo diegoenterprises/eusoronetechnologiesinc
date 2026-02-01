@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql, gte, lte, and } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { appointments, loads, users, companies } from "../../drizzle/schema";
 
 const appointmentStatusSchema = z.enum([
   "scheduled", "confirmed", "checked_in", "loading", "unloading", "completed", "cancelled", "no_show"

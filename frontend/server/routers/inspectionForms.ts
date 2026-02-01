@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { vehicles, drivers } from "../../drizzle/schema";
 
 const inspectionTypeSchema = z.enum(["pre_trip", "post_trip", "en_route", "dot", "annual"]);
 const defectSeveritySchema = z.enum(["minor", "major", "critical", "oos"]);

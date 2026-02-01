@@ -2,10 +2,14 @@
  * INSPECTIONS ROUTER
  * tRPC procedures for Pre-Trip Inspections and DVIR
  * Per 49 CFR 396.11-396.13
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { inspections, vehicles, users } from "../../drizzle/schema";
 
 const inspectionItemSchema = z.object({
   id: z.string(),

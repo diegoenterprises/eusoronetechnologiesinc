@@ -13,6 +13,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Building2,
   Star,
@@ -25,6 +27,7 @@ import {
   Search,
   Filter,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,69 +55,52 @@ export default function ShippersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Mock shipper data - TODO: Replace with trpc.brokers.shippers.useQuery()
-  const shippers: Shipper[] = [
-    {
-      id: "S001",
-      name: "PetroTrans Inc",
-      contactPerson: "Sarah Martinez",
-      email: "sarah@petrotrans.com",
-      phone: "(555) 123-4567",
-      location: "Houston, TX",
-      rating: 4.8,
-      totalLoads: 45,
-      activeLoads: 3,
-      totalRevenue: 54000,
-      avgCommission: 15,
-      status: "active",
-      lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    },
-    {
-      id: "S002",
-      name: "Swift Energy",
-      contactPerson: "Michael Johnson",
-      email: "mjohnson@swiftenergy.com",
-      phone: "(555) 234-5678",
-      location: "Midland, TX",
-      rating: 4.9,
-      totalLoads: 62,
-      activeLoads: 5,
-      totalRevenue: 74400,
-      avgCommission: 12,
-      status: "active",
-      lastActivity: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    },
-    {
-      id: "S003",
-      name: "Texas Fuel Co",
-      contactPerson: "Jennifer Chen",
-      email: "jchen@texasfuel.com",
-      phone: "(555) 345-6789",
-      location: "Dallas, TX",
-      rating: 4.7,
-      totalLoads: 38,
-      activeLoads: 2,
-      totalRevenue: 45600,
-      avgCommission: 15,
-      status: "active",
-      lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    },
-    {
-      id: "S004",
-      name: "Lone Star Petroleum",
-      contactPerson: "Robert Davis",
-      email: "rdavis@lonestar.com",
-      phone: "(555) 456-7890",
-      location: "Austin, TX",
-      rating: 4.5,
-      totalLoads: 28,
-      activeLoads: 0,
-      totalRevenue: 33600,
-      avgCommission: 14,
-      status: "inactive",
-      lastActivity: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    },
-  ];
+  // tRPC query for shippers
+  const shippersQuery = trpc.brokers.getShippers.useQuery({ 
+    search: searchQuery || undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined 
+  });
+
+  if (shippersQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-48" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (shippersQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load shippers</p>
+        <Button onClick={() => shippersQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const shippers: Shipper[] = (shippersQuery.data || []).map((s: any) => ({
+    id: String(s.id),
+    name: s.name || 'Unknown',
+    contactPerson: s.contactPerson || '',
+    email: s.email || '',
+    phone: s.phone || '',
+    location: s.location || '',
+    rating: s.rating || 0,
+    totalLoads: s.totalLoads || 0,
+    activeLoads: s.activeLoads || 0,
+    totalRevenue: s.totalRevenue || 0,
+    avgCommission: s.avgCommission || 0,
+    status: s.status || 'active',
+    lastActivity: new Date(s.lastActivity || Date.now()),
+  }));
 
   const filteredShippers = shippers.filter((shipper) => {
     if (statusFilter !== "all" && shipper.status !== statusFilter) return false;

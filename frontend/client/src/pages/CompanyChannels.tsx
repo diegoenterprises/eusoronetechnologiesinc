@@ -3,11 +3,14 @@
  * Enhanced UI matching Support/Messages style
  * Real-time communication with team members and departments
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
+ * 100% Dynamic - No mock data
  */
 
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import {
   MessageSquare,
   Plus,
@@ -20,6 +23,7 @@ import {
   Lock,
   Bell,
   MoreVertical,
+  RefreshCw,
 } from "lucide-react";
 
 export interface Channel {
@@ -57,129 +61,76 @@ export default function CompanyChannels() {
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [newChannelName, setNewChannelName] = useState("");
+  const [newChannelDesc, setNewChannelDesc] = useState("");
+  const [newChannelType, setNewChannelType] = useState<"public" | "private">("public");
 
-  // Mock channels data
-  const channels: Channel[] = [
-    {
-      id: "general",
-      name: "General",
-      description: "General company announcements",
-      type: "public",
-      memberCount: 145,
-      unreadCount: 3,
-      lastMessage: {
-        author: "John Smith",
-        content: "Welcome to the company channels!",
-        timestamp: new Date(Date.now() - 5 * 60 * 1000),
-      },
-    },
-    {
-      id: "operations",
-      name: "Operations",
-      description: "Operational updates and logistics",
-      type: "public",
-      memberCount: 67,
-      unreadCount: 0,
-      lastMessage: {
-        author: "Sarah Johnson",
-        content: "Q4 logistics plan is ready for review",
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      },
-    },
-    {
-      id: "drivers",
-      name: "Drivers",
-      description: "Driver coordination and updates",
-      type: "public",
-      memberCount: 234,
-      unreadCount: 5,
-      lastMessage: {
-        author: "Mike Davis",
-        content: "New route optimization live",
-        timestamp: new Date(Date.now() - 30 * 60 * 1000),
-      },
-    },
-    {
-      id: "compliance",
-      name: "Compliance",
-      description: "Regulatory and compliance matters",
-      type: "private",
-      memberCount: 12,
-      unreadCount: 1,
-      lastMessage: {
-        author: "Legal Team",
-        content: "Updated HOS regulations effective tomorrow",
-        timestamp: new Date(Date.now() - 60 * 60 * 1000),
-      },
-    },
-    {
-      id: "sales",
-      name: "Sales",
-      description: "Sales team coordination",
-      type: "public",
-      memberCount: 23,
-      unreadCount: 0,
-      lastMessage: {
-        author: "Emma Wilson",
-        content: "New client onboarded successfully",
-        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000),
-      },
-    },
-    {
-      id: "engineering",
-      name: "Engineering",
-      description: "Tech team discussions",
-      type: "private",
-      memberCount: 8,
-      unreadCount: 2,
-      lastMessage: {
-        author: "Dev Team",
-        content: "API v2 deployment scheduled",
-        timestamp: new Date(Date.now() - 45 * 60 * 1000),
-      },
-    },
-  ];
-
-  // Mock messages for selected channel
-  const messages: Message[] = [
-    {
-      id: "msg-1",
-      author: "John Smith",
-      authorId: "user-1",
-      content: "Welcome to the company channels!",
-      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      reactions: { "👍": 5, "🎉": 2 },
-    },
-    {
-      id: "msg-2",
-      author: "Sarah Johnson",
-      authorId: "user-2",
-      content:
-        "This is a great way to keep everyone informed about company updates.",
-      timestamp: new Date(Date.now() - 90 * 60 * 1000),
-      reactions: { "👍": 3 },
-    },
-    {
-      id: "msg-3",
-      author: "Mike Davis",
-      authorId: "user-3",
-      content: "Looking forward to using this for team coordination!",
-      timestamp: new Date(Date.now() - 60 * 60 * 1000),
-      reactions: { "✨": 1, "👍": 2 },
-    },
-  ];
-
-  const activeChannel = channels.find((c) => c.id === selectedChannel);
-  const filteredChannels = channels.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // tRPC queries
+  const channelsQuery = trpc.channels.list.useQuery({ search: searchQuery || undefined });
+  const messagesQuery = trpc.channels.getMessages.useQuery(
+    { channelId: selectedChannel, limit: 50 },
+    { enabled: !!selectedChannel }
   );
+  const summaryQuery = trpc.channels.getSummary.useQuery();
+
+  // tRPC mutations
+  const sendMessageMutation = trpc.channels.sendMessage.useMutation({
+    onSuccess: () => {
+      setMessageInput("");
+      messagesQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('[Channels] Send message error:', error.message);
+    },
+  });
+
+  const createChannelMutation = trpc.channels.create.useMutation({
+    onSuccess: () => {
+      setShowCreateChannel(false);
+      setNewChannelName("");
+      setNewChannelDesc("");
+      channelsQuery.refetch();
+    },
+    onError: (error) => {
+      console.error('[Channels] Create channel error:', error.message);
+    },
+  });
+
+  const channels = channelsQuery.data || [];
+  const messages = messagesQuery.data || [];
+  const activeChannel = channels.find((c) => c.id === selectedChannel);
+  const filteredChannels = channels;
 
   const handleSendMessage = () => {
-    if (messageInput.trim()) {
-      // Handle message sending
-      setMessageInput("");
+    if (messageInput.trim() && selectedChannel) {
+      sendMessageMutation.mutate({
+        channelId: selectedChannel,
+        content: messageInput.trim(),
+      });
     }
   };
+
+  const handleCreateChannel = () => {
+    if (newChannelName.trim()) {
+      createChannelMutation.mutate({
+        name: newChannelName.trim(),
+        description: newChannelDesc.trim() || undefined,
+        type: newChannelType,
+      });
+    }
+  };
+
+  if (channelsQuery.isLoading) {
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <div className="grid grid-cols-4 gap-4">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96 col-span-3" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -345,15 +296,15 @@ export default function CompanyChannels() {
                         {message.author}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {message.timestamp.toLocaleTimeString()}
+                        {new Date(message.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
 
                     <p className="text-gray-300 mt-1">{message.content}</p>
 
-                    {message.attachments && message.attachments.length > 0 && (
+                    {(message as any).attachments && (message as any).attachments.length > 0 && (
                       <div className="mt-2 space-y-1">
-                        {message.attachments.map((att, idx) => (
+                        {(message as any).attachments.map((att: { name: string }, idx: number) => (
                           <div
                             key={idx}
                             className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 rounded border border-gray-700 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer"
@@ -365,15 +316,15 @@ export default function CompanyChannels() {
                       </div>
                     )}
 
-                    {Object.keys(message.reactions).length > 0 && (
+                    {message.reactions && Object.keys(message.reactions).length > 0 && (
                       <div className="mt-2 flex gap-2">
                         {Object.entries(message.reactions).map(
-                          ([emoji, count]) => (
+                          ([reaction, count]) => (
                             <button
-                              key={emoji}
-                              className="px-2 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700 transition-colors"
+                              key={reaction}
+                              className="px-2 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700 transition-colors text-gray-300"
                             >
-                              {emoji} {count}
+                              {reaction}: {String(count)}
                             </button>
                           )
                         )}
@@ -445,6 +396,8 @@ export default function CompanyChannels() {
                 <input
                   type="text"
                   placeholder="e.g., marketing-team"
+                  value={newChannelName}
+                  onChange={(e) => setNewChannelName(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
                 />
               </div>
@@ -456,6 +409,8 @@ export default function CompanyChannels() {
                 <textarea
                   placeholder="What is this channel about?"
                   rows={3}
+                  value={newChannelDesc}
+                  onChange={(e) => setNewChannelDesc(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
                 />
               </div>
@@ -470,7 +425,8 @@ export default function CompanyChannels() {
                       type="radio"
                       name="type"
                       value="public"
-                      defaultChecked
+                      checked={newChannelType === "public"}
+                      onChange={() => setNewChannelType("public")}
                       className="rounded"
                     />
                     <span className="text-gray-300">Public</span>
@@ -480,6 +436,8 @@ export default function CompanyChannels() {
                       type="radio"
                       name="type"
                       value="private"
+                      checked={newChannelType === "private"}
+                      onChange={() => setNewChannelType("private")}
                       className="rounded"
                     />
                     <span className="text-gray-300">Private</span>
@@ -492,14 +450,16 @@ export default function CompanyChannels() {
                   onClick={() => setShowCreateChannel(false)}
                   variant="outline"
                   className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
+                  disabled={createChannelMutation.isPending}
                 >
                   Cancel
                 </Button>
                 <Button
-                  onClick={() => setShowCreateChannel(false)}
+                  onClick={handleCreateChannel}
                   className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  disabled={createChannelMutation.isPending || !newChannelName.trim()}
                 >
-                  Create Channel
+                  {createChannelMutation.isPending ? "Creating..." : "Create Channel"}
                 </Button>
               </div>
             </div>

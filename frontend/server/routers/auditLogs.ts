@@ -1,8 +1,16 @@
+/**
+ * AUDIT LOGS ROUTER
+ * PRODUCTION-READY: All data from database
+ */
+
 import { z } from "zod";
-import { publicProcedure, router } from "../_core/trpc";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { auditLogs, users } from "../../drizzle/schema";
 
 export const auditLogsRouter = router({
-  getLogs: publicProcedure
+  getLogs: protectedProcedure
     .input(z.object({
       search: z.string().optional(),
       action: z.string().optional(),
@@ -11,33 +19,81 @@ export const auditLogsRouter = router({
       limit: z.number().default(50),
     }))
     .query(async ({ input }) => {
-      // Return mock data for now - will be replaced with real DB queries
-      const logs = [
-        { id: "1", action: "login", description: "User logged in", userName: "John Doe", resource: "auth", ipAddress: "192.168.1.1", timestamp: "2025-01-24 08:30:00" },
-        { id: "2", action: "create", description: "Created new load #LOAD-12345", userName: "Jane Smith", resource: "loads", ipAddress: "192.168.1.2", timestamp: "2025-01-24 09:15:00" },
-        { id: "3", action: "update", description: "Updated driver profile", userName: "Mike Johnson", resource: "drivers", ipAddress: "192.168.1.3", timestamp: "2025-01-24 10:00:00" },
-      ];
-      return {
-        logs,
-        totalPages: 1,
-        total: logs.length,
-      };
+      const db = await getDb();
+      if (!db) return { logs: [], totalPages: 0, total: 0 };
+
+      try {
+        const offset = (input.page - 1) * input.limit;
+        const logs = await db.select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          userId: auditLogs.userId,
+          resource: auditLogs.entityType,
+          ipAddress: auditLogs.ipAddress,
+          timestamp: auditLogs.createdAt,
+          userName: users.name,
+        })
+          .from(auditLogs)
+          .leftJoin(users, eq(auditLogs.userId, users.id))
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(input.limit)
+          .offset(offset);
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs);
+
+        return {
+          logs: logs.map(l => ({
+            id: String(l.id),
+            action: l.action || 'unknown',
+            description: `${l.action} on ${l.resource}`,
+            userName: l.userName || 'Unknown',
+            resource: l.resource || 'system',
+            ipAddress: l.ipAddress || '',
+            timestamp: l.timestamp?.toISOString() || new Date().toISOString(),
+          })),
+          totalPages: Math.ceil((total?.count || 0) / input.limit),
+          total: total?.count || 0,
+        };
+      } catch (error) {
+        console.error('[AuditLogs] getLogs error:', error);
+        return { logs: [], totalPages: 0, total: 0 };
+      }
     }),
 
-  getUsers: publicProcedure.query(async () => {
-    return [
-      { id: "1", name: "John Doe" },
-      { id: "2", name: "Jane Smith" },
-      { id: "3", name: "Mike Johnson" },
-    ];
+  getUsers: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+
+    try {
+      const userList = await db.select({ id: users.id, name: users.name }).from(users).limit(100);
+      return userList.map(u => ({ id: String(u.id), name: u.name || 'Unknown' }));
+    } catch (error) {
+      console.error('[AuditLogs] getUsers error:', error);
+      return [];
+    }
   }),
 
-  getSummary: publicProcedure.query(async () => {
-    return {
-      totalEvents: 1250,
-      todayEvents: 45,
-      activeUsers: 12,
-      securityEvents: 3,
-    };
+  getSummary: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalEvents: 0, todayEvents: 0, activeUsers: 0, securityEvents: 0 };
+
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const [totalEvents] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs);
+      const [todayEvents] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(gte(auditLogs.createdAt, today));
+      const [activeUsers] = await db.select({ count: sql<number>`count(DISTINCT userId)` }).from(auditLogs).where(gte(auditLogs.createdAt, today));
+
+      return {
+        totalEvents: totalEvents?.count || 0,
+        todayEvents: todayEvents?.count || 0,
+        activeUsers: activeUsers?.count || 0,
+        securityEvents: 0,
+      };
+    } catch (error) {
+      console.error('[AuditLogs] getSummary error:', error);
+      return { totalEvents: 0, todayEvents: 0, activeUsers: 0, securityEvents: 0 };
+    }
   }),
 });

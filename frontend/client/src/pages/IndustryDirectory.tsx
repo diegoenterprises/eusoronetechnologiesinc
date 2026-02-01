@@ -10,22 +10,41 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import { 
   Search, Building2, Truck, MapPin, Phone, Globe, 
   CheckCircle, Filter, ChevronRight, Factory, Fuel,
-  Package, Warehouse, Users, ExternalLink, X
+  Package, Warehouse, Users, ExternalLink, X, RefreshCw
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  ALL_COMPANIES,
-  COMPANIES_BY_STATE,
-  STATE_NAMES,
-  COMPANY_TYPE_LABELS,
-  searchCompanies,
-  type Company,
-  type CompanyType,
-  type State,
-} from "@/data/industryDirectory";
+
+type CompanyType = "refinery" | "shipper" | "carrier" | "terminal" | "fuel_reseller" | "logistics" | "exploration";
+type State = string;
+
+interface Company {
+  id: string;
+  name: string;
+  type: CompanyType;
+  state: State;
+  city: string;
+  phone: string;
+  website?: string;
+  isVerified: boolean;
+  rating: number;
+  description?: string;
+  services: string[];
+}
+
+const STATE_NAMES: Record<string, string> = {
+  TX: "Texas", LA: "Louisiana", OK: "Oklahoma", NM: "New Mexico", CO: "Colorado",
+  WY: "Wyoming", MT: "Montana", ND: "North Dakota", CA: "California", AK: "Alaska",
+};
+
+const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
+  refinery: "Refinery", shipper: "Shipper", carrier: "Carrier", terminal: "Terminal",
+  fuel_reseller: "Fuel Reseller", logistics: "Logistics", exploration: "Exploration",
+};
 
 const TYPE_ICONS: Record<CompanyType, React.ReactNode> = {
   refinery: <Factory className="w-4 h-4" />,
@@ -54,11 +73,51 @@ export default function IndustryDirectory() {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
+  // tRPC query for companies
+  const companiesQuery = trpc.companies.list.useQuery({ search: searchTerm || undefined });
+
+  if (companiesQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-48" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (companiesQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load directory</p>
+        <Button onClick={() => companiesQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const allCompanies: Company[] = (companiesQuery.data || []).map((c: any) => ({
+    id: String(c.id),
+    name: c.legalName || c.name || '',
+    type: (c.type || 'carrier') as CompanyType,
+    state: c.state || '',
+    city: c.city || '',
+    phone: c.phone || '',
+    website: c.website,
+    isVerified: c.isVerified ?? false,
+    rating: c.rating || 0,
+    description: c.description,
+    services: c.services || [],
+  }));
+
   const filteredCompanies = useMemo(() => {
-    let companies = ALL_COMPANIES;
+    let companies = allCompanies;
 
     if (searchTerm) {
-      companies = searchCompanies(searchTerm);
+      const q = searchTerm.toLowerCase();
+      companies = companies.filter(c => c.name.toLowerCase().includes(q) || c.city.toLowerCase().includes(q));
     }
 
     if (stateFilter !== "all") {
@@ -74,14 +133,14 @@ export default function IndustryDirectory() {
     }
 
     return companies;
-  }, [searchTerm, stateFilter, typeFilter, activeTab]);
+  }, [allCompanies, searchTerm, stateFilter, typeFilter, activeTab]);
 
   const stats = {
-    total: ALL_COMPANIES.length,
-    verified: ALL_COMPANIES.filter(c => c.isVerified).length,
-    carriers: ALL_COMPANIES.filter(c => c.type === "carrier").length,
-    refineries: ALL_COMPANIES.filter(c => c.type === "refinery").length,
-    states: Object.keys(COMPANIES_BY_STATE).length,
+    total: allCompanies.length,
+    verified: allCompanies.filter(c => c.isVerified).length,
+    carriers: allCompanies.filter(c => c.type === "carrier").length,
+    refineries: allCompanies.filter(c => c.type === "refinery").length,
+    states: Array.from(new Set(allCompanies.map(c => c.state))).length,
   };
 
   return (
@@ -201,7 +260,7 @@ export default function IndustryDirectory() {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-slate-800/50 border border-slate-700">
-          <TabsTrigger value="all">All Companies ({ALL_COMPANIES.length})</TabsTrigger>
+          <TabsTrigger value="all">All Companies ({allCompanies.length})</TabsTrigger>
           <TabsTrigger value="verified">Verified ({stats.verified})</TabsTrigger>
         </TabsList>
 

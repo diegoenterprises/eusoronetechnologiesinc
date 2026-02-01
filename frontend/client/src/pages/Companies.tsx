@@ -5,10 +5,12 @@
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Building2, FileText, Shield, AlertCircle, CheckCircle, Clock, Plus, Edit2, Trash2, Download, Upload } from "lucide-react";
+import { Building2, FileText, Shield, AlertCircle, CheckCircle, Clock, Plus, Edit2, Trash2, Download, Upload, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 
 interface ComplianceDocument {
@@ -46,102 +48,50 @@ export default function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddDocument, setShowAddDocument] = useState(false);
 
-  const companies: Company[] = [
-    {
-      id: "comp-1",
-      name: "Johnson Transport LLC",
-      dotNumber: "DOT-3456789",
-      mcNumber: "MC-987654",
-      ein: "12-3456789",
-      status: "active",
-      founded: "2015",
-      employees: 45,
-      complianceScore: 98.5,
-      contact: {
-        email: "compliance@johnsontransport.com",
-        phone: "(555) 123-4567",
-        address: "1234 Transport Ave, Houston, TX 77001",
-      },
-      documents: [
-        {
-          id: "doc-1",
-          type: "insurance",
-          name: "General Liability Insurance",
-          issueDate: "2024-01-15",
-          expiryDate: "2025-01-15",
-          status: "valid",
-          provider: "XYZ Insurance Co",
-          documentUrl: "/docs/insurance-001.pdf",
-        },
-        {
-          id: "doc-2",
-          type: "hazmat",
-          name: "HazMat License",
-          issueDate: "2023-06-01",
-          expiryDate: "2025-06-01",
-          status: "valid",
-          provider: "DOT",
-          documentUrl: "/docs/hazmat-001.pdf",
-        },
-        {
-          id: "doc-3",
-          type: "twic",
-          name: "TWIC Card",
-          issueDate: "2022-03-15",
-          expiryDate: "2027-03-15",
-          status: "valid",
-          provider: "TSA",
-          documentUrl: "/docs/twic-001.pdf",
-        },
-        {
-          id: "doc-4",
-          type: "dot",
-          name: "DOT Compliance",
-          issueDate: "2024-01-01",
-          expiryDate: "2024-12-31",
-          status: "expiring_soon",
-          provider: "FMCSA",
-          documentUrl: "/docs/dot-001.pdf",
-        },
-      ],
+  // tRPC query for companies
+  const companiesQuery = trpc.companies.list.useQuery({ search: searchTerm || undefined });
+
+  if (companiesQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96 lg:col-span-2" />
+        </div>
+      </div>
+    );
+  }
+
+  if (companiesQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load companies</p>
+        <Button onClick={() => companiesQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const companies: Company[] = (companiesQuery.data || []).map((c: any) => ({
+    id: String(c.id),
+    name: c.name || 'Unknown Company',
+    dotNumber: c.dotNumber || 'N/A',
+    mcNumber: c.mcNumber || 'N/A',
+    ein: c.ein || 'N/A',
+    status: c.isActive ? 'active' : 'inactive',
+    founded: c.foundedYear || 'N/A',
+    employees: c.employeeCount || 0,
+    complianceScore: c.complianceScore || 0,
+    contact: {
+      email: c.email || '',
+      phone: c.phone || '',
+      address: [c.address, c.city, c.state, c.zipCode].filter(Boolean).join(', '),
     },
-    {
-      id: "comp-2",
-      name: "ABC Logistics Inc",
-      dotNumber: "DOT-9876543",
-      mcNumber: "MC-654321",
-      ein: "98-7654321",
-      status: "active",
-      founded: "2010",
-      employees: 120,
-      complianceScore: 95.2,
-      contact: {
-        email: "compliance@abclogistics.com",
-        phone: "(555) 987-6543",
-        address: "5678 Logistics Blvd, Los Angeles, CA 90001",
-      },
-      documents: [
-        {
-          id: "doc-5",
-          type: "insurance",
-          name: "Cargo Insurance",
-          issueDate: "2024-02-01",
-          expiryDate: "2025-02-01",
-          status: "valid",
-          provider: "ABC Insurance",
-        },
-        {
-          id: "doc-6",
-          type: "hazmat",
-          name: "HazMat License",
-          issueDate: "2023-08-15",
-          expiryDate: "2025-08-15",
-          status: "valid",
-          provider: "DOT",
-        },
-      ],
-    },
-  ];
+    documents: c.documents || [],
+  }));
 
   const filteredCompanies = companies.filter((comp) =>
     comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

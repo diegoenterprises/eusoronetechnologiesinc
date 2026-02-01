@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { documents, loads } from "../../drizzle/schema";
 
 export const podRouter = router({
   getSummary: protectedProcedure.query(async () => ({

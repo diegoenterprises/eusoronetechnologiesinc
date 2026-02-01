@@ -2,10 +2,14 @@
  * ADMIN ROUTER
  * tRPC procedures for admin/super admin operations
  * Based on 10_ADMIN_USER_JOURNEY.md
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
+import { eq, and, desc, sql, like, or, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { users, companies, auditLogs } from "../../drizzle/schema";
 
 const userStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "needs_info"]);
@@ -15,20 +19,47 @@ export const adminRouter = router({
    * Get users for UserManagement page
    */
   getUsers: protectedProcedure
-    .input(z.object({ search: z.string().optional(), role: z.string().optional() }))
+    .input(z.object({ search: z.string().optional(), role: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
-      const users = [
-        { id: "u1", name: "Mike Johnson", email: "mike@example.com", role: "driver", status: "active", lastLogin: "2025-01-23" },
-        { id: "u2", name: "Sarah Williams", email: "sarah@example.com", role: "carrier", status: "active", lastLogin: "2025-01-22" },
-        { id: "u3", name: "Tom Brown", email: "tom@example.com", role: "shipper", status: "pending", lastLogin: null },
-      ];
-      let filtered = users;
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        let query = db.select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          isActive: users.isActive,
+          isVerified: users.isVerified,
+          lastSignedIn: users.lastSignedIn,
+          createdAt: users.createdAt,
+        }).from(users);
+
+        const userList = await query.orderBy(desc(users.createdAt)).limit(input.limit);
+
+        let filtered = userList.map(u => ({
+          id: String(u.id),
+          name: u.name || 'Unknown',
+          email: u.email || '',
+          role: u.role?.toLowerCase() || 'user',
+          status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended',
+          lastLogin: u.lastSignedIn?.toISOString().split('T')[0] || null,
+        }));
+
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          filtered = filtered.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+        }
+        if (input.role && input.role !== "all") {
+          filtered = filtered.filter(u => u.role === input.role);
+        }
+
+        return filtered;
+      } catch (error) {
+        console.error('[Admin] getUsers error:', error);
+        return [];
       }
-      if (input.role && input.role !== "all") filtered = filtered.filter(u => u.role === input.role);
-      return filtered;
     }),
 
   /**
@@ -36,7 +67,33 @@ export const adminRouter = router({
    */
   getUserStats: protectedProcedure
     .query(async () => {
-      return { total: 2450, active: 1890, pending: 145, suspended: 12, admins: 8, newThisMonth: 45 };
+      const db = await getDb();
+      if (!db) return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 };
+
+      try {
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(users);
+        const [active] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.isActive, true), eq(users.isVerified, true)));
+        const [pending] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isVerified, false));
+        const [suspended] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isActive, false));
+        const [admins] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'ADMIN'));
+        const [newThisMonth] = await db.select({ count: sql<number>`count(*)` }).from(users).where(gte(users.createdAt, monthStart));
+
+        return {
+          total: total?.count || 0,
+          active: active?.count || 0,
+          pending: pending?.count || 0,
+          suspended: suspended?.count || 0,
+          admins: admins?.count || 0,
+          newThisMonth: newThisMonth?.count || 0,
+        };
+      } catch (error) {
+        console.error('[Admin] getUserStats error:', error);
+        return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 };
+      }
     }),
 
   /**

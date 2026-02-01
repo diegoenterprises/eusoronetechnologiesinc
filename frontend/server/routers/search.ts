@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, like, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { loads, drivers, users } from "../../drizzle/schema";
 
 export const searchRouter = router({
   global: protectedProcedure.input(z.object({ query: z.string(), type: z.string().optional(), filters: z.any().optional() }).optional()).query(async ({ input }) => ({

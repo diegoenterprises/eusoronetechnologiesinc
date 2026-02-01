@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { drugTests, drivers, users } from "../../drizzle/schema";
 
 const testTypeSchema = z.enum([
   "pre_employment", "random", "post_accident", "reasonable_suspicion", "return_to_duty", "follow_up"

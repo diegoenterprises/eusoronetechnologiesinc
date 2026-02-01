@@ -4,12 +4,12 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import { aggregateAllFeeds, getAllCategories, RSS_FEEDS } from "./services/rssAggregator";
-import { zeunMechanicsRouter } from "./services/zeun_mechanics/integration";
 import { loadsRouter, bidsRouter } from "./routers/loads";
 import { inhouseRouter } from "./routers/inhouse";
 import { paymentsRouter } from "./routers/payments";
 import { usersRouter } from "./routers/users";
 import { companiesRouter } from "./routers/companies";
+// ESANG AI router - uses Gemini API
 import { esangRouter } from "./esangRouter";
 import { dashboardRouter } from "./routers/dashboard";
 import { inspectionsRouter } from "./routers/inspections";
@@ -80,6 +80,7 @@ import { alertsRouter } from "./routers/alerts";
 import { activityRouter } from "./routers/activity";
 import { insuranceRouter } from "./routers/insurance";
 import { onboardingRouter } from "./routers/onboarding";
+import { registrationRouter } from "./routers/registration";
 import { maintenanceRouter } from "./routers/maintenance";
 import { announcementsRouter } from "./routers/announcements";
 import { bolRouter } from "./routers/bol";
@@ -110,6 +111,7 @@ import { rewardsRouter } from "./routers/rewards";
 import { bookmarksRouter } from "./routers/bookmarks";
 import { carrierPacketsRouter } from "./routers/carrierPackets";
 import { hazmatRouter } from "./routers/hazmat";
+import { platformFeesRouter } from "./routers/platformFees";
 import { podRouter } from "./routers/pod";
 import { mileageRouter } from "./routers/mileage";
 import { preferencesRouter } from "./routers/preferences";
@@ -118,12 +120,33 @@ import { restStopsRouter } from "./routers/restStops";
 import { scalesRouter } from "./routers/scales";
 import { searchRouter } from "./routers/search";
 import { vehiclesRouter } from "./routers/vehicles";
+import { jobsRouter } from "./routers/jobs";
+import { channelsRouter } from "./routers/channels";
+import { zeunRouter } from "./routers/zeun";
+import { telemetryRouter } from "./routers/telemetry";
+import { geofencingRouter } from "./routers/geofencing";
+import { navigationRouter } from "./routers/navigation";
+import { convoyRouter } from "./routers/convoy";
+import { safetyAlertsRouter } from "./routers/safetyAlerts";
+import { zeunMechanicsRouter } from "./routers/zeunMechanics";
+import { runTicketsRouter } from "./routers/runTickets";
+import { negotiationsRouter } from "./routers/negotiations";
 
 export const appRouter = router({
   system: systemRouter,
 
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+    login: publicProcedure.input(z.object({ email: z.string(), password: z.string() })).mutation(async ({ input, ctx }) => {
+      const { authService } = await import("./_core/auth");
+      const result = await authService.loginWithCredentials(input.email, input.password);
+      if (!result) {
+        throw new Error("Invalid credentials");
+      }
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, result.token, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+      return { success: true, user: result.user };
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -204,6 +227,9 @@ export const appRouter = router({
   // Messaging
   messages: messagesRouter,
 
+  // Company Channels
+  channels: channelsRouter,
+
   // Rate Calculator & Market Data
   rates: ratesRouter,
 
@@ -215,6 +241,9 @@ export const appRouter = router({
 
   // Driver Management
   drivers: driversRouter,
+
+  // Driver Jobs
+  jobs: jobsRouter,
 
   // Analytics & Reporting
   analytics: analyticsRouter,
@@ -375,6 +404,9 @@ export const appRouter = router({
   // User/Company Onboarding
   onboarding: onboardingRouter,
 
+  // User Registration (Shipper, Carrier, Driver, etc.)
+  registration: registrationRouter,
+
   // Vehicle Maintenance
   maintenance: maintenanceRouter,
 
@@ -465,6 +497,27 @@ export const appRouter = router({
   // Hazmat
   hazmat: hazmatRouter,
 
+  // Platform Fees & Revenue
+  platformFees: platformFeesRouter,
+
+  // Telemetry & GPS Tracking
+  telemetry: telemetryRouter,
+
+  // Geofencing
+  geofencing: geofencingRouter,
+
+  // Navigation & Routing
+  navigation: navigationRouter,
+
+  // Convoy Management
+  convoy: convoyRouter,
+
+  // Safety Alerts
+  safetyAlerts: safetyAlertsRouter,
+
+  // ZEUN Mechanics - Breakdown, Diagnostic & Repair
+  zeunMechanics: zeunMechanicsRouter,
+
   // POD
   pod: podRouter,
 
@@ -489,36 +542,11 @@ export const appRouter = router({
   // Vehicles
   vehicles: vehiclesRouter,
 
-  zeun: router({
-    health: publicProcedure.query(async () => zeunMechanicsRouter.health.query()),
-    reportBreakdown: publicProcedure
-      .input(zeunMechanicsRouter.reportBreakdown.input)
-      .mutation(async ({ input }) => zeunMechanicsRouter.reportBreakdown.mutation(input)),
-    getMaintenanceDue: publicProcedure
-      .input(zeunMechanicsRouter.getMaintenanceDue.input)
-      .query(async ({ input }) => zeunMechanicsRouter.getMaintenanceDue.query(input)),
-    searchProviders: publicProcedure
-      .input(zeunMechanicsRouter.searchProviders.input)
-      .query(async ({ input }) => zeunMechanicsRouter.searchProviders.query(input)),
-    getDiagnosticDetails: publicProcedure
-      .input(zeunMechanicsRouter.getDiagnosticDetails.input)
-      .query(async ({ input }) => zeunMechanicsRouter.getDiagnosticDetails.query(input)),
-    getMaintenanceHistory: publicProcedure
-      .input(zeunMechanicsRouter.getMaintenanceHistory.input)
-      .query(async ({ input }) => zeunMechanicsRouter.getMaintenanceHistory.query(input)),
-    getCostEstimate: publicProcedure
-      .input(zeunMechanicsRouter.getCostEstimate.input)
-      .query(async ({ input }) => zeunMechanicsRouter.getCostEstimate.query(input)),
-    getWeatherImpact: publicProcedure
-      .input(zeunMechanicsRouter.getWeatherImpact.input)
-      .query(async ({ input }) => zeunMechanicsRouter.getWeatherImpact.query(input)),
-    getTelematicsData: publicProcedure
-      .input(zeunMechanicsRouter.getTelematicsData.input)
-      .query(async ({ input }) => zeunMechanicsRouter.getTelematicsData.query(input)),
-    getDiagnosticCodes: protectedProcedure.input(z.object({ vehicleId: z.string() })).query(async () => [{ code: "P0420", description: "Catalyst System Efficiency Below Threshold", severity: "medium" }]),
-    getNearbyProviders: protectedProcedure.input(z.object({ lat: z.number(), lng: z.number() })).query(async () => [{ id: "p1", name: "TruckPro Service", distance: 2.5, rating: 4.8 }]),
-    getVehicleStatus: protectedProcedure.input(z.object({ vehicleId: z.string() })).query(async ({ input }) => ({ vehicleId: input.vehicleId, status: "healthy", lastCheck: "2025-01-23" })),
-  }),
+  // Run Tickets / Trip Sheets
+  runTickets: runTicketsRouter,
+
+  // Rate Negotiations
+  negotiations: negotiationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

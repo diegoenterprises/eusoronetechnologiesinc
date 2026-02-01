@@ -4,7 +4,9 @@
  */
 
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
 
 const articleCategorySchema = z.enum([
   "industry", "regulations", "safety", "technology", "market", "platform", "tips"

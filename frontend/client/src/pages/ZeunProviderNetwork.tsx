@@ -26,8 +26,8 @@ export default function ZeunProviderNetwork() {
   const [serviceType, setServiceType] = useState("MOBILE_REPAIR");
   const [searched, setSearched] = useState(false);
 
-  const providersQuery = trpc.zeun.searchProviders.useQuery(
-    { latitude, longitude, serviceType: serviceType as any, maxDistance },
+  const providersQuery = trpc.zeunMechanics.findProviders.useQuery(
+    { latitude, longitude, providerType: serviceType, radiusMiles: maxDistance },
     { enabled: searched }
   );
 

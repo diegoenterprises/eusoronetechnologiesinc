@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { auditLogs } from "../../drizzle/schema";
 
 export const developerRouter = router({
   getAPIKey: protectedProcedure.query(async () => ({

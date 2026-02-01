@@ -16,6 +16,7 @@ import {
   Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface BrokerFormData {
   // Step 1: Company Information
@@ -102,20 +103,40 @@ export default function RegisterBroker() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting broker registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+  const registerMutation = trpc.registration.registerBroker.useMutation({
+    onSuccess: () => {
       toast.success("Registration submitted!", {
         description: "Your broker account is pending verification.",
       });
-      
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", {
+        description: error.message,
+      });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      companyName: formData.companyName,
+      dba: formData.dba || undefined,
+      einNumber: formData.einNumber,
+      mcNumber: formData.mcNumber,
+      usdotNumber: formData.usdotNumber || undefined,
+      contactName: formData.primaryContactName,
+      contactEmail: formData.primaryContactEmail,
+      contactPhone: formData.primaryContactPhone,
+      password: formData.primaryContactEmail,
+      streetAddress: formData.streetAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      suretyBondAmount: Number(formData.suretyBondAmount) || 75000,
+      suretyBondCarrier: formData.suretyBondCarrier,
+      suretyBondNumber: formData.bondNumber,
+      brokersHazmat: false,
+    });
   };
 
   const steps: WizardStep[] = [

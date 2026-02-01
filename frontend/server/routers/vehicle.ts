@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { vehicles } from "../../drizzle/schema";
 
 export const vehicleRouter = router({
   /**
@@ -46,4 +49,29 @@ export const vehicleRouter = router({
         { id: "d2", vehicle: "TRK-105", type: "quarterly", dueDate: "2025-01-28", daysRemaining: 5 },
       ];
     }),
+
+  // Get assigned vehicle for driver
+  getAssigned: protectedProcedure.query(async () => ({
+    id: "v1",
+    unitNumber: "TRK-103",
+    year: 2022,
+    make: "Peterbilt",
+    model: "579",
+    vin: "1HGBH41JXMN109186",
+    licensePlate: "TX-ABC-1234",
+    odometer: 87450,
+    fuelLevel: 75,
+    status: "active",
+  })),
+
+  // Get maintenance history
+  getMaintenanceHistory: protectedProcedure
+    .input(z.object({ limit: z.number().optional() }))
+    .query(async () => ({
+      records: [
+        { id: "1", type: "Oil Change", date: "2026-01-15", mileage: 85000, cost: 150 },
+        { id: "2", type: "Tire Rotation", date: "2026-01-01", mileage: 83500, cost: 75 },
+        { id: "3", type: "Brake Inspection", date: "2025-12-15", mileage: 82000, cost: 200 },
+      ],
+    })),
 });

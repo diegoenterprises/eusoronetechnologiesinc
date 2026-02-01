@@ -14,6 +14,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   FileText,
   AlertTriangle,
@@ -25,6 +27,7 @@ import {
   Download,
   BookOpen,
   ClipboardCheck,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,174 +65,54 @@ export default function ProceduresPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  // Mock procedures - TODO: Replace with trpc.procedures.getAll.useQuery()
-  const procedures: Procedure[] = [
-    {
-      id: "P001",
-      title: "Pre-Trip Vehicle Inspection",
-      category: "safety",
-      description:
-        "Complete vehicle safety inspection before starting any trip",
-      steps: [
-        "Check tire pressure and tread depth",
-        "Inspect brake system and air lines",
-        "Test all lights and signals",
-        "Check fluid levels (oil, coolant, DEF)",
-        "Inspect coupling devices",
-        "Verify emergency equipment",
-        "Document inspection results",
-      ],
-      lastUpdated: new Date("2024-01-15"),
-      required: true,
-    },
-    {
-      id: "P002",
-      title: "Crude Oil Loading Procedure",
-      category: "loading",
-      description:
-        "Standard procedure for loading crude oil at terminal facilities",
-      steps: [
-        "Verify load order and BOL documentation",
-        "Position truck at designated loading bay",
-        "Connect grounding cable",
-        "Attach loading hose and verify connections",
-        "Open valves in correct sequence",
-        "Monitor flow rate and tank levels",
-        "Close valves when loading complete",
-        "Disconnect hose and grounding cable",
-        "Seal compartments and verify load",
-        "Complete loading documentation",
-      ],
-      lastUpdated: new Date("2024-02-01"),
-      required: true,
-    },
-    {
-      id: "P003",
-      title: "HazMat Spill Response",
-      category: "emergency",
-      description:
-        "Emergency response protocol for hazardous material spills",
-      steps: [
-        "Immediately stop vehicle and secure area",
-        "Activate emergency flashers",
-        "Identify material using ERG 2020 guide",
-        "Call 911 and report spill",
-        "Notify dispatch and shipper",
-        "Evacuate to safe distance (refer to ERG)",
-        "Deploy spill containment if safe to do so",
-        "Prevent ignition sources",
-        "Wait for emergency responders",
-        "Complete incident report",
-      ],
-      lastUpdated: new Date("2024-01-20"),
-      required: true,
-    },
-    {
-      id: "P004",
-      title: "DOT Compliance Checklist",
-      category: "compliance",
-      description: "Daily compliance verification for DOT regulations",
-      steps: [
-        "Verify current medical certificate",
-        "Check HOS (Hours of Service) compliance",
-        "Ensure ELD is functioning properly",
-        "Verify insurance documents are current",
-        "Check vehicle registration and permits",
-        "Confirm HazMat endorsement if required",
-        "Review load securement requirements",
-        "Verify weight limits compliance",
-      ],
-      lastUpdated: new Date("2024-02-10"),
-      required: true,
-    },
-    {
-      id: "P005",
-      title: "ERG 2020 HazMat Classification",
-      category: "hazmat",
-      description:
-        "Using Emergency Response Guidebook for hazmat identification",
-      steps: [
-        "Locate UN number on shipping papers",
-        "Find material in ERG yellow pages",
-        "Identify guide number",
-        "Reference orange guide pages",
-        "Note initial isolation distance",
-        "Check protective action distance",
-        "Review emergency response procedures",
-        "Identify special precautions",
-      ],
-      lastUpdated: new Date("2024-01-25"),
-      required: true,
-    },
-  ];
+  // tRPC queries for procedures data
+  const proceduresQuery = trpc.compliance.getProcedures.useQuery({ category: selectedCategory !== "all" ? selectedCategory : undefined });
+  const checklistsQuery = trpc.compliance.getChecklists.useQuery({});
 
-  // Mock checklists - TODO: Replace with trpc.procedures.getChecklists.useQuery()
-  const checklists: Checklist[] = [
-    {
-      id: "C001",
-      name: "Daily Pre-Trip Inspection",
-      completed: 12,
-      total: 15,
-      items: [
-        {
-          id: "I001",
-          text: "Check tire pressure (all tires)",
-          checked: true,
-          required: true,
-        },
-        {
-          id: "I002",
-          text: "Inspect brake system",
-          checked: true,
-          required: true,
-        },
-        {
-          id: "I003",
-          text: "Test all lights",
-          checked: true,
-          required: true,
-        },
-        {
-          id: "I004",
-          text: "Check fluid levels",
-          checked: false,
-          required: true,
-        },
-        {
-          id: "I005",
-          text: "Verify emergency equipment",
-          checked: false,
-          required: true,
-        },
-      ],
-    },
-    {
-      id: "C002",
-      name: "HazMat Loading Checklist",
-      completed: 8,
-      total: 10,
-      items: [
-        {
-          id: "I006",
-          text: "Verify HazMat placards",
-          checked: true,
-          required: true,
-        },
-        {
-          id: "I007",
-          text: "Check shipping papers",
-          checked: true,
-          required: true,
-        },
-        {
-          id: "I008",
-          text: "Inspect containment equipment",
-          checked: false,
-          required: true,
-        },
-      ],
-    },
-  ];
+  if (proceduresQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-2 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-48" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (proceduresQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load procedures</p>
+        <Button onClick={() => proceduresQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const procedures: Procedure[] = (proceduresQuery.data || []).map((p: any) => ({
+    id: String(p.id),
+    title: p.title || '',
+    category: p.category || 'safety',
+    description: p.description || '',
+    steps: p.steps || [],
+    lastUpdated: new Date(p.lastUpdated || Date.now()),
+    required: p.required ?? true,
+  }));
+
+  const checklists: Checklist[] = (checklistsQuery.data || []).map((c: any) => ({
+    id: String(c.id),
+    name: c.name || '',
+    completed: c.completed || 0,
+    total: c.total || 0,
+    items: (c.items || []).map((i: any) => ({
+      id: String(i.id),
+      text: i.text || '',
+      checked: i.checked ?? false,
+      required: i.required ?? true,
+    })),
+  }));
 
   const getCategoryIcon = (category: string) => {
     switch (category) {

@@ -14,6 +14,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Building2,
   TruckIcon,
@@ -27,6 +29,7 @@ import {
   BarChart3,
   Calendar,
   Thermometer,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -77,105 +80,74 @@ export default function FacilityPage() {
   const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Mock facility stats - TODO: Replace with trpc.facility.getStats.useQuery()
-  const stats: FacilityStats = {
-    activeShipments: 12,
-    incomingToday: 8,
-    outgoingToday: 15,
-    availableBays: 4,
-    totalBays: 10,
-    staffOnDuty: 18,
+  // tRPC queries for facility data
+  const statsQuery = trpc.terminals.getStats.useQuery();
+  const shipmentsQuery = trpc.terminals.getShipments.useQuery({ date: selectedDate.toISOString() });
+  const baysQuery = trpc.terminals.getBays.useQuery();
+  const staffQuery = trpc.terminals.getStaff.useQuery({ search: '' });
+
+  if (statsQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  if (statsQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load facility data</p>
+        <Button onClick={() => statsQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const stats: FacilityStats = statsQuery.data || {
+    activeShipments: 0,
+    incomingToday: 0,
+    outgoingToday: 0,
+    availableBays: 0,
+    totalBays: 0,
+    staffOnDuty: 0,
     safetyIncidents: 0,
   };
 
-  // Mock shipments - TODO: Replace with trpc.facility.getShipments.useQuery()
-  const shipments: Shipment[] = [
-    {
-      id: "S001",
-      type: "incoming",
-      carrier: "Swift Logistics",
-      driver: "John Smith",
-      commodity: "Crude Oil",
-      quantity: 8000,
-      scheduledTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      status: "scheduled",
-    },
-    {
-      id: "S002",
-      type: "outgoing",
-      carrier: "Texas Haulers",
-      driver: "Mike Johnson",
-      commodity: "Diesel Fuel",
-      quantity: 7500,
-      scheduledTime: new Date(Date.now() + 1 * 60 * 60 * 1000),
-      status: "in_progress",
-      bay: "Bay 3",
-    },
-    {
-      id: "S003",
-      type: "incoming",
-      carrier: "Lone Star Transport",
-      driver: "Sarah Martinez",
-      commodity: "Gasoline",
-      quantity: 9000,
-      scheduledTime: new Date(Date.now() - 30 * 60 * 1000),
-      status: "delayed",
-    },
-  ];
+  const shipments: Shipment[] = (shipmentsQuery.data || []).map((s: any) => ({
+    id: String(s.id),
+    type: s.type || 'incoming',
+    carrier: s.carrier || '',
+    driver: s.driver || '',
+    commodity: s.commodity || '',
+    quantity: s.quantity || 0,
+    scheduledTime: new Date(s.scheduledTime || Date.now()),
+    status: s.status || 'scheduled',
+    bay: s.bay,
+  }));
 
-  // Mock bays - TODO: Replace with trpc.facility.getBays.useQuery()
-  const bays: Bay[] = [
-    {
-      id: "B001",
-      number: 1,
-      status: "occupied",
-      currentShipment: "S002",
-      type: "loading",
-      equipment: ["Flow Meter", "Safety Valve", "Grounding Cable"],
-    },
-    {
-      id: "B002",
-      number: 2,
-      status: "available",
-      type: "unloading",
-      equipment: ["Flow Meter", "Vapor Recovery"],
-    },
-    {
-      id: "B003",
-      number: 3,
-      status: "maintenance",
-      type: "loading",
-      equipment: ["Flow Meter (Under Repair)"],
-    },
-  ];
+  const bays: Bay[] = (baysQuery.data || []).map((b: any) => ({
+    id: String(b.id),
+    number: b.number || 0,
+    status: b.status || 'available',
+    currentShipment: b.currentShipment,
+    type: b.type || 'loading',
+    equipment: b.equipment || [],
+  }));
 
-  // Mock staff - TODO: Replace with trpc.facility.getStaff.useQuery()
-  const staff: StaffMember[] = [
-    {
-      id: "ST001",
-      name: "Robert Davis",
-      role: "Dock Supervisor",
-      shift: "Day",
-      status: "active",
-      tasksCompleted: 12,
-    },
-    {
-      id: "ST002",
-      name: "Lisa Anderson",
-      role: "Safety Officer",
-      shift: "Day",
-      status: "active",
-      tasksCompleted: 8,
-    },
-    {
-      id: "ST003",
-      name: "James Wilson",
-      role: "Equipment Operator",
-      shift: "Day",
-      status: "break",
-      tasksCompleted: 15,
-    },
-  ];
+  const staff: StaffMember[] = (staffQuery.data || []).map((s: any) => ({
+    id: String(s.id),
+    name: s.name || '',
+    role: s.role || '',
+    shift: s.shift || 'Day',
+    status: s.status || 'active',
+    tasksCompleted: s.tasksCompleted || 0,
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {

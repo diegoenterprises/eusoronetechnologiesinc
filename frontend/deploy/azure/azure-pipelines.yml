@@ -1,0 +1,84 @@
+# Azure DevOps Pipeline Configuration
+# EusoTrip Platform CI/CD
+
+trigger:
+  - main
+  - develop
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  nodeVersion: '20.x'
+  npmConfigCache: $(Pipeline.Workspace)/.npm
+
+stages:
+  - stage: Build
+    displayName: 'Build Stage'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Application'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(nodeVersion)
+            displayName: 'Install Node.js'
+
+          - task: Cache@2
+            inputs:
+              key: 'npm | "$(Agent.OS)" | pnpm-lock.yaml'
+              restoreKeys: |
+                npm | "$(Agent.OS)"
+              path: $(npmConfigCache)
+            displayName: 'Cache npm packages'
+
+          - script: |
+              npm install -g pnpm
+              pnpm install --frozen-lockfile
+            displayName: 'Install dependencies'
+
+          - script: pnpm run typecheck
+            displayName: 'TypeScript check'
+
+          - script: pnpm run build
+            displayName: 'Build application'
+
+          - task: CopyFiles@2
+            inputs:
+              sourceFolder: 'dist'
+              contents: '**'
+              targetFolder: '$(Build.ArtifactStagingDirectory)/dist'
+
+          - task: CopyFiles@2
+            inputs:
+              contents: |
+                package.json
+                pnpm-lock.yaml
+                Dockerfile
+                docker-compose.yml
+              targetFolder: '$(Build.ArtifactStagingDirectory)'
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              pathToPublish: '$(Build.ArtifactStagingDirectory)'
+              artifactName: 'eusotrip-build'
+
+  - stage: Deploy
+    displayName: 'Deploy Stage'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployJob
+        displayName: 'Deploy to Azure'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureWebApp@1
+                  inputs:
+                    azureSubscription: 'EusoTrip-Production'
+                    appType: 'webAppLinux'
+                    appName: 'eusotrip-platform'
+                    package: '$(Pipeline.Workspace)/eusotrip-build'
+                    runtimeStack: 'NODE|20-lts'

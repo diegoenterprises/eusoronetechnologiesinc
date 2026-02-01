@@ -62,7 +62,6 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
-import { RoleSwitcher } from "./RoleSwitcher";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -274,9 +273,6 @@ export default function DashboardLayout({
             <button className="relative p-2 hover:bg-gray-800 rounded-lg transition-colors">
               <div className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full"></div>
             </button>
-
-            {/* Role Switcher for Testing */}
-            <RoleSwitcher />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

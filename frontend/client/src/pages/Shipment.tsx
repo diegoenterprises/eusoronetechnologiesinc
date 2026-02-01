@@ -5,7 +5,9 @@
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Plus, Search, Filter, Truck, MapPin, DollarSign, Clock, TrendingUp, AlertTriangle, Snowflake, Zap } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Plus, Search, Filter, Truck, MapPin, DollarSign, Clock, TrendingUp, AlertTriangle, Snowflake, Zap, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -17,73 +19,61 @@ export default function ShipmentPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
 
-  const shipments = [
-    {
-      id: "SH-001",
+  // tRPC query for shipments
+  const shipmentsQuery = trpc.loads.getTrackedLoads.useQuery({ search: searchTerm || undefined });
+
+  if (shipmentsQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-48" />)}
+        </div>
+      </div>
+    );
+  }
+
+  if (shipmentsQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load shipments</p>
+        <Button onClick={() => shipmentsQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const shipments = (shipmentsQuery.data || []).map((s: any) => ({
+    id: s.id || s.loadNumber,
+    origin: s.origin || 'Unknown',
+    destination: s.destination || 'Unknown',
+    status: s.status?.toUpperCase() || 'PENDING',
+    weight: '0 lbs',
+    rate: '$0',
+    eta: s.eta || 'TBD',
+    type: 'standard',
+    carrier: s.driver || 'Unassigned',
+    progress: s.progress || 0,
+    distance: '0 miles',
+  }));
+
+  // Add placeholder if no shipments
+  if (shipments.length === 0) {
+    shipments.push({
+      id: "SH-DEMO",
       origin: "Houston, TX",
       destination: "Denver, CO",
-      status: "IN_TRANSIT",
-      weight: "24,000 lbs",
-      rate: "$4,250",
-      eta: "2024-12-18 14:00",
-      type: "hazmat",
-      carrier: "Johnson Transport LLC",
-      progress: 65,
-      distance: "1,200 miles",
-    },
-    {
-      id: "SH-002",
-      origin: "Los Angeles, CA",
-      destination: "Chicago, IL",
       status: "PENDING",
-      weight: "18,500 lbs",
-      rate: "$3,800",
-      eta: "2024-12-20 10:30",
+      weight: "0 lbs",
+      rate: "$0",
+      eta: "TBD",
       type: "standard",
-      carrier: "ABC Logistics",
+      carrier: "No carrier assigned",
       progress: 0,
-      distance: "2,015 miles",
-    },
-    {
-      id: "SH-003",
-      origin: "Atlanta, GA",
-      destination: "Miami, FL",
-      status: "DELIVERED",
-      weight: "15,000 lbs",
-      rate: "$2,900",
-      eta: "2024-12-15 16:45",
-      type: "refrigerated",
-      carrier: "Elite Freight",
-      progress: 100,
-      distance: "660 miles",
-    },
-    {
-      id: "SH-004",
-      origin: "Dallas, TX",
-      destination: "Phoenix, AZ",
-      status: "IN_TRANSIT",
-      weight: "22,000 lbs",
-      rate: "$3,600",
-      eta: "2024-12-19 09:15",
-      type: "extended",
-      carrier: "Swift Logistics",
-      progress: 45,
-      distance: "1,050 miles",
-    },
-    {
-      id: "SH-005",
-      origin: "New York, NY",
-      destination: "Boston, MA",
-      status: "IN_TRANSIT",
-      weight: "12,000 lbs",
-      rate: "$2,100",
-      eta: "2024-12-17 18:30",
-      type: "refrigerated",
-      carrier: "Northeast Transport",
-      progress: 80,
-      distance: "215 miles",
-    },
-  ];
+      distance: "0 miles",
+    });
+  }
 
   // Calculate analytics
   const analytics = {

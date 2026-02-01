@@ -1,44 +1,116 @@
 /**
  * GAMIFICATION ROUTER
  * tRPC procedures for driver achievements, points, and rewards
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { eq, and, desc, gte, lte, sql, isNull, or } from "drizzle-orm";
+import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import {
+  users,
+  drivers,
+  missions,
+  missionProgress,
+  badges,
+  userBadges,
+  userTitles,
+  gamificationProfiles,
+  rewardCrates,
+  seasons,
+  leaderboards,
+  rewards,
+} from "../../drizzle/schema";
 
 export const gamificationRouter = router({
   /**
-   * Get user profile
+   * Get user gamification profile
    */
   getProfile: protectedProcedure
     .input(z.object({
       userId: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = input.userId ? Number(input.userId) : Number(ctx.user?.id) || 0;
+
+      if (!db) {
+        return {
+          userId,
+          name: ctx.user?.name || "User",
+          level: 1,
+          title: null,
+          totalPoints: 0,
+          currentXp: 0,
+          xpToNextLevel: 1000,
+          rank: null,
+          totalUsers: 0,
+          percentile: 0,
+          memberSince: new Date().toISOString().split("T")[0],
+          streaks: { currentOnTime: 0, longestOnTime: 0, currentSafe: 0, longestSafe: 0 },
+          stats: { loadsCompleted: 0, milesDriver: 0, onTimeRate: 0, safetyScore: 100, customerRating: 0 },
+        };
+      }
+
+      // Get or create gamification profile
+      let [profile] = await db.select()
+        .from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, userId))
+        .limit(1);
+
+      if (!profile) {
+        // Create profile if it doesn't exist
+        await db.insert(gamificationProfiles).values({
+          userId,
+          level: 1,
+          currentXp: 0,
+          totalXp: 0,
+          xpToNextLevel: 1000,
+        });
+
+        [profile] = await db.select()
+          .from(gamificationProfiles)
+          .where(eq(gamificationProfiles.userId, userId))
+          .limit(1);
+      }
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+
+      // Count total users for percentile calculation
+      const allProfiles = await db.select().from(gamificationProfiles);
+      const totalUsers = allProfiles.length;
+      const userRank = profile?.rank || allProfiles.filter(p => (p.totalXp || 0) > (profile?.totalXp || 0)).length + 1;
+      const percentile = totalUsers > 0 ? ((totalUsers - userRank) / totalUsers) * 100 : 0;
+
       return {
-        userId: input.userId || ctx.user?.id,
-        name: "Mike Johnson",
-        level: 12,
-        title: "Road Warrior",
-        totalPoints: 4850,
-        pointsToNextLevel: 150,
-        nextLevelAt: 5000,
-        rank: 15,
-        totalUsers: 450,
-        percentile: 96.7,
-        memberSince: "2022-03-15",
+        userId,
+        name: user?.name || ctx.user?.name || "User",
+        level: profile?.level || 1,
+        title: profile?.activeTitle || null,
+        totalPoints: profile?.totalXp || 0,
+        currentXp: profile?.currentXp || 0,
+        xpToNextLevel: profile?.xpToNextLevel || 1000,
+        pointsToNextLevel: (profile?.xpToNextLevel || 1000) - (profile?.currentXp || 0),
+        nextLevelAt: profile?.xpToNextLevel || 1000,
+        rank: userRank,
+        totalUsers,
+        percentile: Math.round(percentile * 10) / 10,
+        memberSince: user?.createdAt?.toISOString().split("T")[0] || new Date().toISOString().split("T")[0],
+        currentMiles: profile?.currentMiles ? parseFloat(profile.currentMiles) : 0,
+        totalMilesEarned: profile?.totalMilesEarned ? parseFloat(profile.totalMilesEarned) : 0,
         streaks: {
-          currentOnTime: 28,
-          longestOnTime: 45,
-          currentSafe: 156,
-          longestSafe: 156,
+          currentOnTime: profile?.streakDays || 0,
+          longestOnTime: profile?.longestStreak || 0,
+          currentSafe: profile?.streakDays || 0,
+          longestSafe: profile?.longestStreak || 0,
         },
-        stats: {
-          loadsCompleted: 342,
-          milesDriver: 125000,
-          onTimeRate: 0.96,
-          safetyScore: 98,
-          customerRating: 4.8,
+        stats: profile?.stats || {
+          totalMissionsCompleted: 0,
+          totalBadgesEarned: 0,
+          totalCratesOpened: 0,
+          perfectDeliveries: 0,
+          onTimeRate: 0,
         },
       };
     }),
@@ -413,16 +485,533 @@ export const gamificationRouter = router({
       };
     }),
 
-  getMyAchievements: protectedProcedure.query(async () => [{ id: "a1", name: "Road Warrior", earned: true, earnedAt: "2025-01-15", unlocked: true }]),
+  getMyAchievements: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const userId = Number(ctx.user?.id) || 0;
+
+    if (!db) return [];
+
+    const userBadgesList = await db.select({
+      badge: badges,
+      userBadge: userBadges,
+    })
+      .from(userBadges)
+      .leftJoin(badges, eq(userBadges.badgeId, badges.id))
+      .where(eq(userBadges.userId, userId));
+
+    return userBadgesList.map(b => ({
+      id: `badge_${b.badge?.id}`,
+      name: b.badge?.name || "Unknown",
+      earned: true,
+      earnedAt: b.userBadge.earnedAt?.toISOString().split("T")[0],
+      unlocked: true,
+    }));
+  }),
 
   // Stats
-  getStats: protectedProcedure.query(async () => ({
-    totalAchievements: 25,
-    earned: 18,
-    inProgress: 4,
-    points: 4850,
-    totalBadges: 12,
-    totalPoints: 4850,
-    completionRate: 72,
-  })),
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const userId = Number(ctx.user?.id) || 0;
+
+    if (!db) {
+      return {
+        totalAchievements: 0,
+        earned: 0,
+        inProgress: 0,
+        points: 0,
+        totalBadges: 0,
+        totalPoints: 0,
+        completionRate: 0,
+      };
+    }
+
+    const [profile] = await db.select()
+      .from(gamificationProfiles)
+      .where(eq(gamificationProfiles.userId, userId))
+      .limit(1);
+
+    const userBadgeCount = await db.select()
+      .from(userBadges)
+      .where(eq(userBadges.userId, userId));
+
+    const totalBadges = await db.select().from(badges).where(eq(badges.isActive, true));
+
+    const userMissions = await db.select()
+      .from(missionProgress)
+      .where(eq(missionProgress.userId, userId));
+
+    const completedMissions = userMissions.filter(m => m.status === "completed" || m.status === "claimed");
+    const inProgressMissions = userMissions.filter(m => m.status === "in_progress");
+
+    return {
+      totalAchievements: totalBadges.length,
+      earned: userBadgeCount.length,
+      inProgress: inProgressMissions.length,
+      points: profile?.totalXp || 0,
+      totalBadges: userBadgeCount.length,
+      totalPoints: profile?.totalXp || 0,
+      completionRate: totalBadges.length > 0 ? Math.round((userBadgeCount.length / totalBadges.length) * 100) : 0,
+    };
+  }),
+
+  /**
+   * Get available missions
+   */
+  getMissions: protectedProcedure
+    .input(z.object({
+      type: z.enum(["daily", "weekly", "monthly", "epic", "seasonal", "raid", "story", "achievement", "all"]).default("all"),
+      category: z.enum(["deliveries", "earnings", "safety", "efficiency", "social", "special", "onboarding", "all"]).default("all"),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) return { active: [], completed: [], available: [] };
+
+      // Get all active missions
+      let missionList = await db.select()
+        .from(missions)
+        .where(eq(missions.isActive, true))
+        .orderBy(missions.sortOrder);
+
+      if (input?.type && input.type !== "all") {
+        missionList = missionList.filter(m => m.type === input.type);
+      }
+      if (input?.category && input.category !== "all") {
+        missionList = missionList.filter(m => m.category === input.category);
+      }
+
+      // Get user's mission progress
+      const userProgress = await db.select()
+        .from(missionProgress)
+        .where(eq(missionProgress.userId, userId));
+
+      const progressMap = new Map(userProgress.map(p => [p.missionId, p]));
+
+      const formatMission = (m: typeof missionList[0], progress?: typeof userProgress[0]) => ({
+        id: m.id,
+        code: m.code,
+        name: m.name,
+        description: m.description,
+        type: m.type,
+        category: m.category,
+        targetType: m.targetType,
+        targetValue: m.targetValue ? parseFloat(m.targetValue) : 0,
+        targetUnit: m.targetUnit,
+        rewardType: m.rewardType,
+        rewardValue: m.rewardValue ? parseFloat(m.rewardValue) : 0,
+        xpReward: m.xpReward || 0,
+        currentProgress: progress?.currentProgress ? parseFloat(progress.currentProgress) : 0,
+        status: progress?.status || "not_started",
+        completedAt: progress?.completedAt?.toISOString(),
+        startsAt: m.startsAt?.toISOString(),
+        endsAt: m.endsAt?.toISOString(),
+      });
+
+      const active = missionList
+        .filter(m => {
+          const progress = progressMap.get(m.id);
+          return progress && (progress.status === "in_progress" || progress.status === "completed");
+        })
+        .map(m => formatMission(m, progressMap.get(m.id)));
+
+      const completed = missionList
+        .filter(m => {
+          const progress = progressMap.get(m.id);
+          return progress && progress.status === "claimed";
+        })
+        .map(m => formatMission(m, progressMap.get(m.id)));
+
+      const available = missionList
+        .filter(m => {
+          const progress = progressMap.get(m.id);
+          return !progress || progress.status === "not_started";
+        })
+        .map(m => formatMission(m));
+
+      return { active, completed, available };
+    }),
+
+  /**
+   * Start a mission
+   */
+  startMission: protectedProcedure
+    .input(z.object({ missionId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) throw new Error("Database not available");
+
+      const [mission] = await db.select()
+        .from(missions)
+        .where(eq(missions.id, input.missionId))
+        .limit(1);
+
+      if (!mission) throw new Error("Mission not found");
+
+      // Check if already started
+      const [existing] = await db.select()
+        .from(missionProgress)
+        .where(and(
+          eq(missionProgress.userId, userId),
+          eq(missionProgress.missionId, input.missionId)
+        ))
+        .limit(1);
+
+      if (existing) {
+        return { success: false, message: "Mission already started" };
+      }
+
+      await db.insert(missionProgress).values({
+        userId,
+        missionId: input.missionId,
+        currentProgress: "0",
+        targetProgress: mission.targetValue,
+        status: "in_progress",
+      });
+
+      return { success: true, message: "Mission started" };
+    }),
+
+  /**
+   * Claim mission reward
+   */
+  claimMissionReward: protectedProcedure
+    .input(z.object({ missionId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) throw new Error("Database not available");
+
+      const [progress] = await db.select()
+        .from(missionProgress)
+        .where(and(
+          eq(missionProgress.userId, userId),
+          eq(missionProgress.missionId, input.missionId),
+          eq(missionProgress.status, "completed")
+        ))
+        .limit(1);
+
+      if (!progress) {
+        return { success: false, message: "Mission not completed" };
+      }
+
+      const [mission] = await db.select()
+        .from(missions)
+        .where(eq(missions.id, input.missionId))
+        .limit(1);
+
+      if (!mission) throw new Error("Mission not found");
+
+      // Update progress to claimed
+      await db.update(missionProgress)
+        .set({ status: "claimed", claimedAt: new Date() })
+        .where(eq(missionProgress.id, progress.id));
+
+      // Add XP to profile
+      const [profile] = await db.select()
+        .from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, userId))
+        .limit(1);
+
+      if (profile) {
+        const newXp = (profile.currentXp || 0) + (mission.xpReward || 0);
+        const newTotalXp = (profile.totalXp || 0) + (mission.xpReward || 0);
+        const stats = profile.stats || { totalMissionsCompleted: 0, totalBadgesEarned: 0, totalCratesOpened: 0, perfectDeliveries: 0, onTimeRate: 0 };
+        stats.totalMissionsCompleted = (stats.totalMissionsCompleted || 0) + 1;
+
+        await db.update(gamificationProfiles)
+          .set({
+            currentXp: newXp,
+            totalXp: newTotalXp,
+            stats,
+          })
+          .where(eq(gamificationProfiles.id, profile.id));
+      }
+
+      // Create reward record
+      await db.insert(rewards).values({
+        userId,
+        type: "mission_completion",
+        sourceType: "mission",
+        sourceId: mission.id,
+        rewardType: mission.rewardType,
+        amount: mission.rewardValue,
+        description: `Completed mission: ${mission.name}`,
+        status: "claimed",
+        claimedAt: new Date(),
+      });
+
+      return {
+        success: true,
+        reward: {
+          type: mission.rewardType,
+          value: mission.rewardValue ? parseFloat(mission.rewardValue) : 0,
+          xp: mission.xpReward || 0,
+        },
+      };
+    }),
+
+  /**
+   * Get user's crates
+   */
+  getCrates: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) return [];
+
+      const crates = await db.select()
+        .from(rewardCrates)
+        .where(and(
+          eq(rewardCrates.userId, userId),
+          eq(rewardCrates.status, "pending")
+        ))
+        .orderBy(desc(rewardCrates.createdAt));
+
+      return crates.map(c => ({
+        id: c.id,
+        crateType: c.crateType,
+        source: c.source,
+        createdAt: c.createdAt?.toISOString(),
+        expiresAt: c.expiresAt?.toISOString(),
+      }));
+    }),
+
+  /**
+   * Open a crate
+   */
+  openCrate: protectedProcedure
+    .input(z.object({ crateId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) throw new Error("Database not available");
+
+      const [crate] = await db.select()
+        .from(rewardCrates)
+        .where(and(
+          eq(rewardCrates.id, input.crateId),
+          eq(rewardCrates.userId, userId),
+          eq(rewardCrates.status, "pending")
+        ))
+        .limit(1);
+
+      if (!crate) {
+        return { success: false, message: "Crate not found or already opened" };
+      }
+
+      // Generate random contents based on crate type
+      const dropRates: Record<string, { miles: number; xp: number; cash: number }> = {
+        common: { miles: 100, xp: 50, cash: 5 },
+        uncommon: { miles: 250, xp: 100, cash: 10 },
+        rare: { miles: 500, xp: 200, cash: 25 },
+        epic: { miles: 1000, xp: 500, cash: 50 },
+        legendary: { miles: 2500, xp: 1000, cash: 100 },
+        mythic: { miles: 5000, xp: 2000, cash: 250 },
+      };
+
+      const rates = dropRates[crate.crateType] || dropRates.common;
+      const contents = [
+        { type: "miles", value: rates.miles, name: `${rates.miles} EusoMiles` },
+        { type: "xp", value: rates.xp, name: `${rates.xp} XP` },
+      ];
+
+      // Update crate
+      await db.update(rewardCrates)
+        .set({
+          status: "opened",
+          openedAt: new Date(),
+          contents,
+        })
+        .where(eq(rewardCrates.id, crate.id));
+
+      // Update gamification profile
+      const [profile] = await db.select()
+        .from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, userId))
+        .limit(1);
+
+      if (profile) {
+        const stats = profile.stats || { totalMissionsCompleted: 0, totalBadgesEarned: 0, totalCratesOpened: 0, perfectDeliveries: 0, onTimeRate: 0 };
+        stats.totalCratesOpened = (stats.totalCratesOpened || 0) + 1;
+
+        await db.update(gamificationProfiles)
+          .set({
+            currentXp: (profile.currentXp || 0) + rates.xp,
+            totalXp: (profile.totalXp || 0) + rates.xp,
+            currentMiles: String(parseFloat(profile.currentMiles || "0") + rates.miles),
+            totalMilesEarned: String(parseFloat(profile.totalMilesEarned || "0") + rates.miles),
+            stats,
+          })
+          .where(eq(gamificationProfiles.id, profile.id));
+      }
+
+      return {
+        success: true,
+        contents,
+      };
+    }),
+
+  /**
+   * Get current season
+   */
+  getCurrentSeason: protectedProcedure
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return null;
+
+      const now = new Date();
+      const [season] = await db.select()
+        .from(seasons)
+        .where(and(
+          eq(seasons.isActive, true),
+          lte(seasons.startsAt, now),
+          gte(seasons.endsAt, now)
+        ))
+        .limit(1);
+
+      if (!season) return null;
+
+      return {
+        id: season.id,
+        name: season.name,
+        description: season.description,
+        theme: season.theme,
+        startsAt: season.startsAt?.toISOString(),
+        endsAt: season.endsAt?.toISOString(),
+        rewards: season.rewards,
+      };
+    }),
+
+  /**
+   * Admin: Create mission
+   */
+  createMission: adminProcedure
+    .input(z.object({
+      code: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      type: z.enum(["daily", "weekly", "monthly", "epic", "seasonal", "raid", "story", "achievement"]),
+      category: z.enum(["deliveries", "earnings", "safety", "efficiency", "social", "special", "onboarding"]),
+      targetType: z.enum(["count", "amount", "distance", "streak", "rating", "time"]),
+      targetValue: z.number(),
+      targetUnit: z.string().optional(),
+      rewardType: z.enum(["miles", "cash", "badge", "title", "fee_reduction", "priority_perk", "crate", "xp"]),
+      rewardValue: z.number(),
+      xpReward: z.number().default(0),
+      applicableRoles: z.array(z.string()).optional(),
+      startsAt: z.string().optional(),
+      endsAt: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const [result] = await db.insert(missions).values({
+        code: input.code,
+        name: input.name,
+        description: input.description,
+        type: input.type,
+        category: input.category,
+        targetType: input.targetType,
+        targetValue: input.targetValue.toString(),
+        targetUnit: input.targetUnit,
+        rewardType: input.rewardType,
+        rewardValue: input.rewardValue.toString(),
+        xpReward: input.xpReward,
+        applicableRoles: input.applicableRoles,
+        startsAt: input.startsAt ? new Date(input.startsAt) : undefined,
+        endsAt: input.endsAt ? new Date(input.endsAt) : undefined,
+        isActive: true,
+      });
+
+      return { success: true, id: result.insertId };
+    }),
+
+  /**
+   * Admin: Create badge
+   */
+  createBadge: adminProcedure
+    .input(z.object({
+      code: z.string(),
+      name: z.string(),
+      description: z.string().optional(),
+      category: z.enum(["milestone", "performance", "specialty", "seasonal", "epic", "legendary"]),
+      tier: z.enum(["bronze", "silver", "gold", "platinum", "diamond"]).default("bronze"),
+      iconUrl: z.string().optional(),
+      xpValue: z.number().default(0),
+      isRare: z.boolean().default(false),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const [result] = await db.insert(badges).values({
+        code: input.code,
+        name: input.name,
+        description: input.description,
+        category: input.category,
+        tier: input.tier,
+        iconUrl: input.iconUrl,
+        xpValue: input.xpValue,
+        isRare: input.isRare,
+        isActive: true,
+      });
+
+      return { success: true, id: result.insertId };
+    }),
+
+  /**
+   * Admin: Award badge to user
+   */
+  awardBadge: adminProcedure
+    .input(z.object({
+      userId: z.number(),
+      badgeId: z.number(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      // Check if already awarded
+      const [existing] = await db.select()
+        .from(userBadges)
+        .where(and(
+          eq(userBadges.userId, input.userId),
+          eq(userBadges.badgeId, input.badgeId)
+        ))
+        .limit(1);
+
+      if (existing) {
+        return { success: false, message: "Badge already awarded" };
+      }
+
+      await db.insert(userBadges).values({
+        userId: input.userId,
+        badgeId: input.badgeId,
+        earnedAt: new Date(),
+      });
+
+      // Update user stats
+      const [profile] = await db.select()
+        .from(gamificationProfiles)
+        .where(eq(gamificationProfiles.userId, input.userId))
+        .limit(1);
+
+      if (profile) {
+        const stats = profile.stats || { totalMissionsCompleted: 0, totalBadgesEarned: 0, totalCratesOpened: 0, perfectDeliveries: 0, onTimeRate: 0 };
+        stats.totalBadgesEarned = (stats.totalBadgesEarned || 0) + 1;
+
+        await db.update(gamificationProfiles)
+          .set({ stats })
+          .where(eq(gamificationProfiles.id, profile.id));
+      }
+
+      return { success: true };
+    }),
 });

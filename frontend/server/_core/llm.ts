@@ -209,21 +209,12 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const resolveApiUrl = () => {
-  // Use Gemini API directly instead of Manus Forge
-  if (ENV.geminiApiKey) {
-    return `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${ENV.geminiApiKey}`;
-  }
-  // Fallback to OpenAI-compatible endpoint if configured
-  if (ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0) {
-    return `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`;
-  }
-  throw new Error("No LLM API configured. Set GEMINI_API_KEY or BUILT_IN_FORGE_API_URL");
-};
+const resolveApiUrl = () =>
+  `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`;
 
 const assertApiKey = () => {
-  if (!ENV.geminiApiKey && !ENV.forgeApiKey) {
-    throw new Error("GEMINI_API_KEY or BUILT_IN_FORGE_API_KEY is not configured");
+  if (!ENV.geminiApiKey) {
+    throw new Error("GEMINI_API_KEY is not configured");
   }
 };
 
@@ -323,7 +314,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${ENV.forgeApiKey}`,
+      authorization: `Bearer ${ENV.geminiApiKey}`,
     },
     body: JSON.stringify(payload),
   });

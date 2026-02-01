@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { payments, loads } from "../../drizzle/schema";
 
 const invoiceStatusSchema = z.enum([
   "pending", "submitted", "approved", "funded", "paid", "rejected", "disputed"

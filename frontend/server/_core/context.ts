@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import { sdk } from "./sdk";
+import { authService } from "./auth";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -15,12 +15,10 @@ export async function createContext(
 
   // Check for test user (development/testing only)
   const testUserHeader = opts.req.headers['x-test-user'];
-  console.log('[Context] x-test-user header:', testUserHeader);
   if (testUserHeader && typeof testUserHeader === 'string') {
     try {
       const testUser = JSON.parse(testUserHeader);
       user = testUser as User;
-      console.log('[Context] Using test user:', user);
       return {
         req: opts.req,
         res: opts.res,
@@ -32,7 +30,10 @@ export async function createContext(
   }
 
   try {
-    user = await sdk.authenticateRequest(opts.req);
+    const authUser = await authService.authenticateRequest(opts.req);
+    if (authUser) {
+      user = authUser as unknown as User;
+    }
   } catch (error) {
     // Authentication is optional for public procedures.
     user = null;

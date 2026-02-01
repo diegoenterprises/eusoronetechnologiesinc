@@ -3,48 +3,36 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Truck, Lock, Mail, ArrowRight, Package, Users, Briefcase, Car, Zap, Shield, Building, FileCheck, AlertTriangle, Settings } from 'lucide-react';
-
-const ALL_ROLES = [
-  { name: 'Shipper', role: 'SHIPPER', icon: Package, color: 'from-blue-500 to-blue-600' },
-  { name: 'Carrier', role: 'CARRIER', icon: Truck, color: 'from-green-500 to-green-600' },
-  { name: 'Broker', role: 'BROKER', icon: Briefcase, color: 'from-purple-500 to-purple-600' },
-  { name: 'Driver', role: 'DRIVER', icon: Car, color: 'from-orange-500 to-orange-600' },
-  { name: 'Catalyst', role: 'CATALYST', icon: Zap, color: 'from-yellow-500 to-yellow-600' },
-  { name: 'Escort', role: 'ESCORT', icon: Shield, color: 'from-red-500 to-red-600' },
-  { name: 'Terminal Mgr', role: 'TERMINAL_MANAGER', icon: Building, color: 'from-cyan-500 to-cyan-600' },
-  { name: 'Compliance', role: 'COMPLIANCE_OFFICER', icon: FileCheck, color: 'from-indigo-500 to-indigo-600' },
-  { name: 'Safety Mgr', role: 'SAFETY_MANAGER', icon: AlertTriangle, color: 'from-pink-500 to-pink-600' },
-  { name: 'Admin', role: 'ADMIN', icon: Settings, color: 'from-gray-500 to-gray-600' },
-];
+import { Truck, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { toast } from 'sonner';
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleTestLogin = async (role: string) => {
-    setIsLoading(true);
-    const testUser = {
-      id: 1,
-      email: `test@${role.toLowerCase().replace('_', '')}.com`,
-      name: `Test ${role.replace('_', ' ')}`,
-      role: role,
-      companyId: 1,
-    };
-    localStorage.setItem('eusotrip-user-info', JSON.stringify(testUser));
-    
-    setTimeout(() => {
+  const loginMutation = trpc.auth.login.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Welcome back, ${data.user.name}!`);
       setLocation('/');
       window.location.reload();
-    }, 500);
-  };
+    },
+    onError: (err) => {
+      setError(err.message || 'Invalid credentials');
+      toast.error('Login failed. Please check your credentials.');
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    await handleTestLogin('SHIPPER');
+    setError('');
+    if (!email || !password) {
+      setError('Please enter both email and password');
+      return;
+    }
+    loginMutation.mutate({ email, password });
   };
 
   return (
@@ -75,7 +63,13 @@ export default function Login() {
           </CardHeader>
           <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {error && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-300 text-sm">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {error}
+                </div>
+              )}
+              <div className="space-y-4">
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
@@ -83,7 +77,8 @@ export default function Login() {
                     placeholder="Email address"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-12"
+                    disabled={loginMutation.isPending}
                   />
                 </div>
                 <div className="relative">
@@ -93,44 +88,28 @@ export default function Login() {
                     placeholder="Password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-12"
+                    disabled={loginMutation.isPending}
                   />
                 </div>
               </div>
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={loginMutation.isPending}
                 className="w-full bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700 h-12 text-lg"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </form>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-white/20" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-transparent text-gray-400">Quick Access - Select Your Role</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-5 gap-3">
-              {ALL_ROLES.map((r) => (
-                <Button
-                  key={r.role}
-                  variant="outline"
-                  onClick={() => handleTestLogin(r.role)}
-                  disabled={isLoading}
-                  className="flex flex-col items-center gap-2 h-auto py-4 bg-white/5 border-white/20 text-white hover:bg-white/10 transition-all hover:scale-105"
-                >
-                  <div className={`p-2 rounded-lg bg-gradient-to-br ${r.color}`}>
-                    <r.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <span className="text-xs">{r.name}</span>
-                </Button>
-              ))}
+            <div className="text-center">
+              <p className="text-gray-400 text-sm">
+                Don't have an account?{' '}
+                <a href="/register" className="text-purple-400 hover:text-purple-300 underline">
+                  Register here
+                </a>
+              </p>
             </div>
           </CardContent>
         </Card>

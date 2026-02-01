@@ -18,6 +18,7 @@ import {
   MapPin, Calendar, Truck, Award
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface DriverFormData {
   // Step 1: Personal Information
@@ -123,20 +124,44 @@ export default function RegisterDriver() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting driver registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      toast.success("Registration submitted!", {
-        description: "Your application is pending TSA background check and verification.",
-      });
-      
+  const registerMutation = trpc.registration.registerDriver.useMutation({
+    onSuccess: () => {
+      toast.success("Registration submitted!", { description: "Background check and CDL verification in progress." });
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.email,
+      dateOfBirth: formData.dateOfBirth,
+      ssn: formData.ssn || undefined,
+      streetAddress: formData.streetAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      cdlNumber: formData.cdlNumber,
+      cdlState: formData.cdlState,
+      cdlClass: (formData.cdlClass || "A") as "A" | "B" | "C",
+      cdlExpiration: formData.cdlExpiration,
+      cdlEndorsements: formData.endorsements || [],
+      hazmatEndorsement: formData.endorsements?.includes("H") || formData.endorsements?.includes("X") || false,
+      tankerEndorsement: formData.endorsements?.includes("N") || false,
+      twicCard: !!formData.twicNumber,
+      twicExpiration: formData.twicExpiration || undefined,
+      medicalCardExpiration: formData.medicalExpiration,
+      yearsExperience: 0,
+      pspConsent: formData.acceptTerms,
+      backgroundCheckConsent: formData.acceptBackgroundCheck,
+      drugTestConsent: formData.acceptDrugTest,
+    });
   };
 
   const steps: WizardStep[] = [

@@ -17,6 +17,7 @@ import {
   Upload, CheckCircle, AlertCircle, Mail, Phone, Award
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface EscortFormData {
   // Step 1: Personal Information
@@ -133,20 +134,31 @@ export default function RegisterEscort() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting escort registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      toast.success("Registration submitted!", {
-        description: "Your application is pending verification.",
-      });
-      
+  const registerMutation = trpc.registration.registerEscort.useMutation({
+    onSuccess: () => {
+      toast.success("Registration submitted!", { description: "Your certifications are being verified." });
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.email,
+      driversLicenseNumber: formData.licenseNumber,
+      driversLicenseState: formData.licenseState,
+      streetAddress: formData.streetAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      experienceYears: Number(formData.yearsExperience) || 0,
+    });
   };
 
   const steps: WizardStep[] = [

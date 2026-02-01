@@ -5,10 +5,12 @@
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Users, FileText, Upload, Download, Trash2, Search, Filter, CheckCircle, AlertCircle, Clock, CreditCard, AlertTriangle, Heart, Shield, ShieldCheck, File as FileIcon } from "lucide-react";
+import { Users, FileText, Upload, Download, Trash2, Search, Filter, CheckCircle, AlertCircle, Clock, CreditCard, AlertTriangle, Heart, Shield, ShieldCheck, File as FileIcon, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 
 interface UserDocument {
@@ -42,99 +44,47 @@ export default function UsersPage() {
   const [selectedUser, setSelectedUser] = useState(0);
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  const users: User[] = [
-    {
-      id: "user-1",
-      name: "John Smith",
-      email: "john.smith@example.com",
-      phone: "(555) 123-4567",
-      role: "DRIVER",
-      status: "active",
-      joinDate: "2023-01-15",
-      complianceScore: 98.5,
-      documents: [
-        {
-          id: "doc-1",
-          userId: "user-1",
-          type: "twic",
-          name: "TWIC Card",
-          issueDate: "2022-03-15",
-          expiryDate: "2027-03-15",
-          status: "valid",
-          uploadedAt: "2024-01-10",
-          documentUrl: "/docs/user1-twic.pdf",
-        },
-        {
-          id: "doc-2",
-          userId: "user-1",
-          type: "hazmat",
-          name: "HazMat Endorsement",
-          issueDate: "2023-06-01",
-          expiryDate: "2025-06-01",
-          status: "expiring_soon",
-          uploadedAt: "2024-01-10",
-          documentUrl: "/docs/user1-hazmat.pdf",
-        },
-        {
-          id: "doc-3",
-          userId: "user-1",
-          type: "medical",
-          name: "DOT Medical Certificate",
-          issueDate: "2024-01-01",
-          expiryDate: "2025-01-01",
-          status: "valid",
-          uploadedAt: "2024-01-10",
-          documentUrl: "/docs/user1-medical.pdf",
-        },
-      ],
-    },
-    {
-      id: "user-2",
-      name: "Sarah Johnson",
-      email: "sarah.johnson@example.com",
-      phone: "(555) 987-6543",
-      role: "SHIPPER",
-      status: "active",
-      joinDate: "2023-03-20",
-      complianceScore: 95.2,
-      documents: [
-        {
-          id: "doc-4",
-          userId: "user-2",
-          type: "insurance",
-          name: "Cargo Insurance",
-          issueDate: "2024-02-01",
-          expiryDate: "2025-02-01",
-          status: "valid",
-          uploadedAt: "2024-02-01",
-          documentUrl: "/docs/user2-insurance.pdf",
-        },
-      ],
-    },
-    {
-      id: "user-3",
-      name: "Mike Davis",
-      email: "mike.davis@example.com",
-      phone: "(555) 456-7890",
-      role: "CARRIER",
-      status: "active",
-      joinDate: "2022-11-05",
-      complianceScore: 92.8,
-      documents: [
-        {
-          id: "doc-5",
-          userId: "user-3",
-          type: "dot",
-          name: "DOT Compliance",
-          issueDate: "2024-01-01",
-          expiryDate: "2024-12-31",
-          status: "valid",
-          uploadedAt: "2024-01-01",
-          documentUrl: "/docs/user3-dot.pdf",
-        },
-      ],
-    },
-  ];
+  // tRPC query for users
+  const usersQuery = trpc.users.list.useQuery({ 
+    search: searchTerm || undefined, 
+    role: filterRole !== "all" ? filterRole : undefined 
+  });
+
+  if (usersQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96 lg:col-span-2" />
+        </div>
+      </div>
+    );
+  }
+
+  if (usersQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load users</p>
+        <Button onClick={() => usersQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const users: User[] = (usersQuery.data || []).map((u: any) => ({
+    id: String(u.id),
+    name: u.name || 'Unknown User',
+    email: u.email || '',
+    phone: u.phone || '',
+    role: u.role || 'USER',
+    status: u.isActive ? 'active' : 'inactive',
+    joinDate: u.createdAt?.split('T')[0] || '',
+    complianceScore: u.complianceScore || 0,
+    documents: u.documents || [],
+  }));
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =

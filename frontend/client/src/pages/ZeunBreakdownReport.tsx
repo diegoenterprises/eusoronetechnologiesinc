@@ -54,7 +54,7 @@ export default function ZeunBreakdownReport() {
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const reportBreakdownMutation = trpc.zeun.reportBreakdown.useMutation();
+  const reportBreakdownMutation = trpc.zeunMechanics.reportBreakdown.useMutation();
 
   const handleAddSymptom = () => {
     if (currentSymptom.trim()) {
@@ -94,23 +94,17 @@ export default function ZeunBreakdownReport() {
     setLoading(true);
     try {
       const result = await reportBreakdownMutation.mutateAsync({
-        reportId: `REPORT-${Date.now()}`,
-        driverId: String(user?.id) || "unknown",
-        vehicleVin: formData.vehicleVin,
-        timestamp: new Date(),
+        vehicleId: 1,
         latitude: formData.latitude,
         longitude: formData.longitude,
-        address: formData.address,
-        state: "TX",
         symptoms: formData.symptoms,
         issueCategory: formData.issueCategory as any,
         severity: formData.severity as any,
         canDrive: formData.canDrive,
-        loadStatus: formData.loadStatus,
-        isHazmat: formData.isHazmat,
+        driverNotes: formData.address,
       });
 
-      setReportId(result.reportId);
+      setReportId(String(result.reportId));
       setDiagnosticResult(result);
     } catch (error) {
       console.error("Error reporting breakdown:", error);

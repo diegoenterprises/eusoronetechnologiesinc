@@ -1,0 +1,35 @@
+# AWS CodeDeploy Application Specification
+# EusoTrip Platform Deployment
+
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /var/www/eusotrip
+
+hooks:
+  BeforeInstall:
+    - location: deploy/scripts/before_install.sh
+      timeout: 300
+      runas: root
+
+  AfterInstall:
+    - location: deploy/scripts/after_install.sh
+      timeout: 300
+      runas: root
+
+  ApplicationStart:
+    - location: deploy/scripts/start_server.sh
+      timeout: 300
+      runas: root
+
+  ApplicationStop:
+    - location: deploy/scripts/stop_server.sh
+      timeout: 300
+      runas: root
+
+  ValidateService:
+    - location: deploy/scripts/validate_service.sh
+      timeout: 300
+      runas: root

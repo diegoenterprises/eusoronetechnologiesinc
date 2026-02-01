@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { vehicles, drivers } from "../../drizzle/schema";
 
 export const vehiclesRouter = router({
   list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [

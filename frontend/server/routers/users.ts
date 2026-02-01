@@ -5,6 +5,24 @@ import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 
 export const usersRouter = router({
+  // List users (admin)
+  list: protectedProcedure
+    .input(z.object({ search: z.string().optional(), role: z.string().optional(), limit: z.number().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const allUsers = await db.select().from(users).limit(input.limit || 50);
+      return allUsers.map(u => ({
+        id: u.id,
+        name: u.name || u.email || 'Unknown',
+        email: u.email,
+        role: u.role,
+        status: 'active',
+        createdAt: u.createdAt?.toISOString() || new Date().toISOString(),
+        avatar: null,
+      }));
+    }),
+
   // Get current user profile
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     return {

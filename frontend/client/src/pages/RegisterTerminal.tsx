@@ -17,6 +17,7 @@ import {
   CheckCircle, AlertCircle, Mail, Phone, Fuel, Database
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface TerminalFormData {
   // Step 1: Personal Information
@@ -124,20 +125,31 @@ export default function RegisterTerminal() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting terminal registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      toast.success("Registration submitted!", {
-        description: "Your facility registration is pending verification.",
-      });
-      
+  const registerMutation = trpc.registration.registerTerminalManager.useMutation({
+    onSuccess: () => {
+      toast.success("Registration submitted!", { description: "Your facility registration is pending verification." });
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      managerName: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.email,
+      facilityName: formData.facilityName,
+      ownerCompany: formData.facilityName,
+      streetAddress: formData.streetAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      epaIdNumber: formData.epaId || undefined,
+      hasSpccPlan: !!formData.spccPlanDate,
+    });
   };
 
   const steps: WizardStep[] = [

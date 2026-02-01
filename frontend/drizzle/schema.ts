@@ -1,5 +1,6 @@
 import {
   int,
+  bigint,
   mysqlEnum,
   mysqlTable,
   text,
@@ -187,7 +188,12 @@ export const loads = mysqlTable(
       "posted",
       "bidding",
       "assigned",
+      "en_route_pickup",
+      "at_pickup",
+      "loading",
       "in_transit",
+      "at_delivery",
+      "unloading",
       "delivered",
       "cancelled",
       "disputed",
@@ -413,20 +419,37 @@ export const geofences = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     name: varchar("name", { length: 255 }).notNull(),
-    type: mysqlEnum("type", ["terminal", "warehouse", "rest_area", "custom"]).notNull(),
+    description: text("description"),
+    type: mysqlEnum("type", [
+      "terminal", "warehouse", "rest_area", "custom",
+      "pickup", "delivery", "waypoint", "state_boundary",
+      "hazmat_restricted", "weight_restricted", "height_restricted",
+      "customer_site", "no_go", "speed_zone"
+    ]).notNull(),
+    shape: mysqlEnum("shape", ["circle", "polygon"]).default("circle"),
     center: json("center").$type<{ lat: number; lng: number }>(),
     radius: decimal("radius", { precision: 10, scale: 2 }),
+    radiusMeters: int("radiusMeters"),
     polygon: json("polygon").$type<Array<{ lat: number; lng: number }>>(),
     companyId: int("companyId"),
+    loadId: int("loadId"),
+    terminalId: int("terminalId"),
+    createdBy: int("createdBy"),
     alertOnEnter: boolean("alertOnEnter").default(true),
     alertOnExit: boolean("alertOnExit").default(true),
+    alertOnDwell: boolean("alertOnDwell").default(false),
+    dwellThresholdSeconds: int("dwellThresholdSeconds").default(300),
+    actions: json("actions").$type<{ type: string; config: Record<string, unknown> }[]>(),
     isActive: boolean("isActive").default(true).notNull(),
+    expiresAt: timestamp("expiresAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
     typeIdx: index("geofence_type_idx").on(table.type),
     companyIdx: index("geofence_company_idx").on(table.companyId),
+    loadIdx: index("geofence_load_idx").on(table.loadId),
+    activeIdx: index("geofence_active_idx").on(table.isActive),
   })
 );
 
@@ -703,207 +726,68 @@ export type AchTransfer = typeof achTransfers.$inferSelect;
 export type InsertAchTransfer = typeof achTransfers.$inferInsert;
 
 // ============================================================================
-// COMPLIANCE - VIOLATIONS & AUDITS
+// DRIVERS - Extended driver information
 // ============================================================================
 
-export const violations = mysqlTable(
-  "violations",
+export const drivers = mysqlTable(
+  "drivers",
   {
     id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
     companyId: int("companyId").notNull(),
-    driverId: int("driverId"),
-    vehicleId: int("vehicleId"),
-    loadId: int("loadId"),
-    violationType: mysqlEnum("violationType", [
-      "hos",
-      "equipment",
-      "hazmat",
-      "driver_qualification",
-      "drug_alcohol",
-      "cargo_securement",
-      "other",
-    ]).notNull(),
-    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
-    status: mysqlEnum("status", ["open", "in_review", "resolved", "escalated"])
-      .default("open")
-      .notNull(),
-    code: varchar("code", { length: 50 }),
-    title: varchar("title", { length: 255 }).notNull(),
-    description: text("description"),
-    source: mysqlEnum("source", ["fmcsa", "state", "internal", "roadside"])
-      .default("internal")
-      .notNull(),
-    inspectionId: varchar("inspectionId", { length: 100 }),
-    fineAmount: decimal("fineAmount", { precision: 10, scale: 2 }),
-    dueDate: timestamp("dueDate"),
-    resolvedAt: timestamp("resolvedAt"),
-    resolvedBy: int("resolvedBy"),
-    resolutionNotes: text("resolutionNotes"),
-    documents: json("documents").$type<string[]>(),
+    licenseNumber: varchar("licenseNumber", { length: 50 }),
+    licenseState: varchar("licenseState", { length: 2 }),
+    licenseExpiry: timestamp("licenseExpiry"),
+    medicalCardExpiry: timestamp("medicalCardExpiry"),
+    hazmatEndorsement: boolean("hazmatEndorsement").default(false),
+    hazmatExpiry: timestamp("hazmatExpiry"),
+    twicExpiry: timestamp("twicExpiry"),
+    safetyScore: int("safetyScore").default(100),
+    totalMiles: decimal("totalMiles", { precision: 12, scale: 2 }),
+    totalLoads: int("totalLoads").default(0),
+    status: mysqlEnum("status", ["active", "inactive", "suspended", "available", "off_duty", "on_load"]).default("active"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
-    companyIdx: index("violation_company_idx").on(table.companyId),
-    driverIdx: index("violation_driver_idx").on(table.driverId),
-    statusIdx: index("violation_status_idx").on(table.status),
-    severityIdx: index("violation_severity_idx").on(table.severity),
+    userIdx: index("driver_user_idx").on(table.userId),
+    companyIdx: index("driver_company_idx").on(table.companyId),
   })
 );
 
-export type Violation = typeof violations.$inferSelect;
-export type InsertViolation = typeof violations.$inferInsert;
-
-export const audits = mysqlTable(
-  "audits",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    companyId: int("companyId").notNull(),
-    auditType: mysqlEnum("auditType", [
-      "internal",
-      "fmcsa",
-      "dot",
-      "state",
-      "insurance",
-      "customer",
-    ]).notNull(),
-    status: mysqlEnum("status", ["scheduled", "in_progress", "completed", "failed", "cancelled"])
-      .default("scheduled")
-      .notNull(),
-    title: varchar("title", { length: 255 }).notNull(),
-    description: text("description"),
-    scheduledDate: timestamp("scheduledDate"),
-    startedAt: timestamp("startedAt"),
-    completedAt: timestamp("completedAt"),
-    auditorName: varchar("auditorName", { length: 255 }),
-    auditorOrg: varchar("auditorOrg", { length: 255 }),
-    findings: json("findings").$type<Array<{ category: string; finding: string; severity: string }>>(),
-    score: int("score"),
-    maxScore: int("maxScore"),
-    passFailStatus: mysqlEnum("passFailStatus", ["pass", "fail", "conditional"]),
-    correctiveActions: json("correctiveActions").$type<Array<{ action: string; dueDate: string; status: string }>>(),
-    documents: json("documents").$type<string[]>(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    companyIdx: index("audit_company_idx").on(table.companyId),
-    statusIdx: index("audit_status_idx").on(table.status),
-    typeIdx: index("audit_type_idx").on(table.auditType),
-    scheduledIdx: index("audit_scheduled_idx").on(table.scheduledDate),
-  })
-);
-
-export type Audit = typeof audits.$inferSelect;
-export type InsertAudit = typeof audits.$inferInsert;
+export type Driver = typeof drivers.$inferSelect;
+export type InsertDriver = typeof drivers.$inferInsert;
 
 // ============================================================================
-// SAFETY - INCIDENTS & INSPECTIONS
+// INSPECTIONS
 // ============================================================================
 
-export const safetyIncidents = mysqlTable(
-  "safety_incidents",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    companyId: int("companyId").notNull(),
-    driverId: int("driverId"),
-    vehicleId: int("vehicleId"),
-    loadId: int("loadId"),
-    incidentType: mysqlEnum("incidentType", [
-      "accident",
-      "near_miss",
-      "injury",
-      "spill",
-      "property_damage",
-      "theft",
-      "breakdown",
-      "other",
-    ]).notNull(),
-    severity: mysqlEnum("severity", ["minor", "moderate", "major", "critical"]).notNull(),
-    status: mysqlEnum("status", ["reported", "investigating", "resolved", "closed"])
-      .default("reported")
-      .notNull(),
-    title: varchar("title", { length: 255 }).notNull(),
-    description: text("description"),
-    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
-    occurredAt: timestamp("occurredAt").notNull(),
-    reportedAt: timestamp("reportedAt").defaultNow().notNull(),
-    reportedBy: int("reportedBy"),
-    weatherConditions: varchar("weatherConditions", { length: 100 }),
-    roadConditions: varchar("roadConditions", { length: 100 }),
-    injuriesCount: int("injuriesCount").default(0),
-    fatalitiesCount: int("fatalitiesCount").default(0),
-    estimatedDamage: decimal("estimatedDamage", { precision: 12, scale: 2 }),
-    insuranceClaim: varchar("insuranceClaim", { length: 100 }),
-    policeReport: varchar("policeReport", { length: 100 }),
-    rootCause: text("rootCause"),
-    correctiveActions: text("correctiveActions"),
-    resolvedAt: timestamp("resolvedAt"),
-    resolvedBy: int("resolvedBy"),
-    documents: json("documents").$type<string[]>(),
-    witnesses: json("witnesses").$type<Array<{ name: string; phone: string; statement: string }>>(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    companyIdx: index("incident_company_idx").on(table.companyId),
-    driverIdx: index("incident_driver_idx").on(table.driverId),
-    statusIdx: index("incident_status_idx").on(table.status),
-    severityIdx: index("incident_severity_idx").on(table.severity),
-    occurredIdx: index("incident_occurred_idx").on(table.occurredAt),
-  })
-);
-
-export type SafetyIncident = typeof safetyIncidents.$inferSelect;
-export type InsertSafetyIncident = typeof safetyIncidents.$inferInsert;
-
-export const vehicleInspections = mysqlTable(
-  "vehicle_inspections",
+export const inspections = mysqlTable(
+  "inspections",
   {
     id: int("id").autoincrement().primaryKey(),
     vehicleId: int("vehicleId").notNull(),
     driverId: int("driverId").notNull(),
     companyId: int("companyId").notNull(),
-    inspectionType: mysqlEnum("inspectionType", ["pre_trip", "post_trip", "dot", "annual", "roadside"])
-      .notNull(),
-    status: mysqlEnum("status", ["pass", "fail", "out_of_service"]).notNull(),
-    inspectorType: mysqlEnum("inspectorType", ["driver", "mechanic", "dot_officer", "third_party"])
-      .notNull(),
-    inspectorName: varchar("inspectorName", { length: 255 }),
-    inspectorBadge: varchar("inspectorBadge", { length: 50 }),
-    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
-    odometer: int("odometer"),
-    defects: json("defects").$type<Array<{ 
-      category: string; 
-      description: string; 
-      severity: string; 
-      repaired: boolean;
-      repairedAt?: string;
-    }>>(),
-    defectCount: int("defectCount").default(0),
-    criticalDefectCount: int("criticalDefectCount").default(0),
-    driverSignature: text("driverSignature"),
-    mechanicSignature: text("mechanicSignature"),
-    notes: text("notes"),
-    documents: json("documents").$type<string[]>(),
-    inspectedAt: timestamp("inspectedAt").notNull(),
+    type: mysqlEnum("type", ["pre_trip", "post_trip", "roadside", "annual", "dot"]).notNull(),
+    status: mysqlEnum("status", ["passed", "failed", "pending"]).default("pending"),
+    location: varchar("location", { length: 255 }),
+    defectsFound: int("defectsFound").default(0),
+    oosViolation: boolean("oosViolation").default(false),
+    completedAt: timestamp("completedAt"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
     vehicleIdx: index("inspection_vehicle_idx").on(table.vehicleId),
     driverIdx: index("inspection_driver_idx").on(table.driverId),
-    companyIdx: index("inspection_company_idx").on(table.companyId),
-    typeIdx: index("inspection_type_idx").on(table.inspectionType),
-    inspectedIdx: index("inspection_inspected_idx").on(table.inspectedAt),
   })
 );
 
-export type VehicleInspection = typeof vehicleInspections.$inferSelect;
-export type InsertVehicleInspection = typeof vehicleInspections.$inferInsert;
+export type Inspection = typeof inspections.$inferSelect;
+export type InsertInspection = typeof inspections.$inferInsert;
 
 // ============================================================================
-// TERMINAL OPERATIONS
+// TERMINALS
 // ============================================================================
 
 export const terminals = mysqlTable(
@@ -912,338 +796,2141 @@ export const terminals = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     companyId: int("companyId").notNull(),
     name: varchar("name", { length: 255 }).notNull(),
-    code: varchar("code", { length: 50 }).notNull().unique(),
+    code: varchar("code", { length: 20 }),
     address: text("address"),
     city: varchar("city", { length: 100 }),
     state: varchar("state", { length: 50 }),
-    zipCode: varchar("zipCode", { length: 20 }),
-    location: json("location").$type<{ lat: number; lng: number }>(),
-    terminalType: mysqlEnum("terminalType", ["bulk", "petroleum", "chemical", "lpg", "lng", "asphalt", "general"])
-      .notNull(),
-    capacity: decimal("capacity", { precision: 12, scale: 2 }),
-    capacityUnit: varchar("capacityUnit", { length: 20 }).default("barrels"),
+    dockCount: int("dockCount").default(0),
     tankCount: int("tankCount").default(0),
-    rackCount: int("rackCount").default(0),
-    operatingHours: json("operatingHours").$type<{ open: string; close: string; days: string[] }>(),
-    contactName: varchar("contactName", { length: 255 }),
-    contactPhone: varchar("contactPhone", { length: 20 }),
-    contactEmail: varchar("contactEmail", { length: 320 }),
-    isActive: boolean("isActive").default(true).notNull(),
+    status: mysqlEnum("status", ["active", "inactive"]).default("active"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
     companyIdx: index("terminal_company_idx").on(table.companyId),
-    codeIdx: unique("terminal_code_unique").on(table.code),
-    typeIdx: index("terminal_type_idx").on(table.terminalType),
   })
 );
 
 export type Terminal = typeof terminals.$inferSelect;
 export type InsertTerminal = typeof terminals.$inferInsert;
 
-export const loadingBays = mysqlTable(
-  "loading_bays",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    terminalId: int("terminalId").notNull(),
-    name: varchar("name", { length: 100 }).notNull(),
-    bayNumber: int("bayNumber").notNull(),
-    status: mysqlEnum("status", ["available", "loading", "unloading", "maintenance", "offline"])
-      .default("available")
-      .notNull(),
-    currentLoadId: int("currentLoadId"),
-    currentVehicleId: int("currentVehicleId"),
-    currentDriverId: int("currentDriverId"),
-    productType: varchar("productType", { length: 100 }),
-    flowRate: decimal("flowRate", { precision: 8, scale: 2 }),
-    loadingProgress: int("loadingProgress").default(0),
-    startedAt: timestamp("startedAt"),
-    estimatedCompletion: timestamp("estimatedCompletion"),
-    isActive: boolean("isActive").default(true).notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    terminalIdx: index("bay_terminal_idx").on(table.terminalId),
-    statusIdx: index("bay_status_idx").on(table.status),
-    bayNumberIdx: index("bay_number_idx").on(table.terminalId, table.bayNumber),
-  })
-);
-
-export type LoadingBay = typeof loadingBays.$inferSelect;
-export type InsertLoadingBay = typeof loadingBays.$inferInsert;
-
-export const tankInventory = mysqlTable(
-  "tank_inventory",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    terminalId: int("terminalId").notNull(),
-    tankNumber: varchar("tankNumber", { length: 50 }).notNull(),
-    productName: varchar("productName", { length: 255 }).notNull(),
-    productCode: varchar("productCode", { length: 50 }),
-    capacity: decimal("capacity", { precision: 12, scale: 2 }).notNull(),
-    currentLevel: decimal("currentLevel", { precision: 12, scale: 2 }).notNull(),
-    capacityUnit: varchar("capacityUnit", { length: 20 }).default("gallons"),
-    levelPercent: decimal("levelPercent", { precision: 5, scale: 2 }),
-    temperature: decimal("temperature", { precision: 5, scale: 2 }),
-    temperatureUnit: varchar("temperatureUnit", { length: 5 }).default("F"),
-    lastGaugeReading: timestamp("lastGaugeReading"),
-    lowLevelAlert: decimal("lowLevelAlert", { precision: 5, scale: 2 }).default("20"),
-    highLevelAlert: decimal("highLevelAlert", { precision: 5, scale: 2 }).default("95"),
-    status: mysqlEnum("status", ["normal", "low", "high", "critical", "offline"])
-      .default("normal")
-      .notNull(),
-    isActive: boolean("isActive").default(true).notNull(),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    terminalIdx: index("tank_terminal_idx").on(table.terminalId),
-    productIdx: index("tank_product_idx").on(table.productCode),
-    statusIdx: index("tank_status_idx").on(table.status),
-  })
-);
-
-export type TankInventory = typeof tankInventory.$inferSelect;
-export type InsertTankInventory = typeof tankInventory.$inferInsert;
-
-export const billsOfLading = mysqlTable(
-  "bills_of_lading",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    terminalId: int("terminalId").notNull(),
-    loadId: int("loadId"),
-    bolNumber: varchar("bolNumber", { length: 50 }).notNull().unique(),
-    status: mysqlEnum("status", ["draft", "pending", "approved", "printed", "voided"])
-      .default("draft")
-      .notNull(),
-    shipperName: varchar("shipperName", { length: 255 }),
-    shipperId: int("shipperId"),
-    carrierName: varchar("carrierName", { length: 255 }),
-    carrierId: int("carrierId"),
-    driverName: varchar("driverName", { length: 255 }),
-    driverId: int("driverId"),
-    vehicleNumber: varchar("vehicleNumber", { length: 50 }),
-    trailerNumber: varchar("trailerNumber", { length: 50 }),
-    productName: varchar("productName", { length: 255 }).notNull(),
-    productCode: varchar("productCode", { length: 50 }),
-    quantity: decimal("quantity", { precision: 12, scale: 2 }).notNull(),
-    quantityUnit: varchar("quantityUnit", { length: 20 }).default("gallons"),
-    grossWeight: decimal("grossWeight", { precision: 10, scale: 2 }),
-    netWeight: decimal("netWeight", { precision: 10, scale: 2 }),
-    destination: text("destination"),
-    specialInstructions: text("specialInstructions"),
-    hazmatClass: varchar("hazmatClass", { length: 20 }),
-    unNumber: varchar("unNumber", { length: 20 }),
-    temperature: decimal("temperature", { precision: 5, scale: 2 }),
-    sealNumbers: json("sealNumbers").$type<string[]>(),
-    signatures: json("signatures").$type<{ driver?: string; terminal?: string; receiver?: string }>(),
-    printedAt: timestamp("printedAt"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    terminalIdx: index("bol_terminal_idx").on(table.terminalId),
-    loadIdx: index("bol_load_idx").on(table.loadId),
-    bolNumberIdx: unique("bol_number_unique").on(table.bolNumber),
-    statusIdx: index("bol_status_idx").on(table.status),
-  })
-);
-
-export type BillOfLading = typeof billsOfLading.$inferSelect;
-export type InsertBillOfLading = typeof billsOfLading.$inferInsert;
-
 // ============================================================================
-// ESCORT OPERATIONS
+// INCIDENTS
 // ============================================================================
 
-export const escortPermits = mysqlTable(
-  "escort_permits",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    state: varchar("state", { length: 50 }).notNull(),
-    permitNumber: varchar("permitNumber", { length: 100 }).notNull(),
-    permitType: varchar("permitType", { length: 100 }),
-    status: mysqlEnum("status", ["active", "expiring_soon", "expired", "pending", "suspended"])
-      .default("active")
-      .notNull(),
-    issuedDate: timestamp("issuedDate").notNull(),
-    expirationDate: timestamp("expirationDate").notNull(),
-    reciprocityStates: json("reciprocityStates").$type<string[]>(),
-    documents: json("documents").$type<string[]>(),
-    renewalSubmittedAt: timestamp("renewalSubmittedAt"),
-    notes: text("notes"),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdx: index("escort_permit_user_idx").on(table.userId),
-    stateIdx: index("escort_permit_state_idx").on(table.state),
-    statusIdx: index("escort_permit_status_idx").on(table.status),
-    expirationIdx: index("escort_permit_expiration_idx").on(table.expirationDate),
-  })
-);
-
-export type EscortPermit = typeof escortPermits.$inferSelect;
-export type InsertEscortPermit = typeof escortPermits.$inferInsert;
-
-export const escortJobs = mysqlTable(
-  "escort_jobs",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    carrierId: int("carrierId").notNull(),
-    escortId: int("escortId"),
-    loadId: int("loadId"),
-    title: varchar("title", { length: 255 }).notNull(),
-    status: mysqlEnum("status", ["posted", "assigned", "in_progress", "completed", "cancelled"])
-      .default("posted")
-      .notNull(),
-    position: mysqlEnum("position", ["lead", "chase", "both"]).notNull(),
-    origin: json("origin").$type<{ city: string; state: string; lat: number; lng: number }>(),
-    destination: json("destination").$type<{ city: string; state: string; lat: number; lng: number }>(),
-    startDate: timestamp("startDate").notNull(),
-    estimatedDuration: varchar("estimatedDuration", { length: 50 }),
-    distance: decimal("distance", { precision: 10, scale: 2 }),
-    rate: decimal("rate", { precision: 10, scale: 2 }).notNull(),
-    rateType: mysqlEnum("rateType", ["flat", "hourly", "per_mile"]).default("flat"),
-    loadDetails: json("loadDetails").$type<{
-      type: string;
-      dimensions: string;
-      weight: string;
-    }>(),
-    requirements: json("requirements").$type<{
-      equipment: string[];
-      certifications: string[];
-    }>(),
-    urgency: mysqlEnum("urgency", ["normal", "high", "urgent"]).default("normal"),
-    notes: text("notes"),
-    completedAt: timestamp("completedAt"),
-    rating: decimal("rating", { precision: 2, scale: 1 }),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    carrierIdx: index("escort_job_carrier_idx").on(table.carrierId),
-    escortIdx: index("escort_job_escort_idx").on(table.escortId),
-    statusIdx: index("escort_job_status_idx").on(table.status),
-    startDateIdx: index("escort_job_start_date_idx").on(table.startDate),
-  })
-);
-
-export type EscortJob = typeof escortJobs.$inferSelect;
-export type InsertEscortJob = typeof escortJobs.$inferInsert;
-
-export const escortAvailability = mysqlTable(
-  "escort_availability",
-  {
-    id: int("id").autoincrement().primaryKey(),
-    userId: int("userId").notNull(),
-    dayOfWeek: int("dayOfWeek").notNull(),
-    available: boolean("available").default(true).notNull(),
-    startTime: varchar("startTime", { length: 10 }),
-    endTime: varchar("endTime", { length: 10 }),
-    createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-  },
-  (table) => ({
-    userIdx: index("escort_availability_user_idx").on(table.userId),
-    userDayIdx: unique("escort_availability_user_day_unique").on(table.userId, table.dayOfWeek),
-  })
-);
-
-export type EscortAvailability = typeof escortAvailability.$inferSelect;
-export type InsertEscortAvailability = typeof escortAvailability.$inferInsert;
-
-// ============================================================================
-// DISPATCH EXCEPTIONS
-// ============================================================================
-
-export const dispatchExceptions = mysqlTable(
-  "dispatch_exceptions",
+export const incidents = mysqlTable(
+  "incidents",
   {
     id: int("id").autoincrement().primaryKey(),
     companyId: int("companyId").notNull(),
-    loadId: int("loadId"),
     driverId: int("driverId"),
     vehicleId: int("vehicleId"),
-    exceptionType: mysqlEnum("exceptionType", [
-      "breakdown",
-      "delay",
-      "hos_violation",
-      "weather",
-      "customer_issue",
-      "accident",
-      "other",
-    ]).notNull(),
-    severity: mysqlEnum("severity", ["low", "medium", "high", "critical"]).notNull(),
-    status: mysqlEnum("status", ["open", "in_progress", "monitoring", "resolved"])
-      .default("open")
-      .notNull(),
-    title: varchar("title", { length: 255 }).notNull(),
+    type: mysqlEnum("type", ["accident", "injury", "property_damage", "hazmat_spill", "near_miss"]).notNull(),
+    severity: mysqlEnum("severity", ["minor", "moderate", "major", "critical"]).notNull(),
+    occurredAt: timestamp("occurredAt").notNull(),
+    location: varchar("location", { length: 255 }),
     description: text("description"),
-    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
-    estimatedDelay: int("estimatedDelay"),
-    actualDelay: int("actualDelay"),
-    reportedBy: int("reportedBy"),
-    reportedAt: timestamp("reportedAt").defaultNow().notNull(),
-    assignedTo: int("assignedTo"),
-    resolution: text("resolution"),
-    resolvedAt: timestamp("resolvedAt"),
-    resolvedBy: int("resolvedBy"),
+    injuries: int("injuries").default(0),
+    fatalities: int("fatalities").default(0),
+    status: mysqlEnum("status", ["reported", "investigating", "resolved"]).default("reported"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
-    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
-    companyIdx: index("exception_company_idx").on(table.companyId),
-    loadIdx: index("exception_load_idx").on(table.loadId),
-    statusIdx: index("exception_status_idx").on(table.status),
-    severityIdx: index("exception_severity_idx").on(table.severity),
-    typeIdx: index("exception_type_idx").on(table.exceptionType),
+    companyIdx: index("incident_company_idx").on(table.companyId),
+    driverIdx: index("incident_driver_idx").on(table.driverId),
   })
 );
 
-export type DispatchException = typeof dispatchExceptions.$inferSelect;
-export type InsertDispatchException = typeof dispatchExceptions.$inferInsert;
+export type Incident = typeof incidents.$inferSelect;
+export type InsertIncident = typeof incidents.$inferInsert;
 
 // ============================================================================
-// HOS (HOURS OF SERVICE) LOGS
+// CERTIFICATIONS
 // ============================================================================
 
-export const hosLogs = mysqlTable(
-  "hos_logs",
+export const certifications = mysqlTable(
+  "certifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    type: varchar("type", { length: 100 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    expiryDate: timestamp("expiryDate"),
+    status: mysqlEnum("status", ["active", "expired", "pending"]).default("active"),
+    documentUrl: text("documentUrl"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("certification_user_idx").on(table.userId),
+    expiryIdx: index("certification_expiry_idx").on(table.expiryDate),
+  })
+);
+
+export type Certification = typeof certifications.$inferSelect;
+export type InsertCertification = typeof certifications.$inferInsert;
+
+// ============================================================================
+// DOCUMENTS
+// ============================================================================
+
+export const documents = mysqlTable(
+  "documents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId"),
+    companyId: int("companyId"),
+    loadId: int("loadId"),
+    type: varchar("type", { length: 100 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    fileUrl: text("fileUrl").notNull(),
+    expiryDate: timestamp("expiryDate"),
+    status: mysqlEnum("status", ["active", "expired", "pending"]).default("active"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("document_user_idx").on(table.userId),
+    companyIdx: index("document_company_idx").on(table.companyId),
+  })
+);
+
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
+
+// ============================================================================
+// FUEL TRANSACTIONS
+// ============================================================================
+
+export const fuelTransactions = mysqlTable(
+  "fuel_transactions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    driverId: int("driverId").notNull(),
+    vehicleId: int("vehicleId").notNull(),
+    companyId: int("companyId").notNull(),
+    stationName: varchar("stationName", { length: 255 }),
+    gallons: decimal("gallons", { precision: 10, scale: 3 }).notNull(),
+    pricePerGallon: decimal("pricePerGallon", { precision: 6, scale: 3 }).notNull(),
+    totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }).notNull(),
+    transactionDate: timestamp("transactionDate").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("fuel_driver_idx").on(table.driverId),
+    companyIdx: index("fuel_company_idx").on(table.companyId),
+  })
+);
+
+export type FuelTransaction = typeof fuelTransactions.$inferSelect;
+export type InsertFuelTransaction = typeof fuelTransactions.$inferInsert;
+
+// ============================================================================
+// TRAINING RECORDS
+// ============================================================================
+
+export const trainingRecords = mysqlTable(
+  "training_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    companyId: int("companyId").notNull(),
+    courseName: varchar("courseName", { length: 255 }).notNull(),
+    completedAt: timestamp("completedAt"),
+    expiresAt: timestamp("expiresAt"),
+    passed: boolean("passed").default(false),
+    status: mysqlEnum("status", ["assigned", "in_progress", "completed", "expired"]).default("assigned"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("training_user_idx").on(table.userId),
+    companyIdx: index("training_company_idx").on(table.companyId),
+  })
+);
+
+export type TrainingRecord = typeof trainingRecords.$inferSelect;
+export type InsertTrainingRecord = typeof trainingRecords.$inferInsert;
+
+// ============================================================================
+// DRUG TESTS
+// ============================================================================
+
+export const drugTests = mysqlTable(
+  "drug_tests",
   {
     id: int("id").autoincrement().primaryKey(),
     driverId: int("driverId").notNull(),
     companyId: int("companyId").notNull(),
-    logDate: timestamp("logDate").notNull(),
-    status: mysqlEnum("status", ["off_duty", "sleeper", "driving", "on_duty"]).notNull(),
-    startTime: timestamp("startTime").notNull(),
-    endTime: timestamp("endTime"),
-    duration: int("duration"),
-    location: json("location").$type<{ lat: number; lng: number; address: string }>(),
-    vehicleId: int("vehicleId"),
+    type: mysqlEnum("type", ["pre_employment", "random", "post_accident", "reasonable_suspicion"]).notNull(),
+    testDate: timestamp("testDate").notNull(),
+    result: mysqlEnum("result", ["negative", "positive", "pending"]).default("pending"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("drug_test_driver_idx").on(table.driverId),
+    companyIdx: index("drug_test_company_idx").on(table.companyId),
+  })
+);
+
+export type DrugTest = typeof drugTests.$inferSelect;
+export type InsertDrugTest = typeof drugTests.$inferInsert;
+
+// ============================================================================
+// APPOINTMENTS
+// ============================================================================
+
+export const appointments = mysqlTable(
+  "appointments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    terminalId: int("terminalId").notNull(),
     loadId: int("loadId"),
-    odometer: int("odometer"),
-    engineHours: decimal("engineHours", { precision: 10, scale: 2 }),
-    notes: text("notes"),
-    editReason: text("editReason"),
-    editedBy: int("editedBy"),
-    editedAt: timestamp("editedAt"),
-    isCertified: boolean("isCertified").default(false),
-    certifiedAt: timestamp("certifiedAt"),
+    driverId: int("driverId"),
+    type: mysqlEnum("type", ["pickup", "delivery", "loading", "unloading"]).notNull(),
+    scheduledAt: timestamp("scheduledAt").notNull(),
+    dockNumber: varchar("dockNumber", { length: 20 }),
+    status: mysqlEnum("status", ["scheduled", "checked_in", "completed", "cancelled"]).default("scheduled"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    terminalIdx: index("appointment_terminal_idx").on(table.terminalId),
+    scheduledIdx: index("appointment_scheduled_idx").on(table.scheduledAt),
+  })
+);
+
+export type Appointment = typeof appointments.$inferSelect;
+export type InsertAppointment = typeof appointments.$inferInsert;
+
+// ============================================================================
+// DIGITAL WALLETS - EusoWallet System
+// ============================================================================
+
+export const wallets = mysqlTable(
+  "wallets",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
+    availableBalance: decimal("availableBalance", { precision: 12, scale: 2 }).default("0").notNull(),
+    pendingBalance: decimal("pendingBalance", { precision: 12, scale: 2 }).default("0").notNull(),
+    reservedBalance: decimal("reservedBalance", { precision: 12, scale: 2 }).default("0"),
+    currency: varchar("currency", { length: 3 }).default("USD").notNull(),
+    stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+    stripeConnectId: varchar("stripeConnectId", { length: 255 }),
+    stripeAccountStatus: mysqlEnum("stripeAccountStatus", ["pending", "active", "restricted", "disabled"]).default("pending"),
+    lastDepositAt: timestamp("lastDepositAt"),
+    lastWithdrawalAt: timestamp("lastWithdrawalAt"),
+    totalReceived: decimal("totalReceived", { precision: 14, scale: 2 }).default("0"),
+    totalSpent: decimal("totalSpent", { precision: 14, scale: 2 }).default("0"),
+    isActive: boolean("isActive").default(true).notNull(),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
   (table) => ({
-    driverIdx: index("hos_driver_idx").on(table.driverId),
-    companyIdx: index("hos_company_idx").on(table.companyId),
-    logDateIdx: index("hos_log_date_idx").on(table.logDate),
-    statusIdx: index("hos_status_idx").on(table.status),
+    userIdx: unique("wallet_user_unique").on(table.userId),
+    stripeIdx: index("wallet_stripe_idx").on(table.stripeCustomerId),
   })
 );
 
-export type HosLog = typeof hosLogs.$inferSelect;
-export type InsertHosLog = typeof hosLogs.$inferInsert;
+export type Wallet = typeof wallets.$inferSelect;
+export type InsertWallet = typeof wallets.$inferInsert;
+
+export const walletTransactions = mysqlTable(
+  "wallet_transactions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    walletId: int("walletId").notNull(),
+    type: mysqlEnum("type", ["earnings", "payout", "fee", "refund", "bonus", "adjustment", "transfer", "deposit"]).notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    fee: decimal("fee", { precision: 10, scale: 2 }).default("0"),
+    netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).default("USD"),
+    status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "cancelled"]).default("pending").notNull(),
+    description: text("description"),
+    loadId: int("loadId"),
+    loadNumber: varchar("loadNumber", { length: 50 }),
+    stripePaymentId: varchar("stripePaymentId", { length: 255 }),
+    stripeTransferId: varchar("stripeTransferId", { length: 255 }),
+    metadata: json("metadata"),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    walletIdx: index("wallet_transaction_wallet_idx").on(table.walletId),
+    typeIdx: index("wallet_transaction_type_idx").on(table.type),
+    statusIdx: index("wallet_transaction_status_idx").on(table.status),
+    createdAtIdx: index("wallet_transaction_created_idx").on(table.createdAt),
+  })
+);
+
+export type WalletTransaction = typeof walletTransactions.$inferSelect;
+export type InsertWalletTransaction = typeof walletTransactions.$inferInsert;
+
+export const payoutMethods = mysqlTable(
+  "payout_methods",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    type: mysqlEnum("type", ["bank_account", "debit_card"]).notNull(),
+    bankName: varchar("bankName", { length: 255 }),
+    last4: varchar("last4", { length: 4 }).notNull(),
+    brand: varchar("brand", { length: 50 }),
+    accountHolderName: varchar("accountHolderName", { length: 255 }),
+    stripeExternalAccountId: varchar("stripeExternalAccountId", { length: 255 }),
+    isDefault: boolean("isDefault").default(false),
+    instantPayoutEligible: boolean("instantPayoutEligible").default(false),
+    isVerified: boolean("isVerified").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("payout_method_user_idx").on(table.userId),
+    stripeIdx: index("payout_method_stripe_idx").on(table.stripeExternalAccountId),
+  })
+);
+
+export type PayoutMethod = typeof payoutMethods.$inferSelect;
+export type InsertPayoutMethod = typeof payoutMethods.$inferInsert;
+
+// ============================================================================
+// TRAINING MODULES - Required training for compliance
+// ============================================================================
+
+export const trainingModules = mysqlTable(
+  "training_modules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    type: mysqlEnum("type", ["hazmat", "safety", "compliance", "equipment", "onboarding"]).notNull(),
+    duration: int("duration"),
+    requiredForRoles: json("requiredForRoles").$type<string[]>(),
+    contentUrl: text("contentUrl"),
+    passingScore: int("passingScore").default(80),
+    expirationMonths: int("expirationMonths").default(12),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    typeIdx: index("training_module_type_idx").on(table.type),
+  })
+);
+
+export type TrainingModule = typeof trainingModules.$inferSelect;
+export type InsertTrainingModule = typeof trainingModules.$inferInsert;
+
+export const userTraining = mysqlTable(
+  "user_training",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    moduleId: int("moduleId").notNull(),
+    status: mysqlEnum("status", ["not_started", "in_progress", "completed", "expired"]).default("not_started").notNull(),
+    progress: int("progress").default(0),
+    score: int("score"),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    expiresAt: timestamp("expiresAt"),
+    certificateUrl: text("certificateUrl"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("user_training_user_idx").on(table.userId),
+    moduleIdx: index("user_training_module_idx").on(table.moduleId),
+    statusIdx: index("user_training_status_idx").on(table.status),
+  })
+);
+
+export type UserTraining = typeof userTraining.$inferSelect;
+export type InsertUserTraining = typeof userTraining.$inferInsert;
+
+// ============================================================================
+// ONBOARDING TRACKING
+// ============================================================================
+
+export const onboardingProgress = mysqlTable(
+  "onboarding_progress",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
+    currentStep: int("currentStep").default(1).notNull(),
+    totalSteps: int("totalSteps").default(7).notNull(),
+    completedSteps: json("completedSteps").$type<string[]>().default([]),
+    pendingSteps: json("pendingSteps").$type<string[]>(),
+    status: mysqlEnum("status", ["in_progress", "pending_review", "approved", "rejected"]).default("in_progress").notNull(),
+    submittedAt: timestamp("submittedAt"),
+    approvedAt: timestamp("approvedAt"),
+    approvedBy: int("approvedBy"),
+    rejectionReason: text("rejectionReason"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: unique("onboarding_user_unique").on(table.userId),
+    statusIdx: index("onboarding_status_idx").on(table.status),
+  })
+);
+
+export type OnboardingProgress = typeof onboardingProgress.$inferSelect;
+export type InsertOnboardingProgress = typeof onboardingProgress.$inferInsert;
+
+// ============================================================================
+// PLATFORM FEE REVENUE SYSTEM
+// ============================================================================
+
+export const platformFeeConfigs = mysqlTable(
+  "platform_fee_configs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    feeCode: varchar("feeCode", { length: 50 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    transactionType: mysqlEnum("transactionType", [
+      "load_booking",
+      "load_completion",
+      "instant_pay",
+      "cash_advance",
+      "p2p_transfer",
+      "wallet_withdrawal",
+      "subscription",
+      "premium_feature",
+    ]).notNull(),
+    feeType: mysqlEnum("feeType", ["percentage", "flat", "tiered", "hybrid"]).notNull(),
+    baseRate: decimal("baseRate", { precision: 10, scale: 4 }),
+    flatAmount: decimal("flatAmount", { precision: 10, scale: 2 }),
+    minFee: decimal("minFee", { precision: 10, scale: 2 }),
+    maxFee: decimal("maxFee", { precision: 10, scale: 2 }),
+    tiers: json("tiers").$type<Array<{ minAmount: number; maxAmount: number; rate: number }>>(),
+    applicableRoles: json("applicableRoles").$type<string[]>(),
+    platformShare: decimal("platformShare", { precision: 5, scale: 2 }).default("100"),
+    processorShare: decimal("processorShare", { precision: 5, scale: 2 }).default("0"),
+    isActive: boolean("isActive").default(true).notNull(),
+    effectiveFrom: timestamp("effectiveFrom").defaultNow().notNull(),
+    effectiveTo: timestamp("effectiveTo"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    feeCodeIdx: unique("fee_code_unique").on(table.feeCode),
+    transactionTypeIdx: index("fee_transaction_type_idx").on(table.transactionType),
+    activeIdx: index("fee_active_idx").on(table.isActive),
+  })
+);
+
+export type PlatformFeeConfig = typeof platformFeeConfigs.$inferSelect;
+export type InsertPlatformFeeConfig = typeof platformFeeConfigs.$inferInsert;
+
+export const volumeDiscounts = mysqlTable(
+  "volume_discounts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    discountType: mysqlEnum("discountType", ["transaction_count", "volume_amount", "tenure"]).notNull(),
+    thresholdValue: decimal("thresholdValue", { precision: 12, scale: 2 }).notNull(),
+    discountPercent: decimal("discountPercent", { precision: 5, scale: 2 }).notNull(),
+    applicableFeeCode: varchar("applicableFeeCode", { length: 50 }),
+    applicableRoles: json("applicableRoles").$type<string[]>(),
+    periodType: mysqlEnum("periodType", ["monthly", "quarterly", "yearly", "lifetime"]).default("monthly"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    discountTypeIdx: index("volume_discount_type_idx").on(table.discountType),
+    activeIdx: index("volume_discount_active_idx").on(table.isActive),
+  })
+);
+
+export type VolumeDiscount = typeof volumeDiscounts.$inferSelect;
+export type InsertVolumeDiscount = typeof volumeDiscounts.$inferInsert;
+
+export const userFeeOverrides = mysqlTable(
+  "user_fee_overrides",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    feeConfigId: int("feeConfigId").notNull(),
+    overrideType: mysqlEnum("overrideType", ["rate_adjustment", "flat_override", "percentage_off", "waived"]).notNull(),
+    overrideValue: decimal("overrideValue", { precision: 10, scale: 4 }),
+    reason: text("reason"),
+    approvedBy: int("approvedBy"),
+    effectiveFrom: timestamp("effectiveFrom").defaultNow().notNull(),
+    effectiveTo: timestamp("effectiveTo"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("user_fee_override_user_idx").on(table.userId),
+    feeConfigIdx: index("user_fee_override_config_idx").on(table.feeConfigId),
+    activeIdx: index("user_fee_override_active_idx").on(table.isActive),
+  })
+);
+
+export type UserFeeOverride = typeof userFeeOverrides.$inferSelect;
+export type InsertUserFeeOverride = typeof userFeeOverrides.$inferInsert;
+
+export const platformRevenue = mysqlTable(
+  "platform_revenue",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    transactionId: int("transactionId").notNull(),
+    transactionType: varchar("transactionType", { length: 50 }).notNull(),
+    userId: int("userId").notNull(),
+    feeConfigId: int("feeConfigId"),
+    grossAmount: decimal("grossAmount", { precision: 12, scale: 2 }).notNull(),
+    feeAmount: decimal("feeAmount", { precision: 10, scale: 2 }).notNull(),
+    netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull(),
+    platformShare: decimal("platformShare", { precision: 10, scale: 2 }).notNull(),
+    processorShare: decimal("processorShare", { precision: 10, scale: 2 }).default("0"),
+    discountApplied: decimal("discountApplied", { precision: 10, scale: 2 }).default("0"),
+    promoCodeUsed: varchar("promoCodeUsed", { length: 50 }),
+    feeBreakdown: json("feeBreakdown").$type<{
+      baseFee: number;
+      volumeDiscount?: number;
+      overrideDiscount?: number;
+      promoDiscount?: number;
+      finalFee: number;
+    }>(),
+    metadata: json("metadata"),
+    processedAt: timestamp("processedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    transactionIdx: index("platform_revenue_transaction_idx").on(table.transactionId),
+    userIdx: index("platform_revenue_user_idx").on(table.userId),
+    processedAtIdx: index("platform_revenue_processed_idx").on(table.processedAt),
+    transactionTypeIdx: index("platform_revenue_type_idx").on(table.transactionType),
+  })
+);
+
+export type PlatformRevenue = typeof platformRevenue.$inferSelect;
+export type InsertPlatformRevenue = typeof platformRevenue.$inferInsert;
+
+export const promoCodes = mysqlTable(
+  "promo_codes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 50 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    discountType: mysqlEnum("discountType", ["percentage", "flat", "fee_waiver"]).notNull(),
+    discountValue: decimal("discountValue", { precision: 10, scale: 2 }).notNull(),
+    applicableFeeCode: varchar("applicableFeeCode", { length: 50 }),
+    maxUses: int("maxUses"),
+    maxUsesPerUser: int("maxUsesPerUser").default(1),
+    currentUses: int("currentUses").default(0),
+    minTransactionAmount: decimal("minTransactionAmount", { precision: 10, scale: 2 }),
+    applicableRoles: json("applicableRoles").$type<string[]>(),
+    validFrom: timestamp("validFrom").defaultNow().notNull(),
+    validTo: timestamp("validTo"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    codeIdx: unique("promo_code_unique").on(table.code),
+    activeIdx: index("promo_code_active_idx").on(table.isActive),
+    validIdx: index("promo_code_valid_idx").on(table.validFrom, table.validTo),
+  })
+);
+
+export type PromoCode = typeof promoCodes.$inferSelect;
+export type InsertPromoCode = typeof promoCodes.$inferInsert;
+
+export const promoCodeUsage = mysqlTable(
+  "promo_code_usage",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    promoCodeId: int("promoCodeId").notNull(),
+    userId: int("userId").notNull(),
+    transactionId: int("transactionId").notNull(),
+    discountAmount: decimal("discountAmount", { precision: 10, scale: 2 }).notNull(),
+    usedAt: timestamp("usedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    promoCodeIdx: index("promo_usage_code_idx").on(table.promoCodeId),
+    userIdx: index("promo_usage_user_idx").on(table.userId),
+  })
+);
+
+export type PromoCodeUsage = typeof promoCodeUsage.$inferSelect;
+export type InsertPromoCodeUsage = typeof promoCodeUsage.$inferInsert;
+
+// ============================================================================
+// GAMIFICATION QUEST SYSTEM
+// ============================================================================
+
+export const missions = mysqlTable(
+  "missions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 100 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    type: mysqlEnum("type", [
+      "daily",
+      "weekly",
+      "monthly",
+      "epic",
+      "seasonal",
+      "raid",
+      "story",
+      "achievement",
+    ]).notNull(),
+    category: mysqlEnum("category", [
+      "deliveries",
+      "earnings",
+      "safety",
+      "efficiency",
+      "social",
+      "special",
+      "onboarding",
+    ]).notNull(),
+    targetType: mysqlEnum("targetType", [
+      "count",
+      "amount",
+      "distance",
+      "streak",
+      "rating",
+      "time",
+    ]).notNull(),
+    targetValue: decimal("targetValue", { precision: 12, scale: 2 }).notNull(),
+    targetUnit: varchar("targetUnit", { length: 50 }),
+    requirements: json("requirements").$type<{
+      minLevel?: number;
+      requiredBadges?: string[];
+      roleRestriction?: string[];
+      prerequisiteMissions?: string[];
+    }>(),
+    rewardType: mysqlEnum("rewardType", [
+      "miles",
+      "cash",
+      "badge",
+      "title",
+      "fee_reduction",
+      "priority_perk",
+      "crate",
+      "xp",
+    ]).notNull(),
+    rewardValue: decimal("rewardValue", { precision: 12, scale: 2 }).notNull(),
+    rewardData: json("rewardData").$type<{
+      badgeId?: string;
+      title?: string;
+      feeReductionPercent?: number;
+      crateType?: string;
+      bonusMultiplier?: number;
+    }>(),
+    xpReward: int("xpReward").default(0),
+    cooldownHours: int("cooldownHours"),
+    maxCompletions: int("maxCompletions"),
+    applicableRoles: json("applicableRoles").$type<string[]>(),
+    seasonId: int("seasonId"),
+    sortOrder: int("sortOrder").default(0),
+    isActive: boolean("isActive").default(true).notNull(),
+    startsAt: timestamp("startsAt"),
+    endsAt: timestamp("endsAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    codeIdx: unique("mission_code_unique").on(table.code),
+    typeIdx: index("mission_type_idx").on(table.type),
+    categoryIdx: index("mission_category_idx").on(table.category),
+    activeIdx: index("mission_active_idx").on(table.isActive),
+    seasonIdx: index("mission_season_idx").on(table.seasonId),
+  })
+);
+
+export type Mission = typeof missions.$inferSelect;
+export type InsertMission = typeof missions.$inferInsert;
+
+export const missionProgress = mysqlTable(
+  "mission_progress",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    missionId: int("missionId").notNull(),
+    currentProgress: decimal("currentProgress", { precision: 12, scale: 2 }).default("0").notNull(),
+    targetProgress: decimal("targetProgress", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", ["not_started", "in_progress", "completed", "claimed", "expired"]).default("not_started").notNull(),
+    completionCount: int("completionCount").default(0),
+    lastProgressAt: timestamp("lastProgressAt"),
+    completedAt: timestamp("completedAt"),
+    claimedAt: timestamp("claimedAt"),
+    expiresAt: timestamp("expiresAt"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("mission_progress_user_idx").on(table.userId),
+    missionIdx: index("mission_progress_mission_idx").on(table.missionId),
+    statusIdx: index("mission_progress_status_idx").on(table.status),
+    userMissionIdx: index("mission_progress_user_mission_idx").on(table.userId, table.missionId),
+  })
+);
+
+export type MissionProgress = typeof missionProgress.$inferSelect;
+export type InsertMissionProgress = typeof missionProgress.$inferInsert;
+
+export const badges = mysqlTable(
+  "badges",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 100 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    category: mysqlEnum("category", [
+      "milestone",
+      "performance",
+      "specialty",
+      "seasonal",
+      "epic",
+      "legendary",
+    ]).notNull(),
+    tier: mysqlEnum("tier", ["bronze", "silver", "gold", "platinum", "diamond"]).default("bronze"),
+    iconUrl: text("iconUrl"),
+    criteria: json("criteria").$type<{
+      type: string;
+      value: number;
+      condition?: string;
+    }>(),
+    xpValue: int("xpValue").default(0),
+    isRare: boolean("isRare").default(false),
+    sortOrder: int("sortOrder").default(0),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    codeIdx: unique("badge_code_unique").on(table.code),
+    categoryIdx: index("badge_category_idx").on(table.category),
+    tierIdx: index("badge_tier_idx").on(table.tier),
+  })
+);
+
+export type Badge = typeof badges.$inferSelect;
+export type InsertBadge = typeof badges.$inferInsert;
+
+export const userBadges = mysqlTable(
+  "user_badges",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    badgeId: int("badgeId").notNull(),
+    earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+    displayOrder: int("displayOrder").default(0),
+    isDisplayed: boolean("isDisplayed").default(true),
+    metadata: json("metadata"),
+  },
+  (table) => ({
+    userIdx: index("user_badge_user_idx").on(table.userId),
+    badgeIdx: index("user_badge_badge_idx").on(table.badgeId),
+    userBadgeIdx: unique("user_badge_unique").on(table.userId, table.badgeId),
+  })
+);
+
+export type UserBadge = typeof userBadges.$inferSelect;
+export type InsertUserBadge = typeof userBadges.$inferInsert;
+
+export const userTitles = mysqlTable(
+  "user_titles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    title: varchar("title", { length: 100 }).notNull(),
+    source: varchar("source", { length: 100 }),
+    earnedAt: timestamp("earnedAt").defaultNow().notNull(),
+    isActive: boolean("isActive").default(true),
+  },
+  (table) => ({
+    userIdx: index("user_title_user_idx").on(table.userId),
+  })
+);
+
+export type UserTitle = typeof userTitles.$inferSelect;
+export type InsertUserTitle = typeof userTitles.$inferInsert;
+
+export const gamificationProfiles = mysqlTable(
+  "gamification_profiles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
+    level: int("level").default(1).notNull(),
+    currentXp: int("currentXp").default(0).notNull(),
+    totalXp: int("totalXp").default(0).notNull(),
+    xpToNextLevel: int("xpToNextLevel").default(1000).notNull(),
+    totalMilesEarned: decimal("totalMilesEarned", { precision: 14, scale: 2 }).default("0"),
+    currentMiles: decimal("currentMiles", { precision: 14, scale: 2 }).default("0"),
+    activeTitle: varchar("activeTitle", { length: 100 }),
+    rank: int("rank"),
+    streakDays: int("streakDays").default(0),
+    longestStreak: int("longestStreak").default(0),
+    lastActivityAt: timestamp("lastActivityAt"),
+    seasonalRank: int("seasonalRank"),
+    seasonalXp: int("seasonalXp").default(0),
+    stats: json("stats").$type<{
+      totalMissionsCompleted: number;
+      totalBadgesEarned: number;
+      totalCratesOpened: number;
+      perfectDeliveries: number;
+      onTimeRate: number;
+    }>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: unique("gamification_profile_user_unique").on(table.userId),
+    levelIdx: index("gamification_profile_level_idx").on(table.level),
+    rankIdx: index("gamification_profile_rank_idx").on(table.rank),
+  })
+);
+
+export type GamificationProfile = typeof gamificationProfiles.$inferSelect;
+export type InsertGamificationProfile = typeof gamificationProfiles.$inferInsert;
+
+export const rewardCrates = mysqlTable(
+  "reward_crates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    crateType: mysqlEnum("crateType", [
+      "common",
+      "uncommon",
+      "rare",
+      "epic",
+      "legendary",
+      "mythic",
+    ]).notNull(),
+    source: varchar("source", { length: 100 }),
+    sourceId: int("sourceId"),
+    status: mysqlEnum("status", ["pending", "opened", "expired"]).default("pending").notNull(),
+    contents: json("contents").$type<Array<{
+      type: string;
+      value: number;
+      name?: string;
+    }>>(),
+    openedAt: timestamp("openedAt"),
+    expiresAt: timestamp("expiresAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("reward_crate_user_idx").on(table.userId),
+    statusIdx: index("reward_crate_status_idx").on(table.status),
+    crateTypeIdx: index("reward_crate_type_idx").on(table.crateType),
+  })
+);
+
+export type RewardCrate = typeof rewardCrates.$inferSelect;
+export type InsertRewardCrate = typeof rewardCrates.$inferInsert;
+
+export const seasons = mysqlTable(
+  "seasons",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    theme: varchar("theme", { length: 100 }),
+    startsAt: timestamp("startsAt").notNull(),
+    endsAt: timestamp("endsAt").notNull(),
+    rewards: json("rewards").$type<Array<{
+      rank: number;
+      reward: { type: string; value: number };
+    }>>(),
+    isActive: boolean("isActive").default(false).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    activeIdx: index("season_active_idx").on(table.isActive),
+    dateIdx: index("season_date_idx").on(table.startsAt, table.endsAt),
+  })
+);
+
+export type Season = typeof seasons.$inferSelect;
+export type InsertSeason = typeof seasons.$inferInsert;
+
+export const leaderboards = mysqlTable(
+  "leaderboards",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    periodType: mysqlEnum("periodType", ["daily", "weekly", "monthly", "seasonal", "all_time"]).notNull(),
+    periodKey: varchar("periodKey", { length: 50 }).notNull(),
+    category: varchar("category", { length: 50 }).notNull(),
+    score: decimal("score", { precision: 14, scale: 2 }).notNull(),
+    rank: int("rank"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("leaderboard_user_idx").on(table.userId),
+    periodIdx: index("leaderboard_period_idx").on(table.periodType, table.periodKey),
+    categoryIdx: index("leaderboard_category_idx").on(table.category),
+    rankIdx: index("leaderboard_rank_idx").on(table.rank),
+  })
+);
+
+export type Leaderboard = typeof leaderboards.$inferSelect;
+export type InsertLeaderboard = typeof leaderboards.$inferInsert;
+
+// ============================================================================
+// ENHANCED MESSAGING & NOTIFICATION SYSTEM
+// ============================================================================
+
+export const notificationPreferences = mysqlTable(
+  "notification_preferences",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull().unique(),
+    emailNotifications: boolean("emailNotifications").default(true),
+    pushNotifications: boolean("pushNotifications").default(true),
+    smsNotifications: boolean("smsNotifications").default(false),
+    inAppNotifications: boolean("inAppNotifications").default(true),
+    loadUpdates: boolean("loadUpdates").default(true),
+    bidAlerts: boolean("bidAlerts").default(true),
+    paymentAlerts: boolean("paymentAlerts").default(true),
+    messageAlerts: boolean("messageAlerts").default(true),
+    missionAlerts: boolean("missionAlerts").default(true),
+    promotionalAlerts: boolean("promotionalAlerts").default(false),
+    weeklyDigest: boolean("weeklyDigest").default(true),
+    quietHoursEnabled: boolean("quietHoursEnabled").default(false),
+    quietHoursStart: varchar("quietHoursStart", { length: 5 }),
+    quietHoursEnd: varchar("quietHoursEnd", { length: 5 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: unique("notification_pref_user_unique").on(table.userId),
+  })
+);
+
+export type NotificationPreference = typeof notificationPreferences.$inferSelect;
+export type InsertNotificationPreference = typeof notificationPreferences.$inferInsert;
+
+export const pushTokens = mysqlTable(
+  "push_tokens",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    token: text("token").notNull(),
+    platform: mysqlEnum("platform", ["ios", "android", "web"]).notNull(),
+    deviceId: varchar("deviceId", { length: 255 }),
+    deviceName: varchar("deviceName", { length: 255 }),
+    isActive: boolean("isActive").default(true).notNull(),
+    lastUsedAt: timestamp("lastUsedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("push_token_user_idx").on(table.userId),
+    platformIdx: index("push_token_platform_idx").on(table.platform),
+  })
+);
+
+export type PushToken = typeof pushTokens.$inferSelect;
+export type InsertPushToken = typeof pushTokens.$inferInsert;
+
+export const conversationParticipants = mysqlTable(
+  "conversation_participants",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    conversationId: int("conversationId").notNull(),
+    userId: int("userId").notNull(),
+    role: mysqlEnum("role", ["owner", "admin", "member", "guest"]).default("member").notNull(),
+    nickname: varchar("nickname", { length: 100 }),
+    lastReadAt: timestamp("lastReadAt"),
+    lastSeenAt: timestamp("lastSeenAt"),
+    unreadCount: int("unreadCount").default(0),
+    isMuted: boolean("isMuted").default(false),
+    mutedUntil: timestamp("mutedUntil"),
+    isPinned: boolean("isPinned").default(false),
+    isArchived: boolean("isArchived").default(false),
+    joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+    leftAt: timestamp("leftAt"),
+  },
+  (table) => ({
+    conversationIdx: index("conv_participant_conv_idx").on(table.conversationId),
+    userIdx: index("conv_participant_user_idx").on(table.userId),
+    convUserIdx: unique("conv_participant_unique").on(table.conversationId, table.userId),
+  })
+);
+
+export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+export type InsertConversationParticipant = typeof conversationParticipants.$inferInsert;
+
+export const messageReactions = mysqlTable(
+  "message_reactions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    messageId: int("messageId").notNull(),
+    userId: int("userId").notNull(),
+    reaction: varchar("reaction", { length: 50 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    messageIdx: index("reaction_message_idx").on(table.messageId),
+    userIdx: index("reaction_user_idx").on(table.userId),
+    uniqueIdx: unique("reaction_unique").on(table.messageId, table.userId, table.reaction),
+  })
+);
+
+export type MessageReaction = typeof messageReactions.$inferSelect;
+export type InsertMessageReaction = typeof messageReactions.$inferInsert;
+
+export const messageAttachments = mysqlTable(
+  "message_attachments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    messageId: int("messageId").notNull(),
+    type: mysqlEnum("type", ["image", "document", "audio", "video", "location"]).notNull(),
+    fileName: varchar("fileName", { length: 255 }),
+    fileUrl: text("fileUrl").notNull(),
+    fileSize: int("fileSize"),
+    mimeType: varchar("mimeType", { length: 100 }),
+    thumbnailUrl: text("thumbnailUrl"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    messageIdx: index("attachment_message_idx").on(table.messageId),
+    typeIdx: index("attachment_type_idx").on(table.type),
+  })
+);
+
+export type MessageAttachment = typeof messageAttachments.$inferSelect;
+export type InsertMessageAttachment = typeof messageAttachments.$inferInsert;
+
+// ============================================================================
+// EXTENDED EUSOWALLET - P2P, CHAT PAYMENTS, CASH ADVANCES, INSTANT PAY
+// ============================================================================
+
+export const p2pTransfers = mysqlTable(
+  "p2p_transfers",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    senderWalletId: int("senderWalletId").notNull(),
+    recipientWalletId: int("recipientWalletId").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).default("USD"),
+    fee: decimal("fee", { precision: 10, scale: 2 }).default("0"),
+    note: text("note"),
+    status: mysqlEnum("status", ["pending", "completed", "failed", "cancelled", "refunded"]).default("pending").notNull(),
+    transferType: mysqlEnum("transferType", ["standard", "instant", "scheduled"]).default("standard"),
+    scheduledFor: timestamp("scheduledFor"),
+    completedAt: timestamp("completedAt"),
+    failureReason: text("failureReason"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    senderIdx: index("p2p_sender_idx").on(table.senderWalletId),
+    recipientIdx: index("p2p_recipient_idx").on(table.recipientWalletId),
+    statusIdx: index("p2p_status_idx").on(table.status),
+    createdAtIdx: index("p2p_created_idx").on(table.createdAt),
+  })
+);
+
+export type P2PTransfer = typeof p2pTransfers.$inferSelect;
+export type InsertP2PTransfer = typeof p2pTransfers.$inferInsert;
+
+export const chatPayments = mysqlTable(
+  "chat_payments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    conversationId: int("conversationId").notNull(),
+    messageId: int("messageId"),
+    senderUserId: int("senderUserId").notNull(),
+    recipientUserId: int("recipientUserId").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    currency: varchar("currency", { length: 3 }).default("USD"),
+    paymentType: mysqlEnum("paymentType", ["direct", "request", "split", "tip"]).default("direct").notNull(),
+    status: mysqlEnum("status", ["pending", "accepted", "completed", "declined", "expired", "cancelled"]).default("pending").notNull(),
+    note: text("note"),
+    expiresAt: timestamp("expiresAt"),
+    completedAt: timestamp("completedAt"),
+    p2pTransferId: int("p2pTransferId"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    conversationIdx: index("chat_payment_conv_idx").on(table.conversationId),
+    senderIdx: index("chat_payment_sender_idx").on(table.senderUserId),
+    recipientIdx: index("chat_payment_recipient_idx").on(table.recipientUserId),
+    statusIdx: index("chat_payment_status_idx").on(table.status),
+  })
+);
+
+export type ChatPayment = typeof chatPayments.$inferSelect;
+export type InsertChatPayment = typeof chatPayments.$inferInsert;
+
+export const cashAdvances = mysqlTable(
+  "cash_advances",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    walletId: int("walletId").notNull(),
+    loadId: int("loadId"),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    fee: decimal("fee", { precision: 10, scale: 2 }).notNull(),
+    feePercent: decimal("feePercent", { precision: 5, scale: 2 }),
+    totalRepayment: decimal("totalRepayment", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", [
+      "pending",
+      "approved",
+      "disbursed",
+      "partially_repaid",
+      "repaid",
+      "defaulted",
+      "cancelled",
+    ]).default("pending").notNull(),
+    repaidAmount: decimal("repaidAmount", { precision: 12, scale: 2 }).default("0"),
+    approvedBy: int("approvedBy"),
+    approvedAt: timestamp("approvedAt"),
+    disbursedAt: timestamp("disbursedAt"),
+    dueDate: timestamp("dueDate"),
+    repaidAt: timestamp("repaidAt"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("cash_advance_user_idx").on(table.userId),
+    walletIdx: index("cash_advance_wallet_idx").on(table.walletId),
+    statusIdx: index("cash_advance_status_idx").on(table.status),
+    loadIdx: index("cash_advance_load_idx").on(table.loadId),
+  })
+);
+
+export type CashAdvance = typeof cashAdvances.$inferSelect;
+export type InsertCashAdvance = typeof cashAdvances.$inferInsert;
+
+export const instantPayRequests = mysqlTable(
+  "instant_pay_requests",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    walletId: int("walletId").notNull(),
+    loadId: int("loadId"),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    fee: decimal("fee", { precision: 10, scale: 2 }).notNull(),
+    feePercent: decimal("feePercent", { precision: 5, scale: 2 }),
+    netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", ["pending", "processing", "completed", "failed", "cancelled"]).default("pending").notNull(),
+    payoutMethodId: int("payoutMethodId"),
+    processedAt: timestamp("processedAt"),
+    failureReason: text("failureReason"),
+    stripePayoutId: varchar("stripePayoutId", { length: 255 }),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("instant_pay_user_idx").on(table.userId),
+    walletIdx: index("instant_pay_wallet_idx").on(table.walletId),
+    statusIdx: index("instant_pay_status_idx").on(table.status),
+    loadIdx: index("instant_pay_load_idx").on(table.loadId),
+  })
+);
+
+export type InstantPayRequest = typeof instantPayRequests.$inferSelect;
+export type InsertInstantPayRequest = typeof instantPayRequests.$inferInsert;
+
+export const payrollRuns = mysqlTable(
+  "payroll_runs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    periodStart: timestamp("periodStart").notNull(),
+    periodEnd: timestamp("periodEnd").notNull(),
+    status: mysqlEnum("status", ["draft", "pending", "processing", "completed", "failed", "cancelled"]).default("draft").notNull(),
+    totalAmount: decimal("totalAmount", { precision: 14, scale: 2 }).notNull(),
+    totalFees: decimal("totalFees", { precision: 10, scale: 2 }).default("0"),
+    employeeCount: int("employeeCount").default(0),
+    processedCount: int("processedCount").default(0),
+    failedCount: int("failedCount").default(0),
+    approvedBy: int("approvedBy"),
+    approvedAt: timestamp("approvedAt"),
+    processedAt: timestamp("processedAt"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("payroll_company_idx").on(table.companyId),
+    statusIdx: index("payroll_status_idx").on(table.status),
+    periodIdx: index("payroll_period_idx").on(table.periodStart, table.periodEnd),
+  })
+);
+
+export type PayrollRun = typeof payrollRuns.$inferSelect;
+export type InsertPayrollRun = typeof payrollRuns.$inferInsert;
+
+export const payrollItems = mysqlTable(
+  "payroll_items",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    payrollRunId: int("payrollRunId").notNull(),
+    userId: int("userId").notNull(),
+    walletId: int("walletId"),
+    grossAmount: decimal("grossAmount", { precision: 12, scale: 2 }).notNull(),
+    deductions: decimal("deductions", { precision: 10, scale: 2 }).default("0"),
+    bonuses: decimal("bonuses", { precision: 10, scale: 2 }).default("0"),
+    netAmount: decimal("netAmount", { precision: 12, scale: 2 }).notNull(),
+    status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+    paymentMethod: mysqlEnum("paymentMethod", ["wallet", "bank_transfer", "check"]).default("wallet"),
+    processedAt: timestamp("processedAt"),
+    failureReason: text("failureReason"),
+    breakdown: json("breakdown").$type<{
+      basePay: number;
+      loadPay: number;
+      mileagePay: number;
+      bonuses: number;
+      deductions: { type: string; amount: number }[];
+    }>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    payrollRunIdx: index("payroll_item_run_idx").on(table.payrollRunId),
+    userIdx: index("payroll_item_user_idx").on(table.userId),
+    statusIdx: index("payroll_item_status_idx").on(table.status),
+  })
+);
+
+export type PayrollItem = typeof payrollItems.$inferSelect;
+export type InsertPayrollItem = typeof payrollItems.$inferInsert;
+
+export const rewards = mysqlTable(
+  "rewards",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    type: mysqlEnum("type", [
+      "mission_completion",
+      "badge_earned",
+      "level_up",
+      "crate_opened",
+      "referral",
+      "achievement",
+      "seasonal",
+      "bonus",
+    ]).notNull(),
+    sourceType: varchar("sourceType", { length: 50 }),
+    sourceId: int("sourceId"),
+    rewardType: mysqlEnum("rewardType", ["miles", "cash", "xp", "badge", "title", "fee_reduction", "priority_perk", "crate"]).notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }),
+    description: text("description"),
+    status: mysqlEnum("status", ["pending", "claimed", "expired"]).default("pending").notNull(),
+    claimedAt: timestamp("claimedAt"),
+    expiresAt: timestamp("expiresAt"),
+    metadata: json("metadata"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("reward_user_idx").on(table.userId),
+    typeIdx: index("reward_type_idx").on(table.type),
+    statusIdx: index("reward_status_idx").on(table.status),
+    createdAtIdx: index("reward_created_idx").on(table.createdAt),
+  })
+);
+
+export type Reward = typeof rewards.$inferSelect;
+export type InsertReward = typeof rewards.$inferInsert;
+
+// ============================================================================
+// TELEMETRY & GPS TRACKING
+// ============================================================================
+
+export const locationHistory = mysqlTable(
+  "location_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    deviceId: varchar("deviceId", { length: 100 }),
+    loadId: int("loadId"),
+    convoyId: int("convoyId"),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+    altitude: decimal("altitude", { precision: 10, scale: 2 }),
+    speed: decimal("speed", { precision: 6, scale: 2 }),
+    heading: decimal("heading", { precision: 5, scale: 2 }),
+    horizontalAccuracy: decimal("horizontalAccuracy", { precision: 8, scale: 2 }),
+    activityType: mysqlEnum("activityType", ["driving", "stationary", "walking", "unknown"]).default("unknown"),
+    isMoving: boolean("isMoving").default(false),
+    batteryLevel: int("batteryLevel"),
+    provider: mysqlEnum("provider", ["gps", "network", "fused", "passive"]).default("fused"),
+    isMocked: boolean("isMocked").default(false),
+    deviceTimestamp: timestamp("deviceTimestamp").notNull(),
+    serverTimestamp: timestamp("serverTimestamp").defaultNow().notNull(),
+  },
+  (table) => ({
+    userTimeIdx: index("location_user_time_idx").on(table.userId, table.deviceTimestamp),
+    loadTimeIdx: index("location_load_time_idx").on(table.loadId, table.deviceTimestamp),
+  })
+);
+
+export type LocationHistory = typeof locationHistory.$inferSelect;
+export type InsertLocationHistory = typeof locationHistory.$inferInsert;
+
+// ============================================================================
+// GEOFENCE EVENTS (extends existing geofences table)
+// ============================================================================
+
+export const geofenceEvents = mysqlTable(
+  "geofence_events",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    geofenceId: int("geofenceId").notNull(),
+    userId: int("userId").notNull(),
+    loadId: int("loadId"),
+    eventType: mysqlEnum("eventType", ["enter", "exit", "dwell", "approach"]).notNull(),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+    dwellSeconds: int("dwellSeconds"),
+    actionsTriggered: json("actionsTriggered").$type<string[]>(),
+    eventTimestamp: timestamp("eventTimestamp").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    geofenceIdx: index("geofence_event_geofence_idx").on(table.geofenceId),
+    userIdx: index("geofence_event_user_idx").on(table.userId),
+  })
+);
+
+export type GeofenceEvent = typeof geofenceEvents.$inferSelect;
+export type InsertGeofenceEvent = typeof geofenceEvents.$inferInsert;
+
+// ============================================================================
+// ROUTES & NAVIGATION
+// ============================================================================
+
+export const routes = mysqlTable(
+  "routes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    distanceMiles: decimal("distanceMiles", { precision: 10, scale: 2 }).notNull(),
+    durationMinutes: int("durationMinutes").notNull(),
+    durationInTraffic: int("durationInTraffic"),
+    polyline: text("polyline").notNull(),
+    vehicleProfile: json("vehicleProfile").$type<{
+      height?: number; width?: number; length?: number; weight?: number;
+      axles?: number; hazmatClass?: string; isOversize?: boolean; isOverweight?: boolean;
+    }>(),
+    hazmatRestrictions: json("hazmatRestrictions"),
+    heightRestrictions: json("heightRestrictions"),
+    weightRestrictions: json("weightRestrictions"),
+    requiredBreaks: json("requiredBreaks"),
+    fuelStops: json("fuelStops"),
+    estimatedFuelCost: decimal("estimatedFuelCost", { precision: 10, scale: 2 }),
+    tollCost: decimal("tollCost", { precision: 10, scale: 2 }),
+    status: mysqlEnum("status", ["planned", "active", "completed", "cancelled"]).default("planned").notNull(),
+    calculatedAt: timestamp("calculatedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("route_load_idx").on(table.loadId),
+    statusIdx: index("route_status_idx").on(table.status),
+  })
+);
+
+export type Route = typeof routes.$inferSelect;
+export type InsertRoute = typeof routes.$inferInsert;
+
+export const routeWaypoints = mysqlTable(
+  "route_waypoints",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    routeId: int("routeId").notNull(),
+    sequence: int("sequence").notNull(),
+    type: mysqlEnum("type", ["origin", "stop", "rest", "fuel", "scale", "inspection", "destination"]).notNull(),
+    name: varchar("name", { length: 200 }).notNull(),
+    address: varchar("address", { length: 500 }),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+    plannedArrival: timestamp("plannedArrival"),
+    plannedDeparture: timestamp("plannedDeparture"),
+    actualArrival: timestamp("actualArrival"),
+    actualDeparture: timestamp("actualDeparture"),
+    dwellMinutes: int("dwellMinutes"),
+    status: mysqlEnum("status", ["upcoming", "approaching", "arrived", "departed", "skipped"]).default("upcoming").notNull(),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    routeSeqIdx: index("waypoint_route_seq_idx").on(table.routeId, table.sequence),
+  })
+);
+
+export type RouteWaypoint = typeof routeWaypoints.$inferSelect;
+export type InsertRouteWaypoint = typeof routeWaypoints.$inferInsert;
+
+// ============================================================================
+// CONVOYS
+// ============================================================================
+
+export const convoys = mysqlTable(
+  "convoys",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    routeId: int("routeId"),
+    leadUserId: int("leadUserId").notNull(),
+    loadUserId: int("loadUserId").notNull(),
+    rearUserId: int("rearUserId"),
+    status: mysqlEnum("status", ["forming", "active", "paused", "completed", "disbanded"]).default("forming").notNull(),
+    targetLeadDistanceMeters: int("targetLeadDistanceMeters").default(800),
+    targetRearDistanceMeters: int("targetRearDistanceMeters").default(500),
+    maxSpeedMph: int("maxSpeedMph").default(45),
+    currentLeadDistance: int("currentLeadDistance"),
+    currentRearDistance: int("currentRearDistance"),
+    lastPositionUpdate: timestamp("lastPositionUpdate"),
+    startedAt: timestamp("startedAt"),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("convoy_load_idx").on(table.loadId),
+    statusIdx: index("convoy_status_idx").on(table.status),
+  })
+);
+
+export type Convoy = typeof convoys.$inferSelect;
+export type InsertConvoy = typeof convoys.$inferInsert;
+
+// ============================================================================
+// ETA TRACKING
+// ============================================================================
+
+export const etaHistory = mysqlTable(
+  "eta_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    waypointId: int("waypointId"),
+    destination: varchar("destination", { length: 500 }),
+    predictedEta: timestamp("predictedEta").notNull(),
+    remainingMiles: decimal("remainingMiles", { precision: 10, scale: 2 }),
+    remainingMinutes: int("remainingMinutes"),
+    confidence: mysqlEnum("confidence", ["high", "medium", "low"]).default("medium"),
+    previousEta: timestamp("previousEta"),
+    changeMinutes: int("changeMinutes"),
+    changeReason: mysqlEnum("changeReason", ["traffic", "weather", "stop", "route_change", "recalculation", "initial", "deviation", "delay"]),
+    currentLat: decimal("currentLat", { precision: 10, scale: 8 }),
+    currentLng: decimal("currentLng", { precision: 11, scale: 8 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("eta_load_idx").on(table.loadId, table.createdAt),
+  })
+);
+
+export type EtaHistory = typeof etaHistory.$inferSelect;
+export type InsertEtaHistory = typeof etaHistory.$inferInsert;
+
+// ============================================================================
+// SPEED & SAFETY EVENTS
+// ============================================================================
+
+export const speedEvents = mysqlTable(
+  "speed_events",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    loadId: int("loadId"),
+    recordedSpeed: decimal("recordedSpeed", { precision: 6, scale: 2 }).notNull(),
+    speedLimit: decimal("speedLimit", { precision: 6, scale: 2 }),
+    overage: decimal("overage", { precision: 6, scale: 2 }),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+    roadName: varchar("roadName", { length: 200 }),
+    durationSeconds: int("durationSeconds").notNull(),
+    severity: mysqlEnum("severity", ["minor", "moderate", "severe"]).default("minor"),
+    eventTimestamp: timestamp("eventTimestamp").notNull(),
+    acknowledged: boolean("acknowledged").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("speed_user_idx").on(table.userId, table.eventTimestamp),
+    loadIdx: index("speed_load_idx").on(table.loadId),
+  })
+);
+
+export type SpeedEvent = typeof speedEvents.$inferSelect;
+export type InsertSpeedEvent = typeof speedEvents.$inferInsert;
+
+export const safetyAlerts = mysqlTable(
+  "safety_alerts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    loadId: int("loadId"),
+    type: mysqlEnum("type", ["sos", "geofence_violation", "speeding", "harsh_braking", "rapid_acceleration", "fatigue", "deviation", "no_signal"]).notNull(),
+    severity: mysqlEnum("severity", ["info", "warning", "critical", "emergency"]).default("warning").notNull(),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }),
+    message: text("message"),
+    metadata: json("metadata"),
+    status: mysqlEnum("status", ["active", "acknowledged", "resolved", "false_alarm"]).default("active").notNull(),
+    acknowledgedBy: int("acknowledgedBy"),
+    acknowledgedAt: timestamp("acknowledgedAt"),
+    resolvedAt: timestamp("resolvedAt"),
+    eventTimestamp: timestamp("eventTimestamp").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("safety_user_idx").on(table.userId),
+    typeIdx: index("safety_type_idx").on(table.type),
+    statusIdx: index("safety_status_idx").on(table.status),
+  })
+);
+
+export type SafetyAlert = typeof safetyAlerts.$inferSelect;
+export type InsertSafetyAlert = typeof safetyAlerts.$inferInsert;
+
+// ============================================================================
+// ZEUN MECHANICS SYSTEM - AI-Powered Breakdown, Diagnostic & Repair Platform
+// ============================================================================
+
+// BREAKDOWN REPORTS
+export const zeunBreakdownReports = mysqlTable(
+  "zeun_breakdown_reports",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    driverId: int("driverId").notNull(),
+    vehicleId: int("vehicleId"),
+    companyId: int("companyId"),
+    loadId: int("loadId"),
+    issueCategory: mysqlEnum("issueCategory", ["ENGINE", "BRAKES", "TRANSMISSION", "ELECTRICAL", "TIRES", "FUEL_SYSTEM", "COOLING", "EXHAUST", "STEERING", "SUSPENSION", "HVAC", "OTHER"]).notNull(),
+    severity: mysqlEnum("severity", ["LOW", "MEDIUM", "HIGH", "CRITICAL"]).notNull(),
+    symptoms: json("symptoms").$type<string[]>().notNull(),
+    canDrive: boolean("canDrive").notNull(),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }).notNull(),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }).notNull(),
+    address: varchar("address", { length: 500 }),
+    vehicleVin: varchar("vehicleVin", { length: 17 }),
+    faultCodes: json("faultCodes").$type<string[]>(),
+    driverNotes: text("driverNotes"),
+    photos: json("photos").$type<string[]>(),
+    videos: json("videos").$type<string[]>(),
+    loadStatus: mysqlEnum("loadStatus", ["EMPTY", "LOADED", "HAZMAT"]),
+    cargoType: varchar("cargoType", { length: 255 }),
+    isHazmat: boolean("isHazmat").default(false),
+    hazmatClass: varchar("hazmatClass", { length: 50 }),
+    fuelLevelPercent: int("fuelLevelPercent"),
+    defLevelPercent: int("defLevelPercent"),
+    oilPressurePsi: int("oilPressurePsi"),
+    coolantTempF: int("coolantTempF"),
+    batteryVoltage: decimal("batteryVoltage", { precision: 4, scale: 2 }),
+    currentOdometer: int("currentOdometer"),
+    status: mysqlEnum("status", ["REPORTED", "DIAGNOSED", "ACKNOWLEDGED", "EN_ROUTE_TO_SHOP", "AT_SHOP", "UNDER_REPAIR", "WAITING_PARTS", "RESOLVED", "CANCELLED"]).default("REPORTED").notNull(),
+    selectedProviderId: int("selectedProviderId"),
+    actualCost: decimal("actualCost", { precision: 10, scale: 2 }),
+    resolvedAt: timestamp("resolvedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("zeun_breakdown_driver_idx").on(table.driverId),
+    companyIdx: index("zeun_breakdown_company_idx").on(table.companyId),
+    statusIdx: index("zeun_breakdown_status_idx").on(table.status),
+    severityIdx: index("zeun_breakdown_severity_idx").on(table.severity),
+  })
+);
+
+// DIAGNOSTIC RESULTS
+export const zeunDiagnosticResults = mysqlTable(
+  "zeun_diagnostic_results",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    breakdownReportId: int("breakdownReportId").notNull(),
+    confidence: decimal("confidence", { precision: 5, scale: 2 }).notNull(),
+    primaryDiagnosis: json("primaryDiagnosis").$type<{ issue: string; probability: number; severity: string; description: string }>().notNull(),
+    alternativeDiagnoses: json("alternativeDiagnoses").$type<Array<{ issue: string; probability: number; severity: string }>>(),
+    recommendedActions: json("recommendedActions").$type<string[]>(),
+    emergencyProcedures: json("emergencyProcedures").$type<Array<{ title: string; severity: string; steps: string[] }>>(),
+    canDrive: boolean("canDrive").notNull(),
+    outOfService: boolean("outOfService").default(false),
+    estimatedCostMin: decimal("estimatedCostMin", { precision: 10, scale: 2 }),
+    estimatedCostMax: decimal("estimatedCostMax", { precision: 10, scale: 2 }),
+    estimatedRepairTimeMin: int("estimatedRepairTimeMin"),
+    estimatedRepairTimeMax: int("estimatedRepairTimeMax"),
+    processingTimeMs: int("processingTimeMs"),
+    aiModel: varchar("aiModel", { length: 50 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    breakdownIdx: index("zeun_diagnostic_breakdown_idx").on(table.breakdownReportId),
+  })
+);
+
+// REPAIR PROVIDERS
+export const zeunRepairProviders = mysqlTable(
+  "zeun_repair_providers",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    externalId: varchar("externalId", { length: 100 }),
+    source: mysqlEnum("source", ["GOOGLE", "YELP", "CHAIN", "MANUAL"]).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    providerType: mysqlEnum("providerType", ["TRUCK_STOP", "DEALER", "INDEPENDENT", "MOBILE", "TOWING", "TIRE_SHOP"]).notNull(),
+    chainName: varchar("chainName", { length: 100 }),
+    address: varchar("address", { length: 500 }),
+    city: varchar("city", { length: 100 }),
+    state: varchar("state", { length: 2 }),
+    zip: varchar("zip", { length: 10 }),
+    latitude: decimal("latitude", { precision: 10, scale: 8 }),
+    longitude: decimal("longitude", { precision: 11, scale: 8 }),
+    phone: varchar("phone", { length: 20 }),
+    website: varchar("website", { length: 500 }),
+    email: varchar("email", { length: 255 }),
+    services: json("services").$type<string[]>(),
+    certifications: json("certifications").$type<string[]>(),
+    oemBrands: json("oemBrands").$type<string[]>(),
+    available24x7: boolean("available24x7").default(false),
+    hasMobileService: boolean("hasMobileService").default(false),
+    acceptsCreditCard: boolean("acceptsCreditCard").default(true),
+    acceptsFleetAccounts: boolean("acceptsFleetAccounts").default(false),
+    rating: decimal("rating", { precision: 3, scale: 2 }),
+    reviewCount: int("reviewCount").default(0),
+    zeunRating: decimal("zeunRating", { precision: 3, scale: 2 }),
+    zeunReviewCount: int("zeunReviewCount").default(0),
+    averageWaitTimeMinutes: int("averageWaitTimeMinutes"),
+    jobsCompleted: int("jobsCompleted").default(0),
+    isActive: boolean("isActive").default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    lastVerified: timestamp("lastVerified"),
+  },
+  (table) => ({
+    typeStateIdx: index("zeun_provider_type_state_idx").on(table.providerType, table.state),
+    chainIdx: index("zeun_provider_chain_idx").on(table.chainName),
+    ratingIdx: index("zeun_provider_rating_idx").on(table.rating),
+  })
+);
+
+// PROVIDER REVIEWS
+export const zeunProviderReviews = mysqlTable(
+  "zeun_provider_reviews",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    providerId: int("providerId").notNull(),
+    userId: int("userId").notNull(),
+    breakdownReportId: int("breakdownReportId"),
+    rating: decimal("rating", { precision: 3, scale: 2 }).notNull(),
+    title: varchar("title", { length: 255 }),
+    reviewText: text("reviewText"),
+    serviceType: varchar("serviceType", { length: 50 }),
+    waitTimeMinutes: int("waitTimeMinutes"),
+    costAccuracy: mysqlEnum("costAccuracy", ["LOWER", "AS_QUOTED", "HIGHER"]),
+    wouldRecommend: boolean("wouldRecommend"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    providerIdx: index("zeun_review_provider_idx").on(table.providerId),
+    userIdx: index("zeun_review_user_idx").on(table.userId),
+  })
+);
+
+// MAINTENANCE LOGS
+export const zeunMaintenanceLogs = mysqlTable(
+  "zeun_maintenance_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    vehicleId: int("vehicleId").notNull(),
+    driverId: int("driverId"),
+    companyId: int("companyId"),
+    serviceType: varchar("serviceType", { length: 50 }).notNull(),
+    serviceDate: timestamp("serviceDate").notNull(),
+    odometerAtService: int("odometerAtService").notNull(),
+    cost: decimal("cost", { precision: 10, scale: 2 }),
+    providerName: varchar("providerName", { length: 255 }),
+    providerId: int("providerId"),
+    partsReplaced: json("partsReplaced").$type<string[]>(),
+    laborHours: decimal("laborHours", { precision: 5, scale: 2 }),
+    invoiceUrl: varchar("invoiceUrl", { length: 500 }),
+    notes: text("notes"),
+    breakdownReportId: int("breakdownReportId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    vehicleIdx: index("zeun_maint_vehicle_idx").on(table.vehicleId),
+    companyIdx: index("zeun_maint_company_idx").on(table.companyId),
+    serviceTypeIdx: index("zeun_maint_service_idx").on(table.serviceType),
+    serviceDateIdx: index("zeun_maint_date_idx").on(table.serviceDate),
+  })
+);
+
+// MAINTENANCE SCHEDULES
+export const zeunMaintenanceSchedules = mysqlTable(
+  "zeun_maintenance_schedules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    vehicleId: int("vehicleId").notNull(),
+    serviceType: varchar("serviceType", { length: 50 }).notNull(),
+    intervalMiles: int("intervalMiles"),
+    intervalDays: int("intervalDays"),
+    lastServiceDate: timestamp("lastServiceDate"),
+    lastServiceOdometer: int("lastServiceOdometer"),
+    nextDueDate: timestamp("nextDueDate"),
+    nextDueOdometer: int("nextDueOdometer"),
+    estimatedCostMin: decimal("estimatedCostMin", { precision: 10, scale: 2 }),
+    estimatedCostMax: decimal("estimatedCostMax", { precision: 10, scale: 2 }),
+    isOverdue: boolean("isOverdue").default(false),
+    priority: mysqlEnum("priority", ["LOW", "MEDIUM", "HIGH", "CRITICAL"]).default("MEDIUM"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    vehicleIdx: index("zeun_sched_vehicle_idx").on(table.vehicleId),
+    serviceTypeIdx: index("zeun_sched_service_idx").on(table.serviceType),
+    overdueIdx: index("zeun_sched_overdue_idx").on(table.isOverdue),
+  })
+);
+
+// VEHICLE RECALLS
+export const zeunVehicleRecalls = mysqlTable(
+  "zeun_vehicle_recalls",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    vehicleId: int("vehicleId").notNull(),
+    campaignNumber: varchar("campaignNumber", { length: 50 }).notNull(),
+    manufacturer: varchar("manufacturer", { length: 100 }),
+    component: varchar("component", { length: 100 }),
+    summary: text("summary"),
+    consequence: text("consequence"),
+    remedy: text("remedy"),
+    recallDate: timestamp("recallDate"),
+    isCompleted: boolean("isCompleted").default(false),
+    completionDate: timestamp("completionDate"),
+    completionProviderId: int("completionProviderId"),
+    completionNotes: text("completionNotes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    vehicleIdx: index("zeun_recall_vehicle_idx").on(table.vehicleId),
+    campaignIdx: index("zeun_recall_campaign_idx").on(table.campaignNumber),
+    completedIdx: index("zeun_recall_completed_idx").on(table.isCompleted),
+  })
+);
+
+// BREAKDOWN STATUS HISTORY
+export const zeunBreakdownStatusHistory = mysqlTable(
+  "zeun_breakdown_status_history",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    breakdownReportId: int("breakdownReportId").notNull(),
+    previousStatus: varchar("previousStatus", { length: 50 }),
+    newStatus: varchar("newStatus", { length: 50 }).notNull(),
+    changedByUserId: int("changedByUserId"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    breakdownIdx: index("zeun_status_breakdown_idx").on(table.breakdownReportId),
+  })
+);
+
+// FLEET MAINTENANCE SCHEDULES (custom per fleet)
+export const zeunFleetMaintenanceSchedules = mysqlTable(
+  "zeun_fleet_maintenance_schedules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    serviceType: varchar("serviceType", { length: 50 }).notNull(),
+    intervalMiles: int("intervalMiles"),
+    intervalDays: int("intervalDays"),
+    estimatedCostMin: decimal("estimatedCostMin", { precision: 10, scale: 2 }),
+    estimatedCostMax: decimal("estimatedCostMax", { precision: 10, scale: 2 }),
+    preferredProviderId: int("preferredProviderId"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyServiceIdx: index("zeun_fleet_company_service_idx").on(table.companyId, table.serviceType),
+  })
+);
+
+export type ZeunBreakdownReport = typeof zeunBreakdownReports.$inferSelect;
+export type InsertZeunBreakdownReport = typeof zeunBreakdownReports.$inferInsert;
+export type ZeunDiagnosticResult = typeof zeunDiagnosticResults.$inferSelect;
+export type ZeunRepairProvider = typeof zeunRepairProviders.$inferSelect;
+export type ZeunProviderReview = typeof zeunProviderReviews.$inferSelect;
+export type ZeunMaintenanceLog = typeof zeunMaintenanceLogs.$inferSelect;
+export type ZeunMaintenanceSchedule = typeof zeunMaintenanceSchedules.$inferSelect;
+export type ZeunVehicleRecall = typeof zeunVehicleRecalls.$inferSelect;
+
+// ============================================================================
+// DASHBOARD WIDGET SYSTEM
+// ============================================================================
+
+export const dashboardLayouts = mysqlTable(
+  "dashboard_layouts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    role: varchar("role", { length: 50 }).notNull(),
+    layoutJson: json("layoutJson").$type<Array<{ widgetId: string; x: number; y: number; w: number; h: number }>>(),
+    isDefault: boolean("isDefault").default(false),
+    name: varchar("name", { length: 100 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userRoleIdx: index("dashboard_layout_user_role_idx").on(table.userId, table.role),
+  })
+);
+
+export const dashboardWidgets = mysqlTable(
+  "dashboard_widgets",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    widgetKey: varchar("widgetKey", { length: 100 }).notNull().unique(),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: text("description"),
+    category: mysqlEnum("category", [
+      "LOAD_MANAGEMENT", "FINANCIAL", "COMMUNICATION", "NAVIGATION",
+      "COMPLIANCE", "GAMIFICATION", "ANALYTICS", "ZEUN_MECHANICS", "SYSTEM"
+    ]).notNull(),
+    defaultWidth: int("defaultWidth").default(2),
+    defaultHeight: int("defaultHeight").default(2),
+    minWidth: int("minWidth").default(1),
+    minHeight: int("minHeight").default(1),
+    maxWidth: int("maxWidth").default(4),
+    maxHeight: int("maxHeight").default(4),
+    rolesAllowed: json("rolesAllowed").$type<string[]>(),
+    isActive: boolean("isActive").default(true),
+    componentPath: varchar("componentPath", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    categoryIdx: index("dashboard_widget_category_idx").on(table.category),
+  })
+);
+
+export const widgetConfigurations = mysqlTable(
+  "widget_configurations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    widgetId: int("widgetId").notNull(),
+    positionX: int("positionX").default(0),
+    positionY: int("positionY").default(0),
+    width: int("width").default(2),
+    height: int("height").default(2),
+    settings: json("settings").$type<Record<string, unknown>>(),
+    isVisible: boolean("isVisible").default(true),
+    refreshInterval: int("refreshInterval").default(60),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userWidgetIdx: index("widget_config_user_widget_idx").on(table.userId, table.widgetId),
+  })
+);
+
+// ============================================================================
+// FEE & REVENUE MANAGEMENT SYSTEM
+// ============================================================================
+
+export const feeConfigurations = mysqlTable(
+  "fee_configurations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    feeType: varchar("feeType", { length: 100 }).notNull().unique(),
+    category: mysqlEnum("category", [
+      "LOAD_TRANSACTION", "FINANCIAL_SERVICE", "PAYMENT_PROCESSING",
+      "WALLET_TRANSFER", "TERMINAL_SERVICE", "SUBSCRIPTION", "PREMIUM_FEATURE"
+    ]).notNull(),
+    description: text("description"),
+    baseRate: decimal("baseRate", { precision: 8, scale: 4 }).notNull(),
+    minFee: decimal("minFee", { precision: 10, scale: 2 }),
+    maxFee: decimal("maxFee", { precision: 10, scale: 2 }),
+    flatFee: decimal("flatFee", { precision: 10, scale: 2 }),
+    isPercentage: boolean("isPercentage").default(true),
+    isActive: boolean("isActive").default(true),
+    effectiveFrom: timestamp("effectiveFrom"),
+    effectiveTo: timestamp("effectiveTo"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    categoryIdx: index("fee_config_category_idx").on(table.category),
+    typeIdx: index("fee_config_type_idx").on(table.feeType),
+  })
+);
+
+export const feeCalculations = mysqlTable(
+  "fee_calculations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    transactionId: varchar("transactionId", { length: 100 }).notNull(),
+    transactionType: varchar("transactionType", { length: 50 }).notNull(),
+    feeConfigId: int("feeConfigId").notNull(),
+    baseAmount: decimal("baseAmount", { precision: 12, scale: 2 }).notNull(),
+    calculatedFee: decimal("calculatedFee", { precision: 10, scale: 2 }).notNull(),
+    discountApplied: decimal("discountApplied", { precision: 10, scale: 2 }).default("0"),
+    finalFee: decimal("finalFee", { precision: 10, scale: 2 }).notNull(),
+    userId: int("userId"),
+    companyId: int("companyId"),
+    metadata: json("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    transactionIdx: index("fee_calc_transaction_idx").on(table.transactionId),
+    userIdx: index("fee_calc_user_idx").on(table.userId),
+  })
+);
+
+export const feeAuditLog = mysqlTable(
+  "fee_audit_log",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    feeConfigId: int("feeConfigId").notNull(),
+    changedBy: int("changedBy").notNull(),
+    action: mysqlEnum("action", ["CREATE", "UPDATE", "DELETE", "ACTIVATE", "DEACTIVATE"]).notNull(),
+    oldValue: json("oldValue").$type<Record<string, unknown>>(),
+    newValue: json("newValue").$type<Record<string, unknown>>(),
+    reason: text("reason"),
+    ipAddress: varchar("ipAddress", { length: 45 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    configIdx: index("fee_audit_config_idx").on(table.feeConfigId),
+    changedByIdx: index("fee_audit_changed_by_idx").on(table.changedBy),
+  })
+);
+
+// ============================================================================
+// MESSAGING SYSTEM - CHANNELS & READ RECEIPTS
+// ============================================================================
+
+export const groupChannels = mysqlTable(
+  "group_channels",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: text("description"),
+    type: mysqlEnum("type", [
+      "GENERAL", "ANNOUNCEMENTS", "DEPARTMENT", "PROJECT", "DRIVERS", "COMPLIANCE", "SAFETY", "CUSTOM"
+    ]).notNull(),
+    visibility: mysqlEnum("visibility", ["PUBLIC", "PRIVATE", "SHARED"]).default("PUBLIC"),
+    createdBy: int("createdBy").notNull(),
+    isArchived: boolean("isArchived").default(false),
+    settings: json("settings").$type<{ postPermissions?: string[]; muteNotifications?: boolean }>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("channel_company_idx").on(table.companyId),
+    typeIdx: index("channel_type_idx").on(table.type),
+  })
+);
+
+export const channelMembers = mysqlTable(
+  "channel_members",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    channelId: int("channelId").notNull(),
+    userId: int("userId").notNull(),
+    role: mysqlEnum("role", ["OWNER", "ADMIN", "MODERATOR", "MEMBER", "GUEST"]).default("MEMBER"),
+    joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+    lastReadAt: timestamp("lastReadAt"),
+    isMuted: boolean("isMuted").default(false),
+    notificationPreference: mysqlEnum("notificationPreference", ["ALL", "MENTIONS", "NONE"]).default("ALL"),
+  },
+  (table) => ({
+    channelUserIdx: index("channel_member_idx").on(table.channelId, table.userId),
+  })
+);
+
+export const messageReadReceipts = mysqlTable(
+  "message_read_receipts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    messageId: int("messageId").notNull(),
+    userId: int("userId").notNull(),
+    readAt: timestamp("readAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    messageUserIdx: index("read_receipt_msg_user_idx").on(table.messageId, table.userId),
+  })
+);
+
+// ============================================================================
+// GAMIFICATION SYSTEM - GUILDS, LOOT, INVENTORY
+// ============================================================================
+
+export const guilds = mysqlTable(
+  "guilds",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull().unique(),
+    name: varchar("name", { length: 100 }).notNull(),
+    description: text("description"),
+    level: int("level").default(1),
+    totalMiles: bigint("totalMiles", { mode: "number" }).default(0),
+    memberCount: int("memberCount").default(0),
+    maxMembers: int("maxMembers").default(100),
+    emblem: varchar("emblem", { length: 255 }),
+    bannerColor: varchar("bannerColor", { length: 20 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("guild_company_idx").on(table.companyId),
+    levelIdx: index("guild_level_idx").on(table.level),
+  })
+);
+
+export const guildMembers = mysqlTable(
+  "guild_members",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    guildId: int("guildId").notNull(),
+    userId: int("userId").notNull(),
+    role: mysqlEnum("role", ["LEADER", "OFFICER", "VETERAN", "MEMBER", "RECRUIT"]).default("MEMBER"),
+    joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+    contributedMiles: bigint("contributedMiles", { mode: "number" }).default(0),
+    weeklyContribution: int("weeklyContribution").default(0),
+  },
+  (table) => ({
+    guildUserIdx: index("guild_member_idx").on(table.guildId, table.userId),
+  })
+);
+
+export const milesTransactions = mysqlTable(
+  "miles_transactions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    amount: int("amount").notNull(),
+    type: mysqlEnum("type", ["EARN", "SPEND", "BONUS", "PENALTY", "TRANSFER", "SEASONAL_RESET"]).notNull(),
+    source: varchar("source", { length: 100 }).notNull(),
+    referenceId: varchar("referenceId", { length: 100 }),
+    referenceType: varchar("referenceType", { length: 50 }),
+    description: text("description"),
+    balanceAfter: bigint("balanceAfter", { mode: "number" }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("miles_tx_user_idx").on(table.userId),
+    typeIdx: index("miles_tx_type_idx").on(table.type),
+    sourceIdx: index("miles_tx_source_idx").on(table.source),
+  })
+);
+
+export const lootCrates = mysqlTable(
+  "loot_crates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    tier: mysqlEnum("tier", ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"]).notNull(),
+    source: varchar("source", { length: 100 }).notNull(),
+    sourceReferenceId: varchar("sourceReferenceId", { length: 100 }),
+    contentsJson: json("contentsJson").$type<Array<{ itemType: string; itemId: string; quantity: number }>>(),
+    isOpened: boolean("isOpened").default(false),
+    openedAt: timestamp("openedAt"),
+    expiresAt: timestamp("expiresAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("loot_crate_user_idx").on(table.userId),
+    tierIdx: index("loot_crate_tier_idx").on(table.tier),
+  })
+);
+
+export const userInventory = mysqlTable(
+  "user_inventory",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    itemId: varchar("itemId", { length: 100 }).notNull(),
+    itemType: mysqlEnum("itemType", [
+      "COSMETIC", "BOOST", "TITLE", "BADGE", "EMOTE", "FRAME", "CONSUMABLE", "CURRENCY"
+    ]).notNull(),
+    itemName: varchar("itemName", { length: 100 }).notNull(),
+    rarity: mysqlEnum("rarity", ["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY", "MYTHIC"]).notNull(),
+    quantity: int("quantity").default(1),
+    isEquipped: boolean("isEquipped").default(false),
+    metadata: json("metadata").$type<Record<string, unknown>>(),
+    acquiredAt: timestamp("acquiredAt").defaultNow().notNull(),
+    expiresAt: timestamp("expiresAt"),
+  },
+  (table) => ({
+    userItemIdx: index("inventory_user_item_idx").on(table.userId, table.itemId),
+    typeIdx: index("inventory_type_idx").on(table.itemType),
+  })
+);
+
+// ============================================================================
+// ESCROW & PAYMENT METHODS
+// ============================================================================
+
+export const escrowHolds = mysqlTable(
+  "escrow_holds",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+    shipperWalletId: int("shipperWalletId").notNull(),
+    carrierWalletId: int("carrierWalletId").notNull(),
+    status: mysqlEnum("status", ["HELD", "RELEASED", "REFUNDED", "DISPUTED", "PARTIAL_RELEASE"]).default("HELD"),
+    releasedAmount: decimal("releasedAmount", { precision: 12, scale: 2 }),
+    releasedAt: timestamp("releasedAt"),
+    releaseReason: text("releaseReason"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("escrow_load_idx").on(table.loadId),
+    statusIdx: index("escrow_status_idx").on(table.status),
+  })
+);
+
+export const paymentMethods = mysqlTable(
+  "payment_methods",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    stripePaymentMethodId: varchar("stripePaymentMethodId", { length: 100 }),
+    type: mysqlEnum("type", ["CARD", "BANK_ACCOUNT", "ACH", "WIRE"]).notNull(),
+    lastFour: varchar("lastFour", { length: 4 }),
+    brand: varchar("brand", { length: 50 }),
+    expiryMonth: int("expiryMonth"),
+    expiryYear: int("expiryYear"),
+    isDefault: boolean("isDefault").default(false),
+    isVerified: boolean("isVerified").default(false),
+    nickname: varchar("nickname", { length: 50 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("payment_method_user_idx").on(table.userId),
+  })
+);
+
+// Type exports for new tables
+export type DashboardLayout = typeof dashboardLayouts.$inferSelect;
+export type DashboardWidget = typeof dashboardWidgets.$inferSelect;
+export type WidgetConfiguration = typeof widgetConfigurations.$inferSelect;
+export type FeeConfiguration = typeof feeConfigurations.$inferSelect;
+export type FeeCalculation = typeof feeCalculations.$inferSelect;
+export type FeeAuditLog = typeof feeAuditLog.$inferSelect;
+export type GroupChannel = typeof groupChannels.$inferSelect;
+export type ChannelMember = typeof channelMembers.$inferSelect;
+export type MessageReadReceipt = typeof messageReadReceipts.$inferSelect;
+export type Guild = typeof guilds.$inferSelect;
+export type GuildMember = typeof guildMembers.$inferSelect;
+export type MilesTransaction = typeof milesTransactions.$inferSelect;
+export type LootCrate = typeof lootCrates.$inferSelect;
+export type UserInventoryItem = typeof userInventory.$inferSelect;
+export type EscrowHold = typeof escrowHolds.$inferSelect;
+export type PaymentMethod = typeof paymentMethods.$inferSelect;
 

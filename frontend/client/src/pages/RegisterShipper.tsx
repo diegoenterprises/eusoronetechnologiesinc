@@ -20,6 +20,7 @@ import {
   MapPin, Globe, Hash
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface ShipperFormData {
   // Step 1: Company Information
@@ -121,25 +122,49 @@ export default function RegisterShipper() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      // Here you would submit to the backend
-      console.log("Submitting shipper registration:", formData);
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
+  const registerMutation = trpc.registration.registerShipper.useMutation({
+    onSuccess: () => {
       toast.success("Registration submitted successfully!", {
         description: "Your account is pending verification. We'll email you within 24-48 hours.",
       });
-      
       setLocation("/login");
-    } catch (error) {
+    },
+    onError: (error) => {
       toast.error("Registration failed", {
-        description: "Please try again or contact support.",
+        description: error.message || "Please try again or contact support.",
       });
-      throw error;
-    }
+    },
+  });
+
+  const handleComplete = async () => {
+    const hazmatClasses = formData.hazmatTypes
+      .map(t => t.replace("class", ""))
+      .filter(c => ["2","3","4","5","6","7","8","9"].includes(c)) as ("2"|"3"|"4"|"5"|"6"|"7"|"8"|"9")[];
+    
+    await registerMutation.mutateAsync({
+      companyName: formData.companyName,
+      dba: formData.dba || undefined,
+      einNumber: formData.einNumber,
+      dunsNumber: formData.dunsNumber || undefined,
+      companyType: formData.companyType,
+      contactName: formData.primaryContactName,
+      contactTitle: formData.primaryContactTitle || undefined,
+      contactEmail: formData.primaryContactEmail,
+      contactPhone: formData.primaryContactPhone,
+      password: formData.primaryContactEmail,
+      emergencyContactName: formData.primaryContactName,
+      emergencyContactPhone: formData.primaryContactPhone,
+      streetAddress: formData.streetAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      phmsaNumber: formData.phmsamRegistrationNumber || undefined,
+      hazmatClasses,
+      generalLiabilityCarrier: formData.insuranceCarrier,
+      generalLiabilityPolicy: formData.policyNumber,
+      generalLiabilityCoverage: formData.coverageAmount,
+      generalLiabilityExpiration: formData.expirationDate,
+    });
   };
 
   const steps: WizardStep[] = [

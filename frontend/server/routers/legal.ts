@@ -4,7 +4,9 @@
  */
 
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
 
 export const legalRouter = router({
   getTermsOfService: publicProcedure.query(async () => ({ sections: [{ title: "Introduction", content: "Welcome to our service..." }, { title: "Terms", content: "By using our service..." }], contactEmail: "legal@eusoronetech.com",

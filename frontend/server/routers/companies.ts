@@ -194,4 +194,43 @@ export const companiesRouter = router({
     createdAt: "2022-01-15",
     updatedAt: "2025-01-20",
   })),
+
+  /**
+   * List companies for Companies page
+   */
+  list: protectedProcedure
+    .input(z.object({ search: z.string().optional(), limit: z.number().optional().default(50) }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyList = await db
+          .select()
+          .from(companies)
+          .limit(input.limit);
+
+        return companyList.map(c => ({
+          id: c.id,
+          name: c.name,
+          dotNumber: c.dotNumber || '',
+          mcNumber: c.mcNumber || '',
+          ein: c.ein || '',
+          isActive: c.isActive,
+          foundedYear: '',
+          employeeCount: 0,
+          complianceScore: 95,
+          email: c.email || '',
+          phone: c.phone || '',
+          address: c.address || '',
+          city: c.city || '',
+          state: c.state || '',
+          zipCode: c.zipCode || '',
+          documents: [],
+        }));
+      } catch (error) {
+        console.error('[Companies] list error:', error);
+        return [];
+      }
+    }),
 });

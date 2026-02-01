@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   MapPin, DollarSign, Clock, Briefcase, AlertCircle, CheckCircle,
   TrendingUp, TrendingDown, Minus, Filter, Search, Star,
@@ -90,172 +91,50 @@ export default function JobsPage() {
     },
   });
 
-  // Mock loads data for UI development - TODO: remove after testing
-  const mockLoads: Load[] = [
-    {
-      id: "LOAD-001",
-      title: "Hazmat Transport - Methanol (UN1230)",
-      origin: "Houston, TX",
-      destination: "Denver, CO",
-      pickupDate: "2024-12-20",
-      deliveryDate: "2024-12-22",
-      pay: 4250,
-      distance: 1015,
-      type: "HAZMAT",
-      status: "AVAILABLE",
-      hazmatClass: "3 (Flammable Liquid)",
-      unNumber: "UN1230",
-      requiredCerts: ["CDL-A", "HazMat", "Tanker"],
-      weight: 42000,
-      commodity: "Methanol",
-      bidsCount: 12,
-      fairnessScore: "GOOD",
-      urgency: "HIGH",
-      detentionPolicy: "$75/hr after 2 hours",
-      shipper: {
-        name: "Petrochemical Solutions Inc",
-        rating: 4.8,
-        totalLoads: 1247,
-      },
-    },
-    {
-      id: "LOAD-002",
-      title: "Refrigerated Transport - Pharmaceuticals",
-      origin: "Los Angeles, CA",
-      destination: "Chicago, IL",
-      pickupDate: "2024-12-19",
-      deliveryDate: "2024-12-21",
-      pay: 3800,
-      distance: 2015,
-      type: "REEFER",
-      status: "AVAILABLE",
-      requiredCerts: ["CDL-A", "TWIC"],
-      weight: 38000,
-      commodity: "Pharmaceuticals (Temperature Controlled)",
-      bidsCount: 8,
-      fairnessScore: "FAIR",
-      urgency: "MEDIUM",
-      detentionPolicy: "$50/hr after 2 hours",
-      shipper: {
-        name: "MediLogistics Corp",
-        rating: 4.6,
-        totalLoads: 892,
-      },
-    },
-    {
-      id: "LOAD-003",
-      title: "Dry Van - Consumer Electronics",
-      origin: "Atlanta, GA",
-      destination: "Miami, FL",
-      pickupDate: "2024-12-18",
-      deliveryDate: "2024-12-19",
-      pay: 1900,
-      distance: 350,
-      type: "DRY_VAN",
-      status: "BIDDING",
-      requiredCerts: ["CDL-A"],
-      weight: 32000,
-      commodity: "Consumer Electronics",
-      bidsCount: 24,
-      myBid: {
-        amount: 1850,
-        status: "PENDING",
-        submittedAt: "2024-12-17T10:30:00Z",
-      },
-      fairnessScore: "LOW",
-      urgency: "LOW",
-      detentionPolicy: "$40/hr after 2 hours",
-      shipper: {
-        name: "TechDistro LLC",
-        rating: 4.2,
-        totalLoads: 456,
-      },
-    },
-    {
-      id: "LOAD-004",
-      title: "Tanker - Diesel Fuel",
-      origin: "Dallas, TX",
-      destination: "Phoenix, AZ",
-      pickupDate: "2024-12-21",
-      deliveryDate: "2024-12-23",
-      pay: 3200,
-      distance: 1050,
-      type: "TANKER",
-      status: "AVAILABLE",
-      hazmatClass: "3 (Flammable Liquid)",
-      unNumber: "UN1202",
-      requiredCerts: ["CDL-A", "HazMat", "Tanker"],
-      weight: 45000,
-      commodity: "Diesel Fuel",
-      bidsCount: 6,
-      fairnessScore: "GOOD",
-      urgency: "MEDIUM",
-      detentionPolicy: "$60/hr after 2 hours",
-      shipper: {
-        name: "Southwest Energy Transport",
-        rating: 4.9,
-        totalLoads: 2134,
-      },
-    },
-    {
-      id: "LOAD-005",
-      title: "Flatbed - Construction Equipment",
-      origin: "Seattle, WA",
-      destination: "Portland, OR",
-      pickupDate: "2024-12-19",
-      deliveryDate: "2024-12-20",
-      pay: 1200,
-      distance: 175,
-      type: "FLATBED",
-      status: "ASSIGNED",
-      requiredCerts: ["CDL-A"],
-      weight: 28000,
-      commodity: "Construction Equipment",
-      bidsCount: 15,
-      myBid: {
-        amount: 1150,
-        status: "ACCEPTED",
-        submittedAt: "2024-12-16T14:20:00Z",
-      },
-      fairnessScore: "GOOD",
-      urgency: "LOW",
-      detentionPolicy: "$35/hr after 2 hours",
-      shipper: {
-        name: "BuildRight Logistics",
-        rating: 4.5,
-        totalLoads: 678,
-      },
-    },
-  ];
+  if (loadsLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="h-16 w-64" />
+          <div className="grid grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[1,2,3,4,5,6].map(i => <Skeleton key={i} className="h-48" />)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Use real loads if available, otherwise fall back to mock data
-  const loads = loadsData && loadsData.length > 0 ? loadsData.map((load: any) => ({
+  // Transform loads data from tRPC
+  const loads: Load[] = (loadsData || []).map((load: any) => ({
     id: load.id.toString(),
-    title: `${load.commodity} Transport`,
-    origin: load.pickupLocation || "Unknown",
-    destination: load.deliveryLocation || "Unknown",
+    title: load.specialInstructions ? `${load.cargoType} - ${load.specialInstructions.substring(0, 30)}` : `${load.cargoType} Transport`,
+    origin: typeof load.pickupLocation === 'object' ? `${(load.pickupLocation as any)?.city || ''}, ${(load.pickupLocation as any)?.state || ''}` : 'Unknown',
+    destination: typeof load.deliveryLocation === 'object' ? `${(load.deliveryLocation as any)?.city || ''}, ${(load.deliveryLocation as any)?.state || ''}` : 'Unknown',
     pickupDate: load.pickupDate ? new Date(load.pickupDate).toISOString().split('T')[0] : "",
     deliveryDate: load.deliveryDate ? new Date(load.deliveryDate).toISOString().split('T')[0] : "",
-    pay: parseFloat(load.rate || "0"),
-    distance: load.distance || 0,
-    type: (load.isHazmat ? "HAZMAT" : "DRY_VAN") as "HAZMAT" | "REEFER" | "DRY_VAN" | "FLATBED" | "TANKER",
-    status: (load.status?.toUpperCase() || "AVAILABLE") as "AVAILABLE" | "BIDDING" | "ASSIGNED" | "IN_TRANSIT" | "COMPLETED",
-    hazmatClass: load.hazmatClass,
-    unNumber: load.unNumber,
-    requiredCerts: [],
-    weight: load.weight || 0,
-    commodity: load.commodity || "",
+    pay: load.rate ? parseFloat(String(load.rate)) : 0,
+    distance: load.distance ? parseFloat(String(load.distance)) : 0,
+    type: (load.cargoType === 'hazmat' ? "HAZMAT" : load.cargoType === 'refrigerated' ? "REEFER" : load.cargoType === 'liquid' ? "TANKER" : "DRY_VAN") as Load['type'],
+    status: (load.status === 'posted' ? "AVAILABLE" : load.status === 'bidding' ? "BIDDING" : load.status === 'assigned' ? "ASSIGNED" : load.status === 'in_transit' ? "IN_TRANSIT" : "AVAILABLE") as Load['status'],
+    hazmatClass: load.hazmatClass || undefined,
+    unNumber: load.unNumber || undefined,
+    requiredCerts: load.cargoType === 'hazmat' ? ["CDL-A", "HazMat", "Tanker"] : ["CDL-A"],
+    weight: load.weight ? parseFloat(String(load.weight)) : 0,
+    commodity: load.specialInstructions || load.cargoType || "",
     bidsCount: 0,
     myBid: undefined,
     fairnessScore: "FAIR" as const,
     urgency: "MEDIUM" as const,
     detentionPolicy: "$50/hr after 2 hours",
     shipper: {
-      name: "Shipper",
+      name: "Verified Shipper",
       rating: 4.5,
       totalLoads: 100,
     },
-  })) : mockLoads;
+  }));
 
   const getLoadTypeColor = (type: string) => {
     switch (type) {

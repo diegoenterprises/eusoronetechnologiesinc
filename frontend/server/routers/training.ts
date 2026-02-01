@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { drivers, documents } from "../../drizzle/schema";
 
 const trainingStatusSchema = z.enum(["not_started", "in_progress", "completed", "expired"]);
 const courseCategorySchema = z.enum(["safety", "hazmat", "compliance", "equipment", "customer_service"]);

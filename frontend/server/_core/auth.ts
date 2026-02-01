@@ -1,216 +1,110 @@
 /**
- * EusoTrip In-House Authentication Service
- * Replaces Manus OAuth with JWT-based authentication
+ * AUTH SERVICE
+ * JWT-based authentication service for EusoTrip
  */
 
-import { SignJWT, jwtVerify } from "jose";
-import { parse as parseCookieHeader } from "cookie";
+import jwt from "jsonwebtoken";
 import type { Request } from "express";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import { ForbiddenError } from "@shared/_core/errors";
-import * as db from "../db";
-import { ENV } from "./env";
 
-export type SessionPayload = {
+const JWT_SECRET = process.env.JWT_SECRET || "eusotrip-dev-secret-key-change-in-production";
+const TOKEN_EXPIRY = "7d";
+
+interface TokenPayload {
   userId: string;
   email: string;
-  name: string;
   role: string;
-};
-
-export type UserInfo = {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-  companyId?: number;
-};
-
-const isNonEmptyString = (value: unknown): value is string =>
-  typeof value === "string" && value.length > 0;
-
-class AuthService {
-  private getSessionSecret() {
-    const secret = ENV.cookieSecret || "eusotrip-secret-key-change-in-production";
-    return new TextEncoder().encode(secret);
-  }
-
-  /**
-   * Create a JWT session token for a user
-   */
-  async createSessionToken(
-    user: { id: number; email: string; name: string; role: string },
-    options: { expiresInMs?: number } = {}
-  ): Promise<string> {
-    const issuedAt = Date.now();
-    const expiresInMs = options.expiresInMs ?? ONE_YEAR_MS;
-    const expirationSeconds = Math.floor((issuedAt + expiresInMs) / 1000);
-    const secretKey = this.getSessionSecret();
-
-    return new SignJWT({
-      userId: String(user.id),
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    })
-      .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-      .setExpirationTime(expirationSeconds)
-      .sign(secretKey);
-  }
-
-  /**
-   * Verify a JWT session token
-   */
-  async verifySession(
-    cookieValue: string | undefined | null
-  ): Promise<SessionPayload | null> {
-    if (!cookieValue) {
-      console.warn("[Auth] Missing session cookie");
-      return null;
-    }
-
-    try {
-      const secretKey = this.getSessionSecret();
-      const { payload } = await jwtVerify(cookieValue, secretKey, {
-        algorithms: ["HS256"],
-      });
-      const { userId, email, name, role } = payload as Record<string, unknown>;
-
-      if (!isNonEmptyString(userId) || !isNonEmptyString(email)) {
-        console.warn("[Auth] Session payload missing required fields");
-        return null;
-      }
-
-      return {
-        userId,
-        email,
-        name: name as string || "",
-        role: role as string || "USER",
-      };
-    } catch (error) {
-      console.warn("[Auth] Session verification failed", String(error));
-      return null;
-    }
-  }
-
-  /**
-   * Parse cookies from request header
-   */
-  parseCookies(cookieHeader: string | undefined): Map<string, string> {
-    if (!cookieHeader) {
-      return new Map<string, string>();
-    }
-    const parsed = parseCookieHeader(cookieHeader);
-    return new Map(Object.entries(parsed));
-  }
-
-  /**
-   * Authenticate a request and return user info
-   */
-  async authenticateRequest(req: Request): Promise<UserInfo | null> {
-    // Check for test user header (development only)
-    const testUserHeader = req.headers["x-test-user"];
-    if (testUserHeader && process.env.NODE_ENV === "development") {
-      try {
-        const testUser = JSON.parse(testUserHeader as string);
-        return {
-          id: testUser.id || 1,
-          email: testUser.email || "test@eusotrip.com",
-          name: testUser.name || "Test User",
-          role: testUser.role || "SHIPPER",
-          companyId: testUser.companyId,
-        };
-      } catch {
-        console.warn("[Auth] Invalid test user header");
-      }
-    }
-
-    // Check session cookie
-    const cookies = this.parseCookies(req.headers.cookie);
-    const sessionCookie = cookies.get(COOKIE_NAME);
-    
-    if (!sessionCookie) {
-      return null;
-    }
-
-    const session = await this.verifySession(sessionCookie);
-    if (!session) {
-      return null;
-    }
-
-    // Fetch full user from database
-    try {
-      const dbInstance = await db.getDb();
-      if (!dbInstance) {
-        console.warn("[Auth] Database not available");
-        return null;
-      }
-
-      const user = await db.getUserByEmail(session.email);
-      if (!user) {
-        return null;
-      }
-
-      return {
-        id: user.id,
-        email: user.email || "",
-        name: user.name || "",
-        role: user.role || "USER",
-        companyId: user.companyId || undefined,
-      };
-    } catch (error) {
-      console.error("[Auth] Error fetching user:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Login with email and password (for production use)
-   */
-  async loginWithCredentials(
-    email: string,
-    password: string
-  ): Promise<{ user: UserInfo; token: string } | null> {
-    try {
-      const dbInstance = await db.getDb();
-      if (!dbInstance) {
-        throw new Error("Database not available");
-      }
-
-      // In production, verify password hash
-      // For now, just find the user by email
-      const user = await db.getUserByEmail(email);
-      if (!user) {
-        return null;
-      }
-
-      // TODO: Add password verification in production
-      // const isValid = await bcrypt.compare(password, user.passwordHash);
-      // if (!isValid) return null;
-
-      const token = await this.createSessionToken({
-        id: user.id,
-        email: user.email || "",
-        name: user.name || "",
-        role: user.role || "USER",
-      });
-
-      return {
-        user: {
-          id: user.id,
-          email: user.email || "",
-          name: user.name || "",
-          role: user.role || "USER",
-          companyId: user.companyId || undefined,
-        },
-        token,
-      };
-    } catch (error) {
-      console.error("[Auth] Login error:", error);
-      return null;
-    }
-  }
 }
 
-export const authService = new AuthService();
-export default authService;
+interface AuthUser {
+  id: string;
+  email: string;
+  role: string;
+  name?: string;
+  companyId?: string;
+}
+
+export const authService = {
+  /**
+   * Create a session token for a user
+   */
+  createSessionToken(user: AuthUser): string {
+    const payload: TokenPayload = {
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    };
+    return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
+  },
+
+  /**
+   * Verify a session token
+   */
+  verifyToken(token: string): TokenPayload | null {
+    try {
+      return jwt.verify(token, JWT_SECRET) as TokenPayload;
+    } catch {
+      return null;
+    }
+  },
+
+  /**
+   * Authenticate a request using Bearer token
+   */
+  async authenticateRequest(req: Request): Promise<AuthUser | null> {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return null;
+    }
+
+    const token = authHeader.slice(7);
+    const payload = this.verifyToken(token);
+    if (!payload) {
+      return null;
+    }
+
+    return {
+      id: payload.userId,
+      email: payload.email,
+      role: payload.role,
+    };
+  },
+
+  /**
+   * Login with credentials (for development/testing)
+   */
+  async loginWithCredentials(email: string, password: string): Promise<{ user: AuthUser; token: string } | null> {
+    // Test users for development
+    const testUsers: Record<string, AuthUser> = {
+      "diego": { id: "admin-diego", email: "diego@eusotrip.com", role: "SUPER_ADMIN", name: "Diego" },
+      "diego@eusotrip.com": { id: "admin-diego", email: "diego@eusotrip.com", role: "SUPER_ADMIN", name: "Diego" },
+      "shipper@eusotrip.com": { id: "shipper-1", email: "shipper@eusotrip.com", role: "SHIPPER", name: "Test Shipper" },
+      "carrier@eusotrip.com": { id: "carrier-1", email: "carrier@eusotrip.com", role: "CARRIER", name: "Test Carrier" },
+      "broker@eusotrip.com": { id: "broker-1", email: "broker@eusotrip.com", role: "BROKER", name: "Test Broker" },
+      "driver@eusotrip.com": { id: "driver-1", email: "driver@eusotrip.com", role: "DRIVER", name: "Test Driver" },
+      "catalyst@eusotrip.com": { id: "catalyst-1", email: "catalyst@eusotrip.com", role: "CATALYST", name: "Test Catalyst" },
+      "escort@eusotrip.com": { id: "escort-1", email: "escort@eusotrip.com", role: "ESCORT", name: "Test Escort" },
+      "terminal@eusotrip.com": { id: "terminal-1", email: "terminal@eusotrip.com", role: "TERMINAL_MANAGER", name: "Test Terminal Manager" },
+      "compliance@eusotrip.com": { id: "compliance-1", email: "compliance@eusotrip.com", role: "COMPLIANCE_OFFICER", name: "Test Compliance Officer" },
+      "safety@eusotrip.com": { id: "safety-1", email: "safety@eusotrip.com", role: "SAFETY_MANAGER", name: "Test Safety Manager" },
+      "admin@eusotrip.com": { id: "admin-1", email: "admin@eusotrip.com", role: "ADMIN", name: "Test Admin" },
+      "superadmin@eusotrip.com": { id: "superadmin-1", email: "superadmin@eusotrip.com", role: "SUPER_ADMIN", name: "Super Admin" },
+    };
+
+    const user = testUsers[email];
+    if (!user) {
+      return null;
+    }
+
+    // Master password for all test users
+    const MASTER_PASSWORD = "Vision2026!";
+    
+    if (password === MASTER_PASSWORD) {
+      const token = this.createSessionToken(user);
+      return { user, token };
+    }
+
+    return null;
+  },
+};
+
+export type { AuthUser, TokenPayload };

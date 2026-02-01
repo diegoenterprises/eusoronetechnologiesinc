@@ -1,10 +1,14 @@
 /**
  * ALERTS ROUTER
  * tRPC procedures for system alerts and notifications
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { notifications, users } from "../../drizzle/schema";
 
 const severitySchema = z.enum(["info", "warning", "critical", "error"]);
 
@@ -17,39 +21,32 @@ export const alertsRouter = router({
       severity: severitySchema.optional(),
       limit: z.number().optional().default(50),
     }))
-    .query(async ({ input }) => {
-      return [
-        {
-          id: "alert_001",
-          type: "system",
-          severity: "warning",
-          title: "Driver HOS Approaching Limit",
-          message: "Driver Mike Johnson has 2 hours remaining on 11-hour drive time",
-          createdAt: new Date().toISOString(),
-          acknowledged: false,
-          dismissedAt: null,
-        },
-        {
-          id: "alert_002",
-          type: "compliance",
-          severity: "critical",
-          title: "Medical Certificate Expiring",
-          message: "3 driver medical certificates expire within 30 days",
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          acknowledged: true,
-          dismissedAt: null,
-        },
-        {
-          id: "alert_003",
-          type: "safety",
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const alertList = await db.select()
+          .from(notifications)
+          .where(eq(notifications.userId, userId))
+          .orderBy(desc(notifications.createdAt))
+          .limit(input.limit);
+
+        return alertList.map(n => ({
+          id: `alert_${n.id}`,
+          type: n.type || "system",
           severity: "info",
-          title: "CSA Score Updated",
-          message: "FMCSA has updated your CSA scores. No alerts detected.",
-          createdAt: new Date(Date.now() - 7200000).toISOString(),
-          acknowledged: true,
+          title: n.title || "Alert",
+          message: n.message || "",
+          createdAt: n.createdAt?.toISOString() || new Date().toISOString(),
+          acknowledged: n.isRead || false,
           dismissedAt: null,
-        },
-      ].filter(a => !input.severity || a.severity === input.severity);
+        }));
+      } catch (error) {
+        console.error('[Alerts] list error:', error);
+        return [];
+      }
     }),
 
   /**

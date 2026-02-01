@@ -6,6 +6,7 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   TrendingUp, TrendingDown, DollarSign, Package, Truck,
   Clock, Star, Target, BarChart3, Calendar, ArrowUp,
@@ -20,37 +21,32 @@ export default function CarrierAnalyticsPage() {
   
   const [timeRange, setTimeRange] = useState<string>("THIS_MONTH");
 
-  // Mock analytics data - in production, fetch from database
-  const analytics = {
-    revenue: {
-      current: 145800,
-      previous: 132400,
-      change: 10.1
-    },
-    loads: {
-      completed: 87,
-      inProgress: 12,
-      total: 99
-    },
-    efficiency: {
-      onTimeDelivery: 94.5,
-      avgDeliveryTime: 2.3,
-      fuelEfficiency: 6.8
-    },
-    performance: {
-      rating: 4.7,
-      repeatCustomers: 68,
-      cancellationRate: 2.1
-    }
+  // tRPC queries for carrier analytics
+  const analyticsQuery = trpc.carriers.getAnalytics.useQuery({ timeRange });
+  const recentLoadsQuery = trpc.carriers.getRecentCompletedLoads.useQuery({ limit: 5 });
+
+  if (analyticsQuery.isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="h-16 w-64" />
+          <div className="grid grid-cols-4 gap-4">
+            {[1,2,3,4].map(i => <Skeleton key={i} className="h-40" />)}
+          </div>
+          <Skeleton className="h-64" />
+        </div>
+      </div>
+    );
+  }
+
+  const analytics = analyticsQuery.data || {
+    revenue: { current: 0, previous: 0, change: 0 },
+    loads: { completed: 0, inProgress: 0, total: 0 },
+    efficiency: { onTimeDelivery: 0, avgDeliveryTime: 0, fuelEfficiency: 0 },
+    performance: { rating: 0, repeatCustomers: 0, cancellationRate: 0 }
   };
 
-  const recentLoads = [
-    { id: 1, number: "LD-2024-087", revenue: 4500, status: "completed", date: "2024-11-20" },
-    { id: 2, number: "LD-2024-086", revenue: 3200, status: "completed", date: "2024-11-19" },
-    { id: 3, number: "LD-2024-085", revenue: 5800, status: "completed", date: "2024-11-18" },
-    { id: 4, number: "LD-2024-084", revenue: 2900, status: "completed", date: "2024-11-17" },
-    { id: 5, number: "LD-2024-083", revenue: 4100, status: "completed", date: "2024-11-16" },
-  ];
+  const recentLoads = recentLoadsQuery.data || [];
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-6">

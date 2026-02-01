@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { vehicles, loads } from "../../drizzle/schema";
 
 const fuelTypeSchema = z.enum(["diesel", "def", "gasoline"]);
 

@@ -1,0 +1,50 @@
+# AWS CodeBuild Build Specification
+# EusoTrip Platform CI/CD Pipeline
+
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm install -g pnpm
+      - pnpm install --frozen-lockfile
+
+  pre_build:
+    commands:
+      - echo "Running pre-build checks..."
+      - pnpm run lint || true
+      - pnpm run typecheck
+
+  build:
+    commands:
+      - echo "Building application..."
+      - pnpm run build
+      - echo "Build completed on `date`"
+
+  post_build:
+    commands:
+      - echo "Running post-build tasks..."
+      - echo "Creating deployment package..."
+
+artifacts:
+  files:
+    - dist/**/*
+    - package.json
+    - pnpm-lock.yaml
+    - deploy/**/*
+    - Dockerfile
+    - docker-compose.yml
+  discard-paths: no
+
+cache:
+  paths:
+    - 'node_modules/**/*'
+    - '.pnpm-store/**/*'
+
+reports:
+  test-reports:
+    files:
+      - 'coverage/**/*'
+    file-format: 'CLOVERXML'

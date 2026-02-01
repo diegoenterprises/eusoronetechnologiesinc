@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { loads } from "../../drizzle/schema";
 
 const equipmentTypeSchema = z.enum(["tanker", "flatbed", "reefer", "van", "specialized"]);
 const hazmatClassSchema = z.enum(["1", "2", "3", "4", "5", "6", "7", "8", "9", "none"]);

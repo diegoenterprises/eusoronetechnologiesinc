@@ -16,33 +16,79 @@ export const loadsRouter = router({
    */
   getTrackedLoads: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const loads = [
-        { id: "l1", loadNumber: "LOAD-45920", origin: "Houston, TX", destination: "Dallas, TX", status: "in_transit", eta: "2:30 PM", driver: "Mike Johnson", progress: 65 },
-        { id: "l2", loadNumber: "LOAD-45918", origin: "Austin, TX", destination: "San Antonio, TX", status: "delivered", driver: "Sarah Williams", progress: 100 },
-        { id: "l3", loadNumber: "LOAD-45915", origin: "El Paso, TX", destination: "Houston, TX", status: "picked_up", eta: "Tomorrow 9 AM", driver: "Tom Brown", progress: 10 },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return loads.filter(l => l.loadNumber.toLowerCase().includes(q) || l.driver.toLowerCase().includes(q));
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const loadList = await db
+          .select()
+          .from(loads)
+          .where(sql`${loads.shipperId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'delivered')`)
+          .orderBy(desc(loads.createdAt))
+          .limit(20);
+
+        let result = loadList.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          const progress = l.status === 'delivered' ? 100 : l.status === 'in_transit' ? 65 : 10;
+          return {
+            id: String(l.id),
+            loadNumber: l.loadNumber,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            status: l.status,
+            eta: l.deliveryDate?.toLocaleTimeString() || 'TBD',
+            driver: 'Assigned Driver',
+            progress,
+          };
+        });
+
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          result = result.filter(l => l.loadNumber.toLowerCase().includes(q));
+        }
+
+        return result;
+      } catch (error) {
+        console.error('[Loads] getTrackedLoads error:', error);
+        return [];
       }
-      return loads;
     }),
 
   /**
    * Get shipper summary for ShipperLoads page
    */
   getShipperSummary: protectedProcedure
-    .query(async () => {
-      return {
-        totalLoads: 156,
-        activeLoads: 12,
-        inTransit: 8,
-        delivered: 142,
-        pendingBids: 4,
-        pending: 4,
-        totalSpend: 385000,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) {
+        return { totalLoads: 0, activeLoads: 0, inTransit: 0, delivered: 0, pendingBids: 0, pending: 0, totalSpend: 0 };
+      }
+
+      try {
+        const userId = ctx.user?.id || 0;
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
+        const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'in_transit')));
+        const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
+        const [pending] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('draft', 'posted', 'bidding')`));
+        const [totalSpend] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.shipperId, userId));
+
+        return {
+          totalLoads: total?.count || 0,
+          activeLoads: (inTransit?.count || 0) + (pending?.count || 0),
+          inTransit: inTransit?.count || 0,
+          delivered: delivered?.count || 0,
+          pendingBids: pending?.count || 0,
+          pending: pending?.count || 0,
+          totalSpend: totalSpend?.sum || 0,
+        };
+      } catch (error) {
+        console.error('[Loads] getShipperSummary error:', error);
+        return { totalLoads: 0, activeLoads: 0, inTransit: 0, delivered: 0, pendingBids: 0, pending: 0, totalSpend: 0 };
+      }
     }),
 
   /**
@@ -51,18 +97,39 @@ export const loadsRouter = router({
   trackLoad: protectedProcedure
     .input(z.object({ loadNumber: z.string() }))
     .mutation(async ({ input }) => {
-      return {
-        loadNumber: input.loadNumber,
-        status: "in_transit",
-        origin: { city: "Houston", state: "TX" },
-        destination: { city: "Dallas", state: "TX" },
-        currentLocation: { city: "Waco", state: "TX", lat: 31.5493, lng: -97.1467 },
-        driver: "Mike Johnson",
-        carrier: "ABC Transport",
-        eta: "2:30 PM",
-        progress: 65,
-        lastUpdate: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) return null;
+
+      try {
+        const [load] = await db
+          .select()
+          .from(loads)
+          .where(eq(loads.loadNumber, input.loadNumber))
+          .limit(1);
+
+        if (!load) return null;
+
+        const pickup = load.pickupLocation as any || {};
+        const delivery = load.deliveryLocation as any || {};
+        const current = load.currentLocation as any || {};
+        const progress = load.status === 'delivered' ? 100 : load.status === 'in_transit' ? 65 : 10;
+
+        return {
+          loadNumber: load.loadNumber,
+          status: load.status,
+          origin: { city: pickup.city || '', state: pickup.state || '' },
+          destination: { city: delivery.city || '', state: delivery.state || '' },
+          currentLocation: { city: '', state: '', lat: current.lat || 0, lng: current.lng || 0 },
+          driver: 'Assigned Driver',
+          carrier: 'Assigned Carrier',
+          eta: load.deliveryDate?.toLocaleTimeString() || 'TBD',
+          progress,
+          lastUpdate: load.updatedAt?.toISOString() || new Date().toISOString(),
+        };
+      } catch (error) {
+        console.error('[Loads] trackLoad error:', error);
+        return null;
+      }
     }),
 
   /**
@@ -458,4 +525,90 @@ export const bidsRouter = router({
   submit: protectedProcedure.input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() })).mutation(async () => ({ success: true, bidId: "bid_123" })),
   accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
+
+  /**
+   * Get marketplace loads for Marketplace page
+   * Returns all posted/bidding loads for carriers to browse and bid on
+   */
+  getMarketplaceLoads: protectedProcedure
+    .input(z.object({
+      search: z.string().optional(),
+      type: z.string().optional(),
+      sortBy: z.string().optional(),
+      limit: z.number().optional().default(50),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        let loadList = await db
+          .select()
+          .from(loads)
+          .where(sql`${loads.status} IN ('posted', 'bidding', 'open')`)
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit || 50);
+
+        return loadList.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          const bidCount = 0;
+          return {
+            id: l.id,
+            loadNumber: l.loadNumber,
+            shipperName: 'Verified Shipper',
+            shipperRating: 4.5,
+            originCity: pickup.city || 'Unknown',
+            originState: pickup.state || '',
+            destinationCity: delivery.city || 'Unknown',
+            destinationState: delivery.state || '',
+            pickupDate: l.pickupDate?.toISOString() || new Date().toISOString(),
+            deliveryDate: l.deliveryDate?.toISOString() || new Date().toISOString(),
+            weight: l.weight ? parseFloat(String(l.weight)) : 0,
+            dimensions: 'Standard',
+            equipmentType: l.cargoType || 'general',
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            description: l.specialInstructions || '',
+            requirements: l.specialInstructions ? [l.specialInstructions] : [],
+            bidCount: bidCount,
+            status: l.status,
+            createdAt: l.createdAt?.toISOString() || new Date().toISOString(),
+          };
+        });
+      } catch (error) {
+        console.error('[Loads] getMarketplaceLoads error:', error);
+        return [];
+      }
+    }),
+
+  /**
+   * Place a bid on a load
+   */
+  placeBid: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      amount: z.number(),
+      estimatedDelivery: z.string().optional(),
+      message: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        await db.insert(bids).values({
+          loadId: input.loadId,
+          carrierId: ctx.user.id,
+          amount: input.amount.toString(),
+          status: 'pending',
+          notes: input.message || '',
+          createdAt: new Date(),
+        });
+
+        return { success: true };
+      } catch (error) {
+        console.error('[Loads] placeBid error:', error);
+        throw new Error("Failed to place bid");
+      }
+    }),
 });

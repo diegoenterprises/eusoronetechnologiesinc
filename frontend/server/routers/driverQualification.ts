@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql, gte, lte, and } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { drivers, documents, users } from "../../drizzle/schema";
 
 const dqDocumentTypeSchema = z.enum([
   "application", "mvr", "road_test", "medical_card", "cdl_copy", "employment_history",

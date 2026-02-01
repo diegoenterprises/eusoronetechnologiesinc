@@ -13,7 +13,10 @@
  */
 
 import { z } from "zod";
+import { eq, sql } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { loads, documents } from "../../drizzle/schema";
 
 // Run Ticket schema
 const runTicketSchema = z.object({

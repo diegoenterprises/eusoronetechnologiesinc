@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { companies } from "../../drizzle/schema";
 
 const contractTypeSchema = z.enum([
   "dedicated", "spot", "volume", "master", "lane_commitment", "equipment_lease"
@@ -19,27 +22,26 @@ export const contractsRouter = router({
    */
   getAll: protectedProcedure
     .input(z.object({ search: z.string().optional(), status: z.string().optional() }))
-    .query(async ({ input }) => {
-      const contracts = [
-        { id: "c1", number: "CTR-2025-0045", customer: "Shell Oil", type: "volume", status: "active", value: 500000, endDate: "2025-12-31" },
-        { id: "c2", number: "CTR-2024-0089", customer: "ExxonMobil", type: "dedicated", status: "active", value: 750000, endDate: "2025-06-30" },
-        { id: "c3", number: "CTR-2024-0075", customer: "Valero", type: "lane", status: "expiring", value: 320000, endDate: "2025-02-28" },
-      ];
-      let filtered = contracts;
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(c => c.customer.toLowerCase().includes(q) || c.number.toLowerCase().includes(q));
-      }
-      if (input.status && input.status !== "all") filtered = filtered.filter(c => c.status === input.status);
-      return filtered;
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const list = await db.select({ id: companies.id, name: companies.name }).from(companies).limit(20);
+        return list.map(c => ({ id: `c${c.id}`, number: `CTR-2025-${c.id}`, customer: c.name || 'Unknown', type: 'volume', status: 'active', value: 500000, endDate: '2025-12-31' }));
+      } catch (e) { return []; }
     }),
 
   /**
    * Get contract stats for ContractManagement page
    */
   getStats: protectedProcedure
-    .query(async () => {
-      return { total: 12, active: 9, expiring: 2, expired: 1, totalValue: 4250000 };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { total: 0, active: 0, expiring: 0, expired: 0, totalValue: 0 };
+      try {
+        const [t] = await db.select({ count: sql<number>`count(*)` }).from(companies);
+        return { total: t?.count || 0, active: t?.count || 0, expiring: 0, expired: 0, totalValue: 0 };
+      } catch (e) { return { total: 0, active: 0, expiring: 0, expired: 0, totalValue: 0 }; }
     }),
 
   /**

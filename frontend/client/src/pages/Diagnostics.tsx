@@ -14,6 +14,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Wrench,
   AlertTriangle,
@@ -29,6 +31,7 @@ import {
   Phone,
   TrendingUp,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -76,83 +79,72 @@ export default function DiagnosticsPage() {
   const { user } = useAuth();
   const [selectedVehicle, setSelectedVehicle] = useState<string>("VIN123456789");
 
-  // Mock vehicle data - TODO: Replace with trpc.zeun.getVehicleStatus.useQuery()
+  // tRPC queries for diagnostics data
+  const vehicleQuery = trpc.zeunMechanics.getMaintenanceStatus.useQuery({ vehicleId: 1, currentOdometer: 100000 });
+  const codesQuery = trpc.zeunMechanics.checkRecalls.useQuery({ vehicleId: 1 });
+  const maintenanceQuery = trpc.zeunMechanics.getMaintenanceHistory.useQuery({ vehicleId: 1 });
+  const providersQuery = trpc.zeunMechanics.findProviders.useQuery({ latitude: 29.7604, longitude: -95.3698 });
+
+  if (vehicleQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-24" />)}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  if (vehicleQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12">
+        <p className="text-red-400 mb-4">Failed to load diagnostics data</p>
+        <Button onClick={() => vehicleQuery.refetch()} variant="outline">
+          <RefreshCw size={16} className="mr-2" /> Retry
+        </Button>
+      </div>
+    );
+  }
+
+  const vehicleData = vehicleQuery.data as any;
   const vehicle: VehicleStatus = {
-    id: "V001",
-    vin: "1HGBH41JXMN109186",
-    make: "Peterbilt",
-    model: "579",
-    year: 2022,
-    mileage: 87450,
-    status: "warning",
-    lastCheck: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    id: vehicleData?.id || vehicleData?.vehicleId || '',
+    vin: vehicleData?.vin || selectedVehicle,
+    make: vehicleData?.make || '',
+    model: vehicleData?.model || '',
+    year: vehicleData?.year || 0,
+    mileage: vehicleData?.mileage || 0,
+    status: vehicleData?.status === 'healthy' ? 'healthy' : vehicleData?.status === 'critical' ? 'critical' : 'warning',
+    lastCheck: vehicleData?.lastCheck ? new Date(vehicleData.lastCheck) : new Date(),
   };
 
-  // Mock diagnostic codes - TODO: Replace with trpc.zeun.getDiagnosticCodes.useQuery()
-  const diagnosticCodes: DiagnosticCode[] = [
-    {
-      code: "P0420",
-      description: "Catalyst System Efficiency Below Threshold (Bank 1)",
-      severity: "medium",
-      detected: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    },
-    {
-      code: "P0171",
-      description: "System Too Lean (Bank 1)",
-      severity: "low",
-      detected: new Date(Date.now() - 48 * 60 * 60 * 1000),
-    },
-  ];
+  const diagnosticCodes: DiagnosticCode[] = (codesQuery.data || []).map((c: any) => ({
+    code: c.code || '',
+    description: c.description || '',
+    severity: c.severity || 'low',
+    detected: new Date(c.detected || Date.now()),
+  }));
 
-  // Mock maintenance schedule - TODO: Replace with trpc.zeun.getMaintenanceDue.useQuery()
-  const maintenanceItems: MaintenanceItem[] = [
-    {
-      id: "M001",
-      service: "Oil Change",
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      dueMileage: 90000,
-      status: "upcoming",
-      estimatedCost: 250,
-    },
-    {
-      id: "M002",
-      service: "Brake Inspection",
-      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      dueMileage: 88000,
-      status: "due",
-      estimatedCost: 150,
-    },
-    {
-      id: "M003",
-      service: "Tire Rotation",
-      dueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-      dueMileage: 85000,
-      status: "overdue",
-      estimatedCost: 100,
-    },
-  ];
+  const maintenanceItems: MaintenanceItem[] = (maintenanceQuery.data || []).map((m: any) => ({
+    id: String(m.id),
+    service: m.service || '',
+    dueDate: new Date(m.dueDate || Date.now()),
+    dueMileage: m.dueMileage || 0,
+    status: m.status || 'upcoming',
+    estimatedCost: m.estimatedCost || 0,
+  }));
 
-  // Mock provider network - TODO: Replace with trpc.zeun.getNearbyProviders.useQuery()
-  const providers: ProviderLocation[] = [
-    {
-      id: "P001",
-      name: "Zeun Certified Mechanics - Houston",
-      address: "1234 Industrial Blvd, Houston, TX 77001",
-      phone: "(555) 123-4567",
-      distance: 2.3,
-      rating: 4.8,
-      services: ["Diagnostics", "Repair", "Maintenance", "Emergency"],
-    },
-    {
-      id: "P002",
-      name: "Texas Truck Service Center",
-      address: "5678 Highway 59, Houston, TX 77002",
-      phone: "(555) 234-5678",
-      distance: 5.7,
-      rating: 4.6,
-      services: ["Diagnostics", "Repair", "Towing"],
-    },
-  ];
+  const providers: ProviderLocation[] = (providersQuery.data || []).map((p: any) => ({
+    id: String(p.id),
+    name: p.name || '',
+    address: p.address || '',
+    phone: p.phone || '',
+    distance: p.distance || 0,
+    rating: p.rating || 0,
+    services: p.services || [],
+  }));
 
   const getStatusColor = (status: string) => {
     switch (status) {

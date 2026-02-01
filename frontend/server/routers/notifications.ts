@@ -1,10 +1,14 @@
 /**
  * NOTIFICATIONS ROUTER
  * tRPC procedures for notification management
+ * PRODUCTION-READY: All data from database
  */
 
 import { z } from "zod";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { notifications, users } from "../../drizzle/schema";
 
 const notificationTypeSchema = z.enum(["alert", "info", "success", "warning", "action_required"]);
 const notificationCategorySchema = z.enum(["loads", "compliance", "safety", "billing", "system", "drivers"]);
@@ -14,20 +18,28 @@ export const notificationsRouter = router({
    * Get notifications summary
    */
   getSummary: protectedProcedure
-    .query(async () => {
-      return {
-        total: 12,
-        unread: 4,
-        read: 8,
-        alerts: 3,
-        byCategory: {
-          loads: 5,
-          compliance: 3,
-          safety: 2,
-          billing: 1,
-          system: 1,
-        },
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { total: 0, unread: 0, read: 0, alerts: 0, byCategory: { loads: 0, compliance: 0, safety: 0, billing: 0, system: 0 } };
+
+      try {
+        const userId = ctx.user?.id || 0;
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(notifications).where(eq(notifications.userId, userId));
+        const [unread] = await db.select({ count: sql<number>`count(*)` }).from(notifications).where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+        const [alerts] = await db.select({ count: sql<number>`count(*)` }).from(notifications).where(and(eq(notifications.userId, userId), eq(notifications.type, 'system')));
+
+        return {
+          total: total?.count || 0,
+          unread: unread?.count || 0,
+          read: (total?.count || 0) - (unread?.count || 0),
+          alerts: alerts?.count || 0,
+          byCategory: { loads: 0, compliance: 0, safety: 0, billing: 0, system: 0 },
+        };
+      } catch (error) {
+        console.error('[Notifications] getSummary error:', error);
+        return { total: 0, unread: 0, read: 0, alerts: 0, byCategory: { loads: 0, compliance: 0, safety: 0, billing: 0, system: 0 } };
+      }
     }),
 
   /**

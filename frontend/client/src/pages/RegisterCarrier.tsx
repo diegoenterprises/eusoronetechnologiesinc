@@ -19,6 +19,7 @@ import {
   MapPin, Hash, Search, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface CarrierFormData {
   // Step 1: Company Information
@@ -158,20 +159,44 @@ export default function RegisterCarrier() {
     setIsLookingUp(false);
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting carrier registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      toast.success("Registration submitted successfully!", {
-        description: "Your carrier account is pending verification.",
-      });
-      
+  const registerMutation = trpc.registration.registerCarrier.useMutation({
+    onSuccess: () => {
+      toast.success("Registration submitted!", { description: "Your carrier account is pending USDOT verification." });
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      companyName: formData.companyName,
+      dba: formData.dba || undefined,
+      usdotNumber: formData.usdotNumber,
+      mcNumber: formData.mcNumber || undefined,
+      einNumber: formData.einNumber || undefined,
+      contactName: formData.primaryContactName,
+      contactEmail: formData.primaryContactEmail,
+      contactPhone: formData.primaryContactPhone,
+      password: formData.primaryContactEmail,
+      streetAddress: formData.physicalAddress,
+      city: "",
+      state: "",
+      zipCode: "",
+      fleetSize: {
+        powerUnits: Number(formData.powerUnits) || 0,
+        trailers: 0,
+        drivers: Number(formData.drivers) || 0,
+      },
+      hazmatEndorsed: formData.hasHazmatAuthority,
+      hazmatClasses: [],
+      tankerEndorsed: false,
+      liabilityCarrier: formData.liabilityCarrier,
+      liabilityPolicy: formData.liabilityPolicy,
+      liabilityCoverage: formData.liabilityCoverage,
+      liabilityExpiration: formData.liabilityExpiration,
+    });
   };
 
   const steps: WizardStep[] = [

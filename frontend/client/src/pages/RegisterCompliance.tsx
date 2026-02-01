@@ -17,6 +17,7 @@ import {
   CheckCircle, AlertCircle, Mail, Phone
 } from "lucide-react";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 
 interface ComplianceFormData {
   // Step 1: Personal Information
@@ -98,20 +99,26 @@ export default function RegisterCompliance() {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  const handleComplete = async () => {
-    try {
-      console.log("Submitting compliance officer registration:", formData);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      toast.success("Registration submitted!", {
-        description: "Your account is pending company verification.",
-      });
-      
+  const registerMutation = trpc.registration.registerComplianceOfficer.useMutation({
+    onSuccess: () => {
+      toast.success("Registration submitted!", { description: "Your account is pending verification." });
       setLocation("/login");
-    } catch (error) {
-      toast.error("Registration failed");
-      throw error;
-    }
+    },
+    onError: (error) => {
+      toast.error("Registration failed", { description: error.message });
+    },
+  });
+
+  const handleComplete = async () => {
+    await registerMutation.mutateAsync({
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.email,
+      employerCompanyName: formData.companyName,
+      yearsExperience: 1,
+    });
   };
 
   const steps: WizardStep[] = [

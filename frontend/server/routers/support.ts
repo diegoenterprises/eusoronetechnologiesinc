@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { users } from "../../drizzle/schema";
 
 const ticketStatusSchema = z.enum(["open", "in_progress", "pending_customer", "resolved", "closed"]);
 const ticketPrioritySchema = z.enum(["low", "normal", "high", "urgent"]);

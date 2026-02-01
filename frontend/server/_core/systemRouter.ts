@@ -13,39 +13,6 @@ export const systemRouter = router({
       ok: true,
     })),
 
-  getStatus: publicProcedure
-    .input(z.object({ timeRange: z.string().optional() }).optional())
-    .query(() => ({
-      overall: "operational",
-      services: [
-        { name: "API", status: "operational", uptime: 99.99, latency: 45 },
-        { name: "Database", status: "operational", uptime: 99.98, latency: 12 },
-        { name: "Authentication", status: "operational", uptime: 99.95, latency: 25 },
-        { name: "Storage", status: "operational", uptime: 99.92, latency: 85 },
-      ],
-      lastUpdated: new Date().toISOString(),
-      lastCheck: new Date().toISOString(),
-      uptime: 99.95,
-      cpuUsage: 42,
-      memoryUsage: 68,
-      diskUsage: 55,
-    })),
-
-  getIncidents: publicProcedure
-    .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(() => ([
-      { id: "inc1", title: "Scheduled Maintenance", status: "resolved", severity: "info", startedAt: "2025-01-20 02:00", resolvedAt: "2025-01-20 04:00" },
-    ])),
-
-  getUptime: publicProcedure
-    .query(() => ({
-      last24h: 100,
-      last7d: 99.98,
-      last30d: 99.95,
-      last90d: 99.92,
-      responseTime: 145,
-    })),
-
   notifyOwner: adminProcedure
     .input(
       z.object({
@@ -60,37 +27,51 @@ export const systemRouter = router({
       } as const;
     }),
 
-  // Additional system procedures
-  getLatestVersion: publicProcedure.query(async () => ({ version: "2.5.0", releaseDate: "2025-01-20", releasedAt: "2025-01-20", required: false })),
-  getReleaseNotes: publicProcedure.input(z.object({ version: z.string().optional(), filter: z.string().optional(), limit: z.number().optional() })).query(async () => ([
-    { version: "2.5.0", date: "2025-01-20", releasedAt: "2025-01-20", notes: ["New dashboard widgets", "Performance improvements", "Bug fixes"] },
-  ])),
+  getReleaseNotes: publicProcedure
+    .input(z.object({ filter: z.string().optional(), limit: z.number().optional() }))
+    .query(() => [
+      {
+        id: "v2.1.0",
+        version: "2.1.0",
+        date: new Date().toISOString(),
+        title: "Registration System Overhaul",
+        changes: [
+          { type: "feature", description: "Added all 10 role registration forms with tRPC integration" },
+          { type: "improvement", description: "Enhanced form validation with Zod schemas" },
+          { type: "bugfix", description: "Fixed TypeScript errors in registration pages" },
+        ],
+      },
+    ]),
 
-  // System health stats
-  getHealth: publicProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({
-    overall: "healthy",
-    overallStatus: "healthy",
-    status: "operational",
-    services: [
-      { name: "API", status: "operational", uptime: 99.99, latency: 45 },
-      { name: "Database", status: "operational", uptime: 99.98, latency: 12 },
-      { name: "Cache", status: "operational", uptime: 100, latency: 5 },
-    ],
-    lastCheck: new Date().toISOString(),
-    uptime: 99.95,
-    activeUsers: 1250,
-    loadAvg: 0.42,
-    cpu: { current: 42, avg: 38, peak: 72 },
-    memory: { current: 68, avg: 65, peak: 82 },
-    disk: { current: 55, used: 275, total: 500 },
-    cpuUsage: 42,
-    memoryUsage: 68,
-    diskUsage: 55,
+  getLatestVersion: publicProcedure.query(() => ({
+    version: "2.1.0",
+    releasedAt: new Date().toISOString(),
+    isLatest: true,
   })),
-  getMetrics: publicProcedure.input(z.object({ period: z.string().optional(), timeRange: z.string().optional() }).optional()).query(async () => ({
-    cpu: [42, 45, 38, 52, 48, 44, 41],
-    memory: [68, 70, 65, 72, 69, 67, 68],
-    disk: [55, 55, 55, 56, 56, 56, 55],
-    requests: [1250, 1380, 1420, 1100, 1550, 1620, 1480],
+
+  getStatus: publicProcedure.query(() => ({
+    status: "operational" as const,
+    services: [
+      { name: "API", status: "operational" as const },
+      { name: "Database", status: "operational" as const },
+      { name: "Authentication", status: "operational" as const },
+    ],
+    lastUpdated: new Date().toISOString(),
+  })),
+
+  getIncidents: publicProcedure
+    .input(z.object({ limit: z.number().optional() }).optional())
+    .query(() => [] as { id: string; title: string; status: string; createdAt: string; description: string }[]),
+
+  getUptime: publicProcedure.query(() => ({
+    uptime: 99.9,
+    last24h: 100,
+    last7d: 99.9,
+    last30d: 99.8,
+    responseTime: 45,
+    lastDowntime: null as string | null,
+    uptimeHistory: [
+      { date: new Date().toISOString(), uptime: 100 },
+    ],
   })),
 });

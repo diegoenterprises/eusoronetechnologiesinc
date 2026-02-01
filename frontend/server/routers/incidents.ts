@@ -5,7 +5,10 @@
  */
 
 import { z } from "zod";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { incidents } from "../../drizzle/schema";
 
 const incidentTypeSchema = z.enum([
   "accident", "spill", "violation", "injury", "near_miss", "equipment_failure", "theft", "other"

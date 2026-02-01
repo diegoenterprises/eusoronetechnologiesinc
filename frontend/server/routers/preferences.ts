@@ -4,7 +4,10 @@
  */
 
 import { z } from "zod";
+import { eq } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
+import { getDb } from "../db";
+import { users } from "../../drizzle/schema";
 
 export const preferencesRouter = router({
   get: protectedProcedure.query(async () => ({
