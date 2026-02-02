@@ -25,26 +25,81 @@ export const usersRouter = router({
 
   // Get current user profile
   getProfile: protectedProcedure.query(async ({ ctx }) => {
-    return {
-      id: ctx.user?.id || "usr_001",
-      firstName: ctx.user?.name?.split(" ")[0] || "John",
-      lastName: ctx.user?.name?.split(" ")[1] || "Doe",
-      email: ctx.user?.email || "john.doe@example.com",
-      phone: "+1 (555) 123-4567",
-      company: "ABC Trucking LLC",
-      location: "Houston, TX",
-      role: ctx.user?.role || "shipper",
-      verified: true,
-      createdAt: "January 2024",
-      loadsCreated: 156,
-      loadsCompleted: 142,
-      rating: "4.8",
-      daysActive: 385,
-      timezone: "America/Chicago",
-      language: "en",
-      pendingDeletion: false,
-      deletionDate: null,
-    };
+    const db = await getDb();
+    const userId = ctx.user?.id || 0;
+
+    if (!db) {
+      return {
+        id: userId,
+        firstName: ctx.user?.name?.split(" ")[0] || "User",
+        lastName: ctx.user?.name?.split(" ")[1] || "",
+        email: ctx.user?.email || "",
+        phone: "",
+        company: "",
+        location: "",
+        role: ctx.user?.role || "shipper",
+        verified: false,
+        createdAt: new Date().toISOString(),
+        loadsCreated: 0,
+        loadsCompleted: 0,
+        rating: "0",
+        daysActive: 0,
+        timezone: "America/Chicago",
+        language: "en",
+        pendingDeletion: false,
+        deletionDate: null,
+      };
+    }
+
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const nameParts = (user?.name || "").split(" ");
+      const createdAt = user?.createdAt || new Date();
+      const daysActive = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+
+      return {
+        id: user?.id || userId,
+        firstName: nameParts[0] || "User",
+        lastName: nameParts.slice(1).join(" ") || "",
+        email: user?.email || ctx.user?.email || "",
+        phone: user?.phone || "",
+        company: "",
+        location: "",
+        role: user?.role || ctx.user?.role || "shipper",
+        verified: user?.isVerified || false,
+        createdAt: createdAt.toISOString(),
+        loadsCreated: 0,
+        loadsCompleted: 0,
+        rating: "0",
+        daysActive,
+        timezone: "America/Chicago",
+        language: "en",
+        pendingDeletion: false,
+        deletionDate: null,
+      };
+    } catch (error) {
+      console.error('[Users] getProfile error:', error);
+      return {
+        id: userId,
+        firstName: ctx.user?.name?.split(" ")[0] || "User",
+        lastName: ctx.user?.name?.split(" ")[1] || "",
+        email: ctx.user?.email || "",
+        phone: "",
+        company: "",
+        location: "",
+        role: ctx.user?.role || "shipper",
+        verified: false,
+        createdAt: new Date().toISOString(),
+        loadsCreated: 0,
+        loadsCompleted: 0,
+        rating: "0",
+        daysActive: 0,
+        timezone: "America/Chicago",
+        language: "en",
+        pendingDeletion: false,
+        deletionDate: null,
+      };
+    }
   }),
 
   // Get user preferences

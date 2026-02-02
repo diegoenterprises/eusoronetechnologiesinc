@@ -147,20 +147,34 @@ export const dispatchRouter = router({
    * Get active issues
    */
   getActiveIssues: protectedProcedure
-    .query(async () => {
-      return [
-        {
-          id: "issue_001",
-          type: "breakdown",
-          severity: "high",
-          load: "LOAD-45915",
-          driver: "James Wilson",
-          location: "I-35 near Temple, TX",
-          reportedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          status: "pending",
-          description: "Flat tire - awaiting roadside assistance",
-        },
-      ];
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const { incidents } = await import('../../drizzle/schema');
+        const companyId = ctx.user?.companyId || 0;
+
+        const issueList = await db.select().from(incidents)
+          .where(sql`${incidents.status} != 'resolved'`)
+          .orderBy(desc(incidents.createdAt))
+          .limit(10);
+
+        return issueList.map(i => ({
+          id: `issue_${i.id}`,
+          type: i.type || 'general',
+          severity: i.severity || 'medium',
+          load: '',
+          driver: '',
+          location: i.location || 'Unknown',
+          reportedAt: i.createdAt?.toISOString() || '',
+          status: i.status,
+          description: i.description || '',
+        }));
+      } catch (error) {
+        console.error('[Dispatch] getActiveIssues error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -168,36 +182,37 @@ export const dispatchRouter = router({
    */
   getUnassignedLoads: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(async () => {
-      return [
-        {
-          id: "load_u1",
-          loadNumber: "LOAD-45925",
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          pickupTime: "2025-01-25 08:00",
-          rate: 2450,
-          urgency: "normal",
-        },
-        {
-          id: "load_u2",
-          loadNumber: "LOAD-45926",
-          origin: "Beaumont, TX",
-          destination: "Austin, TX",
-          pickupTime: "2025-01-25 10:00",
-          rate: 2800,
-          urgency: "high",
-        },
-        {
-          id: "load_u3",
-          loadNumber: "LOAD-45927",
-          origin: "Port Arthur, TX",
-          destination: "San Antonio, TX",
-          pickupTime: "2025-01-25 14:00",
-          rate: 3100,
-          urgency: "normal",
-        },
-      ];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const unassignedLoads = await db.select().from(loads)
+          .where(sql`${loads.status} IN ('posted', 'bidding') AND ${loads.driverId} IS NULL`)
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit);
+
+        return unassignedLoads.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          const now = new Date();
+          const pickupDate = l.pickupDate ? new Date(l.pickupDate) : null;
+          const hoursUntilPickup = pickupDate ? (pickupDate.getTime() - now.getTime()) / (1000 * 60 * 60) : 24;
+
+          return {
+            id: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            pickupTime: l.pickupDate?.toISOString() || '',
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            urgency: hoursUntilPickup < 4 ? 'high' : hoursUntilPickup < 12 ? 'medium' : 'normal',
+          };
+        });
+      } catch (error) {
+        console.error('[Dispatch] getUnassignedLoads error:', error);
+        return [];
+      }
     }),
 
   /**

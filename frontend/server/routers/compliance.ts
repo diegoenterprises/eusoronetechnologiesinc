@@ -129,10 +129,41 @@ export const complianceRouter = router({
    */
   getRecentViolations: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(async () => {
-      return [
-        { id: "vio_001", type: "HOS", driver: "Bob Davis", date: "2025-01-20", severity: "minor", status: "resolved" },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const violationList = await db.select({
+          id: inspections.id,
+          driverId: inspections.driverId,
+          completedAt: inspections.completedAt,
+          defectsFound: inspections.defectsFound,
+          status: inspections.status,
+        }).from(inspections)
+          .where(sql`${inspections.defectsFound} > 0`)
+          .orderBy(desc(inspections.completedAt))
+          .limit(input.limit);
+
+        return await Promise.all(violationList.map(async (v) => {
+          let driverName = 'Unknown';
+          if (v.driverId) {
+            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, v.driverId)).limit(1);
+            driverName = driver?.name || 'Unknown';
+          }
+          return {
+            id: `vio_${v.id}`,
+            type: 'Inspection',
+            driver: driverName,
+            date: v.completedAt?.toISOString().split('T')[0] || '',
+            severity: (v.defectsFound || 0) > 2 ? 'major' : 'minor',
+            status: v.status === 'passed' ? 'resolved' : 'open',
+          };
+        }));
+      } catch (error) {
+        console.error('[Compliance] getRecentViolations error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -140,25 +171,65 @@ export const complianceRouter = router({
    */
   getHOSDrivers: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const drivers = [
-        { id: "d1", name: "Mike Johnson", status: "compliant", driveRemaining: 8.5, dutyRemaining: 11, cycleRemaining: 55 },
-        { id: "d2", name: "Sarah Williams", status: "warning", driveRemaining: 2.0, dutyRemaining: 4, cycleRemaining: 45 },
-        { id: "d3", name: "Tom Brown", status: "violation", driveRemaining: 0, dutyRemaining: 0, cycleRemaining: 38 },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return drivers.filter(d => d.name.toLowerCase().includes(q));
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const driverList = await db.select({
+          id: drivers.id,
+          userId: drivers.userId,
+          userName: users.name,
+        }).from(drivers)
+          .leftJoin(users, eq(drivers.userId, users.id))
+          .where(eq(drivers.companyId, companyId))
+          .limit(50);
+
+        let result = driverList.map(d => ({
+          id: `d_${d.id}`,
+          name: d.userName || 'Unknown',
+          status: 'compliant',
+          driveRemaining: 11,
+          dutyRemaining: 14,
+          cycleRemaining: 70,
+        }));
+
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          result = result.filter(d => d.name.toLowerCase().includes(q));
+        }
+        return result;
+      } catch (error) {
+        console.error('[Compliance] getHOSDrivers error:', error);
+        return [];
       }
-      return drivers;
     }),
 
   /**
    * Get HOS stats for HOSCompliance page
    */
   getHOSStats: protectedProcedure
-    .query(async () => {
-      return { totalDrivers: 18, compliant: 15, warnings: 2, violations: 1, complianceRate: 94 };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalDrivers: 0, compliant: 0, warnings: 0, violations: 0, complianceRate: 0 };
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const totalCount = total?.count || 0;
+
+        return {
+          totalDrivers: totalCount,
+          compliant: totalCount,
+          warnings: 0,
+          violations: 0,
+          complianceRate: 100,
+        };
+      } catch (error) {
+        console.error('[Compliance] getHOSStats error:', error);
+        return { totalDrivers: 0, compliant: 0, warnings: 0, violations: 0, complianceRate: 0 };
+      }
     }),
 
   /**
@@ -177,17 +248,56 @@ export const complianceRouter = router({
    */
   getHazmatDrivers: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const drivers = [
-        { id: "d1", name: "Mike Johnson", status: "valid", endorsement: "H", expiresAt: "2026-03-15", trainedAt: "2024-03-15" },
-        { id: "d2", name: "Sarah Williams", status: "expiring", endorsement: "H", expiresAt: "2025-02-15", trainedAt: "2023-02-15" },
-        { id: "d3", name: "Tom Brown", status: "valid", endorsement: "H,X", expiresAt: "2026-08-20", trainedAt: "2024-08-20" },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return drivers.filter(d => d.name.toLowerCase().includes(q));
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const now = new Date();
+        const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        const certList = await db.select({
+          id: certifications.id,
+          userId: certifications.userId,
+          type: certifications.type,
+          expiryDate: certifications.expiryDate,
+          createdAt: certifications.createdAt,
+        }).from(certifications)
+          .where(eq(certifications.type, 'hazmat'))
+          .limit(50);
+
+        const result = await Promise.all(certList.map(async (c) => {
+          let driverName = 'Unknown';
+          if (c.userId) {
+            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, c.userId)).limit(1);
+            driverName = driver?.name || 'Unknown';
+          }
+          const expiryDate = c.expiryDate ? new Date(c.expiryDate) : null;
+          let certStatus = 'valid';
+          if (expiryDate) {
+            if (expiryDate < now) certStatus = 'expired';
+            else if (expiryDate < thirtyDays) certStatus = 'expiring';
+          }
+          return {
+            id: `cert_${c.id}`,
+            name: driverName,
+            status: certStatus,
+            endorsement: 'H',
+            expiresAt: c.expiryDate?.toISOString().split('T')[0] || '',
+            trainedAt: c.createdAt?.toISOString().split('T')[0] || '',
+          };
+        }));
+
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          return result.filter(d => d.name.toLowerCase().includes(q));
+        }
+        return result;
+      } catch (error) {
+        console.error('[Compliance] getHazmatDrivers error:', error);
+        return [];
       }
-      return drivers;
     }),
 
   /**
@@ -195,7 +305,33 @@ export const complianceRouter = router({
    */
   getHazmatStats: protectedProcedure
     .query(async () => {
-      return { totalCertified: 12, valid: 10, expiringSoon: 2, expiring: 2, expired: 0, trainingDue: 1 };
+      const db = await getDb();
+      if (!db) return { totalCertified: 0, valid: 0, expiringSoon: 0, expiring: 0, expired: 0, trainingDue: 0 };
+
+      try {
+        const now = new Date();
+        const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(eq(certifications.type, 'hazmat'));
+        const [expired] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(and(eq(certifications.type, 'hazmat'), lte(certifications.expiryDate, now)));
+        const [expiring] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(and(eq(certifications.type, 'hazmat'), gte(certifications.expiryDate, now), lte(certifications.expiryDate, thirtyDays)));
+
+        const totalCount = total?.count || 0;
+        const expiredCount = expired?.count || 0;
+        const expiringCount = expiring?.count || 0;
+
+        return {
+          totalCertified: totalCount,
+          valid: totalCount - expiredCount - expiringCount,
+          expiringSoon: expiringCount,
+          expiring: expiringCount,
+          expired: expiredCount,
+          trainingDue: 0,
+        };
+      } catch (error) {
+        console.error('[Compliance] getHazmatStats error:', error);
+        return { totalCertified: 0, valid: 0, expiringSoon: 0, expiring: 0, expired: 0, trainingDue: 0 };
+      }
     }),
 
   /**

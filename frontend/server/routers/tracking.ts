@@ -102,32 +102,52 @@ export const trackingRouter = router({
       vehicleId: z.string(),
     }))
     .query(async ({ input }) => {
-      return {
-        vehicleId: input.vehicleId,
-        unitNumber: "TRK-101",
-        position: {
-          lat: 31.5493,
-          lng: -97.1467,
-          heading: 15,
-          speed: 62,
-          updatedAt: new Date().toISOString(),
-        },
-        driver: {
-          id: "d1",
-          name: "Mike Johnson",
-          hosStatus: "driving",
-          hoursRemaining: 6.5,
-        },
-        currentLoad: {
-          loadNumber: "LOAD-45850",
-          status: "in_transit",
-          destination: "Dallas, TX",
-          eta: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        },
-        fuelLevel: 0.72,
-        odometer: 458350,
-        engineStatus: "running",
-      };
+      const db = await getDb();
+      if (!db) return null;
+
+      try {
+        const vehicleId = parseInt(input.vehicleId.replace('v_', ''), 10) || parseInt(input.vehicleId, 10);
+        const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vehicleId)).limit(1);
+        if (!vehicle) return null;
+
+        // Get latest GPS data for this vehicle's driver
+        let position = { lat: 0, lng: 0, heading: 0, speed: 0, updatedAt: new Date().toISOString() };
+        if (vehicle.assignedDriverId) {
+          const [gps] = await db.select().from(gpsTracking).where(eq(gpsTracking.driverId, vehicle.assignedDriverId)).orderBy(desc(gpsTracking.timestamp)).limit(1);
+          if (gps) {
+            position = { lat: Number(gps.latitude), lng: Number(gps.longitude), heading: Number(gps.heading) || 0, speed: Number(gps.speed) || 0, updatedAt: gps.timestamp?.toISOString() || new Date().toISOString() };
+          }
+        }
+
+        // Get driver info
+        let driverInfo = { id: '', name: 'Not assigned', hosStatus: 'off_duty', hoursRemaining: 0 };
+        if (vehicle.assignedDriverId) {
+          const [driver] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, vehicle.assignedDriverId)).limit(1);
+          if (driver) driverInfo = { id: `d_${driver.id}`, name: driver.name || 'Driver', hosStatus: 'driving', hoursRemaining: 8 };
+        }
+
+        // Get current load
+        let currentLoad = null;
+        const [load] = await db.select().from(loads).where(and(eq(loads.vehicleId, vehicleId), eq(loads.status, 'in_transit'))).limit(1);
+        if (load) {
+          const delivery = load.deliveryLocation as any || {};
+          currentLoad = { loadNumber: load.loadNumber, status: load.status, destination: delivery.city ? `${delivery.city}, ${delivery.state}` : 'Unknown', eta: load.deliveryDate?.toISOString() || '' };
+        }
+
+        return {
+          vehicleId: input.vehicleId,
+          unitNumber: vehicle.unitNumber || `TRK-${vehicle.id}`,
+          position,
+          driver: driverInfo,
+          currentLoad,
+          fuelLevel: 0.75,
+          odometer: 0,
+          engineStatus: vehicle.status === 'in_use' ? 'running' : 'off',
+        };
+      } catch (error) {
+        console.error('[Tracking] getVehicleLocation error:', error);
+        return null;
+      }
     }),
 
   /**
@@ -143,45 +163,58 @@ export const trackingRouter = router({
       }).optional(),
       status: z.enum(["all", "moving", "stopped", "idle"]).default("all"),
     }))
-    .query(async ({ input }) => {
-      return {
-        vehicles: [
-          {
-            id: "v1",
-            unitNumber: "TRK-101",
-            position: { lat: 31.5493, lng: -97.1467 },
-            status: "moving",
-            speed: 62,
-            heading: 15,
-            driver: "Mike Johnson",
-            loadNumber: "LOAD-45850",
-            destination: "Dallas, TX",
-          },
-          {
-            id: "v2",
-            unitNumber: "TRK-102",
-            position: { lat: 29.7604, lng: -95.3698 },
-            status: "stopped",
-            speed: 0,
-            heading: 0,
-            driver: "Sarah Williams",
-            loadNumber: "LOAD-45855",
-            destination: "San Antonio, TX",
-          },
-          {
-            id: "v3",
-            unitNumber: "TRK-103",
-            position: { lat: 30.2672, lng: -97.7431 },
-            status: "idle",
-            speed: 0,
-            heading: 90,
-            driver: "Tom Brown",
-            loadNumber: null,
-            destination: null,
-          },
-        ],
-        lastUpdated: new Date().toISOString(),
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { vehicles: [], lastUpdated: new Date().toISOString() };
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const vehicleList = await db.select().from(vehicles).where(eq(vehicles.companyId, companyId)).limit(50);
+
+        const mappedVehicles = await Promise.all(vehicleList.map(async (v) => {
+          let position = { lat: 0, lng: 0 };
+          let speed = 0;
+          let heading = 0;
+          let driverName = 'Unassigned';
+          let loadNumber: string | null = null;
+          let destination: string | null = null;
+
+          if (v.assignedDriverId) {
+            const [gps] = await db.select().from(gpsTracking).where(eq(gpsTracking.driverId, v.assignedDriverId)).orderBy(desc(gpsTracking.timestamp)).limit(1);
+            if (gps) {
+              position = { lat: Number(gps.latitude), lng: Number(gps.longitude) };
+              speed = Number(gps.speed) || 0;
+              heading = Number(gps.heading) || 0;
+            }
+            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, v.assignedDriverId)).limit(1);
+            if (driver) driverName = driver.name || 'Driver';
+          }
+
+          const [load] = await db.select().from(loads).where(and(eq(loads.vehicleId, v.id), eq(loads.status, 'in_transit'))).limit(1);
+          if (load) {
+            loadNumber = load.loadNumber;
+            const delivery = load.deliveryLocation as any || {};
+            destination = delivery.city ? `${delivery.city}, ${delivery.state}` : null;
+          }
+
+          return {
+            id: `v_${v.id}`,
+            unitNumber: v.unitNumber || `TRK-${v.id}`,
+            position,
+            status: speed > 0 ? 'moving' : v.status === 'in_use' ? 'stopped' : 'idle',
+            speed,
+            heading,
+            driver: driverName,
+            loadNumber,
+            destination,
+          };
+        }));
+
+        return { vehicles: mappedVehicles, lastUpdated: new Date().toISOString() };
+      } catch (error) {
+        console.error('[Tracking] getFleetMap error:', error);
+        return { vehicles: [], lastUpdated: new Date().toISOString() };
+      }
     }),
 
   /**

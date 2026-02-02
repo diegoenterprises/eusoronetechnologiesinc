@@ -151,55 +151,48 @@ export const messagesRouter = router({
       before: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const messages = [
-        {
-          id: "msg_001",
-          conversationId: input.conversationId,
-          senderId: "u1",
-          senderName: "Mike Johnson",
-          content: "I've arrived at the pickup location",
-          type: "text",
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          read: true,
-          isOwn: true,
-        },
-        {
-          id: "msg_002",
-          conversationId: input.conversationId,
-          senderId: "u2",
-          senderName: "Sarah Shipper",
-          content: "Great! The loading dock is at Gate 3",
-          type: "text",
-          timestamp: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
-          read: true,
-          isOwn: false,
-        },
-        {
-          id: "msg_003",
-          conversationId: input.conversationId,
-          senderId: "system",
-          senderName: "System",
-          content: "Load status updated: Loading in progress",
-          type: "load_update",
-          timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-          read: true,
-          isOwn: false,
-          metadata: { loadNumber: "LOAD-45920", status: "loading" },
-        },
-        {
-          id: "msg_004",
-          conversationId: input.conversationId,
-          senderId: "u1",
-          senderName: "Mike Johnson",
-          content: "Load #45920 has been picked up successfully",
-          type: "text",
-          timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-          read: false,
-          isOwn: true,
-        },
-      ];
+      const db = await getDb();
+      if (!db) return [];
 
-      return messages;
+      try {
+        const userId = ctx.user?.id || 0;
+        const convId = parseInt(input.conversationId.replace('conv_', ''), 10) || parseInt(input.conversationId, 10);
+
+        const messageList = await db.select({
+          id: messages.id,
+          conversationId: messages.conversationId,
+          senderId: messages.senderId,
+          content: messages.content,
+          createdAt: messages.createdAt,
+          readBy: messages.readBy,
+        }).from(messages)
+          .where(eq(messages.conversationId, convId))
+          .orderBy(desc(messages.createdAt))
+          .limit(input.limit);
+
+        return await Promise.all(messageList.map(async (msg) => {
+          let senderName = 'Unknown';
+          if (msg.senderId) {
+            const [sender] = await db.select({ name: users.name }).from(users).where(eq(users.id, msg.senderId)).limit(1);
+            senderName = sender?.name || 'Unknown';
+          }
+          const readByArray = msg.readBy as number[] || [];
+          return {
+            id: `msg_${msg.id}`,
+            conversationId: input.conversationId,
+            senderId: `u_${msg.senderId}`,
+            senderName,
+            content: msg.content || '',
+            type: 'text',
+            timestamp: msg.createdAt?.toISOString() || '',
+            read: readByArray.includes(userId),
+            isOwn: msg.senderId === userId,
+          };
+        }));
+      } catch (error) {
+        console.error('[Messages] getMessages error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -265,13 +258,31 @@ export const messagesRouter = router({
    */
   getUnreadCount: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        total: 3,
-        byConversation: {
-          conv_001: 2,
-          conv_003: 1,
-        },
-      };
+      const db = await getDb();
+      if (!db) return { total: 0, byConversation: {} };
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const unreadMessages = await db.select({
+          conversationId: messages.conversationId,
+        }).from(messages)
+          .where(sql`JSON_CONTAINS(${messages.readBy}, ${userId}) = 0`)
+          .limit(100);
+
+        const byConversation: Record<string, number> = {};
+        unreadMessages.forEach(m => {
+          const key = `conv_${m.conversationId}`;
+          byConversation[key] = (byConversation[key] || 0) + 1;
+        });
+
+        return {
+          total: unreadMessages.length,
+          byConversation,
+        };
+      } catch (error) {
+        console.error('[Messages] getUnreadCount error:', error);
+        return { total: 0, byConversation: {} };
+      }
     }),
 
   /**

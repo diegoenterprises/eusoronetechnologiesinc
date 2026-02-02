@@ -11,7 +11,19 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, bids, users, companies, vehicles } from "../../drizzle/schema";
+import { 
+  loads, 
+  bids, 
+  users, 
+  companies, 
+  vehicles, 
+  drivers, 
+  terminals, 
+  appointments, 
+  documents, 
+  incidents, 
+  inspections 
+} from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte, count, sum } from "drizzle-orm";
 
 // Helper to get date ranges
@@ -783,13 +795,33 @@ async function getCarrierStats(db: any, companyId: number) {
 }
 
 async function getBrokerStats(db: any, userId: number) {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  const [loadsThisMonth] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(loads)
+    .where(gte(loads.createdAt, thirtyDaysAgo));
+
+  const [activeLoadsCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(loads)
+    .where(sql`${loads.status} IN ('posted', 'bidding', 'assigned', 'in_transit')`);
+
+  const [totalBids] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(bids)
+    .where(eq(bids.status, 'pending'));
+
   return {
-    activeShippers: 45,
-    activeCarriers: 128,
-    loadsThisMonth: 234,
-    totalCommission: 45600,
+    activeShippers: 0,
+    activeCarriers: 0,
+    loadsThisMonth: loadsThisMonth?.count || 0,
+    totalCommission: 0,
     avgMargin: 12.5,
-    pendingPayments: 12400,
+    pendingPayments: 0,
+    activeLoads: activeLoadsCount?.count || 0,
+    pendingBids: totalBids?.count || 0,
   };
 }
 
@@ -815,46 +847,157 @@ async function getDriverStats(db: any, userId: number) {
 }
 
 async function getCatalystStats(db: any, companyId: number) {
+  const [activeDriversCount] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(drivers)
+    .where(and(eq(drivers.companyId, companyId), sql`${drivers.status} IN ('active', 'available', 'on_load')`));
+
+  const [loadsInTransit] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(loads)
+    .where(and(eq(loads.carrierId, companyId), eq(loads.status, 'in_transit')));
+
+  const [pendingAssignments] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(loads)
+    .where(and(eq(loads.carrierId, companyId), sql`${loads.status} IN ('assigned', 'bidding')`, sql`${loads.driverId} IS NULL`));
+
+  const [fleetTotal] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vehicles)
+    .where(eq(vehicles.companyId, companyId));
+
+  const [fleetInUse] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vehicles)
+    .where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'in_use')));
+
+  const utilization = fleetTotal?.count ? Math.round((fleetInUse?.count || 0) / fleetTotal.count * 100) : 0;
+
   return {
-    activeDrivers: 24,
-    loadsInTransit: 18,
-    pendingAssignments: 6,
+    activeDrivers: activeDriversCount?.count || 0,
+    loadsInTransit: loadsInTransit?.count || 0,
+    pendingAssignments: pendingAssignments?.count || 0,
     hosViolations: 0,
     avgResponseTime: '12 min',
-    fleetUtilization: 78,
+    fleetUtilization: utilization,
   };
 }
 
 async function getTerminalStats(db: any, companyId: number) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const [terminal] = await db
+    .select()
+    .from(terminals)
+    .where(eq(terminals.companyId, companyId))
+    .limit(1);
+
+  const [appointmentsToday] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(appointments)
+    .where(and(
+      terminal ? eq(appointments.terminalId, terminal.id) : sql`1=1`,
+      gte(appointments.scheduledAt, today),
+      lte(appointments.scheduledAt, tomorrow)
+    ));
+
   return {
-    docksActive: 8,
-    docksTotal: 12,
-    appointmentsToday: 24,
-    throughputToday: 125000,
-    tankUtilization: 68,
-    pendingBOLs: 3,
+    docksActive: terminal?.dockCount || 0,
+    docksTotal: terminal?.dockCount || 0,
+    appointmentsToday: appointmentsToday?.count || 0,
+    throughputToday: 0,
+    tankUtilization: 0,
+    pendingBOLs: 0,
   };
 }
 
 async function getComplianceStats(db: any, companyId: number) {
+  const thirtyDaysFromNow = new Date();
+  thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+  const [driversTotal] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(drivers)
+    .where(eq(drivers.companyId, companyId));
+
+  const [driversCompliant] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(drivers)
+    .where(and(
+      eq(drivers.companyId, companyId),
+      sql`${drivers.licenseExpiry} > NOW()`,
+      sql`${drivers.medicalCardExpiry} > NOW()`
+    ));
+
+  const [expiringDocs] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(documents)
+    .where(and(
+      eq(documents.companyId, companyId),
+      lte(documents.expiryDate, thirtyDaysFromNow),
+      gte(documents.expiryDate, new Date())
+    ));
+
   return {
-    driversCompliant: 45,
-    driversTotal: 48,
-    expiringDocuments: 5,
-    pendingAudits: 2,
+    driversCompliant: driversCompliant?.count || 0,
+    driversTotal: driversTotal?.count || 0,
+    expiringDocuments: expiringDocs?.count || 0,
+    pendingAudits: 0,
     csaScore: 'Satisfactory',
-    lastAuditDate: '2025-12-15',
+    lastAuditDate: null,
   };
 }
 
 async function getSafetyStats(db: any, companyId: number) {
+  const startOfYear = new Date(new Date().getFullYear(), 0, 1);
+
+  const [accidentsYTD] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(incidents)
+    .where(and(
+      eq(incidents.companyId, companyId),
+      gte(incidents.occurredAt, startOfYear)
+    ));
+
+  const [driversWithScores] = await db
+    .select({ avg: sql<number>`AVG(${drivers.safetyScore})` })
+    .from(drivers)
+    .where(eq(drivers.companyId, companyId));
+
+  const [inspectionsPassed] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(inspections)
+    .where(and(
+      eq(inspections.companyId, companyId),
+      eq(inspections.status, 'passed')
+    ));
+
+  const [inspectionsTotal] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(inspections)
+    .where(eq(inspections.companyId, companyId));
+
+  const [maintenanceDue] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(vehicles)
+    .where(and(
+      eq(vehicles.companyId, companyId),
+      lte(vehicles.nextMaintenanceDate, new Date())
+    ));
+
+  const passRate = inspectionsTotal?.count ? Math.round((inspectionsPassed?.count || 0) / inspectionsTotal.count * 100) : 100;
+
   return {
-    accidentsYTD: 2,
-    incidentRate: 0.8,
-    driverScoreAvg: 94,
-    inspectionsPassed: 98,
-    maintenanceDue: 4,
-    safetyMeetingsCompleted: 12,
+    accidentsYTD: accidentsYTD?.count || 0,
+    incidentRate: 0,
+    driverScoreAvg: Math.round(driversWithScores?.avg || 100),
+    inspectionsPassed: passRate,
+    maintenanceDue: maintenanceDue?.count || 0,
+    safetyMeetingsCompleted: 0,
   };
 }
 

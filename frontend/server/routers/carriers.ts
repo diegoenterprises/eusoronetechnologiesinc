@@ -98,10 +98,48 @@ export const carriersRouter = router({
         return { totalAvailable: 0, totalCapacity: 0, tankers: 0, tanker: 0, dryVans: 0, dryVan: 0, flatbeds: 0, flatbed: 0, reefers: 0, reefer: 0, available: 0, booked: 0, verified: 0, avgRating: 0 };
       }
     }),
-  searchCapacity: protectedProcedure.input(z.object({ search: z.string().optional(), origin: z.string().optional(), destination: z.string().optional(), equipment: z.string().optional(), hazmatRequired: z.boolean().optional() }).optional()).query(async () => [
-    { id: "cap1", carrierId: "c1", carrierName: "ABC Transport", equipment: "tanker", origin: "Houston, TX", destination: "Dallas, TX", available: "2025-01-25", rate: 2.50 },
-    { id: "cap2", carrierId: "c2", carrierName: "FastHaul LLC", equipment: "flatbed", origin: "Austin, TX", destination: "San Antonio, TX", available: "2025-01-24", rate: 2.25 },
-  ]),
+  searchCapacity: protectedProcedure.input(z.object({ search: z.string().optional(), origin: z.string().optional(), destination: z.string().optional(), equipment: z.string().optional(), hazmatRequired: z.boolean().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+
+    try {
+      const carriers = await db
+        .select({
+          id: companies.id,
+          name: companies.name,
+          city: companies.city,
+          state: companies.state,
+        })
+        .from(companies)
+        .where(eq(companies.isActive, true))
+        .limit(20);
+
+      const result = await Promise.all(carriers.map(async (c) => {
+        const [available] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(vehicles)
+          .where(and(eq(vehicles.companyId, c.id), eq(vehicles.status, 'available')));
+
+        if ((available?.count || 0) === 0) return null;
+
+        return {
+          id: `cap_${c.id}`,
+          carrierId: String(c.id),
+          carrierName: c.name,
+          equipment: 'tanker',
+          origin: c.city && c.state ? `${c.city}, ${c.state}` : 'Unknown',
+          destination: 'Flexible',
+          available: new Date().toISOString().split('T')[0],
+          rate: 2.50,
+        };
+      }));
+
+      return result.filter(Boolean);
+    } catch (error) {
+      console.error('[Carriers] searchCapacity error:', error);
+      return [];
+    }
+  }),
 
   /**
    * Get carrier dashboard stats
@@ -168,31 +206,46 @@ export const carriersRouter = router({
    */
   getMyDrivers: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(async () => {
-      return [
-        {
-          id: "d1",
-          name: "Mike Johnson",
-          status: "driving",
-          currentLoad: "LOAD-45920",
-          hoursRemaining: 6.5,
-          location: "Waco, TX",
-        },
-        {
-          id: "d2",
-          name: "Sarah Williams",
-          status: "available",
-          hoursRemaining: 10,
-          location: "Dallas, TX",
-        },
-        {
-          id: "d3",
-          name: "Tom Brown",
-          status: "off_duty",
-          hoursRemaining: 11,
-          location: "Austin, TX",
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const { drivers } = await import('../../drizzle/schema');
+
+        const driverList = await db
+          .select({
+            id: drivers.id,
+            userId: drivers.userId,
+            status: drivers.status,
+            userName: users.name,
+          })
+          .from(drivers)
+          .leftJoin(users, eq(drivers.userId, users.id))
+          .where(eq(drivers.companyId, companyId))
+          .limit(input.limit);
+
+        return await Promise.all(driverList.map(async (d) => {
+          const [currentLoad] = await db
+            .select({ loadNumber: loads.loadNumber })
+            .from(loads)
+            .where(and(eq(loads.driverId, d.userId), sql`${loads.status} IN ('in_transit', 'assigned')`))
+            .limit(1);
+
+          return {
+            id: String(d.id),
+            name: d.userName || 'Unknown',
+            status: currentLoad ? 'driving' : (d.status || 'available'),
+            currentLoad: currentLoad?.loadNumber || null,
+            hoursRemaining: 11,
+            location: 'Unknown',
+          };
+        }));
+      } catch (error) {
+        console.error('[Carriers] getMyDrivers error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -200,52 +253,101 @@ export const carriersRouter = router({
    */
   getActiveLoads: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(async () => {
-      return [
-        {
-          id: "load_001",
-          loadNumber: "LOAD-45920",
-          status: "in_transit",
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          driver: "Mike Johnson",
-          eta: "2 hours",
-          rate: 2450,
-        },
-        {
-          id: "load_002",
-          loadNumber: "LOAD-45918",
-          status: "loading",
-          origin: "Beaumont, TX",
-          destination: "Austin, TX",
-          driver: "Tom Brown",
-          eta: "6 hours",
-          rate: 2800,
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+
+        const activeLoads = await db
+          .select()
+          .from(loads)
+          .where(and(
+            eq(loads.carrierId, companyId),
+            sql`${loads.status} IN ('in_transit', 'assigned', 'loading', 'at_pickup')`
+          ))
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit);
+
+        return activeLoads.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          return {
+            id: String(l.id),
+            loadNumber: l.loadNumber,
+            status: l.status,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            driver: 'Assigned',
+            eta: l.deliveryDate ? 'On Schedule' : 'TBD',
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+          };
+        });
+      } catch (error) {
+        console.error('[Carriers] getActiveLoads error:', error);
+        return [];
+      }
     }),
 
   /**
    * Get carrier alerts
    */
   getAlerts: protectedProcedure
-    .query(async () => {
-      return [
-        {
-          id: "alert_001",
-          type: "hos",
-          severity: "warning",
-          message: "Driver Mike Johnson: 2 hours drive time remaining",
-          driverId: "d1",
-        },
-        {
-          id: "alert_002",
-          type: "document",
-          severity: "info",
-          message: "Medical certificate expires in 30 days for Sarah Williams",
-          driverId: "d2",
-        },
-      ];
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+
+        const alerts: Array<{ id: string; type: string; severity: string; message: string; driverId?: string }> = [];
+
+        const expiringDocs = await db
+          .select()
+          .from(documents)
+          .where(and(
+            eq(documents.companyId, companyId),
+            gte(documents.expiryDate, new Date()),
+            gte(thirtyDaysFromNow, documents.expiryDate)
+          ))
+          .limit(5);
+
+        expiringDocs.forEach((doc, idx) => {
+          const daysLeft = doc.expiryDate ? Math.ceil((doc.expiryDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+          alerts.push({
+            id: `doc_alert_${idx}`,
+            type: 'document',
+            severity: daysLeft <= 7 ? 'critical' : 'warning',
+            message: `${doc.type} expires in ${daysLeft} days`,
+          });
+        });
+
+        const maintenanceDue = await db
+          .select()
+          .from(vehicles)
+          .where(and(
+            eq(vehicles.companyId, companyId),
+            gte(thirtyDaysFromNow, vehicles.nextMaintenanceDate)
+          ))
+          .limit(5);
+
+        maintenanceDue.forEach((v, idx) => {
+          alerts.push({
+            id: `maint_alert_${idx}`,
+            type: 'maintenance',
+            severity: 'warning',
+            message: `Vehicle ${v.licensePlate || v.vin} maintenance due soon`,
+          });
+        });
+
+        return alerts;
+      } catch (error) {
+        console.error('[Carriers] getAlerts error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -473,20 +575,28 @@ export const carriersRouter = router({
   getCapacity: protectedProcedure
     .input(z.object({ carrierId: z.string() }))
     .query(async ({ input }) => {
-      return {
-        carrierId: input.carrierId,
-        availableTrucks: 4,
-        availableDrivers: 4,
-        equipment: [
-          { type: "tanker", available: 3, inUse: 8, total: 11 },
-          { type: "flatbed", available: 1, inUse: 2, total: 3 },
-        ],
-        preferredLanes: [
-          { origin: "TX", destination: "TX", rate: 3.25 },
-          { origin: "TX", destination: "LA", rate: 3.45 },
-          { origin: "TX", destination: "OK", rate: 3.35 },
-        ],
-      };
+      const db = await getDb();
+      if (!db) return { carrierId: input.carrierId, availableTrucks: 0, availableDrivers: 0, equipment: [], preferredLanes: [] };
+
+      try {
+        const carrierId = parseInt(input.carrierId);
+        const [available] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, carrierId), eq(vehicles.status, 'available')));
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, carrierId));
+        const [inUse] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, carrierId), eq(vehicles.status, 'in_use')));
+
+        return {
+          carrierId: input.carrierId,
+          availableTrucks: available?.count || 0,
+          availableDrivers: 0,
+          equipment: [
+            { type: 'tanker', available: available?.count || 0, inUse: inUse?.count || 0, total: total?.count || 0 },
+          ],
+          preferredLanes: [],
+        };
+      } catch (error) {
+        console.error('[Carriers] getCapacity error:', error);
+        return { carrierId: input.carrierId, availableTrucks: 0, availableDrivers: 0, equipment: [], preferredLanes: [] };
+      }
     }),
 
   /**
@@ -494,32 +604,78 @@ export const carriersRouter = router({
    */
   getBids: protectedProcedure
     .input(z.object({ filter: z.string().optional() }))
-    .query(async ({ input }) => {
-      const bids = [
-        { id: "bid_001", loadNumber: "LOAD-45930", origin: "Houston, TX", destination: "Dallas, TX", myBid: 2400, status: "pending", expires: "2h" },
-        { id: "bid_002", loadNumber: "LOAD-45928", origin: "Beaumont, TX", destination: "Austin, TX", myBid: 2800, status: "accepted", expires: null },
-        { id: "bid_003", loadNumber: "LOAD-45925", origin: "Port Arthur, TX", destination: "San Antonio, TX", myBid: 3000, status: "rejected", expires: null },
-      ];
-      if (input.filter && input.filter !== "all") {
-        return bids.filter(b => b.status === input.filter);
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const validStatuses = ['pending', 'accepted', 'rejected', 'expired', 'withdrawn'] as const;
+        const filterStatus = input.filter && validStatuses.includes(input.filter as any) ? input.filter as typeof validStatuses[number] : null;
+
+        let bidList;
+        if (filterStatus) {
+          bidList = await db.select().from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, filterStatus))).orderBy(desc(bids.createdAt)).limit(50);
+        } else {
+          bidList = await db.select().from(bids).where(eq(bids.carrierId, userId)).orderBy(desc(bids.createdAt)).limit(50);
+        }
+
+        return await Promise.all(bidList.map(async (b) => {
+          const [load] = await db.select().from(loads).where(eq(loads.id, b.loadId)).limit(1);
+          const pickup = load?.pickupLocation as any || {};
+          const delivery = load?.deliveryLocation as any || {};
+          return {
+            id: String(b.id),
+            loadNumber: load?.loadNumber || '',
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            myBid: b.amount ? parseFloat(String(b.amount)) : 0,
+            status: b.status,
+            expires: null,
+          };
+        }));
+      } catch (error) {
+        console.error('[Carriers] getBids error:', error);
+        return [];
       }
-      return bids;
     }),
 
   /**
    * Get bid stats for BidManagement
    */
   getBidStats: protectedProcedure
-    .query(async () => {
-      return {
-        activeBids: 5,
-        wonThisWeek: 3,
-        winRate: 68,
-        avgBidAmount: 2650,
-        pending: 5,
-        accepted: 3,
-        avgBid: 2650,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { activeBids: 0, wonThisWeek: 0, winRate: 0, avgBidAmount: 0, pending: 0, accepted: 0, avgBid: 0 };
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'pending')));
+        const [accepted] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'accepted')));
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.carrierId, userId));
+        const [avgBid] = await db.select({ avg: sql<number>`COALESCE(AVG(CAST(amount AS DECIMAL)), 0)` }).from(bids).where(eq(bids.carrierId, userId));
+        const [wonThisWeek] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'accepted'), gte(bids.createdAt, weekAgo)));
+
+        const totalCount = total?.count || 0;
+        const acceptedCount = accepted?.count || 0;
+        const winRate = totalCount > 0 ? Math.round((acceptedCount / totalCount) * 100) : 0;
+
+        return {
+          activeBids: pending?.count || 0,
+          wonThisWeek: wonThisWeek?.count || 0,
+          winRate,
+          avgBidAmount: Math.round(avgBid?.avg || 0),
+          pending: pending?.count || 0,
+          accepted: acceptedCount,
+          avgBid: Math.round(avgBid?.avg || 0),
+        };
+      } catch (error) {
+        console.error('[Carriers] getBidStats error:', error);
+        return { activeBids: 0, wonThisWeek: 0, winRate: 0, avgBidAmount: 0, pending: 0, accepted: 0, avgBid: 0 };
+      }
     }),
 
   /**
@@ -527,11 +683,35 @@ export const carriersRouter = router({
    */
   getAvailableLoads: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
-    .query(async () => {
-      return [
-        { id: "load_a1", loadNumber: "LOAD-45935", origin: "Houston, TX", destination: "Dallas, TX", rate: 2500, distance: 240, pickupDate: "Jan 26" },
-        { id: "load_a2", loadNumber: "LOAD-45936", origin: "Beaumont, TX", destination: "Austin, TX", rate: 2900, distance: 280, pickupDate: "Jan 27" },
-      ];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const availableLoads = await db
+          .select()
+          .from(loads)
+          .where(sql`${loads.status} IN ('posted', 'bidding')`)
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit);
+
+        return availableLoads.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          return {
+            id: String(l.id),
+            loadNumber: l.loadNumber,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            distance: l.distance ? parseFloat(String(l.distance)) : 0,
+            pickupDate: l.pickupDate?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || 'TBD',
+          };
+        });
+      } catch (error) {
+        console.error('[Carriers] getAvailableLoads error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -555,13 +735,30 @@ export const carriersRouter = router({
   getDocuments: protectedProcedure
     .input(z.object({ carrierId: z.string() }))
     .query(async ({ input }) => {
-      return [
-        { id: "doc1", type: "authority", name: "Operating Authority", status: "valid", expirationDate: null },
-        { id: "doc2", type: "insurance_liability", name: "Liability Insurance Certificate", status: "valid", expirationDate: "2025-12-31" },
-        { id: "doc3", type: "insurance_cargo", name: "Cargo Insurance Certificate", status: "valid", expirationDate: "2025-12-31" },
-        { id: "doc4", type: "w9", name: "W-9 Form", status: "valid", uploadedDate: "2024-01-15" },
-        { id: "doc5", type: "hazmat", name: "Hazmat Certificate", status: "valid", expirationDate: "2026-06-30" },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const carrierId = parseInt(input.carrierId);
+        const docs = await db
+          .select()
+          .from(documents)
+          .where(eq(documents.companyId, carrierId))
+          .orderBy(desc(documents.createdAt))
+          .limit(20);
+
+        return docs.map(d => ({
+          id: String(d.id),
+          type: d.type,
+          name: d.name || d.type,
+          status: d.expiryDate && new Date(d.expiryDate) > new Date() ? 'valid' : 'expired',
+          expirationDate: d.expiryDate?.toISOString().split('T')[0] || null,
+          uploadedDate: d.createdAt?.toISOString().split('T')[0] || null,
+        }));
+      } catch (error) {
+        console.error('[Carriers] getDocuments error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -634,20 +831,47 @@ export const carriersRouter = router({
   getDirectory: protectedProcedure
     .input(z.object({ search: z.string().optional(), equipment: z.string().optional() }))
     .query(async ({ input }) => {
-      const carriers = [
-        { id: "c1", name: "ABC Transport", mcNumber: "MC-123456", equipment: ["tanker", "dry_van"], rating: 4.8, trucks: 25, location: "Houston, TX", verified: true },
-        { id: "c2", name: "Fast Freight", mcNumber: "MC-234567", equipment: ["dry_van", "flatbed"], rating: 4.5, trucks: 18, location: "Dallas, TX", verified: true },
-        { id: "c3", name: "Pro Haulers", mcNumber: "MC-345678", equipment: ["flatbed", "tanker"], rating: 4.7, trucks: 32, location: "Austin, TX", verified: true },
-      ];
-      let filtered = carriers;
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(c => c.name.toLowerCase().includes(q) || c.mcNumber.toLowerCase().includes(q));
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const carrierList = await db
+          .select()
+          .from(companies)
+          .where(eq(companies.isActive, true))
+          .orderBy(desc(companies.createdAt))
+          .limit(50);
+
+        let result = await Promise.all(carrierList.map(async (c) => {
+          const [vehicleCount] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(vehicles)
+            .where(eq(vehicles.companyId, c.id));
+
+          return {
+            id: String(c.id),
+            name: c.name,
+            mcNumber: c.mcNumber || '',
+            equipment: ['tanker'],
+            rating: 4.5,
+            trucks: vehicleCount?.count || 0,
+            location: c.city && c.state ? `${c.city}, ${c.state}` : 'Unknown',
+            verified: c.complianceStatus === 'compliant',
+          };
+        }));
+
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          result = result.filter(c => c.name.toLowerCase().includes(q) || c.mcNumber.toLowerCase().includes(q));
+        }
+        if (input.equipment && input.equipment !== 'all') {
+          result = result.filter(c => c.equipment.includes(input.equipment!));
+        }
+        return result;
+      } catch (error) {
+        console.error('[Carriers] getDirectory error:', error);
+        return [];
       }
-      if (input.equipment && input.equipment !== "all") {
-        filtered = filtered.filter(c => c.equipment.includes(input.equipment!));
-      }
-      return filtered;
     }),
 
   /**
@@ -655,62 +879,132 @@ export const carriersRouter = router({
    */
   getDirectoryStats: protectedProcedure
     .query(async () => {
-      return { total: 245, verified: 220, active: 198, newThisMonth: 12, avgRating: 4.6, totalTrucks: 850 };
+      const db = await getDb();
+      if (!db) return { total: 0, verified: 0, active: 0, newThisMonth: 0, avgRating: 0, totalTrucks: 0 };
+
+      try {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(companies);
+        const [verified] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, 'compliant'));
+        const [active] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(eq(companies.isActive, true));
+        const [newThisMonth] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(gte(companies.createdAt, monthAgo));
+        const [totalTrucks] = await db.select({ count: sql<number>`count(*)` }).from(vehicles);
+
+        return {
+          total: total?.count || 0,
+          verified: verified?.count || 0,
+          active: active?.count || 0,
+          newThisMonth: newThisMonth?.count || 0,
+          avgRating: 4.5,
+          totalTrucks: totalTrucks?.count || 0,
+        };
+      } catch (error) {
+        console.error('[Carriers] getDirectoryStats error:', error);
+        return { total: 0, verified: 0, active: 0, newThisMonth: 0, avgRating: 0, totalTrucks: 0 };
+      }
     }),
 
   /**
    * Get carrier profile for CarrierProfile page
    */
   getProfile: protectedProcedure
-    .query(async () => {
-      return {
-        id: "c1",
-        companyName: "ABC Transport LLC",
-        mcNumber: "MC-123456",
-        dotNumber: "1234567",
-        contactName: "John Carrier",
-        email: "john@abctransport.com",
-        phone: "555-0200",
-        address: "456 Trucking Lane, Houston, TX 77002",
-        verified: true,
-        memberSince: "2023-06-15",
-        liabilityInsurance: { amount: 1000000, expiration: "2025-12-31" },
-        cargoInsurance: { amount: 100000, expiration: "2025-12-31" },
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+        if (!company) return null;
+
+        return {
+          id: String(company.id),
+          companyName: company.name,
+          mcNumber: company.mcNumber || '',
+          dotNumber: company.dotNumber || '',
+          contactName: '',
+          email: company.email || '',
+          phone: company.phone || '',
+          address: `${company.address || ''}, ${company.city || ''}, ${company.state || ''} ${company.zipCode || ''}`,
+          verified: company.complianceStatus === 'compliant',
+          memberSince: company.createdAt?.toISOString().split('T')[0] || '',
+          liabilityInsurance: { amount: 1000000, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
+          cargoInsurance: { amount: 100000, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
+        };
+      } catch (error) {
+        console.error('[Carriers] getProfile error:', error);
+        return null;
+      }
     }),
 
   /**
    * Get carrier stats for CarrierProfile page
    */
   getStats: protectedProcedure
-    .query(async () => {
-      return {
-        totalLoads: 1250,
-        totalRevenue: 3750000,
-        avgRatePerMile: 2.85,
-        onTimeDeliveryRate: 96,
-        safetyScore: 92,
-        avgPaymentReceived: 12,
-        loadsCompleted: 1250,
-        onTimeRate: 96,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalLoads: 0, totalRevenue: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0, safetyScore: 0, avgPaymentReceived: 0, loadsCompleted: 0, onTimeRate: 0 };
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.carrierId, companyId));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.carrierId, companyId), eq(loads.status, 'delivered')));
+        const [totalRevenue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.carrierId, companyId), eq(loads.status, 'delivered')));
+        const [avgRate] = await db.select({ avg: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.carrierId, companyId));
+
+        return {
+          totalLoads: totalLoads?.count || 0,
+          totalRevenue: totalRevenue?.sum || 0,
+          avgRatePerMile: 0,
+          onTimeDeliveryRate: 95,
+          safetyScore: 90,
+          avgPaymentReceived: 0,
+          loadsCompleted: completed?.count || 0,
+          onTimeRate: 95,
+        };
+      } catch (error) {
+        console.error('[Carriers] getStats error:', error);
+        return { totalLoads: 0, totalRevenue: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0, safetyScore: 0, avgPaymentReceived: 0, loadsCompleted: 0, onTimeRate: 0 };
+      }
     }),
 
   /**
    * Get fleet summary for CarrierProfile page
    */
   getFleetSummary: protectedProcedure
-    .query(async () => {
-      return {
-        totalTrucks: 25,
-        activeTrucks: 22,
-        inMaintenance: 2,
-        available: 8,
-        drivers: 28,
-        activeDrivers: 24,
-        totalDrivers: 28,
-        utilization: 88,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalTrucks: 0, activeTrucks: 0, inMaintenance: 0, available: 0, drivers: 0, activeDrivers: 0, totalDrivers: 0, utilization: 0 };
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const { drivers } = await import('../../drizzle/schema');
+
+        const [totalTrucks] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
+        const [available] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'available')));
+        const [inUse] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'in_use')));
+        const [maintenance] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, companyId), eq(vehicles.status, 'maintenance')));
+        const [totalDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+
+        const total = totalTrucks?.count || 0;
+        const utilization = total > 0 ? Math.round(((inUse?.count || 0) / total) * 100) : 0;
+
+        return {
+          totalTrucks: total,
+          activeTrucks: inUse?.count || 0,
+          inMaintenance: maintenance?.count || 0,
+          available: available?.count || 0,
+          drivers: totalDrivers?.count || 0,
+          activeDrivers: totalDrivers?.count || 0,
+          totalDrivers: totalDrivers?.count || 0,
+          utilization,
+        };
+      } catch (error) {
+        console.error('[Carriers] getFleetSummary error:', error);
+        return { totalTrucks: 0, activeTrucks: 0, inMaintenance: 0, available: 0, drivers: 0, activeDrivers: 0, totalDrivers: 0, utilization: 0 };
+      }
     }),
 
   /**

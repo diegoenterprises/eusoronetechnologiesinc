@@ -97,11 +97,32 @@ export const safetyRouter = router({
    */
   getRecentIncidents: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(5) }))
-    .query(async () => {
-      return [
-        { id: "inc_001", type: "near_miss", driver: "Tom Brown", date: "2025-01-22", severity: "minor", status: "closed" },
-        { id: "inc_002", type: "violation", driver: "Bob Davis", date: "2025-01-20", severity: "minor", status: "investigating" },
-      ];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const incidentList = await db.select().from(incidents).orderBy(desc(incidents.createdAt)).limit(input.limit);
+
+        return await Promise.all(incidentList.map(async (i) => {
+          let driverName = 'Unknown';
+          if (i.driverId) {
+            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, i.driverId)).limit(1);
+            driverName = driver?.name || 'Unknown';
+          }
+          return {
+            id: `inc_${i.id}`,
+            type: i.type,
+            driver: driverName,
+            date: i.createdAt?.toISOString().split('T')[0] || '',
+            severity: i.severity,
+            status: i.status,
+          };
+        }));
+      } catch (error) {
+        console.error('[Safety] getRecentIncidents error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -109,14 +130,34 @@ export const safetyRouter = router({
    */
   getTopDrivers: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(5) }))
-    .query(async () => {
-      return [
-        { id: "d1", name: "Mike Johnson", score: 98, incidents: 0, inspections: 5 },
-        { id: "d2", name: "Sarah Williams", score: 96, incidents: 0, inspections: 4 },
-        { id: "d3", name: "Tom Brown", score: 94, incidents: 1, inspections: 3 },
-        { id: "d4", name: "Lisa Chen", score: 92, incidents: 0, inspections: 2 },
-        { id: "d5", name: "Bob Davis", score: 88, incidents: 1, inspections: 3 },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const driverList = await db.select({
+          id: drivers.id,
+          userId: drivers.userId,
+          safetyScore: drivers.safetyScore,
+          userName: users.name,
+        }).from(drivers)
+          .leftJoin(users, eq(drivers.userId, users.id))
+          .where(eq(drivers.companyId, companyId))
+          .orderBy(desc(drivers.safetyScore))
+          .limit(input.limit);
+
+        return driverList.map(d => ({
+          id: `d_${d.id}`,
+          name: d.userName || 'Unknown',
+          score: d.safetyScore || 100,
+          incidents: 0,
+          inspections: 0,
+        }));
+      } catch (error) {
+        console.error('[Safety] getTopDrivers error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -124,7 +165,37 @@ export const safetyRouter = router({
    */
   getIncidentSummary: protectedProcedure
     .query(async () => {
-      return { total: 12, open: 3, investigating: 2, resolved: 7, thisMonth: 2, severity: { high: 1, medium: 4, low: 7 }, severe: 1, closed: 7, critical: 1 };
+      const db = await getDb();
+      if (!db) return { total: 0, open: 0, investigating: 0, resolved: 0, thisMonth: 0, severity: { high: 0, medium: 0, low: 0 }, severe: 0, closed: 0, critical: 0 };
+
+      try {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(incidents);
+        const [open] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'open'));
+        const [investigating] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'investigating'));
+        const [closed] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'resolved'));
+        const [thisMonth] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(gte(incidents.createdAt, monthAgo));
+        const [critical] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.severity, 'critical'));
+        const [major] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.severity, 'major'));
+        const [minor] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.severity, 'minor'));
+
+        return {
+          total: total?.count || 0,
+          open: open?.count || 0,
+          investigating: investigating?.count || 0,
+          resolved: closed?.count || 0,
+          thisMonth: thisMonth?.count || 0,
+          severity: { high: critical?.count || 0, medium: major?.count || 0, low: minor?.count || 0 },
+          severe: critical?.count || 0,
+          closed: closed?.count || 0,
+          critical: critical?.count || 0,
+        };
+      } catch (error) {
+        console.error('[Safety] getIncidentSummary error:', error);
+        return { total: 0, open: 0, investigating: 0, resolved: 0, thisMonth: 0, severity: { high: 0, medium: 0, low: 0 }, severe: 0, closed: 0, critical: 0 };
+      }
     }),
 
   /**
@@ -132,18 +203,33 @@ export const safetyRouter = router({
    */
   getDashboardSummary: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        overallScore: 92,
-        activeDirvers: 18,
-        openIncidents: 3,
-        overdueItems: 2,
-        pendingDrugTests: 1,
-        csaAlert: false,
-        trends: {
-          score: { current: 92, previous: 89, change: 3.4 },
-          incidents: { current: 3, previous: 5, change: -40 },
-        },
-      };
+      const db = await getDb();
+      if (!db) return { overallScore: 0, activeDrivers: 0, openIncidents: 0, overdueItems: 0, pendingDrugTests: 0, csaAlert: false, trends: { score: { current: 0, previous: 0, change: 0 }, incidents: { current: 0, previous: 0, change: 0 } } };
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+
+        const [activeDrivers] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), eq(drivers.status, 'active')));
+        const [avgScore] = await db.select({ avg: sql<number>`AVG(safetyScore)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const [openIncidents] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(sql`${incidents.status} IN ('open', 'investigating')`);
+        const [pendingTests] = await db.select({ count: sql<number>`count(*)` }).from(drugTests).where(eq(drugTests.result, 'pending'));
+
+        return {
+          overallScore: Math.round(avgScore?.avg || 100),
+          activeDrivers: activeDrivers?.count || 0,
+          openIncidents: openIncidents?.count || 0,
+          overdueItems: 0,
+          pendingDrugTests: pendingTests?.count || 0,
+          csaAlert: false,
+          trends: {
+            score: { current: Math.round(avgScore?.avg || 100), previous: 90, change: 0 },
+            incidents: { current: openIncidents?.count || 0, previous: 0, change: 0 },
+          },
+        };
+      } catch (error) {
+        console.error('[Safety] getDashboardSummary error:', error);
+        return { overallScore: 0, activeDrivers: 0, openIncidents: 0, overdueItems: 0, pendingDrugTests: 0, csaAlert: false, trends: { score: { current: 0, previous: 0, change: 0 }, incidents: { current: 0, previous: 0, change: 0 } } };
+      }
     }),
 
   /**

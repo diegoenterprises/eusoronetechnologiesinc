@@ -84,13 +84,24 @@ export const documentsRouter = router({
    * Get document categories
    */
   getCategories: protectedProcedure
-    .query(async () => {
-      return [
-        { id: "permits", name: "Permits", count: 8 },
-        { id: "insurance", name: "Insurance", count: 12 },
-        { id: "compliance", name: "Compliance", count: 15 },
-        { id: "contracts", name: "Contracts", count: 10 },
-      ];
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const categories = ['permits', 'insurance', 'compliance', 'contracts', 'invoices', 'bols', 'other'];
+
+        const result = await Promise.all(categories.map(async (cat) => {
+          const [count] = await db.select({ count: sql<number>`count(*)` }).from(documents).where(and(eq(documents.userId, userId), eq(documents.type, cat)));
+          return { id: cat, name: cat.charAt(0).toUpperCase() + cat.slice(1), count: count?.count || 0 };
+        }));
+
+        return result.filter(c => c.count > 0);
+      } catch (error) {
+        console.error('[Documents] getCategories error:', error);
+        return [];
+      }
     }),
 
   /**

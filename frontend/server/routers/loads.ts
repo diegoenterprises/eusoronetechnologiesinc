@@ -378,12 +378,65 @@ export const loadsRouter = router({
     };
   }),
 
-  cancel: protectedProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
-  getHistoryStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalCompleted: 342, avgRate: 2850, onTimeRate: 96, totalLoads: 342, delivered: 342, totalRevenue: 975300, totalMiles: 125000 })),
-  getHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional(), search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
-    { id: "h1", loadNumber: "LOAD-45900", origin: "Houston, TX", destination: "Dallas, TX", deliveredAt: "2025-01-20", rate: 2200, status: "delivered" },
-    { id: "h2", loadNumber: "LOAD-45890", origin: "Austin, TX", destination: "San Antonio, TX", deliveredAt: "2025-01-18", rate: 1850, status: "delivered" },
-  ]),
+  cancel: protectedProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input, ctx }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    
+    const loadId = parseInt(input.loadId, 10);
+    await db.update(loads).set({ status: 'cancelled' }).where(and(eq(loads.id, loadId), eq(loads.shipperId, ctx.user.id)));
+    return { success: true, loadId: input.loadId };
+  }),
+
+  getHistoryStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { totalCompleted: 0, avgRate: 0, onTimeRate: 0, totalLoads: 0, delivered: 0, totalRevenue: 0, totalMiles: 0 };
+    
+    const userId = ctx.user?.id || 0;
+    const [total] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
+    const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
+    const [revenue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
+    const [avgRate] = await db.select({ avg: sql<number>`COALESCE(AVG(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
+    const [miles] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)), 0)` }).from(loads).where(eq(loads.shipperId, userId));
+    
+    return {
+      totalCompleted: delivered?.count || 0,
+      avgRate: Math.round(avgRate?.avg || 0),
+      onTimeRate: 95,
+      totalLoads: total?.count || 0,
+      delivered: delivered?.count || 0,
+      totalRevenue: revenue?.sum || 0,
+      totalMiles: miles?.sum || 0,
+    };
+  }),
+
+  getHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional(), search: z.string().optional(), status: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    
+    const userId = ctx.user?.id || 0;
+    const limit = input?.limit || 20;
+    
+    const results = await db
+      .select()
+      .from(loads)
+      .where(eq(loads.shipperId, userId))
+      .orderBy(desc(loads.createdAt))
+      .limit(limit);
+    
+    return results.map(l => {
+      const pickup = l.pickupLocation as any || {};
+      const delivery = l.deliveryLocation as any || {};
+      return {
+        id: String(l.id),
+        loadNumber: l.loadNumber,
+        origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+        destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+        deliveredAt: l.actualDeliveryDate?.toISOString() || l.deliveryDate?.toISOString() || '',
+        rate: l.rate ? parseFloat(String(l.rate)) : 0,
+        status: l.status,
+      };
+    });
+  }),
 });
 
 
@@ -582,40 +635,115 @@ export const bidsRouter = router({
     }),
 
   // Additional bid procedures
-  getById: protectedProcedure.input(z.object({ bidId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
-    id: input.bidId || input.id || "b1", 
-    loadId: "l1", 
-    loadNumber: "LOAD-45920",
-    amount: 2450, 
-    status: "pending",
-    submittedAt: "2025-01-23T10:30:00Z",
-    ratePerMile: 2.85,
-    origin: { city: "Houston", state: "TX" },
-    destination: { city: "Dallas", state: "TX" },
-    pickupDate: "2025-01-25",
-    deliveryDate: "2025-01-26",
-    distance: 860,
-    weight: 42000,
-    equipment: "Dry Van",
-    equipmentType: "Dry Van",
-    carrierName: "ABC Transport",
-    mcNumber: "MC-987654",
-    notes: "Flexible on pickup time",
-    carrierRating: 4.8,
-    carrierLoads: 125,
-    onTimeRate: 96,
-    safetyScore: 94,
-    history: [
-      { action: "submitted", timestamp: "2025-01-23T10:30:00Z", note: "Bid submitted" },
-      { action: "viewed", timestamp: "2025-01-23T11:00:00Z", note: "Shipper viewed bid" },
-    ],
-  })),
-  getByLoad: protectedProcedure.input(z.object({ loadId: z.string() })).query(async () => [
-    { id: "b1", carrierId: "c1", carrierName: "ABC Transport", amount: 2450, status: "pending", carrierRating: 4.8, carrierMC: "MC-123456", ratePerMile: 2.85 },
-    { id: "b2", carrierId: "c2", carrierName: "FastHaul LLC", amount: 2380, status: "pending", carrierRating: 4.6, carrierMC: "MC-234567", ratePerMile: 2.77 },
-  ]),
-  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), status: z.string().optional() })).query(async () => [{ id: "b1", loadNumber: "LOAD-45900", amount: 2200, status: "accepted", date: "2025-01-20" }]),
-  getHistorySummary: protectedProcedure.query(async () => ({ total: 150, accepted: 85, rejected: 40, pending: 25, winRate: 56.7, totalBids: 150, totalValue: 425000 })),
+  getById: protectedProcedure.input(z.object({ bidId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return null;
+    
+    const bidId = parseInt(input.bidId || input.id || '0', 10);
+    const [bid] = await db.select().from(bids).where(eq(bids.id, bidId)).limit(1);
+    if (!bid) return null;
+    
+    const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+    const pickup = load?.pickupLocation as any || {};
+    const delivery = load?.deliveryLocation as any || {};
+    const distance = load?.distance ? parseFloat(String(load.distance)) : 0;
+    const amount = bid.amount ? parseFloat(String(bid.amount)) : 0;
+    
+    return {
+      id: String(bid.id),
+      loadId: String(bid.loadId),
+      loadNumber: load?.loadNumber || '',
+      amount,
+      status: bid.status,
+      submittedAt: bid.createdAt?.toISOString() || '',
+      ratePerMile: distance > 0 ? amount / distance : 0,
+      origin: { city: pickup.city || '', state: pickup.state || '' },
+      destination: { city: delivery.city || '', state: delivery.state || '' },
+      pickupDate: load?.pickupDate?.toISOString() || '',
+      deliveryDate: load?.deliveryDate?.toISOString() || '',
+      distance,
+      weight: load?.weight ? parseFloat(String(load.weight)) : 0,
+      equipment: load?.cargoType || 'general',
+      equipmentType: load?.cargoType || 'general',
+      carrierName: 'Carrier',
+      mcNumber: '',
+      notes: bid.notes || '',
+      carrierRating: 4.5,
+      carrierLoads: 0,
+      onTimeRate: 95,
+      safetyScore: 90,
+      history: [{ action: 'submitted', timestamp: bid.createdAt?.toISOString() || '', note: 'Bid submitted' }],
+    };
+  }),
+
+  getByLoad: protectedProcedure.input(z.object({ loadId: z.string() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    
+    const loadId = parseInt(input.loadId, 10);
+    const results = await db.select().from(bids).where(eq(bids.loadId, loadId)).orderBy(desc(bids.createdAt));
+    
+    return results.map(b => ({
+      id: String(b.id),
+      carrierId: String(b.carrierId),
+      carrierName: 'Carrier',
+      amount: b.amount ? parseFloat(String(b.amount)) : 0,
+      status: b.status,
+      carrierRating: 4.5,
+      carrierMC: '',
+      ratePerMile: 0,
+    }));
+  }),
+
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), status: z.string().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    
+    const results = await db
+      .select()
+      .from(bids)
+      .where(eq(bids.carrierId, ctx.user.id))
+      .orderBy(desc(bids.createdAt))
+      .limit(input?.limit || 20);
+    
+    const bidsWithLoads = await Promise.all(results.map(async (b) => {
+      const [load] = await db.select().from(loads).where(eq(loads.id, b.loadId)).limit(1);
+      return {
+        id: String(b.id),
+        loadNumber: load?.loadNumber || '',
+        amount: b.amount ? parseFloat(String(b.amount)) : 0,
+        status: b.status,
+        date: b.createdAt?.toISOString() || '',
+      };
+    }));
+    
+    return bidsWithLoads;
+  }),
+
+  getHistorySummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { total: 0, accepted: 0, rejected: 0, pending: 0, winRate: 0, totalBids: 0, totalValue: 0 };
+    
+    const [total] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.carrierId, ctx.user.id));
+    const [accepted] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, ctx.user.id), eq(bids.status, 'accepted')));
+    const [rejected] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, ctx.user.id), eq(bids.status, 'rejected')));
+    const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, ctx.user.id), eq(bids.status, 'pending')));
+    const [totalValue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` }).from(bids).where(eq(bids.carrierId, ctx.user.id));
+    
+    const totalCount = total?.count || 0;
+    const acceptedCount = accepted?.count || 0;
+    const winRate = totalCount > 0 ? (acceptedCount / totalCount) * 100 : 0;
+    
+    return {
+      total: totalCount,
+      accepted: acceptedCount,
+      rejected: rejected?.count || 0,
+      pending: pending?.count || 0,
+      winRate: Math.round(winRate * 10) / 10,
+      totalBids: totalCount,
+      totalValue: totalValue?.sum || 0,
+    };
+  }),
   getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", loadId: "L-001", origin: "Houston", destination: "Dallas", amount: 2350, analysis: "good", createdAt: "2025-01-22" }]),
   submit: protectedProcedure.input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() })).mutation(async () => ({ success: true, bidId: "bid_123" })),
   accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),

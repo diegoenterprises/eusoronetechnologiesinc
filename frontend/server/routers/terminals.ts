@@ -106,13 +106,38 @@ export const terminalsRouter = router({
    */
   getTodayAppointments: protectedProcedure
     .input(z.object({ limit: z.number().optional() }).optional())
-    .query(async () => {
-      return [
-        { id: "apt_001", time: "08:00", carrier: "ABC Transport", carrierName: "ABC Transport", driver: "Mike Johnson", driverName: "Mike Johnson", truckNumber: "TRK-101", product: "Unleaded", quantity: 8500, rackNumber: "Rack 1", status: "completed" },
-        { id: "apt_002", time: "09:00", carrier: "XYZ Carriers", carrierName: "XYZ Carriers", driver: "Sarah Williams", driverName: "Sarah Williams", truckNumber: "TRK-205", product: "Diesel", quantity: 7200, rackNumber: "Rack 2", status: "loading" },
-        { id: "apt_003", time: "10:00", carrier: "FastHaul LLC", carrierName: "FastHaul LLC", driver: "Tom Brown", driverName: "Tom Brown", truckNumber: "TRK-312", product: "Premium", quantity: 6800, rackNumber: "Rack 1", status: "checked_in" },
-        { id: "apt_004", time: "11:00", carrier: "QuickLoad Inc", carrierName: "QuickLoad Inc", driver: "Lisa Chen", driverName: "Lisa Chen", truckNumber: "TRK-418", product: "Unleaded", quantity: 8000, rackNumber: "Rack 3", status: "scheduled" },
-      ];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const apptList = await db.select().from(appointments)
+          .where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)))
+          .orderBy(appointments.scheduledAt)
+          .limit(input?.limit || 20);
+
+        return apptList.map(a => ({
+          id: `apt_${a.id}`,
+          time: a.scheduledAt?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '',
+          carrier: 'Carrier',
+          carrierName: 'Carrier',
+          driver: 'Driver',
+          driverName: 'Driver',
+          truckNumber: '',
+          product: a.appointmentType || 'General',
+          quantity: 0,
+          rackNumber: 'Rack 1',
+          status: a.status,
+        }));
+      } catch (error) {
+        console.error('[Terminals] getTodayAppointments error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -144,11 +169,22 @@ export const terminalsRouter = router({
    */
   getTerminals: protectedProcedure
     .query(async () => {
-      return [
-        { id: "t1", name: "Houston Terminal", location: "Houston, TX", racks: 4, status: "active" },
-        { id: "t2", name: "Dallas Terminal", location: "Dallas, TX", racks: 3, status: "active" },
-        { id: "t3", name: "Austin Terminal", location: "Austin, TX", racks: 2, status: "active" },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const terminalList = await db.select().from(terminals).limit(50);
+        return terminalList.map(t => ({
+          id: `t_${t.id}`,
+          name: t.name,
+          location: t.city && t.state ? `${t.city}, ${t.state}` : 'Unknown',
+          racks: 4,
+          status: t.isActive ? 'active' : 'inactive',
+        }));
+      } catch (error) {
+        console.error('[Terminals] getTerminals error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -171,7 +207,35 @@ export const terminalsRouter = router({
   getAppointmentStats: protectedProcedure
     .input(z.object({ date: z.string().optional() }))
     .query(async () => {
-      return { total: 24, completed: 8, inProgress: 3, scheduled: 12, cancelled: 1, confirmed: 12, pending: 5, checkedIn: 3 };
+      const db = await getDb();
+      if (!db) return { total: 0, completed: 0, inProgress: 0, scheduled: 0, cancelled: 0, confirmed: 0, pending: 0, checkedIn: 0 };
+
+      try {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'completed')));
+        const [scheduled] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'scheduled')));
+        const [checkedIn] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'checked_in')));
+        const [cancelled] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'cancelled')));
+
+        return {
+          total: total?.count || 0,
+          completed: completed?.count || 0,
+          inProgress: checkedIn?.count || 0,
+          scheduled: scheduled?.count || 0,
+          cancelled: cancelled?.count || 0,
+          confirmed: scheduled?.count || 0,
+          pending: 0,
+          checkedIn: checkedIn?.count || 0,
+        };
+      } catch (error) {
+        console.error('[Terminals] getAppointmentStats error:', error);
+        return { total: 0, completed: 0, inProgress: 0, scheduled: 0, cancelled: 0, confirmed: 0, pending: 0, checkedIn: 0 };
+      }
     }),
 
   /**

@@ -88,23 +88,44 @@ export const shippersRouter = router({
    * Get loads requiring attention
    */
   getLoadsRequiringAttention: protectedProcedure
-    .query(async () => {
-      return [
-        {
-          id: "load_003",
-          loadNumber: "LOAD-45918",
-          issue: "Delayed pickup",
-          severity: "warning",
-          message: "Carrier delayed 30 minutes at origin",
-        },
-        {
-          id: "load_004",
-          loadNumber: "LOAD-45915",
-          issue: "Missing documentation",
-          severity: "critical",
-          message: "BOL not uploaded",
-        },
-      ];
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const alerts: Array<{ id: string; loadNumber: string; issue: string; severity: string; message: string }> = [];
+
+        // Get loads with pending bids that need review
+        const loadsWithBids = await db.select().from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'bidding'))).limit(5);
+        loadsWithBids.forEach(l => {
+          alerts.push({
+            id: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            issue: 'Pending bids',
+            severity: 'warning',
+            message: 'Bids awaiting review',
+          });
+        });
+
+        // Get posted loads with no bids after 24 hours
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const staleLoads = await db.select().from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'posted'), sql`${loads.createdAt} <= ${oneDayAgo.toISOString()}`)).limit(5);
+        staleLoads.forEach(l => {
+          alerts.push({
+            id: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            issue: 'No bids',
+            severity: 'critical',
+            message: 'No bids received after 24 hours',
+          });
+        });
+
+        return alerts;
+      } catch (error) {
+        console.error('[Shippers] getLoadsRequiringAttention error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -112,27 +133,31 @@ export const shippersRouter = router({
    */
   getRecentLoads: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(5) }))
-    .query(async () => {
-      return [
-        {
-          id: "load_010",
-          loadNumber: "LOAD-45910",
-          status: "delivered",
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          deliveredAt: "2025-01-23",
-          rate: 2300,
-        },
-        {
-          id: "load_011",
-          loadNumber: "LOAD-45908",
-          status: "delivered",
-          origin: "Port Arthur, TX",
-          destination: "Austin, TX",
-          deliveredAt: "2025-01-22",
-          rate: 2650,
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const recentLoads = await db.select().from(loads).where(eq(loads.shipperId, userId)).orderBy(desc(loads.createdAt)).limit(input.limit);
+
+        return recentLoads.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          return {
+            id: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            status: l.status,
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            deliveredAt: l.actualDeliveryDate?.toISOString().split('T')[0] || l.deliveryDate?.toISOString().split('T')[0] || '',
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+          };
+        });
+      } catch (error) {
+        console.error('[Shippers] getRecentLoads error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -140,14 +165,31 @@ export const shippersRouter = router({
    */
   getDashboardSummary: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        activeLoads: 8,
-        pendingBids: 12,
-        deliveredThisWeek: 15,
-        ratePerMile: 3.45,
-        onTimeRate: 96,
-        totalSpendThisMonth: 89500,
-      };
+      const db = await getDb();
+      if (!db) return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, ratePerMile: 0, onTimeRate: 0, totalSpendThisMonth: 0 };
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+        const [activeLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`${loads.status} IN ('posted', 'assigned', 'in_transit')`));
+        const [pendingBids] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.status, 'pending'));
+        const [deliveredThisWeek] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered'), gte(loads.deliveryDate, weekAgo)));
+        const [monthSpend] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, monthStart)));
+
+        return {
+          activeLoads: activeLoads?.count || 0,
+          pendingBids: pendingBids?.count || 0,
+          deliveredThisWeek: deliveredThisWeek?.count || 0,
+          ratePerMile: 0,
+          onTimeRate: 95,
+          totalSpendThisMonth: monthSpend?.total || 0,
+        };
+      } catch (error) {
+        console.error('[Shippers] getDashboardSummary error:', error);
+        return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, ratePerMile: 0, onTimeRate: 0, totalSpendThisMonth: 0 };
+      }
     }),
 
   /**
@@ -160,70 +202,55 @@ export const shippersRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
-      const loads = [
-        {
-          id: "load_001",
-          loadNumber: "LOAD-45920",
-          status: "in_transit",
-          origin: { city: "Houston", state: "TX" },
-          destination: { city: "Dallas", state: "TX" },
-          pickupDate: "2025-01-23",
-          deliveryDate: "2025-01-23",
-          equipment: "tanker",
-          weight: 42000,
-          hazmat: true,
-          hazmatClass: "3",
-          product: "Gasoline",
-          carrier: { id: "car_001", name: "ABC Transport LLC" },
-          driver: { id: "d1", name: "Mike Johnson" },
-          rate: 2450,
-          currentLocation: { city: "Waco", state: "TX" },
-          eta: "2 hours",
-        },
-        {
-          id: "load_002",
-          loadNumber: "LOAD-45921",
-          status: "posted",
-          origin: { city: "Beaumont", state: "TX" },
-          destination: { city: "San Antonio", state: "TX" },
-          pickupDate: "2025-01-25",
-          deliveryDate: "2025-01-25",
-          equipment: "tanker",
-          weight: 45000,
-          hazmat: true,
-          hazmatClass: "3",
-          product: "Diesel",
-          rate: 2800,
-          bidsReceived: 5,
-        },
-        {
-          id: "load_003",
-          loadNumber: "LOAD-45918",
-          status: "delivered",
-          origin: { city: "Port Arthur", state: "TX" },
-          destination: { city: "Austin", state: "TX" },
-          pickupDate: "2025-01-22",
-          deliveryDate: "2025-01-22",
-          equipment: "tanker",
-          weight: 40000,
-          hazmat: true,
-          hazmatClass: "3",
-          product: "Jet Fuel",
-          carrier: { id: "car_002", name: "FastHaul LLC" },
-          rate: 2650,
-          deliveredAt: "2025-01-22T16:30:00Z",
-        },
-      ];
+      const db = await getDb();
+      if (!db) return { loads: [], total: 0 };
 
-      let filtered = loads;
-      if (input.status) {
-        filtered = filtered.filter(l => l.status === input.status);
+      try {
+        const userId = ctx.user?.id || 0;
+        let query = db.select().from(loads).where(eq(loads.shipperId, userId)).$dynamic();
+
+        if (input.status) {
+          query = query.where(eq(loads.status, input.status));
+        }
+
+        const [totalResult] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
+        const loadList = await query.orderBy(desc(loads.createdAt)).limit(input.limit).offset(input.offset);
+
+        const mappedLoads = loadList.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          const current = l.currentLocation as any || {};
+          return {
+            id: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            status: l.status,
+            origin: { city: pickup.city || '', state: pickup.state || '' },
+            destination: { city: delivery.city || '', state: delivery.state || '' },
+            pickupDate: l.pickupDate?.toISOString().split('T')[0] || '',
+            deliveryDate: l.deliveryDate?.toISOString().split('T')[0] || '',
+            equipment: l.cargoType || 'general',
+            weight: l.weight ? parseFloat(String(l.weight)) : 0,
+            hazmat: l.cargoType === 'hazmat',
+            hazmatClass: l.hazmatClass || null,
+            product: l.cargoType || '',
+            carrier: l.carrierId ? { id: `car_${l.carrierId}`, name: 'Carrier' } : null,
+            driver: l.driverId ? { id: `d_${l.driverId}`, name: 'Driver' } : null,
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            currentLocation: current.city ? { city: current.city, state: current.state || '' } : null,
+            eta: l.deliveryDate ? 'On Schedule' : 'TBD',
+            bidsReceived: 0,
+            deliveredAt: l.actualDeliveryDate?.toISOString() || null,
+          };
+        });
+
+        return {
+          loads: mappedLoads,
+          total: totalResult?.count || 0,
+        };
+      } catch (error) {
+        console.error('[Shippers] getMyLoads error:', error);
+        return { loads: [], total: 0 };
       }
-
-      return {
-        loads: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
     }),
 
   /**
@@ -231,22 +258,41 @@ export const shippersRouter = router({
    */
   getLoadsAttentionDetails: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        {
-          loadId: "load_002",
-          loadNumber: "LOAD-45921",
-          issue: "pending_bids",
-          message: "5 bids awaiting review",
-          priority: "high",
-        },
-        {
-          loadId: "load_004",
-          loadNumber: "LOAD-45922",
-          issue: "no_bids",
-          message: "No bids received after 24 hours",
-          priority: "medium",
-        },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = ctx.user?.id || 0;
+        const alerts: Array<{ loadId: string; loadNumber: string; issue: string; message: string; priority: string }> = [];
+
+        const loadsWithBids = await db.select().from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'bidding'))).limit(5);
+        loadsWithBids.forEach(l => {
+          alerts.push({
+            loadId: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            issue: 'pending_bids',
+            message: 'Bids awaiting review',
+            priority: 'high',
+          });
+        });
+
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const staleLoads = await db.select().from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'posted'), sql`${loads.createdAt} <= ${oneDayAgo.toISOString()}`)).limit(5);
+        staleLoads.forEach(l => {
+          alerts.push({
+            loadId: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            issue: 'no_bids',
+            message: 'No bids received after 24 hours',
+            priority: 'medium',
+          });
+        });
+
+        return alerts;
+      } catch (error) {
+        console.error('[Shippers] getLoadsAttentionDetails error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -255,41 +301,32 @@ export const shippersRouter = router({
   getBidsForLoad: protectedProcedure
     .input(z.object({ loadId: z.string() }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "bid_001",
-          carrierId: "car_001",
-          carrierName: "ABC Transport LLC",
-          dotNumber: "1234567",
-          safetyScore: 92,
-          amount: 2350,
-          transitTime: "8 hours",
-          submittedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          message: "Available immediately with hazmat certified driver",
-          recommended: true,
-        },
-        {
-          id: "bid_002",
-          carrierId: "car_002",
-          carrierName: "FastHaul LLC",
-          dotNumber: "2345678",
-          safetyScore: 88,
-          amount: 2450,
-          transitTime: "7 hours",
-          submittedAt: new Date(Date.now() - 1.5 * 60 * 60 * 1000).toISOString(),
-          message: "Expedited delivery available",
-        },
-        {
-          id: "bid_003",
-          carrierId: "car_003",
-          carrierName: "SafeHaul Transport",
-          dotNumber: "3456789",
-          safetyScore: 90,
-          amount: 2280,
-          transitTime: "9 hours",
-          submittedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const loadId = parseInt(input.loadId.replace('load_', ''), 10) || parseInt(input.loadId, 10);
+        const bidList = await db.select().from(bids).where(eq(bids.loadId, loadId)).orderBy(desc(bids.createdAt));
+
+        return await Promise.all(bidList.map(async (b, idx) => {
+          const [carrier] = await db.select().from(companies).where(eq(companies.id, b.carrierId)).limit(1);
+          return {
+            id: `bid_${b.id}`,
+            carrierId: `car_${b.carrierId}`,
+            carrierName: carrier?.name || 'Carrier',
+            dotNumber: carrier?.dotNumber || '',
+            safetyScore: 90,
+            amount: b.amount ? parseFloat(String(b.amount)) : 0,
+            transitTime: '8 hours',
+            submittedAt: b.createdAt?.toISOString() || '',
+            message: b.notes || '',
+            recommended: idx === 0,
+          };
+        }));
+      } catch (error) {
+        console.error('[Shippers] getBidsForLoad error:', error);
+        return [];
+      }
     }),
 
   /**

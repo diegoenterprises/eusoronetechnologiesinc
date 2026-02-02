@@ -4,10 +4,10 @@
  */
 
 import { z } from "zod";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { vehicles, loads } from "../../drizzle/schema";
+import { vehicles, loads, fuelTransactions, users } from "../../drizzle/schema";
 
 const fuelTypeSchema = z.enum(["diesel", "def", "gasoline"]);
 
@@ -16,17 +16,32 @@ export const fuelRouter = router({
    * Get summary for FuelManagement page
    */
   getSummary: protectedProcedure
-    .query(async () => {
-      return {
-        totalGallons: 4250,
-        totalSpent: 15862.50,
-        avgPrice: 3.73,
-        thisMonthGallons: 1850,
-        thisMonthSpent: 6845.50,
-        mpgAvg: 6.8,
-        avgMpg: 6.8,
-        avgPricePerGallon: 3.73,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalGallons: 0, totalSpent: 0, avgPrice: 0, thisMonthGallons: 0, thisMonthSpent: 0, mpgAvg: 0, avgMpg: 0, avgPricePerGallon: 0 };
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [totals] = await db.select({
+          totalGallons: sql<number>`SUM(gallons)`,
+          totalSpent: sql<number>`SUM(totalAmount)`,
+          avgPrice: sql<number>`AVG(pricePerGallon)`,
+        }).from(fuelTransactions).where(eq(fuelTransactions.companyId, companyId));
+
+        return {
+          totalGallons: Math.round(parseFloat(String(totals?.totalGallons || 0))),
+          totalSpent: parseFloat(String(totals?.totalSpent || 0)),
+          avgPrice: parseFloat(String(totals?.avgPrice || 0)).toFixed(2),
+          thisMonthGallons: Math.round(parseFloat(String(totals?.totalGallons || 0))),
+          thisMonthSpent: parseFloat(String(totals?.totalSpent || 0)),
+          mpgAvg: 6.8,
+          avgMpg: 6.8,
+          avgPricePerGallon: parseFloat(String(totals?.avgPrice || 0)).toFixed(2),
+        };
+      } catch (error) {
+        console.error('[Fuel] getSummary error:', error);
+        return { totalGallons: 0, totalSpent: 0, avgPrice: 0, thisMonthGallons: 0, thisMonthSpent: 0, mpgAvg: 0, avgMpg: 0, avgPricePerGallon: 0 };
+      }
     }),
 
   /**
