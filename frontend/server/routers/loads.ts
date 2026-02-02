@@ -9,6 +9,13 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, bids, users, companies } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
+import {
+  emitLoadStatusChange,
+  emitBidReceived,
+  emitBidAwarded,
+  emitNotification,
+} from "../_core/websocket";
+import { WS_EVENTS } from "@shared/websocket-events";
 
 export const loadsRouter = router({
   /**
@@ -304,6 +311,17 @@ export const loadsRouter = router({
       });
 
       const insertedId = (result as any).insertId || 0;
+
+      // Emit real-time event for load creation
+      emitLoadStatusChange({
+        loadId: String(insertedId),
+        loadNumber,
+        previousStatus: '',
+        newStatus: 'draft',
+        timestamp: new Date().toISOString(),
+        updatedBy: String(ctx.user.id),
+      });
+
       return { success: true, loadId: Number(insertedId), id: Number(insertedId) };
     }),
 
@@ -385,7 +403,7 @@ export const bidsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      await db.insert(bids).values({
+      const result = await db.insert(bids).values({
         loadId: input.loadId,
         carrierId: ctx.user.id,
         amount: input.amount.toString(),
@@ -393,7 +411,38 @@ export const bidsRouter = router({
         status: "pending",
       });
 
-      return { success: true };
+      const bidId = (result as any).insertId || 0;
+
+      // Get load details for notification
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+
+      // Emit real-time bid received event
+      emitBidReceived({
+        bidId: String(bidId),
+        loadId: String(input.loadId),
+        loadNumber: load?.loadNumber || '',
+        carrierId: String(ctx.user.id),
+        carrierName: ctx.user.name || 'Carrier',
+        amount: input.amount,
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+      });
+
+      // Notify shipper of new bid
+      if (load?.shipperId) {
+        emitNotification(String(load.shipperId), {
+          id: `notif_${Date.now()}`,
+          type: 'bid_received',
+          title: 'New Bid Received',
+          message: `New bid of $${input.amount.toLocaleString()} received for load ${load.loadNumber}`,
+          priority: 'medium',
+          data: { loadId: String(input.loadId), bidId: String(bidId) },
+          actionUrl: `/loads/${input.loadId}/bids`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      return { success: true, bidId };
     }),
 
   /**
@@ -454,6 +503,52 @@ export const bidsRouter = router({
         .update(bids)
         .set(updateData)
         .where(eq(bids.id, input.bidId));
+
+      // Get bid and load details for notifications
+      const [bid] = await db.select().from(bids).where(eq(bids.id, input.bidId)).limit(1);
+      if (bid) {
+        const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+
+        if (input.status === 'accepted') {
+          // Emit bid awarded event
+          emitBidAwarded({
+            bidId: String(input.bidId),
+            loadId: String(bid.loadId),
+            loadNumber: load?.loadNumber || '',
+            carrierId: String(bid.carrierId),
+            carrierName: 'Carrier',
+            amount: Number(bid.amount),
+            status: 'accepted',
+            timestamp: new Date().toISOString(),
+          });
+
+          // Update load status to assigned
+          await db.update(loads).set({ 
+            status: 'assigned', 
+            carrierId: bid.carrierId 
+          }).where(eq(loads.id, bid.loadId));
+
+          emitLoadStatusChange({
+            loadId: String(bid.loadId),
+            loadNumber: load?.loadNumber || '',
+            previousStatus: load?.status || '',
+            newStatus: 'assigned',
+            timestamp: new Date().toISOString(),
+          });
+
+          // Notify carrier
+          emitNotification(String(bid.carrierId), {
+            id: `notif_${Date.now()}`,
+            type: 'bid_accepted',
+            title: 'Bid Accepted!',
+            message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`,
+            priority: 'high',
+            data: { loadId: String(bid.loadId), bidId: String(input.bidId) },
+            actionUrl: `/loads/${bid.loadId}`,
+            timestamp: new Date().toISOString(),
+          });
+        }
+      }
 
       return { success: true };
     }),

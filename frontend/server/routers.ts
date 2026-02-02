@@ -131,6 +131,7 @@ import { safetyAlertsRouter } from "./routers/safetyAlerts";
 import { zeunMechanicsRouter } from "./routers/zeunMechanics";
 import { runTicketsRouter } from "./routers/runTickets";
 import { negotiationsRouter } from "./routers/negotiations";
+import { integrationsRouter } from "./routers/integrations";
 
 export const appRouter = router({
   system: systemRouter,
@@ -220,6 +221,9 @@ export const appRouter = router({
 
   // Compliance Management
   compliance: complianceRouter,
+
+  // External Integrations (FMCSA, ELD, Clearinghouse)
+  integrations: integrationsRouter,
 
   // Training Management
   training: trainingRouter,

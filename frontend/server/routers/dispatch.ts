@@ -10,6 +10,8 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { drivers, loads, users } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
+import { emitDispatchEvent, emitDriverStatusChange, emitLoadStatusChange, emitNotification } from "../_core/websocket";
+import { WS_EVENTS } from "@shared/websocket-events";
 
 const loadStatusSchema = z.enum([
   "unassigned", "assigned", "en_route_pickup", "at_pickup", 
@@ -349,6 +351,42 @@ export const dispatchRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const companyId = String(ctx.user?.companyId || 0);
+
+      // Emit dispatch event
+      emitDispatchEvent(companyId, {
+        loadId: input.loadId,
+        loadNumber: `LOAD-${input.loadId}`,
+        driverId: input.driverId,
+        vehicleId: input.vehicleId,
+        eventType: WS_EVENTS.DISPATCH_ASSIGNMENT_NEW,
+        priority: 'normal',
+        message: `Driver assigned to load`,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Emit load status change
+      emitLoadStatusChange({
+        loadId: input.loadId,
+        loadNumber: `LOAD-${input.loadId}`,
+        previousStatus: 'unassigned',
+        newStatus: 'assigned',
+        timestamp: new Date().toISOString(),
+        updatedBy: String(ctx.user?.id),
+      });
+
+      // Notify driver
+      emitNotification(input.driverId, {
+        id: `notif_${Date.now()}`,
+        type: 'assignment',
+        title: 'New Load Assignment',
+        message: `You have been assigned to a new load`,
+        priority: 'high',
+        data: { loadId: input.loadId },
+        actionUrl: `/driver/loads/${input.loadId}`,
+        timestamp: new Date().toISOString(),
+      });
+
       return {
         success: true,
         loadId: input.loadId,

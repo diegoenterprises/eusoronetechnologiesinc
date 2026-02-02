@@ -8,6 +8,8 @@ import { z } from "zod";
 import { eq, and, desc, gte, lte, sql, isNull, or } from "drizzle-orm";
 import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { emitGamificationEvent, emitNotification } from "../_core/websocket";
+import { WS_EVENTS } from "@shared/websocket-events";
 import {
   users,
   drivers,
@@ -744,6 +746,38 @@ export const gamificationRouter = router({
         claimedAt: new Date(),
       });
 
+      // Emit gamification event for mission completion
+      emitGamificationEvent(
+        String(userId),
+        WS_EVENTS.MISSION_COMPLETED,
+        {
+          userId: String(userId),
+          eventType: 'mission_completed',
+          data: {
+            name: mission.name,
+            description: mission.description || '',
+            xpEarned: mission.xpReward || 0,
+            missionId: String(mission.id),
+            reward: {
+              type: mission.rewardType,
+              value: mission.rewardValue ? parseFloat(mission.rewardValue) : 0,
+            },
+          },
+          timestamp: new Date().toISOString(),
+        }
+      );
+
+      // Notify user
+      emitNotification(String(userId), {
+        id: `notif_${Date.now()}`,
+        type: 'mission_completed',
+        title: 'Mission Complete!',
+        message: `You completed "${mission.name}" and earned ${mission.xpReward || 0} XP!`,
+        priority: 'medium',
+        data: { missionId: String(mission.id) },
+        timestamp: new Date().toISOString(),
+      });
+
       return {
         success: true,
         reward: {
@@ -850,6 +884,22 @@ export const gamificationRouter = router({
           })
           .where(eq(gamificationProfiles.id, profile.id));
       }
+
+      // Emit crate opened event
+      emitGamificationEvent(
+        String(userId),
+        WS_EVENTS.CRATE_OPENED,
+        {
+          userId: String(userId),
+          eventType: 'crate_opened',
+          data: {
+            name: `${crate.crateType.charAt(0).toUpperCase() + crate.crateType.slice(1)} Crate`,
+            xpEarned: rates.xp,
+            reward: { type: 'miles', value: rates.miles },
+          },
+          timestamp: new Date().toISOString(),
+        }
+      );
 
       return {
         success: true,

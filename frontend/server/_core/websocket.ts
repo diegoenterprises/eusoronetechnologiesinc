@@ -2,10 +2,30 @@
  * WEBSOCKET SERVICE
  * Real-time communication for GPS tracking, messaging, and notifications
  * Based on user journey requirements for 30-second GPS updates
+ * Supports 140+ event types across all 12 user roles
  */
 
 import { Server as HTTPServer } from "http";
 import { IncomingMessage } from "http";
+import {
+  WS_EVENTS,
+  WS_CHANNELS,
+  WSEventType,
+  WSMessage,
+  LoadStatusPayload,
+  BidPayload,
+  GPSPayload,
+  HOSPayload,
+  NotificationPayload,
+  MessagePayload,
+  GamificationPayload,
+  CompliancePayload,
+  SafetyPayload,
+  TerminalPayload,
+  DispatchPayload,
+  FinancialPayload,
+  ZeunPayload,
+} from "@shared/websocket-events";
 
 // WebSocket types
 interface WSConnection {
@@ -374,14 +394,370 @@ class WebSocketService {
 // Singleton instance
 export const wsService = new WebSocketService();
 
-// Event types for frontend consumption
-export const WS_EVENTS = {
-  GPS_UPDATE: "gps_position",
-  NOTIFICATION: "notification",
-  LOAD_STATUS: "load_status_update",
-  EXCEPTION_ALERT: "exception_alert",
-  MESSAGE: "chat_message",
-  DRIVER_STATUS: "driver_status_update",
-  BAY_STATUS: "bay_status_update",
-  TANK_LEVEL: "tank_level_update",
-} as const;
+// Re-export events from shared module
+export { WS_EVENTS, WS_CHANNELS } from "@shared/websocket-events";
+export type { WSEventType, WSMessage } from "@shared/websocket-events";
+
+// ============================================================================
+// EVENT EMITTER METHODS - For use by routers and services
+// ============================================================================
+
+/**
+ * Emit load status change event
+ */
+export function emitLoadStatusChange(payload: LoadStatusPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD(payload.loadId),
+    {
+      type: WS_EVENTS.LOAD_STATUS_CHANGED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit new bid received event
+ */
+export function emitBidReceived(payload: BidPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD_BIDS(payload.loadId),
+    {
+      type: WS_EVENTS.BID_RECEIVED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit GPS position update
+ */
+export function emitGPSUpdate(companyId: string, payload: GPSPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.FLEET(companyId),
+    {
+      type: WS_EVENTS.GPS_POSITION,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  // Also emit to load channel if applicable
+  if (payload.loadId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.LOAD_TRACKING(payload.loadId),
+      {
+        type: WS_EVENTS.GPS_POSITION,
+        data: payload,
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+}
+
+/**
+ * Emit HOS warning/violation
+ */
+export function emitHOSAlert(companyId: string, payload: HOSPayload): void {
+  const eventType = payload.violation 
+    ? WS_EVENTS.DRIVER_HOS_VIOLATION 
+    : WS_EVENTS.DRIVER_HOS_WARNING;
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH(companyId),
+    {
+      type: eventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DRIVER_HOS(payload.driverId),
+    {
+      type: eventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit notification to user
+ */
+export function emitNotification(userId: string, payload: NotificationPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.USER_NOTIFICATIONS(userId),
+    {
+      type: WS_EVENTS.NOTIFICATION_NEW,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit new message in conversation
+ */
+export function emitMessage(payload: MessagePayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.CONVERSATION(payload.conversationId),
+    {
+      type: WS_EVENTS.MESSAGE_NEW,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit gamification event
+ */
+export function emitGamificationEvent(
+  userId: string,
+  eventType: WSEventType,
+  payload: GamificationPayload
+): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.USER(userId),
+    {
+      type: eventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit compliance alert
+ */
+export function emitComplianceAlert(companyId: string, payload: CompliancePayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.COMPANY(companyId),
+    {
+      type: WS_EVENTS.COMPLIANCE_ALERT,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.COMPLIANCE_ALERTS,
+    {
+      type: WS_EVENTS.COMPLIANCE_ALERT,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit safety incident
+ */
+export function emitSafetyIncident(companyId: string, payload: SafetyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.COMPANY(companyId),
+    {
+      type: WS_EVENTS.SAFETY_INCIDENT_REPORTED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.SAFETY_ALERTS,
+    {
+      type: WS_EVENTS.SAFETY_ALERT,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit terminal event
+ */
+export function emitTerminalEvent(payload: TerminalPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.TERMINAL(payload.terminalId),
+    {
+      type: payload.eventType as WSEventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit dispatch event
+ */
+export function emitDispatchEvent(companyId: string, payload: DispatchPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH(companyId),
+    {
+      type: payload.eventType as WSEventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  if (payload.priority === 'urgent') {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.DISPATCH_UPDATES,
+      {
+        type: WS_EVENTS.DISPATCH_EXCEPTION,
+        data: payload,
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+}
+
+/**
+ * Emit financial event
+ */
+export function emitFinancialEvent(userId: string, payload: FinancialPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.USER(userId),
+    {
+      type: payload.type as WSEventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit Zeun Mechanics event
+ */
+export function emitZeunEvent(companyId: string, payload: ZeunPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.COMPANY(companyId),
+    {
+      type: WS_EVENTS.BREAKDOWN_REPORTED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  if (payload.driverId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.DRIVER(payload.driverId),
+      {
+        type: WS_EVENTS.BREAKDOWN_UPDATED,
+        data: payload,
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+}
+
+/**
+ * Emit vehicle event
+ */
+export function emitVehicleEvent(
+  companyId: string,
+  vehicleId: string,
+  eventType: WSEventType,
+  data: Record<string, unknown>
+): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.FLEET(companyId),
+    {
+      type: eventType,
+      data: { vehicleId, ...data },
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.VEHICLE(vehicleId),
+    {
+      type: eventType,
+      data: { vehicleId, ...data },
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit driver status change
+ */
+export function emitDriverStatusChange(
+  companyId: string,
+  driverId: string,
+  status: string,
+  data: Record<string, unknown> = {}
+): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DISPATCH(companyId),
+    {
+      type: WS_EVENTS.DRIVER_STATUS_CHANGED,
+      data: { driverId, status, ...data },
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.DRIVER(driverId),
+    {
+      type: WS_EVENTS.DRIVER_STATUS_CHANGED,
+      data: { driverId, status, ...data },
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit bid awarded event
+ */
+export function emitBidAwarded(payload: BidPayload): void {
+  // Notify the winning carrier
+  wsService.broadcastToChannel(
+    WS_CHANNELS.COMPANY(payload.carrierId),
+    {
+      type: WS_EVENTS.BID_AWARDED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  // Notify all bidders on the load
+  wsService.broadcastToChannel(
+    WS_CHANNELS.LOAD_BIDS(payload.loadId),
+    {
+      type: WS_EVENTS.BID_AWARDED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit escort job available
+ */
+export function emitEscortJobAvailable(data: Record<string, unknown>): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.ESCORT_JOBS,
+    {
+      type: WS_EVENTS.ESCORT_JOB_AVAILABLE,
+      data,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit system announcement
+ */
+export function emitSystemAnnouncement(data: { title: string; message: string; priority: string }): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.SYSTEM_ANNOUNCEMENTS,
+    {
+      type: WS_EVENTS.ANNOUNCEMENT_NEW,
+      data,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}

@@ -9,6 +9,8 @@ import { eq, and, desc } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, vehicles, users, companies, gpsTracking } from "../../drizzle/schema";
+import { emitGPSUpdate, wsService, WS_CHANNELS } from "../_core/websocket";
+import { WS_EVENTS } from "@shared/websocket-events";
 
 export const trackingRouter = router({
   /**
