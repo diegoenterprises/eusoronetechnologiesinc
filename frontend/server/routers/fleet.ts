@@ -406,31 +406,60 @@ export const fleetRouter = router({
 
   /**
    * Get vehicle locations (real-time)
+   * PRODUCTION-READY: Fetches from database with GPS data
    */
   getLocations: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        {
-          vehicleId: "v1",
-          unitNumber: "TRK-101",
-          driverName: "Mike Johnson",
-          location: { lat: 29.7604, lng: -95.3698 },
-          heading: 45,
-          speed: 62,
-          status: "moving",
-          lastUpdate: new Date().toISOString(),
-        },
-        {
-          vehicleId: "v2",
-          unitNumber: "TRK-102",
-          driverName: "Sarah Williams",
-          location: { lat: 32.7767, lng: -96.7970 },
-          heading: 180,
-          speed: 0,
-          status: "stopped",
-          lastUpdate: new Date().toISOString(),
-        },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const companyId = ctx.user?.companyId || 0;
+
+        // Get vehicles with their current location from currentLocation JSON field
+        const vehicleList = await db.select({
+          id: vehicles.id,
+          licensePlate: vehicles.licensePlate,
+          vehicleType: vehicles.vehicleType,
+          status: vehicles.status,
+          currentLocation: vehicles.currentLocation,
+          currentDriverId: vehicles.currentDriverId,
+        })
+        .from(vehicles)
+        .where(eq(vehicles.companyId, companyId))
+        .limit(100);
+
+        // Get driver names for assigned vehicles
+        const driverIds = vehicleList.filter(v => v.currentDriverId).map(v => v.currentDriverId!);
+        const driverMap = new Map<number, string>();
+        
+        if (driverIds.length > 0) {
+          const driverList = await db.select({ id: users.id, name: users.name })
+            .from(users)
+            .where(sql`${users.id} IN (${driverIds.join(',')})`);
+          driverList.forEach(d => driverMap.set(d.id, d.name || 'Unknown'));
+        }
+
+        return vehicleList.map(v => {
+          const loc = (v.currentLocation as any) || {};
+          return {
+            vehicleId: String(v.id),
+            unitNumber: v.licensePlate || `VEH-${v.id}`,
+            driverName: v.currentDriverId ? driverMap.get(v.currentDriverId) || 'Unassigned' : 'Unassigned',
+            location: { 
+              lat: loc.latitude || loc.lat || 0, 
+              lng: loc.longitude || loc.lng || 0 
+            },
+            heading: loc.heading || 0,
+            speed: loc.speed || 0,
+            status: v.status === 'in_use' ? 'moving' : v.status === 'available' ? 'stopped' : 'idle',
+            lastUpdate: loc.timestamp || new Date().toISOString(),
+          };
+        });
+      } catch (error) {
+        console.error('[Fleet] getLocations error:', error);
+        return [];
+      }
     }),
 
   /**
