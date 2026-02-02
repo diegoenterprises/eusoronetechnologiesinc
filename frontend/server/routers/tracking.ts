@@ -394,4 +394,224 @@ export const trackingRouter = router({
         createdBy: ctx.user?.id,
       };
     }),
+
+  /**
+   * Get role-specific map locations for dashboard
+   * Returns trucks, jobs, terminals based on user role
+   */
+  getRoleMapLocations: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userRole = ctx.user?.role || 'SHIPPER';
+      const userId = ctx.user?.id;
+      const companyId = ctx.user?.companyId;
+
+      const locations: Array<{
+        id: string;
+        lat: number;
+        lng: number;
+        title: string;
+        type: 'truck' | 'job' | 'terminal' | 'warehouse' | 'driver';
+        status: 'active' | 'pending' | 'completed' | 'idle';
+        details?: string;
+        vehicleId?: string;
+        loadNumber?: string;
+        speed?: number;
+        heading?: number;
+        updatedAt?: string;
+      }> = [];
+
+      try {
+        if (!db) {
+          // Return empty array if no db connection
+          return { locations, lastUpdated: new Date().toISOString(), role: userRole };
+        }
+
+        // Get active loads with GPS data
+        const activeLoads = await db.select({
+          id: loads.id,
+          loadNumber: loads.loadNumber,
+          status: loads.status,
+          pickupLocation: loads.pickupLocation,
+          deliveryLocation: loads.deliveryLocation,
+          driverId: loads.driverId,
+          carrierId: loads.carrierId,
+          shipperId: loads.shipperId,
+        })
+        .from(loads)
+        .where(
+          userRole === 'SHIPPER' && companyId
+            ? eq(loads.shipperId, companyId)
+            : userRole === 'CARRIER' && companyId
+            ? eq(loads.carrierId, companyId)
+            : userRole === 'DRIVER' && userId
+            ? eq(loads.driverId, userId)
+            : undefined as any
+        )
+        .limit(50);
+
+        // Get GPS positions for drivers on active loads
+        for (const load of activeLoads) {
+          if (load.driverId) {
+            const [gps] = await db.select()
+              .from(gpsTracking)
+              .where(eq(gpsTracking.driverId, load.driverId))
+              .orderBy(desc(gpsTracking.timestamp))
+              .limit(1);
+
+            if (gps) {
+              const pickup = load.pickupLocation as any || {};
+              const delivery = load.deliveryLocation as any || {};
+              
+              locations.push({
+                id: `load-${load.id}`,
+                lat: Number(gps.latitude) || 0,
+                lng: Number(gps.longitude) || 0,
+                title: `Load ${load.loadNumber}`,
+                type: userRole === 'DRIVER' ? 'job' : 'truck',
+                status: load.status === 'in_transit' ? 'active' : 
+                        load.status === 'delivered' ? 'completed' : 'pending',
+                details: `${pickup.city || 'Origin'} → ${delivery.city || 'Destination'}`,
+                loadNumber: load.loadNumber,
+                speed: Number(gps.speed) || 0,
+                heading: Number(gps.heading) || 0,
+                updatedAt: gps.timestamp?.toISOString(),
+              });
+            }
+          }
+        }
+
+        // For BROKER role, also get available loads without GPS (pickup locations)
+        if (userRole === 'BROKER') {
+          const availableLoads = await db.select({
+            id: loads.id,
+            loadNumber: loads.loadNumber,
+            status: loads.status,
+            pickupLocation: loads.pickupLocation,
+          })
+          .from(loads)
+          .where(eq(loads.status, 'posted'))
+          .limit(20);
+
+          for (const load of availableLoads) {
+            const pickup = load.pickupLocation as any || {};
+            if (pickup.lat && pickup.lng) {
+              locations.push({
+                id: `available-${load.id}`,
+                lat: Number(pickup.lat),
+                lng: Number(pickup.lng),
+                title: `Load ${load.loadNumber}`,
+                type: 'job',
+                status: 'pending',
+                details: `Available - ${pickup.city || 'Pickup location'}`,
+                loadNumber: load.loadNumber,
+              });
+            }
+          }
+        }
+
+        // Get fleet vehicles for CARRIER/CATALYST
+        if ((userRole === 'CARRIER' || userRole === 'CATALYST') && companyId) {
+          const fleetVehicles = await db.select()
+            .from(vehicles)
+            .where(eq(vehicles.companyId, companyId))
+            .limit(30);
+
+          for (const vehicle of fleetVehicles) {
+            // Get latest GPS for each vehicle
+            const [gps] = await db.select()
+              .from(gpsTracking)
+              .where(eq(gpsTracking.vehicleId, vehicle.id))
+              .orderBy(desc(gpsTracking.timestamp))
+              .limit(1);
+
+            if (gps) {
+              const isMoving = Number(gps.speed) > 5;
+              locations.push({
+                id: `vehicle-${vehicle.id}`,
+                lat: Number(gps.latitude) || 0,
+                lng: Number(gps.longitude) || 0,
+                title: vehicle.unitNumber || `Vehicle ${vehicle.id.slice(0, 8)}`,
+                type: 'truck',
+                status: isMoving ? 'active' : 'idle',
+                details: isMoving ? `Moving at ${Math.round(Number(gps.speed))} mph` : 'Stopped',
+                vehicleId: vehicle.id,
+                speed: Number(gps.speed) || 0,
+                heading: Number(gps.heading) || 0,
+                updatedAt: gps.timestamp?.toISOString(),
+              });
+            }
+          }
+        }
+
+        return {
+          locations,
+          lastUpdated: new Date().toISOString(),
+          role: userRole,
+          totalCount: locations.length,
+        };
+      } catch (error) {
+        console.error('[Tracking] getRoleMapLocations error:', error);
+        return {
+          locations: [],
+          lastUpdated: new Date().toISOString(),
+          role: userRole,
+          error: 'Failed to fetch locations',
+        };
+      }
+    }),
+
+  /**
+   * Get real-time GPS updates stream
+   * Used by WebSocket for live map updates
+   */
+  getRealtimePositions: protectedProcedure
+    .input(z.object({
+      vehicleIds: z.array(z.string()).optional(),
+      loadIds: z.array(z.string()).optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { positions: [] };
+
+      const positions: Array<{
+        id: string;
+        lat: number;
+        lng: number;
+        speed: number;
+        heading: number;
+        timestamp: string;
+        type: 'vehicle' | 'load';
+      }> = [];
+
+      try {
+        // Get positions for specified vehicles
+        if (input.vehicleIds?.length) {
+          for (const vehicleId of input.vehicleIds) {
+            const [gps] = await db.select()
+              .from(gpsTracking)
+              .where(eq(gpsTracking.vehicleId, vehicleId))
+              .orderBy(desc(gpsTracking.timestamp))
+              .limit(1);
+
+            if (gps) {
+              positions.push({
+                id: vehicleId,
+                lat: Number(gps.latitude),
+                lng: Number(gps.longitude),
+                speed: Number(gps.speed) || 0,
+                heading: Number(gps.heading) || 0,
+                timestamp: gps.timestamp?.toISOString() || new Date().toISOString(),
+                type: 'vehicle',
+              });
+            }
+          }
+        }
+
+        return { positions, timestamp: new Date().toISOString() };
+      } catch (error) {
+        console.error('[Tracking] getRealtimePositions error:', error);
+        return { positions: [], error: 'Failed to fetch positions' };
+      }
+    }),
 });

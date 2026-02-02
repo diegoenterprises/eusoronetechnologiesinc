@@ -5,12 +5,26 @@ interface MapWidgetProps {
   role?: string;
   compact?: boolean;
   expanded?: boolean;
+  autoRefresh?: boolean;
+  refreshInterval?: number;
 }
 
-const MapWidget: React.FC<MapWidgetProps> = ({ role, compact = false, expanded = false }) => {
+const MapWidget: React.FC<MapWidgetProps> = ({ 
+  role, 
+  compact = false, 
+  expanded = false,
+  autoRefresh = true,
+  refreshInterval = 30000,
+}) => {
+  const height = compact ? 'h-[200px]' : expanded ? 'h-[600px]' : 'h-[400px]';
+  
   return (
-    <div className={`h-full ${compact ? 'min-h-[200px]' : 'min-h-[400px]'}`}>
-      <RoleBasedMap />
+    <div className="h-full w-full">
+      <RoleBasedMap 
+        height={height}
+        autoRefresh={autoRefresh}
+        refreshInterval={refreshInterval}
+      />
     </div>
   );
 };

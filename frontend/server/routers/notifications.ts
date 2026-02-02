@@ -44,6 +44,7 @@ export const notificationsRouter = router({
 
   /**
    * Get all notifications for current user
+   * PRODUCTION-READY: Fetches from database
    */
   list: protectedProcedure
     .input(z.object({
@@ -55,106 +56,174 @@ export const notificationsRouter = router({
       offset: z.number().default(0).optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
-      const notifications = [
-        {
-          id: "n1",
-          type: "alert",
-          category: "compliance",
-          title: "Medical Card Expiring",
-          message: "Driver Mike Johnson's medical card expires in 14 days.",
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          read: false,
-          archived: false,
-          actionUrl: "/compliance/dq-files",
-          actionLabel: "View DQ File",
-        },
-        {
-          id: "n2",
-          type: "action_required",
-          category: "loads",
-          title: "New Bid Received",
-          message: "ABC Transport submitted a bid of $2,450 for Load #45921",
-          timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-          read: false,
-          archived: false,
-          actionUrl: "/bids",
-          actionLabel: "Review Bid",
-        },
-        {
-          id: "n3",
-          type: "warning",
-          category: "safety",
-          title: "CSA Score Alert",
-          message: "Vehicle Maintenance BASIC score increased to 58%.",
-          timestamp: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
-          createdAt: new Date(Date.now() - 75 * 60 * 1000).toISOString(),
-          read: false,
-          archived: false,
-          actionUrl: "/safety/csa-scores",
-          actionLabel: "View CSA Scores",
-        },
-        {
-          id: "n4",
-          type: "success",
-          category: "loads",
-          title: "Load Delivered",
-          message: "Load #45918 successfully delivered. BOL signed.",
-          timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-          read: true,
-          archived: false,
-        },
-      ];
+      const db = await getDb();
+      const userId = ctx.user?.id;
 
-      let filtered = notifications.filter(n => n.archived === input?.archived);
-      
-      if (input?.category) {
-        filtered = filtered.filter(n => n.category === input?.category);
-      }
-      if (input?.read !== undefined) {
-        filtered = filtered.filter(n => n.read === input?.read);
+      if (!db || !userId) {
+        return { notifications: [], total: 0, hasMore: false };
       }
 
-      const result = filtered.slice(input?.offset || 0, (input?.offset || 0) + (input?.limit || 20)) as any;
-      result.notifications = result;
-      return result;
+      try {
+        // Build query conditions
+        const conditions = [eq(notifications.userId, userId)];
+        
+        if (input?.read !== undefined) {
+          conditions.push(eq(notifications.isRead, input.read));
+        }
+
+        // Get notifications from database
+        const notificationList = await db.select()
+          .from(notifications)
+          .where(and(...conditions))
+          .orderBy(desc(notifications.createdAt))
+          .limit(input?.limit || 50)
+          .offset(input?.offset || 0);
+
+        // Get total count
+        const [countResult] = await db.select({ count: sql<number>`count(*)` })
+          .from(notifications)
+          .where(and(...conditions));
+
+        const total = countResult?.count || 0;
+        const hasMore = (input?.offset || 0) + notificationList.length < total;
+
+        // Transform to expected format
+        // Note: category, actionUrl, actionLabel stored in 'data' JSON field
+        const formattedNotifications = notificationList.map(n => {
+          const data = (n.data as any) || {};
+          return {
+            id: String(n.id),
+            type: n.type || 'system',
+            category: data.category || 'system',
+            title: n.title,
+            message: n.message || '',
+            timestamp: n.createdAt?.toISOString() || new Date().toISOString(),
+            createdAt: n.createdAt?.toISOString() || new Date().toISOString(),
+            read: n.isRead,
+            archived: false,
+            actionUrl: data.actionUrl || undefined,
+            actionLabel: data.actionLabel || undefined,
+            metadata: data,
+          };
+        });
+
+        return {
+          notifications: formattedNotifications,
+          total,
+          hasMore,
+        };
+      } catch (error) {
+        console.error('[Notifications] list error:', error);
+        return { notifications: [], total: 0, hasMore: false };
+      }
     }),
 
   /**
    * Mark notification as read
+   * PRODUCTION-READY: Updates database
    */
   markAsRead: protectedProcedure
     .input(z.object({ id: z.string().optional(), notificationId: z.string().optional() }))
-    .mutation(async ({ input }) => {
-      return { success: true, id: input.id || input.notificationId };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const notificationId = input.id || input.notificationId;
+      
+      if (!db || !notificationId) {
+        return { success: false, id: notificationId };
+      }
+
+      try {
+        await db.update(notifications)
+          .set({ isRead: true })
+          .where(and(
+            eq(notifications.id, parseInt(notificationId)),
+            eq(notifications.userId, ctx.user?.id || 0)
+          ));
+        return { success: true, id: notificationId };
+      } catch (error) {
+        console.error('[Notifications] markAsRead error:', error);
+        return { success: false, id: notificationId, error: 'Failed to mark as read' };
+      }
     }),
 
   /**
    * Mark all notifications as read
+   * PRODUCTION-READY: Updates database
    */
   markAllAsRead: protectedProcedure
     .input(z.object({}).optional())
     .mutation(async ({ ctx }) => {
-      return { success: true, count: 5 };
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      
+      if (!db || !userId) {
+        return { success: false, count: 0 };
+      }
+
+      try {
+        const result = await db.update(notifications)
+          .set({ isRead: true })
+          .where(and(
+            eq(notifications.userId, userId),
+            eq(notifications.isRead, false)
+          ));
+        return { success: true, count: result[0]?.affectedRows || 0 };
+      } catch (error) {
+        console.error('[Notifications] markAllAsRead error:', error);
+        return { success: false, count: 0, error: 'Failed to mark all as read' };
+      }
     }),
 
   /**
-   * Archive notification
+   * Archive notification (delete from database)
+   * PRODUCTION-READY: Deletes from database
    */
   archive: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { success: true, id: input.id };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      
+      if (!db) {
+        return { success: false, id: input.id };
+      }
+
+      try {
+        await db.delete(notifications)
+          .where(and(
+            eq(notifications.id, parseInt(input.id)),
+            eq(notifications.userId, ctx.user?.id || 0)
+          ));
+        return { success: true, id: input.id };
+      } catch (error) {
+        console.error('[Notifications] archive error:', error);
+        return { success: false, id: input.id, error: 'Failed to archive' };
+      }
     }),
 
   /**
    * Delete notification
+   * PRODUCTION-READY: Deletes from database
    */
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      return { success: true, id: input.id };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      
+      if (!db) {
+        return { success: false, id: input.id };
+      }
+
+      try {
+        await db.delete(notifications)
+          .where(and(
+            eq(notifications.id, parseInt(input.id)),
+            eq(notifications.userId, ctx.user?.id || 0)
+          ));
+        return { success: true, id: input.id };
+      } catch (error) {
+        console.error('[Notifications] delete error:', error);
+        return { success: false, id: input.id, error: 'Failed to delete' };
+      }
     }),
 
   /**

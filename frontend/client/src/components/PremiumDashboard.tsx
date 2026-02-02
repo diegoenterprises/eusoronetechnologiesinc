@@ -27,6 +27,7 @@ import {
   ProfitMarginWidget, LoadMatchingWidget, DetentionTrackerWidget
 } from "./widgets/DynamicWidgets";
 import Weather from "./Weather";
+import RoleBasedMap from "./RoleBasedMap";
 import ReactGridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 
@@ -91,6 +92,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
   switch (widgetId) {
     // Universal widgets
     case 'weather': return <Weather />;
+    case 'live_map': return <RoleBasedMap height="h-full" />;
     case 'tasks': return <TasksWidget />;
     case 'notes': return <NotesWidget />;
     case 'notifications': return <NotificationsWidget />;

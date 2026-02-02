@@ -143,6 +143,16 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 6 }
   },
+  {
+    id: 'live_map',
+    name: 'Live Map',
+    description: 'Real-time location tracking with GPS updates',
+    icon: Map,
+    category: 'tracking',
+    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    defaultSize: { w: 12, h: 8 },
+    minSize: { w: 6, h: 6 }
+  },
 ];
 
 // SHIPPER-specific widgets (15 widgets)
