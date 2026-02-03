@@ -152,6 +152,8 @@ import AdminTelemetry from "./pages/AdminTelemetry";
 import ZeunBreakdown from "./pages/ZeunBreakdown";
 import ZeunFleetDashboard from "./pages/ZeunFleetDashboard";
 import ZeunAdminDashboard from "./pages/ZeunAdminDashboard";
+import SettingsIntegrations from "./pages/SettingsIntegrations";
+import InsuranceDashboard from "./pages/InsuranceDashboard";
 
 function Router() {
   // CLEAN ROUTING - NO DUPLICATES
@@ -381,6 +383,17 @@ function Router() {
       <Route path={"/zeun/breakdown"} component={() => (<DashboardLayout><ZeunBreakdownReport /></DashboardLayout>)} />
       <Route path={"/zeun/maintenance"} component={() => (<DashboardLayout><ZeunMaintenanceTracker /></DashboardLayout>)} />
       <Route path={"/zeun/providers"} component={() => (<DashboardLayout><ZeunProviderNetwork /></DashboardLayout>)} />
+
+      {/* ============================================ */}
+      {/* EUSOCONNECT & EUSOSHIELD ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/settings/integrations"} component={() => (<DashboardLayout><SettingsIntegrations /></DashboardLayout>)} />
+      <Route path={"/integrations"} component={() => (<DashboardLayout><SettingsIntegrations /></DashboardLayout>)} />
+      <Route path={"/insurance"} component={() => (<DashboardLayout><InsuranceDashboard /></DashboardLayout>)} />
+      <Route path={"/insurance/dashboard"} component={() => (<DashboardLayout><InsuranceDashboard /></DashboardLayout>)} />
+      <Route path={"/insurance/policies"} component={() => (<DashboardLayout><InsuranceDashboard /></DashboardLayout>)} />
+      <Route path={"/insurance/claims"} component={() => (<DashboardLayout><InsuranceDashboard /></DashboardLayout>)} />
+      <Route path={"/insurance/certificates"} component={() => (<DashboardLayout><InsuranceDashboard /></DashboardLayout>)} />
 
       {/* ============================================ */}
       {/* FALLBACK */}

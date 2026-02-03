@@ -5,9 +5,16 @@
 
 import { BaseIntegrationService } from "./BaseIntegrationService";
 import { CanopyConnectService } from "./CanopyConnectService";
+import { ISNetworldService } from "./ISNetworldService";
+import { VeriforceService } from "./VeriforceService";
+import { MotiveELDService } from "./MotiveELDService";
 
 const serviceRegistry: Record<string, new () => BaseIntegrationService> = {
   canopy_connect: CanopyConnectService,
+  isnetworld: ISNetworldService,
+  veriforce: VeriforceService,
+  keeptruckin: MotiveELDService,
+  motive: MotiveELDService,
 };
 
 /**
@@ -38,3 +45,6 @@ export function getImplementedProviders(): string[] {
 
 export { BaseIntegrationService } from "./BaseIntegrationService";
 export { CanopyConnectService } from "./CanopyConnectService";
+export { ISNetworldService } from "./ISNetworldService";
+export { VeriforceService } from "./VeriforceService";
+export { MotiveELDService } from "./MotiveELDService";
