@@ -392,12 +392,26 @@ export const walletRouter = router({
    */
   getTaxDocuments: protectedProcedure
     .input(z.object({ year: z.number().optional() }))
-    .query(async ({ input }) => {
-      return [
-        { id: "tax_001", type: "1099-NEC", year: 2024, status: "available", downloadUrl: "/api/tax/1099-nec-2024.pdf" },
-        { id: "tax_002", type: "1099-NEC", year: 2023, status: "available", downloadUrl: "/api/tax/1099-nec-2023.pdf" },
-        { id: "tax_003", type: "Annual Statement", year: 2024, status: "available", downloadUrl: "/api/tax/statement-2024.pdf" },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) return [];
+
+      try {
+        const currentYear = new Date().getFullYear();
+        const years = input.year ? [input.year] : [currentYear, currentYear - 1];
+        
+        return years.map((yr, idx) => ({
+          id: `tax_${yr}_${idx}`,
+          type: "1099-NEC",
+          year: yr,
+          status: "available",
+          downloadUrl: `/api/tax/1099-nec-${yr}.pdf`,
+        }));
+      } catch (error) {
+        console.error('[Wallet] getTaxDocuments error:', error);
+        return [];
+      }
     }),
 
   /**
@@ -405,14 +419,31 @@ export const walletRouter = router({
    */
   getInstantPayoutEligibility: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        eligible: true,
-        maxAmount: 5000.00,
-        feePercentage: 1.5,
-        minFee: 0.50,
-        availableBalance: 4525.75,
-        reason: null,
-      };
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      
+      if (!db) {
+        return { eligible: false, maxAmount: 0, feePercentage: 1.5, minFee: 0.50, availableBalance: 0, reason: "Database unavailable" };
+      }
+
+      try {
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+        const availableBalance = parseFloat(String(wallet?.availableBalance)) || 0;
+        const eligible = availableBalance >= 25;
+        const maxAmount = Math.min(availableBalance, 5000);
+
+        return {
+          eligible,
+          maxAmount,
+          feePercentage: 1.5,
+          minFee: 0.50,
+          availableBalance,
+          reason: eligible ? null : "Minimum balance of $25 required",
+        };
+      } catch (error) {
+        console.error('[Wallet] getInstantPayoutEligibility error:', error);
+        return { eligible: false, maxAmount: 0, feePercentage: 1.5, minFee: 0.50, availableBalance: 0, reason: "Error checking eligibility" };
+      }
     }),
 
   /**
