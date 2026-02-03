@@ -1,15 +1,23 @@
 /**
  * INTEGRATIONS ROUTER
  * tRPC procedures for external service integrations
- * FMCSA, ELD, Clearinghouse, and other third-party APIs
+ * FMCSA, ELD, Clearinghouse, EusoConnect providers and connections
  */
 
 import { z } from "zod";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { fmcsaService } from "../services/fmcsa";
 import { eldService } from "../services/eld";
 import { clearinghouseService } from "../services/clearinghouse";
 import { emitComplianceAlert, emitNotification } from "../_core/websocket";
+import { getDb } from "../db";
+import { 
+  integrationProviders, 
+  integrationConnections, 
+  integrationSyncLogs,
+  integrationSyncedRecords 
+} from "../../drizzle/schema";
 
 export const integrationsRouter = router({
   // ============================================================================
@@ -431,5 +439,477 @@ export const integrationsRouter = router({
         submitted: results.length,
         results,
       };
+    }),
+
+  // ============================================================================
+  // EUSOCONNECT - PROVIDERS
+  // ============================================================================
+
+  /**
+   * Get all available integration providers for user's role
+   */
+  getProviders: protectedProcedure
+    .input(z.object({
+      category: z.string().optional(),
+      status: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = getDb();
+        const userRole = ctx.user?.role || "DRIVER";
+        
+        let query = db.select().from(integrationProviders);
+        
+        const conditions = [];
+        
+        if (input?.category) {
+          conditions.push(eq(integrationProviders.category, input.category as any));
+        }
+        if (input?.status) {
+          conditions.push(eq(integrationProviders.status, input.status as any));
+        } else {
+          conditions.push(inArray(integrationProviders.status, ["active", "beta"]));
+        }
+        
+        const providers = await query
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
+          .orderBy(integrationProviders.category, integrationProviders.displayName);
+        
+        // Filter by role availability
+        return providers.filter(p => {
+          const roles = (p.availableForRoles as string[]) || [];
+          return roles.includes(userRole) || roles.includes("ALL");
+        });
+      } catch (error) {
+        console.error("[Integrations] getProviders error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Get provider by slug
+   */
+  getProviderBySlug: protectedProcedure
+    .input(z.object({ slug: z.string() }))
+    .query(async ({ input }) => {
+      try {
+        const db = getDb();
+        const [provider] = await db
+          .select()
+          .from(integrationProviders)
+          .where(eq(integrationProviders.slug, input.slug));
+        
+        return provider || null;
+      } catch (error) {
+        console.error("[Integrations] getProviderBySlug error:", error);
+        return null;
+      }
+    }),
+
+  /**
+   * Get providers by category
+   */
+  getProvidersByCategory: protectedProcedure
+    .input(z.object({ category: z.string() }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = getDb();
+        const userRole = ctx.user?.role || "DRIVER";
+        
+        const providers = await db
+          .select()
+          .from(integrationProviders)
+          .where(and(
+            eq(integrationProviders.category, input.category as any),
+            inArray(integrationProviders.status, ["active", "beta"])
+          ))
+          .orderBy(integrationProviders.displayName);
+        
+        return providers.filter(p => {
+          const roles = (p.availableForRoles as string[]) || [];
+          return roles.includes(userRole) || roles.includes("ALL");
+        });
+      } catch (error) {
+        console.error("[Integrations] getProvidersByCategory error:", error);
+        return [];
+      }
+    }),
+
+  // ============================================================================
+  // EUSOCONNECT - CONNECTIONS
+  // ============================================================================
+
+  /**
+   * Get all connections for company
+   */
+  getConnections: protectedProcedure
+    .input(z.object({
+      category: z.string().optional(),
+      status: z.string().optional(),
+    }).optional())
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = getDb();
+        const companyId = ctx.user?.companyId;
+        if (!companyId) return [];
+        
+        const connections = await db
+          .select({
+            connection: integrationConnections,
+            provider: integrationProviders,
+          })
+          .from(integrationConnections)
+          .leftJoin(integrationProviders, eq(integrationConnections.providerId, integrationProviders.id))
+          .where(eq(integrationConnections.companyId, companyId))
+          .orderBy(desc(integrationConnections.createdAt));
+        
+        return connections.map(c => ({
+          ...c.connection,
+          provider: c.provider,
+        }));
+      } catch (error) {
+        console.error("[Integrations] getConnections error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Get connection by provider slug
+   */
+  getConnectionByProvider: protectedProcedure
+    .input(z.object({ providerSlug: z.string() }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = getDb();
+        const companyId = ctx.user?.companyId;
+        if (!companyId) return null;
+        
+        const [connection] = await db
+          .select()
+          .from(integrationConnections)
+          .where(and(
+            eq(integrationConnections.companyId, companyId),
+            eq(integrationConnections.providerSlug, input.providerSlug)
+          ));
+        
+        return connection || null;
+      } catch (error) {
+        console.error("[Integrations] getConnectionByProvider error:", error);
+        return null;
+      }
+    }),
+
+  /**
+   * Connect with API key
+   */
+  connectWithApiKey: protectedProcedure
+    .input(z.object({
+      providerSlug: z.string(),
+      apiKey: z.string(),
+      apiSecret: z.string().optional(),
+      externalId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const companyId = ctx.user?.companyId;
+      const userId = ctx.user?.id;
+      if (!companyId || !userId) {
+        throw new Error("User must be associated with a company");
+      }
+      
+      // Get provider
+      const [provider] = await db
+        .select()
+        .from(integrationProviders)
+        .where(eq(integrationProviders.slug, input.providerSlug));
+      
+      if (!provider) {
+        throw new Error("Provider not found");
+      }
+      
+      // Check for existing connection
+      const [existing] = await db
+        .select()
+        .from(integrationConnections)
+        .where(and(
+          eq(integrationConnections.companyId, companyId),
+          eq(integrationConnections.providerSlug, input.providerSlug)
+        ));
+      
+      if (existing) {
+        // Update existing connection
+        await db
+          .update(integrationConnections)
+          .set({
+            apiKey: input.apiKey,
+            apiSecret: input.apiSecret || null,
+            externalId: input.externalId || null,
+            status: "connected",
+            lastConnectedAt: new Date(),
+            errorCount: 0,
+            lastError: null,
+          })
+          .where(eq(integrationConnections.id, existing.id));
+        
+        return { success: true, connectionId: existing.id, isNew: false };
+      }
+      
+      // Create new connection
+      const [newConnection] = await db
+        .insert(integrationConnections)
+        .values({
+          companyId,
+          userId,
+          providerId: provider.id,
+          providerSlug: input.providerSlug,
+          authType: provider.authType,
+          apiKey: input.apiKey,
+          apiSecret: input.apiSecret || null,
+          externalId: input.externalId || null,
+          status: "connected",
+          lastConnectedAt: new Date(),
+          connectedBy: userId,
+        })
+        .$returningId();
+      
+      // Emit event
+      emitNotification(String(userId), {
+        id: `notif_${Date.now()}`,
+        type: "integration_connected",
+        title: "Integration Connected",
+        message: `Successfully connected to ${provider.displayName}`,
+        priority: "medium",
+        data: { providerSlug: input.providerSlug },
+        timestamp: new Date().toISOString(),
+      });
+      
+      return { success: true, connectionId: newConnection.id, isNew: true };
+    }),
+
+  /**
+   * Initiate OAuth flow
+   */
+  initiateOAuth: protectedProcedure
+    .input(z.object({
+      providerSlug: z.string(),
+      externalId: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const companyId = ctx.user?.companyId;
+      const userId = ctx.user?.id;
+      if (!companyId || !userId) {
+        throw new Error("User must be associated with a company");
+      }
+      
+      // Get provider
+      const [provider] = await db
+        .select()
+        .from(integrationProviders)
+        .where(eq(integrationProviders.slug, input.providerSlug));
+      
+      if (!provider || !provider.oauthAuthorizeUrl) {
+        throw new Error("Provider not found or does not support OAuth");
+      }
+      
+      // Create state token
+      const state = Buffer.from(JSON.stringify({
+        companyId,
+        userId,
+        providerSlug: input.providerSlug,
+        externalId: input.externalId,
+        timestamp: Date.now(),
+      })).toString("base64");
+      
+      // Build OAuth URL
+      const params = new URLSearchParams({
+        client_id: process.env[`${input.providerSlug.toUpperCase()}_CLIENT_ID`] || "",
+        redirect_uri: `${process.env.APP_URL}/api/integrations/oauth/callback`,
+        response_type: "code",
+        state,
+      });
+      
+      if (provider.oauthScopes && Array.isArray(provider.oauthScopes)) {
+        params.append("scope", (provider.oauthScopes as string[]).join(" "));
+      }
+      
+      if (input.externalId && provider.requiresExternalId) {
+        params.append("company_id", input.externalId);
+      }
+      
+      const authUrl = `${provider.oauthAuthorizeUrl}?${params.toString()}`;
+      
+      return { authUrl, state };
+    }),
+
+  /**
+   * Disconnect integration
+   */
+  disconnect: protectedProcedure
+    .input(z.object({ providerSlug: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const companyId = ctx.user?.companyId;
+      if (!companyId) {
+        throw new Error("User must be associated with a company");
+      }
+      
+      await db
+        .update(integrationConnections)
+        .set({
+          status: "disconnected",
+          accessToken: null,
+          refreshToken: null,
+          apiKey: null,
+          apiSecret: null,
+        })
+        .where(and(
+          eq(integrationConnections.companyId, companyId),
+          eq(integrationConnections.providerSlug, input.providerSlug)
+        ));
+      
+      return { success: true };
+    }),
+
+  /**
+   * Trigger manual sync
+   */
+  triggerSync: protectedProcedure
+    .input(z.object({
+      providerSlug: z.string(),
+      dataTypes: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const companyId = ctx.user?.companyId;
+      const userId = ctx.user?.id;
+      if (!companyId) {
+        throw new Error("User must be associated with a company");
+      }
+      
+      // Get connection
+      const [connection] = await db
+        .select()
+        .from(integrationConnections)
+        .where(and(
+          eq(integrationConnections.companyId, companyId),
+          eq(integrationConnections.providerSlug, input.providerSlug)
+        ));
+      
+      if (!connection || connection.status !== "connected") {
+        throw new Error("Integration not connected");
+      }
+      
+      // Create sync log
+      const [syncLog] = await db
+        .insert(integrationSyncLogs)
+        .values({
+          connectionId: connection.id,
+          syncType: "manual",
+          status: "running",
+          triggeredBy: "user",
+          triggeredByUserId: userId,
+        })
+        .$returningId();
+      
+      // Update connection status
+      await db
+        .update(integrationConnections)
+        .set({ status: "syncing" })
+        .where(eq(integrationConnections.id, connection.id));
+      
+      // TODO: Trigger actual sync via service
+      // For now, simulate completion
+      setTimeout(async () => {
+        await db
+          .update(integrationSyncLogs)
+          .set({
+            status: "completed",
+            completedAt: new Date(),
+            durationMs: 1500,
+            recordsFetched: 0,
+            recordsCreated: 0,
+            recordsUpdated: 0,
+          })
+          .where(eq(integrationSyncLogs.id, syncLog.id));
+        
+        await db
+          .update(integrationConnections)
+          .set({
+            status: "connected",
+            lastSyncAt: new Date(),
+          })
+          .where(eq(integrationConnections.id, connection.id));
+      }, 1500);
+      
+      return { success: true, syncLogId: syncLog.id };
+    }),
+
+  /**
+   * Get sync history
+   */
+  getSyncHistory: protectedProcedure
+    .input(z.object({
+      providerSlug: z.string(),
+      limit: z.number().default(20),
+    }))
+    .query(async ({ ctx, input }) => {
+      try {
+        const db = getDb();
+        const companyId = ctx.user?.companyId;
+        if (!companyId) return [];
+        
+        // Get connection
+        const [connection] = await db
+          .select()
+          .from(integrationConnections)
+          .where(and(
+            eq(integrationConnections.companyId, companyId),
+            eq(integrationConnections.providerSlug, input.providerSlug)
+          ));
+        
+        if (!connection) return [];
+        
+        const logs = await db
+          .select()
+          .from(integrationSyncLogs)
+          .where(eq(integrationSyncLogs.connectionId, connection.id))
+          .orderBy(desc(integrationSyncLogs.startedAt))
+          .limit(input.limit);
+        
+        return logs;
+      } catch (error) {
+        console.error("[Integrations] getSyncHistory error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Get dashboard stats
+   */
+  getDashboardStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const db = getDb();
+        const companyId = ctx.user?.companyId;
+        if (!companyId) {
+          return { connected: 0, syncing: 0, errors: 0, totalRecords: 0 };
+        }
+        
+        const connections = await db
+          .select()
+          .from(integrationConnections)
+          .where(eq(integrationConnections.companyId, companyId));
+        
+        const connected = connections.filter(c => c.status === "connected").length;
+        const syncing = connections.filter(c => c.status === "syncing").length;
+        const errors = connections.filter(c => c.status === "error").length;
+        const totalRecords = connections.reduce((sum, c) => sum + (c.totalRecordsSynced || 0), 0);
+        
+        return { connected, syncing, errors, totalRecords };
+      } catch (error) {
+        console.error("[Integrations] getDashboardStats error:", error);
+        return { connected: 0, syncing: 0, errors: 0, totalRecords: 0 };
+      }
     }),
 });

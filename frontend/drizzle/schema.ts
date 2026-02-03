@@ -2916,6 +2916,566 @@ export const paymentMethods = mysqlTable(
   })
 );
 
+// ============================================================================
+// EUSOCONNECT - INTEGRATION PROVIDERS
+// ============================================================================
+
+export const integrationProviders = mysqlTable(
+  "integration_providers",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 100 }).notNull(),
+    slug: varchar("slug", { length: 50 }).notNull().unique(),
+    displayName: varchar("displayName", { length: 255 }).notNull(),
+    description: text("description"),
+    logoUrl: varchar("logoUrl", { length: 500 }),
+    websiteUrl: varchar("websiteUrl", { length: 500 }),
+    category: mysqlEnum("category", [
+      "insurance", "compliance", "terminal", "eld", "fuel", "banking", "government"
+    ]).notNull(),
+    subcategory: varchar("subcategory", { length: 50 }),
+    authType: mysqlEnum("authType", [
+      "oauth2", "api_key", "api_key_secret", "oauth2_with_id", "credentials"
+    ]).notNull(),
+    oauthAuthorizeUrl: varchar("oauthAuthorizeUrl", { length: 500 }),
+    oauthTokenUrl: varchar("oauthTokenUrl", { length: 500 }),
+    oauthScopes: json("oauthScopes").$type<string[]>().default([]),
+    requiresExternalId: boolean("requiresExternalId").default(false),
+    externalIdLabel: varchar("externalIdLabel", { length: 100 }),
+    externalIdFormat: varchar("externalIdFormat", { length: 100 }),
+    apiBaseUrl: varchar("apiBaseUrl", { length: 500 }),
+    apiVersion: varchar("apiVersion", { length: 20 }),
+    rateLimitRequests: int("rateLimitRequests").default(100),
+    rateLimitWindowSeconds: int("rateLimitWindowSeconds").default(60),
+    supportsWebhooks: boolean("supportsWebhooks").default(false),
+    webhookEvents: json("webhookEvents").$type<string[]>().default([]),
+    dataTypesAvailable: json("dataTypesAvailable").$type<string[]>().default([]),
+    syncFrequencyMinutes: int("syncFrequencyMinutes").default(60),
+    supportsRealtime: boolean("supportsRealtime").default(false),
+    fieldMappings: json("fieldMappings").$type<Record<string, string>>().default({}),
+    entityMappings: json("entityMappings").$type<Record<string, string>>().default({}),
+    status: mysqlEnum("status", ["active", "beta", "deprecated", "coming_soon"]).default("active"),
+    isPremium: boolean("isPremium").default(false),
+    availableForRoles: json("availableForRoles").$type<string[]>().default(["CARRIER", "SHIPPER", "BROKER"]),
+    setupInstructions: text("setupInstructions"),
+    documentationUrl: varchar("documentationUrl", { length: 500 }),
+    supportEmail: varchar("supportEmail", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    categoryIdx: index("provider_category_idx").on(table.category),
+    slugIdx: index("provider_slug_idx").on(table.slug),
+    statusIdx: index("provider_status_idx").on(table.status),
+  })
+);
+
+// ============================================================================
+// EUSOCONNECT - INTEGRATION CONNECTIONS
+// ============================================================================
+
+export const integrationConnections = mysqlTable(
+  "integration_connections",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    userId: int("userId").notNull(),
+    providerId: int("providerId").notNull(),
+    providerSlug: varchar("providerSlug", { length: 50 }).notNull(),
+    authType: varchar("authType", { length: 30 }).notNull(),
+    accessToken: text("accessToken"),
+    refreshToken: text("refreshToken"),
+    apiKey: text("apiKey"),
+    apiSecret: text("apiSecret"),
+    externalId: varchar("externalId", { length: 255 }),
+    tokenExpiresAt: timestamp("tokenExpiresAt"),
+    tokenScopes: json("tokenScopes").$type<string[]>().default([]),
+    status: mysqlEnum("status", [
+      "pending", "connected", "syncing", "error", "disconnected", "expired"
+    ]).default("pending"),
+    lastConnectedAt: timestamp("lastConnectedAt"),
+    lastSyncAt: timestamp("lastSyncAt"),
+    lastError: text("lastError"),
+    errorCount: int("errorCount").default(0),
+    syncEnabled: boolean("syncEnabled").default(true),
+    syncFrequencyMinutes: int("syncFrequencyMinutes"),
+    syncDataTypes: json("syncDataTypes").$type<string[]>().default([]),
+    totalRecordsSynced: int("totalRecordsSynced").default(0),
+    lastRecordsSynced: int("lastRecordsSynced").default(0),
+    webhookUrl: varchar("webhookUrl", { length: 500 }),
+    webhookSecret: varchar("webhookSecret", { length: 255 }),
+    webhookEnabled: boolean("webhookEnabled").default(false),
+    connectionMetadata: json("connectionMetadata").$type<Record<string, unknown>>().default({}),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    connectedBy: int("connectedBy"),
+  },
+  (table) => ({
+    companyIdx: index("connection_company_idx").on(table.companyId),
+    providerIdx: index("connection_provider_idx").on(table.providerSlug),
+    statusIdx: index("connection_status_idx").on(table.status),
+    companyProviderIdx: unique("connection_company_provider_idx").on(table.companyId, table.providerSlug),
+  })
+);
+
+// ============================================================================
+// EUSOCONNECT - SYNC LOGS
+// ============================================================================
+
+export const integrationSyncLogs = mysqlTable(
+  "integration_sync_logs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    connectionId: int("connectionId").notNull(),
+    syncType: mysqlEnum("syncType", ["full", "incremental", "webhook", "manual"]).notNull(),
+    dataType: varchar("dataType", { length: 50 }),
+    startedAt: timestamp("startedAt").defaultNow().notNull(),
+    completedAt: timestamp("completedAt"),
+    durationMs: int("durationMs"),
+    status: mysqlEnum("status", ["running", "completed", "failed", "partial"]).notNull(),
+    recordsFetched: int("recordsFetched").default(0),
+    recordsCreated: int("recordsCreated").default(0),
+    recordsUpdated: int("recordsUpdated").default(0),
+    recordsFailed: int("recordsFailed").default(0),
+    errorMessage: text("errorMessage"),
+    errorDetails: json("errorDetails").$type<Record<string, unknown>>(),
+    triggeredBy: varchar("triggeredBy", { length: 50 }),
+    triggeredByUserId: int("triggeredByUserId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    connectionIdx: index("sync_log_connection_idx").on(table.connectionId),
+    statusIdx: index("sync_log_status_idx").on(table.status),
+  })
+);
+
+// ============================================================================
+// EUSOCONNECT - SYNCED RECORDS
+// ============================================================================
+
+export const integrationSyncedRecords = mysqlTable(
+  "integration_synced_records",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    connectionId: int("connectionId").notNull(),
+    externalId: varchar("externalId", { length: 255 }).notNull(),
+    externalType: varchar("externalType", { length: 100 }).notNull(),
+    externalData: json("externalData").$type<Record<string, unknown>>(),
+    internalTable: varchar("internalTable", { length: 100 }).notNull(),
+    internalId: int("internalId").notNull(),
+    lastSyncedAt: timestamp("lastSyncedAt").defaultNow().notNull(),
+    syncStatus: mysqlEnum("syncStatus", ["synced", "pending", "conflict", "error"]).default("synced"),
+    syncDirection: mysqlEnum("syncDirection", ["inbound", "outbound", "bidirectional"]).default("inbound"),
+    externalUpdatedAt: timestamp("externalUpdatedAt"),
+    internalUpdatedAt: timestamp("internalUpdatedAt"),
+    hasConflict: boolean("hasConflict").default(false),
+    conflictResolution: varchar("conflictResolution", { length: 20 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    connectionIdx: index("synced_record_connection_idx").on(table.connectionId),
+    externalIdx: index("synced_record_external_idx").on(table.externalId, table.externalType),
+    internalIdx: index("synced_record_internal_idx").on(table.internalTable, table.internalId),
+    uniqueExternal: unique("synced_record_unique").on(table.connectionId, table.externalId, table.externalType),
+  })
+);
+
+// ============================================================================
+// EUSOCONNECT - WEBHOOKS
+// ============================================================================
+
+export const integrationWebhooks = mysqlTable(
+  "integration_webhooks",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    connectionId: int("connectionId"),
+    providerSlug: varchar("providerSlug", { length: 50 }).notNull(),
+    eventType: varchar("eventType", { length: 100 }).notNull(),
+    payload: json("payload").$type<Record<string, unknown>>().notNull(),
+    headers: json("headers").$type<Record<string, string>>(),
+    status: mysqlEnum("status", ["received", "processing", "processed", "failed", "ignored"]).default("received"),
+    processedAt: timestamp("processedAt"),
+    errorMessage: text("errorMessage"),
+    signatureValid: boolean("signatureValid"),
+    receivedAt: timestamp("receivedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    connectionIdx: index("webhook_connection_idx").on(table.connectionId),
+    providerIdx: index("webhook_provider_idx").on(table.providerSlug),
+    statusIdx: index("webhook_status_idx").on(table.status),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - INSURANCE PROVIDERS
+// ============================================================================
+
+export const insuranceProviders = mysqlTable(
+  "insurance_providers",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    naicCode: varchar("naicCode", { length: 20 }),
+    amBestRating: varchar("amBestRating", { length: 10 }),
+    phone: varchar("phone", { length: 20 }),
+    email: varchar("email", { length: 255 }),
+    website: varchar("website", { length: 500 }),
+    address: text("address"),
+    city: varchar("city", { length: 100 }),
+    state: varchar("state", { length: 50 }),
+    zipCode: varchar("zipCode", { length: 20 }),
+    specializesInHazmat: boolean("specializesInHazmat").default(false),
+    hazmatClasses: json("hazmatClasses").$type<string[]>().default([]),
+    policyTypes: json("policyTypes").$type<string[]>().default([]),
+    minimumPremium: decimal("minimumPremium", { precision: 12, scale: 2 }),
+    isPreferred: boolean("isPreferred").default(false),
+    isActive: boolean("isActive").default(true),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    naicIdx: index("ins_provider_naic_idx").on(table.naicCode),
+    hazmatIdx: index("ins_provider_hazmat_idx").on(table.specializesInHazmat),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - INSURANCE POLICIES
+// ============================================================================
+
+export const insurancePolicies = mysqlTable(
+  "insurance_policies",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    providerId: int("providerId"),
+    providerName: varchar("providerName", { length: 255 }),
+    policyNumber: varchar("policyNumber", { length: 100 }).notNull(),
+    policyType: mysqlEnum("policyType", [
+      "auto_liability", "general_liability", "cargo", "workers_compensation",
+      "umbrella_excess", "pollution_liability", "environmental_impairment",
+      "motor_truck_cargo", "physical_damage", "non_trucking_liability",
+      "trailer_interchange", "reefer_breakdown", "hazmat_endorsement", "other"
+    ]).notNull(),
+    coverageType: mysqlEnum("coverageType", ["primary", "excess", "umbrella"]).default("primary"),
+    effectiveDate: timestamp("effectiveDate").notNull(),
+    expirationDate: timestamp("expirationDate").notNull(),
+    perOccurrenceLimit: decimal("perOccurrenceLimit", { precision: 15, scale: 2 }),
+    aggregateLimit: decimal("aggregateLimit", { precision: 15, scale: 2 }),
+    combinedSingleLimit: decimal("combinedSingleLimit", { precision: 15, scale: 2 }),
+    bodilyInjuryPerPerson: decimal("bodilyInjuryPerPerson", { precision: 15, scale: 2 }),
+    bodilyInjuryPerAccident: decimal("bodilyInjuryPerAccident", { precision: 15, scale: 2 }),
+    propertyDamageLimit: decimal("propertyDamageLimit", { precision: 15, scale: 2 }),
+    cargoLimit: decimal("cargoLimit", { precision: 15, scale: 2 }),
+    deductible: decimal("deductible", { precision: 12, scale: 2 }),
+    annualPremium: decimal("annualPremium", { precision: 12, scale: 2 }),
+    paymentFrequency: varchar("paymentFrequency", { length: 20 }),
+    status: mysqlEnum("status", ["active", "expired", "cancelled", "pending", "lapsed"]).default("active"),
+    namedInsureds: json("namedInsureds").$type<string[]>().default([]),
+    additionalInsureds: json("additionalInsureds").$type<Array<{name: string; address?: string}>>().default([]),
+    endorsements: json("endorsements").$type<string[]>().default([]),
+    exclusions: json("exclusions").$type<string[]>().default([]),
+    hazmatCoverage: boolean("hazmatCoverage").default(false),
+    hazmatClasses: json("hazmatClasses").$type<string[]>().default([]),
+    pollutionCoverage: boolean("pollutionCoverage").default(false),
+    fmcsaFilingNumber: varchar("fmcsaFilingNumber", { length: 50 }),
+    filingStatus: mysqlEnum("filingStatus", ["filed", "pending", "rejected", "not_required"]),
+    verifiedAt: timestamp("verifiedAt"),
+    verifiedBy: int("verifiedBy"),
+    verificationSource: varchar("verificationSource", { length: 50 }),
+    documentUrl: text("documentUrl"),
+    syncedFromIntegration: int("syncedFromIntegration"),
+    externalPolicyId: varchar("externalPolicyId", { length: 255 }),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("policy_company_idx").on(table.companyId),
+    policyNumberIdx: index("policy_number_idx").on(table.policyNumber),
+    typeIdx: index("policy_type_idx").on(table.policyType),
+    statusIdx: index("policy_status_idx").on(table.status),
+    expirationIdx: index("policy_expiration_idx").on(table.expirationDate),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - CERTIFICATES OF INSURANCE
+// ============================================================================
+
+export const certificatesOfInsurance = mysqlTable(
+  "certificates_of_insurance",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    certificateNumber: varchar("certificateNumber", { length: 100 }),
+    holderName: varchar("holderName", { length: 255 }).notNull(),
+    holderAddress: text("holderAddress"),
+    holderEmail: varchar("holderEmail", { length: 255 }),
+    issuedDate: timestamp("issuedDate").notNull(),
+    expirationDate: timestamp("expirationDate"),
+    policies: json("policies").$type<Array<{policyId: number; policyType: string; limits: Record<string, number>}>>().default([]),
+    additionalInsuredEndorsement: boolean("additionalInsuredEndorsement").default(false),
+    waiverOfSubrogation: boolean("waiverOfSubrogation").default(false),
+    primaryNonContributory: boolean("primaryNonContributory").default(false),
+    specialProvisions: text("specialProvisions"),
+    documentUrl: text("documentUrl"),
+    status: mysqlEnum("status", ["active", "expired", "revoked", "pending"]).default("active"),
+    requestedBy: int("requestedBy"),
+    requestedAt: timestamp("requestedAt"),
+    issuedBy: int("issuedBy"),
+    syncedFromIntegration: int("syncedFromIntegration"),
+    externalCertId: varchar("externalCertId", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("coi_company_idx").on(table.companyId),
+    holderIdx: index("coi_holder_idx").on(table.holderName),
+    expirationIdx: index("coi_expiration_idx").on(table.expirationDate),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - INSURANCE CLAIMS
+// ============================================================================
+
+export const insuranceClaims = mysqlTable(
+  "insurance_claims",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    policyId: int("policyId").notNull(),
+    loadId: int("loadId"),
+    claimNumber: varchar("claimNumber", { length: 100 }),
+    incidentDate: timestamp("incidentDate").notNull(),
+    reportedDate: timestamp("reportedDate").notNull(),
+    claimType: mysqlEnum("claimType", [
+      "cargo_damage", "cargo_theft", "cargo_contamination",
+      "bodily_injury", "property_damage", "environmental",
+      "spill_cleanup", "third_party_liability", "collision",
+      "comprehensive", "workers_comp", "other"
+    ]).notNull(),
+    description: text("description").notNull(),
+    incidentLocation: json("incidentLocation").$type<{address?: string; city?: string; state?: string; lat?: number; lng?: number}>(),
+    estimatedLoss: decimal("estimatedLoss", { precision: 15, scale: 2 }),
+    claimedAmount: decimal("claimedAmount", { precision: 15, scale: 2 }),
+    paidAmount: decimal("paidAmount", { precision: 15, scale: 2 }),
+    deductibleApplied: decimal("deductibleApplied", { precision: 12, scale: 2 }),
+    status: mysqlEnum("status", [
+      "draft", "submitted", "under_review", "investigation",
+      "approved", "denied", "settled", "closed", "reopened"
+    ]).default("draft"),
+    adjusterName: varchar("adjusterName", { length: 255 }),
+    adjusterPhone: varchar("adjusterPhone", { length: 20 }),
+    adjusterEmail: varchar("adjusterEmail", { length: 255 }),
+    witnesses: json("witnesses").$type<Array<{name: string; phone?: string; statement?: string}>>().default([]),
+    policeReportNumber: varchar("policeReportNumber", { length: 100 }),
+    hazmatInvolved: boolean("hazmatInvolved").default(false),
+    hazmatClass: varchar("hazmatClass", { length: 20 }),
+    spillReported: boolean("spillReported").default(false),
+    epaNotified: boolean("epaNotified").default(false),
+    dotReportable: boolean("dotReportable").default(false),
+    documents: json("documents").$type<Array<{name: string; url: string; type: string}>>().default([]),
+    timeline: json("timeline").$type<Array<{date: string; action: string; notes?: string}>>().default([]),
+    resolution: text("resolution"),
+    closedAt: timestamp("closedAt"),
+    closedBy: int("closedBy"),
+    filedBy: int("filedBy").notNull(),
+    syncedFromIntegration: int("syncedFromIntegration"),
+    externalClaimId: varchar("externalClaimId", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("claim_company_idx").on(table.companyId),
+    policyIdx: index("claim_policy_idx").on(table.policyId),
+    statusIdx: index("claim_status_idx").on(table.status),
+    incidentDateIdx: index("claim_incident_date_idx").on(table.incidentDate),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - INSURANCE VERIFICATIONS
+// ============================================================================
+
+export const insuranceVerifications = mysqlTable(
+  "insurance_verifications",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    requestedByCompanyId: int("requestedByCompanyId").notNull(),
+    targetCompanyId: int("targetCompanyId").notNull(),
+    loadId: int("loadId"),
+    verificationType: mysqlEnum("verificationType", [
+      "pre_dispatch", "periodic", "incident", "renewal", "new_relationship"
+    ]).notNull(),
+    requiredCoverages: json("requiredCoverages").$type<Array<{type: string; minLimit: number}>>().default([]),
+    verificationStatus: mysqlEnum("verificationStatus", [
+      "pending", "verified", "failed", "expired", "partial"
+    ]).default("pending"),
+    verifiedPolicies: json("verifiedPolicies").$type<Array<{policyId: number; verified: boolean; reason?: string}>>().default([]),
+    verificationMethod: varchar("verificationMethod", { length: 50 }),
+    verifiedAt: timestamp("verifiedAt"),
+    verifiedBy: int("verifiedBy"),
+    expiresAt: timestamp("expiresAt"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    requestedByIdx: index("verification_requested_by_idx").on(table.requestedByCompanyId),
+    targetIdx: index("verification_target_idx").on(table.targetCompanyId),
+    statusIdx: index("verification_status_idx").on(table.verificationStatus),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - INSURANCE QUOTES (MARKETPLACE)
+// ============================================================================
+
+export const insuranceQuotes = mysqlTable(
+  "insurance_quotes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    requestId: varchar("requestId", { length: 100 }),
+    providerId: int("providerId"),
+    providerName: varchar("providerName", { length: 255 }),
+    policyType: varchar("policyType", { length: 50 }).notNull(),
+    coverageDetails: json("coverageDetails").$type<Record<string, unknown>>(),
+    limits: json("limits").$type<Record<string, number>>(),
+    deductible: decimal("deductible", { precision: 12, scale: 2 }),
+    premium: decimal("premium", { precision: 12, scale: 2 }),
+    paymentOptions: json("paymentOptions").$type<Array<{frequency: string; amount: number}>>(),
+    effectiveDate: timestamp("effectiveDate"),
+    expirationDate: timestamp("expirationDate"),
+    status: mysqlEnum("status", [
+      "requested", "received", "reviewing", "accepted", "declined", "expired"
+    ]).default("requested"),
+    validUntil: timestamp("validUntil"),
+    acceptedAt: timestamp("acceptedAt"),
+    acceptedBy: int("acceptedBy"),
+    resultingPolicyId: int("resultingPolicyId"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("quote_company_idx").on(table.companyId),
+    requestIdx: index("quote_request_idx").on(table.requestId),
+    statusIdx: index("quote_status_idx").on(table.status),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - LOAD INSURANCE (PER-LOAD COVERAGE)
+// ============================================================================
+
+export const loadInsurance = mysqlTable(
+  "load_insurance",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    companyId: int("companyId").notNull(),
+    coverageType: mysqlEnum("coverageType", [
+      "cargo", "pollution", "excess_liability", "contingent_cargo", "all_risk"
+    ]).notNull(),
+    providerId: int("providerId"),
+    providerName: varchar("providerName", { length: 255 }),
+    policyNumber: varchar("policyNumber", { length: 100 }),
+    coverageLimit: decimal("coverageLimit", { precision: 15, scale: 2 }).notNull(),
+    deductible: decimal("deductible", { precision: 12, scale: 2 }),
+    premium: decimal("premium", { precision: 12, scale: 2 }).notNull(),
+    effectiveDate: timestamp("effectiveDate").notNull(),
+    expirationDate: timestamp("expirationDate").notNull(),
+    commodityDescription: varchar("commodityDescription", { length: 255 }),
+    hazmatClass: varchar("hazmatClass", { length: 20 }),
+    declaredValue: decimal("declaredValue", { precision: 15, scale: 2 }),
+    status: mysqlEnum("status", ["pending", "active", "expired", "claimed", "cancelled"]).default("pending"),
+    certificateUrl: text("certificateUrl"),
+    purchasedBy: int("purchasedBy").notNull(),
+    purchasedAt: timestamp("purchasedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("load_insurance_load_idx").on(table.loadId),
+    companyIdx: index("load_insurance_company_idx").on(table.companyId),
+    statusIdx: index("load_insurance_status_idx").on(table.status),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - CARRIER RISK SCORES
+// ============================================================================
+
+export const carrierRiskScores = mysqlTable(
+  "carrier_risk_scores",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    overallScore: int("overallScore").notNull(),
+    riskTier: mysqlEnum("riskTier", ["low", "moderate", "elevated", "high", "critical"]).notNull(),
+    safetyScore: int("safetyScore"),
+    insuranceScore: int("insuranceScore"),
+    complianceScore: int("complianceScore"),
+    financialScore: int("financialScore"),
+    claimsHistory: json("claimsHistory").$type<{totalClaims: number; paidAmount: number; openClaims: number}>(),
+    csaBasicScores: json("csaBasicScores").$type<Record<string, number>>(),
+    outOfServiceRate: decimal("outOfServiceRate", { precision: 5, scale: 2 }),
+    crashRate: decimal("crashRate", { precision: 5, scale: 4 }),
+    factors: json("factors").$type<Array<{factor: string; impact: string; score: number}>>().default([]),
+    recommendations: json("recommendations").$type<string[]>().default([]),
+    calculatedAt: timestamp("calculatedAt").defaultNow().notNull(),
+    validUntil: timestamp("validUntil"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: unique("risk_score_company_idx").on(table.companyId),
+    tierIdx: index("risk_score_tier_idx").on(table.riskTier),
+  })
+);
+
+// ============================================================================
+// EUSOSHIELD - INSURANCE ALERTS
+// ============================================================================
+
+export const insuranceAlerts = mysqlTable(
+  "insurance_alerts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    policyId: int("policyId"),
+    alertType: mysqlEnum("alertType", [
+      "expiring_soon", "expired", "coverage_gap", "limit_inadequate",
+      "filing_issue", "premium_due", "claim_update", "verification_failed",
+      "document_needed", "renewal_reminder"
+    ]).notNull(),
+    severity: mysqlEnum("severity", ["info", "warning", "critical"]).default("warning"),
+    title: varchar("title", { length: 255 }).notNull(),
+    message: text("message").notNull(),
+    actionRequired: boolean("actionRequired").default(false),
+    actionUrl: varchar("actionUrl", { length: 500 }),
+    dueDate: timestamp("dueDate"),
+    status: mysqlEnum("status", ["active", "acknowledged", "dismissed", "resolved"]).default("active"),
+    acknowledgedAt: timestamp("acknowledgedAt"),
+    acknowledgedBy: int("acknowledgedBy"),
+    resolvedAt: timestamp("resolvedAt"),
+    resolvedBy: int("resolvedBy"),
+    metadata: json("metadata").$type<Record<string, unknown>>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("ins_alert_company_idx").on(table.companyId),
+    policyIdx: index("ins_alert_policy_idx").on(table.policyId),
+    typeIdx: index("ins_alert_type_idx").on(table.alertType),
+    statusIdx: index("ins_alert_status_idx").on(table.status),
+  })
+);
+
 // Type exports for new tables
 export type DashboardLayout = typeof dashboardLayouts.$inferSelect;
 export type DashboardWidget = typeof dashboardWidgets.$inferSelect;
@@ -2933,4 +3493,22 @@ export type LootCrate = typeof lootCrates.$inferSelect;
 export type UserInventoryItem = typeof userInventory.$inferSelect;
 export type EscrowHold = typeof escrowHolds.$inferSelect;
 export type PaymentMethod = typeof paymentMethods.$inferSelect;
+
+// EusoConnect Types
+export type IntegrationProvider = typeof integrationProviders.$inferSelect;
+export type IntegrationConnection = typeof integrationConnections.$inferSelect;
+export type IntegrationSyncLog = typeof integrationSyncLogs.$inferSelect;
+export type IntegrationSyncedRecord = typeof integrationSyncedRecords.$inferSelect;
+export type IntegrationWebhook = typeof integrationWebhooks.$inferSelect;
+
+// EusoShield Types
+export type InsuranceProvider = typeof insuranceProviders.$inferSelect;
+export type InsurancePolicy = typeof insurancePolicies.$inferSelect;
+export type CertificateOfInsurance = typeof certificatesOfInsurance.$inferSelect;
+export type InsuranceClaim = typeof insuranceClaims.$inferSelect;
+export type InsuranceVerification = typeof insuranceVerifications.$inferSelect;
+export type InsuranceQuote = typeof insuranceQuotes.$inferSelect;
+export type LoadInsurance = typeof loadInsurance.$inferSelect;
+export type CarrierRiskScore = typeof carrierRiskScores.$inferSelect;
+export type InsuranceAlert = typeof insuranceAlerts.$inferSelect;
 
