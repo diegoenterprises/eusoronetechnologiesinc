@@ -13,10 +13,10 @@
  */
 
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc, and } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, documents } from "../../drizzle/schema";
+import { loads, documents, users, vehicles } from "../../drizzle/schema";
 
 // Run Ticket schema
 const runTicketSchema = z.object({
@@ -139,35 +139,76 @@ export const eusoTicketRouter = router({
   getRunTicket: protectedProcedure
     .input(z.object({ ticketNumber: z.string() }))
     .query(async ({ input }) => {
-      // Mock data - in production would query database
-      return {
-        ticketNumber: input.ticketNumber,
-        status: "completed",
-        loadId: "LD-2024-001",
-        carrierId: "CAR-001",
-        driverId: "DRV-001",
-        vehicleId: "VEH-001",
-        originTerminalId: "TERM-001",
-        productName: "West Texas Intermediate Crude",
-        crudeType: "WTI",
-        apiGravity: 39.6,
-        bsw: 0.3,
-        sulfurContent: 0.24,
-        temperature: 72,
-        grossVolume: 8500,
-        netVolume: 8475,
-        grossWeight: 59500,
-        netWeight: 59325,
-        loadStartTime: new Date(Date.now() - 3600000).toISOString(),
-        loadEndTime: new Date().toISOString(),
-        rackNumber: "R-12",
-        bayNumber: "B-03",
-        meterNumber: "M-1234",
-        sealNumbers: ["SEAL-001", "SEAL-002"],
-        spectraMatchVerified: true,
-        spectraMatchConfidence: 94,
-        createdAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        const ticketId = parseInt(input.ticketNumber.replace(/\D/g, '')) || 0;
+        const [load] = await db.select().from(loads).where(eq(loads.id, ticketId)).limit(1);
+
+        if (!load) {
+          return {
+            ticketNumber: input.ticketNumber,
+            status: "not_found",
+            loadId: "",
+            carrierId: "",
+            driverId: "",
+            vehicleId: "",
+            originTerminalId: "",
+            productName: "",
+            crudeType: "",
+            apiGravity: 0,
+            bsw: 0,
+            sulfurContent: 0,
+            temperature: 0,
+            grossVolume: 0,
+            netVolume: 0,
+            grossWeight: 0,
+            netWeight: 0,
+            loadStartTime: "",
+            loadEndTime: "",
+            rackNumber: "",
+            bayNumber: "",
+            meterNumber: "",
+            sealNumbers: [],
+            spectraMatchVerified: false,
+            spectraMatchConfidence: 0,
+            createdAt: new Date().toISOString(),
+          };
+        }
+
+        return {
+          ticketNumber: input.ticketNumber,
+          status: load.status || "pending",
+          loadId: `LD-${load.id}`,
+          carrierId: String(load.carrierId || ""),
+          driverId: String(load.driverId || ""),
+          vehicleId: "",
+          originTerminalId: "",
+          productName: load.commodityName || "Unknown Product",
+          crudeType: load.commodityName || "",
+          apiGravity: 0,
+          bsw: 0,
+          sulfurContent: 0,
+          temperature: 0,
+          grossVolume: parseFloat(String(load.weight)) || 0,
+          netVolume: parseFloat(String(load.weight)) || 0,
+          grossWeight: parseFloat(String(load.weight)) || 0,
+          netWeight: parseFloat(String(load.weight)) || 0,
+          loadStartTime: load.pickupDate?.toISOString() || "",
+          loadEndTime: load.deliveryDate?.toISOString() || "",
+          rackNumber: "",
+          bayNumber: "",
+          meterNumber: "",
+          sealNumbers: [],
+          spectraMatchVerified: false,
+          spectraMatchConfidence: 0,
+          createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
+        };
+      } catch (error) {
+        console.error('[EusoTicket] getRunTicket error:', error);
+        throw error;
+      }
     }),
 
   // List run tickets
@@ -181,48 +222,39 @@ export const eusoTicketRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      // Mock data - in production would query database
-      return {
-        tickets: [
-          {
-            ticketNumber: "RT-2024-001",
-            status: "completed",
-            productName: "WTI Crude",
-            netVolume: 8475,
-            apiGravity: 39.6,
-            driverName: "John Smith",
-            vehiclePlate: "TX-1234",
-            terminalName: "Midland Terminal",
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-            spectraMatchVerified: true,
-          },
-          {
-            ticketNumber: "RT-2024-002",
-            status: "completed",
-            productName: "Bakken Crude",
-            netVolume: 8200,
-            apiGravity: 42.1,
-            driverName: "Jane Doe",
-            vehiclePlate: "TX-5678",
-            terminalName: "Midland Terminal",
-            createdAt: new Date(Date.now() - 7200000).toISOString(),
-            spectraMatchVerified: true,
-          },
-          {
-            ticketNumber: "RT-2024-003",
-            status: "pending",
-            productName: "Eagle Ford Condensate",
-            netVolume: 7900,
-            apiGravity: 48.0,
-            driverName: "Mike Johnson",
-            vehiclePlate: "TX-9012",
-            terminalName: "Houston Terminal",
-            createdAt: new Date(Date.now() - 10800000).toISOString(),
+      const db = await getDb();
+      if (!db) return { tickets: [], total: 0 };
+
+      try {
+        const loadsList = await db.select({
+          id: loads.id,
+          status: loads.status,
+          commodityName: loads.commodityName,
+          weight: loads.weight,
+          createdAt: loads.createdAt,
+        }).from(loads)
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit);
+
+        return {
+          tickets: loadsList.map(load => ({
+            ticketNumber: `RT-${load.id}`,
+            status: load.status || "pending",
+            productName: load.commodityName || "Unknown",
+            netVolume: parseFloat(String(load.weight)) || 0,
+            apiGravity: 0,
+            driverName: "Driver",
+            vehiclePlate: "",
+            terminalName: "Terminal",
+            createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
             spectraMatchVerified: false,
-          },
-        ],
-        total: 3,
-      };
+          })),
+          total: loadsList.length,
+        };
+      } catch (error) {
+        console.error('[EusoTicket] listRunTickets error:', error);
+        return { tickets: [], total: 0 };
+      }
     }),
 
   // Generate BOL from run ticket

@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { groupChannels, channelMembers, messages } from "../../drizzle/schema";
 import { sql, eq, desc, and } from "drizzle-orm";
 
 export const channelsRouter = router({
@@ -52,10 +53,24 @@ export const channelsRouter = router({
       if (!db) return [];
 
       try {
-        // Return placeholder messages - extend with actual messages table
-        return [
-          { id: "msg-1", author: "System", authorId: "system", content: `Welcome to #${input.channelId}!`, timestamp: new Date().toISOString(), reactions: {} },
-        ];
+        const channelMessages = await db.select({
+          id: messages.id,
+          content: messages.content,
+          senderId: messages.senderId,
+          createdAt: messages.createdAt,
+        }).from(messages)
+          .where(eq(messages.conversationId, parseInt(input.channelId) || 0))
+          .orderBy(desc(messages.createdAt))
+          .limit(input.limit);
+
+        return channelMessages.map(msg => ({
+          id: String(msg.id),
+          author: "User",
+          authorId: String(msg.senderId),
+          content: msg.content || "",
+          timestamp: msg.createdAt?.toISOString() || new Date().toISOString(),
+          reactions: {},
+        }));
       } catch (error) {
         console.error('[Channels] getMessages error:', error);
         return [];
@@ -80,10 +95,17 @@ export const channelsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      // TODO: Insert into messages table when available
+      const userId = ctx.user?.id || 0;
+      const result = await db.insert(messages).values({
+        conversationId: parseInt(input.channelId) || 0,
+        senderId: userId,
+        content: input.content,
+        createdAt: new Date(),
+      });
+      const insertId = (result as any)[0]?.insertId || Date.now();
       return {
         success: true,
-        messageId: `msg-${Date.now()}`,
+        messageId: String(insertId),
         timestamp: new Date().toISOString(),
       };
     }),
@@ -101,10 +123,20 @@ export const channelsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      // TODO: Insert into channels table when available
+      const userId = ctx.user?.id || 0;
+      const companyId = ctx.user?.companyId || 0;
+      const result = await db.insert(groupChannels).values({
+        name: input.name,
+        description: input.description || null,
+        type: "CUSTOM",
+        visibility: input.type === "private" ? "PRIVATE" : "PUBLIC",
+        companyId,
+        createdBy: userId,
+      });
+      const insertId = (result as any)[0]?.insertId || Date.now();
       return {
         success: true,
-        channelId: input.name.toLowerCase().replace(/\s+/g, '-'),
+        channelId: String(insertId),
       };
     }),
 
