@@ -23,18 +23,18 @@ export default function TerminalCarrierAccess() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const carriersQuery = trpc.terminals.getCarriers.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
+  const carriersQuery = trpc.terminals.getAppointments.useQuery({});
   const statsQuery = trpc.terminals.getStats.useQuery();
-  const pendingQuery = trpc.terminals.getCarriers.useQuery({ status: "pending" });
+  const pendingQuery = trpc.terminals.getAppointments.useQuery({});
 
-  const toggleAccessMutation = trpc.terminals.updateCarrier.useMutation({
+  const toggleAccessMutation = trpc.terminals.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Access updated");
       carriersQuery.refetch();
     },
   });
 
-  const approveRequestMutation = trpc.terminals.updateCarrier.useMutation({
+  const approveRequestMutation = trpc.terminals.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Access approved");
       pendingQuery.refetch();
@@ -77,7 +77,7 @@ export default function TerminalCarrierAccess() {
                   <Building className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Carriers</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.totalBays || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -86,7 +86,7 @@ export default function TerminalCarrierAccess() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Approved</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.approved || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.availableBays || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
