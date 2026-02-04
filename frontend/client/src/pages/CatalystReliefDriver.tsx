@@ -28,18 +28,15 @@ export default function CatalystReliefDriver() {
   const [notes, setNotes] = useState("");
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const currentDriverQuery = trpc.loads.getCurrentDriver.useQuery({ loadId: loadId || "" });
-  const availableQuery = trpc.drivers.getAvailableRelief.useQuery({
-    loadId: loadId || "",
-    location: currentDriverQuery.data?.currentLocation,
-  }, { enabled: !!currentDriverQuery.data });
+  const currentDriverQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
+  const availableQuery = trpc.drivers.getAvailable.useQuery({});
 
-  const dispatchMutation = trpc.catalysts.dispatchRelief.useMutation({
+  const dispatchMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Relief driver dispatched");
       navigate("/catalyst/dashboard");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const load = loadQuery.data;
