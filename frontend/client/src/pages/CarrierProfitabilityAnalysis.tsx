@@ -33,8 +33,8 @@ export default function CarrierProfitabilityAnalysis() {
   const [driverPay, setDriverPay] = useState(0.55);
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const fuelQuery = trpc.market.getCurrentFuelPrice.useQuery();
-  const analysisQuery = trpc.analytics.calculateProfitability.useQuery({
+  const fuelQuery = trpc.fuel.getSummary.useQuery();
+  const analysisQuery = trpc.carriers.getBidAnalysis.useQuery({
     loadId: loadId || "",
     bidAmount: parseFloat(bidAmount) || 0,
     fuelPrice,
@@ -53,7 +53,7 @@ export default function CarrierProfitabilityAnalysis() {
   const load = loadQuery.data;
   const analysis = analysisQuery.data;
 
-  const miles = load?.distance || 0;
+  const miles = typeof load?.distance === 'number' ? load.distance : parseFloat(String(load?.distance)) || 0;
   const fuelCost = (miles / mpg) * fuelPrice;
   const driverCost = miles * driverPay;
   const fixedCosts = 150; // Insurance, maintenance, etc.
@@ -61,7 +61,7 @@ export default function CarrierProfitabilityAnalysis() {
   const revenue = parseFloat(bidAmount) || 0;
   const profit = revenue - totalCosts;
   const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-  const ratePerMile = miles > 0 ? revenue / miles : 0;
+  const ratePerMile = Number(miles) > 0 ? revenue / Number(miles) : 0;
 
   const isProfitable = profit > 0;
   const isGoodMargin = margin >= 15;

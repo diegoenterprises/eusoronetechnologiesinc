@@ -27,24 +27,24 @@ export default function ShipperPODReview() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showReject, setShowReject] = useState(false);
 
-  const podQuery = trpc.documents.getPOD.useQuery({ loadId: loadId || "" });
+  const podQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const photosQuery = trpc.documents.getPODPhotos.useQuery({ loadId: loadId || "" });
+  const photosQuery = trpc.documents.getByLoadId.useQuery({ loadId: loadId || "" });
 
-  const approveMutation = trpc.documents.approvePOD.useMutation({
+  const approveMutation = trpc.documents.verifyDocument.useMutation({
     onSuccess: () => {
       toast.success("POD approved");
       navigate("/shipper/loads");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.documents.rejectPOD.useMutation({
+  const rejectMutation = trpc.documents.verifyDocument.useMutation({
     onSuccess: () => {
       toast.success("POD rejected");
       navigate("/shipper/loads");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const pod = podQuery.data;

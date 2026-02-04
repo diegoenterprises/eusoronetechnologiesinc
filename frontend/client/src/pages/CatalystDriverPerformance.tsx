@@ -23,8 +23,8 @@ export default function CatalystDriverPerformance() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [sortBy, setSortBy] = useState("score");
 
-  const driversQuery = trpc.catalysts.getDriverPerformance.useQuery({ period: periodFilter, sortBy });
-  const statsQuery = trpc.catalysts.getPerformanceStats.useQuery({ period: periodFilter });
+  const driversQuery = trpc.catalysts.getDriverAssignments.useQuery({ status: "active" });
+  const statsQuery = trpc.catalysts.getPerformanceStats.useQuery();
 
   const drivers = driversQuery.data || [];
   const stats = statsQuery.data;
@@ -79,7 +79,7 @@ export default function CatalystDriverPerformance() {
                   <Users className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Active Drivers</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.activeDrivers || 0}</p>
+                <p className="text-2xl font-bold text-white">{drivers?.length || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -106,7 +106,7 @@ export default function CatalystDriverPerformance() {
                   <Truck className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total Loads</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.totalLoads?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.loadsCompleted?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -115,7 +115,7 @@ export default function CatalystDriverPerformance() {
                   <DollarSign className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Revenue</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">${stats?.totalRevenue?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-green-400">${stats?.totalEarnings?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
           </>
