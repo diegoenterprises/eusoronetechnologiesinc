@@ -41,14 +41,14 @@ export default function BrokerCarrierVetting() {
   const carrierQuery = trpc.carriers.getById.useQuery({ id: carrierId || "" }, { enabled: !!carrierId });
   const vettingQuery = trpc.brokers.getVettingStats.useQuery();
 
-  const lookupMutation = trpc.carriers.create.useMutation({
+  const lookupMutation = trpc.carriers.verifyCarrier.useMutation({
     onSuccess: (data: any) => {
       toast.success("Carrier found");
     },
     onError: (error: any) => toast.error("Lookup failed", { description: error.message }),
   });
 
-  const verifyMutation = trpc.carriers.update.useMutation({
+  const verifyMutation = trpc.carriers.verifyCarrier.useMutation({
     onSuccess: () => {
       toast.success("Verification complete");
       vettingQuery.refetch();
@@ -165,7 +165,7 @@ export default function BrokerCarrierVetting() {
               </div>
               <div className="p-3 rounded-lg bg-slate-700/30">
                 <p className="text-slate-400 text-xs">Authority Since</p>
-                <p className="text-white font-medium">{carrier.authoritySince || "N/A"}</p>
+                <p className="text-white font-medium">{(carrier as any).authoritySince || "N/A"}</p>
               </div>
             </div>
 
@@ -221,8 +221,8 @@ export default function BrokerCarrierVetting() {
 
             <div className="space-y-3">
               {vettingChecklist.map((item) => {
-                const isChecked = vetting?.checks?.[item.key];
-                const isAuto = vetting?.autoVerified?.includes(item.key);
+                const isChecked = (vetting as any)?.checks?.[item.key];
+                const isAuto = (vetting as any)?.autoVerified?.includes(item.key);
                 return (
                   <div
                     key={item.key}
