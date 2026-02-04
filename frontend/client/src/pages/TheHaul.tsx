@@ -20,9 +20,9 @@ import {
 export default function TheHaul() {
   const [activeTab, setActiveTab] = useState('overview');
 
-  const { data: profile, isLoading: profileLoading } = trpc.gamification.getProfile.useQuery();
-  const { data: missions, isLoading: missionsLoading } = trpc.gamification.getMissions.useQuery({ status: 'active' });
-  const { data: achievements, isLoading: achievementsLoading } = trpc.gamification.getAchievements.useQuery({});
+  const { data: profile, isLoading: profileLoading } = trpc.gamification.getProfile.useQuery({ userId: "current" });
+  const { data: missions, isLoading: missionsLoading } = trpc.gamification.getMissions.useQuery({ type: "all" });
+  const { data: achievements, isLoading: achievementsLoading } = trpc.gamification.getAchievements.useQuery({ category: "all" });
   const { data: leaderboard, isLoading: leaderboardLoading } = trpc.gamification.getLeaderboard.useQuery({ limit: 10 });
 
   if (profileLoading) {
@@ -70,7 +70,7 @@ export default function TheHaul() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Miles</p>
-                <p className="text-2xl font-bold">{profile?.totalMiles?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold">{(profile?.totalMilesEarned || profile?.totalPoints || 0).toLocaleString()}</p>
               </div>
             </div>
           </CardContent>
@@ -84,7 +84,7 @@ export default function TheHaul() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Missions</p>
-                <p className="text-2xl font-bold">{missions?.length || 0}</p>
+                <p className="text-2xl font-bold">{missions?.active?.length || 0}</p>
               </div>
             </div>
           </CardContent>
@@ -98,7 +98,7 @@ export default function TheHaul() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Achievements</p>
-                <p className="text-2xl font-bold">{achievements?.filter((a: any) => a.unlocked)?.length || 0}</p>
+                <p className="text-2xl font-bold">{achievements?.earned?.length || 0}</p>
               </div>
             </div>
           </CardContent>

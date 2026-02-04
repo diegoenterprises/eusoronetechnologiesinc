@@ -30,10 +30,10 @@ export default function CarrierBidSubmit() {
   const [equipmentType, setEquipmentType] = useState("");
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const rateQuery = trpc.esang.suggestCarrierRate.useQuery({ loadId: loadId || "" });
-  const profitQuery = trpc.carriers.calculateProfit.useQuery({
+  const rateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
+  const profitQuery = trpc.carriers.getBidAnalysis.useQuery({
     loadId: loadId || "",
-    bidAmount: parseFloat(bidAmount) || 0,
+    proposedRate: parseFloat(bidAmount) || 0,
   }, { enabled: !!bidAmount });
 
   const submitBidMutation = trpc.carriers.submitBid.useMutation({
@@ -48,8 +48,9 @@ export default function CarrierBidSubmit() {
   const rateData = rateQuery.data;
   const profit = profitQuery.data;
 
-  const ratePerMile = load?.distance && bidAmount 
-    ? (parseFloat(bidAmount) / load.distance).toFixed(2) 
+  const distance = typeof load?.distance === 'number' ? load.distance : parseFloat(String(load?.distance)) || 0;
+  const ratePerMile = distance && bidAmount 
+    ? (parseFloat(bidAmount) / distance).toFixed(2) 
     : "0.00";
 
   if (loadQuery.isLoading) {
@@ -106,11 +107,11 @@ export default function CarrierBidSubmit() {
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Truck className="w-3 h-3" />Equipment</p>
-              <p className="text-white font-medium">{load?.equipment}</p>
+              <p className="text-white font-medium">{load?.equipmentType || 'TBD'}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Calendar className="w-3 h-3" />Pickup</p>
-              <p className="text-white font-medium">{load?.pickupDate}</p>
+              <p className="text-white font-medium">{load?.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : 'TBD'}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" />Delivery</p>

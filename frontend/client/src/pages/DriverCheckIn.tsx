@@ -23,23 +23,23 @@ export default function DriverCheckIn() {
   const [, navigate] = useLocation();
   const [checkInCode, setCheckInCode] = useState("");
 
-  const loadQuery = trpc.drivers.getCurrentLoad.useQuery();
-  const appointmentQuery = trpc.drivers.getAppointment.useQuery({ 
-    loadId: loadQuery.data?.id || "" 
-  }, { enabled: !!loadQuery.data?.id });
+  const loadQuery = trpc.loads.getByDriver.useQuery({ driverId: "current" });
+  const appointmentQuery = trpc.appointments.getById.useQuery({ 
+    id: loadQuery.data?.[0]?.id?.toString() || "" 
+  }, { enabled: !!loadQuery.data?.[0]?.id });
   const facilityQuery = trpc.facilities.getById.useQuery({ 
-    id: loadQuery.data?.currentStop?.facilityId || "" 
-  }, { enabled: !!loadQuery.data?.currentStop?.facilityId });
+    id: loadQuery.data?.[0]?.originFacilityId?.toString() || "" 
+  }, { enabled: !!loadQuery.data?.[0]?.originFacilityId });
 
-  const checkInMutation = trpc.drivers.checkIn.useMutation({
+  const checkInMutation = trpc.appointments.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Check-in successful");
       navigate("/driver/dashboard");
     },
-    onError: (error) => toast.error("Check-in failed", { description: error.message }),
+    onError: (error: any) => toast.error("Check-in failed", { description: error.message }),
   });
 
-  const load = loadQuery.data;
+  const load = loadQuery.data?.[0];
   const appointment = appointmentQuery.data;
   const facility = facilityQuery.data;
 
@@ -82,7 +82,7 @@ export default function DriverCheckIn() {
             </div>
             <div>
               <p className="text-white font-bold text-xl">{facility?.name}</p>
-              <p className="text-slate-400">{facility?.address}</p>
+              <p className="text-slate-400">{facility?.addressLine1}</p>
               <p className="text-slate-400 text-sm">{facility?.city}, {facility?.state} {facility?.zip}</p>
             </div>
           </div>
