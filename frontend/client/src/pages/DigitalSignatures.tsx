@@ -27,29 +27,28 @@ export default function DigitalSignatures() {
   const [search, setSearch] = useState("");
   const [documentType, setDocumentType] = useState("all");
 
-  const requestsQuery = trpc.documents.getSignatureRequests.useQuery({
-    status: activeTab !== "all" ? activeTab : undefined,
-    documentType: documentType !== "all" ? documentType : undefined,
+  const requestsQuery = trpc.documents.getAll.useQuery({
+    category: documentType !== "all" ? documentType : undefined,
     search,
   });
 
-  const statsQuery = trpc.documents.getSignatureStats.useQuery();
+  const statsQuery = trpc.documents.getStats.useQuery();
 
-  const resendMutation = trpc.documents.resendSignatureRequest.useMutation({
+  const resendMutation = trpc.documents.requestSignature.useMutation({
     onSuccess: () => {
       toast.success("Reminder sent successfully");
       requestsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed to send reminder", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send reminder", { description: error.message }),
   });
 
-  const voidMutation = trpc.documents.voidSignatureRequest.useMutation({
+  const voidMutation = trpc.documents.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Signature request voided");
       requestsQuery.refetch();
       statsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed to void request", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to void request", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {
