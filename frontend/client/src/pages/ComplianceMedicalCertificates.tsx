@@ -22,10 +22,10 @@ export default function ComplianceMedicalCertificates() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const certificatesQuery = trpc.compliance.getMedicalCertificates.useQuery({ status: statusFilter });
+  const certificatesQuery = trpc.compliance.getMedicalCerts.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
   const statsQuery = trpc.compliance.getMedicalCertStats.useQuery();
 
-  const sendReminderMutation = trpc.compliance.sendCertificateReminder.useMutation({
+  const sendReminderMutation = trpc.compliance.sendReminder.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 
@@ -72,7 +72,7 @@ export default function ComplianceMedicalCertificates() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Valid</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.validCerts || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.valid || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -81,7 +81,7 @@ export default function ComplianceMedicalCertificates() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Expiring 30d</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.expiring30 || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.expiringSoon || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-orange-500/10 border-orange-500/30 rounded-xl">
@@ -90,7 +90,7 @@ export default function ComplianceMedicalCertificates() {
                   <Clock className="w-4 h-4 text-orange-400" />
                   <span className="text-slate-400 text-sm">Expiring 7d</span>
                 </div>
-                <p className="text-2xl font-bold text-orange-400">{stats?.expiring7 || 0}</p>
+                <p className="text-2xl font-bold text-orange-400">{stats?.expiring || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
