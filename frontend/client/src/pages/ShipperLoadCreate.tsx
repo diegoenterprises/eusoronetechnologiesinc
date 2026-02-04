@@ -56,6 +56,7 @@ export default function ShipperLoadCreate() {
   });
 
   const classifyMutation = trpc.esang.classifyHazmat.useMutation();
+  const classifyData = classifyMutation.data;
   const rateQuery = trpc.esang.getLoadRecommendations.useQuery({
     loadId: "",
   }, { enabled: currentStep === 4 && !!formData.originCity && !!formData.destCity });
@@ -90,17 +91,17 @@ export default function ShipperLoadCreate() {
               />
             </div>
 
-            {classifyQuery.data && (
+            {classifyData && (
               <Card className="bg-purple-500/10 border-purple-500/30 rounded-lg">
                 <CardContent className="p-4 flex items-center gap-4">
                   <Sparkles className="w-6 h-6 text-purple-400" />
                   <div>
                     <p className="text-purple-400 font-medium">ESANG AI Suggestion</p>
-                    <p className="text-white">Class {classifyQuery.data.hazmatClass} - {classifyQuery.data.description}</p>
+                    <p className="text-white">Class {classifyData.hazmatClass} - {classifyData.description}</p>
                   </div>
                   <Button size="sm" onClick={() => {
-                    updateField("hazmatClass", classifyQuery.data.hazmatClass);
-                    updateField("unNumber", classifyQuery.data.unNumber);
+                    updateField("hazmatClass", classifyData.hazmatClass);
+                    updateField("unNumber", classifyData.unNumber);
                   }} className="ml-auto bg-purple-600">Apply</Button>
                 </CardContent>
               </Card>
@@ -128,11 +129,11 @@ export default function ShipperLoadCreate() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Quantity</label>
-                <Input type="number" value={formData.weight} onChange={(e) => updateField("quantity", e.target.value)} placeholder="0" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={formData.quantity} onChange={(e) => updateField("quantity", e.target.value)} placeholder="0" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Unit</label>
-                <Select value={formData.weightUnit} onValueChange={(v) => updateField("unit", v)}>
+                <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="gallons">Gallons</SelectItem>
