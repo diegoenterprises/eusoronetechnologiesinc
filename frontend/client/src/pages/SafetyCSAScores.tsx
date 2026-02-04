@@ -33,7 +33,7 @@ export default function SafetyCSAScores() {
   const scoresQuery = trpc.safety.getCSAScores.useQuery();
   const historyQuery = trpc.safety.getCSAHistory.useQuery({ months: 12 });
   const inspectionsQuery = trpc.safety.getVehicleInspections.useQuery({ vehicleId: "all" });
-  const carriersQuery = trpc.carriers.list.useQuery();
+  const carriersQuery = trpc.carriers.list.useQuery({});
 
   const scores = scoresQuery.data;
   const history = historyQuery.data || [];
@@ -87,28 +87,28 @@ export default function SafetyCSAScores() {
               <div className={cn(
                 "p-4 rounded-full",
                 (scores?.alerts?.length === 0) ? "bg-green-500/20" :
-                scores?.alerts === "conditional" ? "bg-yellow-500/20" : "bg-red-500/20"
+                (scores?.alerts?.length || 0) <= 2 ? "bg-yellow-500/20" : "bg-red-500/20"
               )}>
                 <Shield className={cn(
                   "w-10 h-10",
-                  scores?.alerts === "satisfactory" ? "text-green-400" :
-                  scores?.alerts === "conditional" ? "text-yellow-400" : "text-red-400"
+                  (scores?.alerts?.length === 0) ? "text-green-400" :
+                  (scores?.alerts?.length || 0) <= 2 ? "text-yellow-400" : "text-red-400"
                 )} />
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Safety Rating</p>
-                <p className="text-white font-bold text-2xl capitalize">{scores?.safetyRating || "Satisfactory"}</p>
+                <p className="text-white font-bold text-2xl capitalize">{(scores as any)?.safetyRating || "Satisfactory"}</p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-slate-400 text-sm">Alert Status</p>
               <Badge className={cn(
                 "border-0 text-lg px-4 py-1",
-                scores?.alerts === "satisfactory" ? "bg-green-500/20 text-green-400" :
-                scores?.alerts === "conditional" ? "bg-yellow-500/20 text-yellow-400" :
+                (scores?.alerts?.length === 0) ? "bg-green-500/20 text-green-400" :
+                (scores?.alerts?.length || 0) <= 2 ? "bg-yellow-500/20 text-yellow-400" :
                 "bg-red-500/20 text-red-400"
               )}>
-                {scores?.alertCount || 0} Alerts
+                {scores?.alertsCount || 0} Alerts
               </Badge>
             </div>
           </div>
