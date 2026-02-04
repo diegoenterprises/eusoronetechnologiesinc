@@ -70,7 +70,7 @@ export default function BrokerCarrierNetwork() {
                   <Users className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.totalCarriers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -79,7 +79,7 @@ export default function BrokerCarrierNetwork() {
                   <Star className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Preferred</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.preferred || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.preferredCarriers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -88,7 +88,7 @@ export default function BrokerCarrierNetwork() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Active</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.active || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.activeCarriers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -97,7 +97,7 @@ export default function BrokerCarrierNetwork() {
                   <Truck className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Total Trucks</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.totalTrucks || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.totalCapacity || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -106,7 +106,7 @@ export default function BrokerCarrierNetwork() {
                   <TrendingUp className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Loads YTD</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.loadsYTD?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.newThisMonth || 0}</p>
               </CardContent>
             </Card>
           </>
