@@ -58,7 +58,7 @@ export default function EscortConvoyComm() {
 
   const handleSend = () => {
     if (!message.trim()) return;
-    sendMessageMutation.mutate({ jobId: jobId!, message: message.trim() });
+    sendMessageMutation.mutate({ jobId: jobId! });
   };
 
   if (jobQuery.isLoading) {
@@ -184,7 +184,7 @@ export default function EscortConvoyComm() {
                 size="sm"
                 variant="outline"
                 className="bg-red-500/10 border-red-500/30 text-red-400 rounded-lg text-xs"
-                onClick={() => sendAlertMutation.mutate({ jobId: jobId!, type: "stop" })}
+                onClick={() => sendAlertMutation.mutate({ jobId: jobId! })}
               >
                 <AlertTriangle className="w-3 h-3 mr-1" />STOP
               </Button>
@@ -192,7 +192,7 @@ export default function EscortConvoyComm() {
                 size="sm"
                 variant="outline"
                 className="bg-yellow-500/10 border-yellow-500/30 text-yellow-400 rounded-lg text-xs"
-                onClick={() => sendAlertMutation.mutate({ jobId: jobId!, type: "slow" })}
+                onClick={() => sendAlertMutation.mutate({ jobId: jobId! })}
               >
                 Slow Down
               </Button>
@@ -200,7 +200,7 @@ export default function EscortConvoyComm() {
                 size="sm"
                 variant="outline"
                 className="bg-green-500/10 border-green-500/30 text-green-400 rounded-lg text-xs"
-                onClick={() => sendAlertMutation.mutate({ jobId: jobId!, type: "clear" })}
+                onClick={() => sendAlertMutation.mutate({ jobId: jobId! })}
               >
                 All Clear
               </Button>
