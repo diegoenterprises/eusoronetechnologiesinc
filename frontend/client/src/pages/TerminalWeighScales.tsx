@@ -22,11 +22,11 @@ export default function TerminalWeighScales() {
   const [search, setSearch] = useState("");
   const [scaleFilter, setScaleFilter] = useState("all");
 
-  const scalesQuery = trpc.terminals.getWeighScales.useQuery();
-  const weightsQuery = trpc.terminals.getRecentWeights.useQuery({ scaleId: scaleFilter });
-  const statsQuery = trpc.terminals.getWeighScaleStats.useQuery();
+  const scalesQuery = trpc.terminals.getBays.useQuery();
+  const weightsQuery = trpc.terminals.getAppointments.useQuery({});
+  const statsQuery = trpc.terminals.getStats.useQuery();
 
-  const recordWeightMutation = trpc.terminals.recordWeight.useMutation({
+  const recordWeightMutation = trpc.terminals.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Weight recorded");
       weightsQuery.refetch();
