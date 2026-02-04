@@ -23,7 +23,7 @@ export default function TerminalGateManagement() {
   const [gateFilter, setGateFilter] = useState("all");
 
   const gatesQuery = trpc.terminals.getBays.useQuery();
-  const transactionsQuery = trpc.terminals.getAppointments.useQuery({ status: gateFilter !== "all" ? gateFilter : undefined });
+  const transactionsQuery = trpc.terminals.getAppointments.useQuery({});
   const statsQuery = trpc.terminals.getStats.useQuery();
 
   const processEntryMutation = trpc.terminals.checkIn.useMutation({
@@ -34,7 +34,7 @@ export default function TerminalGateManagement() {
     },
   });
 
-  const processExitMutation = trpc.terminals.checkOut.useMutation({
+  const processExitMutation = trpc.terminals.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Exit processed");
       transactionsQuery.refetch();
@@ -75,7 +75,7 @@ export default function TerminalGateManagement() {
                   <DoorOpen className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Active Gates</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.activeGates || 0}/{stats?.totalGates || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.availableBays || 0}/{stats?.totalBays || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
