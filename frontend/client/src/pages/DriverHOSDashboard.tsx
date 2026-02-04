@@ -29,9 +29,9 @@ export default function DriverHOSDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
   const hosQuery = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
-  const logsQuery = trpc.hos.getLogs.useQuery({ driverId: "current", startDate: selectedDate, endDate: selectedDate });
+  const logsQuery = trpc.hos.getStatus.useQuery();
   const violationsQuery = trpc.hos.getViolations.useQuery({ driverId: "current" });
-  const eldQuery = trpc.eld.getSyncStatus.useQuery();
+  const eldQuery = trpc.eld.getDevices.useQuery();
 
   const changeStatusMutation = trpc.drivers.changeHOSStatus.useMutation({
     onSuccess: () => {
@@ -80,25 +80,25 @@ export default function DriverHOSDashboard() {
       {/* Current Status */}
       <Card className={cn(
         "rounded-xl border-2",
-        hos?.status === "driving" ? "bg-green-500/10 border-green-500/30" :
-        hos?.status === "on_duty" ? "bg-cyan-500/10 border-cyan-500/30" :
-        hos?.status === "sleeper" ? "bg-purple-500/10 border-purple-500/30" :
+        hos?.currentStatus === "driving" ? "bg-green-500/10 border-green-500/30" :
+        hos?.currentStatus === "on_duty" ? "bg-cyan-500/10 border-cyan-500/30" :
+        hos?.currentStatus === "sleeper" ? "bg-purple-500/10 border-purple-500/30" :
         "bg-slate-800/50 border-slate-700/50"
       )}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={cn("p-4 rounded-full", dutyStatuses.find(s => s.value === hos?.status)?.bg)}>
-                {React.createElement(dutyStatuses.find(s => s.value === hos?.status)?.icon || Clock, {
-                  className: cn("w-8 h-8", dutyStatuses.find(s => s.value === hos?.status)?.color)
+              <div className={cn("p-4 rounded-full", dutyStatuses.find(s => s.value === hos?.currentStatus)?.bg)}>
+                {React.createElement(dutyStatuses.find(s => s.value === hos?.currentStatus)?.icon || Clock, {
+                  className: cn("w-8 h-8", dutyStatuses.find(s => s.value === hos?.currentStatus)?.color)
                 })}
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Current Status</p>
                 <p className="text-white font-bold text-2xl">
-                  {dutyStatuses.find(s => s.value === hos?.status)?.label || "Unknown"}
+                  {dutyStatuses.find(s => s.value === hos?.currentStatus)?.label || "Unknown"}
                 </p>
-                <p className="text-slate-400 text-sm">Since {hos?.lastUpdate}</p>
+                <p className="text-slate-400 text-sm">Since {hos?.statusStartTime}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -107,10 +107,10 @@ export default function DriverHOSDashboard() {
                   key={status.value}
                   variant="outline"
                   onClick={() => changeStatusMutation.mutate({ driverId: "current", status: status.value })}
-                  disabled={hos?.status === status.value}
+                  disabled={hos?.currentStatus === status.value}
                   className={cn(
                     "rounded-lg",
-                    hos?.status === status.value
+                    hos?.currentStatus === status.value
                       ? `${status.bg} border-transparent`
                       : "bg-slate-700/50 border-slate-600/50"
                   )}
@@ -137,14 +137,14 @@ export default function DriverHOSDashboard() {
                     <Truck className="w-5 h-5 text-green-400" />
                     <span className="text-slate-300">11-Hour Driving</span>
                   </div>
-                  <span className="text-white font-bold text-xl">{hos?.drivingRemaining}h</span>
+                  <span className="text-white font-bold text-xl">{hos?.limits?.driving?.remaining || 0}h</span>
                 </div>
                 <Progress
-                  value={(parseFloat(hos?.drivingRemaining || "0") / 11) * 100}
+                  value={((hos?.limits?.driving?.remaining || 0) / 11) * 100}
                   className="h-3"
                 />
                 <p className="text-slate-400 text-xs mt-2">
-                  {hos?.drivingHours?.used || 0}h used of 11h limit
+                  {hos?.limits?.driving?.used || 0}h used of 11h limit
                 </p>
               </CardContent>
             </Card>
