@@ -55,11 +55,9 @@ export default function ShipperLoadCreate() {
     notes: "",
   });
 
-  const classifyQuery = trpc.esang.classifyHazmat.useQuery({ productName: formData.productName }, { enabled: formData.productName.length > 2 });
-  const rateQuery = trpc.esang.suggestRate.useQuery({
-    origin: `${formData.originCity}, ${formData.originState}`,
-    destination: `${formData.destCity}, ${formData.destState}`,
-    equipment: formData.equipment,
+  const classifyMutation = trpc.esang.classifyHazmat.useMutation();
+  const rateQuery = trpc.esang.getLoadRecommendations.useQuery({
+    loadId: "",
   }, { enabled: currentStep === 4 && !!formData.originCity && !!formData.destCity });
 
   const createMutation = trpc.loads.create.useMutation({
