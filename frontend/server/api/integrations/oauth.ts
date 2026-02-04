@@ -80,7 +80,6 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
           refreshToken: tokenResponse.refresh_token,
           tokenExpiresAt,
           status: "connected",
-          connectedAt: new Date(),
           lastError: null,
           errorCount: 0,
         })
@@ -163,7 +162,7 @@ async function exchangeCodeForTokens(
   provider: typeof integrationProviders.$inferSelect,
   code: string
 ): Promise<{ access_token?: string; refresh_token?: string; expires_in?: number }> {
-  const tokenUrl = provider.tokenUrl;
+  const tokenUrl = (provider as any).tokenUrl || provider.apiBaseUrl;
   if (!tokenUrl) {
     throw new Error("Provider does not have token URL configured");
   }
@@ -200,13 +199,13 @@ function buildOAuthUrl(
   provider: typeof integrationProviders.$inferSelect,
   state: string
 ): string {
-  const authUrl = provider.authUrl;
+  const authUrl = (provider as any).authUrl || provider.websiteUrl;
   if (!authUrl) {
     throw new Error("Provider does not have auth URL configured");
   }
 
   const callbackUrl = `${process.env.APP_URL || "http://localhost:3007"}/api/integrations/oauth/callback/${provider.slug}`;
-  const scopes = Array.isArray(provider.scopes) ? (provider.scopes as string[]).join(" ") : "";
+  const scopes = Array.isArray((provider as any).scopes) ? ((provider as any).scopes as string[]).join(" ") : "";
 
   const params = new URLSearchParams({
     response_type: "code",
