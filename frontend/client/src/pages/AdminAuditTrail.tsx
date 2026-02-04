@@ -103,7 +103,7 @@ export default function AdminAuditTrail() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Deletes</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.deletes || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.criticalActions || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -112,7 +112,7 @@ export default function AdminAuditTrail() {
                   <User className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Active Users</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.activeUsers || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.uniqueUsers || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -120,12 +120,12 @@ export default function AdminAuditTrail() {
       </div>
 
       {/* Security Events */}
-      {stats?.securityEvents > 0 && (
+      {(stats?.criticalActions || 0) > 0 && (
         <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white flex items-center gap-2">
               <Shield className="w-5 h-5 text-red-400" />
-              Security Events ({stats.securityEvents})
+              Security Events ({stats?.criticalActions || 0})
             </CardTitle>
           </CardHeader>
           <CardContent>
