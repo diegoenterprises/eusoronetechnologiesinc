@@ -23,8 +23,8 @@ export default function DriverHOS() {
   const [selectedStatus, setSelectedStatus] = useState<DutyStatus | null>(null);
 
   const { data: hosData, isLoading, error, refetch } = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
-  const { data: logs } = trpc.hos.getDriverLogs.useQuery({ driverId: "current", startDate: new Date(Date.now() - 7*24*60*60*1000).toISOString(), endDate: new Date().toISOString() });
-  const updateStatusMutation = trpc.hos.setDriverStatus.useMutation({
+  const { data: logs } = trpc.hos.getLogs.useQuery({ driverId: "current", startDate: new Date(Date.now() - 7*24*60*60*1000).toISOString(), endDate: new Date().toISOString() });
+  const updateStatusMutation = trpc.hos.updateStatus.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -68,8 +68,8 @@ export default function DriverHOS() {
 
   const currentStatus = hosData?.currentStatus || "OFF_DUTY";
   const drivingRemaining = hosData?.limits?.driving?.remaining || 0;
-  const onDutyRemaining = hosData?.onDutyRemaining || 0;
-  const cycleRemaining = hosData?.cycleRemaining || 0;
+  const onDutyRemaining = hosData?.limits?.onDuty?.remaining || 0;
+  const cycleRemaining = hosData?.limits?.cycle?.remaining || 0;
   const breakRequired = hosData?.breakRequired || false;
 
   const formatHours = (minutes: number) => {
@@ -248,12 +248,12 @@ export default function DriverHOS() {
               <div className="flex items-center justify-between">
                 <span>Last Sync</span>
                 <span className="text-sm text-muted-foreground">
-                  {hosData?.lastSync ? new Date(hosData.lastSync).toLocaleTimeString() : "N/A"}
+                  {(hosData as any)?.lastSync ? new Date((hosData as any).lastSync).toLocaleTimeString() : "N/A"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Device ID</span>
-                <span className="text-sm font-mono">{hosData?.deviceId || "N/A"}</span>
+                <span className="text-sm font-mono">{(hosData as any)?.deviceId || "N/A"}</span>
               </div>
             </div>
           </CardContent>
