@@ -19,10 +19,9 @@ export default function TheHaulLeaderboard() {
   const [period, setPeriod] = useState('weekly');
 
   const { data: leaderboard, isLoading } = trpc.gamification.getLeaderboard.useQuery({ 
-    period: period as 'daily' | 'weekly' | 'monthly' | 'allTime',
-    limit: 50 
+    period: period === 'daily' ? 'week' : period === 'weekly' ? 'week' : period === 'monthly' ? 'month' : 'all'
   });
-  const { data: myRank } = trpc.gamification.getMyRank.useQuery({ period: period as any });
+  const { data: myRank } = trpc.gamification.getProfile.useQuery({});
 
   if (isLoading) {
     return (
@@ -108,7 +107,7 @@ export default function TheHaulLeaderboard() {
           <Card>
             <CardContent className="p-0">
               <div className="divide-y">
-                {leaderboard?.map((entry: any, index: number) => (
+                {leaderboard?.leaders?.map((entry: any, index: number) => (
                   <div 
                     key={entry.userId} 
                     className={`flex items-center justify-between p-4 ${
