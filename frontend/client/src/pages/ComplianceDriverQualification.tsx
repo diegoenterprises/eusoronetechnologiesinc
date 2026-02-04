@@ -23,10 +23,10 @@ export default function ComplianceDriverQualification() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const driversQuery = trpc.compliance.getDriverQualificationFiles.useQuery({ status: statusFilter });
+  const driversQuery = trpc.compliance.getDQFiles.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
   const statsQuery = trpc.compliance.getDQStats.useQuery();
 
-  const requestDocMutation = trpc.compliance.requestDocument.useMutation({
+  const requestDocMutation = trpc.compliance.uploadDocument.useMutation({
     onSuccess: () => {
       toast.success("Document request sent");
       driversQuery.refetch();
@@ -76,7 +76,7 @@ export default function ComplianceDriverQualification() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Fully Compliant</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.fullyCompliant || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.complete || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -94,7 +94,7 @@ export default function ComplianceDriverQualification() {
                   <XCircle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Missing Docs</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.missingDocs || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.missing || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -103,7 +103,7 @@ export default function ComplianceDriverQualification() {
                   <FolderOpen className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Avg Completion</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.avgCompletion || 0}%</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.incomplete || 0}</p>
               </CardContent>
             </Card>
           </>
