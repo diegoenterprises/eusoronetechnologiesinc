@@ -38,12 +38,12 @@ export default function DriverPODCapture() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
 
-  const submitPODMutation = trpc.documents.submitPOD.useMutation({
+  const submitPODMutation = trpc.documents.upload.useMutation({
     onSuccess: () => {
       toast.success("Proof of Delivery submitted successfully");
       navigate("/driver/dashboard");
     },
-    onError: (error) => toast.error("Failed to submit POD", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit POD", { description: error.message }),
   });
 
   const load = loadQuery.data;
@@ -62,13 +62,14 @@ export default function DriverPODCapture() {
     });
   };
 
-  const variance = load?.weight && deliveredQty 
-    ? load.weight - parseFloat(deliveredQty)
+  const loadWeight = typeof load?.weight === 'number' ? load.weight : 0;
+  const variance = loadWeight && deliveredQty 
+    ? loadWeight - parseFloat(deliveredQty)
     : 0;
-  const variancePercent = load?.weight && deliveredQty
-    ? ((variance / load.weight) * 100).toFixed(2)
+  const variancePercent = loadWeight && deliveredQty
+    ? ((variance / loadWeight) * 100).toFixed(2)
     : 0;
-  const withinTolerance = Math.abs(variance) <= (load?.weight || 0) * 0.005;
+  const withinTolerance = Math.abs(variance) <= loadWeight * 0.005;
 
   if (loadQuery.isLoading) {
     return (
