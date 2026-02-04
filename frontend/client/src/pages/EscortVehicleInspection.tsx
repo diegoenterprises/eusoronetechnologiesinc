@@ -27,7 +27,7 @@ export default function EscortVehicleInspection() {
 
   const inspectionsQuery = trpc.escorts.getJobs.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
   const statsQuery = trpc.escorts.getDashboardStats.useQuery();
-  const vehiclesQuery = trpc.escorts.getVehicles.useQuery();
+  const vehiclesQuery = trpc.escorts.getJobs.useQuery({});
   const checklistQuery = trpc.escorts.getJobs.useQuery({});
 
   const submitInspectionMutation = trpc.escorts.acceptJob.useMutation({
@@ -82,7 +82,7 @@ export default function EscortVehicleInspection() {
                   <ClipboardCheck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalInspections || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.completedThisMonth || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
@@ -91,7 +91,7 @@ export default function EscortVehicleInspection() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Passed</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.passed || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.completed || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
@@ -100,7 +100,7 @@ export default function EscortVehicleInspection() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Failed</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.failed || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.activeJobs || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -109,7 +109,7 @@ export default function EscortVehicleInspection() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Due Today</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.dueToday || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.upcoming || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -118,7 +118,7 @@ export default function EscortVehicleInspection() {
                   <Car className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Vehicles</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.totalVehicles || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.upcomingJobs || 0}</p>
               </CardContent>
             </Card>
           </>
