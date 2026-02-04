@@ -23,7 +23,7 @@ export default function FleetInsurance() {
   const claimsQuery = trpc.insurance.getClaimsSummary.useQuery();
   const vehiclesQuery = trpc.insurance.getInsuredVehicles.useQuery({ limit: 10 });
 
-  const coverage = coverageQuery.data;
+  const coverage = coverageQuery.data && !Array.isArray(coverageQuery.data) ? coverageQuery.data : null;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
