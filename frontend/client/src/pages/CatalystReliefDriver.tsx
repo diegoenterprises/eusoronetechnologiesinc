@@ -84,26 +84,26 @@ export default function CatalystReliefDriver() {
             </div>
             <div>
               <p className="text-red-400 font-medium">Driver Out of Hours</p>
-              <p className="text-white font-bold text-xl">{currentDriver?.name}</p>
+              <p className="text-white font-bold text-xl">{(currentDriver as any)?.name || "Driver"}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs">Driving Left</p>
-              <p className="text-red-400 font-bold">{currentDriver?.hos?.drivingRemaining || "0:00"}</p>
+              <p className="text-red-400 font-bold">{(currentDriver as any)?.hos?.drivingRemaining || "0:00"}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs">On-Duty Left</p>
-              <p className="text-red-400 font-bold">{currentDriver?.hos?.onDutyRemaining || "0:00"}</p>
+              <p className="text-red-400 font-bold">{(currentDriver as any)?.hos?.onDutyRemaining || "0:00"}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs">Current Location</p>
-              <p className="text-white font-medium text-sm">{currentDriver?.currentLocation?.city}</p>
+              <p className="text-white font-medium text-sm">{(currentDriver as any)?.currentLocation?.city || "N/A"}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs">Miles to Dest</p>
-              <p className="text-white font-bold">{load?.remainingMiles} mi</p>
+              <p className="text-white font-bold">{(load as any)?.remainingMiles || load?.distance} mi</p>
             </div>
           </div>
         </CardContent>
