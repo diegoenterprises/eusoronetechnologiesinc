@@ -23,10 +23,10 @@ export default function EscortCertificationRenewal() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const certificationsQuery = trpc.escorts.getCertifications.useQuery({ status: statusFilter });
+  const certificationsQuery = trpc.escorts.getCertifications.useQuery();
   const statsQuery = trpc.escorts.getCertificationStats.useQuery();
 
-  const startRenewalMutation = trpc.escorts.startCertificationRenewal.useMutation({
+  const startRenewalMutation = trpc.escorts.renewCertification.useMutation({
     onSuccess: () => {
       toast.success("Renewal process started");
       certificationsQuery.refetch();
@@ -79,7 +79,7 @@ export default function EscortCertificationRenewal() {
                   <Award className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Certs</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalCertifications || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -88,7 +88,7 @@ export default function EscortCertificationRenewal() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Active</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.active || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.valid || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -97,7 +97,7 @@ export default function EscortCertificationRenewal() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Expiring Soon</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.expiringSoon || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.expiring || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
