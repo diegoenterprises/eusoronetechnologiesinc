@@ -78,7 +78,7 @@ export default function BrokerCarrierOnboarding() {
                   <UserPlus className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Applications</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalApplications || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats?.pending || 0) + (stats?.inProgress || 0) + (stats?.completed || 0)}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -87,7 +87,7 @@ export default function BrokerCarrierOnboarding() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending Review</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.pendingReview || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.pending || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-blue-500/10 border-blue-500/30 rounded-xl">
@@ -96,7 +96,7 @@ export default function BrokerCarrierOnboarding() {
                   <FileText className="w-4 h-4 text-blue-400" />
                   <span className="text-slate-400 text-sm">Docs Pending</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-400">{stats?.docsPending || 0}</p>
+                <p className="text-2xl font-bold text-blue-400">{stats?.inProgress || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
@@ -105,7 +105,7 @@ export default function BrokerCarrierOnboarding() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Approved</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.approved || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.completed || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -114,7 +114,7 @@ export default function BrokerCarrierOnboarding() {
                   <Clock className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Avg Time</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.avgOnboardingDays || 0} days</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.avgCompletionDays || 0} days</p>
               </CardContent>
             </Card>
           </>
