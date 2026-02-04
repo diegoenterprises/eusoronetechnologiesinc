@@ -22,11 +22,11 @@ export default function TerminalGateManagement() {
   const [search, setSearch] = useState("");
   const [gateFilter, setGateFilter] = useState("all");
 
-  const gatesQuery = trpc.terminals.getGates.useQuery();
-  const transactionsQuery = trpc.terminals.getGateTransactions.useQuery({ gate: gateFilter });
-  const statsQuery = trpc.terminals.getGateStats.useQuery();
+  const gatesQuery = trpc.terminals.getBays.useQuery();
+  const transactionsQuery = trpc.terminals.getAppointments.useQuery({ status: gateFilter !== "all" ? gateFilter : undefined });
+  const statsQuery = trpc.terminals.getStats.useQuery();
 
-  const processEntryMutation = trpc.terminals.processGateEntry.useMutation({
+  const processEntryMutation = trpc.terminals.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Entry processed");
       transactionsQuery.refetch();
@@ -34,7 +34,7 @@ export default function TerminalGateManagement() {
     },
   });
 
-  const processExitMutation = trpc.terminals.processGateExit.useMutation({
+  const processExitMutation = trpc.terminals.checkOut.useMutation({
     onSuccess: () => {
       toast.success("Exit processed");
       transactionsQuery.refetch();
