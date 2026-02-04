@@ -31,7 +31,7 @@ export default function DriverHOSDashboard() {
   const hosQuery = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
   const logsQuery = trpc.hos.getStatus.useQuery();
   const violationsQuery = trpc.hos.getViolations.useQuery({ driverId: "current" });
-  const eldQuery = trpc.eld.getDevices.useQuery();
+  const eldQuery = trpc.eld.getSummary.useQuery();
 
   const changeStatusMutation = trpc.drivers.changeHOSStatus.useMutation({
     onSuccess: () => {
@@ -156,10 +156,10 @@ export default function DriverHOSDashboard() {
                     <Clock className="w-5 h-5 text-cyan-400" />
                     <span className="text-slate-300">14-Hour Window</span>
                   </div>
-                  <span className="text-white font-bold text-xl">{hos?.onDutyRemaining}h</span>
+                  <span className="text-white font-bold text-xl">{hos?.limits?.onDuty?.remaining || 0}h</span>
                 </div>
                 <Progress
-                  value={(parseFloat(hos?.onDutyRemaining || "0") / 14) * 100}
+                  value={((hos?.limits?.onDuty?.remaining || 0) / 14) * 100}
                   className="h-3"
                 />
                 <p className="text-slate-400 text-xs mt-2">
@@ -175,14 +175,14 @@ export default function DriverHOSDashboard() {
                     <Calendar className="w-5 h-5 text-purple-400" />
                     <span className="text-slate-300">70-Hour Cycle</span>
                   </div>
-                  <span className="text-white font-bold text-xl">{hos?.cycleRemaining}h</span>
+                  <span className="text-white font-bold text-xl">{hos?.limits?.cycle?.remaining || 0}h</span>
                 </div>
                 <Progress
-                  value={(hos?.cycleRemaining / 70) * 100}
+                  value={((hos?.limits?.cycle?.remaining || 0) / 70) * 100}
                   className="h-3"
                 />
                 <p className="text-slate-400 text-xs mt-2">
-                  Resets {hos?.cycleResetDate}
+                  Resets {hos?.lastRestartDate || "N/A"}
                 </p>
               </CardContent>
             </Card>
@@ -203,8 +203,8 @@ export default function DriverHOSDashboard() {
                 <p className="text-white font-medium">30-Minute Break</p>
                 <p className="text-slate-400 text-sm">
                   {hos?.breakRequired
-                    ? `Required - ${hos?.breakDueIn} remaining`
-                    : `Next break due after ${hos?.nextBreakAfter} of driving`}
+                    ? `Required - break needed`
+                    : `Next break due after more driving`}
                 </p>
               </div>
             </div>
