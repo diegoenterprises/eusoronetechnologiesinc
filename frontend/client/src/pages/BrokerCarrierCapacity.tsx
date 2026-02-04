@@ -23,8 +23,7 @@ export default function BrokerCarrierCapacity() {
   const [locationFilter, setLocationFilter] = useState("");
 
   const capacityQuery = trpc.brokers.getCarrierCapacity.useQuery({ 
-    equipment: equipmentFilter, 
-    location: locationFilter 
+    equipment: equipmentFilter !== "all" ? equipmentFilter : undefined
   });
   const statsQuery = trpc.brokers.getCapacityStats.useQuery();
 
@@ -57,7 +56,7 @@ export default function BrokerCarrierCapacity() {
                   <Truck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Available Now</span>
                 </div>
-                <p className="text-2xl font-bold text-cyan-400">{stats?.availableNow || 0}</p>
+                <p className="text-2xl font-bold text-cyan-400">{stats?.available || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -66,7 +65,7 @@ export default function BrokerCarrierCapacity() {
                   <Calendar className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Next 24h</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.next24h || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.booked || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -75,7 +74,7 @@ export default function BrokerCarrierCapacity() {
                   <Star className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Preferred</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.preferred || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.verified || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -84,7 +83,7 @@ export default function BrokerCarrierCapacity() {
                   <CheckCircle className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Hazmat Cert</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.hazmatCertified || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.totalCapacity || 0}</p>
               </CardContent>
             </Card>
           </>
