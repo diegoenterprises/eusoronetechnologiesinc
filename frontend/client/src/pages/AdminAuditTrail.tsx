@@ -23,12 +23,11 @@ export default function AdminAuditTrail() {
   const [moduleFilter, setModuleFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("7d");
 
-  const auditQuery = trpc.admin.getAuditTrail.useQuery({
-    action: actionFilter,
-    module: moduleFilter,
-    period: periodFilter,
+  const auditQuery = trpc.admin.getAuditLogs.useQuery({
+    action: actionFilter === 'all' ? undefined : actionFilter,
+    limit: 100,
   });
-  const statsQuery = trpc.admin.getAuditStats.useQuery({ period: periodFilter });
+  const statsQuery = trpc.admin.getAuditStats.useQuery();
 
   const auditLogs = auditQuery.data || [];
   const stats = statsQuery.data;
@@ -77,7 +76,7 @@ export default function AdminAuditTrail() {
                   <History className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Events</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalEvents?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.total?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
@@ -86,7 +85,7 @@ export default function AdminAuditTrail() {
                   <FileText className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Creates</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.creates || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.today || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-blue-500/10 border-blue-500/30 rounded-xl">
@@ -95,7 +94,7 @@ export default function AdminAuditTrail() {
                   <FileText className="w-4 h-4 text-blue-400" />
                   <span className="text-slate-400 text-sm">Updates</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-400">{stats?.updates || 0}</p>
+                <p className="text-2xl font-bold text-blue-400">{stats?.uniqueUsers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">

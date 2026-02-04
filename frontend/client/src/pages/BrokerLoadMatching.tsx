@@ -29,15 +29,15 @@ export default function BrokerLoadMatching() {
   const [customRate, setCustomRate] = useState("");
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const matchQuery = trpc.esang.matchCarriers.useQuery({ loadId: loadId || "" });
-  const rateQuery = trpc.esang.suggestRate.useQuery({ loadId: loadId || "" });
+  const matchQuery = trpc.carriers.getAvailableCapacity.useQuery({ limit: 20 });
+  const rateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
 
-  const sendOffersMutation = trpc.brokers.sendOffers.useMutation({
+  const sendOffersMutation = trpc.brokers.sendCarrierInvitation.useMutation({
     onSuccess: () => {
       toast.success(`Offers sent to ${selectedCarriers.length} carriers`);
       navigate("/broker/loads");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const load = loadQuery.data;
@@ -92,7 +92,7 @@ export default function BrokerLoadMatching() {
             </div>
             <div>
               <p className="text-slate-400 text-xs">Equipment</p>
-              <Badge className="bg-slate-600/50 text-slate-300 border-0">{load?.equipment}</Badge>
+              <Badge className="bg-slate-600/50 text-slate-300 border-0">{load?.equipmentType || 'TBD'}</Badge>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Pickup</p>

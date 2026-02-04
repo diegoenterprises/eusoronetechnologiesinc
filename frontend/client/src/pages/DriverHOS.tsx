@@ -22,9 +22,9 @@ type DutyStatus = "OFF_DUTY" | "SLEEPER" | "DRIVING" | "ON_DUTY";
 export default function DriverHOS() {
   const [selectedStatus, setSelectedStatus] = useState<DutyStatus | null>(null);
 
-  const { data: hosData, isLoading, error, refetch } = trpc.hos.getCurrentStatus.useQuery();
-  const { data: logs } = trpc.hos.getLogs.useQuery({ days: 7 });
-  const updateStatusMutation = trpc.hos.updateStatus.useMutation({
+  const { data: hosData, isLoading, error, refetch } = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
+  const { data: logs } = trpc.hos.getDriverLogs.useQuery({ driverId: "current", startDate: new Date(Date.now() - 7*24*60*60*1000).toISOString(), endDate: new Date().toISOString() });
+  const updateStatusMutation = trpc.hos.setDriverStatus.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -66,8 +66,8 @@ export default function DriverHOS() {
     );
   }
 
-  const currentStatus = hosData?.status || "OFF_DUTY";
-  const drivingRemaining = hosData?.drivingRemaining || 0;
+  const currentStatus = hosData?.currentStatus || "OFF_DUTY";
+  const drivingRemaining = hosData?.limits?.driving?.remaining || 0;
   const onDutyRemaining = hosData?.onDutyRemaining || 0;
   const cycleRemaining = hosData?.cycleRemaining || 0;
   const breakRequired = hosData?.breakRequired || false;
