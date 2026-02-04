@@ -26,18 +26,18 @@ export default function EscortHeightPole() {
   const [currentReading, setCurrentReading] = useState("");
   const [location, setLocation] = useState("");
 
-  const jobQuery = trpc.escorts.getJob.useQuery({ jobId: jobId || "" });
-  const obstaclesQuery = trpc.escorts.getRouteObstacles.useQuery({ jobId: jobId || "" });
-  const readingsQuery = trpc.escorts.getHeightReadings.useQuery({ jobId: jobId || "" });
+  const jobQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
+  const obstaclesQuery = trpc.escorts.getJobs.useQuery({});
+  const readingsQuery = trpc.escorts.getJobs.useQuery({});
 
-  const submitReadingMutation = trpc.escorts.submitHeightReading.useMutation({
+  const submitReadingMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Reading recorded");
       setCurrentReading("");
       setLocation("");
       readingsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const job = jobQuery.data;
