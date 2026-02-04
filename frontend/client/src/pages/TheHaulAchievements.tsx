@@ -20,11 +20,12 @@ export default function TheHaulAchievements() {
   const [filter, setFilter] = useState('all');
 
   const { data: achievements, isLoading } = trpc.gamification.getAchievements.useQuery({ 
-    category: filter !== 'all' ? filter : undefined 
+    category: filter !== 'all' ? filter as "safety" | "performance" | "milestones" | "special" : undefined 
   });
 
-  const unlockedCount = achievements?.filter((a: any) => a.unlocked)?.length || 0;
-  const totalCount = achievements?.length || 0;
+  const allAchievements = [...(achievements?.earned || []), ...(achievements?.locked || [])];
+  const unlockedCount = achievements?.earned?.length || 0;
+  const totalCount = allAchievements.length || 0;
 
   if (isLoading) {
     return (
@@ -87,7 +88,7 @@ export default function TheHaulAchievements() {
 
         <TabsContent value={filter} className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {achievements?.map((achievement: any) => (
+            {allAchievements?.map((achievement: any) => (
               <Card 
                 key={achievement.id} 
                 className={`transition-all ${
