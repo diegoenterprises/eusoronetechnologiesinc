@@ -31,20 +31,20 @@ export default function DriverFuelPurchase() {
   const [odometer, setOdometer] = useState("");
 
   const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
-  const loadQuery = trpc.drivers.getCurrentLoad.useQuery();
-  const stationsQuery = trpc.fuel.getNearbyStations.useQuery();
-  const historyQuery = trpc.fuel.getRecentPurchases.useQuery();
+  const loadQuery = trpc.loads.getByDriver.useQuery({ driverId: "current" });
+  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ latitude: 0, longitude: 0 });
+  const historyQuery = trpc.fuel.getPurchaseHistory.useQuery({ driverId: "current" });
 
-  const submitMutation = trpc.fuel.recordPurchase.useMutation({
+  const submitMutation = trpc.fuel.reportPurchase.useMutation({
     onSuccess: () => {
       toast.success("Fuel purchase recorded");
       navigate("/driver/dashboard");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const vehicle = vehicleQuery.data;
-  const load = loadQuery.data;
+  const load = loadQuery.data?.[0];
   const stations = stationsQuery.data || [];
   const history = historyQuery.data || [];
 

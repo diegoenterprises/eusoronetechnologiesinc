@@ -23,10 +23,10 @@ export default function ComplianceLogAudits() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [periodFilter, setPeriodFilter] = useState("7d");
 
-  const auditsQuery = trpc.compliance.getLogAudits.useQuery({ status: statusFilter, period: periodFilter });
+  const auditsQuery = trpc.compliance.getAudits.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
   const statsQuery = trpc.compliance.getAuditStats.useQuery();
 
-  const approveAuditMutation = trpc.compliance.approveAudit.useMutation({
+  const approveAuditMutation = trpc.compliance.updateAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit approved");
       auditsQuery.refetch();
@@ -34,7 +34,7 @@ export default function ComplianceLogAudits() {
     },
   });
 
-  const flagAuditMutation = trpc.compliance.flagAudit.useMutation({
+  const flagAuditMutation = trpc.compliance.updateAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit flagged for review");
       auditsQuery.refetch();
@@ -93,7 +93,7 @@ export default function ComplianceLogAudits() {
                   <FileSearch className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Logs</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalLogs || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.scheduled || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -102,7 +102,7 @@ export default function ComplianceLogAudits() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending Review</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.pending || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.inProgress || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
