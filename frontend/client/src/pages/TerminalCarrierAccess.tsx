@@ -23,18 +23,18 @@ export default function TerminalCarrierAccess() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const carriersQuery = trpc.terminals.getApprovedCarriers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.terminals.getCarrierAccessStats.useQuery();
-  const pendingQuery = trpc.terminals.getPendingAccessRequests.useQuery();
+  const carriersQuery = trpc.terminals.getCarriers.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
+  const statsQuery = trpc.terminals.getStats.useQuery();
+  const pendingQuery = trpc.terminals.getCarriers.useQuery({ status: "pending" });
 
-  const toggleAccessMutation = trpc.terminals.toggleCarrierAccess.useMutation({
+  const toggleAccessMutation = trpc.terminals.updateCarrier.useMutation({
     onSuccess: () => {
       toast.success("Access updated");
       carriersQuery.refetch();
     },
   });
 
-  const approveRequestMutation = trpc.terminals.approveAccessRequest.useMutation({
+  const approveRequestMutation = trpc.terminals.updateCarrier.useMutation({
     onSuccess: () => {
       toast.success("Access approved");
       pendingQuery.refetch();
