@@ -29,7 +29,7 @@ export default function CatalystDriverAssignment() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
   const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
-  const aiQuery = trpc.esang.recommendDrivers.useQuery({ loadId: loadId || "" });
+  const aiQuery = trpc.catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
 
   const assignMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
@@ -89,15 +89,15 @@ export default function CatalystDriverAssignment() {
             </div>
             <div>
               <p className="text-slate-400 text-xs">Est. Time</p>
-              <p className="text-white font-medium">{load?.estimatedHours}h</p>
+              <p className="text-white font-medium">{(load as any)?.estimatedHours || "N/A"}h</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Pickup</p>
-              <p className="text-white font-medium">{load?.pickupDate}</p>
+              <p className="text-white font-medium">{(load as any)?.pickupDate ? new Date((load as any).pickupDate).toLocaleDateString() : "TBD"}</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Equipment</p>
-              <Badge className="bg-slate-600/50 text-slate-300 border-0">{load?.equipment}</Badge>
+              <Badge className="bg-slate-600/50 text-slate-300 border-0">{(load as any)?.equipment || load?.cargoType}</Badge>
             </div>
           </div>
         </CardContent>
