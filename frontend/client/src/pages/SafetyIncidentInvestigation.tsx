@@ -25,7 +25,7 @@ export default function SafetyIncidentInvestigation() {
 
   const incidentQuery = trpc.safety.getIncident.useQuery({ id: incidentId || "" });
   const userQuery = trpc.users.me.useQuery();
-  const closeMutation = trpc.safety.closeInvestigation.useMutation({
+  const closeMutation = trpc.safety.updateIncident.useMutation({
     onSuccess: () => { toast.success("Investigation closed"); navigate("/safety/incidents"); },
   });
 
@@ -42,18 +42,18 @@ export default function SafetyIncidentInvestigation() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/safety/incidents")} className="text-slate-400 hover:text-white"><ChevronLeft className="w-6 h-6" /></Button>
-        <div className="flex-1"><h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">Incident Investigation</h1><p className="text-slate-400 text-sm mt-1">Case #{incident?.caseNumber}</p></div>
+        <div className="flex-1"><h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">Incident Investigation</h1><p className="text-slate-400 text-sm mt-1">Case #{incident?.incidentNumber}</p></div>
         <Badge className={cn("border-0", incident?.status === "open" ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400")}>{incident?.status}</Badge>
       </div>
 
       {showSignature ? (
-        <SignatureCanvas signerName={user?.name || "Safety Manager"} signerRole="Safety Manager" documentName={`Investigation #${incident?.caseNumber}`} documentType="Investigation Closure" onSave={handleSign} onCancel={() => setShowSignature(false)} />
+        <SignatureCanvas signerName={user?.name || "Safety Manager"} signerRole="Safety Manager" documentName={`Investigation #${incident?.incidentNumber}`} documentType="Investigation Closure" onSave={handleSign} onCancel={() => setShowSignature(false)} />
       ) : (
         <>
           <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 rounded-xl">
             <CardContent className="p-6 grid grid-cols-4 gap-4">
-              <div><p className="text-slate-400 text-sm">Date</p><p className="text-white font-medium">{new Date(incident?.occurredAt || Date.now()).toLocaleString()}</p></div>
-              <div><p className="text-slate-400 text-sm">Location</p><p className="text-white font-medium">{incident?.location}</p></div>
+              <div><p className="text-slate-400 text-sm">Date</p><p className="text-white font-medium">{incident?.date ? new Date(incident.date).toLocaleString() : 'N/A'}</p></div>
+              <div><p className="text-slate-400 text-sm">Location</p><p className="text-white font-medium">{incident?.location?.city || 'N/A'}, {incident?.location?.state || ''}</p></div>
               <div><p className="text-slate-400 text-sm">Type</p><Badge className="bg-red-500/20 text-red-400 border-0">{incident?.type}</Badge></div>
               <div><p className="text-slate-400 text-sm">Severity</p><Badge className="bg-orange-500/20 text-orange-400 border-0">{incident?.severity}</Badge></div>
             </CardContent>
