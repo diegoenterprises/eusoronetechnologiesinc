@@ -26,7 +26,7 @@ export default function ComplianceLogAudits() {
   const auditsQuery = trpc.compliance.getAudits.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
   const statsQuery = trpc.compliance.getAuditStats.useQuery();
 
-  const approveAuditMutation = trpc.compliance.updateAudit.useMutation({
+  const approveAuditMutation = trpc.compliance.completeAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit approved");
       auditsQuery.refetch();
@@ -34,7 +34,7 @@ export default function ComplianceLogAudits() {
     },
   });
 
-  const flagAuditMutation = trpc.compliance.updateAudit.useMutation({
+  const flagAuditMutation = trpc.compliance.completeAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit flagged for review");
       auditsQuery.refetch();
@@ -111,7 +111,7 @@ export default function ComplianceLogAudits() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Approved</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.approved || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.passed || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -120,7 +120,7 @@ export default function ComplianceLogAudits() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Flagged</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.flagged || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.failed || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -129,7 +129,7 @@ export default function ComplianceLogAudits() {
                   <AlertTriangle className="w-4 h-4 text-orange-400" />
                   <span className="text-slate-400 text-sm">Violations</span>
                 </div>
-                <p className="text-2xl font-bold text-orange-400">{stats?.violations || 0}</p>
+                <p className="text-2xl font-bold text-orange-400">{stats?.upcomingThisMonth || 0}</p>
               </CardContent>
             </Card>
           </>
