@@ -159,38 +159,38 @@ export default function RateConfirmationSign() {
                     <MapPin className="w-4 h-4" />
                     <span className="text-xs">Origin</span>
                   </div>
-                  <p className="text-white font-medium">{rateConf?.origin?.city}, {rateConf?.origin?.state}</p>
+                  <p className="text-white font-medium">{(rateConf as any)?.origin?.city}, {(rateConf as any)?.origin?.state}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30">
                   <div className="flex items-center gap-2 text-red-400 mb-1">
                     <MapPin className="w-4 h-4" />
                     <span className="text-xs">Destination</span>
                   </div>
-                  <p className="text-white font-medium">{rateConf?.destination?.city}, {rateConf?.destination?.state}</p>
+                  <p className="text-white font-medium">{(rateConf as any)?.destination?.city}, {(rateConf as any)?.destination?.state}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30">
                   <div className="flex items-center gap-2 text-cyan-400 mb-1">
                     <Calendar className="w-4 h-4" />
                     <span className="text-xs">Pickup</span>
                   </div>
-                  <p className="text-white font-medium">{rateConf?.pickupDate}</p>
+                  <p className="text-white font-medium">{(rateConf as any)?.pickupDate || "TBD"}</p>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-700/30">
                   <div className="flex items-center gap-2 text-purple-400 mb-1">
                     <Calendar className="w-4 h-4" />
                     <span className="text-xs">Delivery</span>
                   </div>
-                  <p className="text-white font-medium">{rateConf?.deliveryDate}</p>
+                  <p className="text-white font-medium">{(rateConf as any)?.deliveryDate || "TBD"}</p>
                 </div>
               </div>
 
               <div className="p-4 rounded-lg bg-slate-700/30">
                 <p className="text-slate-400 text-sm mb-2">Commodity</p>
-                <p className="text-white font-medium">{rateConf?.commodity}</p>
-                {rateConf?.hazmat && (
+                <p className="text-white font-medium">{(rateConf as any)?.commodity || "N/A"}</p>
+                {(rateConf as any)?.hazmat && (
                   <Badge className="bg-orange-500/20 text-orange-400 border-0 mt-2">
                     <AlertTriangle className="w-3 h-3 mr-1" />
-                    Hazmat - {rateConf?.hazmatClass}
+                    Hazmat - {(rateConf as any)?.hazmatClass}
                   </Badge>
                 )}
               </div>
@@ -209,15 +209,15 @@ export default function RateConfirmationSign() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                   <span className="text-slate-300">Line Haul</span>
-                  <span className="text-white font-medium">${rateConf?.lineHaul?.toLocaleString()}</span>
+                  <span className="text-white font-medium">${(rateConf as any)?.lineHaul?.toLocaleString() || "0"}</span>
                 </div>
-                {rateConf?.fuelSurcharge > 0 && (
+                {(rateConf as any)?.fuelSurcharge > 0 && (
                   <div className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                     <span className="text-slate-300">Fuel Surcharge</span>
-                    <span className="text-white font-medium">${rateConf?.fuelSurcharge?.toLocaleString()}</span>
+                    <span className="text-white font-medium">${(rateConf as any)?.fuelSurcharge?.toLocaleString()}</span>
                   </div>
                 )}
-                {rateConf?.accessorials?.map((acc: any, i: number) => (
+                {(rateConf as any)?.accessorials?.map((acc: any, i: number) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                     <span className="text-slate-300">{acc.type}</span>
                     <span className="text-white font-medium">${acc.amount?.toLocaleString()}</span>
