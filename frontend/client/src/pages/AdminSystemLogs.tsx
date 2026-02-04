@@ -22,7 +22,7 @@ export default function AdminSystemLogs() {
   const [levelFilter, setLevelFilter] = useState("all");
   const [sourceFilter, setSourceFilter] = useState("all");
 
-  const logsQuery = trpc.admin.getSystemLogs.useQuery({ level: levelFilter, source: sourceFilter });
+  const logsQuery = trpc.admin.getSystemLogs.useQuery({ level: levelFilter !== "all" ? levelFilter : undefined });
   const statsQuery = trpc.admin.getLogStats.useQuery();
 
   const logs = logsQuery.data || [];
@@ -88,7 +88,7 @@ export default function AdminSystemLogs() {
                   <FileText className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total (24h)</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total24h?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.total?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -97,7 +97,7 @@ export default function AdminSystemLogs() {
                   <AlertCircle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Errors</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.errors || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.error || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -106,7 +106,7 @@ export default function AdminSystemLogs() {
                   <AlertTriangle className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Warnings</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.warnings || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.warning || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -115,7 +115,7 @@ export default function AdminSystemLogs() {
                   <Server className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Services</span>
                 </div>
-                <p className="text-2xl font-bold text-cyan-400">{stats?.activeServices || 0}</p>
+                <p className="text-2xl font-bold text-cyan-400">{stats?.info || 0}</p>
               </CardContent>
             </Card>
           </>
