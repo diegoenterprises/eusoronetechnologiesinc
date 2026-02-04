@@ -220,7 +220,7 @@ export default function AppointmentScheduler() {
                             <Badge className={getStatusColor(apt.status)}>{apt.status.replace("_", " ")}</Badge>
                           </div>
                           <p className="text-sm text-slate-400">
-                            {apt.loadNumber} - {apt.product} ({apt.quantity?.toLocaleString()} gal)
+                            {apt.loadNumber} - {apt.product} ({apt.weight?.toLocaleString()} gal)
                           </p>
                           <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
                             <span className="flex items-center gap-1">
@@ -302,7 +302,7 @@ export default function AppointmentScheduler() {
                                   </div>
                                   <p className="text-white font-medium text-sm">{apt.carrierName}</p>
                                   <p className="text-xs text-slate-400">{apt.loadNumber}</p>
-                                  <p className="text-xs text-slate-500 mt-1">{apt.product} - {apt.quantity?.toLocaleString()} gal</p>
+                                  <p className="text-xs text-slate-500 mt-1">{apt.product} - {apt.weight?.toLocaleString()} gal</p>
                                 </div>
                               ))}
                             </div>
@@ -349,7 +349,7 @@ export default function AppointmentScheduler() {
                           </div>
                           <p className="text-white font-medium">{currentApt.carrierName}</p>
                           <p className="text-xs text-slate-400">{currentApt.loadNumber}</p>
-                          <p className="text-xs text-slate-500">{currentApt.quantity?.toLocaleString()} gal</p>
+                          <p className="text-xs text-slate-500">{currentApt.weight?.toLocaleString()} gal</p>
                         </div>
                       ) : (
                         <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 mb-3">

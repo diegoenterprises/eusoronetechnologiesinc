@@ -135,7 +135,7 @@ export default function QuoteManagement() {
                     <p className="text-sm text-slate-400">{quote.customer}</p>
                     <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                       <span>{quote.origin} → {quote.destination}</span>
-                      <span>{quote.miles} mi</span>
+                      <span>{quote.distance} mi</span>
                       <span>Created: {quote.createdAt}</span>
                       <span>Expires: {quote.expiresAt}</span>
                     </div>

@@ -42,7 +42,7 @@ export default function ShipperLoadTracking() {
             <div className="text-center"><div className="w-4 h-4 rounded-full bg-red-400 mx-auto mb-2" /><p className="text-white font-bold">{load?.destination?.city}</p></div>
           </div>
           <div className="grid grid-cols-4 gap-4">
-            <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-xs">Miles Left</p><p className="text-white font-bold">{tracking?.milesRemaining || "—"}</p></div>
+            <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-xs">Miles Left</p><p className="text-white font-bold">{tracking?.distanceRemaining || "—"}</p></div>
             <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-xs">ETA</p><p className="text-white font-bold">{tracking?.eta || "—"}</p></div>
             <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-xs">Last Update</p><p className="text-white font-bold">{tracking?.lastUpdate || "—"}</p></div>
             <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-xs">Speed</p><p className="text-white font-bold">{tracking?.speed || 0} mph</p></div>

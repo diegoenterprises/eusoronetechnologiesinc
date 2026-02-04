@@ -21,9 +21,9 @@ export default function TerminalLoadingSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [rackFilter, setRackFilter] = useState("all");
 
-  const scheduleQuery = trpc.terminal.getLoadingSchedule.useQuery({ date: selectedDate, rack: rackFilter });
-  const racksQuery = trpc.terminal.getRacks.useQuery();
-  const statsQuery = trpc.terminal.getScheduleStats.useQuery({ date: selectedDate });
+  const scheduleQuery = trpc.terminals.getLoadingSchedule.useQuery({ date: selectedDate, rack: rackFilter });
+  const racksQuery = trpc.terminals.getRacks.useQuery();
+  const statsQuery = trpc.terminals.getScheduleStats.useQuery({ date: selectedDate });
 
   const schedule = scheduleQuery.data || [];
   const racks = racksQuery.data || [];

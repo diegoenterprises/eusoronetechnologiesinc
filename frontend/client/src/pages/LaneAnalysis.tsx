@@ -105,7 +105,7 @@ export default function LaneAnalysis() {
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <p className="text-xs text-slate-500">Miles</p>
-                      <p className="text-white font-bold">{lane.miles}</p>
+                      <p className="text-white font-bold">{lane.distance}</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-slate-500">Loads</p>

@@ -122,7 +122,7 @@ export default function EscortReports() {
                       <p className="text-sm text-slate-400">Job #{report.jobNumber} - {report.convoyRoute}</p>
                       <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                         <span>Date: {report.date}</span>
-                        <span>Miles: {report.miles}</span>
+                        <span>Miles: {report.distance}</span>
                         <span>Duration: {report.duration}</span>
                       </div>
                     </div>

@@ -184,7 +184,7 @@ export default function TerminalAppointments() {
                             {appointment.type === "loading" ? "Loading" : "Unloading"}
                           </Badge>
                         </div>
-                        <p className="text-sm text-slate-400">{appointment.product} - {appointment.quantity}</p>
+                        <p className="text-sm text-slate-400">{appointment.product} - {appointment.weight}</p>
                         <div className="flex items-center gap-4 mt-2 text-xs text-slate-500">
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{appointment.scheduledTime}</span>
                           <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{appointment.terminalName} - Rack {appointment.rack}</span>

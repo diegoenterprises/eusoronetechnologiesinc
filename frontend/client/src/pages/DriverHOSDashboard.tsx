@@ -80,23 +80,23 @@ export default function DriverHOSDashboard() {
       {/* Current Status */}
       <Card className={cn(
         "rounded-xl border-2",
-        hos?.currentStatus === "driving" ? "bg-green-500/10 border-green-500/30" :
-        hos?.currentStatus === "on_duty" ? "bg-cyan-500/10 border-cyan-500/30" :
-        hos?.currentStatus === "sleeper" ? "bg-purple-500/10 border-purple-500/30" :
+        hos?.status === "driving" ? "bg-green-500/10 border-green-500/30" :
+        hos?.status === "on_duty" ? "bg-cyan-500/10 border-cyan-500/30" :
+        hos?.status === "sleeper" ? "bg-purple-500/10 border-purple-500/30" :
         "bg-slate-800/50 border-slate-700/50"
       )}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={cn("p-4 rounded-full", dutyStatuses.find(s => s.value === hos?.currentStatus)?.bg)}>
-                {React.createElement(dutyStatuses.find(s => s.value === hos?.currentStatus)?.icon || Clock, {
-                  className: cn("w-8 h-8", dutyStatuses.find(s => s.value === hos?.currentStatus)?.color)
+              <div className={cn("p-4 rounded-full", dutyStatuses.find(s => s.value === hos?.status)?.bg)}>
+                {React.createElement(dutyStatuses.find(s => s.value === hos?.status)?.icon || Clock, {
+                  className: cn("w-8 h-8", dutyStatuses.find(s => s.value === hos?.status)?.color)
                 })}
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Current Status</p>
                 <p className="text-white font-bold text-2xl">
-                  {dutyStatuses.find(s => s.value === hos?.currentStatus)?.label || "Unknown"}
+                  {dutyStatuses.find(s => s.value === hos?.status)?.label || "Unknown"}
                 </p>
                 <p className="text-slate-400 text-sm">Since {hos?.statusSince}</p>
               </div>
@@ -107,10 +107,10 @@ export default function DriverHOSDashboard() {
                   key={status.value}
                   variant="outline"
                   onClick={() => changeStatusMutation.mutate({ status: status.value })}
-                  disabled={hos?.currentStatus === status.value}
+                  disabled={hos?.status === status.value}
                   className={cn(
                     "rounded-lg",
-                    hos?.currentStatus === status.value
+                    hos?.status === status.value
                       ? `${status.bg} border-transparent`
                       : "bg-slate-700/50 border-slate-600/50"
                   )}

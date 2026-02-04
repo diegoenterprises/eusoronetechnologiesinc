@@ -23,9 +23,9 @@ export default function CatalystCarrierCapacity() {
   const [regionFilter, setRegionFilter] = useState("all");
   const [equipmentFilter, setEquipmentFilter] = useState("all");
 
-  const capacityQuery = trpc.catalyst.getCarrierCapacity.useQuery({ region: regionFilter, equipment: equipmentFilter });
-  const statsQuery = trpc.catalyst.getCapacityStats.useQuery();
-  const regionsQuery = trpc.catalyst.getRegions.useQuery();
+  const capacityQuery = trpc.catalysts.getCarrierCapacity.useQuery({ region: regionFilter, equipment: equipmentFilter });
+  const statsQuery = trpc.catalysts.getCapacityStats.useQuery();
+  const regionsQuery = trpc.catalysts.getRegions.useQuery();
 
   const carriers = capacityQuery.data || [];
   const stats = statsQuery.data;

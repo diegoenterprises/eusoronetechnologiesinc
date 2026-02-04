@@ -195,7 +195,7 @@ export default function LaneRates() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4 text-xs text-slate-500">
-                      <span>{lane.miles} miles</span>
+                      <span>{lane.distance} miles</span>
                       <span>{lane.loadsThisMonth} loads this month</span>
                       <span>Market: ${lane.marketRate?.toFixed(2)}/mi</span>
                     </div>

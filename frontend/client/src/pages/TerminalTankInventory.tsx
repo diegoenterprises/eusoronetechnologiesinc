@@ -22,9 +22,9 @@ export default function TerminalTankInventory() {
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [timeRange, setTimeRange] = useState("24h");
 
-  const tanksQuery = trpc.terminal.getTanks.useQuery({ product: selectedProduct });
-  const scadaQuery = trpc.terminal.getScadaStatus.useQuery({}, { refetchInterval: 5000 });
-  const movementQuery = trpc.terminal.getInventoryMovement.useQuery({ timeRange });
+  const tanksQuery = trpc.terminals.getTanks.useQuery({ product: selectedProduct });
+  const scadaQuery = trpc.terminals.getScadaStatus.useQuery({}, { refetchInterval: 5000 });
+  const movementQuery = trpc.terminals.getInventoryMovement.useQuery({ timeRange });
 
   const tanks = tanksQuery.data || [];
   const scada = scadaQuery.data;

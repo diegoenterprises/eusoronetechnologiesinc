@@ -34,7 +34,7 @@ export default function CatalystReliefDriver() {
     location: currentDriverQuery.data?.currentLocation,
   }, { enabled: !!currentDriverQuery.data });
 
-  const dispatchMutation = trpc.catalyst.dispatchRelief.useMutation({
+  const dispatchMutation = trpc.catalysts.dispatchRelief.useMutation({
     onSuccess: () => {
       toast.success("Relief driver dispatched");
       navigate("/catalyst/dashboard");

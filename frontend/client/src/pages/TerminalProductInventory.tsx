@@ -22,10 +22,10 @@ export default function TerminalProductInventory() {
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState("all");
 
-  const inventoryQuery = trpc.terminal.getProductInventory.useQuery({ product: productFilter });
-  const tanksQuery = trpc.terminal.getTanks.useQuery();
-  const movementsQuery = trpc.terminal.getInventoryMovements.useQuery();
-  const alertsQuery = trpc.terminal.getInventoryAlerts.useQuery();
+  const inventoryQuery = trpc.terminals.getProductInventory.useQuery({ product: productFilter });
+  const tanksQuery = trpc.terminals.getTanks.useQuery();
+  const movementsQuery = trpc.terminals.getInventoryMovements.useQuery();
+  const alertsQuery = trpc.terminals.getInventoryAlerts.useQuery();
 
   const inventory = inventoryQuery.data || [];
   const tanks = tanksQuery.data || [];

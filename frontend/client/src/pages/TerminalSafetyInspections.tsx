@@ -23,8 +23,8 @@ export default function TerminalSafetyInspections() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const inspectionsQuery = trpc.terminal.getSafetyInspections.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.terminal.getInspectionStats.useQuery();
+  const inspectionsQuery = trpc.terminals.getSafetyInspections.useQuery({ status: statusFilter, type: typeFilter });
+  const statsQuery = trpc.terminals.getInspectionStats.useQuery();
 
   const inspections = inspectionsQuery.data || [];
   const stats = statsQuery.data;

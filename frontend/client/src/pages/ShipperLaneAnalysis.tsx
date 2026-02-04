@@ -139,7 +139,7 @@ export default function ShipperLaneAnalysis() {
                         </div>
                       </div>
                       <Badge className="bg-slate-600/50 text-slate-300 border-0">
-                        {lane.miles} mi
+                        {lane.distance} mi
                       </Badge>
                     </div>
 

@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function EscortPayHistory() {
   const [periodFilter, setPeriodFilter] = useState("30d");
 
-  const paymentsQuery = trpc.escort.getPayHistory.useQuery({ period: periodFilter });
-  const summaryQuery = trpc.escort.getPaySummary.useQuery({ period: periodFilter });
-  const pendingQuery = trpc.escort.getPendingPayments.useQuery();
+  const paymentsQuery = trpc.escorts.getPayHistory.useQuery({ period: periodFilter });
+  const summaryQuery = trpc.escorts.getPaySummary.useQuery({ period: periodFilter });
+  const pendingQuery = trpc.escorts.getPendingPayments.useQuery();
 
   const payments = paymentsQuery.data || [];
   const summary = summaryQuery.data;

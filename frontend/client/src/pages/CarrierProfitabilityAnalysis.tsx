@@ -53,7 +53,7 @@ export default function CarrierProfitabilityAnalysis() {
   const load = loadQuery.data;
   const analysis = analysisQuery.data;
 
-  const miles = load?.miles || 0;
+  const miles = load?.distance || 0;
   const fuelCost = (miles / mpg) * fuelPrice;
   const driverCost = miles * driverPay;
   const fixedCosts = 150; // Insurance, maintenance, etc.

@@ -190,7 +190,7 @@ export default function CarrierSettlements() {
                           </Badge>
                         </div>
                         <p className="text-slate-400 text-sm">
-                          {settlement.loadCount} loads • {settlement.miles?.toLocaleString()} miles
+                          {settlement.loadCount} loads • {settlement.distance?.toLocaleString()} miles
                         </p>
                       </div>
                     </div>

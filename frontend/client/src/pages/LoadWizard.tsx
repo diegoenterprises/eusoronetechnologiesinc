@@ -168,7 +168,7 @@ export default function LoadWizard() {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-slate-400">Quantity (gallons)</Label>
-              <Input type="number" value={formData.quantity} onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} placeholder="Enter quantity" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="number" value={formData.weight} onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} placeholder="Enter quantity" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Weight (lbs)</Label>

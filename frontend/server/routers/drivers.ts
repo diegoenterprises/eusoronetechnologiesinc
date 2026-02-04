@@ -1049,6 +1049,16 @@ export const driversRouter = router({
   // Driver Status
   getStatusSummary: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => ({ available: 8, driving: 12, onDuty: 3, offDuty: 4, sleeper: 2 })),
 
+  // HOS procedures for DriverHOSDashboard
+  getHOSLogs: protectedProcedure.input(z.object({ driverId: z.string(), date: z.string().optional() }).optional()).query(async () => [
+    { id: "log1", time: "06:00", status: "off_duty", duration: 480, location: "Houston, TX" },
+    { id: "log2", time: "14:00", status: "driving", duration: 240, location: "I-45 North" },
+    { id: "log3", time: "18:00", status: "on_duty", duration: 60, location: "Dallas, TX" },
+  ]),
+  getHOSViolations: protectedProcedure.input(z.object({ driverId: z.string() }).optional()).query(async () => []),
+  getSyncStatus: protectedProcedure.query(async () => ({ lastSync: new Date().toISOString(), status: "synced", provider: "ELD" })),
+  changeHOSStatus: protectedProcedure.input(z.object({ driverId: z.string(), status: z.string(), location: z.string().optional() })).mutation(async ({ input }) => ({ success: true, newStatus: input.status })),
+
   // Get all drivers as array for Drivers.tsx
   getAll: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb();

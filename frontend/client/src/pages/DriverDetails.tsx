@@ -181,7 +181,7 @@ export default function DriverDetails() {
                 <p className="text-xs text-slate-400">On-Time Rate</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-700/30 text-center">
-                <p className="text-2xl font-bold text-purple-400">{(driver.milesLogged || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-purple-400">{(driver.distanceLogged || 0).toLocaleString()}</p>
                 <p className="text-xs text-slate-400">Miles Logged</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-700/30 text-center">

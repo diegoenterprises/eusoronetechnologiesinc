@@ -36,7 +36,7 @@ export const insuranceRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -69,7 +69,7 @@ export const insuranceRouter = router({
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return null;
         
@@ -102,7 +102,7 @@ export const insuranceRouter = router({
       annualPremium: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       if (!companyId) throw new Error("Company required");
       
@@ -129,7 +129,7 @@ export const insuranceRouter = router({
   getExpiringPolicies: protectedProcedure
     .query(async ({ ctx }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -157,7 +157,7 @@ export const insuranceRouter = router({
   getSummary: protectedProcedure
     .query(async ({ ctx }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) {
           return { total: 0, active: 0, expiringSoon: 0, expired: 0, totalCoverage: 0, annualPremium: 0 };
@@ -208,7 +208,7 @@ export const insuranceRouter = router({
 
   getStats: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       if (!companyId) return { totalPolicies: 0, activeClaims: 0, totalCoverage: 0, active: 0, expiring: 0, expired: 0 };
       
@@ -248,7 +248,7 @@ export const insuranceRouter = router({
     .input(z.object({ filter: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -279,7 +279,7 @@ export const insuranceRouter = router({
   getClaimStats: protectedProcedure
     .query(async ({ ctx }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) {
           return { total: 0, open: 0, openClaims: 0, approved: 0, pending: 0, totalPaid: 0, totalAmount: 0, avgResolutionDays: 0, approvalRate: 0 };
@@ -314,7 +314,7 @@ export const insuranceRouter = router({
 
   getClaimsSummary: protectedProcedure.query(async ({ ctx }) => {
     try {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       if (!companyId) return { open: 0, openClaims: 0, closed: 0, totalPaid: 0 };
       
@@ -346,7 +346,7 @@ export const insuranceRouter = router({
       loadId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       const userId = ctx.user?.id;
       if (!companyId || !userId) throw new Error("User must be associated with a company");
@@ -381,7 +381,7 @@ export const insuranceRouter = router({
     .input(z.object({ limit: z.number().optional() }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -413,7 +413,7 @@ export const insuranceRouter = router({
       waiverOfSubrogation: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       const userId = ctx.user?.id;
       if (!companyId || !userId) throw new Error("User must be associated with a company");
@@ -451,7 +451,7 @@ export const insuranceRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -472,11 +472,11 @@ export const insuranceRouter = router({
   requestQuotes: protectedProcedure
     .input(z.object({
       policyType: z.string(),
-      coverageDetails: z.record(z.unknown()).optional(),
-      desiredLimits: z.record(z.number()).optional(),
+      coverageDetails: z.record(z.string(), z.unknown()).optional(),
+      desiredLimits: z.record(z.string(), z.number()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       if (!companyId) throw new Error("Company required");
       
@@ -501,7 +501,7 @@ export const insuranceRouter = router({
   acceptQuote: protectedProcedure
     .input(z.object({ quoteId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       const userId = ctx.user?.id;
       if (!companyId || !userId) throw new Error("Company required");
@@ -530,7 +530,7 @@ export const insuranceRouter = router({
   getRiskScore: protectedProcedure
     .query(async ({ ctx }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return null;
         
@@ -555,7 +555,7 @@ export const insuranceRouter = router({
     .input(z.object({ status: z.string().optional() }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -581,7 +581,7 @@ export const insuranceRouter = router({
   acknowledgeAlert: protectedProcedure
     .input(z.object({ alertId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const userId = ctx.user?.id;
       
       await db.update(insuranceAlerts)
@@ -603,7 +603,7 @@ export const insuranceRouter = router({
     .input(z.object({ limit: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) return [];
         const companyId = ctx.user?.companyId;
         if (!companyId) return { totalCoverage: 0, insuredVehicles: 0, annualPremium: 0, breakdown: [] };
         
@@ -640,7 +640,7 @@ export const insuranceRouter = router({
   renewPolicy: protectedProcedure
     .input(z.object({ policyId: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) return [];
       const companyId = ctx.user?.companyId;
       if (!companyId) throw new Error("Company required");
       

@@ -121,7 +121,7 @@ export default function MatchedLoads() {
                     </div>
                     <div className="p-2 rounded-lg bg-slate-700/30">
                       <p className="text-xs text-slate-500">Distance</p>
-                      <p className="text-white text-sm flex items-center gap-1"><Truck className="w-3 h-3" />{load.miles} mi</p>
+                      <p className="text-white text-sm flex items-center gap-1"><Truck className="w-3 h-3" />{load.distance} mi</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-700/30">
                       <p className="text-xs text-slate-500">Pickup</p>

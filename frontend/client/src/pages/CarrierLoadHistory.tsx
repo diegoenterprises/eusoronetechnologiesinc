@@ -22,8 +22,8 @@ export default function CarrierLoadHistory() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.carrier.getLoadHistory.useQuery({ period: periodFilter, status: statusFilter });
-  const statsQuery = trpc.carrier.getHistoryStats.useQuery({ period: periodFilter });
+  const loadsQuery = trpc.carriers.getLoadHistory.useQuery({ period: periodFilter, status: statusFilter });
+  const statsQuery = trpc.carriers.getHistoryStats.useQuery({ period: periodFilter });
 
   const loads = loadsQuery.data || [];
   const stats = statsQuery.data;
@@ -209,7 +209,7 @@ export default function CarrierLoadHistory() {
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Miles</p>
-                        <p className="text-white">{load.miles?.toLocaleString()}</p>
+                        <p className="text-white">{load.distance?.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Date</p>

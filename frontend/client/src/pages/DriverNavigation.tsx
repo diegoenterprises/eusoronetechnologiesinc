@@ -76,7 +76,7 @@ export default function DriverNavigation() {
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-full bg-cyan-500/20"><Navigation className="w-6 h-6 text-cyan-400" /></div>
-                      <div><p className="text-2xl font-bold text-cyan-400">{route.milesRemaining}</p><p className="text-xs text-slate-400">Miles Left</p></div>
+                      <div><p className="text-2xl font-bold text-cyan-400">{route.distanceRemaining}</p><p className="text-xs text-slate-400">Miles Left</p></div>
                     </div>
                   </CardContent>
                 </Card>
@@ -138,7 +138,7 @@ export default function DriverNavigation() {
                           <p className="text-xs text-red-300 mt-1">{restriction.description}</p>
                         </div>
                         <Badge className="bg-slate-800 text-slate-300 text-xs">
-                          {restriction.miles} mi ahead
+                          {restriction.distance} mi ahead
                         </Badge>
                       </div>
                     ))}

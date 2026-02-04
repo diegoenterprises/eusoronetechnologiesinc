@@ -313,7 +313,7 @@ export default function TerminalDashboard() {
                         <div>
                           <p className="text-white font-medium">{appt.carrierName}</p>
                           <p className="text-sm text-slate-400">{appt.truckNumber} - {appt.driverName}</p>
-                          <p className="text-xs text-slate-500">{appt.product} | {appt.quantity} gal | Rack {appt.rackNumber}</p>
+                          <p className="text-xs text-slate-500">{appt.product} | {appt.weight} gal | Rack {appt.rackNumber}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">

@@ -23,10 +23,10 @@ export default function BrokerCarrierOnboarding() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const carriersQuery = trpc.broker.getOnboardingCarriers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.broker.getOnboardingStats.useQuery();
+  const carriersQuery = trpc.brokers.getOnboardingCarriers.useQuery({ status: statusFilter });
+  const statsQuery = trpc.brokers.getOnboardingStats.useQuery();
 
-  const approveCarrierMutation = trpc.broker.approveCarrier.useMutation({
+  const approveCarrierMutation = trpc.brokers.approveCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier approved");
       carriersQuery.refetch();
@@ -34,7 +34,7 @@ export default function BrokerCarrierOnboarding() {
     },
   });
 
-  const rejectCarrierMutation = trpc.broker.rejectCarrier.useMutation({
+  const rejectCarrierMutation = trpc.brokers.rejectCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier rejected");
       carriersQuery.refetch();
@@ -42,7 +42,7 @@ export default function BrokerCarrierOnboarding() {
     },
   });
 
-  const sendReminderMutation = trpc.broker.sendOnboardingReminder.useMutation({
+  const sendReminderMutation = trpc.brokers.sendOnboardingReminder.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 

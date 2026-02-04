@@ -21,11 +21,11 @@ export default function TerminalEIAReporting() {
   const [reportPeriod, setReportPeriod] = useState("weekly");
   const [selectedWeek, setSelectedWeek] = useState("");
 
-  const reportQuery = trpc.terminal.getEIAReport.useQuery({ period: reportPeriod, week: selectedWeek });
-  const historyQuery = trpc.terminal.getEIAHistory.useQuery();
-  const inventoryQuery = trpc.terminal.getCurrentInventory.useQuery();
+  const reportQuery = trpc.terminals.getEIAReport.useQuery({ period: reportPeriod, week: selectedWeek });
+  const historyQuery = trpc.terminals.getEIAHistory.useQuery();
+  const inventoryQuery = trpc.terminals.getCurrentInventory.useQuery();
 
-  const submitMutation = trpc.terminal.submitEIAReport.useMutation({
+  const submitMutation = trpc.terminals.submitEIAReport.useMutation({
     onSuccess: () => {
       toast.success("EIA report submitted");
       historyQuery.refetch();

@@ -155,7 +155,7 @@ export default function EscortSchedule() {
                         </div>
                         <div className="flex items-center gap-1 text-slate-400">
                           <Truck className="w-3 h-3" />
-                          <span>{job.miles} miles</span>
+                          <span>{job.distance} miles</span>
                         </div>
                         {job.specialRequirements && (
                           <div className="flex items-center gap-1 text-orange-400">
@@ -211,7 +211,7 @@ export default function EscortSchedule() {
                       </div>
                       <div className="text-right">
                         <p className="text-green-400 font-bold">${job.rate}</p>
-                        <p className="text-xs text-slate-500">{job.miles} mi</p>
+                        <p className="text-xs text-slate-500">{job.distance} mi</p>
                       </div>
                     </div>
                   ))}

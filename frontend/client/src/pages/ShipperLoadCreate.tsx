@@ -130,11 +130,11 @@ export default function ShipperLoadCreate() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Quantity</label>
-                <Input type="number" value={formData.quantity} onChange={(e) => updateField("quantity", e.target.value)} placeholder="0" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={formData.weight} onChange={(e) => updateField("quantity", e.target.value)} placeholder="0" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Unit</label>
-                <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
+                <Select value={formData.weightUnit} onValueChange={(v) => updateField("unit", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="gallons">Gallons</SelectItem>
@@ -270,7 +270,7 @@ export default function ShipperLoadCreate() {
             <Card className="bg-slate-700/30 border-slate-600/50 rounded-lg">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between"><span className="text-slate-400">Product</span><span className="text-white">{formData.productName}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Quantity</span><span className="text-white">{formData.quantity} {formData.unit}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Quantity</span><span className="text-white">{formData.weight} {formData.weightUnit}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Hazmat</span><span className="text-white">Class {formData.hazmatClass} • {formData.unNumber}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Route</span><span className="text-white">{formData.originCity}, {formData.originState} → {formData.destCity}, {formData.destState}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Pickup</span><span className="text-white">{formData.pickupDate} {formData.pickupTime}</span></div>

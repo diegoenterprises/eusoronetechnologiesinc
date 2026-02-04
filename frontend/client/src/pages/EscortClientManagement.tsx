@@ -23,8 +23,8 @@ export default function EscortClientManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const clientsQuery = trpc.escort.getClients.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.escort.getClientStats.useQuery();
+  const clientsQuery = trpc.escorts.getClients.useQuery({ status: statusFilter, type: typeFilter });
+  const statsQuery = trpc.escorts.getClientStats.useQuery();
 
   const clients = clientsQuery.data || [];
   const stats = statsQuery.data;

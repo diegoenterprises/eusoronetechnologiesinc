@@ -217,12 +217,12 @@ export default function BrokerAnalytics() {
                           <TrendingDown className="w-4 h-4 text-red-400" />
                         )}
                         <span className={cn("text-sm font-bold", metric.trend >= 0 ? "text-green-400" : "text-red-400")}>
-                          {metric.value}{metric.unit}
+                          {metric.value}{metric.weightUnit}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
-                      <span>Target: {metric.target}{metric.unit}</span>
+                      <span>Target: {metric.target}{metric.weightUnit}</span>
                       <span>{metric.trend >= 0 ? "+" : ""}{metric.trend}% vs target</span>
                     </div>
                   </div>

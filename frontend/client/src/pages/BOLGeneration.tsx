@@ -219,7 +219,7 @@ export default function BOLGeneration() {
                         </div>
                         <div>
                           <p className="text-xs text-slate-500">Quantity</p>
-                          <p className="text-sm text-white">{bol.quantity?.toLocaleString()} gal</p>
+                          <p className="text-sm text-white">{bol.weight?.toLocaleString()} gal</p>
                         </div>
                       </div>
 

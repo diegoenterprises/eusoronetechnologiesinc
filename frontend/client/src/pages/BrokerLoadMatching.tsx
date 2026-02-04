@@ -88,7 +88,7 @@ export default function BrokerLoadMatching() {
             </div>
             <div>
               <p className="text-slate-400 text-xs">Miles</p>
-              <p className="text-white font-medium">{load?.miles}</p>
+              <p className="text-white font-medium">{load?.distance}</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Equipment</p>
@@ -151,7 +151,7 @@ export default function BrokerLoadMatching() {
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg text-xl font-bold w-40"
                 />
                 <span className="text-slate-400">
-                  (${((parseFloat(customRate) || 0) / (load?.miles || 1)).toFixed(2)}/mi)
+                  (${((parseFloat(customRate) || 0) / (load?.distance || 1)).toFixed(2)}/mi)
                 </span>
               </div>
             </div>

@@ -23,9 +23,9 @@ export default function BrokerLoadProfitability() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [marginFilter, setMarginFilter] = useState("all");
 
-  const loadsQuery = trpc.broker.getLoadProfitability.useQuery({ period: periodFilter, margin: marginFilter });
-  const statsQuery = trpc.broker.getProfitabilityStats.useQuery({ period: periodFilter });
-  const topLanesQuery = trpc.broker.getTopProfitableLanes.useQuery({ period: periodFilter });
+  const loadsQuery = trpc.brokers.getLoadProfitability.useQuery({ period: periodFilter, margin: marginFilter });
+  const statsQuery = trpc.brokers.getProfitabilityStats.useQuery({ period: periodFilter });
+  const topLanesQuery = trpc.brokers.getTopProfitableLanes.useQuery({ period: periodFilter });
 
   const loads = loadsQuery.data || [];
   const stats = statsQuery.data;

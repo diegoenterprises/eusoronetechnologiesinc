@@ -519,6 +519,9 @@ export const appRouter = router({
   // Safety Alerts
   safetyAlerts: safetyAlertsRouter,
 
+  // ZEUN Maintenance Platform
+  zeun: zeunRouter,
+
   // ZEUN Mechanics - Breakdown, Diagnostic & Repair
   zeunMechanics: zeunMechanicsRouter,
 

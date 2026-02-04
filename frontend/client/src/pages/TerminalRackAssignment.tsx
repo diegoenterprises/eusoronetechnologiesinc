@@ -14,14 +14,14 @@ import { toast } from "sonner";
 
 export default function TerminalRackAssignment() {
   const [selectedRack, setSelectedRack] = useState<string | null>(null);
-  const racksQuery = trpc.terminal.getRacks.useQuery();
-  const queueQuery = trpc.terminal.getLoadingQueue.useQuery();
-  const scadaQuery = trpc.terminal.getScadaStatus.useQuery({}, { refetchInterval: 5000 });
+  const racksQuery = trpc.terminals.getRacks.useQuery();
+  const queueQuery = trpc.terminals.getLoadingQueue.useQuery();
+  const scadaQuery = trpc.terminals.getScadaStatus.useQuery({}, { refetchInterval: 5000 });
 
-  const assignMutation = trpc.terminal.assignToRack.useMutation({
+  const assignMutation = trpc.terminals.assignToRack.useMutation({
     onSuccess: () => { toast.success("Assigned"); queueQuery.refetch(); racksQuery.refetch(); },
   });
-  const startMutation = trpc.terminal.startLoading.useMutation({
+  const startMutation = trpc.terminals.startLoading.useMutation({
     onSuccess: () => { toast.success("Loading started"); racksQuery.refetch(); },
   });
 

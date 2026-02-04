@@ -161,7 +161,7 @@ export default function BrokerLaneRates() {
                         </div>
                       </div>
                       <Badge className="bg-slate-600/50 text-slate-300 border-0">
-                        {rate.miles} mi
+                        {rate.distance} mi
                       </Badge>
                     </div>
 

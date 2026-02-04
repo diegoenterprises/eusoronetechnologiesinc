@@ -203,7 +203,7 @@ export default function BrokerMarketplace() {
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <span className="flex items-center gap-1">
                           <Truck className="w-3 h-3" />
-                          {load.miles} mi
+                          {load.distance} mi
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />

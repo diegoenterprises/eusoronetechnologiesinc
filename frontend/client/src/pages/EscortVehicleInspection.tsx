@@ -25,12 +25,12 @@ export default function EscortVehicleInspection() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNewInspection, setShowNewInspection] = useState(false);
 
-  const inspectionsQuery = trpc.escort.getInspections.useQuery({ status: statusFilter });
-  const statsQuery = trpc.escort.getInspectionStats.useQuery();
-  const vehiclesQuery = trpc.escort.getAssignedVehicles.useQuery();
-  const checklistQuery = trpc.escort.getInspectionChecklist.useQuery();
+  const inspectionsQuery = trpc.escorts.getInspections.useQuery({ status: statusFilter });
+  const statsQuery = trpc.escorts.getInspectionStats.useQuery();
+  const vehiclesQuery = trpc.escorts.getAssignedVehicles.useQuery();
+  const checklistQuery = trpc.escorts.getInspectionChecklist.useQuery();
 
-  const submitInspectionMutation = trpc.escort.submitInspection.useMutation({
+  const submitInspectionMutation = trpc.escorts.submitInspection.useMutation({
     onSuccess: () => {
       toast.success("Inspection submitted");
       inspectionsQuery.refetch();

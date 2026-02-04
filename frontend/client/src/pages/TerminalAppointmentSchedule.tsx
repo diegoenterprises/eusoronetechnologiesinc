@@ -26,11 +26,11 @@ export default function TerminalAppointmentSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedRack, setSelectedRack] = useState("all");
 
-  const appointmentsQuery = trpc.terminal.getAppointments.useQuery({ date: selectedDate, rack: selectedRack });
-  const racksQuery = trpc.terminal.getRacks.useQuery();
-  const statsQuery = trpc.terminal.getAppointmentStats.useQuery({ date: selectedDate });
+  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate, rack: selectedRack });
+  const racksQuery = trpc.terminals.getRacks.useQuery();
+  const statsQuery = trpc.terminals.getAppointmentStats.useQuery({ date: selectedDate });
 
-  const cancelMutation = trpc.terminal.cancelAppointment.useMutation({
+  const cancelMutation = trpc.terminals.cancelAppointment.useMutation({
     onSuccess: () => {
       toast.success("Appointment cancelled");
       appointmentsQuery.refetch();

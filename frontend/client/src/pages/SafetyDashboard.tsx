@@ -131,7 +131,7 @@ export default function SafetyDashboard() {
                         <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-white", i === 0 ? "bg-yellow-500" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-orange-600" : "bg-slate-600")}>{i + 1}</div>
                         <div>
                           <p className="text-white font-medium">{driver.name}</p>
-                          <p className="text-xs text-slate-500">{driver.miles?.toLocaleString()} miles | {driver.daysWithoutIncident} days safe</p>
+                          <p className="text-xs text-slate-500">{driver.distance?.toLocaleString()} miles | {driver.daysWithoutIncident} days safe</p>
                         </div>
                       </div>
                       <Badge className="bg-green-500/20 text-green-400 border-0">{driver.score}</Badge>

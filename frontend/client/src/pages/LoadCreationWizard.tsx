@@ -66,7 +66,7 @@ export default function LoadCreationWizard() {
     const hazClass = formData.hazmatClass || "";
     if (hazClass.startsWith("2.1") || hazClass.startsWith("2.2") || hazClass.startsWith("2.3")) return "gas";
     if (hazClass === "3" || hazClass.startsWith("4") || hazClass.startsWith("5") || hazClass.startsWith("6") || hazClass.startsWith("8")) return "hazmat";
-    if (formData.quantityUnit === "Pallets" || formData.quantityUnit === "Units") return "refrigerated";
+    if (formData.weightUnit === "Pallets" || formData.weightUnit === "Units") return "refrigerated";
     return "liquid";
   };
 
@@ -104,7 +104,7 @@ export default function LoadCreationWizard() {
   const canProceed = () => {
     switch (step) {
       case 0: return formData.productName && formData.hazmatClass;
-      case 1: return formData.quantity && formData.weight;
+      case 1: return formData.weight && formData.weight;
       case 2: return formData.origin && formData.destination;
       case 3: return formData.equipment;
       case 4: return true;
@@ -188,8 +188,8 @@ export default function LoadCreationWizard() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Quantity</label>
                   <div className="flex gap-2">
-                    <Input type="number" value={formData.quantity || ""} onChange={(e) => updateField("quantity", e.target.value)} placeholder="8500" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={formData.quantityUnit || "Gallons"} onValueChange={(v) => updateField("quantityUnit", v)}>
+                    <Input type="number" value={formData.weight || ""} onChange={(e) => updateField("quantity", e.target.value)} placeholder="8500" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                    <Select value={formData.weightUnit || "Gallons"} onValueChange={(v) => updateField("quantityUnit", v)}>
                       <SelectTrigger className="w-28 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Gallons">Gallons</SelectItem>
@@ -219,14 +219,14 @@ export default function LoadCreationWizard() {
                 </div>
               </div>
 
-              {formData.quantity && Number(formData.quantity) > 0 && (
+              {formData.weight && Number(formData.weight) > 0 && (
                 <div className="pt-4">
                   <p className="text-sm text-slate-400 mb-4 text-center">Load Visualization</p>
                   <MultiTruckVisualization
                     materialType={getMaterialType()}
-                    totalVolume={Number(formData.quantity) || 0}
-                    unit={formData.quantityUnit === "Gallons" ? "gal" : formData.quantityUnit === "Barrels" ? "bbl" : formData.quantityUnit?.toLowerCase() || "gal"}
-                    maxCapacityPerTruck={formData.quantityUnit === "Barrels" ? 200 : formData.quantityUnit === "Pallets" ? 24 : 8500}
+                    totalVolume={Number(formData.weight) || 0}
+                    unit={formData.weightUnit === "Gallons" ? "gal" : formData.weightUnit === "Barrels" ? "bbl" : formData.weightUnit?.toLowerCase() || "gal"}
+                    maxCapacityPerTruck={formData.weightUnit === "Barrels" ? 200 : formData.weightUnit === "Pallets" ? 24 : 8500}
                   />
                 </div>
               )}
@@ -275,7 +275,7 @@ export default function LoadCreationWizard() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Product</p><p className="text-white">{formData.productName}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Hazmat Class</p><p className="text-white">{formData.hazmatClass}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Quantity</p><p className="text-white">{formData.quantity} gal</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Quantity</p><p className="text-white">{formData.weight} gal</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Weight</p><p className="text-white">{formData.weight} lbs</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Origin</p><p className="text-white">{formData.origin}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Destination</p><p className="text-white">{formData.destination}</p></div>

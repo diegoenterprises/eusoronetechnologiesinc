@@ -25,7 +25,7 @@ export default function AdminApiManagement() {
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
   const apiKeysQuery = trpc.admin.getApiKeys.useQuery({ status: statusFilter });
-  const statsQuery = trpc.admin.getApiStats.useQuery();
+  const statsQuery = trpc.admin.getAPIStats.useQuery();
 
   const createKeyMutation = trpc.admin.createApiKey.useMutation({
     onSuccess: () => {

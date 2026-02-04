@@ -33,17 +33,17 @@ export default function CatalystExceptionManagement() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const exceptionsQuery = trpc.catalyst.getExceptions.useQuery({ type: typeFilter, priority: priorityFilter });
-  const statsQuery = trpc.catalyst.getExceptionStats.useQuery();
+  const exceptionsQuery = trpc.catalysts.getExceptions.useQuery({ type: typeFilter, priority: priorityFilter });
+  const statsQuery = trpc.catalysts.getExceptionStats.useQuery();
 
-  const acknowledgeMutation = trpc.catalyst.acknowledgeException.useMutation({
+  const acknowledgeMutation = trpc.catalysts.acknowledgeException.useMutation({
     onSuccess: () => {
       toast.success("Exception acknowledged");
       exceptionsQuery.refetch();
     },
   });
 
-  const resolveMutation = trpc.catalyst.resolveException.useMutation({
+  const resolveMutation = trpc.catalysts.resolveException.useMutation({
     onSuccess: () => {
       toast.success("Exception resolved");
       exceptionsQuery.refetch();

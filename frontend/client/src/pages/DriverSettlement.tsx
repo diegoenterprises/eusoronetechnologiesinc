@@ -174,7 +174,7 @@ export default function DriverSettlement() {
                     </div>
                     <div>
                       <p className="text-white font-medium">{stmt.periodLabel}</p>
-                      <p className="text-slate-400 text-sm">{stmt.loadCount} loads • {stmt.miles?.toLocaleString()} miles</p>
+                      <p className="text-slate-400 text-sm">{stmt.loadCount} loads • {stmt.distance?.toLocaleString()} miles</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">

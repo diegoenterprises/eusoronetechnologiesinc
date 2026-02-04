@@ -98,7 +98,7 @@ export default function BidManagement() {
               <div key={load.id} className="p-3 rounded-lg bg-slate-800/50 flex items-center justify-between">
                 <div>
                   <p className="text-white font-medium">#{load.loadNumber} - {load.origin} → {load.destination}</p>
-                  <p className="text-xs text-slate-500">{load.product} | {load.miles} mi | Target: ${load.targetRate}</p>
+                  <p className="text-xs text-slate-500">{load.product} | {load.distance} mi | Target: ${load.targetRate}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input type="number" placeholder="Your bid" value={bidAmount[load.id] || ""} onChange={(e) => setBidAmount(prev => ({ ...prev, [load.id]: e.target.value }))} className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg h-8 text-sm" />

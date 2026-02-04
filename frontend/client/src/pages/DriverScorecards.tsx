@@ -119,7 +119,7 @@ export default function DriverScorecards() {
                           {getRankBadge(driver.rank)}
                           {driver.needsAttention && <Badge className="bg-red-500/20 text-red-400 border-0"><AlertTriangle className="w-3 h-3" /></Badge>}
                         </div>
-                        <p className="text-sm text-slate-400">{driver.truck} | {driver.miles?.toLocaleString()} miles</p>
+                        <p className="text-sm text-slate-400">{driver.truck} | {driver.distance?.toLocaleString()} miles</p>
                       </div>
                     </div>
                     <div className="text-right">

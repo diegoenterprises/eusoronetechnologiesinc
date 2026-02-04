@@ -148,7 +148,7 @@ export default function ActiveConvoys() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 text-xs text-slate-500">
                       <span className="flex items-center gap-1"><Users className="w-3 h-3" />{convoy.escortCount} escorts</span>
-                      <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{convoy.miles} miles</span>
+                      <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{convoy.distance} miles</span>
                       <span className="flex items-center gap-1"><Clock className="w-3 h-3" />ETA: {convoy.eta}</span>
                     </div>
                     <div className="flex items-center gap-2">

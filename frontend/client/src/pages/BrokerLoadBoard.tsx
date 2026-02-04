@@ -25,7 +25,7 @@ export default function BrokerLoadBoard() {
     trpc.loads.getAvailable.useQuery({ limit: 20 });
   const { data: carriers, isLoading: carriersLoading } = 
     trpc.carriers.list.useQuery({ limit: 20 });
-  const { data: stats } = trpc.broker.getStats.useQuery();
+  const { data: stats } = trpc.brokers.getStats.useQuery();
 
   const assignMutation = trpc.loads.assignCarrier.useMutation({
     onSuccess: () => refetchLoads(),

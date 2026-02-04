@@ -104,7 +104,7 @@ export default function LoadAcceptance() {
                     </div>
                     <div className="p-3 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-2 text-cyan-400 mb-1"><Navigation className="w-4 h-4" /><span className="text-xs">Distance</span></div>
-                      <p className="text-white text-sm">{load.miles} miles</p>
+                      <p className="text-white text-sm">{load.distance} miles</p>
                       <p className="text-xs text-slate-500">Est. {load.estimatedHours}h</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-700/30">

@@ -23,6 +23,17 @@ export const usersRouter = router({
       }));
     }),
 
+  // Get current user (me)
+  me: protectedProcedure.query(async ({ ctx }) => {
+    return {
+      id: ctx.user?.id || 0,
+      name: ctx.user?.name || 'User',
+      email: ctx.user?.email || '',
+      role: ctx.user?.role || 'shipper',
+      companyId: ctx.user?.companyId,
+    };
+  }),
+
   // Get current user profile
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();

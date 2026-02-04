@@ -24,11 +24,11 @@ export default function TerminalInventoryAlerts() {
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
 
-  const alertsQuery = trpc.terminal.getInventoryAlerts.useQuery({ severity: severityFilter });
-  const statsQuery = trpc.terminal.getAlertStats.useQuery();
-  const thresholdsQuery = trpc.terminal.getAlertThresholds.useQuery();
+  const alertsQuery = trpc.terminals.getInventoryAlerts.useQuery({ severity: severityFilter });
+  const statsQuery = trpc.terminals.getAlertStats.useQuery();
+  const thresholdsQuery = trpc.terminals.getAlertThresholds.useQuery();
 
-  const acknowledgeAlertMutation = trpc.terminal.acknowledgeAlert.useMutation({
+  const acknowledgeAlertMutation = trpc.terminals.acknowledgeAlert.useMutation({
     onSuccess: () => {
       toast.success("Alert acknowledged");
       alertsQuery.refetch();

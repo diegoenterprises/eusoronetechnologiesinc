@@ -21,11 +21,11 @@ export default function TerminalRackSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [rackFilter, setRackFilter] = useState("all");
 
-  const scheduleQuery = trpc.terminal.getRackSchedule.useQuery({ date: selectedDate, rack: rackFilter });
-  const racksQuery = trpc.terminal.getRacks.useQuery();
-  const statsQuery = trpc.terminal.getScheduleStats.useQuery({ date: selectedDate });
+  const scheduleQuery = trpc.terminals.getRackSchedule.useQuery({ date: selectedDate, rack: rackFilter });
+  const racksQuery = trpc.terminals.getRacks.useQuery();
+  const statsQuery = trpc.terminals.getScheduleStats.useQuery({ date: selectedDate });
 
-  const confirmSlotMutation = trpc.terminal.confirmAppointment.useMutation({
+  const confirmSlotMutation = trpc.terminals.confirmAppointment.useMutation({
     onSuccess: () => {
       toast.success("Appointment confirmed");
       scheduleQuery.refetch();

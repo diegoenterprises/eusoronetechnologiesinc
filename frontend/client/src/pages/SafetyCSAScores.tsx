@@ -77,8 +77,8 @@ export default function SafetyCSAScores() {
       {/* Overall Status */}
       <Card className={cn(
         "rounded-xl",
-        scores?.alertStatus === "satisfactory" ? "bg-green-500/10 border-green-500/30" :
-        scores?.alertStatus === "conditional" ? "bg-yellow-500/10 border-yellow-500/30" :
+        scores?.alerts === "satisfactory" ? "bg-green-500/10 border-green-500/30" :
+        scores?.alerts === "conditional" ? "bg-yellow-500/10 border-yellow-500/30" :
         "bg-red-500/10 border-red-500/30"
       )}>
         <CardContent className="p-6">
@@ -86,13 +86,13 @@ export default function SafetyCSAScores() {
             <div className="flex items-center gap-4">
               <div className={cn(
                 "p-4 rounded-full",
-                scores?.alertStatus === "satisfactory" ? "bg-green-500/20" :
-                scores?.alertStatus === "conditional" ? "bg-yellow-500/20" : "bg-red-500/20"
+                scores?.alerts === "satisfactory" ? "bg-green-500/20" :
+                scores?.alerts === "conditional" ? "bg-yellow-500/20" : "bg-red-500/20"
               )}>
                 <Shield className={cn(
                   "w-10 h-10",
-                  scores?.alertStatus === "satisfactory" ? "text-green-400" :
-                  scores?.alertStatus === "conditional" ? "text-yellow-400" : "text-red-400"
+                  scores?.alerts === "satisfactory" ? "text-green-400" :
+                  scores?.alerts === "conditional" ? "text-yellow-400" : "text-red-400"
                 )} />
               </div>
               <div>
@@ -104,8 +104,8 @@ export default function SafetyCSAScores() {
               <p className="text-slate-400 text-sm">Alert Status</p>
               <Badge className={cn(
                 "border-0 text-lg px-4 py-1",
-                scores?.alertStatus === "satisfactory" ? "bg-green-500/20 text-green-400" :
-                scores?.alertStatus === "conditional" ? "bg-yellow-500/20 text-yellow-400" :
+                scores?.alerts === "satisfactory" ? "bg-green-500/20 text-green-400" :
+                scores?.alerts === "conditional" ? "bg-yellow-500/20 text-yellow-400" :
                 "bg-red-500/20 text-red-400"
               )}>
                 {scores?.alertCount || 0} Alerts

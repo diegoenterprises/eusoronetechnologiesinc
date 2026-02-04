@@ -53,7 +53,7 @@ export abstract class BaseIntegrationService {
    * Initialize the service with connection credentials
    */
   async initialize(connectionId: number): Promise<boolean> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [connection] = await db
       .select()
@@ -153,7 +153,7 @@ export abstract class BaseIntegrationService {
     triggeredBy?: string,
     triggeredByUserId?: number
   ): Promise<number> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [syncLog] = await db.insert(integrationSyncLogs).values({
       connectionId: this.connectionId!,
@@ -180,7 +180,7 @@ export abstract class BaseIntegrationService {
     syncLogId: number,
     result: SyncResult
   ): Promise<void> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     const startedAt = new Date();
     
     await db.update(integrationSyncLogs).set({
@@ -209,7 +209,7 @@ export abstract class BaseIntegrationService {
    * Get current error count for connection
    */
   private async getConnectionErrorCount(): Promise<number> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     const [connection] = await db
       .select({ errorCount: integrationConnections.errorCount })
       .from(integrationConnections)
@@ -222,7 +222,7 @@ export abstract class BaseIntegrationService {
    * Save a synced record mapping
    */
   protected async saveSyncedRecord(record: MappedRecord, internalId: number): Promise<void> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     // Check if record already exists
     const [existing] = await db

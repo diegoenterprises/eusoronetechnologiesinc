@@ -48,8 +48,8 @@ export default function CarrierBidSubmit() {
   const rateData = rateQuery.data;
   const profit = profitQuery.data;
 
-  const ratePerMile = load?.miles && bidAmount 
-    ? (parseFloat(bidAmount) / load.miles).toFixed(2) 
+  const ratePerMile = load?.distance && bidAmount 
+    ? (parseFloat(bidAmount) / load.distance).toFixed(2) 
     : "0.00";
 
   if (loadQuery.isLoading) {
@@ -102,7 +102,7 @@ export default function CarrierBidSubmit() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Package className="w-3 h-3" />Miles</p>
-              <p className="text-white font-medium">{load?.miles}</p>
+              <p className="text-white font-medium">{load?.distance}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Truck className="w-3 h-3" />Equipment</p>
@@ -144,7 +144,7 @@ export default function CarrierBidSubmit() {
                   ${rateData.lowEstimate?.toLocaleString()} - ${rateData.highEstimate?.toLocaleString()}
                 </p>
                 <p className="text-slate-400 text-sm">
-                  ${(rateData.lowEstimate / load?.miles).toFixed(2)} - ${(rateData.highEstimate / load?.miles).toFixed(2)}/mi
+                  ${(rateData.lowEstimate / load?.distance).toFixed(2)} - ${(rateData.highEstimate / load?.distance).toFixed(2)}/mi
                 </p>
               </div>
             </div>

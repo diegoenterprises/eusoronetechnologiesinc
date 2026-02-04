@@ -206,7 +206,7 @@ export default function HazmatShipments() {
                         </div>
                         <div className="flex items-center gap-2">
                           <div className="text-right mr-4">
-                            <p className="text-white font-medium">{shipment.quantity?.toLocaleString()} gal</p>
+                            <p className="text-white font-medium">{shipment.weight?.toLocaleString()} gal</p>
                             <p className="text-xs text-slate-500">{shipment.driver}</p>
                           </div>
                           <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation(`/hazmat/${shipment.id}`)}>

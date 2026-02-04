@@ -24,14 +24,14 @@ export default function CatalystLoadBoard() {
   const [equipmentFilter, setEquipmentFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const loadsQuery = trpc.catalyst.getLoadBoard.useQuery({
+  const loadsQuery = trpc.catalysts.getLoadBoard.useQuery({
     status: statusFilter,
     equipment: equipmentFilter,
     priority: priorityFilter,
   });
-  const statsQuery = trpc.catalyst.getLoadBoardStats.useQuery();
+  const statsQuery = trpc.catalysts.getLoadBoardStats.useQuery();
 
-  const assignMutation = trpc.catalyst.quickAssignLoad.useMutation({
+  const assignMutation = trpc.catalysts.quickAssignLoad.useMutation({
     onSuccess: () => {
       toast.success("Load assigned");
       loadsQuery.refetch();
@@ -244,7 +244,7 @@ export default function CatalystLoadBoard() {
                           <MapPin className="w-3 h-3 text-red-400" />
                           <span>{load.destination}</span>
                           <span className="text-slate-600">•</span>
-                          <span>{load.miles} mi</span>
+                          <span>{load.distance} mi</span>
                         </div>
                       </div>
                     </div>

@@ -151,7 +151,7 @@ export default function DriverLoadHistory() {
                     <div className="flex items-center gap-6">
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Miles</p>
-                        <p className="text-white font-medium">{load.miles?.toLocaleString()}</p>
+                        <p className="text-white font-medium">{load.distance?.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Earned</p>

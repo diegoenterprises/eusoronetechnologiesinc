@@ -217,7 +217,7 @@ export default function CarrierLoadSearch() {
                     </Badge>
                     <span className="text-slate-400 text-sm flex items-center gap-1">
                       <Package className="w-4 h-4" />
-                      {load.miles} mi
+                      {load.distance} mi
                     </span>
                     <span className="text-slate-400 text-sm flex items-center gap-1">
                       <Calendar className="w-4 h-4" />

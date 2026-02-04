@@ -23,10 +23,10 @@ export default function EscortCertificationRenewal() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const certificationsQuery = trpc.escort.getCertifications.useQuery({ status: statusFilter });
-  const statsQuery = trpc.escort.getCertificationStats.useQuery();
+  const certificationsQuery = trpc.escorts.getCertifications.useQuery({ status: statusFilter });
+  const statsQuery = trpc.escorts.getCertificationStats.useQuery();
 
-  const startRenewalMutation = trpc.escort.startCertificationRenewal.useMutation({
+  const startRenewalMutation = trpc.escorts.startCertificationRenewal.useMutation({
     onSuccess: () => {
       toast.success("Renewal process started");
       certificationsQuery.refetch();

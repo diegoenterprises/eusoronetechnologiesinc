@@ -23,8 +23,8 @@ export default function BrokerCustomerManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
 
-  const customersQuery = trpc.broker.getCustomers.useQuery({ status: statusFilter, tier: tierFilter });
-  const statsQuery = trpc.broker.getCustomerStats.useQuery();
+  const customersQuery = trpc.brokers.getCustomers.useQuery({ status: statusFilter, tier: tierFilter });
+  const statsQuery = trpc.brokers.getCustomerStats.useQuery();
 
   const customers = customersQuery.data || [];
   const stats = statsQuery.data;

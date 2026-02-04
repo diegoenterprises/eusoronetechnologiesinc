@@ -129,7 +129,7 @@ export const terminalsRouter = router({
           driver: 'Driver',
           driverName: 'Driver',
           truckNumber: '',
-          product: a.appointmentType || 'General',
+          product: a.type || 'General',
           quantity: 0,
           rackNumber: 'Rack 1',
           status: a.status,
@@ -179,7 +179,7 @@ export const terminalsRouter = router({
           name: t.name,
           location: t.city && t.state ? `${t.city}, ${t.state}` : 'Unknown',
           racks: 4,
-          status: t.isActive ? 'active' : 'inactive',
+          status: t.status || 'active',
         }));
       } catch (error) {
         console.error('[Terminals] getTerminals error:', error);

@@ -23,10 +23,10 @@ export default function CatalystLoadMatching() {
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const matchesQuery = trpc.catalyst.getLoadMatches.useQuery({ priority: priorityFilter });
-  const statsQuery = trpc.catalyst.getMatchingStats.useQuery();
+  const matchesQuery = trpc.catalysts.getLoadMatches.useQuery({ priority: priorityFilter });
+  const statsQuery = trpc.catalysts.getMatchingStats.useQuery();
 
-  const assignDriverMutation = trpc.catalyst.assignDriverToLoad.useMutation({
+  const assignDriverMutation = trpc.catalysts.assignDriverToLoad.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       matchesQuery.refetch();
@@ -202,7 +202,7 @@ export default function CatalystLoadMatching() {
                   </div>
                   <div className="p-3 rounded-lg bg-slate-700/30">
                     <p className="text-slate-400 text-xs mb-1">Details</p>
-                    <p className="text-white text-sm">{match.miles} miles</p>
+                    <p className="text-white text-sm">{match.distance} miles</p>
                     <p className="text-slate-400 text-xs">{match.equipmentType}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-700/30">

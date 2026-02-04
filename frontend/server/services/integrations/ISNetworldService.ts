@@ -138,7 +138,7 @@ export class ISNetworldService extends BaseIntegrationService {
       const response = await this.makeRequest<{ requirements: ISNComplianceRecord[] }>("/contractor/requirements");
       stats.fetched = response.requirements.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -198,7 +198,7 @@ export class ISNetworldService extends BaseIntegrationService {
       const response = await this.makeRequest<{ safetyRecords: ISNSafetyRecord[] }>("/contractor/safety-records");
       stats.fetched = response.safetyRecords.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -251,7 +251,7 @@ export class ISNetworldService extends BaseIntegrationService {
       const response = await this.makeRequest<{ employees: ISNEmployee[] }>("/contractor/employees");
       stats.fetched = response.employees.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -293,7 +293,7 @@ export class ISNetworldService extends BaseIntegrationService {
     relatedType: string,
     relatedId: string
   ): Promise<void> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [existing] = await db.select().from(documents)
       .where(and(
@@ -327,7 +327,7 @@ export class ISNetworldService extends BaseIntegrationService {
     companyId: number,
     employeeExternalId: string
   ): Promise<void> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [existing] = await db.select().from(driverCertifications)
       .where(eq(driverCertifications.externalId, cert.id));
@@ -358,7 +358,7 @@ export class ISNetworldService extends BaseIntegrationService {
     companyId: number,
     employeeExternalId: string
   ): Promise<void> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [existing] = await db.select().from(drugAlcoholTests)
       .where(eq(drugAlcoholTests.externalId, test.id));
@@ -389,7 +389,7 @@ export class ISNetworldService extends BaseIntegrationService {
     companyId: number,
     employeeExternalId: string
   ): Promise<void> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [existing] = await db.select().from(trainingRecords)
       .where(eq(trainingRecords.externalId, training.id));

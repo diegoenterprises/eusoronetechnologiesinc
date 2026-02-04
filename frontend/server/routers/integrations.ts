@@ -455,7 +455,7 @@ export const integrationsRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const userRole = ctx.user?.role || "DRIVER";
         
         let query = db.select().from(integrationProviders);
@@ -493,7 +493,7 @@ export const integrationsRouter = router({
     .input(z.object({ slug: z.string() }))
     .query(async ({ input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const [provider] = await db
           .select()
           .from(integrationProviders)
@@ -513,7 +513,7 @@ export const integrationsRouter = router({
     .input(z.object({ category: z.string() }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const userRole = ctx.user?.role || "DRIVER";
         
         const providers = await db
@@ -549,7 +549,7 @@ export const integrationsRouter = router({
     }).optional())
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -580,7 +580,7 @@ export const integrationsRouter = router({
     .input(z.object({ providerSlug: z.string() }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const companyId = ctx.user?.companyId;
         if (!companyId) return null;
         
@@ -610,7 +610,7 @@ export const integrationsRouter = router({
       externalId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = ctx.user?.companyId;
       const userId = ctx.user?.id;
       if (!companyId || !userId) {
@@ -695,7 +695,7 @@ export const integrationsRouter = router({
       externalId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = ctx.user?.companyId;
       const userId = ctx.user?.id;
       if (!companyId || !userId) {
@@ -748,7 +748,7 @@ export const integrationsRouter = router({
   disconnect: protectedProcedure
     .input(z.object({ providerSlug: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = ctx.user?.companyId;
       if (!companyId) {
         throw new Error("User must be associated with a company");
@@ -780,7 +780,7 @@ export const integrationsRouter = router({
       dataTypes: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const db = getDb();
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
       const companyId = ctx.user?.companyId;
       const userId = ctx.user?.id;
       if (!companyId) {
@@ -855,7 +855,7 @@ export const integrationsRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const companyId = ctx.user?.companyId;
         if (!companyId) return [];
         
@@ -890,7 +890,7 @@ export const integrationsRouter = router({
   getDashboardStats: protectedProcedure
     .query(async ({ ctx }) => {
       try {
-        const db = getDb();
+        const db = await getDb(); if (!db) throw new Error("Database unavailable");
         const companyId = ctx.user?.companyId;
         if (!companyId) {
           return { connected: 0, syncing: 0, errors: 0, totalRecords: 0 };

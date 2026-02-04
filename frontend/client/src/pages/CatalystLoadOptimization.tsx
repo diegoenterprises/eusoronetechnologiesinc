@@ -20,11 +20,11 @@ import { toast } from "sonner";
 export default function CatalystLoadOptimization() {
   const [optimizationGoal, setOptimizationGoal] = useState("efficiency");
 
-  const unassignedQuery = trpc.catalyst.getUnassignedLoads.useQuery();
-  const driversQuery = trpc.catalyst.getAvailableDrivers.useQuery();
+  const unassignedQuery = trpc.catalysts.getUnassignedLoads.useQuery();
+  const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery();
   const suggestionsQuery = trpc.esang.getOptimizedAssignments.useQuery({ goal: optimizationGoal });
 
-  const applyMutation = trpc.catalyst.applyOptimizedAssignments.useMutation({
+  const applyMutation = trpc.catalysts.applyOptimizedAssignments.useMutation({
     onSuccess: () => {
       toast.success("Optimized assignments applied");
       unassignedQuery.refetch();

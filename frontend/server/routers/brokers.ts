@@ -836,6 +836,74 @@ export const brokersRouter = router({
   // Shippers
   shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ id: "s1", name: "Shell Oil", activeLoads: 5, rating: 4.8 }]),
 
+  // Network Stats
+  getNetworkStats: protectedProcedure.query(async () => ({
+    totalCarriers: 156,
+    activeCarriers: 142,
+    preferredCarriers: 28,
+    newThisMonth: 8,
+    avgRating: 4.5,
+    totalCapacity: 380,
+  })),
+
+  // Onboarding
+  getOnboardingCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
+    { id: "onb1", name: "New Carrier LLC", dotNumber: "1234567", mcNumber: "MC-123456", status: "pending_documents", submittedAt: new Date().toISOString(), progress: 60 },
+    { id: "onb2", name: "Fresh Transport", dotNumber: "2345678", mcNumber: "MC-234567", status: "under_review", submittedAt: new Date().toISOString(), progress: 80 },
+  ]),
+  getOnboardingStats: protectedProcedure.query(async () => ({
+    pending: 5,
+    inProgress: 12,
+    completed: 45,
+    rejected: 3,
+    avgCompletionDays: 3.5,
+  })),
+  sendOnboardingReminder: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
+
+  // Prequalification
+  getPrequalificationCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
+    { id: "pq1", name: "ABC Transport", dotNumber: "1234567", status: "approved", safetyScore: 95, insuranceVerified: true, authorityVerified: true },
+    { id: "pq2", name: "XYZ Logistics", dotNumber: "2345678", status: "pending", safetyScore: 88, insuranceVerified: true, authorityVerified: false },
+  ]),
+  getPrequalificationStats: protectedProcedure.query(async () => ({
+    pending: 8,
+    approved: 120,
+    rejected: 15,
+    avgProcessingTime: "2.5 days",
+    approvedToday: 3,
+    rejectedToday: 1,
+    totalVerified: 135,
+    urgent: 2,
+  })),
+
+  // Customers
+  getCustomers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
+    { id: "cust1", name: "Shell Oil Company", type: "shipper", status: "active", totalLoads: 156, totalRevenue: 425000, avgMargin: 10.5, rating: 4.8, since: "2023-01-15" },
+    { id: "cust2", name: "ExxonMobil", type: "shipper", status: "active", totalLoads: 98, totalRevenue: 285000, avgMargin: 9.8, rating: 4.6, since: "2023-03-20" },
+  ]),
+  getCustomerStats: protectedProcedure.query(async () => ({
+    totalCustomers: 45,
+    activeCustomers: 42,
+    newThisMonth: 3,
+    avgLifetimeValue: 125000,
+    retentionRate: 92,
+  })),
+
+  // Lane Rates
+  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [
+    { id: "lr1", origin: "Houston, TX", destination: "Dallas, TX", miles: 238, avgRate: 2.85, minRate: 2.50, maxRate: 3.20, lastUpdated: new Date().toISOString(), volume: 45 },
+    { id: "lr2", origin: "Beaumont, TX", destination: "San Antonio, TX", miles: 285, avgRate: 3.10, minRate: 2.75, maxRate: 3.45, lastUpdated: new Date().toISOString(), volume: 32 },
+  ]),
+  getMarketRates: protectedProcedure.input(z.object({ origin: z.string().optional(), destination: z.string().optional() }).optional()).query(async () => ({
+    avgRatePerMile: 2.95,
+    trendDirection: "up",
+    trendPercent: 3.5,
+    fuelSurcharge: 0.45,
+    spotRate: 3.15,
+    contractRate: 2.85,
+  })),
+  addLaneRate: protectedProcedure.input(z.object({ origin: z.string(), destination: z.string(), rate: z.number() })).mutation(async ({ input }) => ({ success: true, id: `lr_${Date.now()}`, ...input })),
+
   /**
    * Get shippers list for Shippers page
    */

@@ -125,7 +125,7 @@ export default function FacilityPage() {
     carrier: s.carrier || '',
     driver: s.driver || '',
     commodity: s.commodity || '',
-    quantity: s.quantity || 0,
+    quantity: s.weight || 0,
     scheduledTime: new Date(s.scheduledTime || Date.now()),
     status: s.status || 'scheduled',
     bay: s.bay,
@@ -397,7 +397,7 @@ export default function FacilityPage() {
                         <div>
                           <p className="text-gray-400 text-sm mb-1">Quantity</p>
                           <p className="text-white font-semibold">
-                            {shipment.quantity.toLocaleString()} gal
+                            {shipment.weight.toLocaleString()} gal
                           </p>
                         </div>
                       </div>

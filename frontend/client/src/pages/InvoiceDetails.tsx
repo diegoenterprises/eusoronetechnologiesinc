@@ -191,8 +191,8 @@ export default function InvoiceDetails() {
                     </div>
                     <div className="text-right">
                       <p className="text-white font-bold">${(item.amount || 0).toLocaleString()}</p>
-                      {item.quantity && item.rate && (
-                        <p className="text-xs text-slate-500">{item.quantity} x ${item.rate}</p>
+                      {item.weight && item.rate && (
+                        <p className="text-xs text-slate-500">{item.weight} x ${item.rate}</p>
                       )}
                     </div>
                   </div>

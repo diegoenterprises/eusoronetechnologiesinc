@@ -87,10 +87,10 @@ export default function CatalystPerformance() {
                   <div key={metric.id} className="p-3 rounded-lg bg-slate-700/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-slate-400">{metric.name}</span>
-                      <span className={cn("text-sm font-bold", metric.value >= metric.target ? "text-green-400" : "text-yellow-400")}>{metric.value}{metric.unit}</span>
+                      <span className={cn("text-sm font-bold", metric.value >= metric.target ? "text-green-400" : "text-yellow-400")}>{metric.value}{metric.weightUnit}</span>
                     </div>
                     <Progress value={(metric.value / metric.target) * 100} className="h-2" />
-                    <p className="text-xs text-slate-500 mt-1">Target: {metric.target}{metric.unit}</p>
+                    <p className="text-xs text-slate-500 mt-1">Target: {metric.target}{metric.weightUnit}</p>
                   </div>
                 ))}
               </>

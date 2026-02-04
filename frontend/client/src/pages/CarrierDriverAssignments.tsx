@@ -22,11 +22,11 @@ export default function CarrierDriverAssignments() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const assignmentsQuery = trpc.carrier.getDriverAssignments.useQuery({ status: statusFilter });
-  const driversQuery = trpc.carrier.getAvailableDrivers.useQuery();
-  const statsQuery = trpc.carrier.getAssignmentStats.useQuery();
+  const assignmentsQuery = trpc.carriers.getDriverAssignments.useQuery({ status: statusFilter });
+  const driversQuery = trpc.carriers.getAvailableDrivers.useQuery();
+  const statsQuery = trpc.carriers.getAssignmentStats.useQuery();
 
-  const assignDriverMutation = trpc.carrier.assignDriver.useMutation({
+  const assignDriverMutation = trpc.carriers.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       assignmentsQuery.refetch();
@@ -35,7 +35,7 @@ export default function CarrierDriverAssignments() {
     },
   });
 
-  const unassignDriverMutation = trpc.carrier.unassignDriver.useMutation({
+  const unassignDriverMutation = trpc.carriers.unassignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver unassigned");
       assignmentsQuery.refetch();
@@ -270,7 +270,7 @@ export default function CarrierDriverAssignments() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                   <div className="text-center p-2 rounded-lg bg-slate-700/20">
                     <p className="text-slate-400 text-xs">Miles</p>
-                    <p className="text-white font-bold">{assignment.miles?.toLocaleString()}</p>
+                    <p className="text-white font-bold">{assignment.distance?.toLocaleString()}</p>
                   </div>
                   <div className="text-center p-2 rounded-lg bg-slate-700/20">
                     <p className="text-slate-400 text-xs">Rate</p>

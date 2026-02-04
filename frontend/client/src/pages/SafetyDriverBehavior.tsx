@@ -223,7 +223,7 @@ export default function SafetyDriverBehavior() {
                           </Badge>
                         </div>
                         <p className="text-slate-400 text-sm">
-                          {driver.truckNumber} • {driver.milesThisPeriod?.toLocaleString()} miles this period
+                          {driver.truckNumber} • {driver.distanceThisPeriod?.toLocaleString()} miles this period
                         </p>
                       </div>
                     </div>

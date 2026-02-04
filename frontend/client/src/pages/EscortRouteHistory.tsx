@@ -21,8 +21,8 @@ export default function EscortRouteHistory() {
   const [search, setSearch] = useState("");
   const [periodFilter, setPeriodFilter] = useState("30d");
 
-  const historyQuery = trpc.escort.getRouteHistory.useQuery({ period: periodFilter });
-  const statsQuery = trpc.escort.getHistoryStats.useQuery({ period: periodFilter });
+  const historyQuery = trpc.escorts.getRouteHistory.useQuery({ period: periodFilter });
+  const statsQuery = trpc.escorts.getHistoryStats.useQuery({ period: periodFilter });
 
   const routes = historyQuery.data || [];
   const stats = statsQuery.data;
@@ -159,7 +159,7 @@ export default function EscortRouteHistory() {
                     <div className="flex items-center gap-6">
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Miles</p>
-                        <p className="text-white font-medium">{route.miles?.toLocaleString()}</p>
+                        <p className="text-white font-medium">{route.distance?.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Duration</p>

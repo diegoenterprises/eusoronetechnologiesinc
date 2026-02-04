@@ -191,7 +191,7 @@ export default function BidHistory() {
                         <p className="text-sm text-slate-400">{bid.origin} → {bid.destination}</p>
                         <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{bid.submittedAt}</span>
-                          <span>{bid.miles} miles</span>
+                          <span>{bid.distance} miles</span>
                         </div>
                       </div>
                     </div>

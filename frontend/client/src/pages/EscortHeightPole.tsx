@@ -26,11 +26,11 @@ export default function EscortHeightPole() {
   const [currentReading, setCurrentReading] = useState("");
   const [location, setLocation] = useState("");
 
-  const jobQuery = trpc.escort.getJob.useQuery({ jobId: jobId || "" });
-  const obstaclesQuery = trpc.escort.getRouteObstacles.useQuery({ jobId: jobId || "" });
-  const readingsQuery = trpc.escort.getHeightReadings.useQuery({ jobId: jobId || "" });
+  const jobQuery = trpc.escorts.getJob.useQuery({ jobId: jobId || "" });
+  const obstaclesQuery = trpc.escorts.getRouteObstacles.useQuery({ jobId: jobId || "" });
+  const readingsQuery = trpc.escorts.getHeightReadings.useQuery({ jobId: jobId || "" });
 
-  const submitReadingMutation = trpc.escort.submitHeightReading.useMutation({
+  const submitReadingMutation = trpc.escorts.submitHeightReading.useMutation({
     onSuccess: () => {
       toast.success("Reading recorded");
       setCurrentReading("");

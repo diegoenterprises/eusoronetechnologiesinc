@@ -23,8 +23,8 @@ export default function CatalystDriverPerformance() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [sortBy, setSortBy] = useState("score");
 
-  const driversQuery = trpc.catalyst.getDriverPerformance.useQuery({ period: periodFilter, sortBy });
-  const statsQuery = trpc.catalyst.getPerformanceStats.useQuery({ period: periodFilter });
+  const driversQuery = trpc.catalysts.getDriverPerformance.useQuery({ period: periodFilter, sortBy });
+  const statsQuery = trpc.catalysts.getPerformanceStats.useQuery({ period: periodFilter });
 
   const drivers = driversQuery.data || [];
   const stats = statsQuery.data;
@@ -241,7 +241,7 @@ export default function CatalystDriverPerformance() {
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Miles</p>
-                        <p className="text-white">{driver.miles?.toLocaleString()}</p>
+                        <p className="text-white">{driver.distance?.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Revenue</p>

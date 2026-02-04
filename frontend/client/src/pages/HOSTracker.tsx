@@ -66,7 +66,7 @@ export default function HOSTracker() {
       </div>
 
       {/* Current Status */}
-      <Card className={cn("bg-gradient-to-r border-2 rounded-xl", getStatusColor(hos?.currentStatus || "off_duty"))}>
+      <Card className={cn("bg-gradient-to-r border-2 rounded-xl", getStatusColor(hos?.status || "off_duty"))}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
@@ -77,14 +77,14 @@ export default function HOSTracker() {
                 <p className="text-slate-400 text-sm">Current Status</p>
                 {hosQuery.isLoading ? <Skeleton className="h-10 w-32" /> : (
                   <div className="flex items-center gap-3">
-                    <p className="text-3xl font-bold text-white capitalize">{hos?.currentStatus?.replace("_", " ")}</p>
-                    {getStatusBadge(hos?.currentStatus || "off_duty")}
+                    <p className="text-3xl font-bold text-white capitalize">{hos?.status?.replace("_", " ")}</p>
+                    {getStatusBadge(hos?.status || "off_duty")}
                   </div>
                 )}
               </div>
             </div>
             <div className="flex gap-2">
-              {hos?.currentStatus === "driving" ? (
+              {hos?.status === "driving" ? (
                 <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/20 rounded-lg" onClick={() => stopDrivingMutation.mutate()} disabled={stopDrivingMutation.isPending}>
                   {stopDrivingMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Pause className="w-4 h-4 mr-2" />}
                   Stop Driving

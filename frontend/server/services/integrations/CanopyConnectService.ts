@@ -307,7 +307,7 @@ export class CanopyConnectService extends BaseIntegrationService {
    * Upsert policy to database
    */
   private async upsertPolicy(data: Record<string, unknown>, externalId: string): Promise<number> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     // Get company ID from connection
     const [connection] = await db.select().from(require("../../../drizzle/schema").integrationConnections)
@@ -339,7 +339,7 @@ export class CanopyConnectService extends BaseIntegrationService {
    * Upsert certificate to database
    */
   private async upsertCertificate(data: Record<string, unknown>, externalId: string): Promise<number> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [connection] = await db.select().from(require("../../../drizzle/schema").integrationConnections)
       .where(eq(require("../../../drizzle/schema").integrationConnections.id, this.connectionId!));
@@ -369,7 +369,7 @@ export class CanopyConnectService extends BaseIntegrationService {
    * Upsert claim to database
    */
   private async upsertClaim(data: Record<string, unknown>, externalId: string): Promise<number> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     
     const [connection] = await db.select().from(require("../../../drizzle/schema").integrationConnections)
       .where(eq(require("../../../drizzle/schema").integrationConnections.id, this.connectionId!));
@@ -399,7 +399,7 @@ export class CanopyConnectService extends BaseIntegrationService {
    * Check if we already have a record for this external ID
    */
   private async hasExistingRecord(externalId: string, type: string): Promise<boolean> {
-    const db = getDb();
+    const db = await getDb(); if (!db) return;
     const table = type === "policy" ? insurancePolicies : 
                   type === "certificate" ? certificatesOfInsurance : insuranceClaims;
     const field = type === "policy" ? insurancePolicies.externalPolicyId :

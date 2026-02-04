@@ -51,13 +51,13 @@ export default function ShipperPODReview() {
   const load = loadQuery.data;
   const photos = photosQuery.data || [];
 
-  const variance = load?.quantity && pod?.deliveredQuantity
-    ? load.quantity - pod.deliveredQuantity
+  const variance = load?.weight && pod?.deliveredQuantity
+    ? load.weight - pod.deliveredQuantity
     : 0;
-  const variancePercent = load?.quantity && pod?.deliveredQuantity
-    ? ((variance / load.quantity) * 100).toFixed(2)
+  const variancePercent = load?.weight && pod?.deliveredQuantity
+    ? ((variance / load.weight) * 100).toFixed(2)
     : 0;
-  const withinTolerance = Math.abs(variance) <= (load?.quantity || 0) * 0.005;
+  const withinTolerance = Math.abs(variance) <= (load?.weight || 0) * 0.005;
 
   if (podQuery.isLoading) {
     return (
@@ -148,13 +148,13 @@ export default function ShipperPODReview() {
           <div className="grid grid-cols-3 gap-4">
             <div className="p-4 rounded-lg bg-slate-700/30 text-center">
               <p className="text-slate-400 text-sm mb-1">Shipped</p>
-              <p className="text-white font-bold text-2xl">{load?.quantity?.toLocaleString()}</p>
-              <p className="text-slate-400 text-sm">{load?.unit}</p>
+              <p className="text-white font-bold text-2xl">{load?.weight?.toLocaleString()}</p>
+              <p className="text-slate-400 text-sm">{load?.weightUnit}</p>
             </div>
             <div className="p-4 rounded-lg bg-slate-700/30 text-center">
               <p className="text-slate-400 text-sm mb-1">Delivered</p>
               <p className="text-white font-bold text-2xl">{pod?.deliveredQuantity?.toLocaleString()}</p>
-              <p className="text-slate-400 text-sm">{load?.unit}</p>
+              <p className="text-slate-400 text-sm">{load?.weightUnit}</p>
             </div>
             <div className={cn(
               "p-4 rounded-lg text-center",

@@ -185,7 +185,7 @@ export class MotiveELDService extends BaseIntegrationService {
       const response = await this.makeRequest<{ drivers: MotiveDriver[] }>("/drivers");
       stats.fetched = response.drivers.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -242,7 +242,7 @@ export class MotiveELDService extends BaseIntegrationService {
       const response = await this.makeRequest<{ vehicles: MotiveVehicle[] }>("/vehicles");
       stats.fetched = response.vehicles.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -312,7 +312,7 @@ export class MotiveELDService extends BaseIntegrationService {
       );
       stats.fetched = response.hos_logs.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
 
       for (const log of response.hos_logs) {
         try {
@@ -368,7 +368,7 @@ export class MotiveELDService extends BaseIntegrationService {
       );
       stats.fetched = response.dvirs.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
 
       for (const dvir of response.dvirs) {
         try {
@@ -418,7 +418,7 @@ export class MotiveELDService extends BaseIntegrationService {
       const response = await this.makeRequest<{ locations: MotiveLocation[] }>("/vehicle_locations");
       stats.fetched = response.locations.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
 
       for (const location of response.locations) {
         try {

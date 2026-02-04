@@ -199,7 +199,7 @@ export default function UtilizationReport() {
                   <div key={driver.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{driver.name}</p>
-                      <p className="text-xs text-slate-500">{driver.hoursWorked}h worked • {driver.milesLoaded?.toLocaleString()} mi loaded</p>
+                      <p className="text-xs text-slate-500">{driver.hoursWorked}h worked • {driver.distanceLoaded?.toLocaleString()} mi loaded</p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Progress value={driver.utilization} className={cn("w-24 h-2", driver.utilization < 70 && "[&>div]:bg-red-500", driver.utilization >= 70 && driver.utilization < 85 && "[&>div]:bg-yellow-500")} />

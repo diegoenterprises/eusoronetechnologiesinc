@@ -28,10 +28,10 @@ export default function CatalystDriverAssignment() {
   const [search, setSearch] = useState("");
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const driversQuery = trpc.catalyst.getAvailableDrivers.useQuery({ loadId: loadId || "" });
+  const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
   const aiQuery = trpc.esang.recommendDrivers.useQuery({ loadId: loadId || "" });
 
-  const assignMutation = trpc.catalyst.assignDriver.useMutation({
+  const assignMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       navigate("/catalyst/dispatch");
@@ -85,7 +85,7 @@ export default function CatalystDriverAssignment() {
             </div>
             <div>
               <p className="text-slate-400 text-xs">Distance</p>
-              <p className="text-white font-medium">{load?.miles} mi</p>
+              <p className="text-white font-medium">{load?.distance} mi</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Est. Time</p>

@@ -23,10 +23,10 @@ export default function BrokerCarrierPrequalification() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const carriersQuery = trpc.broker.getPrequalificationCarriers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.broker.getPrequalificationStats.useQuery();
+  const carriersQuery = trpc.brokers.getPrequalificationCarriers.useQuery({ status: statusFilter });
+  const statsQuery = trpc.brokers.getPrequalificationStats.useQuery();
 
-  const approveCarrierMutation = trpc.broker.approveCarrier.useMutation({
+  const approveCarrierMutation = trpc.brokers.approveCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier approved");
       carriersQuery.refetch();
@@ -34,7 +34,7 @@ export default function BrokerCarrierPrequalification() {
     },
   });
 
-  const rejectCarrierMutation = trpc.broker.rejectCarrier.useMutation({
+  const rejectCarrierMutation = trpc.brokers.rejectCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier rejected");
       carriersQuery.refetch();

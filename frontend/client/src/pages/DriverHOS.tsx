@@ -66,7 +66,7 @@ export default function DriverHOS() {
     );
   }
 
-  const currentStatus = hosData?.currentStatus || "OFF_DUTY";
+  const currentStatus = hosData?.status || "OFF_DUTY";
   const drivingRemaining = hosData?.drivingRemaining || 0;
   const onDutyRemaining = hosData?.onDutyRemaining || 0;
   const cycleRemaining = hosData?.cycleRemaining || 0;

@@ -197,7 +197,7 @@ export default function DriverPayroll() {
                   <div className="grid grid-cols-4 gap-4 mt-3 text-xs">
                     <div className="p-2 rounded-lg bg-slate-700/30 text-center">
                       <p className="text-slate-400">Miles</p>
-                      <p className="text-white font-medium">{item.miles?.toLocaleString()}</p>
+                      <p className="text-white font-medium">{item.distance?.toLocaleString()}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-700/30 text-center">
                       <p className="text-slate-400">Loads</p>

@@ -62,13 +62,13 @@ export default function DriverPODCapture() {
     });
   };
 
-  const variance = load?.quantity && deliveredQty 
-    ? load.quantity - parseFloat(deliveredQty)
+  const variance = load?.weight && deliveredQty 
+    ? load.weight - parseFloat(deliveredQty)
     : 0;
-  const variancePercent = load?.quantity && deliveredQty
-    ? ((variance / load.quantity) * 100).toFixed(2)
+  const variancePercent = load?.weight && deliveredQty
+    ? ((variance / load.weight) * 100).toFixed(2)
     : 0;
-  const withinTolerance = Math.abs(variance) <= (load?.quantity || 0) * 0.005;
+  const withinTolerance = Math.abs(variance) <= (load?.weight || 0) * 0.005;
 
   if (loadQuery.isLoading) {
     return (
@@ -147,7 +147,7 @@ export default function DriverPODCapture() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-lg bg-slate-700/30">
                   <p className="text-slate-400 text-sm mb-1">Loaded Quantity</p>
-                  <p className="text-white font-bold text-xl">{load?.quantity?.toLocaleString()} {load?.unit}</p>
+                  <p className="text-white font-bold text-xl">{load?.weight?.toLocaleString()} {load?.weightUnit}</p>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-300">Delivered Quantity</Label>
@@ -159,7 +159,7 @@ export default function DriverPODCapture() {
                       placeholder="Enter delivered amount"
                       className="bg-slate-700/50 border-slate-600/50 rounded-lg"
                     />
-                    <span className="text-slate-400">{load?.unit}</span>
+                    <span className="text-slate-400">{load?.weightUnit}</span>
                   </div>
                 </div>
                 <div className="p-4 rounded-lg bg-slate-700/30">
@@ -167,7 +167,7 @@ export default function DriverPODCapture() {
                   {deliveredQty && (
                     <div className="flex items-center gap-2">
                       <p className={cn("font-bold text-xl", withinTolerance ? "text-green-400" : "text-red-400")}>
-                        {variance > 0 ? "-" : "+"}{Math.abs(variance).toLocaleString()} {load?.unit}
+                        {variance > 0 ? "-" : "+"}{Math.abs(variance).toLocaleString()} {load?.weightUnit}
                       </p>
                       <Badge className={cn("border-0", withinTolerance ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
                         {variancePercent}%

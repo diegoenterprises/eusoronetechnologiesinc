@@ -78,7 +78,7 @@ export default function DriverCompensation() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><MapPin className="w-6 h-6 text-purple-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-purple-400">{stats?.milesDriven?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Miles</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-purple-400">{stats?.distanceDriven?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Miles</p></div>
             </div>
           </CardContent>
         </Card>
@@ -117,7 +117,7 @@ export default function DriverCompensation() {
                       <p className="text-white font-medium">Load #{trip.loadNumber}</p>
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <span>{trip.origin} → {trip.destination}</span>
-                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{trip.miles} mi</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{trip.distance} mi</span>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{trip.completedAt}</span>
                       </div>
                     </div>

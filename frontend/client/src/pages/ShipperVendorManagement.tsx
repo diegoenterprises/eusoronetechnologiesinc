@@ -22,9 +22,9 @@ export default function ShipperVendorManagement() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
 
-  const vendorsQuery = trpc.shipper.getVendors.useQuery({ category: categoryFilter, status: statusFilter });
-  const statsQuery = trpc.shipper.getVendorStats.useQuery();
-  const categoriesQuery = trpc.shipper.getVendorCategories.useQuery();
+  const vendorsQuery = trpc.shippers.getVendors.useQuery({ category: categoryFilter, status: statusFilter });
+  const statsQuery = trpc.shippers.getVendorStats.useQuery();
+  const categoriesQuery = trpc.shippers.getVendorCategories.useQuery();
 
   const vendors = vendorsQuery.data || [];
   const stats = statsQuery.data;

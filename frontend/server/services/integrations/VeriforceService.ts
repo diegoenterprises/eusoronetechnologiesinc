@@ -120,7 +120,7 @@ export class VeriforceService extends BaseIntegrationService {
       const response = await this.makeRequest<{ qualifications: VeriforceOQRecord[] }>("/oq/qualifications");
       stats.fetched = response.qualifications.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -174,7 +174,7 @@ export class VeriforceService extends BaseIntegrationService {
       const response = await this.makeRequest<{ tests: VeriforceDARecord[] }>("/da/tests");
       stats.fetched = response.tests.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;
@@ -228,7 +228,7 @@ export class VeriforceService extends BaseIntegrationService {
       const response = await this.makeRequest<{ trainings: VeriforceTraining[] }>("/training/completions");
       stats.fetched = response.trainings.length;
 
-      const db = getDb();
+      const db = await getDb(); if (!db) return;
       const [connection] = await db.select().from(integrationConnections)
         .where(eq(integrationConnections.id, this.connectionId!));
       const companyId = connection.companyId;

@@ -179,7 +179,7 @@ export default function DriverPayStatements() {
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" />Miles</p>
-                        <p className="text-white">{statement.miles?.toLocaleString()}</p>
+                        <p className="text-white">{statement.distance?.toLocaleString()}</p>
                       </div>
                       <div className="text-center">
                         <p className="text-slate-400 text-xs">Gross</p>

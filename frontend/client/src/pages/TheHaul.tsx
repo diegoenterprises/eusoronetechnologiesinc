@@ -134,7 +134,7 @@ export default function TheHaul() {
             </div>
             <Progress value={profile?.levelProgress || 0} className="h-3" />
             <p className="text-sm text-muted-foreground text-center">
-              {profile?.milesUntilNextLevel?.toLocaleString() || 0} miles until next level
+              {profile?.distanceUntilNextLevel?.toLocaleString() || 0} miles until next level
             </p>
           </div>
         </CardContent>

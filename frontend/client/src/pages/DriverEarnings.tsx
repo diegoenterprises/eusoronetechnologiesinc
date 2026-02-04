@@ -188,7 +188,7 @@ export default function DriverEarnings() {
                     <div>
                       <p className="text-white font-medium">{earning.loadNumber}</p>
                       <p className="text-sm text-slate-400">{earning.origin} → {earning.destination}</p>
-                      <p className="text-xs text-slate-500">{earning.date} | {earning.miles} miles</p>
+                      <p className="text-xs text-slate-500">{earning.date} | {earning.distance} miles</p>
                     </div>
                   </div>
                   <div className="text-right">

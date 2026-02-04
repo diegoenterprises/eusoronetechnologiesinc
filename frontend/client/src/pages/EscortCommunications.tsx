@@ -22,14 +22,14 @@ export default function EscortCommunications() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
 
-  const conversationsQuery = trpc.escort.getConversations.useQuery();
-  const messagesQuery = trpc.escort.getMessages.useQuery(
+  const conversationsQuery = trpc.escorts.getConversations.useQuery();
+  const messagesQuery = trpc.escorts.getMessages.useQuery(
     { conversationId: selectedConversation! },
     { enabled: !!selectedConversation }
   );
-  const activeJobQuery = trpc.escort.getActiveJob.useQuery();
+  const activeJobQuery = trpc.escorts.getActiveJob.useQuery();
 
-  const sendMessageMutation = trpc.escort.sendMessage.useMutation({
+  const sendMessageMutation = trpc.escorts.sendMessage.useMutation({
     onSuccess: () => {
       setNewMessage("");
       messagesQuery.refetch();

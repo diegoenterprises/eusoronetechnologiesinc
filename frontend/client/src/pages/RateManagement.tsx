@@ -116,7 +116,7 @@ export default function RateManagement() {
                         <Badge className={cn("border-0", rate.type === "contract" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400")}>{rate.type}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-slate-400">
-                        <span>{rate.miles} mi</span>
+                        <span>{rate.distance} mi</span>
                         <span>{rate.equipment}</span>
                         {rate.customer && <span>Customer: {rate.customer}</span>}
                       </div>

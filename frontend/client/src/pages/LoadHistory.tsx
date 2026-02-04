@@ -129,7 +129,7 @@ export default function LoadHistory() {
                       </div>
                       <div className="flex items-center gap-4 text-xs text-slate-500 mt-1">
                         <span>{load.product}</span>
-                        <span>{load.miles} mi</span>
+                        <span>{load.distance} mi</span>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{load.completedAt}</span>
                       </div>
                     </div>

@@ -39,7 +39,7 @@ export default function BrokerCarrierVetting() {
   const [mcNumber, setMcNumber] = useState("");
 
   const carrierQuery = trpc.carriers.getById.useQuery({ id: carrierId || "" }, { enabled: !!carrierId });
-  const vettingQuery = trpc.brokers.getVettingStatus.useQuery({ carrierId: carrierId || "" }, { enabled: !!carrierId });
+  const vettingQuery = trpc.brokers.getVettingStats.useQuery({ carrierId: carrierId || "" }, { enabled: !!carrierId });
 
   const lookupMutation = trpc.integrations.fmcsaSaferLookup.useMutation({
     onSuccess: (data) => {

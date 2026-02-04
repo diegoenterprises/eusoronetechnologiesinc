@@ -22,8 +22,8 @@ export default function EscortEquipmentManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const equipmentQuery = trpc.escort.getEquipment.useQuery({ status: statusFilter });
-  const statsQuery = trpc.escort.getEquipmentStats.useQuery();
+  const equipmentQuery = trpc.escorts.getEquipment.useQuery({ status: statusFilter });
+  const statsQuery = trpc.escorts.getEquipmentStats.useQuery();
 
   const equipment = equipmentQuery.data || [];
   const stats = statsQuery.data;

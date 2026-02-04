@@ -174,7 +174,7 @@ export default function DriverBOLSign() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <p className="text-slate-400 text-sm">Quantity</p>
-                    <p className="text-white font-medium">{bol?.hazmat?.quantity?.toLocaleString()} {bol?.hazmat?.unit}</p>
+                    <p className="text-white font-medium">{bol?.hazmat?.weight?.toLocaleString()} {bol?.hazmat?.weightUnit}</p>
                   </div>
                   <div>
                     <p className="text-slate-400 text-sm">Gross Weight</p>

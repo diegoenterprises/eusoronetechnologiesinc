@@ -106,7 +106,7 @@ export default function IFTAReporting() {
                     <div>
                       <p className="text-white font-bold">{j.stateName}</p>
                       <div className="flex items-center gap-4 text-sm text-slate-400">
-                        <span>{j.miles?.toLocaleString()} mi</span>
+                        <span>{j.distance?.toLocaleString()} mi</span>
                         <span>{j.gallonsPurchased?.toLocaleString()} gal purchased</span>
                         <span>{j.gallonsUsed?.toLocaleString()} gal used</span>
                       </div>

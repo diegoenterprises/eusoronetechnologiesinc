@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function EscortTraining() {
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const coursesQuery = trpc.escort.getTrainingCourses.useQuery({ category: categoryFilter });
-  const progressQuery = trpc.escort.getTrainingProgress.useQuery();
-  const certsQuery = trpc.escort.getCertifications.useQuery();
+  const coursesQuery = trpc.escorts.getTrainingCourses.useQuery({ category: categoryFilter });
+  const progressQuery = trpc.escorts.getTrainingProgress.useQuery();
+  const certsQuery = trpc.escorts.getCertifications.useQuery();
 
   const courses = coursesQuery.data || [];
   const progress = progressQuery.data;

@@ -23,11 +23,11 @@ export default function EscortJobAcceptance() {
   const [, params] = useRoute("/escort/job-offer/:jobId");
   const jobId = params?.jobId;
 
-  const jobQuery = trpc.escort.getJobOffer.useQuery({ jobId: jobId || "" });
-  const requirementsQuery = trpc.escort.getJobRequirements.useQuery({ jobId: jobId || "" });
-  const userCertsQuery = trpc.escort.getMyCertifications.useQuery();
+  const jobQuery = trpc.escorts.getJobOffer.useQuery({ jobId: jobId || "" });
+  const requirementsQuery = trpc.escorts.getJobRequirements.useQuery({ jobId: jobId || "" });
+  const userCertsQuery = trpc.escorts.getMyCertifications.useQuery();
 
-  const acceptMutation = trpc.escort.acceptJob.useMutation({
+  const acceptMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Job accepted");
       navigate("/escort/jobs");
@@ -35,7 +35,7 @@ export default function EscortJobAcceptance() {
     onError: (error) => toast.error("Failed", { description: error.message }),
   });
 
-  const declineMutation = trpc.escort.declineJob.useMutation({
+  const declineMutation = trpc.escorts.declineJob.useMutation({
     onSuccess: () => {
       toast.success("Job declined");
       navigate("/escort/marketplace");
@@ -118,7 +118,7 @@ export default function EscortJobAcceptance() {
           <div className="grid grid-cols-4 gap-4">
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Navigation className="w-3 h-3" />Distance</p>
-              <p className="text-white font-medium">{job?.miles} miles</p>
+              <p className="text-white font-medium">{job?.distance} miles</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" />Est. Duration</p>
@@ -130,7 +130,7 @@ export default function EscortJobAcceptance() {
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><DollarSign className="w-3 h-3" />Rate</p>
-              <p className="text-white font-medium">${(job?.pay / job?.miles).toFixed(2)}/mi</p>
+              <p className="text-white font-medium">${(job?.pay / job?.distance).toFixed(2)}/mi</p>
             </div>
           </div>
         </CardContent>
