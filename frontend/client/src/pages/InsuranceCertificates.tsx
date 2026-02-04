@@ -55,7 +55,7 @@ export default function InsuranceCertificates() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage COIs and insurance documentation</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => requestMutation.mutate({})}>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => requestMutation.mutate({ holderName: "New Certificate Request" })}>
           <Plus className="w-4 h-4 mr-2" />Request COI
         </Button>
       </div>
@@ -70,7 +70,7 @@ export default function InsuranceCertificates() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{summary?.total || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(summary as any)?.total || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total COIs</p>
               </div>
@@ -86,7 +86,7 @@ export default function InsuranceCertificates() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{summary?.active || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(summary as any)?.active || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Active</p>
               </div>
@@ -102,7 +102,7 @@ export default function InsuranceCertificates() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{summary?.expiringSoon || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(summary as any)?.expiringSoon || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Expiring Soon</p>
               </div>
@@ -118,7 +118,7 @@ export default function InsuranceCertificates() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{summary?.expired || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(summary as any)?.expired || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Expired</p>
               </div>
