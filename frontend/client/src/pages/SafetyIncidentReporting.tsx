@@ -27,9 +27,9 @@ export default function SafetyIncidentReporting() {
 
   const incidentsQuery = trpc.safety.getIncidents.useQuery({ status: statusFilter, type: typeFilter });
   const statsQuery = trpc.safety.getIncidentStats.useQuery();
-  const typesQuery = trpc.safety.getIncidentTypes.useQuery();
+  const typesQuery = trpc.safety.getIncidents.useQuery({});
 
-  const submitIncidentMutation = trpc.safety.submitIncident.useMutation({
+  const submitIncidentMutation = trpc.safety.createIncident.useMutation({
     onSuccess: () => {
       toast.success("Incident reported");
       incidentsQuery.refetch();
@@ -77,7 +77,7 @@ export default function SafetyIncidentReporting() {
                   <AlertTriangle className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Incidents</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalIncidents || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
@@ -86,7 +86,7 @@ export default function SafetyIncidentReporting() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Open</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.openIncidents || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.open || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -95,7 +95,7 @@ export default function SafetyIncidentReporting() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Under Review</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.underReview || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.investigating || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
