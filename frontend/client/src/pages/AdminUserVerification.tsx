@@ -23,7 +23,7 @@ export default function AdminUserVerification() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  const usersQuery = trpc.admin.getPendingVerifications.useQuery({ status: statusFilter, role: roleFilter });
+  const usersQuery = trpc.admin.getPendingVerifications.useQuery({ filter: statusFilter !== "all" ? statusFilter : undefined });
   const statsQuery = trpc.admin.getVerificationStats.useQuery();
 
   const approveMutation = trpc.admin.approveUser.useMutation({
@@ -121,7 +121,7 @@ export default function AdminUserVerification() {
                   <UserCheck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">This Week</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.thisWeek || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.totalVerified || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -129,13 +129,13 @@ export default function AdminUserVerification() {
       </div>
 
       {/* Urgent Queue */}
-      {stats?.urgent > 0 && (
+      {(stats?.pending || 0) > 5 && (
         <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <AlertTriangle className="w-5 h-5 text-red-400" />
               <div>
-                <p className="text-white font-medium">{stats.urgent} users waiting 48+ hours</p>
+                <p className="text-white font-medium">{stats?.pending || 0} users waiting for review</p>
                 <p className="text-slate-400 text-sm">Prioritize these verifications</p>
               </div>
             </div>
