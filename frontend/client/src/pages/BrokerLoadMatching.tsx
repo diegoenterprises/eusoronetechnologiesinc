@@ -32,7 +32,7 @@ export default function BrokerLoadMatching() {
   const matchQuery = trpc.carriers.getAvailableCapacity.useQuery({ limit: 20 });
   const rateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
 
-  const sendOffersMutation = trpc.brokers.sendCarrierInvitation.useMutation({
+  const sendOffersMutation = trpc.brokers.createMatch.useMutation({
     onSuccess: () => {
       toast.success(`Offers sent to ${selectedCarriers.length} carriers`);
       navigate("/broker/loads");
@@ -96,11 +96,11 @@ export default function BrokerLoadMatching() {
             </div>
             <div>
               <p className="text-slate-400 text-xs">Pickup</p>
-              <p className="text-white font-medium">{load?.pickupDate}</p>
+              <p className="text-white font-medium">{load?.pickupDate ? new Date(String(load.pickupDate)).toLocaleDateString() : 'TBD'}</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Customer Rate</p>
-              <p className="text-green-400 font-bold">${load?.customerRate?.toLocaleString()}</p>
+              <p className="text-green-400 font-bold">${(load as any)?.customerRate?.toLocaleString() || 'TBD'}</p>
             </div>
           </div>
         </CardContent>
@@ -127,7 +127,7 @@ export default function BrokerLoadMatching() {
               <div className="text-right">
                 <p className="text-slate-400 text-sm">Est. Margin</p>
                 <p className="text-green-400 font-bold text-xl">
-                  ${((load?.customerRate || 0) - (rateData.midEstimate || 0)).toLocaleString()}
+                  ${(((load as any)?.customerRate || 0) - (rateData.midEstimate || 0)).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -151,7 +151,7 @@ export default function BrokerLoadMatching() {
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg text-xl font-bold w-40"
                 />
                 <span className="text-slate-400">
-                  (${((parseFloat(customRate) || 0) / (load?.distance || 1)).toFixed(2)}/mi)
+                  (${((parseFloat(customRate) || 0) / (typeof load?.distance === 'number' ? load.distance : 1)).toFixed(2)}/mi)
                 </span>
               </div>
             </div>
@@ -159,9 +159,9 @@ export default function BrokerLoadMatching() {
               <p className="text-slate-400 text-sm">Your Margin</p>
               <p className={cn(
                 "font-bold text-xl",
-                (load?.customerRate || 0) - (parseFloat(customRate) || 0) > 0 ? "text-green-400" : "text-red-400"
+                ((load as any)?.customerRate || 0) - (parseFloat(customRate) || 0) > 0 ? "text-green-400" : "text-red-400"
               )}>
-                ${((load?.customerRate || 0) - (parseFloat(customRate) || 0)).toLocaleString()}
+                ${(((load as any)?.customerRate || 0) - (parseFloat(customRate) || 0)).toLocaleString()}
               </p>
             </div>
           </div>
