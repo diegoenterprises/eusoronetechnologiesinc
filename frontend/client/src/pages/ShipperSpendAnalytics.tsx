@@ -23,8 +23,8 @@ export default function ShipperSpendAnalytics() {
   const [view, setView] = useState("overview");
 
   const statsQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
-  const laneQuery = trpc.analytics.getLoadStats.useQuery({ dateRange: period });
-  const carrierQuery = trpc.analytics.getLoadStats.useQuery({ dateRange: period });
+  const laneQuery = trpc.analytics.getPerformanceStats.useQuery({ dateRange: period });
+  const carrierQuery = trpc.analytics.getPerformanceStats.useQuery({ dateRange: period });
   const accessorialQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
   const trendQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
 
@@ -109,7 +109,7 @@ export default function ShipperSpendAnalytics() {
                     <Truck className="w-5 h-5 text-purple-400" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalLoads ?? 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalLoads ?? 0}</p>
                 <p className="text-xs text-slate-400">Total Loads</p>
               </CardContent>
             </Card>
@@ -121,9 +121,9 @@ export default function ShipperSpendAnalytics() {
                     <Target className="w-5 h-5 text-yellow-400" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.budgetUtilization ?? 0}%</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.budgetUtilization ?? stats?.margin ?? 0}%</p>
                 <p className="text-xs text-slate-400">Budget Used</p>
-                <Progress value={stats?.budgetUtilization ?? 0} className="h-1.5 mt-2" />
+                <Progress value={(stats as any)?.budgetUtilization ?? stats?.margin ?? 0} className="h-1.5 mt-2" />
               </CardContent>
             </Card>
           </>
