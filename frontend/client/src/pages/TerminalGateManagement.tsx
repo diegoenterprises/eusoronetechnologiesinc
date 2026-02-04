@@ -26,7 +26,7 @@ export default function TerminalGateManagement() {
   const transactionsQuery = trpc.terminals.getAppointments.useQuery({});
   const statsQuery = trpc.terminals.getStats.useQuery();
 
-  const processEntryMutation = trpc.terminals.checkIn.useMutation({
+  const processEntryMutation = trpc.terminals.updateAppointment.useMutation({
     onSuccess: () => {
       toast.success("Entry processed");
       transactionsQuery.refetch();
@@ -34,7 +34,7 @@ export default function TerminalGateManagement() {
     },
   });
 
-  const processExitMutation = trpc.terminals.checkIn.useMutation({
+  const processExitMutation = trpc.terminals.updateAppointment.useMutation({
     onSuccess: () => {
       toast.success("Exit processed");
       transactionsQuery.refetch();
@@ -84,7 +84,7 @@ export default function TerminalGateManagement() {
                   <ArrowRight className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Entries Today</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.entriesToday || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.incomingToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-blue-500/10 border-blue-500/30 rounded-xl">
@@ -93,7 +93,7 @@ export default function TerminalGateManagement() {
                   <ArrowLeft className="w-4 h-4 text-blue-400" />
                   <span className="text-slate-400 text-sm">Exits Today</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-400">{stats?.exitsToday || 0}</p>
+                <p className="text-2xl font-bold text-blue-400">{stats?.outgoingToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -102,7 +102,7 @@ export default function TerminalGateManagement() {
                   <Truck className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Currently On-Site</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.currentlyOnSite || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.activeShipments || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -111,7 +111,7 @@ export default function TerminalGateManagement() {
                   <Clock className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Avg Dwell Time</span>
                 </div>
-                <p className="text-2xl font-bold text-cyan-400">{stats?.avgDwellTime || 0}h</p>
+                <p className="text-2xl font-bold text-cyan-400">{stats?.staffOnDuty || 0}</p>
               </CardContent>
             </Card>
           </>
