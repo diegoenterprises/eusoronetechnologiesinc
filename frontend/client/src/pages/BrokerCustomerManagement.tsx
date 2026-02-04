@@ -23,7 +23,7 @@ export default function BrokerCustomerManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
 
-  const customersQuery = trpc.brokers.getCustomers.useQuery({ status: statusFilter, tier: tierFilter });
+  const customersQuery = trpc.brokers.getCustomers.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
   const statsQuery = trpc.brokers.getCustomerStats.useQuery();
 
   const customers = customersQuery.data || [];
@@ -79,7 +79,7 @@ export default function BrokerCustomerManagement() {
                   <Star className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Premium</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.premiumCustomers || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.newThisMonth || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-blue-500/10 border-blue-500/30 rounded-xl">
@@ -88,7 +88,7 @@ export default function BrokerCustomerManagement() {
                   <DollarSign className="w-4 h-4 text-blue-400" />
                   <span className="text-slate-400 text-sm">Revenue MTD</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-400">${stats?.revenueMTD?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-blue-400">${stats?.avgLifetimeValue?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -97,7 +97,7 @@ export default function BrokerCustomerManagement() {
                   <Package className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Loads MTD</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.loadsMTD || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.retentionRate || 0}%</p>
               </CardContent>
             </Card>
           </>
@@ -117,7 +117,7 @@ export default function BrokerCustomerManagement() {
             <Skeleton className="h-24 rounded-lg" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {stats?.topCustomers?.map((customer: any, idx: number) => (
+              {(customers || []).slice(0, 5).map((customer: any, idx: number) => (
                 <div key={customer.id} className="p-3 rounded-lg bg-slate-700/30 flex items-center gap-3">
                   <div className={cn(
                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold",
