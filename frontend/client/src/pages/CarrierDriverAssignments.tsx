@@ -22,11 +22,11 @@ export default function CarrierDriverAssignments() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const assignmentsQuery = trpc.carriers.getDriverAssignments.useQuery({ status: statusFilter });
-  const driversQuery = trpc.carriers.getAvailableDrivers.useQuery();
-  const statsQuery = trpc.carriers.getAssignmentStats.useQuery();
+  const assignmentsQuery = trpc.carriers.getLoads.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
+  const driversQuery = trpc.carriers.getDrivers.useQuery({});
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
-  const assignDriverMutation = trpc.carriers.assignDriver.useMutation({
+  const assignDriverMutation = trpc.carriers.updateLoad.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       assignmentsQuery.refetch();
@@ -35,7 +35,7 @@ export default function CarrierDriverAssignments() {
     },
   });
 
-  const unassignDriverMutation = trpc.carriers.unassignDriver.useMutation({
+  const unassignDriverMutation = trpc.carriers.updateLoad.useMutation({
     onSuccess: () => {
       toast.success("Driver unassigned");
       assignmentsQuery.refetch();
