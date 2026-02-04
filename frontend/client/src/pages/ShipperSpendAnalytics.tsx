@@ -22,11 +22,11 @@ export default function ShipperSpendAnalytics() {
   const [period, setPeriod] = useState("month");
   const [view, setView] = useState("overview");
 
-  const statsQuery = trpc.analytics.getShipperSpendStats.useQuery({ period });
-  const laneQuery = trpc.analytics.getLaneCosts.useQuery({ period });
-  const carrierQuery = trpc.analytics.getCarrierSpend.useQuery({ period });
-  const accessorialQuery = trpc.analytics.getAccessorialBreakdown.useQuery({ period });
-  const trendQuery = trpc.analytics.getSpendTrend.useQuery({ period });
+  const statsQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
+  const laneQuery = trpc.analytics.getLanePerformance.useQuery({ dateRange: period });
+  const carrierQuery = trpc.analytics.getCarrierPerformance.useQuery({ dateRange: period });
+  const accessorialQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
+  const trendQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
 
   const stats = statsQuery.data;
 
