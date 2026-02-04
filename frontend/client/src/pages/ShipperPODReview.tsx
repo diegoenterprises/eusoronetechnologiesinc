@@ -123,7 +123,7 @@ export default function ShipperPODReview() {
                 <User className="w-4 h-4" />
                 <span className="text-xs">Received By</span>
               </div>
-              <p className="text-white font-medium">{pod?.consigneeName}</p>
+              <p className="text-white font-medium">{(pod as any)?.consigneeName || "N/A"}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <div className="flex items-center gap-2 text-slate-400 mb-1">
@@ -237,12 +237,12 @@ export default function ShipperPODReview() {
         <CardContent>
           <div className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
             <div>
-              <p className="text-white font-medium">{pod?.consigneeName}</p>
-              <p className="text-slate-400 text-sm">Signed at {pod?.signedAt}</p>
+              <p className="text-white font-medium">{(pod as any)?.consigneeName || "N/A"}</p>
+              <p className="text-slate-400 text-sm">Signed at {(pod as any)?.signedAt || "N/A"}</p>
             </div>
-            {pod?.signatureImage && (
+            {(pod as any)?.signatureImage && (
               <div className="w-48 h-20 rounded-lg bg-white/10 overflow-hidden">
-                <img src={pod.signatureImage} alt="Signature" className="w-full h-full object-contain" />
+                <img src={(pod as any).signatureImage} alt="Signature" className="w-full h-full object-contain" />
               </div>
             )}
           </div>
