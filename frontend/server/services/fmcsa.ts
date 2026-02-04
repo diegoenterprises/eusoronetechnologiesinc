@@ -498,12 +498,3 @@ class FMCSAService {
 
 // Export singleton instance
 export const fmcsaService = new FMCSAService();
-
-// Export types for use in routers
-export type {
-  FMCSACarrierInfo,
-  FMCSASafetyRating,
-  FMCSAAuthority,
-  FMCSAInsurance,
-  CarrierVerificationResult,
-};
