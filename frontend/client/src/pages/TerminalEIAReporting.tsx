@@ -23,7 +23,7 @@ export default function TerminalEIAReporting() {
 
   const reportQuery = trpc.terminals.getEIAReport.useQuery({ period: reportPeriod });
   const historyQuery = trpc.terminals.getAppointments.useQuery({});
-  const inventoryQuery = trpc.terminals.getInventory.useQuery();
+  const inventoryQuery = trpc.terminals.getInventory.useQuery({});
 
   const submitMutation = trpc.terminals.submitEIAReport.useMutation({
     onSuccess: () => {
@@ -77,7 +77,7 @@ export default function TerminalEIAReporting() {
                   </div>
                   <span className="text-slate-400 text-sm">Gasoline</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{(inventory?.gasoline / 1000).toFixed(1)}K</p>
+                <p className="text-2xl font-bold text-white">{((inventory as any)?.[0]?.currentLevel / 1000 || 0).toFixed(1)}K</p>
                 <p className="text-slate-400 text-xs">barrels</p>
               </CardContent>
             </Card>
@@ -89,7 +89,7 @@ export default function TerminalEIAReporting() {
                   </div>
                   <span className="text-slate-400 text-sm">Diesel</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{(inventory?.diesel / 1000).toFixed(1)}K</p>
+                <p className="text-2xl font-bold text-white">{((inventory as any)?.[1]?.currentLevel / 1000 || 0).toFixed(1)}K</p>
                 <p className="text-slate-400 text-xs">barrels</p>
               </CardContent>
             </Card>
@@ -101,7 +101,7 @@ export default function TerminalEIAReporting() {
                   </div>
                   <span className="text-slate-400 text-sm">Jet Fuel</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{(inventory?.jetFuel / 1000).toFixed(1)}K</p>
+                <p className="text-2xl font-bold text-white">{((inventory as any)?.[2]?.currentLevel / 1000 || 0).toFixed(1)}K</p>
                 <p className="text-slate-400 text-xs">barrels</p>
               </CardContent>
             </Card>
@@ -113,7 +113,7 @@ export default function TerminalEIAReporting() {
                   </div>
                   <span className="text-slate-400 text-sm">Throughput</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{inventory?.throughput?.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-white">{((inventory as any)?.length || 0).toLocaleString()}</p>
                 <p className="text-slate-400 text-xs">bbl/day</p>
               </CardContent>
             </Card>
