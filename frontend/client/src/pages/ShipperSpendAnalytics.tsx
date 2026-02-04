@@ -23,8 +23,8 @@ export default function ShipperSpendAnalytics() {
   const [view, setView] = useState("overview");
 
   const statsQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
-  const laneQuery = trpc.analytics.getLanePerformance.useQuery({ dateRange: period });
-  const carrierQuery = trpc.analytics.getCarrierPerformance.useQuery({ dateRange: period });
+  const laneQuery = trpc.analytics.getLoadStats.useQuery({ dateRange: period });
+  const carrierQuery = trpc.analytics.getLoadStats.useQuery({ dateRange: period });
   const accessorialQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
   const trendQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
 
@@ -76,12 +76,12 @@ export default function ShipperSpendAnalytics() {
                   <div className="p-2 rounded-lg bg-green-500/20">
                     <DollarSign className="w-5 h-5 text-green-400" />
                   </div>
-                  <Badge className={cn("border-0", (stats?.spendChange ?? 0) >= 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400")}>
-                    {(stats?.spendChange ?? 0) >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-                    {Math.abs(stats?.spendChange ?? 0)}%
+                  <Badge className={cn("border-0", (stats?.change ?? 0) >= 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400")}>
+                    {(stats?.change ?? 0) >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+                    {Math.abs(stats?.change ?? 0)}%
                   </Badge>
                 </div>
-                <p className="text-2xl font-bold text-white">{formatCurrency(stats?.totalSpend ?? 0)}</p>
+                <p className="text-2xl font-bold text-white">{formatCurrency(stats?.total ?? 0)}</p>
                 <p className="text-xs text-slate-400">Total Spend</p>
               </CardContent>
             </Card>
@@ -92,12 +92,12 @@ export default function ShipperSpendAnalytics() {
                   <div className="p-2 rounded-lg bg-cyan-500/20">
                     <TrendingUp className="w-5 h-5 text-cyan-400" />
                   </div>
-                  <Badge className={cn("border-0", (stats?.cpmChange ?? 0) >= 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400")}>
-                    {(stats?.cpmChange ?? 0) >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
-                    {Math.abs(stats?.cpmChange ?? 0)}%
+                  <Badge className={cn("border-0", (stats?.growth ?? 0) >= 0 ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400")}>
+                    {(stats?.growth ?? 0) >= 0 ? <ArrowUpRight className="w-3 h-3 mr-1" /> : <ArrowDownRight className="w-3 h-3 mr-1" />}
+                    {Math.abs(stats?.growth ?? 0)}%
                   </Badge>
                 </div>
-                <p className="text-2xl font-bold text-white">${stats?.costPerMile?.toFixed(2) ?? "0.00"}</p>
+                <p className="text-2xl font-bold text-white">${stats?.avgPerLoad?.toFixed(2) ?? "0.00"}</p>
                 <p className="text-xs text-slate-400">Cost Per Mile</p>
               </CardContent>
             </Card>
