@@ -23,11 +23,11 @@ export default function TerminalYardManagement() {
   const [zoneFilter, setZoneFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const yardQuery = trpc.terminals.getYardStatus.useQuery({ zone: zoneFilter, status: statusFilter });
-  const statsQuery = trpc.terminals.getYardStats.useQuery();
-  const zonesQuery = trpc.terminals.getYardZones.useQuery();
+  const yardQuery = trpc.terminals.getAppointments.useQuery({});
+  const statsQuery = trpc.terminals.getStats.useQuery();
+  const zonesQuery = trpc.terminals.getBays.useQuery();
 
-  const moveTrailerMutation = trpc.terminals.moveTrailer.useMutation({
+  const moveTrailerMutation = trpc.terminals.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Trailer moved");
       yardQuery.refetch();
