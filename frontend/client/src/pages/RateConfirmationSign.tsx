@@ -28,15 +28,15 @@ export default function RateConfirmationSign() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
 
-  const rateConfQuery = trpc.documents.getRateConfirmation.useQuery({ loadId: loadId || "" });
+  const rateConfQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
   const userQuery = trpc.users.me.useQuery();
 
-  const signMutation = trpc.documents.signRateConfirmation.useMutation({
+  const signMutation = trpc.documents.update.useMutation({
     onSuccess: () => {
       toast.success("Rate confirmation signed successfully");
-      navigate(-1);
+      navigate("/carrier/loads");
     },
-    onError: (error) => toast.error("Failed to sign", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to sign", { description: error.message }),
   });
 
   const rateConf = rateConfQuery.data;
@@ -67,7 +67,7 @@ export default function RateConfirmationSign() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate("/carrier/loads")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />
