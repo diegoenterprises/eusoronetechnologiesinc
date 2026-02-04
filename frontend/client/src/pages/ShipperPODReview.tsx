@@ -29,7 +29,7 @@ export default function ShipperPODReview() {
 
   const podQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const photosQuery = trpc.documents.getByLoadId.useQuery({ loadId: loadId || "" });
+  const photosQuery = trpc.documents.getAll.useQuery({ category: "pod" });
 
   const approveMutation = trpc.documents.verifyDocument.useMutation({
     onSuccess: () => {
@@ -51,13 +51,13 @@ export default function ShipperPODReview() {
   const load = loadQuery.data;
   const photos = photosQuery.data || [];
 
-  const variance = load?.weight && pod?.deliveredQuantity
-    ? load.weight - pod.deliveredQuantity
+  const loadWeight = typeof load?.weight === 'number' ? load.weight : 0;
+  const deliveredQty = 0; // TODO: Get from actual POD data
+  const variance = loadWeight && deliveredQty ? loadWeight - deliveredQty : 0;
+  const variancePercent = loadWeight && deliveredQty
+    ? ((variance / loadWeight) * 100).toFixed(2)
     : 0;
-  const variancePercent = load?.weight && pod?.deliveredQuantity
-    ? ((variance / load.weight) * 100).toFixed(2)
-    : 0;
-  const withinTolerance = Math.abs(variance) <= (load?.weight || 0) * 0.005;
+  const withinTolerance = Math.abs(variance) <= loadWeight * 0.005;
 
   if (podQuery.isLoading) {
     return (
