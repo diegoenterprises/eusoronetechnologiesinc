@@ -109,14 +109,14 @@ export default function ShipperPODReview() {
                 <Calendar className="w-4 h-4" />
                 <span className="text-xs">Delivery Date</span>
               </div>
-              <p className="text-white font-medium">{pod?.deliveredAt}</p>
+              <p className="text-white font-medium">{(pod as any)?.deliveredAt || pod?.uploadedAt}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <div className="flex items-center gap-2 text-slate-400 mb-1">
                 <MapPin className="w-4 h-4" />
                 <span className="text-xs">Location</span>
               </div>
-              <p className="text-white font-medium">{load?.destination?.name}</p>
+              <p className="text-white font-medium">{load?.destination?.city}, {load?.destination?.state}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <div className="flex items-center gap-2 text-slate-400 mb-1">
@@ -130,7 +130,7 @@ export default function ShipperPODReview() {
                 <Clock className="w-4 h-4" />
                 <span className="text-xs">Time</span>
               </div>
-              <p className="text-white font-medium">{pod?.deliveryTime}</p>
+              <p className="text-white font-medium">{(pod as any)?.deliveryTime || "N/A"}</p>
             </div>
           </div>
         </CardContent>
@@ -153,7 +153,7 @@ export default function ShipperPODReview() {
             </div>
             <div className="p-4 rounded-lg bg-slate-700/30 text-center">
               <p className="text-slate-400 text-sm mb-1">Delivered</p>
-              <p className="text-white font-bold text-2xl">{pod?.deliveredQuantity?.toLocaleString()}</p>
+              <p className="text-white font-bold text-2xl">{((pod as any)?.deliveredQuantity || load?.weight)?.toLocaleString()}</p>
               <p className="text-slate-400 text-sm">{load?.weightUnit}</p>
             </div>
             <div className={cn(
@@ -183,18 +183,18 @@ export default function ShipperPODReview() {
         <CardContent>
           <div className={cn(
             "p-4 rounded-lg flex items-center gap-3",
-            pod?.condition === "good" ? "bg-green-500/10" : "bg-yellow-500/10"
+            (pod as any)?.condition === "good" ? "bg-green-500/10" : "bg-yellow-500/10"
           )}>
-            {pod?.condition === "good" ? (
+            {(pod as any)?.condition === "good" ? (
               <CheckCircle className="w-6 h-6 text-green-400" />
             ) : (
               <AlertTriangle className="w-6 h-6 text-yellow-400" />
             )}
             <div>
-              <p className={cn("font-medium", pod?.condition === "good" ? "text-green-400" : "text-yellow-400")}>
-                {pod?.condition === "good" ? "Delivered in Good Condition" : "Exception Noted"}
+              <p className={cn("font-medium", (pod as any)?.condition === "good" ? "text-green-400" : "text-yellow-400")}>
+                {(pod as any)?.condition === "good" ? "Delivered in Good Condition" : "Exception Noted"}
               </p>
-              {pod?.notes && <p className="text-slate-300 text-sm mt-1">{pod.notes}</p>}
+              {(pod as any)?.notes && <p className="text-slate-300 text-sm mt-1">{(pod as any).notes}</p>}
             </div>
           </div>
         </CardContent>
