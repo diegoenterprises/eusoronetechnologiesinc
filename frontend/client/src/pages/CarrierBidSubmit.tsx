@@ -31,9 +31,8 @@ export default function CarrierBidSubmit() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
   const rateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
-  const profitQuery = trpc.carriers.getBidAnalysis.useQuery({
+  const profitQuery = trpc.carriers.getProfitability.useQuery({
     loadId: loadId || "",
-    proposedRate: parseFloat(bidAmount) || 0,
   }, { enabled: !!bidAmount });
 
   const submitBidMutation = trpc.carriers.submitBid.useMutation({
@@ -115,7 +114,7 @@ export default function CarrierBidSubmit() {
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" />Delivery</p>
-              <p className="text-white font-medium">{load?.deliveryDate}</p>
+              <p className="text-white font-medium">{load?.deliveryDate ? new Date(String(load.deliveryDate)).toLocaleDateString() : 'TBD'}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1"><Star className="w-3 h-3" />Shipper</p>
@@ -123,7 +122,7 @@ export default function CarrierBidSubmit() {
             </div>
           </div>
 
-          {load?.hazmat && (
+          {load?.hazmatClass && (
             <Badge className="bg-orange-500/20 text-orange-400 border-0 mt-4">
               <AlertTriangle className="w-3 h-3 mr-1" />Hazmat - {load.hazmatClass}
             </Badge>
@@ -145,7 +144,7 @@ export default function CarrierBidSubmit() {
                   ${rateData.lowEstimate?.toLocaleString()} - ${rateData.highEstimate?.toLocaleString()}
                 </p>
                 <p className="text-slate-400 text-sm">
-                  ${(rateData.lowEstimate / load?.distance).toFixed(2)} - ${(rateData.highEstimate / load?.distance).toFixed(2)}/mi
+                  ${(rateData.lowEstimate / (distance || 1)).toFixed(2)} - ${(rateData.highEstimate / (distance || 1)).toFixed(2)}/mi
                 </p>
               </div>
             </div>
