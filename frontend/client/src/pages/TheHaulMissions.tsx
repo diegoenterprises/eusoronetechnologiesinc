@@ -20,9 +20,9 @@ export default function TheHaulMissions() {
   const [filter, setFilter] = useState('active');
 
   const { data: missions, isLoading, refetch } = trpc.gamification.getMissions.useQuery({ 
-    status: filter as 'active' | 'completed' | 'expired' 
+    type: filter === 'active' ? 'daily' : filter === 'completed' ? 'weekly' : 'monthly'
   });
-  const claimMutation = trpc.gamification.claimMission.useMutation({
+  const claimMutation = trpc.gamification.completeMission.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -65,7 +65,7 @@ export default function TheHaulMissions() {
 
         <TabsContent value={filter} className="mt-6">
           <div className="grid gap-4">
-            {missions?.map((mission: any) => (
+            {missions?.active?.map((mission: any) => (
               <Card key={mission.id}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
