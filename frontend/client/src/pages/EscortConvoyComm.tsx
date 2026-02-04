@@ -29,18 +29,18 @@ export default function EscortConvoyComm() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const jobQuery = trpc.escorts.getJobs.useQuery({ status: "active" });
-  const participantsQuery = trpc.escorts.getJobDetails.useQuery({ id: jobId || "" });
-  const messagesQuery = trpc.escorts.getJobDetails.useQuery({ id: jobId || "" }, { refetchInterval: 3000 });
-  const locationQuery = trpc.escorts.getJobDetails.useQuery({ id: jobId || "" }, { refetchInterval: 5000 });
+  const participantsQuery = trpc.escorts.getJobDetails.useQuery({ jobId: jobId || "" });
+  const messagesQuery = trpc.escorts.getJobDetails.useQuery({ jobId: jobId || "" }, { refetchInterval: 3000 });
+  const locationQuery = trpc.escorts.getJobDetails.useQuery({ jobId: jobId || "" }, { refetchInterval: 5000 });
 
-  const sendMessageMutation = trpc.escorts.updateJob.useMutation({
+  const sendMessageMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       setMessage("");
       messagesQuery.refetch();
     },
   });
 
-  const sendAlertMutation = trpc.escorts.updateJob.useMutation({
+  const sendAlertMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Alert sent to convoy");
       messagesQuery.refetch();
@@ -85,7 +85,7 @@ export default function EscortConvoyComm() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Convoy Comm
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Job #{job?.jobNumber}</p>
+          <p className="text-slate-400 text-sm mt-1">Job #{job?.[0]?.id || jobId}</p>
         </div>
         <Badge className="bg-green-500/20 text-green-400 border-0">
           <Radio className="w-3 h-3 mr-1 animate-pulse" />
@@ -99,11 +99,11 @@ export default function EscortConvoyComm() {
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <User className="w-5 h-5 text-cyan-400" />
-              Convoy ({participants.length})
+              Convoy ({Array.isArray(participants) ? participants.length : 0})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {participants.map((p: any) => (
+            {(Array.isArray(participants) ? participants : []).map((p: any) => (
               <div key={p.id} className="p-3 rounded-lg bg-slate-700/30">
                 <div className="flex items-center gap-3">
                   <div className={cn(
@@ -147,13 +147,13 @@ export default function EscortConvoyComm() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 overflow-y-auto space-y-3 mb-4">
-              {messages.length === 0 ? (
+              {(Array.isArray(messages) ? messages : []).length === 0 ? (
                 <div className="text-center py-8">
                   <MessageSquare className="w-8 h-8 text-slate-500 mx-auto mb-2" />
                   <p className="text-slate-400 text-sm">No messages yet</p>
                 </div>
               ) : (
-                messages.map((msg: any) => (
+                (Array.isArray(messages) ? messages : []).map((msg: any) => (
                   <div
                     key={msg.id}
                     className={cn(
