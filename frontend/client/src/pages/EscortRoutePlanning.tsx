@@ -28,16 +28,16 @@ export default function EscortRoutePlanning() {
 
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
-  const jobQuery = trpc.escorts.getJob.useQuery({ jobId: jobId || "" });
-  const routesQuery = trpc.escorts.getRouteOptions.useQuery({ jobId: jobId || "" });
-  const permitsQuery = trpc.escorts.getPermitRequirements.useQuery({ jobId: jobId || "" });
+  const jobQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
+  const routesQuery = trpc.escorts.getJobs.useQuery({});
+  const permitsQuery = trpc.escorts.getCertifications.useQuery({});
 
-  const selectRouteMutation = trpc.escorts.selectRoute.useMutation({
+  const selectRouteMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Route selected");
       navigate(`/escort/job/${jobId}`);
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const job = jobQuery.data;
