@@ -33,10 +33,10 @@ export default function CatalystExceptionManagement() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const exceptionsQuery = trpc.catalysts.getExceptions.useQuery({ type: typeFilter, priority: priorityFilter });
+  const exceptionsQuery = trpc.catalysts.getExceptions.useQuery({ type: typeFilter !== "all" ? typeFilter : undefined, status: priorityFilter !== "all" ? priorityFilter : undefined });
   const statsQuery = trpc.catalysts.getExceptionStats.useQuery();
 
-  const acknowledgeMutation = trpc.catalysts.acknowledgeException.useMutation({
+  const acknowledgeMutation = trpc.catalysts.resolveException.useMutation({
     onSuccess: () => {
       toast.success("Exception acknowledged");
       exceptionsQuery.refetch();
@@ -101,7 +101,7 @@ export default function CatalystExceptionManagement() {
                   <AlertTriangle className="w-4 h-4 text-orange-400" />
                   <span className="text-orange-400 text-sm">High</span>
                 </div>
-                <p className="text-2xl font-bold text-orange-400">{stats?.high || 0}</p>
+                <p className="text-2xl font-bold text-orange-400">{stats?.open || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -110,7 +110,7 @@ export default function CatalystExceptionManagement() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-yellow-400 text-sm">Medium</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.medium || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.monitoring || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-cyan-500/10 border-cyan-500/30 rounded-xl">
