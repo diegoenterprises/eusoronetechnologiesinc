@@ -31,9 +31,9 @@ export default function DriverFuelPurchase() {
   const [odometer, setOdometer] = useState("");
 
   const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
-  const loadQuery = trpc.loads.getByDriver.useQuery({ driverId: "current" });
-  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ latitude: 0, longitude: 0 });
-  const historyQuery = trpc.fuel.getPurchaseHistory.useQuery({ driverId: "current" });
+  const loadQuery = trpc.loads.getAll.useQuery({ search: "" });
+  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ lat: 0, lng: 0 });
+  const historyQuery = trpc.fuel.getTransactions.useQuery({ limit: 10 });
 
   const submitMutation = trpc.fuel.reportPurchase.useMutation({
     onSuccess: () => {
@@ -208,7 +208,7 @@ export default function DriverFuelPurchase() {
       </Card>
 
       {/* MPG Estimate */}
-      {gallons && odometer && vehicle?.lastFuelOdometer && (
+      {gallons && odometer && (vehicle as any)?.lastFuelOdometer && (
         <Card className="bg-cyan-500/10 border-cyan-500/30 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -217,12 +217,12 @@ export default function DriverFuelPurchase() {
                 <div>
                   <p className="text-cyan-400 font-medium">Estimated MPG</p>
                   <p className="text-slate-400 text-sm">
-                    {(parseInt(odometer) - vehicle.lastFuelOdometer).toLocaleString()} miles since last fill
+                    {(parseInt(odometer) - ((vehicle as any).lastFuelOdometer || 0)).toLocaleString()} miles since last fill
                   </p>
                 </div>
               </div>
               <p className="text-3xl font-bold text-white">
-                {((parseInt(odometer) - vehicle.lastFuelOdometer) / parseFloat(gallons)).toFixed(1)}
+                {((parseInt(odometer) - ((vehicle as any).lastFuelOdometer || 0)) / parseFloat(gallons)).toFixed(1)}
               </p>
             </div>
           </CardContent>
@@ -232,13 +232,13 @@ export default function DriverFuelPurchase() {
       {/* Submit Button */}
       <Button
         onClick={() => submitMutation.mutate({
-          vehicleId: vehicle?.id,
-          loadId: load?.id,
+          vehicleId: vehicle?.id || "",
+          loadId: load?.id || "",
           gallons: parseFloat(gallons),
           pricePerGallon: parseFloat(pricePerGallon),
           totalAmount: parseFloat(totalAmount),
-          fuelType,
-          stationId: station,
+          fuelType: fuelType as "diesel" | "def" | "gasoline",
+          stationId: station || "",
           paymentMethod,
           odometer: parseInt(odometer),
         })}
