@@ -44,7 +44,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
     const { userId, companyId, providerSlug, returnUrl } = stateData;
 
     // Get provider configuration
-    const db = getDb();
+    const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
     const [providerConfig] = await db.select().from(integrationProviders)
       .where(eq(integrationProviders.slug, providerSlug));
 
@@ -123,7 +123,7 @@ router.get("/initiate/:provider", async (req: Request, res: Response) => {
   }
 
   try {
-    const db = getDb();
+    const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
     const [providerConfig] = await db.select().from(integrationProviders)
       .where(eq(integrationProviders.slug, provider));
 

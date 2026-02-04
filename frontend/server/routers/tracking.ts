@@ -110,19 +110,18 @@ export const trackingRouter = router({
         const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, vehicleId)).limit(1);
         if (!vehicle) return null;
 
-        // Get latest GPS data for this vehicle's driver
+        // Get latest GPS data for this vehicle
         let position = { lat: 0, lng: 0, heading: 0, speed: 0, updatedAt: new Date().toISOString() };
-        if (vehicle.assignedDriverId) {
-          const [gps] = await db.select().from(gpsTracking).where(eq(gpsTracking.driverId, vehicle.assignedDriverId)).orderBy(desc(gpsTracking.timestamp)).limit(1);
-          if (gps) {
-            position = { lat: Number(gps.latitude), lng: Number(gps.longitude), heading: Number(gps.heading) || 0, speed: Number(gps.speed) || 0, updatedAt: gps.timestamp?.toISOString() || new Date().toISOString() };
-          }
+        const [gps] = await db.select().from(gpsTracking).where(eq(gpsTracking.vehicleId, vehicleId)).orderBy(desc(gpsTracking.timestamp)).limit(1);
+        if (gps) {
+          position = { lat: Number(gps.latitude), lng: Number(gps.longitude), heading: Number(gps.heading) || 0, speed: Number(gps.speed) || 0, updatedAt: gps.timestamp?.toISOString() || new Date().toISOString() };
         }
 
-        // Get driver info
+        // Get driver info from active load
         let driverInfo = { id: '', name: 'Not assigned', hosStatus: 'off_duty', hoursRemaining: 0 };
-        if (vehicle.assignedDriverId) {
-          const [driver] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, vehicle.assignedDriverId)).limit(1);
+        const [activeLoad] = await db.select({ driverId: loads.driverId }).from(loads).where(and(eq(loads.vehicleId, vehicleId), eq(loads.status, 'in_transit'))).limit(1);
+        if (activeLoad?.driverId) {
+          const [driver] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, activeLoad.driverId)).limit(1);
           if (driver) driverInfo = { id: `d_${driver.id}`, name: driver.name || 'Driver', hosStatus: 'driving', hoursRemaining: 8 };
         }
 
@@ -136,7 +135,7 @@ export const trackingRouter = router({
 
         return {
           vehicleId: input.vehicleId,
-          unitNumber: vehicle.unitNumber || `TRK-${vehicle.id}`,
+          unitNumber: vehicle.licensePlate || `TRK-${vehicle.id}`,
           position,
           driver: driverInfo,
           currentLoad,
@@ -179,27 +178,25 @@ export const trackingRouter = router({
           let loadNumber: string | null = null;
           let destination: string | null = null;
 
-          if (v.assignedDriverId) {
-            const [gps] = await db.select().from(gpsTracking).where(eq(gpsTracking.driverId, v.assignedDriverId)).orderBy(desc(gpsTracking.timestamp)).limit(1);
+          // Get GPS data and driver from active load
+          const [activeLoad] = await db.select({ driverId: loads.driverId, loadNumber: loads.loadNumber, deliveryLocation: loads.deliveryLocation }).from(loads).where(and(eq(loads.vehicleId, v.id), eq(loads.status, 'in_transit'))).limit(1);
+          if (activeLoad?.driverId) {
+            const [gps] = await db.select().from(gpsTracking).where(eq(gpsTracking.driverId, activeLoad.driverId)).orderBy(desc(gpsTracking.timestamp)).limit(1);
             if (gps) {
               position = { lat: Number(gps.latitude), lng: Number(gps.longitude) };
               speed = Number(gps.speed) || 0;
               heading = Number(gps.heading) || 0;
             }
-            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, v.assignedDriverId)).limit(1);
+            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, activeLoad.driverId)).limit(1);
             if (driver) driverName = driver.name || 'Driver';
-          }
-
-          const [load] = await db.select().from(loads).where(and(eq(loads.vehicleId, v.id), eq(loads.status, 'in_transit'))).limit(1);
-          if (load) {
-            loadNumber = load.loadNumber;
-            const delivery = load.deliveryLocation as any || {};
+            loadNumber = activeLoad.loadNumber;
+            const delivery = activeLoad.deliveryLocation as any || {};
             destination = delivery.city ? `${delivery.city}, ${delivery.state}` : null;
           }
 
           return {
             id: `v_${v.id}`,
-            unitNumber: v.unitNumber || `TRK-${v.id}`,
+            unitNumber: v.licensePlate || `TRK-${v.id}`,
             position,
             status: speed > 0 ? 'moving' : v.status === 'in_use' ? 'stopped' : 'idle',
             speed,
@@ -564,11 +561,11 @@ export const trackingRouter = router({
                 id: `vehicle-${vehicle.id}`,
                 lat: Number(gps.latitude) || 0,
                 lng: Number(gps.longitude) || 0,
-                title: vehicle.unitNumber || `Vehicle ${vehicle.id.slice(0, 8)}`,
+                title: vehicle.licensePlate || `Vehicle ${vehicle.id}`,
                 type: 'truck',
                 status: isMoving ? 'active' : 'idle',
                 details: isMoving ? `Moving at ${Math.round(Number(gps.speed))} mph` : 'Stopped',
-                vehicleId: vehicle.id,
+                vehicleId: String(vehicle.id),
                 speed: Number(gps.speed) || 0,
                 heading: Number(gps.heading) || 0,
                 updatedAt: gps.timestamp?.toISOString(),
@@ -621,9 +618,10 @@ export const trackingRouter = router({
         // Get positions for specified vehicles
         if (input.vehicleIds?.length) {
           for (const vehicleId of input.vehicleIds) {
+            const numericVehicleId = parseInt(vehicleId.replace('v_', ''), 10) || parseInt(vehicleId, 10);
             const [gps] = await db.select()
               .from(gpsTracking)
-              .where(eq(gpsTracking.vehicleId, vehicleId))
+              .where(eq(gpsTracking.vehicleId, numericVehicleId))
               .orderBy(desc(gpsTracking.timestamp))
               .limit(1);
 

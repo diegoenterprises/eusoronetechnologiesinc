@@ -29,7 +29,7 @@ router.post("/:provider", async (req: Request, res: Response) => {
   console.log(`[Webhook] Received from ${provider}: ${webhookId}`);
 
   try {
-    const db = getDb();
+    const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
     
     // Find webhook configuration
     const [webhookConfig] = await db.select().from(integrationWebhooks)
@@ -84,7 +84,7 @@ router.post("/canopy", async (req: Request, res: Response) => {
   console.log(`[Webhook:Canopy] Event: ${event}`);
 
   try {
-    const db = getDb();
+    const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
 
     switch (event) {
       case "policy.updated":
@@ -140,7 +140,7 @@ router.post("/motive", async (req: Request, res: Response) => {
   console.log(`[Webhook:Motive] Event: ${event_type}`);
 
   try {
-    const db = getDb();
+    const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
 
     // Find connection for this company
     const [connection] = await db.select().from(integrationConnections)
@@ -241,7 +241,7 @@ router.post("/isnetworld", async (req: Request, res: Response) => {
   console.log(`[Webhook:ISNetworld] Event: ${notification_type}`);
 
   try {
-    const db = getDb();
+    const db = await getDb(); if (!db) return res.status(500).json({ error: "Database unavailable" });
 
     const [connection] = await db.select().from(integrationConnections)
       .where(and(
