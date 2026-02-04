@@ -28,10 +28,10 @@ const dutyStatuses = [
 export default function DriverHOSDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const hosQuery = trpc.drivers.getHOS.useQuery({ date: selectedDate });
-  const logsQuery = trpc.drivers.getHOSLogs.useQuery({ date: selectedDate });
-  const violationsQuery = trpc.drivers.getHOSViolations.useQuery();
-  const eldQuery = trpc.eld.getSyncStatus.useQuery();
+  const hosQuery = trpc.drivers.getHOS.useQuery({ driverId: "current" });
+  const logsQuery = trpc.drivers.getHOSLogs.useQuery({ driverId: "current", date: selectedDate });
+  const violationsQuery = trpc.drivers.getHOSViolations.useQuery({ driverId: "current" });
+  const eldQuery = trpc.drivers.getSyncStatus.useQuery({ driverId: "current" });
 
   const changeStatusMutation = trpc.drivers.changeHOSStatus.useMutation({
     onSuccess: () => {
@@ -98,7 +98,7 @@ export default function DriverHOSDashboard() {
                 <p className="text-white font-bold text-2xl">
                   {dutyStatuses.find(s => s.value === hos?.status)?.label || "Unknown"}
                 </p>
-                <p className="text-slate-400 text-sm">Since {hos?.statusSince}</p>
+                <p className="text-slate-400 text-sm">Since {hos?.lastUpdate}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -106,7 +106,7 @@ export default function DriverHOSDashboard() {
                 <Button
                   key={status.value}
                   variant="outline"
-                  onClick={() => changeStatusMutation.mutate({ status: status.value })}
+                  onClick={() => changeStatusMutation.mutate({ driverId: "current", status: status.value })}
                   disabled={hos?.status === status.value}
                   className={cn(
                     "rounded-lg",

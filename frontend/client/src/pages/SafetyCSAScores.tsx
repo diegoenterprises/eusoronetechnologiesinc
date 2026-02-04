@@ -30,10 +30,10 @@ const basicCategories = [
 export default function SafetyCSAScores() {
   const [selectedCarrier, setSelectedCarrier] = useState("company");
 
-  const scoresQuery = trpc.safety.getCSAScores.useQuery({ carrierId: selectedCarrier });
-  const historyQuery = trpc.safety.getCSAHistory.useQuery({ carrierId: selectedCarrier });
-  const inspectionsQuery = trpc.safety.getRecentInspections.useQuery({ carrierId: selectedCarrier });
-  const carriersQuery = trpc.safety.getCarriers.useQuery();
+  const scoresQuery = trpc.safety.getCSAScores.useQuery();
+  const historyQuery = trpc.safety.getCSAHistory.useQuery({ months: 12 });
+  const inspectionsQuery = trpc.safety.getVehicleInspections.useQuery({ vehicleId: "all" });
+  const carriersQuery = trpc.carriers.list.useQuery();
 
   const scores = scoresQuery.data;
   const history = historyQuery.data || [];
@@ -77,8 +77,8 @@ export default function SafetyCSAScores() {
       {/* Overall Status */}
       <Card className={cn(
         "rounded-xl",
-        scores?.alerts === "satisfactory" ? "bg-green-500/10 border-green-500/30" :
-        scores?.alerts === "conditional" ? "bg-yellow-500/10 border-yellow-500/30" :
+        (scores?.alerts?.length === 0) ? "bg-green-500/10 border-green-500/30" :
+        (scores?.alerts && scores.alerts.length <= 2) ? "bg-yellow-500/10 border-yellow-500/30" :
         "bg-red-500/10 border-red-500/30"
       )}>
         <CardContent className="p-6">
@@ -86,7 +86,7 @@ export default function SafetyCSAScores() {
             <div className="flex items-center gap-4">
               <div className={cn(
                 "p-4 rounded-full",
-                scores?.alerts === "satisfactory" ? "bg-green-500/20" :
+                (scores?.alerts?.length === 0) ? "bg-green-500/20" :
                 scores?.alerts === "conditional" ? "bg-yellow-500/20" : "bg-red-500/20"
               )}>
                 <Shield className={cn(

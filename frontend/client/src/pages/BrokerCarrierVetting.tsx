@@ -41,14 +41,14 @@ export default function BrokerCarrierVetting() {
   const carrierQuery = trpc.carriers.getById.useQuery({ id: carrierId || "" }, { enabled: !!carrierId });
   const vettingQuery = trpc.brokers.getVettingStats.useQuery({ carrierId: carrierId || "" }, { enabled: !!carrierId });
 
-  const lookupMutation = trpc.integrations.fmcsaSaferLookup.useMutation({
-    onSuccess: (data) => {
+  const lookupMutation = trpc.carriers.verifyCarrier.useMutation({
+    onSuccess: (data: any) => {
       toast.success("Carrier found");
     },
-    onError: (error) => toast.error("Lookup failed", { description: error.message }),
+    onError: (error: any) => toast.error("Lookup failed", { description: error.message }),
   });
 
-  const verifyMutation = trpc.brokers.runVerification.useMutation({
+  const verifyMutation = trpc.carriers.verifyCarrier.useMutation({
     onSuccess: () => {
       toast.success("Verification complete");
       vettingQuery.refetch();
