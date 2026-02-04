@@ -112,7 +112,7 @@ export default function TheHaul() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Streak</p>
-                <p className="text-2xl font-bold">{profile?.currentStreak || 0} days</p>
+                <p className="text-2xl font-bold">{(profile as any)?.currentStreak || 0} days</p>
               </div>
             </div>
           </CardContent>
@@ -132,9 +132,9 @@ export default function TheHaul() {
               <span>Level {profile?.level || 1}</span>
               <span>Level {(profile?.level || 1) + 1}</span>
             </div>
-            <Progress value={profile?.levelProgress || 0} className="h-3" />
+            <Progress value={(profile as any)?.levelProgress || (profile?.currentXp && profile?.xpToNextLevel ? (profile.currentXp / profile.xpToNextLevel) * 100 : 0)} className="h-3" />
             <p className="text-sm text-muted-foreground text-center">
-              {profile?.distanceUntilNextLevel?.toLocaleString() || 0} miles until next level
+              {(profile?.xpToNextLevel || 0).toLocaleString()} XP until next level
             </p>
           </div>
         </CardContent>
@@ -153,7 +153,7 @@ export default function TheHaul() {
             <Skeleton className="h-32" />
           ) : (
             <div className="grid gap-4">
-              {missions?.map((mission: any) => (
+              {(missions?.active || [])?.map((mission: any) => (
                 <Card key={mission.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -174,7 +174,7 @@ export default function TheHaul() {
                   </CardContent>
                 </Card>
               ))}
-              {(!missions || missions.length === 0) && (
+              {(!missions?.active || missions.active.length === 0) && (
                 <Card>
                   <CardContent className="p-6 text-center text-muted-foreground">
                     No active missions available
@@ -190,7 +190,7 @@ export default function TheHaul() {
             <Skeleton className="h-32" />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {achievements?.map((achievement: any) => (
+              {(achievements?.earned || [])?.map((achievement: any) => (
                 <Card key={achievement.id} className={achievement.unlocked ? '' : 'opacity-50'}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
@@ -219,7 +219,7 @@ export default function TheHaul() {
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y">
-                  {leaderboard?.map((entry: any, index: number) => (
+                  {(leaderboard?.leaders || [])?.map((entry: any, index: number) => (
                     <div key={entry.userId} className="flex items-center justify-between p-4">
                       <div className="flex items-center gap-4">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
