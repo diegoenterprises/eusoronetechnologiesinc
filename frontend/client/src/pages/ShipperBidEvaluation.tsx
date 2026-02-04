@@ -24,17 +24,17 @@ export default function ShipperBidEvaluation() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
   const bidsQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId || "" });
-  const aiRateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
+  const aiRateQuery = trpc.bids.getAnalytics.useQuery({ loadId: loadId || "" });
 
-  const awardMutation = trpc.bids.awardBid.useMutation({
+  const awardMutation = trpc.bids.accept.useMutation({
     onSuccess: () => { toast.success("Bid awarded"); bidsQuery.refetch(); },
     onError: (e: any) => toast.error("Failed", { description: e.message }),
   });
-  const counterMutation = trpc.bids.counterBid.useMutation({
+  const counterMutation = trpc.bids.update.useMutation({
     onSuccess: () => { toast.success("Counter sent"); setCounterBidId(null); bidsQuery.refetch(); },
     onError: (e: any) => toast.error("Failed", { description: e.message }),
   });
-  const declineMutation = trpc.bids.decline.useMutation({
+  const declineMutation = trpc.bids.reject.useMutation({
     onSuccess: () => { toast.success("Declined"); bidsQuery.refetch(); },
   });
 
