@@ -27,7 +27,7 @@ export default function TerminalYardManagement() {
   const statsQuery = trpc.terminals.getStats.useQuery();
   const zonesQuery = trpc.terminals.getBays.useQuery();
 
-  const moveTrailerMutation = trpc.terminals.checkIn.useMutation({
+  const moveTrailerMutation = trpc.terminals.updateAppointment.useMutation({
     onSuccess: () => {
       toast.success("Trailer moved");
       yardQuery.refetch();
@@ -75,7 +75,7 @@ export default function TerminalYardManagement() {
                   <Container className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Spots</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalSpots || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.totalBays || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
@@ -84,7 +84,7 @@ export default function TerminalYardManagement() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Available</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.availableSpots || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.availableBays || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-blue-500/10 border-blue-500/30 rounded-xl">
@@ -93,7 +93,7 @@ export default function TerminalYardManagement() {
                   <Container className="w-4 h-4 text-blue-400" />
                   <span className="text-slate-400 text-sm">Occupied</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-400">{stats?.occupiedSpots || 0}</p>
+                <p className="text-2xl font-bold text-blue-400">{stats?.activeShipments || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -102,7 +102,7 @@ export default function TerminalYardManagement() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.pendingMoves || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.incomingToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-purple-500/10 border-purple-500/30 rounded-xl">
@@ -111,7 +111,7 @@ export default function TerminalYardManagement() {
                   <Truck className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">At Doors</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.atDoors || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.outgoingToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -120,7 +120,7 @@ export default function TerminalYardManagement() {
                   <AlertTriangle className="w-4 h-4 text-orange-400" />
                   <span className="text-slate-400 text-sm">Overdue</span>
                 </div>
-                <p className="text-2xl font-bold text-orange-400">{stats?.overdue || 0}</p>
+                <p className="text-2xl font-bold text-orange-400">{stats?.safetyIncidents || 0}</p>
               </CardContent>
             </Card>
           </>
