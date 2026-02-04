@@ -22,8 +22,8 @@ export default function BrokerLaneRates() {
   const [search, setSearch] = useState("");
   const [timeRange, setTimeRange] = useState("30d");
 
-  const ratesQuery = trpc.brokers.getLaneRates.useQuery({ timeRange });
-  const marketQuery = trpc.brokers.getMarketRates.useQuery({ timeRange });
+  const ratesQuery = trpc.brokers.getLaneRates.useQuery({ search });
+  const marketQuery = trpc.brokers.getMarketRates.useQuery({});
 
   const addRateMutation = trpc.brokers.addLaneRate.useMutation({
     onSuccess: () => {
@@ -80,13 +80,13 @@ export default function BrokerLaneRates() {
                 </div>
                 <p className="text-2xl font-bold text-green-400">${market?.avgRatePerMile?.toFixed(2) || 0}</p>
                 <div className="flex items-center gap-1 mt-1">
-                  {market?.rateChange > 0 ? (
+                  {market?.trendDirection === 'up' ? (
                     <TrendingUp className="w-4 h-4 text-red-400" />
                   ) : (
                     <TrendingDown className="w-4 h-4 text-green-400" />
                   )}
-                  <span className={cn("text-sm", market?.rateChange > 0 ? "text-red-400" : "text-green-400")}>
-                    {Math.abs(market?.rateChange || 0)}%
+                  <span className={cn("text-sm", market?.trendDirection === 'up' ? "text-red-400" : "text-green-400")}>
+                    {Math.abs(market?.trendPercent || 0)}%
                   </span>
                 </div>
               </CardContent>
