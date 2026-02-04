@@ -15,7 +15,9 @@ import {
   Shield, FileText, AlertTriangle, CheckCircle, Clock, DollarSign,
   Plus, RefreshCw, Eye, Download, Calendar, TrendingUp, AlertCircle
 } from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+
+const formatCurrency = (value: number) => `$${value.toLocaleString()}`;
 
 const POLICY_TYPE_LABELS: Record<string, string> = {
   auto_liability: "Auto Liability",
@@ -111,21 +113,21 @@ export default function InsuranceDashboard() {
         <Card>
           <CardContent className="p-4 text-center">
             <FileText className="h-8 w-8 mx-auto text-blue-500 mb-2" />
-            <p className="text-2xl font-bold">{summary?.total || 0}</p>
+            <p className="text-2xl font-bold">{(summary && !Array.isArray(summary) ? summary.total || summary.totalPolicies : 0) || 0}</p>
             <p className="text-sm text-muted-foreground">Total Policies</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <CheckCircle className="h-8 w-8 mx-auto text-green-500 mb-2" />
-            <p className="text-2xl font-bold">{summary?.active || 0}</p>
+            <p className="text-2xl font-bold">{(summary && !Array.isArray(summary) ? summary.active || summary.activePolicies : 0) || 0}</p>
             <p className="text-sm text-muted-foreground">Active</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
             <Clock className="h-8 w-8 mx-auto text-yellow-500 mb-2" />
-            <p className="text-2xl font-bold">{summary?.expiringSoon || 0}</p>
+            <p className="text-2xl font-bold">{(summary && !Array.isArray(summary) ? summary.expiringSoon || summary.expiringPolicies : 0) || 0}</p>
             <p className="text-sm text-muted-foreground">Expiring Soon</p>
           </CardContent>
         </Card>
@@ -133,7 +135,7 @@ export default function InsuranceDashboard() {
           <CardContent className="p-4 text-center">
             <DollarSign className="h-8 w-8 mx-auto text-purple-500 mb-2" />
             <p className="text-2xl font-bold">
-              {formatCurrency(summary?.totalCoverage || 0)}
+              {formatCurrency((summary && !Array.isArray(summary) ? summary.totalCoverage : 0) || 0)}
             </p>
             <p className="text-sm text-muted-foreground">Total Coverage</p>
           </CardContent>
