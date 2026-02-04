@@ -45,10 +45,9 @@ export default function RateConfirmationSign() {
   const handleSign = (signatureData: SignatureData) => {
     if (!loadId) return;
     signMutation.mutate({
-      loadId,
-      signatureImage: signatureData.imageDataUrl,
-      signedAt: signatureData.signedAt,
-      signerName: signatureData.signerName,
+      id: loadId,
+      name: `Signed Rate Confirmation - ${signatureData.signerName}`,
+      description: `Signed at ${signatureData.signedAt}`,
     });
   };
 
@@ -76,7 +75,7 @@ export default function RateConfirmationSign() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Rate Confirmation
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Load #{rateConf?.loadNumber}</p>
+          <p className="text-slate-400 text-sm mt-1">Load #{(rateConf as any)?.loadNumber || rateConf?.id}</p>
         </div>
       </div>
 
@@ -84,7 +83,7 @@ export default function RateConfirmationSign() {
         <SignatureCanvas
           signerName={user?.name || "Carrier Representative"}
           signerRole={user?.role || "Carrier"}
-          documentName={`Rate Confirmation #${rateConf?.confirmationNumber}`}
+          documentName={`Rate Confirmation #${(rateConf as any)?.confirmationNumber || rateConf?.id}`}
           documentType="Rate Confirmation"
           onSave={handleSign}
           onCancel={() => setShowSignature(false)}
@@ -97,16 +96,16 @@ export default function RateConfirmationSign() {
               <div className="flex items-center justify-between">
                 <div>
                   <Badge className="bg-purple-500/20 text-purple-400 border-0 mb-2">
-                    {rateConf?.confirmationNumber}
+                    {(rateConf as any)?.confirmationNumber || rateConf?.id}
                   </Badge>
                   <h2 className="text-white font-bold text-xl">Rate Confirmation Agreement</h2>
                   <p className="text-slate-400 text-sm mt-1">
-                    Created: {new Date(rateConf?.createdAt || Date.now()).toLocaleDateString()}
+                    Created: {new Date((rateConf as any)?.createdAt || rateConf?.uploadedAt || Date.now()).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-slate-400 text-sm">Total Rate</p>
-                  <p className="text-3xl font-bold text-green-400">${rateConf?.totalRate?.toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-green-400">${(rateConf as any)?.totalRate?.toLocaleString() || "TBD"}</p>
                 </div>
               </div>
             </CardContent>
@@ -122,10 +121,10 @@ export default function RateConfirmationSign() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-white font-bold">{rateConf?.shipper?.name}</p>
-                <p className="text-slate-400 text-sm">{rateConf?.shipper?.address}</p>
-                <p className="text-slate-400 text-sm">{rateConf?.shipper?.city}, {rateConf?.shipper?.state}</p>
-                <p className="text-slate-400 text-sm mt-2">Contact: {rateConf?.shipper?.contact}</p>
+                <p className="text-white font-bold">{(rateConf as any)?.shipper?.name || "N/A"}</p>
+                <p className="text-slate-400 text-sm">{(rateConf as any)?.shipper?.address || ""}</p>
+                <p className="text-slate-400 text-sm">{(rateConf as any)?.shipper?.city}, {(rateConf as any)?.shipper?.state}</p>
+                <p className="text-slate-400 text-sm mt-2">Contact: {(rateConf as any)?.shipper?.contact || "N/A"}</p>
               </CardContent>
             </Card>
 
@@ -137,10 +136,10 @@ export default function RateConfirmationSign() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-white font-bold">{rateConf?.carrier?.name}</p>
-                <p className="text-slate-400 text-sm">MC#: {rateConf?.carrier?.mcNumber}</p>
-                <p className="text-slate-400 text-sm">USDOT: {rateConf?.carrier?.dotNumber}</p>
-                <p className="text-slate-400 text-sm mt-2">Contact: {rateConf?.carrier?.contact}</p>
+                <p className="text-white font-bold">{(rateConf as any)?.carrier?.name || "N/A"}</p>
+                <p className="text-slate-400 text-sm">MC#: {(rateConf as any)?.carrier?.mcNumber || "N/A"}</p>
+                <p className="text-slate-400 text-sm">USDOT: {(rateConf as any)?.carrier?.dotNumber || "N/A"}</p>
+                <p className="text-slate-400 text-sm mt-2">Contact: {(rateConf as any)?.carrier?.contact || "N/A"}</p>
               </CardContent>
             </Card>
           </div>
