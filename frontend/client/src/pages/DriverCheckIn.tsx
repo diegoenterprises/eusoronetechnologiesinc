@@ -23,7 +23,7 @@ export default function DriverCheckIn() {
   const [, navigate] = useLocation();
   const [checkInCode, setCheckInCode] = useState("");
 
-  const loadQuery = trpc.loads.getByDriver.useQuery({ driverId: "current" });
+  const loadQuery = trpc.loads.getAll.useQuery({ search: "" });
   const appointmentQuery = trpc.appointments.getById.useQuery({ 
     id: loadQuery.data?.[0]?.id?.toString() || "" 
   }, { enabled: !!loadQuery.data?.[0]?.id });
@@ -82,8 +82,8 @@ export default function DriverCheckIn() {
             </div>
             <div>
               <p className="text-white font-bold text-xl">{facility?.name}</p>
-              <p className="text-slate-400">{facility?.addressLine1}</p>
-              <p className="text-slate-400 text-sm">{facility?.city}, {facility?.state} {facility?.zip}</p>
+              <p className="text-slate-400">{facility?.address?.street}</p>
+              <p className="text-slate-400 text-sm">{facility?.address?.city}, {facility?.address?.state} {facility?.address?.zip}</p>
             </div>
           </div>
 
@@ -104,13 +104,13 @@ export default function DriverCheckIn() {
               <p className="text-slate-400 text-xs flex items-center gap-1">
                 <Truck className="w-3 h-3" />Gate
               </p>
-              <p className="text-white font-medium">{facility?.checkInGate || "Main"}</p>
+              <p className="text-white font-medium">{(facility as any)?.checkInGate || "Main"}</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs flex items-center gap-1">
                 <MapPin className="w-3 h-3" />Dock
               </p>
-              <p className="text-white font-medium">{appointment?.assignedDock || "TBD"}</p>
+              <p className="text-white font-medium">{(appointment as any)?.assignedDock || "TBD"}</p>
             </div>
           </div>
         </CardContent>
@@ -144,7 +144,7 @@ export default function DriverCheckIn() {
       </Card>
 
       {/* Requirements */}
-      {facility?.requirements && facility.requirements.length > 0 && (
+      {(facility as any)?.requirements && (facility as any).requirements.length > 0 && (
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -154,7 +154,7 @@ export default function DriverCheckIn() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {facility.requirements.map((req: any, idx: number) => (
+              {(facility as any).requirements.map((req: any, idx: number) => (
                 <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-slate-700/30">
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-300 text-sm">{req}</span>
