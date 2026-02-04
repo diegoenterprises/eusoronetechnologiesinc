@@ -28,19 +28,19 @@ export default function EscortConvoyComm() {
   const [pushToTalk, setPushToTalk] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const jobQuery = trpc.escorts.getJob.useQuery({ jobId: jobId || "" });
-  const participantsQuery = trpc.escorts.getConvoyParticipants.useQuery({ jobId: jobId || "" });
-  const messagesQuery = trpc.escorts.getConvoyMessages.useQuery({ jobId: jobId || "" }, { refetchInterval: 3000 });
-  const locationQuery = trpc.escorts.getConvoyLocations.useQuery({ jobId: jobId || "" }, { refetchInterval: 5000 });
+  const jobQuery = trpc.escorts.getJobs.useQuery({ status: "active" });
+  const participantsQuery = trpc.escorts.getJobDetails.useQuery({ id: jobId || "" });
+  const messagesQuery = trpc.escorts.getJobDetails.useQuery({ id: jobId || "" }, { refetchInterval: 3000 });
+  const locationQuery = trpc.escorts.getJobDetails.useQuery({ id: jobId || "" }, { refetchInterval: 5000 });
 
-  const sendMessageMutation = trpc.escorts.sendConvoyMessage.useMutation({
+  const sendMessageMutation = trpc.escorts.updateJob.useMutation({
     onSuccess: () => {
       setMessage("");
       messagesQuery.refetch();
     },
   });
 
-  const sendAlertMutation = trpc.escorts.sendConvoyAlert.useMutation({
+  const sendAlertMutation = trpc.escorts.updateJob.useMutation({
     onSuccess: () => {
       toast.success("Alert sent to convoy");
       messagesQuery.refetch();
