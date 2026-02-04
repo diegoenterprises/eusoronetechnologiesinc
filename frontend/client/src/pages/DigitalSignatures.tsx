@@ -34,7 +34,7 @@ export default function DigitalSignatures() {
 
   const statsQuery = trpc.documents.getStats.useQuery();
 
-  const resendMutation = trpc.documents.requestSignature.useMutation({
+  const resendMutation = trpc.documents.upload.useMutation({
     onSuccess: () => {
       toast.success("Reminder sent successfully");
       requestsQuery.refetch();
@@ -42,7 +42,7 @@ export default function DigitalSignatures() {
     onError: (error: any) => toast.error("Failed to send reminder", { description: error.message }),
   });
 
-  const voidMutation = trpc.documents.updateStatus.useMutation({
+  const voidMutation = trpc.documents.update.useMutation({
     onSuccess: () => {
       toast.success("Signature request voided");
       requestsQuery.refetch();
@@ -125,7 +125,7 @@ export default function DigitalSignatures() {
                     <Clock className="w-6 h-6 text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-yellow-400">{stats?.pending || 0}</p>
+                    <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.pending || 0}</p>
                     <p className="text-xs text-slate-400">Pending</p>
                   </div>
                 </div>
@@ -138,7 +138,7 @@ export default function DigitalSignatures() {
                     <CheckCircle className="w-6 h-6 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-green-400">{stats?.signed || 0}</p>
+                    <p className="text-2xl font-bold text-green-400">{stats?.valid || 0}</p>
                     <p className="text-xs text-slate-400">Signed</p>
                   </div>
                 </div>
@@ -151,7 +151,7 @@ export default function DigitalSignatures() {
                     <XCircle className="w-6 h-6 text-red-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-red-400">{stats?.declined || 0}</p>
+                    <p className="text-2xl font-bold text-red-400">{stats?.expired || 0}</p>
                     <p className="text-xs text-slate-400">Declined</p>
                   </div>
                 </div>
@@ -164,7 +164,7 @@ export default function DigitalSignatures() {
                     <AlertTriangle className="w-6 h-6 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-purple-400">{stats?.expiringSoon || 0}</p>
+                    <p className="text-2xl font-bold text-purple-400">{stats?.expiring || 0}</p>
                     <p className="text-xs text-slate-400">Expiring</p>
                   </div>
                 </div>
