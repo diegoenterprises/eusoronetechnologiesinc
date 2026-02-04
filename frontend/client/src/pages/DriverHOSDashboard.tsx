@@ -28,10 +28,10 @@ const dutyStatuses = [
 export default function DriverHOSDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const hosQuery = trpc.drivers.getHOS.useQuery({ driverId: "current" });
-  const logsQuery = trpc.drivers.getHOSLogs.useQuery({ driverId: "current", date: selectedDate });
-  const violationsQuery = trpc.drivers.getHOSViolations.useQuery({ driverId: "current" });
-  const eldQuery = trpc.drivers.getSyncStatus.useQuery({ driverId: "current" });
+  const hosQuery = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
+  const logsQuery = trpc.hos.getLogs.useQuery({ driverId: "current", startDate: selectedDate, endDate: selectedDate });
+  const violationsQuery = trpc.hos.getViolations.useQuery({ driverId: "current" });
+  const eldQuery = trpc.eld.getSyncStatus.useQuery();
 
   const changeStatusMutation = trpc.drivers.changeHOSStatus.useMutation({
     onSuccess: () => {
@@ -64,9 +64,9 @@ export default function DriverHOSDashboard() {
           <p className="text-slate-400 text-sm mt-1">ELD Compliance Dashboard</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge className={cn("border-0", eld?.connected ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
-            <RefreshCw className={cn("w-3 h-3 mr-1", eld?.syncing && "animate-spin")} />
-            ELD {eld?.connected ? "Connected" : "Disconnected"}
+          <Badge className={cn("border-0", eld?.status === "connected" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
+            <RefreshCw className={cn("w-3 h-3 mr-1", eld?.status === "syncing" && "animate-spin")} />
+            ELD {eld?.status === "connected" ? "Connected" : "Disconnected"}
           </Badge>
           <input
             type="date"
@@ -140,11 +140,11 @@ export default function DriverHOSDashboard() {
                   <span className="text-white font-bold text-xl">{hos?.drivingRemaining}h</span>
                 </div>
                 <Progress
-                  value={(hos?.drivingRemaining / 11) * 100}
+                  value={(parseFloat(hos?.drivingRemaining || "0") / 11) * 100}
                   className="h-3"
                 />
                 <p className="text-slate-400 text-xs mt-2">
-                  {hos?.drivingUsed}h used of 11h limit
+                  {hos?.drivingHours?.used || 0}h used of 11h limit
                 </p>
               </CardContent>
             </Card>
@@ -159,11 +159,11 @@ export default function DriverHOSDashboard() {
                   <span className="text-white font-bold text-xl">{hos?.onDutyRemaining}h</span>
                 </div>
                 <Progress
-                  value={(hos?.onDutyRemaining / 14) * 100}
+                  value={(parseFloat(hos?.onDutyRemaining || "0") / 14) * 100}
                   className="h-3"
                 />
                 <p className="text-slate-400 text-xs mt-2">
-                  Window ends at {hos?.windowEnds}
+                  Window ends at {(hos as any)?.windowEnds || "N/A"}
                 </p>
               </CardContent>
             </Card>
