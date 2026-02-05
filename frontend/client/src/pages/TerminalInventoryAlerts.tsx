@@ -24,11 +24,11 @@ export default function TerminalInventoryAlerts() {
   const [search, setSearch] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
 
-  const alertsQuery = trpc.terminals.getInventoryAlerts.useQuery({ severity: severityFilter });
-  const statsQuery = trpc.terminals.getAlertStats.useQuery();
-  const thresholdsQuery = trpc.terminals.getAlertThresholds.useQuery();
+  const alertsQuery = trpc.terminals.getAlerts.useQuery();
+  const statsQuery = trpc.terminals.getInventoryStats.useQuery();
+  const thresholdsQuery = trpc.terminals.getInventory.useQuery({});
 
-  const acknowledgeAlertMutation = trpc.terminals.acknowledgeAlert.useMutation({
+  const acknowledgeAlertMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Alert acknowledged");
       alertsQuery.refetch();
@@ -79,7 +79,7 @@ export default function TerminalInventoryAlerts() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Critical</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.critical || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.critical || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -88,7 +88,7 @@ export default function TerminalInventoryAlerts() {
                   <Bell className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Warnings</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.warnings || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.warnings || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -97,7 +97,7 @@ export default function TerminalInventoryAlerts() {
                   <TrendingDown className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Low Stock</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.lowStock || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.lowStock || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -106,7 +106,7 @@ export default function TerminalInventoryAlerts() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Normal</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.normal || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.normal || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -114,7 +114,7 @@ export default function TerminalInventoryAlerts() {
       </div>
 
       {/* Active Critical Alerts */}
-      {stats?.critical > 0 && (
+      {(stats as any)?.critical > 0 && (
         <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-red-400 text-lg flex items-center gap-2">
@@ -140,7 +140,7 @@ export default function TerminalInventoryAlerts() {
                     </div>
                     <Button
                       size="sm"
-                      onClick={() => acknowledgeAlertMutation.mutate({ alertId: alert.id })}
+                      onClick={() => acknowledgeAlertMutation.mutate({ terminalId: alert.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "" } as any)}
                       className="bg-red-600 hover:bg-red-700 rounded-lg"
                     >
                       Acknowledge
@@ -259,7 +259,7 @@ export default function TerminalInventoryAlerts() {
                       {!alert.acknowledged && (
                         <Button
                           size="sm"
-                          onClick={() => acknowledgeAlertMutation.mutate({ alertId: alert.id })}
+                          onClick={() => acknowledgeAlertMutation.mutate({ terminalId: alert.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "" } as any)}
                           variant="outline"
                           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
                         >

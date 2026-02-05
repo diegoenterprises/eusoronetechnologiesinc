@@ -195,10 +195,8 @@ export default function EscortVehicleInspection() {
                 </Button>
                 <Button
                   onClick={() => submitInspectionMutation.mutate({
-                    vehicleId: selectedVehicle,
-                    checklist: inspectionData,
-                    notes,
-                  })}
+                    jobId: selectedVehicle,
+                  } as any)}
                   disabled={!selectedVehicle || submitInspectionMutation.isPending}
                   className="bg-violet-600 hover:bg-violet-700 rounded-lg"
                 >

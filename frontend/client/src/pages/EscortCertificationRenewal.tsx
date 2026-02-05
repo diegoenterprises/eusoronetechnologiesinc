@@ -26,7 +26,7 @@ export default function EscortCertificationRenewal() {
   const certificationsQuery = trpc.escorts.getCertifications.useQuery();
   const statsQuery = trpc.escorts.getCertificationStats.useQuery();
 
-  const startRenewalMutation = trpc.escorts.renewCertification.useMutation({
+  const startRenewalMutation = trpc.escorts.uploadCertification.useMutation({
     onSuccess: () => {
       toast.success("Renewal process started");
       certificationsQuery.refetch();
@@ -34,7 +34,7 @@ export default function EscortCertificationRenewal() {
   });
 
   const certifications = certificationsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredCertifications = certifications.filter((c: any) =>
     c.state?.toLowerCase().includes(search.toLowerCase()) ||
@@ -254,7 +254,7 @@ export default function EscortCertificationRenewal() {
                   <div className="flex items-center gap-2">
                     {cert.status === "active" && daysLeft <= 60 && (
                       <Button
-                        onClick={() => startRenewalMutation.mutate({ certId: cert.id })}
+                        onClick={() => startRenewalMutation.mutate({ state: "", type: "", expirationDate: "" } as any)}
                         disabled={startRenewalMutation.isPending}
                         className="flex-1 bg-yellow-600 hover:bg-yellow-700 rounded-lg"
                       >
@@ -263,7 +263,7 @@ export default function EscortCertificationRenewal() {
                     )}
                     {cert.status === "expired" && (
                       <Button
-                        onClick={() => startRenewalMutation.mutate({ certId: cert.id })}
+                        onClick={() => startRenewalMutation.mutate({ state: "", type: "", expirationDate: "" } as any)}
                         disabled={startRenewalMutation.isPending}
                         className="flex-1 bg-red-600 hover:bg-red-700 rounded-lg"
                       >

@@ -22,11 +22,11 @@ export default function SafetyEquipmentInspections() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const inspectionsQuery = trpc.safety.getEquipmentInspections.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.safety.getEquipmentInspectionStats.useQuery();
+  const inspectionsQuery = trpc.safety.getIncidents.useQuery({});
+  const statsQuery = trpc.safety.getDashboardStats.useQuery();
 
   const inspections = inspectionsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredInspections = inspections.filter((i: any) =>
     i.unitNumber?.toLowerCase().includes(search.toLowerCase()) ||

@@ -82,8 +82,8 @@ export default function RoleBasedMap({
         const existing = locationMap.get(existingKey)!;
         locationMap.set(existingKey, {
           ...existing,
-          lat: vehicle.latitude,
-          lng: vehicle.longitude,
+          lat: (vehicle as any).latitude || vehicle.lat,
+          lng: (vehicle as any).longitude || vehicle.lng,
           speed: vehicle.speed,
           heading: vehicle.heading,
           updatedAt: vehicle.timestamp,

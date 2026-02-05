@@ -22,11 +22,11 @@ export default function TerminalProductManagement() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const productsQuery = trpc.terminals.getProducts.useQuery({ category: categoryFilter });
-  const statsQuery = trpc.terminals.getProductStats.useQuery();
+  const productsQuery = trpc.terminals.getProducts.useQuery();
+  const statsQuery = trpc.terminals.getSummary.useQuery();
 
   const products = productsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredProducts = products.filter((p: any) =>
     p.name?.toLowerCase().includes(search.toLowerCase()) ||

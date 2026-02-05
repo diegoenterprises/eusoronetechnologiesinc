@@ -397,7 +397,7 @@ export default function FacilityPage() {
                         <div>
                           <p className="text-gray-400 text-sm mb-1">Quantity</p>
                           <p className="text-white font-semibold">
-                            {shipment.weight.toLocaleString()} gal
+                            {((shipment as any).weight || shipment.quantity || 0).toLocaleString()} gal
                           </p>
                         </div>
                       </div>

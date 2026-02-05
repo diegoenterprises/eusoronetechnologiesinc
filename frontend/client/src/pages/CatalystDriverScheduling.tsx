@@ -21,10 +21,10 @@ export default function CatalystDriverScheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
 
-  const scheduleQuery = trpc.catalysts.getDriverSchedule.useQuery({ date: selectedDate, view: viewMode });
-  const driversQuery = trpc.catalysts.getDriversForScheduling.useQuery();
+  const scheduleQuery = trpc.catalysts.getMatchedLoads.useQuery({});
+  const driversQuery = trpc.catalysts.getDriverStatusBoard.useQuery();
 
-  const assignMutation = trpc.catalysts.assignDriverToSlot.useMutation({
+  const assignMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned");
       scheduleQuery.refetch();

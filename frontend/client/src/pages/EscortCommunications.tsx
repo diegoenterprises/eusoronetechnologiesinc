@@ -22,14 +22,14 @@ export default function EscortCommunications() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
 
-  const conversationsQuery = trpc.escorts.getConversations.useQuery();
-  const messagesQuery = trpc.escorts.getMessages.useQuery(
-    { conversationId: selectedConversation! },
+  const conversationsQuery = trpc.escorts.getJobs.useQuery({});
+  const messagesQuery = trpc.escorts.getJobs.useQuery(
+    {},
     { enabled: !!selectedConversation }
   );
-  const activeJobQuery = trpc.escorts.getActiveJob.useQuery();
+  const activeJobQuery = trpc.escorts.getActiveJobs.useQuery();
 
-  const sendMessageMutation = trpc.escorts.sendMessage.useMutation({
+  const sendMessageMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       setNewMessage("");
       messagesQuery.refetch();
@@ -48,8 +48,7 @@ export default function EscortCommunications() {
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedConversation) return;
     sendMessageMutation.mutate({
-      conversationId: selectedConversation,
-      message: newMessage.trim(),
+      jobId: selectedConversation,
     });
   };
 
@@ -71,9 +70,9 @@ export default function EscortCommunications() {
             <div className="flex items-center gap-3">
               <Radio className="w-5 h-5 text-cyan-400 animate-pulse" />
               <div>
-                <p className="text-white font-medium">Active Route: #{activeJob.routeNumber}</p>
+                <p className="text-white font-medium">Active Route: #{(activeJob as any)?.[0]?.id || (activeJob as any)?.routeNumber}</p>
                 <p className="text-slate-400 text-sm">
-                  Driver: {activeJob.driverName} • {activeJob.origin} to {activeJob.destination}
+                  Driver: {(activeJob as any)?.[0]?.title || (activeJob as any)?.driverName} • {(activeJob as any)?.[0]?.currentLocation || (activeJob as any)?.origin} to {(activeJob as any)?.[0]?.destination}
                 </p>
               </div>
             </div>
@@ -171,10 +170,10 @@ export default function EscortCommunications() {
                   </div>
                   <div>
                     <p className="text-white font-medium">
-                      {conversations.find((c: any) => c.id === selectedConversation)?.participantName}
+                      {(conversations.find((c: any) => c.id === selectedConversation) as any)?.convoyName || "Participant"}
                     </p>
                     <p className="text-slate-400 text-sm">
-                      {conversations.find((c: any) => c.id === selectedConversation)?.role}
+                      {(conversations.find((c: any) => c.id === selectedConversation) as any)?.status || "Driver"}
                     </p>
                   </div>
                 </div>

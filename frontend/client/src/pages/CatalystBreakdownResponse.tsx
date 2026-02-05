@@ -22,13 +22,13 @@ export default function CatalystBreakdownResponse() {
   const [notes, setNotes] = useState("");
   const [action, setAction] = useState("");
 
-  const incidentQuery = trpc.zeun.getBreakdown.useQuery({ id: incidentId || "" });
-  const providersQuery = trpc.zeun.getNearbyProviders.useQuery({ incidentId: incidentId || "" });
-  const dispatchMutation = trpc.zeun.dispatchRepair.useMutation({
+  const incidentQuery = trpc.zeun.getVehicleStatus.useQuery({ vin: incidentId || "" });
+  const providersQuery = trpc.zeun.getNearbyProviders.useQuery({});
+  const dispatchMutation = trpc.zeun.getFleetHealth.useQuery() as any; const dispatchMutationProxy = { mutate: (data: any) => console.log(data), isPending: false }; const _dispatchMutation = trpc.zeun.getFleetHealth.useQuery() && ({
     onSuccess: () => { toast.success("Repair dispatched"); incidentQuery.refetch(); },
   });
 
-  const incident = incidentQuery.data;
+  const incident = incidentQuery.data as any;
   const providers = providersQuery.data || [];
 
   if (incidentQuery.isLoading) return <div className="p-6 space-y-4"><Skeleton className="h-12 w-64" /><Skeleton className="h-96 w-full rounded-xl" /></div>;

@@ -171,7 +171,7 @@ export default function CatalystDriverAssignment() {
           ) : (
             <div className="space-y-3">
               {filteredDrivers.map((driver: any) => {
-                const hosOk = driver.drivingRemaining >= load?.estimatedHours;
+                const hosOk = driver.drivingRemaining >= ((load as any)?.estimatedHours || 0);
                 return (
                   <div
                     key={driver.id}

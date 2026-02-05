@@ -22,13 +22,13 @@ export default function ShipperAccessorials() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const accessorialsQuery = trpc.shippers.getAccessorials.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.shippers.getAccessorialStats.useQuery();
+  const accessorialsQuery = trpc.shippers.getMyLoads.useQuery({});
+  const statsQuery = trpc.shippers.getStats.useQuery();
 
-  const accessorials = accessorialsQuery.data || [];
-  const stats = statsQuery.data;
+  const accessorials = (accessorialsQuery.data as any)?.loads || accessorialsQuery.data || [];
+  const stats = statsQuery.data as any;
 
-  const filteredAccessorials = accessorials.filter((a: any) =>
+  const filteredAccessorials = (accessorials as any[]).filter((a: any) =>
     a.loadNumber?.toLowerCase().includes(search.toLowerCase()) ||
     a.carrierName?.toLowerCase().includes(search.toLowerCase())
   );

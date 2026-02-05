@@ -22,11 +22,11 @@ export default function CarrierFleetManagement() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const fleetQuery = trpc.carriers.getFleet.useQuery({ type: typeFilter, status: statusFilter });
-  const statsQuery = trpc.carriers.getFleetStats.useQuery();
+  const fleetQuery = trpc.carriers.getAvailableCapacity.useQuery({});
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
   const fleet = fleetQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredFleet = fleet.filter((v: any) =>
     v.unitNumber?.toLowerCase().includes(search.toLowerCase()) ||

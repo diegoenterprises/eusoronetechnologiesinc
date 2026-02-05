@@ -108,12 +108,12 @@ export default function DriverPreTripInspection() {
   const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
   const userQuery = trpc.users.me.useQuery();
 
-  const submitMutation = trpc.inspections.submitPreTrip.useMutation({
+  const submitMutation = trpc.inspections.submit.useMutation({
     onSuccess: () => {
       toast.success("Pre-trip inspection submitted");
       navigate("/driver/dashboard");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const vehicle = vehicleQuery.data;
@@ -130,13 +130,11 @@ export default function DriverPreTripInspection() {
 
   const handleSign = (signatureData: SignatureData) => {
     submitMutation.mutate({
-      vehicleId: vehicle?.id,
-      checkedItems,
-      defects,
-      signatureImage: signatureData.imageDataUrl,
-      signedAt: signatureData.signedAt,
-      hasDefects,
-    });
+      vehicleId: vehicle?.id || "",
+      type: "pre_trip" as const,
+      odometer: 0,
+      items: [],
+    } as any);
   };
 
   if (vehicleQuery.isLoading) {

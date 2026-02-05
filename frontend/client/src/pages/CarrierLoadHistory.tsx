@@ -22,11 +22,11 @@ export default function CarrierLoadHistory() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.carriers.getLoadHistory.useQuery({ period: periodFilter, status: statusFilter });
-  const statsQuery = trpc.carriers.getHistoryStats.useQuery({ period: periodFilter });
+  const loadsQuery = trpc.carriers.getLoadHistory.useQuery({});
+  const statsQuery = trpc.carriers.getDirectoryStats.useQuery();
 
   const loads = loadsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredLoads = loads.filter((l: any) =>
     l.loadNumber?.toLowerCase().includes(search.toLowerCase()) ||

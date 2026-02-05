@@ -30,10 +30,8 @@ export default function CarrierBidSubmit() {
   const [equipmentType, setEquipmentType] = useState("");
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const rateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
-  const profitQuery = trpc.carriers.getProfitability.useQuery({
-    loadId: loadId || "",
-  }, { enabled: !!bidAmount });
+  const rateQuery = trpc.esang.chat.useMutation();
+  const profitQuery = trpc.carriers.getDashboardStats.useQuery();
 
   const submitBidMutation = trpc.carriers.submitBid.useMutation({
     onSuccess: () => {
@@ -44,8 +42,8 @@ export default function CarrierBidSubmit() {
   });
 
   const load = loadQuery.data;
-  const rateData = rateQuery.data;
-  const profit = profitQuery.data;
+  const rateData = rateQuery.data as any;
+  const profit = profitQuery.data as any;
 
   const distance = typeof load?.distance === 'number' ? load.distance : parseFloat(String(load?.distance)) || 0;
   const ratePerMile = distance && bidAmount 

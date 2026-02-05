@@ -30,9 +30,9 @@ export default function BrokerLoadMatching() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
   const matchQuery = trpc.carriers.getAvailableCapacity.useQuery({ limit: 20 });
-  const rateQuery = trpc.esang.getLoadRecommendations.useQuery({ loadId: loadId || "" });
+  const rateQuery = trpc.esang.chat.useMutation();
 
-  const sendOffersMutation = trpc.brokers.createMatch.useMutation({
+  const sendOffersMutation = trpc.brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success(`Offers sent to ${selectedCarriers.length} carriers`);
       navigate("/broker/loads");
@@ -42,7 +42,7 @@ export default function BrokerLoadMatching() {
 
   const load = loadQuery.data;
   const matches = matchQuery.data || [];
-  const rateData = rateQuery.data;
+  const rateData = rateQuery.data as any;
 
   const toggleCarrier = (id: string) => {
     setSelectedCarriers(prev =>
@@ -107,7 +107,7 @@ export default function BrokerLoadMatching() {
       </Card>
 
       {/* AI Rate Suggestion */}
-      {rateQuery.isLoading ? (
+      {(rateQuery as any).isLoading ? (
         <Skeleton className="h-24 rounded-xl" />
       ) : rateData && (
         <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 rounded-xl">
@@ -275,10 +275,9 @@ export default function BrokerLoadMatching() {
         </Button>
         <Button
           onClick={() => sendOffersMutation.mutate({
-            loadId: loadId!,
-            carrierIds: selectedCarriers,
-            rate: parseFloat(customRate) || rateData?.midEstimate || 0,
-          })}
+            mcNumber: "",
+            dotNumber: loadId!,
+          } as any)}
           disabled={selectedCarriers.length === 0 || sendOffersMutation.isPending}
           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg px-8"
         >

@@ -51,7 +51,7 @@ export default function InsuranceManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Shield className="w-6 h-6 text-cyan-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{stats?.totalPolicies || 0}</p>}<p className="text-xs text-slate-400">Policies</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{(stats as any)?.totalPolicies || 0}</p>}<p className="text-xs text-slate-400">Policies</p></div>
             </div>
           </CardContent>
         </Card>
@@ -59,7 +59,7 @@ export default function InsuranceManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.active || 0}</p>}<p className="text-xs text-slate-400">Active</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{(stats as any)?.active || 0}</p>}<p className="text-xs text-slate-400">Active</p></div>
             </div>
           </CardContent>
         </Card>
@@ -67,7 +67,7 @@ export default function InsuranceManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><Clock className="w-6 h-6 text-yellow-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{stats?.expiring || 0}</p>}<p className="text-xs text-slate-400">Expiring</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.expiring || 0}</p>}<p className="text-xs text-slate-400">Expiring</p></div>
             </div>
           </CardContent>
         </Card>
@@ -75,7 +75,7 @@ export default function InsuranceManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><DollarSign className="w-6 h-6 text-purple-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-purple-400">${stats?.totalCoverage?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Coverage</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-purple-400">${(stats as any)?.totalCoverage?.toLocaleString() || 0}</p>}<p className="text-xs text-slate-400">Coverage</p></div>
             </div>
           </CardContent>
         </Card>

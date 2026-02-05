@@ -22,8 +22,8 @@ export default function ShipperBidManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const bidsQuery = trpc.shippers.getBids.useQuery({ status: statusFilter });
-  const statsQuery = trpc.shippers.getBidStats.useQuery();
+  const bidsQuery = trpc.bids.getByLoad.useQuery({ loadId: "" });
+  const statsQuery = trpc.shippers.getStats.useQuery();
 
   const acceptBidMutation = trpc.shippers.acceptBid.useMutation({
     onSuccess: () => {
@@ -80,7 +80,7 @@ export default function ShipperBidManagement() {
                   <Gavel className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Bids</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.total || stats?.totalLoads || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -89,7 +89,7 @@ export default function ShipperBidManagement() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.pending || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.pending || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -98,7 +98,7 @@ export default function ShipperBidManagement() {
                   <DollarSign className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Avg Bid</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">${stats?.avgBid?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-green-400">${(stats as any)?.avgBid?.toLocaleString() || stats?.avgRatePerMile?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -107,7 +107,7 @@ export default function ShipperBidManagement() {
                   <TrendingUp className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Accept Rate</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.acceptRate || 0}%</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.acceptRate || stats?.onTimeRate || 0}%</p>
               </CardContent>
             </Card>
           </>
@@ -202,14 +202,14 @@ export default function ShipperBidManagement() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => rejectBidMutation.mutate({ bidId: bid.id })}
+                            onClick={() => rejectBidMutation.mutate({ loadId: bid.loadId || "", bidId: bid.id, reason: "Rejected" })}
                             className="bg-red-500/20 border-red-500/50 text-red-400 rounded-lg"
                           >
                             <XCircle className="w-4 h-4 mr-1" />Reject
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => acceptBidMutation.mutate({ bidId: bid.id })}
+                            onClick={() => acceptBidMutation.mutate({ loadId: bid.loadId || "", bidId: bid.id })}
                             className="bg-green-600 hover:bg-green-700 rounded-lg"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />Accept

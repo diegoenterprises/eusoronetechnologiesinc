@@ -23,10 +23,10 @@ export default function CatalystLoadMatching() {
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const matchesQuery = trpc.catalysts.getLoadMatches.useQuery({ priority: priorityFilter });
-  const statsQuery = trpc.catalysts.getMatchingStats.useQuery();
+  const matchesQuery = trpc.catalysts.getMatchedLoads.useQuery({});
+  const statsQuery = trpc.catalysts.getMatchStats.useQuery();
 
-  const assignDriverMutation = trpc.catalysts.assignDriverToLoad.useMutation({
+  const assignDriverMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       matchesQuery.refetch();
@@ -76,7 +76,7 @@ export default function CatalystLoadMatching() {
                   <Package className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Pending Loads</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.pendingLoads || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.pendingLoads || stats?.totalMatches || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -85,7 +85,7 @@ export default function CatalystLoadMatching() {
                   <Truck className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Available Drivers</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.availableDrivers || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.availableDrivers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -94,7 +94,7 @@ export default function CatalystLoadMatching() {
                   <Sparkles className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">AI Matches</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.aiMatches || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.aiMatches || stats?.matched || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -103,7 +103,7 @@ export default function CatalystLoadMatching() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Assigned Today</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.assignedToday || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.assignedToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -112,7 +112,7 @@ export default function CatalystLoadMatching() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Urgent</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.urgent || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.urgent || 0}</p>
               </CardContent>
             </Card>
           </>

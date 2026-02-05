@@ -144,7 +144,7 @@ export default function InsuranceDashboard() {
           <CardContent className="p-4 text-center">
             <TrendingUp className="h-8 w-8 mx-auto text-indigo-500 mb-2" />
             <p className="text-2xl font-bold">
-              {riskScore?.overallScore || "N/A"}
+              {(riskScore as any)?.overallScore || "N/A"}
             </p>
             <p className="text-sm text-muted-foreground">Risk Score</p>
           </CardContent>
@@ -210,12 +210,12 @@ export default function InsuranceDashboard() {
               <CardContent>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-2xl font-bold">{claimStats?.open || 0}</p>
+                    <p className="text-2xl font-bold">{(claimStats as any)?.open || 0}</p>
                     <p className="text-sm text-muted-foreground">Open Claims</p>
                   </div>
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <p className="text-2xl font-bold">
-                      {formatCurrency(claimStats?.totalPaid || 0)}
+                      {formatCurrency((claimStats as any)?.totalPaid || 0)}
                     </p>
                     <p className="text-sm text-muted-foreground">Total Paid</p>
                   </div>

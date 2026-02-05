@@ -22,7 +22,7 @@ export default function BrokerShipperManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
 
   const shippersQuery = trpc.brokers.getShippers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.brokers.getShipperStats.useQuery();
+  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
 
   const shippers = shippersQuery.data || [];
   const stats = statsQuery.data;
@@ -58,7 +58,7 @@ export default function BrokerShipperManagement() {
                   <Building className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Shippers</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.total || stats?.activeLoads || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -67,7 +67,7 @@ export default function BrokerShipperManagement() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Active</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.active || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.active || stats?.pendingMatches || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -76,7 +76,7 @@ export default function BrokerShipperManagement() {
                   <Truck className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Loads MTD</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.loadsMTD || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.loadsMTD || stats?.weeklyVolume || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -85,7 +85,7 @@ export default function BrokerShipperManagement() {
                   <DollarSign className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Revenue MTD</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">${stats?.revenueMTD?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-green-400">${(stats as any)?.revenueMTD?.toLocaleString() || stats?.commissionEarned?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
           </>

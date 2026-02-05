@@ -21,11 +21,11 @@ export default function CarrierDriverManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const driversQuery = trpc.carriers.getDrivers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.carriers.getDriverStats.useQuery();
+  const driversQuery = trpc.carriers.getDrivers.useQuery({});
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
   const drivers = driversQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredDrivers = drivers.filter((d: any) =>
     d.name?.toLowerCase().includes(search.toLowerCase()) ||

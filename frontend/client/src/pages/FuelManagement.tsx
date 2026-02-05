@@ -103,7 +103,7 @@ export default function FuelManagement() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-purple-400">${summary?.avgPricePerGallon?.toFixed(2) || 0}</p>
+                  <p className="text-2xl font-bold text-purple-400">${Number(summary?.avgPricePerGallon || 0).toFixed(2)}</p>
                 )}
                 <p className="text-xs text-slate-400">Avg $/Gal</p>
               </div>

@@ -22,10 +22,10 @@ export default function ComplianceMedicalCertificates() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const certificatesQuery = trpc.compliance.getMedicalCerts.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
+  const certificatesQuery = trpc.compliance.getMedicalCerts.useQuery({ search: statusFilter === 'all' ? undefined : statusFilter });
   const statsQuery = trpc.compliance.getMedicalCertStats.useQuery();
 
-  const sendReminderMutation = trpc.compliance.sendReminder.useMutation({
+  const sendReminderMutation = trpc.compliance.scheduleDrugTest.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 

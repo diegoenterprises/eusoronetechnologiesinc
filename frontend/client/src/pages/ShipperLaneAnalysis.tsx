@@ -21,13 +21,13 @@ export default function ShipperLaneAnalysis() {
   const [timeRange, setTimeRange] = useState("90d");
   const [search, setSearch] = useState("");
 
-  const lanesQuery = trpc.shippers.getLaneAnalysis.useQuery({ timeRange });
-  const statsQuery = trpc.shippers.getLaneStats.useQuery({ timeRange });
+  const lanesQuery = trpc.shippers.getMyLoads.useQuery({});
+  const statsQuery = trpc.shippers.getStats.useQuery();
 
-  const lanes = lanesQuery.data || [];
-  const stats = statsQuery.data;
+  const lanes = (lanesQuery.data as any)?.loads || lanesQuery.data || [];
+  const stats = statsQuery.data as any;
 
-  const filteredLanes = lanes.filter((l: any) =>
+  const filteredLanes = (lanes as any[]).filter((l: any) =>
     l.origin?.toLowerCase().includes(search.toLowerCase()) ||
     l.destination?.toLowerCase().includes(search.toLowerCase())
   );

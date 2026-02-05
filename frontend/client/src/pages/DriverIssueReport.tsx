@@ -53,31 +53,32 @@ export default function DriverIssueReport() {
   const [hazmatFire, setHazmatFire] = useState(false);
   const [hazmatDamage, setHazmatDamage] = useState(false);
 
-  const locationQuery = trpc.tracking.getCurrentLocation.useQuery();
+  const locationQuery = trpc.tracking.trackShipment.useQuery({ loadNumber: "" }, { enabled: false });
   const currentLoadQuery = trpc.drivers.getCurrentAssignment.useQuery();
 
-  const submitMutation = trpc.incidents.reportIssue.useMutation({
+  const submitMutation = trpc.incidents.report.useMutation({
     onSuccess: () => {
       toast.success("Issue reported successfully");
       navigate("/driver/dashboard");
     },
-    onError: (error) => toast.error("Failed to submit report", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit report", { description: error.message }),
   });
 
   const handleSubmit = () => {
     submitMutation.mutate({
-      type: issueType,
-      severity,
+      type: issueType as any,
+      severity: severity as any,
       description,
-      location: locationQuery.data,
-      loadId: currentLoadQuery.data?.id,
+      location: (locationQuery.data as any)?.loadNumber || "",
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toLocaleTimeString(),
       hazmatIncident: hazmatSpill || hazmatFire || hazmatDamage,
-      hazmatDetails: {
+      hazmatDetails: JSON.stringify({
         spill: hazmatSpill,
         fire: hazmatFire,
         containerDamage: hazmatDamage,
-      },
-    });
+      }),
+    } as any);
   };
 
   const isHazmatIssue = issueType === "cargo" || hazmatSpill || hazmatFire || hazmatDamage;
@@ -113,7 +114,7 @@ export default function DriverIssueReport() {
               {locationQuery.isLoading ? (
                 <Skeleton className="h-5 w-48 mt-1" />
               ) : (
-                <p className="text-white font-medium">{locationQuery.data?.address || "Location detected"}</p>
+                <p className="text-white font-medium">{(locationQuery.data as any)?.address || locationQuery.data?.loadNumber || "Location detected"}</p>
               )}
             </div>
             <Badge className="bg-green-500/20 text-green-400 border-0">GPS Active</Badge>

@@ -123,7 +123,7 @@ export default function DriverCurrentJob() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Quantity</p>
-                  <p className="text-white font-medium">{job.weight?.toLocaleString()} {job.weightUnit}</p>
+                  <p className="text-white font-medium">{job.weight?.toLocaleString()} {(job as any).weightUnit || "lbs"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Equipment</p>
@@ -221,10 +221,10 @@ export default function DriverCurrentJob() {
               <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm text-slate-400">Progress</span>
-                  <span className="text-white font-medium">{job.distanceCompleted} / {job.totalMiles} miles</span>
+                  <span className="text-white font-medium">{(job as any).distanceCompleted || 0} / {job.totalMiles} miles</span>
                 </div>
                 <Progress 
-                  value={(job.distanceCompleted / job.totalMiles) * 100} 
+                  value={((job as any).distanceCompleted || 0) / (job.totalMiles || 1) * 100} 
                   className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-cyan-500 [&>div]:to-blue-500"
                 />
                 <div className="flex items-center justify-between mt-2 text-xs text-slate-500">

@@ -22,7 +22,7 @@ export default function ComplianceClearinghouse() {
   const [searchTerm, setSearchTerm] = useState("");
   const [queryType, setQueryType] = useState("pre_employment");
 
-  const driversQuery = trpc.compliance.getDriversForClearinghouse.useQuery();
+  const driversQuery = trpc.compliance.getDQDrivers.useQuery({});
   const queriesQuery = trpc.compliance.getClearinghouseQueries.useQuery();
   const statsQuery = trpc.compliance.getClearinghouseStats.useQuery();
 
@@ -108,7 +108,7 @@ export default function ComplianceClearinghouse() {
                   </div>
                   <span className="text-slate-400 text-sm">Annual Due</span>
                 </div>
-                <p className="text-2xl font-bold text-cyan-400">{stats?.annualDue || 0}</p>
+                <p className="text-2xl font-bold text-cyan-400">{(stats as any)?.annualDue || stats?.pending || 0}</p>
                 <p className="text-slate-400 text-xs">Next 30 days</p>
               </CardContent>
             </Card>
@@ -163,7 +163,7 @@ export default function ComplianceClearinghouse() {
                   </div>
                   <Button
                     size="sm"
-                    onClick={() => runQueryMutation.mutate({ driverId: driver.id, queryType })}
+                    onClick={() => runQueryMutation.mutate({ driverId: driver.id, queryType: queryType as "annual" | "pre_employment" })}
                     disabled={runQueryMutation.isPending}
                     className="bg-cyan-600 hover:bg-cyan-700 rounded-lg"
                   >

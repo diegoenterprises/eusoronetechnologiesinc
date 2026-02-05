@@ -21,11 +21,11 @@ export default function ShipperCarrierPerformance() {
   const [timeRange, setTimeRange] = useState("90d");
   const [sortBy, setSortBy] = useState("rating");
 
-  const carriersQuery = trpc.shippers.getCarrierPerformance.useQuery({ timeRange, sortBy });
-  const summaryQuery = trpc.shippers.getCarrierSummary.useQuery({ timeRange });
+  const carriersQuery = trpc.shippers.getCarrierPerformance.useQuery({ period: timeRange as any });
+  const summaryQuery = trpc.shippers.getStats.useQuery();
 
   const carriers = carriersQuery.data || [];
-  const summary = summaryQuery.data;
+  const summary = summaryQuery.data as any;
 
   const getRatingColor = (rating: number) => {
     if (rating >= 4.5) return "text-green-400";

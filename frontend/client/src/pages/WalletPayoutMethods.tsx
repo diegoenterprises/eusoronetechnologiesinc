@@ -44,10 +44,7 @@ export default function WalletPayoutMethods() {
     if (!routingNumber || !accountNumber || !accountName) return;
     addMethodMutation.mutate({
       type: "bank_account",
-      accountType: accountType as "checking" | "savings",
-      routingNumber,
-      accountNumber,
-      accountName,
+      token: `${routingNumber}-${accountNumber}`,
     });
   };
 
@@ -201,7 +198,7 @@ export default function WalletPayoutMethods() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setDefaultMutation.mutate({ methodId: String(method.id) })}
+                        onClick={() => setDefaultMutation.mutate({ payoutMethodId: String(method.id) })}
                         disabled={setDefaultMutation.isPending}
                       >
                         Set as Default
@@ -211,7 +208,7 @@ export default function WalletPayoutMethods() {
                       variant="ghost"
                       size="icon"
                       className="text-red-500 hover:text-red-700"
-                      onClick={() => removeMethodMutation.mutate({ methodId: String(method.id) })}
+                      onClick={() => removeMethodMutation.mutate({ payoutMethodId: String(method.id) })}
                       disabled={removeMethodMutation.isPending}
                     >
                       <Trash2 className="h-4 w-4" />

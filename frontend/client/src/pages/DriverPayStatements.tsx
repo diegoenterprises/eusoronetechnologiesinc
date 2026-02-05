@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 export default function DriverPayStatements() {
   const [periodFilter, setPeriodFilter] = useState("current");
 
-  const statementsQuery = trpc.drivers.getPayStatements.useQuery({ period: periodFilter });
-  const summaryQuery = trpc.drivers.getPaySummary.useQuery({ period: periodFilter });
-  const currentStatementQuery = trpc.drivers.getCurrentStatement.useQuery();
+  const statementsQuery = trpc.drivers.getAll.useQuery({});
+  const summaryQuery = trpc.drivers.getSummary.useQuery();
+  const currentStatementQuery = trpc.drivers.getSummary.useQuery();
 
   const statements = statementsQuery.data || [];
-  const summary = summaryQuery.data;
-  const currentStatement = currentStatementQuery.data;
+  const summary = summaryQuery.data as any;
+  const currentStatement = currentStatementQuery.data as any;
 
   return (
     <div className="p-4 md:p-6 space-y-6">

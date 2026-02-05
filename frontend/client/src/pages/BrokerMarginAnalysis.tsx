@@ -23,12 +23,12 @@ export default function BrokerMarginAnalysis() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [laneFilter, setLaneFilter] = useState("all");
 
-  const marginsQuery = trpc.brokers.getMarginAnalysis.useQuery({ period: periodFilter, lane: laneFilter });
-  const statsQuery = trpc.brokers.getMarginStats.useQuery({ period: periodFilter });
-  const trendsQuery = trpc.brokers.getMarginTrends.useQuery({ period: periodFilter });
+  const marginsQuery = trpc.brokers.getShippers.useQuery({ search: "" });
+  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
+  const trendsQuery = trpc.brokers.getShippers.useQuery({ search: "" });
 
   const margins = marginsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
   const trends = trendsQuery.data || [];
 
   const filteredMargins = margins.filter((m: any) =>

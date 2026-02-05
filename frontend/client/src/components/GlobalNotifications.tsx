@@ -15,7 +15,7 @@ import { trpc } from "@/lib/trpc";
 import { useNotifications as useRealtimeNotifications } from "@/hooks/useRealtimeEvents";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useLocation } from "wouter";
 
 interface Notification {
   id: string;
@@ -38,7 +38,7 @@ export default function GlobalNotifications({
   showBell = true,
   maxVisible = 5,
 }: GlobalNotificationsProps) {
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [seenNotificationIds, setSeenNotificationIds] = useState<Set<string>>(new Set());
 
@@ -68,7 +68,7 @@ export default function GlobalNotifications({
   useEffect(() => {
     realtimeNotifications.forEach(notification => {
       if (!seenNotificationIds.has(notification.id)) {
-        setSeenNotificationIds(prev => new Set([...prev, notification.id]));
+        setSeenNotificationIds(prev => { const arr = Array.from(prev); arr.push(notification.id); return new Set(arr); });
         
         // Show toast notification
         const icon = getNotificationIcon(notification.type);
@@ -76,8 +76,8 @@ export default function GlobalNotifications({
           description: notification.message,
           icon,
           action: notification.actionUrl ? {
-            label: notification.actionLabel || "View",
-            onClick: () => navigate(notification.actionUrl!),
+            label: (notification as any).actionLabel || "View",
+            onClick: () => window.location.href = notification.actionUrl!,
           } : undefined,
           duration: 5000,
         });
@@ -303,7 +303,7 @@ export function useGlobalNotifications() {
     actionUrl?: string,
     actionLabel?: string
   ) => {
-    const navigate = useNavigate();
+    // Navigation handled via callback
     
     const toastFn = type === "success" ? toast.success :
                     type === "warning" ? toast.warning :
@@ -314,7 +314,7 @@ export function useGlobalNotifications() {
       description: message,
       action: actionUrl ? {
         label: actionLabel || "View",
-        onClick: () => navigate(actionUrl),
+        onClick: () => window.location.href = actionUrl,
       } : undefined,
       duration: 5000,
     });

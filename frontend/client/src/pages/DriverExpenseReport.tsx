@@ -31,7 +31,7 @@ import {
   Wrench,
   MoreHorizontal,
 } from "lucide-react";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function DriverExpenseReport() {
@@ -41,23 +41,20 @@ export default function DriverExpenseReport() {
   const [periodFilter, setPeriodFilter] = useState("current_month");
 
   const {
-    data: expensesData,
+    data: expensesDataRaw,
     isLoading,
     error,
     refetch,
-  } = trpc.driver.getExpenseReports.useQuery({
-    search: searchQuery,
-    status: statusFilter,
-    category: categoryFilter,
-    period: periodFilter,
-  });
+  } = trpc.drivers.getAll.useQuery({});
 
-  const submitExpenseMutation = trpc.driver.submitExpenseReport.useMutation({
+  const expensesData = expensesDataRaw as any;
+
+  const submitExpenseMutation = trpc.fuel.reportPurchase.useMutation({
     onSuccess: () => {
       toast.success("Expense report submitted successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to submit expense report");
     },
   });

@@ -24,7 +24,7 @@ export default function AdminApiManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
-  const apiKeysQuery = trpc.admin.getApiKeys.useQuery({ status: statusFilter });
+  const apiKeysQuery = trpc.admin.getApiKeys.useQuery();
   const statsQuery = trpc.admin.getAPIStats.useQuery();
 
   const createKeyMutation = trpc.admin.createApiKey.useMutation({
@@ -43,7 +43,7 @@ export default function AdminApiManagement() {
     },
   });
 
-  const toggleKeyMutation = trpc.admin.toggleApiKey.useMutation({
+  const toggleKeyMutation = trpc.admin.revokeApiKey.useMutation({
     onSuccess: () => {
       toast.success("API key updated");
       apiKeysQuery.refetch();
@@ -77,7 +77,7 @@ export default function AdminApiManagement() {
           <p className="text-slate-400 text-sm mt-1">Manage API keys, webhooks, and integrations</p>
         </div>
         <Button
-          onClick={() => createKeyMutation.mutate({})}
+          onClick={() => createKeyMutation.mutate({ name: "New API Key" } as any)}
           disabled={createKeyMutation.isPending}
           className="bg-gradient-to-r from-violet-600 to-purple-600 rounded-lg"
         >
@@ -124,7 +124,7 @@ export default function AdminApiManagement() {
                   <AlertTriangle className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Rate Limited</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.rateLimited || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.rateLimited || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

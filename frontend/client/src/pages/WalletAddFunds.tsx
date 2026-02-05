@@ -23,14 +23,14 @@ export default function WalletAddFunds() {
   const [paymentMethod, setPaymentMethod] = useState('bank');
 
   const { data: balance, isLoading: balanceLoading } = trpc.wallet.getBalance.useQuery();
-  const { data: accounts } = trpc.wallet.getLinkedAccounts.useQuery();
+  const { data: accounts } = trpc.wallet.getPayoutMethods.useQuery();
   
-  const addFundsMutation = trpc.wallet.addFunds.useMutation({
+  const addFundsMutation = trpc.wallet.requestCashAdvance.useMutation({
     onSuccess: () => {
       toast.success('Funds added successfully!');
       setLocation('/wallet');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'Failed to add funds');
     },
   });
@@ -53,7 +53,7 @@ export default function WalletAddFunds() {
       toast.error('Please enter a valid amount');
       return;
     }
-    addFundsMutation.mutate({ amount: amountNum, method: paymentMethod });
+    addFundsMutation.mutate({ amount: amountNum } as any);
   };
 
   return (

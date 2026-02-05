@@ -23,8 +23,8 @@ export default function ShipperSpendAnalytics() {
   const [view, setView] = useState("overview");
 
   const statsQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
-  const laneQuery = trpc.analytics.getPerformanceStats.useQuery({ dateRange: period });
-  const carrierQuery = trpc.analytics.getPerformanceStats.useQuery({ dateRange: period });
+  const laneQuery = trpc.analytics.getPerformanceStats.useQuery({ metric: period });
+  const carrierQuery = trpc.analytics.getPerformanceStats.useQuery({ metric: period });
   const accessorialQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
   const trendQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
 
@@ -141,11 +141,11 @@ export default function ShipperSpendAnalytics() {
         <CardContent>
           {laneQuery.isLoading ? (
             <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
-          ) : laneQuery.data?.length === 0 ? (
+          ) : (laneQuery.data as any)?.lanes?.length === 0 ? (
             <div className="text-center py-8"><MapPin className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400">No lane data</p></div>
           ) : (
             <div className="space-y-3">
-              {laneQuery.data?.map((lane: any, index: number) => (
+              {((laneQuery.data as any)?.lanes || []).map((lane: any, index: number) => (
                 <div key={index} className="p-4 rounded-lg bg-slate-700/30">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default function ShipperSpendAnalytics() {
               <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
             ) : (
               <div className="space-y-3">
-                {carrierQuery.data?.map((carrier: any, index: number) => (
+                {((carrierQuery.data as any)?.carriers || []).map((carrier: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 flex items-center justify-center text-cyan-400 font-bold text-sm">
@@ -219,7 +219,7 @@ export default function ShipperSpendAnalytics() {
               <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
             ) : (
               <div className="space-y-3">
-                {accessorialQuery.data?.map((item: any, index: number) => {
+                {((accessorialQuery.data as any)?.accessorials || []).map((item: any, index: number) => {
                   const colors = ["bg-cyan-500", "bg-purple-500", "bg-yellow-500", "bg-green-500", "bg-pink-500"];
                   return (
                     <div key={index}>

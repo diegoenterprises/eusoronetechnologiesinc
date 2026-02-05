@@ -17,7 +17,7 @@ import {
 import { Link } from "wouter";
 
 export default function CarrierFleetOverview() {
-  const { data: fleetStats, isLoading, error, refetch } = trpc.fleet.getStats.useQuery();
+  const { data: fleetStats, isLoading, error, refetch } = trpc.zeun.getFleetHealth.useQuery();
   const { data: vehicles } = trpc.vehicles.list.useQuery({ limit: 10 });
   const { data: drivers } = trpc.drivers.list.useQuery({ limit: 10 });
 
@@ -54,7 +54,7 @@ export default function CarrierFleetOverview() {
     );
   }
 
-  const stats = fleetStats || { totalVehicles: 0, activeVehicles: 0, totalDrivers: 0, activeDrivers: 0 };
+  const stats = (fleetStats || { totalVehicles: 0, activeVehicles: 0, totalDrivers: 0, activeDrivers: 0 }) as any;
   const vehicleList = vehicles || [];
   const driverList = drivers || [];
 

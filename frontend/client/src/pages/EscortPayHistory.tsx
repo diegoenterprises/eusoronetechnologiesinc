@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function EscortPayHistory() {
   const [periodFilter, setPeriodFilter] = useState("30d");
 
-  const paymentsQuery = trpc.escorts.getPayHistory.useQuery({ period: periodFilter });
-  const summaryQuery = trpc.escorts.getPaySummary.useQuery({ period: periodFilter });
-  const pendingQuery = trpc.escorts.getPendingPayments.useQuery();
+  const paymentsQuery = trpc.escorts.getJobs.useQuery({});
+  const summaryQuery = trpc.escorts.getDashboardStats.useQuery();
+  const pendingQuery = trpc.escorts.getJobs.useQuery({});
 
   const payments = paymentsQuery.data || [];
   const summary = summaryQuery.data;
@@ -61,10 +61,10 @@ export default function EscortPayHistory() {
                   <DollarSign className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Total Earned</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">${summary?.totalEarned?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-green-400">${(summary as any)?.totalEarned?.toLocaleString() || summary?.earnings?.toLocaleString() || 0}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <TrendingUp className="w-3 h-3 text-green-400" />
-                  <span className="text-green-400 text-xs">+{summary?.percentChange || 0}% vs last period</span>
+                  <span className="text-green-400 text-xs">+{(summary as any)?.percentChange || 0}% vs last period</span>
                 </div>
               </CardContent>
             </Card>
@@ -74,9 +74,9 @@ export default function EscortPayHistory() {
                   <MapPin className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Jobs Completed</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{summary?.jobsCompleted || 0}</p>
+                <p className="text-2xl font-bold text-white">{(summary as any)?.jobsCompleted || summary?.completed || 0}</p>
                 <p className="text-slate-500 text-xs mt-1">
-                  ${summary?.avgPerJob?.toFixed(0) || 0} avg per job
+                  ${(summary as any)?.avgPerJob?.toFixed(0) || 0} avg per job
                 </p>
               </CardContent>
             </Card>
@@ -86,9 +86,9 @@ export default function EscortPayHistory() {
                   <Clock className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total Hours</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{summary?.totalHours || 0}h</p>
+                <p className="text-2xl font-bold text-purple-400">{(summary as any)?.totalHours || 0}h</p>
                 <p className="text-slate-500 text-xs mt-1">
-                  ${summary?.avgPerHour?.toFixed(2) || 0}/hr avg
+                  ${(summary as any)?.avgPerHour?.toFixed(2) || 0}/hr avg
                 </p>
               </CardContent>
             </Card>
@@ -98,7 +98,7 @@ export default function EscortPayHistory() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">${summary?.pendingAmount?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">${(summary as any)?.pendingAmount?.toLocaleString() || 0}</p>
                 <p className="text-slate-500 text-xs mt-1">
                   {pending.length} pending payments
                 </p>

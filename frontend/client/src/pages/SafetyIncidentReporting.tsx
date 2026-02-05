@@ -29,7 +29,7 @@ export default function SafetyIncidentReporting() {
   const statsQuery = trpc.safety.getIncidentStats.useQuery();
   const typesQuery = trpc.safety.getIncidents.useQuery({});
 
-  const submitIncidentMutation = trpc.safety.createIncident.useMutation({
+  const submitIncidentMutation = trpc.safety.reportIncident.useMutation({
     onSuccess: () => {
       toast.success("Incident reported");
       incidentsQuery.refetch();
@@ -139,9 +139,8 @@ export default function SafetyIncidentReporting() {
                 date: formData.get("date") as string,
                 location: formData.get("location") as string,
                 driverId: formData.get("driverId") as string,
-                truckNumber: formData.get("truckNumber") as string,
                 description: formData.get("description") as string,
-              });
+              } as any);
             }} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Select name="type" required>

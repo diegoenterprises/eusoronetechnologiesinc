@@ -23,9 +23,9 @@ export default function SafetyDriverBehavior() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [riskFilter, setRiskFilter] = useState("all");
 
-  const driversQuery = trpc.safety.getDriverBehavior.useQuery({ period: periodFilter, risk: riskFilter });
-  const statsQuery = trpc.safety.getBehaviorStats.useQuery({ period: periodFilter });
-  const eventsQuery = trpc.safety.getRecentBehaviorEvents.useQuery();
+  const driversQuery = trpc.safety.getDriverScores.useQuery();
+  const statsQuery = trpc.safety.getDashboardStats.useQuery();
+  const eventsQuery = trpc.safety.getIncidents.useQuery({});
 
   const drivers = driversQuery.data || [];
   const stats = statsQuery.data;
@@ -84,7 +84,7 @@ export default function SafetyDriverBehavior() {
                   <User className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Drivers</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalDrivers || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalDrivers || stats?.activeDrivers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -93,8 +93,8 @@ export default function SafetyDriverBehavior() {
                   <Shield className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Avg Score</span>
                 </div>
-                <p className={cn("text-2xl font-bold", getScoreColor(stats?.avgScore || 0))}>
-                  {stats?.avgScore || 0}
+                <p className={cn("text-2xl font-bold", getScoreColor((stats as any)?.avgScore || stats?.safetyScore || 0))}>
+                  {(stats as any)?.avgScore || stats?.safetyScore || 0}
                 </p>
               </CardContent>
             </Card>
@@ -104,7 +104,7 @@ export default function SafetyDriverBehavior() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">High Risk</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.highRisk || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.highRisk || stats?.csaAlerts || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -113,7 +113,7 @@ export default function SafetyDriverBehavior() {
                   <Activity className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Events Today</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.eventsToday || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.eventsToday || stats?.openIncidents || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -122,7 +122,7 @@ export default function SafetyDriverBehavior() {
                   <TrendingUp className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Improved</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.improved || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.improved || 0}</p>
               </CardContent>
             </Card>
           </>

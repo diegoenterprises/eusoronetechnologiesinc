@@ -148,7 +148,7 @@ export default function TheHaulAchievements() {
                 </CardContent>
               </Card>
             ))}
-            {(!achievements || achievements.length === 0) && (
+            {(!achievements || (achievements as any).length === 0) && (
               <Card className="col-span-full">
                 <CardContent className="p-6 text-center text-muted-foreground">
                   No achievements found in this category

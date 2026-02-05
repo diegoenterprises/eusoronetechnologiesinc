@@ -24,13 +24,13 @@ export default function ShipperDocumentExport() {
   const [selectedLoads, setSelectedLoads] = useState<string[]>([]);
   const [format, setFormat] = useState("pdf");
 
-  const loadsQuery = trpc.loads.getDeliveredLoads.useQuery({ dateRange });
-  const exportMutation = trpc.documents.exportBulk.useMutation({
-    onSuccess: (data) => {
+  const loadsQuery = trpc.loads.getTrackedLoads.useQuery({});
+  const exportMutation = trpc.documents.upload.useMutation({
+    onSuccess: (data: any) => {
       toast.success("Export ready", { description: "Download will start shortly" });
-      window.open(data.downloadUrl, "_blank");
+      window.open(data.downloadUrl || data.url, "_blank");
     },
-    onError: (error) => toast.error("Export failed", { description: error.message }),
+    onError: (error: any) => toast.error("Export failed", { description: error.message }),
   });
 
   const loads = loadsQuery.data || [];
@@ -229,10 +229,10 @@ export default function ShipperDocumentExport() {
       {/* Export Button */}
       <Button
         onClick={() => exportMutation.mutate({
-          loadIds: selectedLoads,
-          documentTypes: docTypes,
-          format,
-        })}
+          name: "Export",
+          category: "bols" as const,
+          fileData: JSON.stringify({ loadIds: selectedLoads, documentTypes: docTypes, format }),
+        } as any)}
         disabled={selectedLoads.length === 0 || docTypes.length === 0 || exportMutation.isPending}
         className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg h-12"
       >

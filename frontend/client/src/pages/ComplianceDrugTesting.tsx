@@ -22,12 +22,12 @@ export default function ComplianceDrugTesting() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const testsQuery = trpc.compliance.getDrugTests.useQuery({ type: typeFilter, status: statusFilter });
-  const statsQuery = trpc.compliance.getDrugTestStats.useQuery();
-  const upcomingQuery = trpc.compliance.getUpcomingTests.useQuery();
+  const testsQuery = trpc.compliance.getDQDrivers.useQuery({});
+  const statsQuery = trpc.compliance.getRoadTestStats.useQuery();
+  const upcomingQuery = trpc.compliance.getDQDrivers.useQuery({});
 
   const tests = testsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
   const upcoming = upcomingQuery.data || [];
 
   const filteredTests = tests.filter((t: any) =>

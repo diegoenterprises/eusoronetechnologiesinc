@@ -250,26 +250,26 @@ export default function EscortConvoyComm() {
           <CardContent className="space-y-4">
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs mb-1">Current Location</p>
-              <p className="text-white text-sm">{locations[0]?.address || "Updating..."}</p>
+              <p className="text-white text-sm">{(locations as any)?.[0]?.address || "Updating..."}</p>
             </div>
 
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs mb-1">Speed</p>
-              <p className="text-white text-lg font-bold">{locations[0]?.speed || 0} mph</p>
+              <p className="text-white text-lg font-bold">{(locations as any)?.[0]?.speed || 0} mph</p>
             </div>
 
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs mb-1">ETA to Destination</p>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-cyan-400" />
-                <p className="text-white font-medium">{job?.eta || "Calculating..."}</p>
+                <p className="text-white font-medium">{(job as any)?.eta || "Calculating..."}</p>
               </div>
             </div>
 
             <div className="p-3 rounded-lg bg-slate-700/30">
               <p className="text-slate-400 text-xs mb-1">Convoy Spacing</p>
               <div className="space-y-2">
-                {locations.map((loc: any, i: number) => (
+                {(locations as any[]).map((loc: any, i: number) => (
                   i > 0 && (
                     <div key={i} className="flex items-center justify-between text-xs">
                       <span className="text-slate-400">{loc.role}</span>

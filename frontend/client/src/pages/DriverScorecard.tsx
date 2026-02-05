@@ -112,7 +112,7 @@ export default function DriverScorecard() {
               ) : (
                 <>
                   <div className="text-center p-3 rounded-lg bg-slate-800/50">
-                    <p className="text-2xl font-bold text-blue-400">{scorecard?.metrics?.distanceThisMonth?.toLocaleString() || 0}</p>
+                    <p className="text-2xl font-bold text-blue-400">{(scorecard?.metrics as any)?.distanceThisMonth?.toLocaleString() || scorecard?.metrics?.milesThisMonth?.toLocaleString() || 0}</p>
                     <p className="text-xs text-slate-500">Miles</p>
                   </div>
                   <div className="text-center p-3 rounded-lg bg-slate-800/50">

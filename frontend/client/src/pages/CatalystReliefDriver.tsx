@@ -132,7 +132,7 @@ export default function CatalystReliefDriver() {
           <div className="grid grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-slate-400 text-xs">Delivery Due</p>
-              <p className="text-white">{load?.deliveryDate} {load?.deliveryTime}</p>
+              <p className="text-white">{load?.deliveryDate} {(load as any)?.deliveryTime || ""}</p>
             </div>
             <div>
               <p className="text-slate-400 text-xs">Product</p>
@@ -252,10 +252,9 @@ export default function CatalystReliefDriver() {
         <Button
           onClick={() => dispatchMutation.mutate({
             loadId: loadId!,
-            currentDriverId: currentDriver?.id,
-            reliefDriverId: selectedDriver!,
+            driverId: selectedDriver!,
             notes,
-          })}
+          } as any)}
           disabled={!selectedDriver || dispatchMutation.isPending}
           className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg px-8"
         >

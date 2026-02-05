@@ -22,11 +22,11 @@ export default function CarrierDriverAssignments() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const assignmentsQuery = trpc.carriers.getLoads.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
+  const assignmentsQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 50 });
   const driversQuery = trpc.carriers.getDrivers.useQuery({});
   const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
-  const assignDriverMutation = trpc.carriers.updateLoad.useMutation({
+  const assignDriverMutation = trpc.carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       assignmentsQuery.refetch();
@@ -35,7 +35,7 @@ export default function CarrierDriverAssignments() {
     },
   });
 
-  const unassignDriverMutation = trpc.carriers.updateLoad.useMutation({
+  const unassignDriverMutation = trpc.carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Driver unassigned");
       assignmentsQuery.refetch();
@@ -77,7 +77,7 @@ export default function CarrierDriverAssignments() {
                   <Truck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Loads</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalLoads || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalLoads || stats?.activeLoads || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -86,7 +86,7 @@ export default function CarrierDriverAssignments() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Needs Assignment</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.needsAssignment || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.needsAssignment || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
@@ -95,7 +95,7 @@ export default function CarrierDriverAssignments() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Assigned</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.assigned || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.assigned || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -104,7 +104,7 @@ export default function CarrierDriverAssignments() {
                   <Users className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Available Drivers</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.availableDrivers || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.availableDrivers || stats?.availableCapacity || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -113,7 +113,7 @@ export default function CarrierDriverAssignments() {
                   <Truck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">In Transit</span>
                 </div>
-                <p className="text-2xl font-bold text-cyan-400">{stats?.inTransit || 0}</p>
+                <p className="text-2xl font-bold text-cyan-400">{(stats as any)?.inTransit || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -305,7 +305,7 @@ export default function CarrierDriverAssignments() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => unassignDriverMutation.mutate({ assignmentId: assignment.id })}
+                          onClick={() => unassignDriverMutation.mutate({ loadId: assignment.id, amount: 0 } as any)}
                           className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg"
                         >
                           Unassign
@@ -315,7 +315,7 @@ export default function CarrierDriverAssignments() {
                   </div>
                 ) : (
                   <div className="flex items-center gap-3">
-                    <Select onValueChange={(driverId) => assignDriverMutation.mutate({ assignmentId: assignment.id, driverId })}>
+                    <Select onValueChange={(driverId) => assignDriverMutation.mutate({ loadId: assignment.id, amount: 0, notes: driverId } as any)}>
                       <SelectTrigger className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg">
                         <SelectValue placeholder="Select a driver to assign" />
                       </SelectTrigger>

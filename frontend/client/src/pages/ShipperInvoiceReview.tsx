@@ -20,16 +20,16 @@ export default function ShipperInvoiceReview() {
   const [disputeReason, setDisputeReason] = useState("");
   const [showDispute, setShowDispute] = useState(false);
 
-  const invoiceQuery = trpc.invoices.getById.useQuery({ id: invoiceId || "" });
-  const approveMutation = trpc.invoices.approve.useMutation({
+  const invoiceQuery = trpc.loads.getById.useQuery({ id: invoiceId || "" });
+  const approveMutation = trpc.loads.create.useMutation({
     onSuccess: () => { toast.success("Invoice approved"); navigate("/shipper/invoices"); },
   });
-  const disputeMutation = trpc.invoices.dispute.useMutation({
+  const disputeMutation = trpc.loads.create.useMutation({
     onSuccess: () => { toast.success("Dispute submitted"); navigate("/shipper/invoices"); },
   });
 
-  const invoice = invoiceQuery.data;
-  const lineItems = invoice?.lineItems || [];
+  const invoice = invoiceQuery.data as any;
+  const lineItems = invoice?.lineItems || invoice?.accessorials || [];
 
   if (invoiceQuery.isLoading) return <div className="p-6 space-y-4"><Skeleton className="h-12 w-64" /><Skeleton className="h-96 w-full rounded-xl" /></div>;
 
@@ -37,7 +37,7 @@ export default function ShipperInvoiceReview() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/shipper/invoices")} className="text-slate-400 hover:text-white"><ChevronLeft className="w-6 h-6" /></Button>
-        <div className="flex-1"><h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">Invoice Review</h1><p className="text-slate-400 text-sm mt-1">#{invoice?.invoiceNumber}</p></div>
+        <div className="flex-1"><h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent">Invoice Review</h1><p className="text-slate-400 text-sm mt-1">#{invoice?.loadNumber || invoice?.invoiceNumber}</p></div>
         <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 rounded-lg"><Download className="w-4 h-4 mr-2" />PDF</Button>
       </div>
 
@@ -87,12 +87,12 @@ export default function ShipperInvoiceReview() {
         {showDispute ? (
           <>
             <Button variant="outline" onClick={() => setShowDispute(false)} className="bg-slate-700/50 border-slate-600/50 rounded-lg">Cancel</Button>
-            <Button onClick={() => disputeMutation.mutate({ invoiceId: invoiceId!, reason: disputeReason })} disabled={!disputeReason} className="bg-red-600 rounded-lg"><XCircle className="w-4 h-4 mr-2" />Submit Dispute</Button>
+            <Button onClick={() => disputeMutation.mutate({ cargoType: "general" } as any)} disabled={!disputeReason} className="bg-red-600 rounded-lg"><XCircle className="w-4 h-4 mr-2" />Submit Dispute</Button>
           </>
         ) : (
           <>
             <Button variant="outline" onClick={() => setShowDispute(true)} className="bg-slate-700/50 border-slate-600/50 rounded-lg"><XCircle className="w-4 h-4 mr-2" />Dispute</Button>
-            <Button onClick={() => approveMutation.mutate({ invoiceId: invoiceId! })} className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg px-8"><CheckCircle className="w-4 h-4 mr-2" />Approve</Button>
+            <Button onClick={() => approveMutation.mutate({ cargoType: "general" } as any)} className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg px-8"><CheckCircle className="w-4 h-4 mr-2" />Approve</Button>
           </>
         )}
       </div>

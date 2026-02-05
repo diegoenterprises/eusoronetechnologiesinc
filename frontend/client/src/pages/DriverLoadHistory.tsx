@@ -21,11 +21,11 @@ export default function DriverLoadHistory() {
   const [search, setSearch] = useState("");
   const [periodFilter, setPeriodFilter] = useState("30d");
 
-  const historyQuery = trpc.drivers.getLoadHistory.useQuery({ period: periodFilter });
-  const statsQuery = trpc.drivers.getHistoryStats.useQuery({ period: periodFilter });
+  const historyQuery = trpc.drivers.getAll.useQuery({});
+  const statsQuery = trpc.drivers.getSummary.useQuery();
 
   const loads = historyQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredLoads = loads.filter((l: any) =>
     l.loadNumber?.toLowerCase().includes(search.toLowerCase()) ||

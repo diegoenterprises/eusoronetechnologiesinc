@@ -23,13 +23,13 @@ export default function DriverCheckIn() {
   const [, navigate] = useLocation();
   const [checkInCode, setCheckInCode] = useState("");
 
-  const loadQuery = trpc.loads.getAll.useQuery({ search: "" });
+  const loadQuery = trpc.loads.getTrackedLoads.useQuery({ search: "" });
   const appointmentQuery = trpc.appointments.getById.useQuery({ 
     id: loadQuery.data?.[0]?.id?.toString() || "" 
   }, { enabled: !!loadQuery.data?.[0]?.id });
   const facilityQuery = trpc.facilities.getById.useQuery({ 
-    id: loadQuery.data?.[0]?.originFacilityId?.toString() || "" 
-  }, { enabled: !!loadQuery.data?.[0]?.originFacilityId });
+    id: (loadQuery.data?.[0] as any)?.originFacilityId?.toString() || "" 
+  }, { enabled: !!(loadQuery.data?.[0] as any)?.originFacilityId });
 
   const checkInMutation = trpc.appointments.checkIn.useMutation({
     onSuccess: () => {
@@ -69,7 +69,7 @@ export default function DriverCheckIn() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
             Facility Check-In
           </h1>
-          <p className="text-slate-400 text-sm mt-1">{load?.currentStop?.type === "pickup" ? "Pickup" : "Delivery"}</p>
+          <p className="text-slate-400 text-sm mt-1">{(load as any)?.currentStop?.type === "pickup" ? "Pickup" : "Delivery"}</p>
         </div>
       </div>
 
@@ -195,10 +195,8 @@ export default function DriverCheckIn() {
             </Button>
             <Button
               onClick={() => checkInMutation.mutate({
-                loadId: load?.id,
-                facilityId: facility?.id,
-                code: checkInCode || undefined,
-                stopType: load?.currentStop?.type,
+                appointmentId: appointment?.id || "",
+                notes: checkInCode || undefined,
               })}
               disabled={checkInMutation.isPending}
               className="flex-1 bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg"
@@ -238,13 +236,13 @@ export default function DriverCheckIn() {
       </Card>
 
       {/* Contact */}
-      {facility?.phone && (
+      {facility?.contact?.phone && (
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-sm">Facility Contact</p>
-                <p className="text-white font-medium">{facility.phone}</p>
+                <p className="text-white font-medium">{facility.contact.phone}</p>
               </div>
               <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">
                 Call Facility

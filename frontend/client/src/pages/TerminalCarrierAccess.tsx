@@ -27,14 +27,14 @@ export default function TerminalCarrierAccess() {
   const statsQuery = trpc.terminals.getStats.useQuery();
   const pendingQuery = trpc.terminals.getAppointments.useQuery({});
 
-  const toggleAccessMutation = trpc.terminals.checkIn.useMutation({
+  const toggleAccessMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Access updated");
       carriersQuery.refetch();
     },
   });
 
-  const approveRequestMutation = trpc.terminals.checkIn.useMutation({
+  const approveRequestMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Access approved");
       pendingQuery.refetch();
@@ -104,7 +104,7 @@ export default function TerminalCarrierAccess() {
                   <XCircle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Suspended</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.suspended || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.suspended || stats?.safetyIncidents || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -141,7 +141,7 @@ export default function TerminalCarrierAccess() {
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => approveRequestMutation.mutate({ requestId: request.id })}
+                      onClick={() => approveRequestMutation.mutate({ terminalId: request.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "" } as any)}
                       className="bg-green-600 hover:bg-green-700 rounded-lg"
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />Approve
@@ -249,9 +249,16 @@ export default function TerminalCarrierAccess() {
                         <Switch
                           checked={carrier.accessEnabled}
                           onCheckedChange={(checked) => toggleAccessMutation.mutate({
+                            terminalId: carrier.id,
                             carrierId: carrier.id,
-                            enabled: checked,
-                          })}
+                            driverId: "",
+                            truckNumber: "",
+                            productId: "",
+                            quantity: 0,
+                            scheduledDate: "",
+                            scheduledTime: "",
+                            notes: checked ? "enabled" : "disabled",
+                          } as any)}
                         />
                       </div>
                     </div>

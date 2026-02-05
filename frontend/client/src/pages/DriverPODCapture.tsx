@@ -51,14 +51,11 @@ export default function DriverPODCapture() {
   const handleSign = (signatureData: SignatureData) => {
     if (!loadId) return;
     submitPODMutation.mutate({
-      loadId,
-      deliveredQuantity: parseFloat(deliveredQty),
-      condition,
-      notes,
-      consigneeName,
-      signatureImage: signatureData.imageDataUrl,
-      signedAt: signatureData.signedAt,
-      photos,
+      name: `POD-${loadId}`,
+      category: "bols" as const,
+      fileData: signatureData.imageDataUrl,
+      description: notes,
+      relatedToId: loadId,
     });
   };
 
@@ -121,7 +118,7 @@ export default function DriverPODCapture() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-white font-bold text-lg">{load?.destination?.name}</p>
+                  <p className="text-white font-bold text-lg">{(load?.destination as any)?.name || load?.destination?.city}</p>
                   <p className="text-slate-400 text-sm">{load?.destination?.address}</p>
                   <p className="text-slate-400 text-sm">{load?.destination?.city}, {load?.destination?.state}</p>
                 </div>

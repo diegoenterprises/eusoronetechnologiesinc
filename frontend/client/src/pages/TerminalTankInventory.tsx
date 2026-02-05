@@ -22,9 +22,9 @@ export default function TerminalTankInventory() {
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [timeRange, setTimeRange] = useState("24h");
 
-  const tanksQuery = trpc.terminals.getTanks.useQuery({ product: selectedProduct });
-  const scadaQuery = trpc.terminals.getScadaStatus.useQuery({}, { refetchInterval: 5000 });
-  const movementQuery = trpc.terminals.getInventoryMovement.useQuery({ timeRange });
+  const tanksQuery = trpc.terminals.getTanks.useQuery();
+  const scadaQuery = trpc.terminals.getScadaStats.useQuery(undefined, { refetchInterval: 5000 });
+  const movementQuery = trpc.terminals.getInventoryStats.useQuery();
 
   const tanks = tanksQuery.data || [];
   const scada = scadaQuery.data;
@@ -50,9 +50,9 @@ export default function TerminalTankInventory() {
           <p className="text-slate-400 text-sm mt-1">Real-time storage levels</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge className={cn("border-0", scada?.connected ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
-            <Activity className={cn("w-3 h-3 mr-1", scada?.syncing && "animate-pulse")} />
-            SCADA {scada?.connected ? "Live" : "Offline"}
+          <Badge className={cn("border-0", (scada as any)?.connected || scada?.terminalsOnline ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
+            <Activity className={cn("w-3 h-3 mr-1", (scada as any)?.syncing && "animate-pulse")} />
+            SCADA {(scada as any)?.connected || scada?.terminalsOnline ? "Live" : "Offline"}
           </Badge>
           <Select value={selectedProduct} onValueChange={setSelectedProduct}>
             <SelectTrigger className="w-36 bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -112,7 +112,7 @@ export default function TerminalTankInventory() {
                   </div>
                   <span className="text-slate-400 text-sm">Received (24h)</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">+{movement?.received?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-green-400">+{(movement as any)?.received?.toLocaleString() || 0}</p>
                 <p className="text-slate-400 text-xs mt-1">gallons</p>
               </CardContent>
             </Card>
@@ -125,7 +125,7 @@ export default function TerminalTankInventory() {
                   </div>
                   <span className="text-slate-400 text-sm">Dispatched (24h)</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">-{movement?.dispatched?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-red-400">-{(movement as any)?.dispatched?.toLocaleString() || 0}</p>
                 <p className="text-slate-400 text-xs mt-1">gallons</p>
               </CardContent>
             </Card>

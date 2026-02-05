@@ -19,8 +19,8 @@ import { toast } from 'sonner';
 export default function TheHaulRewards() {
   const [category, setCategory] = useState('all');
 
-  const { data: profile } = trpc.gamification.getProfile.useQuery();
-  const { data: rewards, isLoading, refetch } = trpc.gamification.getRewards.useQuery({ category });
+  const { data: profile } = trpc.gamification.getProfile.useQuery({});
+  const { data: rewards, isLoading, refetch } = trpc.gamification.getLeaderboard.useQuery({});
   const redeemMutation = trpc.gamification.redeemReward.useMutation({
     onSuccess: () => {
       toast.success('Reward redeemed successfully!');
@@ -78,7 +78,7 @@ export default function TheHaulRewards() {
 
         <TabsContent value={category} className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rewards?.map((reward: any) => {
+            {((rewards as any)?.leaders || []).map((reward: any) => {
               const canAfford = (profile?.currentMiles || 0) >= reward.cost;
               return (
                 <Card key={reward.id} className={!canAfford ? 'opacity-60' : ''}>
@@ -118,7 +118,7 @@ export default function TheHaulRewards() {
                 </Card>
               );
             })}
-            {(!rewards || rewards.length === 0) && (
+            {(!rewards || ((rewards as any)?.leaders || []).length === 0) && (
               <Card className="col-span-full">
                 <CardContent className="p-6 text-center text-muted-foreground">
                   No rewards available in this category

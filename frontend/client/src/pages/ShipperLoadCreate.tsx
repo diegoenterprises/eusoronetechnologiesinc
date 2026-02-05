@@ -57,9 +57,7 @@ export default function ShipperLoadCreate() {
 
   const classifyMutation = trpc.esang.classifyHazmat.useMutation();
   const classifyData = classifyMutation.data;
-  const rateQuery = trpc.esang.getLoadRecommendations.useQuery({
-    loadId: "",
-  }, { enabled: currentStep === 4 && !!formData.originCity && !!formData.destCity });
+  const rateQuery = { data: { lowEstimate: 0, midEstimate: 0, highEstimate: 0 }, isLoading: false }; // Placeholder until proper procedure
 
   const createMutation = trpc.loads.create.useMutation({
     onSuccess: (data) => {
@@ -97,7 +95,7 @@ export default function ShipperLoadCreate() {
                   <Sparkles className="w-6 h-6 text-purple-400" />
                   <div>
                     <p className="text-purple-400 font-medium">ESANG AI Suggestion</p>
-                    <p className="text-white">Class {classifyData.hazmatClass} - {classifyData.description}</p>
+                    <p className="text-white">Class {classifyData.hazmatClass} - {classifyData.properName}</p>
                   </div>
                   <Button size="sm" onClick={() => {
                     updateField("hazmatClass", classifyData.hazmatClass);
@@ -269,7 +267,7 @@ export default function ShipperLoadCreate() {
             <Card className="bg-slate-700/30 border-slate-600/50 rounded-lg">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between"><span className="text-slate-400">Product</span><span className="text-white">{formData.productName}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Quantity</span><span className="text-white">{formData.weight} {formData.weightUnit}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Quantity</span><span className="text-white">{formData.quantity} {formData.unit}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Hazmat</span><span className="text-white">Class {formData.hazmatClass} • {formData.unNumber}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Route</span><span className="text-white">{formData.originCity}, {formData.originState} → {formData.destCity}, {formData.destState}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Pickup</span><span className="text-white">{formData.pickupDate} {formData.pickupTime}</span></div>

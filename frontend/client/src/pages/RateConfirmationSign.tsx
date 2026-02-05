@@ -225,7 +225,7 @@ export default function RateConfirmationSign() {
                 ))}
                 <div className="flex items-center justify-between p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                   <span className="text-green-400 font-bold">Total</span>
-                  <span className="text-green-400 font-bold text-xl">${rateConf?.totalRate?.toLocaleString()}</span>
+                  <span className="text-green-400 font-bold text-xl">${(rateConf as any)?.totalRate?.toLocaleString() || 0}</span>
                 </div>
               </div>
             </CardContent>
@@ -243,7 +243,7 @@ export default function RateConfirmationSign() {
               <div className="p-4 rounded-lg bg-slate-700/30 max-h-48 overflow-y-auto text-sm text-slate-300 mb-4">
                 <p className="mb-2">1. Carrier agrees to transport the shipment described above in accordance with all applicable laws and regulations.</p>
                 <p className="mb-2">2. Carrier shall maintain adequate insurance coverage as required by law and as specified in the carrier agreement.</p>
-                <p className="mb-2">3. Payment terms: {rateConf?.paymentTerms || "NET 30"} days from delivery.</p>
+                <p className="mb-2">3. Payment terms: {(rateConf as any)?.paymentTerms || "NET 30"} days from delivery.</p>
                 <p className="mb-2">4. Carrier is responsible for all loading/unloading unless otherwise specified.</p>
                 <p className="mb-2">5. Any accessorial charges must be approved in writing prior to service.</p>
                 <p>6. This rate confirmation supersedes any prior agreements for this specific shipment.</p>

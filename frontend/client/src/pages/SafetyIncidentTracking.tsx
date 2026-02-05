@@ -80,7 +80,7 @@ export default function SafetyIncidentTracking() {
                   <AlertTriangle className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total YTD</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalYTD || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalYTD || stats?.yearToDate || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -98,7 +98,7 @@ export default function SafetyIncidentTracking() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Injuries</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.injuries || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.injuries || stats?.severe || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -107,7 +107,7 @@ export default function SafetyIncidentTracking() {
                   <AlertTriangle className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Near Misses</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.nearMisses || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.nearMisses || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

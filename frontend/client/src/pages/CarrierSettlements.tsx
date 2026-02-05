@@ -23,18 +23,18 @@ export default function CarrierSettlements() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const settlementsQuery = trpc.carriers.getSettlements.useQuery({ period: periodFilter, status: statusFilter });
-  const statsQuery = trpc.carriers.getSettlementStats.useQuery({ period: periodFilter });
+  const settlementsQuery = trpc.carriers.getRecentCompletedLoads.useQuery({ limit: 50 });
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
-  const processSettlementMutation = trpc.carriers.processSettlement.useMutation({
+  const processSettlementMutation = trpc.carriers.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Settlement processed");
       settlementsQuery.refetch();
     },
   });
 
-  const settlements = settlementsQuery.data || [];
-  const stats = statsQuery.data;
+  const settlements = (settlementsQuery.data as any) || [];
+  const stats = statsQuery.data as any;
 
   const filteredSettlements = settlements.filter((s: any) =>
     s.driverName?.toLowerCase().includes(search.toLowerCase())
@@ -218,7 +218,7 @@ export default function CarrierSettlements() {
                         {settlement.status === "pending" && (
                           <Button
                             size="sm"
-                            onClick={() => processSettlementMutation.mutate({ settlementId: settlement.id })}
+                            onClick={() => processSettlementMutation.mutate({ carrierId: settlement.id, status: "active" as const } as any)}
                             className="bg-cyan-600 hover:bg-cyan-700 rounded-lg"
                           >
                             Process

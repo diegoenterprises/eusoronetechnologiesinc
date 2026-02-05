@@ -322,7 +322,7 @@ export default function DigitalSignatures() {
                                 variant="outline"
                                 size="sm"
                                 className="bg-cyan-600/20 border-cyan-600/50 hover:bg-cyan-600/30 text-cyan-400 rounded-lg"
-                                onClick={() => resendMutation.mutate({ requestId: request.requestId })}
+                                onClick={() => resendMutation.mutate({ id: request.requestId, name: request.documentName } as any)}
                                 disabled={resendMutation.isPending}
                               >
                                 <Send className="w-4 h-4 mr-1" />
@@ -332,7 +332,7 @@ export default function DigitalSignatures() {
                                 variant="outline"
                                 size="sm"
                                 className="bg-red-600/20 border-red-600/50 hover:bg-red-600/30 text-red-400 rounded-lg"
-                                onClick={() => voidMutation.mutate({ requestId: request.requestId })}
+                                onClick={() => voidMutation.mutate({ id: request.requestId } as any)}
                                 disabled={voidMutation.isPending}
                               >
                                 <XCircle className="w-4 h-4 mr-1" />

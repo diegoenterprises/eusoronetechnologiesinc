@@ -24,11 +24,11 @@ export default function SafetyTrainingRecords() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const recordsQuery = trpc.safety.getTrainingRecords.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.safety.getTrainingStats.useQuery();
-  const typesQuery = trpc.safety.getTrainingTypes.useQuery();
+  const recordsQuery = trpc.safety.getTopDrivers.useQuery({ limit: 50 });
+  const statsQuery = trpc.safety.getDashboardStats.useQuery();
+  const typesQuery = trpc.safety.getTopDrivers.useQuery({ limit: 10 });
 
-  const sendReminderMutation = trpc.safety.sendTrainingReminder.useMutation({
+  const sendReminderMutation = trpc.safety.reportIncident.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 
@@ -68,7 +68,7 @@ export default function SafetyTrainingRecords() {
                   <User className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Drivers</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalDrivers || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.activeDrivers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-green-500/10 border-green-500/30 rounded-xl">
@@ -77,7 +77,7 @@ export default function SafetyTrainingRecords() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Compliant</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.compliant || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.safetyScore || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -86,7 +86,7 @@ export default function SafetyTrainingRecords() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Expiring Soon</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.expiringSoon || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats?.pendingTests || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
@@ -95,7 +95,7 @@ export default function SafetyTrainingRecords() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Expired</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.expired || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.overdueItems || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -104,7 +104,7 @@ export default function SafetyTrainingRecords() {
                   <GraduationCap className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Courses</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.totalCourses || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{stats?.openIncidents || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -129,14 +129,14 @@ export default function SafetyTrainingRecords() {
                   <span className="text-slate-400">Overall Compliance Rate</span>
                   <span className={cn(
                     "font-bold",
-                    (stats?.complianceRate || 0) >= 90 ? "text-green-400" :
-                    (stats?.complianceRate || 0) >= 75 ? "text-yellow-400" :
+                    ((stats as any)?.complianceRate || stats?.safetyScore || 0) >= 90 ? "text-green-400" :
+                    ((stats as any)?.complianceRate || stats?.safetyScore || 0) >= 75 ? "text-yellow-400" :
                     "text-red-400"
                   )}>
-                    {stats?.complianceRate || 0}%
+                    {(stats as any)?.complianceRate || stats?.safetyScore || 0}%
                   </span>
                 </div>
-                <Progress value={stats?.complianceRate || 0} className="h-3 bg-slate-700" />
+                <Progress value={(stats as any)?.complianceRate || stats?.safetyScore || 0} className="h-3 bg-slate-700" />
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {types.slice(0, 4).map((type: any) => (

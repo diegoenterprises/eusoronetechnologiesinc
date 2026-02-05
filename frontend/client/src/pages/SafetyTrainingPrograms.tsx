@@ -22,11 +22,11 @@ export default function SafetyTrainingPrograms() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const programsQuery = trpc.safety.getTrainingPrograms.useQuery({ category: categoryFilter });
-  const statsQuery = trpc.safety.getTrainingProgramStats.useQuery();
+  const programsQuery = trpc.safety.getTopDrivers.useQuery({ limit: 50 });
+  const statsQuery = trpc.safety.getDashboardStats.useQuery();
 
   const programs = programsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredPrograms = programs.filter((p: any) =>
     p.name?.toLowerCase().includes(search.toLowerCase())

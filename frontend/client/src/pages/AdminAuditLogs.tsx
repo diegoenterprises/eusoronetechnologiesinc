@@ -24,7 +24,7 @@ export default function AdminAuditLogs() {
   const [dateRange, setDateRange] = useState("7d");
 
   const logsQuery = trpc.admin.getAuditLogs.useQuery({ 
-    search, action: actionFilter, userId: userFilter, dateRange 
+    search, action: actionFilter, userId: userFilter
   });
   const usersQuery = trpc.admin.getUsers.useQuery({});
 

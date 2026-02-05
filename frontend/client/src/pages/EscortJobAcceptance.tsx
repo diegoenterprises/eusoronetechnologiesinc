@@ -23,26 +23,26 @@ export default function EscortJobAcceptance() {
   const [, params] = useRoute("/escort/job-offer/:jobId");
   const jobId = params?.jobId;
 
-  const jobQuery = trpc.escorts.getJobOffer.useQuery({ jobId: jobId || "" });
-  const requirementsQuery = trpc.escorts.getJobRequirements.useQuery({ jobId: jobId || "" });
-  const userCertsQuery = trpc.escorts.getMyCertifications.useQuery();
+  const jobQuery = trpc.escorts.getAvailableJobs.useQuery({});
+  const requirementsQuery = trpc.escorts.getCertifications.useQuery();
+  const userCertsQuery = trpc.escorts.getCertifications.useQuery();
 
   const acceptMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Job accepted");
       navigate("/escort/jobs");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const declineMutation = trpc.escorts.declineJob.useMutation({
+  const declineMutation = trpc.escorts.updateJobStatus.useMutation({
     onSuccess: () => {
       toast.success("Job declined");
       navigate("/escort/marketplace");
     },
   });
 
-  const job = jobQuery.data;
+  const job = (jobQuery.data || []).find((j: any) => j.id === jobId) as any;
   const requirements = requirementsQuery.data || [];
   const myCerts = userCertsQuery.data || [];
 
@@ -238,7 +238,7 @@ export default function EscortJobAcceptance() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => declineMutation.mutate({ jobId: jobId! })}
+          onClick={() => declineMutation.mutate({ jobId: jobId!, status: "cancelled" as const } as any)}
           disabled={declineMutation.isPending}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >

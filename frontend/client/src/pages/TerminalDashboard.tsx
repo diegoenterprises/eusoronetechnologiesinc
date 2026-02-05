@@ -313,11 +313,11 @@ export default function TerminalDashboard() {
                         <div>
                           <p className="text-white font-medium">{appt.carrierName}</p>
                           <p className="text-sm text-slate-400">{appt.truckNumber} - {appt.driverName}</p>
-                          <p className="text-xs text-slate-500">{appt.product} | {appt.weight} gal | Rack {appt.rackNumber}</p>
+                          <p className="text-xs text-slate-500">{appt.product} | {(appt as any).weight || appt.quantity} gal | Rack {appt.rackNumber}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge className={appt.status === "completed" ? "bg-green-500/20 text-green-400 border-0" : appt.status === "loading" ? "bg-blue-500/20 text-blue-400 border-0" : "bg-yellow-500/20 text-yellow-400 border-0"}>
+                        <Badge className={appt.status === "completed" ? "bg-green-500/20 text-green-400 border-0" : (appt as any).status === "loading" ? "bg-blue-500/20 text-blue-400 border-0" : "bg-yellow-500/20 text-yellow-400 border-0"}>
                           {appt.status}
                         </Badge>
                         <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white"><Eye className="w-4 h-4" /></Button>

@@ -25,7 +25,7 @@ export default function SafetyIncidentInvestigation() {
 
   const incidentQuery = trpc.safety.getIncident.useQuery({ id: incidentId || "" });
   const userQuery = trpc.users.me.useQuery();
-  const closeMutation = trpc.safety.updateIncident.useMutation({
+  const closeMutation = trpc.safety.closeIncident.useMutation({
     onSuccess: () => { toast.success("Investigation closed"); navigate("/safety/incidents"); },
   });
 
@@ -33,7 +33,7 @@ export default function SafetyIncidentInvestigation() {
   const user = userQuery.data;
 
   const handleSign = (sig: SignatureData) => {
-    closeMutation.mutate({ incidentId: incidentId!, signatureImage: sig.imageDataUrl, signedAt: sig.signedAt, signerName: sig.signerName, findings });
+    closeMutation.mutate({ id: incidentId!, resolution: findings } as any);
   };
 
   if (incidentQuery.isLoading) return <div className="p-6 space-y-4"><Skeleton className="h-12 w-64" /><Skeleton className="h-96 w-full rounded-xl" /></div>;
@@ -62,7 +62,7 @@ export default function SafetyIncidentInvestigation() {
           <div className="grid grid-cols-2 gap-4">
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white flex items-center gap-2"><User className="w-5 h-5 text-cyan-400" />Driver</CardTitle></CardHeader>
-              <CardContent><p className="text-white font-medium">{incident?.driver?.name}</p><p className="text-slate-400 text-sm">CDL: {incident?.driver?.cdlNumber}</p></CardContent>
+              <CardContent><p className="text-white font-medium">{incident?.driver?.name}</p><p className="text-slate-400 text-sm">CDL: {(incident?.driver as any)?.cdlNumber || "N/A"}</p></CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-purple-400" />Vehicle</CardTitle></CardHeader>

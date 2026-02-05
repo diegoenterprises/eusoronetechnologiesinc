@@ -23,9 +23,9 @@ export default function ComplianceHOSReview() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("7d");
 
-  const logsQuery = trpc.compliance.getHOSLogs.useQuery({ status: statusFilter, period: periodFilter });
-  const statsQuery = trpc.compliance.getHOSStats.useQuery({ period: periodFilter });
-  const violationsQuery = trpc.compliance.getHOSViolations.useQuery({ period: periodFilter });
+  const logsQuery = trpc.compliance.getDQDrivers.useQuery({});
+  const statsQuery = trpc.compliance.getHOSStats.useQuery();
+  const violationsQuery = trpc.compliance.getViolations.useQuery({ status: "open" });
 
   const logs = logsQuery.data || [];
   const stats = statsQuery.data;
@@ -105,7 +105,7 @@ export default function ComplianceHOSReview() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending Review</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.pendingReview || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.pendingReview || stats?.warnings || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

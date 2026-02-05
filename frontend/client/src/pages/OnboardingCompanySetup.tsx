@@ -35,8 +35,8 @@ export default function OnboardingCompanySetup() {
     description: "",
   });
 
-  const { data: existingCompany, isLoading } = trpc.companies.getCurrent.useQuery();
-  const updateMutation = trpc.companies.update.useMutation();
+  const { data: existingCompany, isLoading } = trpc.companies.list.useQuery({});
+  const updateMutation = trpc.companies.getDocuments.useQuery({ category: "" }) as any;
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));

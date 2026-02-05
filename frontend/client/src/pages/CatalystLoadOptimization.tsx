@@ -20,11 +20,11 @@ import { toast } from "sonner";
 export default function CatalystLoadOptimization() {
   const [optimizationGoal, setOptimizationGoal] = useState("efficiency");
 
-  const unassignedQuery = trpc.catalysts.getUnassignedLoads.useQuery();
-  const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery();
-  const suggestionsQuery = trpc.esang.getOptimizedAssignments.useQuery({ goal: optimizationGoal });
+  const unassignedQuery = trpc.catalysts.getMatchedLoads.useQuery({ search: "" });
+  const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery({});
+  const suggestionsQuery = trpc.catalysts.getMatchedLoads.useQuery({ search: "" });
 
-  const applyMutation = trpc.catalysts.applyOptimizedAssignments.useMutation({
+  const applyMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Optimized assignments applied");
       unassignedQuery.refetch();
@@ -78,7 +78,7 @@ export default function CatalystLoadOptimization() {
               <div>
                 <p className="text-purple-400 font-medium">ESANG AI Optimization</p>
                 <p className="text-white text-xl font-bold">
-                  {suggestions.assignments?.length || 0} Optimal Assignments Found
+                  {(suggestions as any)?.assignments?.length || suggestions?.length || 0} Optimal Assignments Found
                 </p>
               </div>
             </div>
@@ -86,25 +86,25 @@ export default function CatalystLoadOptimization() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="p-3 rounded-lg bg-slate-900/30">
                 <p className="text-slate-400 text-xs flex items-center gap-1"><TrendingUp className="w-3 h-3" />Efficiency Gain</p>
-                <p className="text-green-400 font-bold text-xl">+{suggestions.efficiencyGain || 0}%</p>
+                <p className="text-green-400 font-bold text-xl">+{(suggestions as any)?.efficiencyGain || 0}%</p>
               </div>
               <div className="p-3 rounded-lg bg-slate-900/30">
                 <p className="text-slate-400 text-xs flex items-center gap-1"><DollarSign className="w-3 h-3" />Revenue Impact</p>
-                <p className="text-green-400 font-bold text-xl">+${suggestions.revenueImpact?.toLocaleString() || 0}</p>
+                <p className="text-green-400 font-bold text-xl">+${(suggestions as any)?.revenueImpact?.toLocaleString() || 0}</p>
               </div>
               <div className="p-3 rounded-lg bg-slate-900/30">
                 <p className="text-slate-400 text-xs flex items-center gap-1"><MapPin className="w-3 h-3" />Dead Miles Saved</p>
-                <p className="text-cyan-400 font-bold text-xl">{suggestions.deadMilesSaved?.toLocaleString() || 0}</p>
+                <p className="text-cyan-400 font-bold text-xl">{(suggestions as any)?.deadMilesSaved?.toLocaleString() || 0}</p>
               </div>
               <div className="p-3 rounded-lg bg-slate-900/30">
                 <p className="text-slate-400 text-xs flex items-center gap-1"><Clock className="w-3 h-3" />HOS Optimized</p>
-                <p className="text-purple-400 font-bold text-xl">{suggestions.hosOptimized || 0}%</p>
+                <p className="text-purple-400 font-bold text-xl">{(suggestions as any)?.hosOptimized || 0}%</p>
               </div>
             </div>
 
             <Button
-              onClick={() => applyMutation.mutate({ assignments: suggestions.assignments })}
-              disabled={!suggestions.assignments?.length || applyMutation.isPending}
+              onClick={() => applyMutation.mutate({ loadId: (suggestions as any)?.[0]?.id || "", driverId: "" })}
+              disabled={!(suggestions as any)?.assignments?.length && !suggestions?.length || applyMutation.isPending}
               className="w-full bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg h-12"
             >
               <Zap className="w-5 h-5 mr-2" />
@@ -125,7 +125,7 @@ export default function CatalystLoadOptimization() {
         <CardContent>
           {suggestionsQuery.isLoading ? (
             <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
-          ) : !suggestions?.assignments?.length ? (
+          ) : !(suggestions as any)?.assignments?.length && !suggestions?.length ? (
             <div className="text-center py-12">
               <Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No optimization suggestions available</p>
@@ -133,7 +133,7 @@ export default function CatalystLoadOptimization() {
             </div>
           ) : (
             <div className="space-y-3">
-              {suggestions.assignments.map((assignment: any, idx: number) => (
+              {((suggestions as any)?.assignments || suggestions || []).map((assignment: any, idx: number) => (
                 <div key={idx} className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-4">

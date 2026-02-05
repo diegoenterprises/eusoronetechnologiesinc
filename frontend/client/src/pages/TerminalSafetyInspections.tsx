@@ -23,11 +23,11 @@ export default function TerminalSafetyInspections() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const inspectionsQuery = trpc.terminals.getSafetyInspections.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.terminals.getInspectionStats.useQuery();
+  const inspectionsQuery = trpc.terminals.getAppointments.useQuery({});
+  const statsQuery = trpc.terminals.getOperationStats.useQuery({});
 
   const inspections = inspectionsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredInspections = inspections.filter((i: any) =>
     i.area?.toLowerCase().includes(search.toLowerCase()) ||

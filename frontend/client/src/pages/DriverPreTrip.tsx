@@ -32,9 +32,9 @@ export default function DriverPreTrip() {
   const [items, setItems] = useState<InspectionItem[]>([]);
   const [notes, setNotes] = useState("");
 
-  const { data: checklist, isLoading, error, refetch } = trpc.inspections.getPreTripChecklist.useQuery();
-  const { data: vehicle } = trpc.vehicles.getCurrent.useQuery();
-  const submitMutation = trpc.inspections.submitPreTrip.useMutation({
+  const { data: checklist, isLoading, error, refetch } = trpc.inspections.getTemplate.useQuery({ type: "pre_trip" });
+  const { data: vehicle } = trpc.vehicles.list.useQuery({});
+  const submitMutation = trpc.inspections.submit.useMutation({
     onSuccess: () => {
       refetch();
     },
@@ -63,12 +63,12 @@ export default function DriverPreTrip() {
     }));
     
     submitMutation.mutate({
-      vehicleId: vehicle?.id || 0,
-      type: "PRE_TRIP",
-      items: items.map((i) => ({ itemId: i.id, passed: i.checked && !i.defect })),
-      defects,
+      vehicleId: (vehicle as any)?.[0]?.id || "",
+      type: "pre_trip" as const,
+      odometer: 0,
+      items: items.map((i) => ({ id: i.id, category: "general", name: String((i as any).name || i.id), status: (i.checked && !i.defect ? "pass" : "fail") as "pass" | "fail" | "na" })),
       notes,
-    });
+    } as any);
   };
 
   if (isLoading) {
@@ -105,9 +105,9 @@ export default function DriverPreTrip() {
   }
 
   const checklistItems = checklist || [];
-  const categories = [...new Set(checklistItems.map((item: any) => item.category))];
+  const categories = Array.from(new Set((checklistItems as any).categories?.map((cat: any) => cat.name) || []));
   const completedCount = items.filter((i) => i.checked).length;
-  const totalCount = checklistItems.length;
+  const totalCount = (checklistItems as any)?.categories?.length || 0;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
   const hasDefects = items.some((i) => i.defect);
 
@@ -122,7 +122,7 @@ export default function DriverPreTrip() {
         </div>
         {vehicle && (
           <Badge variant="outline" className="text-lg px-4 py-2">
-            <Truck className="h-4 w-4 mr-2" /> {vehicle.unitNumber || vehicle.licensePlate}
+            <Truck className="h-4 w-4 mr-2" /> {(vehicle as any)?.[0]?.unit || (vehicle as any)?.[0]?.id}
           </Badge>
         )}
       </div>
@@ -144,14 +144,14 @@ export default function DriverPreTrip() {
         </CardContent>
       </Card>
 
-      {categories.map((category: string) => (
+      {(categories as string[]).map((category: string) => (
         <Card key={category}>
           <CardHeader>
             <CardTitle className="text-lg">{category}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {checklistItems
-              .filter((item: any) => item.category === category)
+            {((checklistItems as any)?.categories || [])
+              .filter((item: any) => item.name === category)
               .map((item: any) => {
                 const currentItem = items.find((i) => i.id === item.id) || {
                   ...item,

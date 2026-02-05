@@ -21,11 +21,11 @@ export default function EscortRouteHistory() {
   const [search, setSearch] = useState("");
   const [periodFilter, setPeriodFilter] = useState("30d");
 
-  const historyQuery = trpc.escorts.getRouteHistory.useQuery({ period: periodFilter });
-  const statsQuery = trpc.escorts.getHistoryStats.useQuery({ period: periodFilter });
+  const historyQuery = trpc.escorts.getCompletedJobs.useQuery({});
+  const statsQuery = trpc.escorts.getDashboardStats.useQuery();
 
   const routes = historyQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredRoutes = routes.filter((r: any) =>
     r.routeNumber?.toLowerCase().includes(search.toLowerCase()) ||

@@ -54,7 +54,7 @@ export default function Notifications() {
     }
   };
 
-  const filteredNotifications = notificationsQuery.data?.filter((n: any) => {
+  const filteredNotifications = (notificationsQuery.data as any)?.notifications?.filter((n: any) => {
     if (activeTab === "all") return true;
     if (activeTab === "unread") return !n.read;
     return n.type === activeTab;

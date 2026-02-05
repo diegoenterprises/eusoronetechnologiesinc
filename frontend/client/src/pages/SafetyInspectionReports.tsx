@@ -22,11 +22,11 @@ export default function SafetyInspectionReports() {
   const [periodFilter, setPeriodFilter] = useState("90d");
   const [resultFilter, setResultFilter] = useState("all");
 
-  const inspectionsQuery = trpc.safety.getInspectionReports.useQuery({ period: periodFilter, result: resultFilter });
-  const statsQuery = trpc.safety.getInspectionStats.useQuery({ period: periodFilter });
+  const inspectionsQuery = trpc.safety.getIncidents.useQuery({});
+  const statsQuery = trpc.safety.getDashboardStats.useQuery();
 
   const inspections = inspectionsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredInspections = inspections.filter((i: any) =>
     i.reportNumber?.toLowerCase().includes(search.toLowerCase()) ||

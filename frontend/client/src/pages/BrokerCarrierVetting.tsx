@@ -41,14 +41,14 @@ export default function BrokerCarrierVetting() {
   const carrierQuery = trpc.carriers.getById.useQuery({ id: carrierId || "" }, { enabled: !!carrierId });
   const vettingQuery = trpc.brokers.getVettingStats.useQuery();
 
-  const lookupMutation = trpc.carriers.verifyCarrier.useMutation({
+  const lookupMutation = trpc.brokers.vetCarrier.useMutation({
     onSuccess: (data: any) => {
       toast.success("Carrier found");
     },
     onError: (error: any) => toast.error("Lookup failed", { description: error.message }),
   });
 
-  const verifyMutation = trpc.carriers.verifyCarrier.useMutation({
+  const verifyMutation = trpc.brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success("Verification complete");
       vettingQuery.refetch();
@@ -111,7 +111,7 @@ export default function BrokerCarrierVetting() {
                 />
               </div>
               <Button
-                onClick={() => lookupMutation.mutate({ mcNumber })}
+                onClick={() => lookupMutation.mutate({ mcNumber, dotNumber: "" } as any)}
                 disabled={!mcNumber || lookupMutation.isPending}
                 className="mt-8 bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg"
               >
@@ -201,7 +201,7 @@ export default function BrokerCarrierVetting() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => verifyMutation.mutate({ carrierId: carrierId! })}
+                onClick={() => verifyMutation.mutate({ mcNumber: "", dotNumber: carrierId! } as any)}
                 disabled={verifyMutation.isPending}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               >
@@ -251,9 +251,9 @@ export default function BrokerCarrierVetting() {
                             Auto-Verified
                           </Badge>
                         )}
-                        {isChecked && vetting?.verifiedAt?.[item.key] && (
+                        {isChecked && (vetting as any)?.verifiedAt?.[item.key] && (
                           <span className="text-slate-500 text-xs">
-                            {new Date(vetting.verifiedAt[item.key]).toLocaleDateString()}
+                            {new Date((vetting as any).verifiedAt[item.key]).toLocaleDateString()}
                           </span>
                         )}
                       </div>

@@ -23,14 +23,14 @@ export default function DriverHOS() {
   const [selectedStatus, setSelectedStatus] = useState<DutyStatus | null>(null);
 
   const { data: hosData, isLoading, error, refetch } = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
-  const { data: logs } = trpc.hos.getLogs.useQuery({ driverId: "current", startDate: new Date(Date.now() - 7*24*60*60*1000).toISOString(), endDate: new Date().toISOString() });
-  const updateStatusMutation = trpc.hos.updateStatus.useMutation({
+  const { data: logs } = trpc.hos.getStatus.useQuery();
+  const updateStatusMutation = trpc.hos.changeStatus.useMutation({
     onSuccess: () => refetch(),
   });
 
   const handleStatusChange = (status: DutyStatus) => {
     setSelectedStatus(status);
-    updateStatusMutation.mutate({ status });
+    updateStatusMutation.mutate({ newStatus: status.toLowerCase() as any, location: "" });
   };
 
   if (isLoading) {
@@ -187,9 +187,9 @@ export default function DriverHOS() {
           <CardDescription>Your duty status changes for today</CardDescription>
         </CardHeader>
         <CardContent>
-          {logs && logs.length > 0 ? (
+          {(logs as any)?.length > 0 ? (
             <div className="space-y-3">
-              {logs.slice(0, 10).map((log: any, idx: number) => (
+              {((logs as any) || []).slice(0, 10).map((log: any, idx: number) => (
                 <div key={idx} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className={`w-3 h-3 rounded-full ${getStatusColor(log.status)}`} />

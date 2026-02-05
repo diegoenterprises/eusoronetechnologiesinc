@@ -22,7 +22,7 @@ export default function SafetyAccidentReports() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const reportsQuery = trpc.safety.getAccidentReports.useQuery({ severity: severityFilter, status: statusFilter });
+  const reportsQuery = trpc.safety.getAccidentReports.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
   const statsQuery = trpc.safety.getAccidentStats.useQuery();
 
   const reports = reportsQuery.data || [];
@@ -80,7 +80,7 @@ export default function SafetyAccidentReports() {
                   <AlertTriangle className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total YTD</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalYTD || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.thisYear || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -107,7 +107,7 @@ export default function SafetyAccidentReports() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Major</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.majorIncidents || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.closed || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -116,7 +116,7 @@ export default function SafetyAccidentReports() {
                   <Calendar className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Days Safe</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.daysSinceLast || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.avgResolutionDays || 0}</p>
               </CardContent>
             </Card>
           </>

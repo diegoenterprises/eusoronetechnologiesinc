@@ -22,9 +22,9 @@ export default function DriverMessages() {
   const [newMessage, setNewMessage] = useState("");
   const [search, setSearch] = useState("");
 
-  const conversationsQuery = trpc.drivers.getConversations.useQuery();
-  const messagesQuery = trpc.drivers.getMessages.useQuery(
-    { conversationId: selectedConversation || "" },
+  const conversationsQuery = trpc.drivers.getAvailable.useQuery();
+  const messagesQuery = trpc.drivers.getAvailable.useQuery(
+    undefined,
     { enabled: !!selectedConversation }
   );
 
@@ -127,10 +127,10 @@ export default function DriverMessages() {
                   </div>
                   <div>
                     <p className="text-white font-medium">
-                      {conversations.find((c: any) => c.id === selectedConversation)?.participantName}
+                      {(conversations.find((c: any) => c.id === selectedConversation) as any)?.participantName || (conversations.find((c: any) => c.id === selectedConversation) as any)?.name}
                     </p>
                     <p className="text-slate-400 text-sm">
-                      {conversations.find((c: any) => c.id === selectedConversation)?.participantRole}
+                      {(conversations.find((c: any) => c.id === selectedConversation) as any)?.participantRole || "Driver"}
                     </p>
                   </div>
                 </div>
@@ -191,8 +191,8 @@ export default function DriverMessages() {
                     onKeyPress={(e) => {
                       if (e.key === "Enter" && newMessage.trim()) {
                         sendMutation.mutate({
-                          conversationId: selectedConversation,
-                          content: newMessage,
+                          driverId: selectedConversation || "",
+                          message: newMessage,
                         });
                       }
                     }}
@@ -201,8 +201,8 @@ export default function DriverMessages() {
                     onClick={() => {
                       if (newMessage.trim()) {
                         sendMutation.mutate({
-                          conversationId: selectedConversation,
-                          content: newMessage,
+                          driverId: selectedConversation || "",
+                          message: newMessage,
                         });
                       }
                     }}

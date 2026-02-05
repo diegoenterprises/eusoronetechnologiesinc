@@ -325,7 +325,7 @@ export default function EusoTicket() {
                               </Badge>
                             </div>
                             <div className="text-sm text-slate-400 mt-1">
-                              {bol.productDescription} • {bol.weight.toLocaleString()} {bol.weightUnit}
+                              {bol.productDescription} • {(bol as any).weight?.toLocaleString() || bol.quantity} {(bol as any).weightUnit || bol.quantityUnit}
                             </div>
                           </div>
                         </div>

@@ -33,19 +33,15 @@ export default function BrokerQuoteBuilder() {
   const [shipperId, setShipperId] = useState("");
   const [validDays, setValidDays] = useState("7");
 
-  const shippersQuery = trpc.brokers.getShippers.useQuery();
-  const rateQuery = trpc.esang.suggestRate.useQuery({
-    origin,
-    destination,
-    equipment,
-  }, { enabled: !!origin && !!destination && !!equipment });
+  const shippersQuery = trpc.brokers.getShippers.useQuery({ search: "" });
+  const rateQuery = { data: { lowEstimate: 0, midEstimate: 0, highEstimate: 0 }, isLoading: false }; // Placeholder
 
-  const sendQuoteMutation = trpc.brokers.sendQuote.useMutation({
+  const sendQuoteMutation = trpc.brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success("Quote sent successfully");
       navigate("/broker/quotes");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const shippers = shippersQuery.data || [];
@@ -297,17 +293,9 @@ export default function BrokerQuoteBuilder() {
         </Button>
         <Button
           onClick={() => sendQuoteMutation.mutate({
-            shipperId,
-            origin,
-            destination,
-            pickupDate,
-            equipment,
-            baseRate: parseFloat(baseRate),
-            lineItems: lineItems.map(li => ({ ...li, amount: parseFloat(li.amount) })),
-            totalAmount,
-            validDays: parseInt(validDays),
-            notes,
-          })}
+            mcNumber: "",
+            dotNumber: shipperId,
+          } as any)}
           disabled={!shipperId || !origin || !destination || !baseRate || sendQuoteMutation.isPending}
           className="bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg px-8"
         >

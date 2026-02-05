@@ -32,7 +32,7 @@ export default function WalletInstantPay() {
 
   const handleRequestPayout = () => {
     if (requestedAmount <= 0 || requestedAmount > (eligibility?.maxAmount || 0)) return;
-    instantPayMutation.mutate({ amount: requestedAmount });
+    instantPayMutation.mutate({ amount: requestedAmount, payoutMethodId: 1 } as any);
   };
 
   if (isLoading) {

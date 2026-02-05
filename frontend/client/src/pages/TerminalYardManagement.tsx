@@ -27,7 +27,7 @@ export default function TerminalYardManagement() {
   const statsQuery = trpc.terminals.getStats.useQuery();
   const zonesQuery = trpc.terminals.getBays.useQuery();
 
-  const moveTrailerMutation = trpc.terminals.updateAppointment.useMutation({
+  const moveTrailerMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Trailer moved");
       yardQuery.refetch();
@@ -309,7 +309,7 @@ export default function TerminalYardManagement() {
                 )}
 
                 <div className="flex items-center gap-2">
-                  <Select onValueChange={(spot) => moveTrailerMutation.mutate({ trailerId: trailer.id, toSpot: spot })}>
+                  <Select onValueChange={(spot) => moveTrailerMutation.mutate({ terminalId: trailer.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "", notes: spot } as any)}>
                     <SelectTrigger className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg text-sm">
                       <SelectValue placeholder="Move to spot..." />
                     </SelectTrigger>

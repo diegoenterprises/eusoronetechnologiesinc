@@ -23,7 +23,7 @@ export default function CatalystDriverPerformance() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [sortBy, setSortBy] = useState("score");
 
-  const driversQuery = trpc.catalysts.getDriverAssignments.useQuery({ status: "active" });
+  const driversQuery = trpc.catalysts.getDriverStatusBoard.useQuery();
   const statsQuery = trpc.catalysts.getPerformanceStats.useQuery();
 
   const drivers = driversQuery.data || [];
@@ -123,7 +123,7 @@ export default function CatalystDriverPerformance() {
       </div>
 
       {/* Top Performers */}
-      {stats?.topPerformers && stats.topPerformers.length > 0 && (
+      {(stats as any)?.topPerformers && (stats as any).topPerformers.length > 0 && (
         <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-yellow-400 text-lg flex items-center gap-2">
@@ -133,7 +133,7 @@ export default function CatalystDriverPerformance() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {stats.topPerformers.slice(0, 3).map((driver: any, idx: number) => (
+              {((stats as any).topPerformers || []).slice(0, 3).map((driver: any, idx: number) => (
                 <div key={driver.id} className="flex items-center gap-4 p-3 rounded-lg bg-slate-800/50">
                   <div className={cn(
                     "w-10 h-10 rounded-full flex items-center justify-center font-bold",

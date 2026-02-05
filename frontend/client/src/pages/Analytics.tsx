@@ -108,7 +108,7 @@ export default function Analytics() {
                 </div>
                 <div>
                   {summaryQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                    <p className="text-2xl font-bold text-purple-400">{(summary?.distanceLogged || 0).toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-purple-400">{((summary as any)?.distanceLogged || (summary as any)?.totalMiles || 0).toLocaleString()}</p>
                   )}
                   <p className="text-xs text-slate-400">Miles</p>
                 </div>

@@ -64,9 +64,9 @@ export default function DriverHOSDashboard() {
           <p className="text-slate-400 text-sm mt-1">ELD Compliance Dashboard</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge className={cn("border-0", eld?.status === "connected" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
-            <RefreshCw className={cn("w-3 h-3 mr-1", eld?.status === "syncing" && "animate-spin")} />
-            ELD {eld?.status === "connected" ? "Connected" : "Disconnected"}
+          <Badge className={cn("border-0", (eld as any)?.status === "connected" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400")}>
+            <RefreshCw className={cn("w-3 h-3 mr-1", (eld as any)?.status === "syncing" && "animate-spin")} />
+            ELD {(eld as any)?.status === "connected" ? "Connected" : "Disconnected"}
           </Badge>
           <input
             type="date"
@@ -254,14 +254,14 @@ export default function DriverHOSDashboard() {
         <CardContent>
           {logsQuery.isLoading ? (
             <div className="space-y-2">{Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
-          ) : logs.length === 0 ? (
+          ) : (logs as any)?.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-8 h-8 text-slate-500 mx-auto mb-2" />
               <p className="text-slate-400">No log entries for this date</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {logs.map((log: any) => {
+              {((logs as any) || []).map((log: any) => {
                 const status = dutyStatuses.find(s => s.value === log.status);
                 return (
                   <div key={log.id} className="p-3 rounded-lg bg-slate-700/30 flex items-center gap-4">

@@ -42,10 +42,10 @@ export default function CreateLoad() {
     targetRate: "", maxBudget: "", paymentTerms: "30", notes: "",
   });
 
-  const hazmatQuery = trpc.esang.suggestHazmatClass.useQuery({ productName: formData.productName }, { enabled: formData.productName.length > 3 });
+  const hazmatQuery = trpc.esang.chat.useMutation();
   const createLoadMutation = trpc.loads.create.useMutation({
     onSuccess: (data) => { toast.success("Load created successfully"); navigate(`/shipper/loads/${data.id}`); },
-    onError: (err) => toast.error("Failed to create load", { description: err.message }),
+    onError: (err: any) => toast.error("Failed to create load", { description: err.message }),
   });
 
   const updateField = (field: string, value: any) => setFormData(prev => ({ ...prev, [field]: value }));
@@ -56,9 +56,7 @@ export default function CreateLoad() {
     createLoadMutation.mutate({
       ...formData,
       weight: parseFloat(formData.weight) || 0,
-      targetRate: parseFloat(formData.targetRate) || 0,
-      maxBudget: parseFloat(formData.maxBudget) || 0,
-    });
+    } as any);
   };
 
   return (
@@ -94,7 +92,7 @@ export default function CreateLoad() {
               </div>
               {formData.isHazmat && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 rounded-lg bg-orange-500/10 border border-orange-500/30">
-                  <div><Label>Hazmat Class</Label>{hazmatQuery.isLoading ? <Skeleton className="h-10" /> : <Select value={formData.hazmatClass} onValueChange={v => updateField("hazmatClass", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="1">Class 1 - Explosives</SelectItem><SelectItem value="2">Class 2 - Gases</SelectItem><SelectItem value="3">Class 3 - Flammable Liquids</SelectItem><SelectItem value="4">Class 4 - Flammable Solids</SelectItem><SelectItem value="5">Class 5 - Oxidizers</SelectItem><SelectItem value="6">Class 6 - Poisons</SelectItem><SelectItem value="7">Class 7 - Radioactive</SelectItem><SelectItem value="8">Class 8 - Corrosives</SelectItem><SelectItem value="9">Class 9 - Misc</SelectItem></SelectContent></Select>}</div>
+                  <div><Label>Hazmat Class</Label>{(hazmatQuery as any).isLoading || (hazmatQuery as any).isPending ? <Skeleton className="h-10" /> : <Select value={formData.hazmatClass} onValueChange={v => updateField("hazmatClass", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent><SelectItem value="1">Class 1 - Explosives</SelectItem><SelectItem value="2">Class 2 - Gases</SelectItem><SelectItem value="3">Class 3 - Flammable Liquids</SelectItem><SelectItem value="4">Class 4 - Flammable Solids</SelectItem><SelectItem value="5">Class 5 - Oxidizers</SelectItem><SelectItem value="6">Class 6 - Poisons</SelectItem><SelectItem value="7">Class 7 - Radioactive</SelectItem><SelectItem value="8">Class 8 - Corrosives</SelectItem><SelectItem value="9">Class 9 - Misc</SelectItem></SelectContent></Select>}</div>
                   <div><Label>UN Number</Label><Input value={formData.unNumber} onChange={e => updateField("unNumber", e.target.value)} placeholder="UN1234" className="bg-slate-700/50" /></div>
                   <div><Label>Packing Group</Label><Select value={formData.packingGroup} onValueChange={v => updateField("packingGroup", v)}><SelectTrigger className="bg-slate-700/50"><SelectValue placeholder="Select" /></SelectTrigger><SelectContent><SelectItem value="I">I - Great Danger</SelectItem><SelectItem value="II">II - Medium Danger</SelectItem><SelectItem value="III">III - Minor Danger</SelectItem></SelectContent></Select></div>
                 </div>

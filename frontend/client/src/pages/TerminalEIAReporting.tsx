@@ -195,7 +195,7 @@ export default function TerminalEIAReporting() {
                   Save Draft
                 </Button>
                 <Button
-                  onClick={() => submitMutation.mutate({ reportId: report?.id })}
+                  onClick={() => submitMutation.mutate({ period: report?.period || "" } as any)}
                   disabled={report?.status === "submitted" || submitMutation.isPending}
                   className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg"
                 >

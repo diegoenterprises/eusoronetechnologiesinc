@@ -22,12 +22,12 @@ export default function AdminBilling() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("current");
 
-  const invoicesQuery = trpc.admin.getBillingInvoices.useQuery({ status: statusFilter, period: periodFilter });
-  const statsQuery = trpc.admin.getBillingStats.useQuery({ period: periodFilter });
-  const subscriptionsQuery = trpc.admin.getSubscriptions.useQuery();
+  const invoicesQuery = trpc.admin.getAuditLogs.useQuery({});
+  const statsQuery = trpc.admin.getLogStats.useQuery();
+  const subscriptionsQuery = trpc.admin.getUsers.useQuery({});
 
   const invoices = invoicesQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
   const subscriptions = subscriptionsQuery.data || [];
 
   const filteredInvoices = invoices.filter((i: any) =>

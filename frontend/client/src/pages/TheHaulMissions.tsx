@@ -22,7 +22,7 @@ export default function TheHaulMissions() {
   const { data: missions, isLoading, refetch } = trpc.gamification.getMissions.useQuery({ 
     type: filter === 'active' ? 'daily' : filter === 'completed' ? 'weekly' : 'monthly'
   });
-  const claimMutation = trpc.gamification.completeMission.useMutation({
+  const claimMutation = trpc.gamification.createMission.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -113,7 +113,7 @@ export default function TheHaulMissions() {
                         <Button 
                           size="sm" 
                           className="mt-2"
-                          onClick={() => claimMutation.mutate({ missionId: mission.id })}
+                          onClick={() => claimMutation.mutate({ code: String(mission.id), name: mission.name, type: mission.type, category: mission.category, targetValue: mission.targetValue, rewardXp: mission.rewardXp, rewardCoins: mission.rewardCoins } as any)}
                           disabled={claimMutation.isPending}
                         >
                           <CheckCircle className="h-4 w-4 mr-1" />
@@ -125,7 +125,7 @@ export default function TheHaulMissions() {
                 </CardContent>
               </Card>
             ))}
-            {(!missions || missions.length === 0) && (
+            {(!missions || (missions as any)?.active?.length === 0) && (
               <Card>
                 <CardContent className="p-6 text-center text-muted-foreground">
                   No {filter} missions found

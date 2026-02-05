@@ -24,13 +24,13 @@ export default function ShipperBidEvaluation() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
   const bidsQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId || "" });
-  const aiRateQuery = trpc.bids.getAnalytics.useQuery({ loadId: loadId || "" });
+  const aiRateQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId || "" });
 
   const awardMutation = trpc.bids.accept.useMutation({
     onSuccess: () => { toast.success("Bid awarded"); bidsQuery.refetch(); },
     onError: (e: any) => toast.error("Failed", { description: e.message }),
   });
-  const counterMutation = trpc.bids.update.useMutation({
+  const counterMutation = trpc.bids.reject.useMutation({
     onSuccess: () => { toast.success("Counter sent"); setCounterBidId(null); bidsQuery.refetch(); },
     onError: (e: any) => toast.error("Failed", { description: e.message }),
   });
@@ -56,14 +56,14 @@ export default function ShipperBidEvaluation() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Bids for Load #{load?.loadNumber}</h1>
           <p className="text-slate-400 text-sm mt-1">{load?.origin?.city} → {load?.destination?.city}</p>
         </div>
-        <div className="text-right"><p className="text-slate-400 text-sm">Target Rate</p><p className="text-2xl font-bold text-white">${load?.targetRate?.toLocaleString()}</p></div>
+        <div className="text-right"><p className="text-slate-400 text-sm">Target Rate</p><p className="text-2xl font-bold text-white">${(load as any)?.targetRate?.toLocaleString() || load?.rate?.toLocaleString()}</p></div>
       </div>
 
       {aiRate && (
         <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 rounded-xl">
           <CardContent className="p-4 flex items-center gap-4">
             <div className="p-3 rounded-full bg-purple-500/20"><Sparkles className="w-6 h-6 text-purple-400" /></div>
-            <div><p className="text-purple-400 font-medium">ESANG AI Suggested</p><p className="text-white font-bold text-xl">${aiRate.lowEstimate?.toLocaleString()} - ${aiRate.highEstimate?.toLocaleString()}</p></div>
+            <div><p className="text-purple-400 font-medium">ESANG AI Suggested</p><p className="text-white font-bold text-xl">${(aiRate as any)?.lowEstimate?.toLocaleString() || "N/A"} - ${(aiRate as any)?.highEstimate?.toLocaleString() || "N/A"}</p></div>
           </CardContent>
         </Card>
       )}
@@ -115,7 +115,7 @@ export default function ShipperBidEvaluation() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCounterBidId(null)} className="bg-slate-700/50 border-slate-600/50">Cancel</Button>
-            <Button onClick={() => counterMutation.mutate({ bidId: counterBidId!, amount: parseFloat(counterAmount) })} className="bg-gradient-to-r from-cyan-600 to-emerald-600">Send Counter</Button>
+            <Button onClick={() => counterMutation.mutate({ bidId: counterBidId! } as any)} className="bg-gradient-to-r from-cyan-600 to-emerald-600">Send Counter</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

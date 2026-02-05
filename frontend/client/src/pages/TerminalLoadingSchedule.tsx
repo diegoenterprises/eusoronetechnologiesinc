@@ -21,13 +21,13 @@ export default function TerminalLoadingSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [rackFilter, setRackFilter] = useState("all");
 
-  const scheduleQuery = trpc.terminals.getLoadingSchedule.useQuery({ date: selectedDate, rack: rackFilter });
-  const racksQuery = trpc.terminals.getRacks.useQuery();
-  const statsQuery = trpc.terminals.getScheduleStats.useQuery({ date: selectedDate });
+  const scheduleQuery = trpc.terminals.getAppointments.useQuery({});
+  const racksQuery = trpc.terminals.getRacks.useQuery({});
+  const statsQuery = trpc.terminals.getSummary.useQuery();
 
   const schedule = scheduleQuery.data || [];
   const racks = racksQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const timeSlots = Array.from({ length: 24 }, (_, i) => {
     const hour = i.toString().padStart(2, "0");
@@ -188,7 +188,7 @@ export default function TerminalLoadingSchedule() {
                                     <span className="text-xs font-medium truncate">{appointment.carrierName}</span>
                                   </div>
                                   <p className="text-xs opacity-80 truncate">{appointment.product}</p>
-                                  <p className="text-xs opacity-60">{appointment.volume} gal</p>
+                                  <p className="text-xs opacity-60">{(appointment as any).volume || appointment.quantity} gal</p>
                                 </div>
                               ) : (
                                 <div className="h-16 border border-dashed border-slate-700/30 rounded-lg" />

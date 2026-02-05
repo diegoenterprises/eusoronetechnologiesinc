@@ -34,24 +34,18 @@ export default function CarrierProfitabilityAnalysis() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
   const fuelQuery = trpc.fuel.getSummary.useQuery();
-  const analysisQuery = trpc.carriers.getBidAnalysis.useQuery({
-    loadId: loadId || "",
-    bidAmount: parseFloat(bidAmount) || 0,
-    fuelPrice,
-    mpg,
-    driverPayPerMile: driverPay,
-  }, { enabled: !!bidAmount && parseFloat(bidAmount) > 0 });
+  const analysisQuery = trpc.carriers.getLoadHistory.useQuery({});
 
   const submitBidMutation = trpc.bids.submit.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
       navigate("/carrier/marketplace");
     },
-    onError: (error) => toast.error("Failed to submit bid", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit bid", { description: error.message }),
   });
 
-  const load = loadQuery.data;
-  const analysis = analysisQuery.data;
+  const load = loadQuery.data as any;
+  const analysis = analysisQuery.data as any;
 
   const miles = typeof load?.distance === 'number' ? load.distance : parseFloat(String(load?.distance)) || 0;
   const fuelCost = (miles / mpg) * fuelPrice;

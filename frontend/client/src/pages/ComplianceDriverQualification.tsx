@@ -241,7 +241,7 @@ export default function ComplianceDriverQualification() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => requestDocMutation.mutate({ driverId: driver.id, docType: doc.type })}
+                            onClick={() => requestDocMutation.mutate({ documentType: doc.type, userType: "driver" as const } as any)}
                             className="w-full mt-2 text-xs h-7 text-cyan-400 hover:text-cyan-300"
                           >
                             Request Document

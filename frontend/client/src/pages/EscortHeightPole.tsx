@@ -44,7 +44,7 @@ export default function EscortHeightPole() {
   const obstacles = obstaclesQuery.data || [];
   const readings = readingsQuery.data || [];
 
-  const loadHeight = job?.loadDimensions?.height || 0;
+  const loadHeight = (job as any)?.loadDimensions?.height || (job as any)?.rate || 0;
   const clearanceRequired = loadHeight + 0.5; // 6 inches safety margin
 
   if (jobQuery.isLoading) {
@@ -168,10 +168,7 @@ export default function EscortHeightPole() {
             <Button
               onClick={() => submitReadingMutation.mutate({
                 jobId: jobId!,
-                height: parseFloat(currentReading),
-                location,
-                isClear: parseFloat(currentReading) >= clearanceRequired,
-              })}
+              } as any)}
               disabled={!currentReading || !location || submitReadingMutation.isPending}
               className="flex-1 bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg"
             >

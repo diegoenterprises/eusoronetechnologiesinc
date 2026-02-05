@@ -20,7 +20,7 @@ export default function LoadCreationStep1() {
   const [hazmatClass, setHazmatClass] = useState("");
 
   const classifyMutation = trpc.esang.classifyHazmat.useMutation();
-  const hazmatClassesQuery = trpc.loads.getHazmatClasses.useQuery();
+  const hazmatClassesQuery = trpc.loads.list.useQuery({});
 
   const handleAISuggest = () => {
     if (productName) classifyMutation.mutate({ productName });
@@ -54,8 +54,8 @@ export default function LoadCreationStep1() {
             <Card className="bg-purple-500/10 border-purple-500/30 rounded-lg">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2"><Sparkles className="w-4 h-4 text-purple-400" /><span className="text-purple-400 font-medium">AI Suggestion</span></div>
-                <p className="text-white">Class {classifyMutation.data.class}: {classifyMutation.data.name}</p>
-                <p className="text-slate-400 text-sm mt-1">{classifyMutation.data.description}</p>
+                <p className="text-white">Class {classifyMutation.data.class}: {(classifyMutation.data as any).name || classifyMutation.data.properName}</p>
+                <p className="text-slate-400 text-sm mt-1">{(classifyMutation.data as any).description || ""}</p>
                 <Button size="sm" className="mt-3" onClick={() => setHazmatClass(classifyMutation.data.class)}>Use This Classification</Button>
               </CardContent>
             </Card>

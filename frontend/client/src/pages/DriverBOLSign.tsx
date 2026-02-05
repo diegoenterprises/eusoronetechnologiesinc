@@ -29,27 +29,25 @@ export default function DriverBOLSign() {
   const [verified, setVerified] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
 
-  const bolQuery = trpc.documents.getBOL.useQuery({ loadId: loadId || "" });
+  const bolQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
   const userQuery = trpc.users.me.useQuery();
 
-  const signMutation = trpc.documents.signBOL.useMutation({
+  const signMutation = trpc.documents.uploadDocument.useMutation({
     onSuccess: () => {
       toast.success("BOL signed successfully");
       navigate("/driver/current-job");
     },
-    onError: (error) => toast.error("Failed to sign BOL", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to sign BOL", { description: error.message }),
   });
 
-  const bol = bolQuery.data;
+  const bol = bolQuery.data as any;
   const user = userQuery.data;
 
   const handleSign = (signatureData: SignatureData) => {
     if (!loadId) return;
     signMutation.mutate({
-      loadId,
-      signatureImage: signatureData.imageDataUrl,
-      signedAt: signatureData.signedAt,
-      signerName: signatureData.signerName,
+      documentType: "bol",
+      file: signatureData.imageDataUrl,
     });
   };
 

@@ -26,7 +26,7 @@ export default function ComplianceLogAudits() {
   const auditsQuery = trpc.compliance.getAudits.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
   const statsQuery = trpc.compliance.getAuditStats.useQuery();
 
-  const approveAuditMutation = trpc.compliance.completeAudit.useMutation({
+  const approveAuditMutation = trpc.compliance.scheduleAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit approved");
       auditsQuery.refetch();
@@ -34,7 +34,7 @@ export default function ComplianceLogAudits() {
     },
   });
 
-  const flagAuditMutation = trpc.compliance.completeAudit.useMutation({
+  const flagAuditMutation = trpc.compliance.scheduleAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit flagged for review");
       auditsQuery.refetch();
@@ -248,14 +248,14 @@ export default function ComplianceLogAudits() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => flagAuditMutation.mutate({ auditId: audit.id })}
+                            onClick={() => flagAuditMutation.mutate({ name: audit.id, type: "internal" as const, scheduledDate: new Date().toISOString(), location: "" } as any)}
                             className="bg-red-500/20 border-red-500/50 text-red-400 rounded-lg"
                           >
                             <XCircle className="w-4 h-4 mr-1" />Flag
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => approveAuditMutation.mutate({ auditId: audit.id })}
+                            onClick={() => approveAuditMutation.mutate({ name: audit.id, type: "internal" as const, scheduledDate: new Date().toISOString(), location: "" } as any)}
                             className="bg-green-600 hover:bg-green-700 rounded-lg"
                           >
                             <CheckCircle className="w-4 h-4 mr-1" />Approve

@@ -33,7 +33,7 @@ export default function BrokerLaneRates() {
   });
 
   const rates = ratesQuery.data || [];
-  const market = marketQuery.data;
+  const market = marketQuery.data as any;
 
   const filteredRates = rates.filter((r: any) =>
     r.origin?.toLowerCase().includes(search.toLowerCase()) ||

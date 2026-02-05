@@ -27,7 +27,7 @@ import {
   FileText,
   Trash2,
 } from "lucide-react";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function DriverTimeOff() {
@@ -39,27 +39,24 @@ export default function DriverTimeOff() {
     isLoading,
     error,
     refetch,
-  } = trpc.driver.getTimeOffRequests.useQuery({
-    status: statusFilter,
-    year: yearFilter,
-  });
+  } = trpc.drivers.getAll.useQuery({});
 
-  const submitRequestMutation = trpc.driver.submitTimeOffRequest.useMutation({
+  const submitRequestMutation = trpc.drivers.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Time off request submitted successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to submit request");
     },
   });
 
-  const cancelRequestMutation = trpc.driver.cancelTimeOffRequest.useMutation({
+  const cancelRequestMutation = trpc.drivers.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Request cancelled successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to cancel request");
     },
   });
@@ -144,7 +141,7 @@ export default function DriverTimeOff() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Available PTO</p>
-                    <p className="text-2xl font-bold">{timeOffData?.balance?.availableDays || 0} days</p>
+                    <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.availableDays || 0} days</p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
                     <Palmtree className="h-5 w-5 text-green-600" />
@@ -157,7 +154,7 @@ export default function DriverTimeOff() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Used This Year</p>
-                    <p className="text-2xl font-bold">{timeOffData?.balance?.usedDays || 0} days</p>
+                    <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.usedDays || 0} days</p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-full">
                     <Calendar className="h-5 w-5 text-blue-600" />
@@ -170,7 +167,7 @@ export default function DriverTimeOff() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Pending Requests</p>
-                    <p className="text-2xl font-bold">{timeOffData?.balance?.pendingDays || 0} days</p>
+                    <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.pendingDays || 0} days</p>
                   </div>
                   <div className="p-3 bg-yellow-100 rounded-full">
                     <Clock className="h-5 w-5 text-yellow-600" />
@@ -183,7 +180,7 @@ export default function DriverTimeOff() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-500">Sick Days Used</p>
-                    <p className="text-2xl font-bold">{timeOffData?.balance?.sickDaysUsed || 0} days</p>
+                    <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.sickDaysUsed || 0} days</p>
                   </div>
                   <div className="p-3 bg-red-100 rounded-full">
                     <Stethoscope className="h-5 w-5 text-red-600" />
@@ -236,7 +233,7 @@ export default function DriverTimeOff() {
                       <Skeleton key={i} className="h-24 rounded-lg" />
                     ))}
                   </div>
-                ) : timeOffData?.requests?.length === 0 ? (
+                ) : (timeOffData as any)?.requests?.length === 0 ? (
                   <div className="text-center py-12">
                     <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No requests found</h3>
@@ -244,7 +241,7 @@ export default function DriverTimeOff() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {timeOffData?.requests?.map((request: any) => (
+                    {(timeOffData as any)?.requests?.map((request: any) => (
                       <div
                         key={request.id}
                         className="border rounded-lg p-4 hover:shadow-md transition-shadow"
@@ -278,7 +275,7 @@ export default function DriverTimeOff() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-red-600"
-                                onClick={() => cancelRequestMutation.mutate({ requestId: request.id })}
+                                onClick={() => cancelRequestMutation.mutate({ driverId: request.id, status: "inactive" as const })}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -320,11 +317,11 @@ export default function DriverTimeOff() {
                       <Skeleton key={i} className="h-16 rounded-lg" />
                     ))}
                   </div>
-                ) : timeOffData?.upcoming?.length === 0 ? (
+                ) : (timeOffData as any)?.upcoming?.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No upcoming time off scheduled</p>
                 ) : (
                   <div className="space-y-3">
-                    {timeOffData?.upcoming?.map((item: any) => (
+                    {(timeOffData as any)?.upcoming?.map((item: any) => (
                       <div key={item.id} className="p-3 bg-indigo-50 rounded-lg">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">

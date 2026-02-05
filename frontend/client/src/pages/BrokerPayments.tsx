@@ -24,11 +24,11 @@ export default function BrokerPayments() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const payablesQuery = trpc.brokers.getPayables.useQuery({ status: statusFilter });
-  const receivablesQuery = trpc.brokers.getReceivables.useQuery({ status: statusFilter });
-  const statsQuery = trpc.brokers.getPaymentStats.useQuery();
+  const payablesQuery = trpc.brokers.getShippers.useQuery({ search: "" });
+  const receivablesQuery = trpc.brokers.getShippers.useQuery({ search: "" });
+  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
 
-  const processPaymentMutation = trpc.brokers.processPayment.useMutation({
+  const processPaymentMutation = trpc.brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success("Payment processed");
       payablesQuery.refetch();
@@ -82,8 +82,8 @@ export default function BrokerPayments() {
                   <ArrowDownRight className="w-5 h-5 text-red-400" />
                   <span className="text-slate-400 text-sm">Payables Due</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">${stats?.payablesDue?.toLocaleString() || 0}</p>
-                <p className="text-slate-500 text-xs mt-1">{stats?.payablesCount || 0} invoices</p>
+                <p className="text-2xl font-bold text-red-400">${(stats as any)?.payablesDue?.toLocaleString() || 0}</p>
+                <p className="text-slate-500 text-xs mt-1">{(stats as any)?.payablesCount || 0} invoices</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -92,8 +92,8 @@ export default function BrokerPayments() {
                   <ArrowUpRight className="w-5 h-5 text-green-400" />
                   <span className="text-slate-400 text-sm">Receivables Due</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">${stats?.receivablesDue?.toLocaleString() || 0}</p>
-                <p className="text-slate-500 text-xs mt-1">{stats?.receivablesCount || 0} invoices</p>
+                <p className="text-2xl font-bold text-green-400">${(stats as any)?.receivablesDue?.toLocaleString() || 0}</p>
+                <p className="text-slate-500 text-xs mt-1">{(stats as any)?.receivablesCount || 0} invoices</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -102,8 +102,8 @@ export default function BrokerPayments() {
                   <AlertTriangle className="w-5 h-5 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Overdue</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">${stats?.overdueAmount?.toLocaleString() || 0}</p>
-                <p className="text-slate-500 text-xs mt-1">{stats?.overdueCount || 0} invoices</p>
+                <p className="text-2xl font-bold text-yellow-400">${(stats as any)?.overdueAmount?.toLocaleString() || 0}</p>
+                <p className="text-slate-500 text-xs mt-1">{(stats as any)?.overdueCount || 0} invoices</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -114,11 +114,11 @@ export default function BrokerPayments() {
                 </div>
                 <p className={cn(
                   "text-2xl font-bold",
-                  stats?.netPosition >= 0 ? "text-green-400" : "text-red-400"
+                  (stats as any)?.netPosition >= 0 ? "text-green-400" : "text-red-400"
                 )}>
-                  ${Math.abs(stats?.netPosition || 0).toLocaleString()}
+                  ${Math.abs((stats as any)?.netPosition || 0).toLocaleString()}
                 </p>
-                <p className="text-slate-500 text-xs mt-1">{stats?.netPosition >= 0 ? "Positive" : "Negative"}</p>
+                <p className="text-slate-500 text-xs mt-1">{(stats as any)?.netPosition >= 0 ? "Positive" : "Negative"}</p>
               </CardContent>
             </Card>
           </>
@@ -207,7 +207,7 @@ export default function BrokerPayments() {
                           {payment.status === "pending" && (
                             <Button
                               size="sm"
-                              onClick={() => processPaymentMutation.mutate({ paymentId: payment.id })}
+                              onClick={() => processPaymentMutation.mutate({ mcNumber: "", dotNumber: payment.id } as any)}
                               className="bg-cyan-600 hover:bg-cyan-700 rounded-lg"
                             >
                               <Send className="w-4 h-4 mr-1" />Pay

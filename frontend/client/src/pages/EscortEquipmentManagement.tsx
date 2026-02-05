@@ -22,11 +22,11 @@ export default function EscortEquipmentManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const equipmentQuery = trpc.escorts.getEquipment.useQuery({ status: statusFilter });
-  const statsQuery = trpc.escorts.getEquipmentStats.useQuery();
+  const equipmentQuery = trpc.escorts.getAvailableJobs.useQuery({});
+  const statsQuery = trpc.escorts.getDashboardStats.useQuery();
 
   const equipment = equipmentQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredEquipment = equipment.filter((e: any) =>
     e.name?.toLowerCase().includes(search.toLowerCase()) ||

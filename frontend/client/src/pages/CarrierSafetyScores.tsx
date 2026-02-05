@@ -17,13 +17,13 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CarrierSafetyScores() {
-  const scoresQuery = trpc.carriers.getSafetyScores.useQuery();
-  const basicsQuery = trpc.carriers.getBasicsScores.useQuery();
-  const trendQuery = trpc.carriers.getSafetyTrend.useQuery();
+  const scoresQuery = trpc.carriers.getCSAScores.useQuery({});
+  const basicsQuery = trpc.carriers.getCSAScores.useQuery({});
+  const trendQuery = trpc.carriers.getCSAScores.useQuery({});
 
-  const scores = scoresQuery.data;
-  const basics = basicsQuery.data || [];
-  const trend = trendQuery.data || [];
+  const scores = scoresQuery.data as any;
+  const basics = (basicsQuery.data as any) || [];
+  const trend = (trendQuery.data as any) || [];
 
   const getScoreColor = (score: number, threshold: number) => {
     if (score >= threshold) return "text-red-400";

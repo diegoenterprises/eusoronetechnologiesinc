@@ -24,10 +24,10 @@ export default function ComplianceTrainingRecords() {
   const [typeFilter, setTypeFilter] = useState("all");
 
   const recordsQuery = trpc.compliance.getTrainingRecords.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.compliance.getTrainingStats.useQuery();
+  const statsQuery = trpc.compliance.getDashboardStats.useQuery();
 
-  const records = recordsQuery.data || [];
-  const stats = statsQuery.data;
+  const records = (recordsQuery.data as any)?.records || [];
+  const stats = statsQuery.data as any;
 
   const filteredRecords = records.filter((r: any) =>
     r.driverName?.toLowerCase().includes(search.toLowerCase()) ||

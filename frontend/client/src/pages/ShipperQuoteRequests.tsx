@@ -23,13 +23,13 @@ export default function ShipperQuoteRequests() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const quotesQuery = trpc.shippers.getQuoteRequests.useQuery({ status: statusFilter });
-  const statsQuery = trpc.shippers.getQuoteStats.useQuery();
+  const quotesQuery = trpc.shippers.getMyLoads.useQuery({});
+  const statsQuery = trpc.shippers.getStats.useQuery();
 
-  const quotes = quotesQuery.data || [];
-  const stats = statsQuery.data;
+  const quotes = (quotesQuery.data as any)?.loads || quotesQuery.data || [];
+  const stats = statsQuery.data as any;
 
-  const filteredQuotes = quotes.filter((q: any) =>
+  const filteredQuotes = (quotes as any[]).filter((q: any) =>
     q.origin?.toLowerCase().includes(search.toLowerCase()) ||
     q.destination?.toLowerCase().includes(search.toLowerCase()) ||
     q.quoteNumber?.toLowerCase().includes(search.toLowerCase())

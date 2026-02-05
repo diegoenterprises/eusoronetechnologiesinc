@@ -22,11 +22,11 @@ export default function CarrierInvoicing() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const invoicesQuery = trpc.carriers.getInvoices.useQuery({ status: statusFilter });
-  const statsQuery = trpc.carriers.getInvoiceStats.useQuery();
-  const pendingLoadsQuery = trpc.carriers.getLoadsReadyToInvoice.useQuery();
+  const invoicesQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 50 });
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
+  const pendingLoadsQuery = trpc.carriers.getRecentCompletedLoads.useQuery({ limit: 10 });
 
-  const createInvoiceMutation = trpc.carriers.createInvoice.useMutation({
+  const createInvoiceMutation = trpc.carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Invoice created");
       invoicesQuery.refetch();
@@ -79,7 +79,7 @@ export default function CarrierInvoicing() {
                   <FileText className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.total || stats?.activeLoads || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -88,7 +88,7 @@ export default function CarrierInvoicing() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Pending</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">${stats?.pendingAmount?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">${(stats as any)?.pendingAmount?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -97,7 +97,7 @@ export default function CarrierInvoicing() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Overdue</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">${stats?.overdueAmount?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-red-400">${(stats as any)?.overdueAmount?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -106,7 +106,7 @@ export default function CarrierInvoicing() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Paid MTD</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">${stats?.paidMTD?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-green-400">${(stats as any)?.paidMTD?.toLocaleString() || stats?.weeklyRevenue?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -143,7 +143,7 @@ export default function CarrierInvoicing() {
                     <span className="text-green-400 font-bold">${load.rate?.toLocaleString()}</span>
                     <Button
                       size="sm"
-                      onClick={() => createInvoiceMutation.mutate({ loadId: load.id })}
+                      onClick={() => createInvoiceMutation.mutate({ loadId: load.id?.toString() || "", amount: load.rate || 0 })}
                       className="bg-purple-600 hover:bg-purple-700 rounded-lg"
                     >
                       <Send className="w-4 h-4 mr-1" />Invoice

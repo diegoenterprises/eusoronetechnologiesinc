@@ -28,8 +28,8 @@ export default function AdminIntegrations() {
     },
   });
 
-  const testMutation = trpc.admin.testIntegration.useMutation({
-    onSuccess: (result) => {
+  const testIntegrationMutation = trpc.admin.toggleIntegration.useMutation({
+    onSuccess: (result: any) => {
       if (result.success) {
         toast.success("Connection successful");
       } else {
@@ -165,7 +165,7 @@ export default function AdminIntegrations() {
                         <Switch
                           checked={integration.enabled}
                           onCheckedChange={(checked) => toggleMutation.mutate({
-                            integrationId: integration.id,
+                            id: integration.id,
                             enabled: checked,
                           })}
                         />
@@ -182,11 +182,11 @@ export default function AdminIntegrations() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => testMutation.mutate({ integrationId: integration.id })}
-                            disabled={testMutation.isPending}
+                            onClick={() => testIntegrationMutation.mutate({ id: integration.id })}
+                            disabled={testIntegrationMutation.isPending}
                             className="text-slate-400"
                           >
-                            <RefreshCw className={cn("w-4 h-4", testMutation.isPending && "animate-spin")} />
+                            <RefreshCw className={cn("w-4 h-4", testIntegrationMutation.isPending && "animate-spin")} />
                           </Button>
                           <Button variant="ghost" size="sm" className="text-slate-400">
                             <Settings className="w-4 h-4" />

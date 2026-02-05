@@ -31,7 +31,7 @@ export default function DriverFuelPurchase() {
   const [odometer, setOdometer] = useState("");
 
   const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
-  const loadQuery = trpc.loads.getAll.useQuery({ search: "" });
+  const loadQuery = trpc.loads.getTrackedLoads.useQuery({ search: "" });
   const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ lat: 0, lng: 0 });
   const historyQuery = trpc.fuel.getTransactions.useQuery({ limit: 10 });
 
@@ -233,15 +233,12 @@ export default function DriverFuelPurchase() {
       <Button
         onClick={() => submitMutation.mutate({
           vehicleId: vehicle?.id || "",
-          loadId: load?.id || "",
           gallons: parseFloat(gallons),
           pricePerGallon: parseFloat(pricePerGallon),
-          totalAmount: parseFloat(totalAmount),
           fuelType: fuelType as "diesel" | "def" | "gasoline",
-          stationId: station || "",
-          paymentMethod,
+          location: station || "",
           odometer: parseInt(odometer),
-        })}
+        } as any)}
         disabled={!gallons || !totalAmount || !odometer || submitMutation.isPending}
         className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 rounded-lg h-12"
       >

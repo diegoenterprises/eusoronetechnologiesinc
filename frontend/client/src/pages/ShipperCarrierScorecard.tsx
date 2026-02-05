@@ -23,11 +23,11 @@ export default function ShipperCarrierScorecard() {
   const [periodFilter, setPeriodFilter] = useState("90d");
   const [sortBy, setSortBy] = useState("overall");
 
-  const scorecardsQuery = trpc.shippers.getCarrierScorecards.useQuery({ period: periodFilter, sortBy });
-  const statsQuery = trpc.shippers.getScorecardStats.useQuery({ period: periodFilter });
+  const scorecardsQuery = trpc.shippers.getCarrierPerformance.useQuery({ period: periodFilter as any });
+  const statsQuery = trpc.shippers.getStats.useQuery();
 
   const scorecards = scorecardsQuery.data || [];
-  const stats = statsQuery.data;
+  const stats = statsQuery.data as any;
 
   const filteredScorecards = scorecards.filter((s: any) =>
     s.carrierName?.toLowerCase().includes(search.toLowerCase())

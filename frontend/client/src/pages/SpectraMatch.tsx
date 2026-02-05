@@ -387,7 +387,7 @@ export default function SpectraMatch() {
                           {key.replace(/([A-Z])/g, ' $1').trim()}
                         </span>
                         <span className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                          {param.value}{param.weightUnit}
+                          {param.value}{(param as any).weightUnit || param.unit}
                         </span>
                       </div>
                       <Progress value={param.score} className="h-2 mb-2" />

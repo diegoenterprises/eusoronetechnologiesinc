@@ -26,7 +26,7 @@ export default function TerminalGateManagement() {
   const transactionsQuery = trpc.terminals.getAppointments.useQuery({});
   const statsQuery = trpc.terminals.getStats.useQuery();
 
-  const processEntryMutation = trpc.terminals.updateAppointment.useMutation({
+  const processEntryMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Entry processed");
       transactionsQuery.refetch();
@@ -34,7 +34,7 @@ export default function TerminalGateManagement() {
     },
   });
 
-  const processExitMutation = trpc.terminals.updateAppointment.useMutation({
+  const processExitMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Exit processed");
       transactionsQuery.refetch();
@@ -268,14 +268,14 @@ export default function TerminalGateManagement() {
                         <div className="flex gap-2">
                           <Button
                             size="sm"
-                            onClick={() => processEntryMutation.mutate({ transactionId: txn.id, action: "deny" })}
+                            onClick={() => processEntryMutation.mutate({ terminalId: txn.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "" } as any)}
                             className="bg-red-600 hover:bg-red-700 rounded-lg"
                           >
                             <XCircle className="w-4 h-4" />
                           </Button>
                           <Button
                             size="sm"
-                            onClick={() => processEntryMutation.mutate({ transactionId: txn.id, action: "approve" })}
+                            onClick={() => processEntryMutation.mutate({ terminalId: txn.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "" } as any)}
                             className="bg-green-600 hover:bg-green-700 rounded-lg"
                           >
                             <CheckCircle className="w-4 h-4" />

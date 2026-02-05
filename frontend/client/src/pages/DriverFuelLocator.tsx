@@ -22,11 +22,11 @@ export default function DriverFuelLocator() {
   const [brandFilter, setBrandFilter] = useState("all");
   const [sortBy, setSortBy] = useState("distance");
 
-  const stationsQuery = trpc.drivers.getFuelStations.useQuery({ brand: brandFilter, sortBy });
-  const currentLocationQuery = trpc.drivers.getCurrentLocation.useQuery();
+  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ lat: 0, lng: 0 });
+  const currentLocationQuery = trpc.drivers.getSummary.useQuery();
 
   const stations = stationsQuery.data || [];
-  const currentLocation = currentLocationQuery.data;
+  const currentLocation = currentLocationQuery.data as any;
 
   const filteredStations = stations.filter((s: any) =>
     s.name?.toLowerCase().includes(search.toLowerCase()) ||

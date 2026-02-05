@@ -272,7 +272,7 @@ export default function ShipperPODReview() {
               Cancel
             </Button>
             <Button
-              onClick={() => rejectMutation.mutate({ loadId: loadId!, reason: rejectionReason })}
+              onClick={() => rejectMutation.mutate({ documentId: loadId! })}
               disabled={!rejectionReason || rejectMutation.isPending}
               className="bg-red-600 hover:bg-red-700 rounded-lg"
             >
@@ -287,7 +287,7 @@ export default function ShipperPODReview() {
               Reject POD
             </Button>
             <Button
-              onClick={() => approveMutation.mutate({ loadId: loadId! })}
+              onClick={() => approveMutation.mutate({ documentId: loadId! })}
               disabled={approveMutation.isPending}
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg px-8"
             >

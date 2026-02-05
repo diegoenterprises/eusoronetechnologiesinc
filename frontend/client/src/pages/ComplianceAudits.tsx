@@ -71,7 +71,7 @@ export default function ComplianceAudits() {
                   <ClipboardCheck className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.total || stats?.scheduled || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -89,7 +89,7 @@ export default function ComplianceAudits() {
                   <AlertTriangle className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Findings</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.withFindings || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.withFindings || stats?.failed || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils";
 export default function DriverSettlement() {
   const [periodFilter, setPeriodFilter] = useState("current");
 
-  const settlementQuery = trpc.drivers.getSettlement.useQuery({ period: periodFilter });
-  const historyQuery = trpc.drivers.getSettlementHistory.useQuery();
+  const settlementQuery = trpc.drivers.getAll.useQuery({});
+  const historyQuery = trpc.drivers.getAll.useQuery({});
 
-  const settlement = settlementQuery.data;
+  const settlement = (settlementQuery.data as any)?.[0];
   const history = historyQuery.data || [];
 
   return (

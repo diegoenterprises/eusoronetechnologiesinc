@@ -67,7 +67,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-cyan-500/20"><Bell className="w-6 h-6 text-cyan-400" /></div>
-              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{notificationsQuery.data?.length || 0}</p>}<p className="text-xs text-slate-400">Total</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-cyan-400">{notificationsQuery.data?.notifications?.length || notificationsQuery.data?.total || 0}</p>}<p className="text-xs text-slate-400">Total</p></div>
             </div>
           </CardContent>
         </Card>
@@ -83,7 +83,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-yellow-500/20"><AlertTriangle className="w-6 h-6 text-yellow-400" /></div>
-              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{notificationsQuery.data?.filter((n: any) => n.category === 'safety').length || 0}</p>}<p className="text-xs text-slate-400">Safety</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-yellow-400">{notificationsQuery.data?.notifications?.filter((n: any) => n.category === 'safety').length || 0}</p>}<p className="text-xs text-slate-400">Safety</p></div>
             </div>
           </CardContent>
         </Card>
@@ -91,7 +91,7 @@ export default function NotificationCenter() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{notificationsQuery.data?.filter((n: any) => n.read).length || 0}</p>}<p className="text-xs text-slate-400">Read</p></div>
+              <div>{countQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{notificationsQuery.data?.notifications?.filter((n: any) => n.read).length || 0}</p>}<p className="text-xs text-slate-400">Read</p></div>
             </div>
           </CardContent>
         </Card>

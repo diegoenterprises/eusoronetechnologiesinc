@@ -88,7 +88,7 @@ export default function AppointmentScheduler() {
   }
 
   const getAppointmentsForSlot = (time: string) => {
-    return (appointmentsQuery.data?.appointments || []).filter(apt => {
+    return ((appointmentsQuery.data as any)?.appointments || []).filter((apt: any) => {
       const aptTime = new Date(apt.scheduledTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
       return aptTime === time;
     });
@@ -220,7 +220,7 @@ export default function AppointmentScheduler() {
                             <Badge className={getStatusColor(apt.status)}>{apt.status.replace("_", " ")}</Badge>
                           </div>
                           <p className="text-sm text-slate-400">
-                            {apt.loadNumber} - {apt.product} ({apt.weight?.toLocaleString()} gal)
+                            {apt.loadNumber} - {apt.product} ({(apt as any).weight?.toLocaleString() || 0} gal)
                           </p>
                           <div className="flex items-center gap-4 mt-1 text-xs text-slate-500">
                             <span className="flex items-center gap-1">
@@ -294,7 +294,7 @@ export default function AppointmentScheduler() {
                             </div>
                           ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 py-2">
-                              {slotAppointments.map((apt) => (
+                              {slotAppointments.map((apt: any) => (
                                 <div key={apt.id} className={cn("p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity", getStatusColor(apt.status))}>
                                   <div className="flex items-center justify-between mb-2">
                                     <Badge variant="outline" className="text-xs">{apt.rackName}</Badge>
@@ -349,7 +349,7 @@ export default function AppointmentScheduler() {
                           </div>
                           <p className="text-white font-medium">{currentApt.carrierName}</p>
                           <p className="text-xs text-slate-400">{currentApt.loadNumber}</p>
-                          <p className="text-xs text-slate-500">{currentApt.weight?.toLocaleString()} gal</p>
+                          <p className="text-xs text-slate-500">{(currentApt as any).weight?.toLocaleString() || 0} gal</p>
                         </div>
                       ) : (
                         <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 mb-3">

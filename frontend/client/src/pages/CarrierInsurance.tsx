@@ -22,11 +22,11 @@ export default function CarrierInsurance() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const policiesQuery = trpc.carriers.getInsurancePolicies.useQuery({ type: typeFilter });
-  const statsQuery = trpc.carriers.getInsuranceStats.useQuery();
+  const policiesQuery = trpc.carriers.getInsurance.useQuery({});
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
-  const policies = policiesQuery.data || [];
-  const stats = statsQuery.data;
+  const policies = (policiesQuery.data as any)?.policies || [];
+  const stats = statsQuery.data as any;
 
   const filteredPolicies = policies.filter((p: any) =>
     p.policyNumber?.toLowerCase().includes(search.toLowerCase()) ||

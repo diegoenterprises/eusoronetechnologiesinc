@@ -232,7 +232,7 @@ export default function CatalystExceptionManagement() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => acknowledgeMutation.mutate({ exceptionId: exc.id })}
+                            onClick={() => acknowledgeMutation.mutate({ exceptionId: exc.id, resolution: "acknowledged" } as any)}
                             className="bg-slate-700/50 border-slate-600/50 rounded-lg"
                           >
                             Acknowledge
@@ -246,7 +246,7 @@ export default function CatalystExceptionManagement() {
                             } else if (exc.type === "hos") {
                               navigate(`/catalyst/relief/${exc.loadId}`);
                             } else {
-                              resolveMutation.mutate({ exceptionId: exc.id });
+                              resolveMutation.mutate({ exceptionId: exc.id, resolution: "resolved" } as any);
                             }
                           }}
                           className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg"

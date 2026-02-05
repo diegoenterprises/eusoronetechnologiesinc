@@ -28,7 +28,7 @@ interface DocumentRequirement {
 export default function OnboardingDocuments() {
   const [uploading, setUploading] = useState<string | null>(null);
 
-  const { data: requirements, isLoading, error, refetch } = trpc.documents.getRequiredDocuments.useQuery();
+  const { data: requirements, isLoading, error, refetch } = trpc.documents.getDriverDocuments.useQuery();
   const { data: uploadedDocs } = trpc.documents.list.useQuery({ limit: 100 });
   const uploadMutation = trpc.documents.upload.useMutation({
     onSuccess: () => {
@@ -44,9 +44,9 @@ export default function OnboardingDocuments() {
       const base64 = (reader.result as string).split(",")[1];
       uploadMutation.mutate({
         name: file.name,
-        type: docId,
-        content: base64,
-        mimeType: file.type,
+        category: "compliance" as const,
+        fileData: base64,
+        description: file.type,
       });
     };
     reader.readAsDataURL(file);
@@ -91,8 +91,8 @@ export default function OnboardingDocuments() {
   const getDocStatus = (docId: string): DocumentRequirement["status"] => {
     const uploaded = uploadedMap.get(docId);
     if (!uploaded) return "pending";
-    if (uploaded.verified) return "verified";
-    if (uploaded.rejected) return "rejected";
+    if ((uploaded as any).verified) return "verified";
+    if ((uploaded as any).rejected) return "rejected";
     return "uploaded";
   };
 

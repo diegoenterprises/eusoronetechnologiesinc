@@ -29,8 +29,8 @@ export default function EscortRoutePlanning() {
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
   const jobQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
-  const routesQuery = trpc.escorts.getJobs.useQuery({});
-  const permitsQuery = trpc.escorts.getCertifications.useQuery({});
+  const routesQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
+  const permitsQuery = trpc.escorts.getCertifications.useQuery();
 
   const selectRouteMutation = trpc.escorts.acceptJob.useMutation({
     onSuccess: () => {
@@ -68,7 +68,7 @@ export default function EscortRoutePlanning() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Route Planning
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Job #{job?.jobNumber}</p>
+          <p className="text-slate-400 text-sm mt-1">Job #{(job as any)?.[0]?.id || (job as any)?.jobNumber}</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function EscortRoutePlanning() {
             </div>
             <div>
               <p className="text-white font-bold">Oversize Load Dimensions</p>
-              <p className="text-slate-400 text-sm">{job?.loadDescription}</p>
+              <p className="text-slate-400 text-sm">{(job as any)?.[0]?.convoyName || (job as any)?.loadDescription}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -90,28 +90,28 @@ export default function EscortRoutePlanning() {
                 <Ruler className="w-4 h-4" />
                 <span className="text-xs">Width</span>
               </div>
-              <p className="text-white font-bold text-lg">{job?.dimensions?.width} ft</p>
+              <p className="text-white font-bold text-lg">{(job as any)?.[0]?.dimensions?.width || 0} ft</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <div className="flex items-center gap-2 text-slate-400 mb-1">
                 <ArrowUpDown className="w-4 h-4" />
                 <span className="text-xs">Height</span>
               </div>
-              <p className="text-white font-bold text-lg">{job?.dimensions?.height} ft</p>
+              <p className="text-white font-bold text-lg">{(job as any)?.[0]?.dimensions?.height || 0} ft</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <div className="flex items-center gap-2 text-slate-400 mb-1">
                 <Ruler className="w-4 h-4 rotate-90" />
                 <span className="text-xs">Length</span>
               </div>
-              <p className="text-white font-bold text-lg">{job?.dimensions?.length} ft</p>
+              <p className="text-white font-bold text-lg">{(job as any)?.[0]?.dimensions?.length || 0} ft</p>
             </div>
             <div className="p-3 rounded-lg bg-slate-900/30">
               <div className="flex items-center gap-2 text-slate-400 mb-1">
                 <Truck className="w-4 h-4" />
                 <span className="text-xs">Weight</span>
               </div>
-              <p className="text-white font-bold text-lg">{job?.dimensions?.weight?.toLocaleString()} lbs</p>
+              <p className="text-white font-bold text-lg">{(job as any)?.[0]?.dimensions?.weight?.toLocaleString() || 0} lbs</p>
             </div>
           </div>
         </CardContent>
@@ -285,7 +285,7 @@ export default function EscortRoutePlanning() {
           Cancel
         </Button>
         <Button
-          onClick={() => selectedRoute && selectRouteMutation.mutate({ jobId: jobId!, routeId: selectedRoute })}
+          onClick={() => selectedRoute && selectRouteMutation.mutate({ jobId: jobId! })}
           disabled={!selectedRoute || selectRouteMutation.isPending}
           className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg px-8"
         >

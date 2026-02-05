@@ -22,11 +22,11 @@ export default function DriverRestStops() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortBy, setSortBy] = useState("distance");
 
-  const stopsQuery = trpc.drivers.getRestStops.useQuery({ type: typeFilter, sortBy });
-  const currentLocationQuery = trpc.drivers.getCurrentLocation.useQuery();
+  const stopsQuery = trpc.drivers.getAll.useQuery({});
+  const currentLocationQuery = trpc.drivers.getSummary.useQuery();
 
   const stops = stopsQuery.data || [];
-  const currentLocation = currentLocationQuery.data;
+  const currentLocation = currentLocationQuery.data as any;
 
   const filteredStops = stops.filter((s: any) =>
     s.name?.toLowerCase().includes(search.toLowerCase()) ||

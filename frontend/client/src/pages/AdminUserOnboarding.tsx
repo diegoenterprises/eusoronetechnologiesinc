@@ -24,7 +24,7 @@ export default function AdminUserOnboarding() {
   const [statusFilter, setStatusFilter] = useState("in_progress");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  const usersQuery = trpc.admin.getOnboardingUsers.useQuery({ status: statusFilter, role: roleFilter });
+  const usersQuery = trpc.admin.getOnboardingUsers.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
   const statsQuery = trpc.admin.getOnboardingStats.useQuery();
 
   const sendReminderMutation = trpc.admin.sendOnboardingReminder.useMutation({
@@ -74,7 +74,7 @@ export default function AdminUserOnboarding() {
                   <UserPlus className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Users</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalUsers || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalUsers || stats?.total || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -101,7 +101,7 @@ export default function AdminUserOnboarding() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Stalled</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.stalled || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.stalled || stats?.abandoned || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -110,7 +110,7 @@ export default function AdminUserOnboarding() {
                   <Calendar className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Avg Days</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.avgDays || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.avgDays || stats?.avgCompletionTime || 0}</p>
               </CardContent>
             </Card>
           </>

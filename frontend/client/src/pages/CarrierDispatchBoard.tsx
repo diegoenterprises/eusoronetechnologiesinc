@@ -22,11 +22,11 @@ export default function CarrierDispatchBoard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.carriers.getDispatchBoard.useQuery({ status: statusFilter });
-  const driversQuery = trpc.carriers.getAvailableDrivers.useQuery();
-  const statsQuery = trpc.carriers.getDispatchStats.useQuery();
+  const loadsQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 50 });
+  const driversQuery = trpc.carriers.getDrivers.useQuery({});
+  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
 
-  const assignDriverMutation = trpc.carriers.assignDriver.useMutation({
+  const assignDriverMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       loadsQuery.refetch();
@@ -86,7 +86,7 @@ export default function CarrierDispatchBoard() {
                   <LayoutGrid className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Loads</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalLoads || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalLoads || stats?.activeLoads || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -95,7 +95,7 @@ export default function CarrierDispatchBoard() {
                   <Clock className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Unassigned</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.unassigned || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.unassigned || stats?.availableCapacity || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -104,7 +104,7 @@ export default function CarrierDispatchBoard() {
                   <Truck className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">In Transit</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.inTransit || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.inTransit || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -122,7 +122,7 @@ export default function CarrierDispatchBoard() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Issues</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.issues || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.issues || 0}</p>
               </CardContent>
             </Card>
           </>

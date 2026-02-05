@@ -44,19 +44,19 @@ export default function ComplianceDQFile() {
   const [activeTab, setActiveTab] = useState("overview");
 
   const driverQuery = trpc.drivers.getById.useQuery({ id: driverId || "" });
-  const dqQuery = trpc.compliance.getDQFile.useQuery({ driverId: driverId || "" });
-  const documentsQuery = trpc.compliance.getDQDocuments.useQuery({ driverId: driverId || "" });
+  const dqQuery = trpc.compliance.getDQFiles.useQuery({ search: driverId || "" });
+  const documentsQuery = trpc.compliance.getCarrierDocuments.useQuery();
 
   const driver = driverQuery.data;
   const dqFile = dqQuery.data;
   const documents = documentsQuery.data || [];
 
-  const completedItems = dqFile ? Object.values(dqFile.items || {}).filter((item: any) => item?.status === "complete").length : 0;
+  const completedItems = dqFile ? Object.values((dqFile as any)?.items || (dqFile as any)?.[0]?.documents || {}).filter((item: any) => item?.status === "complete").length : 0;
   const totalItems = dqRequirements.length;
   const completionPercent = (completedItems / totalItems) * 100;
 
   const getItemStatus = (key: string) => {
-    const item = dqFile?.items?.[key];
+    const item = (dqFile as any)?.items?.[key] || (dqFile as any)?.[0]?.documents?.find((d: any) => d.type === key);
     if (!item) return { status: "missing", color: "text-red-400", bg: "bg-red-500/10 border-red-500/30" };
     if (item.status === "complete") {
       if (item.expiresAt && new Date(item.expiresAt) < new Date()) {
@@ -110,8 +110,8 @@ export default function ComplianceDQFile() {
                 <h2 className="text-white font-bold text-xl">{driver?.name}</h2>
                 <div className="flex items-center gap-4 mt-1 text-slate-400 text-sm">
                   <span>CDL: {driver?.cdlNumber}</span>
-                  <span>State: {driver?.cdlState}</span>
-                  <span>Class: {driver?.cdlClass}</span>
+                  <span>State: {(driver as any)?.cdlState || driver?.location?.state}</span>
+                  <span>Class: {(driver as any)?.cdlClass || "A"}</span>
                 </div>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function ComplianceDQFile() {
                 {dqRequirements.map((req) => {
                   const { status, color, bg } = getItemStatus(req.key);
                   const Icon = req.icon;
-                  const item = dqFile?.items?.[req.key];
+                  const item = (dqFile as any)?.items?.[req.key] || dqFile?.find?.((d: any) => d.driverId === req.key);
                   
                   return (
                     <div

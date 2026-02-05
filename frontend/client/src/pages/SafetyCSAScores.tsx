@@ -35,8 +35,8 @@ export default function SafetyCSAScores() {
   const inspectionsQuery = trpc.safety.getVehicleInspections.useQuery({ vehicleId: "all" });
   const carriersQuery = trpc.carriers.list.useQuery({});
 
-  const scores = scoresQuery.data;
-  const history = historyQuery.data || [];
+  const scores = scoresQuery.data as any;
+  const history = (historyQuery.data as any) || [];
   const inspections = inspectionsQuery.data || [];
   const carriers = carriersQuery.data || [];
 

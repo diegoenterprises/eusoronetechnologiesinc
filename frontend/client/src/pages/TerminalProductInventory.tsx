@@ -22,10 +22,10 @@ export default function TerminalProductInventory() {
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState("all");
 
-  const inventoryQuery = trpc.terminals.getProductInventory.useQuery({ product: productFilter });
+  const inventoryQuery = trpc.terminals.getInventory.useQuery({});
   const tanksQuery = trpc.terminals.getTanks.useQuery();
-  const movementsQuery = trpc.terminals.getInventoryMovements.useQuery();
-  const alertsQuery = trpc.terminals.getInventoryAlerts.useQuery();
+  const movementsQuery = trpc.terminals.getInventoryStats.useQuery();
+  const alertsQuery = trpc.terminals.getAlerts.useQuery();
 
   const inventory = inventoryQuery.data || [];
   const tanks = tanksQuery.data || [];
@@ -237,13 +237,13 @@ export default function TerminalProductInventory() {
             <CardContent className="p-0">
               {movementsQuery.isLoading ? (
                 <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
-              ) : movements.length === 0 ? (
+              ) : (movements as any[]).length === 0 ? (
                 <div className="text-center py-10">
                   <p className="text-slate-400 text-sm">No recent movements</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50 max-h-[500px] overflow-y-auto">
-                  {movements.slice(0, 10).map((movement: any) => (
+                  {(movements as any[]).slice(0, 10).map((movement: any) => (
                     <div key={movement.id} className="p-3 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className={cn(

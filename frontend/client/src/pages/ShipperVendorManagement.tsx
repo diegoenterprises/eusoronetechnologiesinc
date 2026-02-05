@@ -22,9 +22,9 @@ export default function ShipperVendorManagement() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("active");
 
-  const vendorsQuery = trpc.shippers.getVendors.useQuery({ category: categoryFilter, status: statusFilter });
-  const statsQuery = trpc.shippers.getVendorStats.useQuery();
-  const categoriesQuery = trpc.shippers.getVendorCategories.useQuery();
+  const vendorsQuery = trpc.shippers.getActiveLoads.useQuery({});
+  const statsQuery = trpc.shippers.getStats.useQuery();
+  const categoriesQuery = trpc.shippers.getActiveLoads.useQuery({});
 
   const vendors = vendorsQuery.data || [];
   const stats = statsQuery.data;
@@ -61,7 +61,7 @@ export default function ShipperVendorManagement() {
                   <Building className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Vendors</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalVendors || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalVendors || stats?.totalLoads || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -70,7 +70,7 @@ export default function ShipperVendorManagement() {
                   <Star className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Preferred</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.preferred || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.preferred || stats?.preferredCarriers || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -79,7 +79,7 @@ export default function ShipperVendorManagement() {
                   <TrendingUp className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Avg Rating</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.avgRating?.toFixed(1) || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.avgRating?.toFixed(1) || stats?.onTimeRate || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -88,7 +88,7 @@ export default function ShipperVendorManagement() {
                   <FileText className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Active Contracts</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.activeContracts || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.activeContracts || 0}</p>
               </CardContent>
             </Card>
           </>

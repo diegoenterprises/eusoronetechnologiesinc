@@ -23,9 +23,9 @@ export default function CatalystCarrierCapacity() {
   const [regionFilter, setRegionFilter] = useState("all");
   const [equipmentFilter, setEquipmentFilter] = useState("all");
 
-  const capacityQuery = trpc.catalysts.getCarrierCapacity.useQuery({ region: regionFilter, equipment: equipmentFilter });
-  const statsQuery = trpc.catalysts.getCapacityStats.useQuery();
-  const regionsQuery = trpc.catalysts.getRegions.useQuery();
+  const capacityQuery = trpc.catalysts.getMatchedLoads.useQuery({});
+  const statsQuery = trpc.catalysts.getMatchStats.useQuery();
+  const regionsQuery = trpc.catalysts.getMatchedLoads.useQuery({});
 
   const carriers = capacityQuery.data || [];
   const stats = statsQuery.data;
@@ -66,7 +66,7 @@ export default function CatalystCarrierCapacity() {
                   <Truck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Carriers</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.totalCarriers || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.totalCarriers || stats?.totalMatches || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -75,7 +75,7 @@ export default function CatalystCarrierCapacity() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Available Now</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.availableNow || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.availableNow || stats?.highScore || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -84,7 +84,7 @@ export default function CatalystCarrierCapacity() {
                   <Calendar className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Available 24h</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.available24h || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.available24h || stats?.mediumScore || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -93,7 +93,7 @@ export default function CatalystCarrierCapacity() {
                   <Truck className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Total Trucks</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">{stats?.totalTrucks || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">{(stats as any)?.totalTrucks || stats?.matched || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -102,7 +102,7 @@ export default function CatalystCarrierCapacity() {
                   <TrendingUp className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Utilization</span>
                 </div>
-                <p className="text-2xl font-bold text-cyan-400">{stats?.utilization || 0}%</p>
+                <p className="text-2xl font-bold text-cyan-400">{(stats as any)?.utilization || stats?.acceptRate || 0}%</p>
               </CardContent>
             </Card>
           </>

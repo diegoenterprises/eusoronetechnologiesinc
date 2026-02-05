@@ -248,7 +248,7 @@ export default function DriverPerformance() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 flex items-center gap-2"><Navigation className="w-4 h-4" />Miles This Month</span>
-                      <span className="text-white font-bold">{driver?.stats?.distanceThisMonth?.toLocaleString() || 0}</span>
+                      <span className="text-white font-bold">{(driver?.stats as any)?.distanceThisMonth?.toLocaleString() || driver?.stats?.milesThisMonth?.toLocaleString() || 0}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-slate-400 flex items-center gap-2"><Clock className="w-4 h-4" />Hours This Week</span>

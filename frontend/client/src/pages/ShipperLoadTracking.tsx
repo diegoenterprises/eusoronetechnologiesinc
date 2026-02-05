@@ -17,12 +17,12 @@ export default function ShipperLoadTracking() {
   const loadId = params?.loadId;
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const trackingQuery = trpc.tracking.getLoadTracking.useQuery({ loadId: loadId || "" }, { refetchInterval: 30000 });
-  const eventsQuery = trpc.tracking.getLoadEvents.useQuery({ loadId: loadId || "" });
+  const trackingQuery = trpc.tracking.getRealtimePositions.useQuery({ loadIds: [loadId || ""] }, { refetchInterval: 30000 });
+  const eventsQuery = trpc.tracking.trackShipment.useQuery({ loadNumber: loadId || "" });
 
   const load = loadQuery.data;
-  const tracking = trackingQuery.data;
-  const events = eventsQuery.data || [];
+  const tracking = trackingQuery.data as any;
+  const events = (eventsQuery.data as any)?.milestones || [];
 
   if (loadQuery.isLoading) return <div className="p-6 space-y-4"><Skeleton className="h-12 w-64" /><Skeleton className="h-96 w-full rounded-xl" /></div>;
 
@@ -64,7 +64,7 @@ export default function ShipperLoadTracking() {
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-sm">Driver</p><p className="text-white font-medium">{load?.driver?.name}</p><p className="text-cyan-400 text-sm">{load?.driver?.phone}</p></div>
-            <div className="p-4 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-sm">Carrier</p><p className="text-white font-medium">{load?.carrier?.name}</p><p className="text-slate-400 text-sm">MC# {load?.carrier?.mcNumber}</p></div>
+            <div className="p-4 rounded-lg bg-slate-700/30"><p className="text-slate-400 text-sm">Carrier</p><p className="text-white font-medium">{load?.carrier?.name}</p><p className="text-slate-400 text-sm">MC# {(load?.carrier as any)?.mcNumber || "N/A"}</p></div>
           </div>
         </CardContent>
       </Card>

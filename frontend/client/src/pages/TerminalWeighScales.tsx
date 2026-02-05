@@ -26,7 +26,7 @@ export default function TerminalWeighScales() {
   const weightsQuery = trpc.terminals.getAppointments.useQuery({});
   const statsQuery = trpc.terminals.getStats.useQuery();
 
-  const recordWeightMutation = trpc.terminals.checkIn.useMutation({
+  const recordWeightMutation = trpc.terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Weight recorded");
       weightsQuery.refetch();
@@ -125,7 +125,7 @@ export default function TerminalWeighScales() {
                   <Truck className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Weighed Today</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.weighedToday || 0}</p>
+                <p className="text-2xl font-bold text-white">{stats?.incomingToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -134,7 +134,7 @@ export default function TerminalWeighScales() {
                   <CheckCircle className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">Within Limit</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.withinLimit || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{stats?.outgoingToday || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -143,7 +143,7 @@ export default function TerminalWeighScales() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Overweight</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.overweight || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{stats?.safetyIncidents || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -152,7 +152,7 @@ export default function TerminalWeighScales() {
                   <Scale className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Avg Weight</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.avgWeight?.toLocaleString() || 0} lbs</p>
+                <p className="text-2xl font-bold text-white">{stats?.activeShipments || 0} lbs</p>
               </CardContent>
             </Card>
           </>

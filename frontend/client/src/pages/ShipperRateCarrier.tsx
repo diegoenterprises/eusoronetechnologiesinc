@@ -39,12 +39,12 @@ export default function ShipperRateCarrier() {
 
   const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
 
-  const submitMutation = trpc.ratings.submitCarrierRating.useMutation({
+  const submitMutation = trpc.ratings.submit.useMutation({
     onSuccess: () => {
       toast.success("Rating submitted successfully");
       navigate("/shipper/loads");
     },
-    onError: (error) => toast.error("Failed to submit rating", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit rating", { description: error.message }),
   });
 
   const load = loadQuery.data;
@@ -63,11 +63,13 @@ export default function ShipperRateCarrier() {
   const handleSubmit = () => {
     if (!loadId) return;
     submitMutation.mutate({
+      entityType: "carrier" as const,
+      entityId: (load as any)?.carrierId || "",
       loadId,
       overallRating,
-      categoryRatings: ratings,
+      categories: ratings as any,
       comment,
-      wouldUseAgain: wouldUseAgain ?? true,
+      anonymous: false,
     });
   };
 
@@ -128,7 +130,7 @@ export default function ShipperRateCarrier() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <Badge className="bg-green-500/20 text-green-400 border-0">Delivered</Badge>
-                <span className="text-slate-400 text-sm">{load?.deliveredAt}</span>
+                <span className="text-slate-400 text-sm">{(load as any)?.deliveredAt || load?.deliveryDate}</span>
               </div>
               <p className="text-white font-medium">{load?.origin?.city} → {load?.destination?.city}</p>
             </div>

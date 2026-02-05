@@ -98,7 +98,7 @@ export default function FleetInsurance() {
               </div>
               <div>
                 {claimsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{claimsQuery.data?.openClaims || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(claimsQuery.data as any)?.openClaims || (claimsQuery.data as any)?.open || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Open Claims</p>
               </div>

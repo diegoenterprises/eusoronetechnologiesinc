@@ -78,7 +78,7 @@ export default function DriverCompensation() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-purple-500/20"><MapPin className="w-6 h-6 text-purple-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-purple-400">{stats?.distanceDriven?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Miles</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-purple-400">{(stats as any)?.distanceDriven?.toLocaleString() || stats?.milesDriven?.toLocaleString() || 0}</p>}<p className="text-xs text-slate-400">Miles</p></div>
             </div>
           </CardContent>
         </Card>

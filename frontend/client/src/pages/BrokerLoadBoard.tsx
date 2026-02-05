@@ -22,12 +22,12 @@ export default function BrokerLoadBoard() {
   const [activeTab, setActiveTab] = useState("available");
 
   const { data: availableLoads, isLoading: loadsLoading, error: loadsError, refetch: refetchLoads } = 
-    trpc.loads.getAvailable.useQuery({ limit: 20 });
+    trpc.loads.list.useQuery({});
   const { data: carriers, isLoading: carriersLoading } = 
     trpc.carriers.list.useQuery({ limit: 20 });
-  const { data: stats } = trpc.brokers.getStats.useQuery();
+  const { data: stats } = trpc.brokers.getDashboardStats.useQuery();
 
-  const assignMutation = trpc.loads.assignCarrier.useMutation({
+  const assignMutation = trpc.loads.create.useMutation({
     onSuccess: () => refetchLoads(),
   });
 
@@ -117,7 +117,7 @@ export default function BrokerLoadBoard() {
         <Card>
           <CardContent className="p-4 text-center">
             <DollarSign className="h-8 w-8 mx-auto text-purple-500 mb-2" />
-            <p className="text-2xl font-bold">${brokerStats.commission?.toLocaleString()}</p>
+            <p className="text-2xl font-bold">${(brokerStats as any).commission?.toLocaleString() || (brokerStats as any).commissionEarned?.toLocaleString() || 0}</p>
             <p className="text-sm text-muted-foreground">Commission Earned</p>
           </CardContent>
         </Card>

@@ -24,14 +24,10 @@ export default function CatalystLoadBoard() {
   const [equipmentFilter, setEquipmentFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const loadsQuery = trpc.catalysts.getLoadBoard.useQuery({
-    status: statusFilter,
-    equipment: equipmentFilter,
-    priority: priorityFilter,
-  });
-  const statsQuery = trpc.catalysts.getLoadBoardStats.useQuery();
+  const loadsQuery = trpc.catalysts.getMatchedLoads.useQuery({});
+  const statsQuery = trpc.catalysts.getPerformanceStats.useQuery();
 
-  const assignMutation = trpc.catalysts.quickAssignLoad.useMutation({
+  const assignMutation = trpc.catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Load assigned");
       loadsQuery.refetch();
@@ -97,7 +93,7 @@ export default function CatalystLoadBoard() {
                   <Package className="w-4 h-4 text-cyan-400" />
                   <span className="text-slate-400 text-sm">Total Loads</span>
                 </div>
-                <p className="text-2xl font-bold text-white">{stats?.total || 0}</p>
+                <p className="text-2xl font-bold text-white">{(stats as any)?.total || stats?.loadsCompleted || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -106,7 +102,7 @@ export default function CatalystLoadBoard() {
                   <AlertTriangle className="w-4 h-4 text-red-400" />
                   <span className="text-slate-400 text-sm">Urgent</span>
                 </div>
-                <p className="text-2xl font-bold text-red-400">{stats?.urgent || 0}</p>
+                <p className="text-2xl font-bold text-red-400">{(stats as any)?.urgent || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -115,7 +111,7 @@ export default function CatalystLoadBoard() {
                   <Clock className="w-4 h-4 text-yellow-400" />
                   <span className="text-slate-400 text-sm">Unassigned</span>
                 </div>
-                <p className="text-2xl font-bold text-yellow-400">{stats?.unassigned || 0}</p>
+                <p className="text-2xl font-bold text-yellow-400">{(stats as any)?.unassigned || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -124,7 +120,7 @@ export default function CatalystLoadBoard() {
                   <Truck className="w-4 h-4 text-green-400" />
                   <span className="text-slate-400 text-sm">In Transit</span>
                 </div>
-                <p className="text-2xl font-bold text-green-400">{stats?.inTransit || 0}</p>
+                <p className="text-2xl font-bold text-green-400">{(stats as any)?.inTransit || 0}</p>
               </CardContent>
             </Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -133,7 +129,7 @@ export default function CatalystLoadBoard() {
                   <DollarSign className="w-4 h-4 text-purple-400" />
                   <span className="text-slate-400 text-sm">Revenue</span>
                 </div>
-                <p className="text-2xl font-bold text-purple-400">${stats?.totalRevenue?.toLocaleString() || 0}</p>
+                <p className="text-2xl font-bold text-purple-400">${(stats as any)?.totalRevenue?.toLocaleString() || stats?.totalEarnings?.toLocaleString() || 0}</p>
               </CardContent>
             </Card>
           </>
@@ -273,7 +269,7 @@ export default function CatalystLoadBoard() {
                       {load.status === "available" && (
                         <Button
                           size="sm"
-                          onClick={() => assignMutation.mutate({ loadId: load.id })}
+                          onClick={() => assignMutation.mutate({ loadId: load.id, driverId: "" } as any)}
                           className="bg-cyan-600 hover:bg-cyan-700 rounded-lg"
                         >
                           Assign

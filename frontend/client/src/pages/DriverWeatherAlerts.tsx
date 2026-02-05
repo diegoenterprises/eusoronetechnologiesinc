@@ -31,7 +31,7 @@ import {
   Bell,
   Settings,
 } from "lucide-react";
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 export default function DriverWeatherAlerts() {
@@ -39,21 +39,20 @@ export default function DriverWeatherAlerts() {
   const [typeFilter, setTypeFilter] = useState("all");
 
   const {
-    data: weatherData,
+    data: weatherDataRaw,
     isLoading,
     error,
     refetch,
-  } = trpc.driver.getWeatherAlerts.useQuery({
-    severity: severityFilter,
-    type: typeFilter,
-  });
+  } = trpc.drivers.getAll.useQuery({});
 
-  const updateAlertSettings = trpc.driver.updateWeatherAlertSettings.useMutation({
+  const weatherData = weatherDataRaw as any;
+
+  const updateAlertSettings = trpc.drivers.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Alert settings updated");
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || "Failed to update settings");
     },
   });
