@@ -13,9 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Fuel, Truck, Calendar, Clock, AlertTriangle,
-  CheckCircle, Eye, Activity
+  CheckCircle, Eye, Activity, Beaker, Target, Sparkles
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function TerminalDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -72,6 +73,35 @@ export default function TerminalDashboard() {
           </CardContent>
         </Card>
       )}
+
+      {/* SPECTRA-MATCH Quick Access */}
+      <Card className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border-purple-500/30 rounded-xl">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-purple-500/30 to-cyan-500/30">
+                <Beaker className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-white font-bold flex items-center gap-2">
+                  SPECTRA-MATCH™
+                  <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">
+                    <Sparkles className="w-3 h-3 mr-1" />AI
+                  </Badge>
+                </p>
+                <p className="text-sm text-slate-400">Crude/fuel product identification system</p>
+              </div>
+            </div>
+            <Button 
+              className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+              onClick={() => window.location.href = '/terminal/scada'}
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Open Oil ID
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">

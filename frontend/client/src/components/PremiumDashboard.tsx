@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Edit3, RotateCcw, X, Plus, Settings, LayoutGrid, Store } from "lucide-react";
 import { UserRole } from '@/hooks/useRoleAccess';
 import { getWidgetsForRole, WidgetDefinition, ALL_WIDGETS } from '@/lib/widgetLibrary';
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 import {
   TasksWidget, NotesWidget, NotificationsWidget, QuickActionsWidget,
   RecentActivityWidget, PerformanceSummaryWidget, SearchWidget,
@@ -147,6 +148,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     // Universal widgets
     case 'weather': return <Weather />;
     case 'live_map': return <RoleBasedMap height="h-full" />;
+    case 'spectra_match': return <SpectraMatchWidget compact={false} showSaveButton={true} />;
     case 'tasks': return <TasksWidget />;
     case 'notes': return <NotesWidget />;
     case 'notifications': return <NotificationsWidget />;

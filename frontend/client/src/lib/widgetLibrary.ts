@@ -153,6 +153,17 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     defaultSize: { w: 12, h: 8 },
     minSize: { w: 6, h: 6 }
   },
+  {
+    id: 'spectra_match',
+    name: 'SPECTRA-MATCH™',
+    description: 'AI-powered crude oil & fuel product identification',
+    icon: Flask,
+    category: 'operations',
+    roles: ['SHIPPER', 'CARRIER', 'DRIVER', 'CATALYST', 'TERMINAL_MANAGER'],
+    defaultSize: { w: 12, h: 10 },
+    minSize: { w: 8, h: 8 },
+    premium: true
+  },
 ];
 
 // SHIPPER-specific widgets (15 widgets)

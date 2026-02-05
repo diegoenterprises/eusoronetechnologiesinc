@@ -20,8 +20,9 @@ import { toast } from "sonner";
 import {
   Receipt, Fuel, MapPin, Clock, DollarSign, Plus,
   CheckCircle, AlertTriangle, Eye, Download, Truck,
-  Calendar, FileText, Camera, Calculator
+  Calendar, FileText, Camera, Calculator, Beaker, Target
 } from "lucide-react";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
 interface RunTicket {
   id: number;
@@ -251,6 +252,9 @@ export default function RunTickets() {
           <TabsTrigger value="completed">Completed</TabsTrigger>
           <TabsTrigger value="pending_review">Pending Review</TabsTrigger>
           <TabsTrigger value="all">All Tickets</TabsTrigger>
+          <TabsTrigger value="spectra" className="data-[state=active]:bg-purple-600">
+            <Beaker className="w-3 h-3 mr-1" />Product ID
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -333,6 +337,59 @@ export default function RunTickets() {
               )}
             </div>
           )}
+        </TabsContent>
+
+        {/* SPECTRA-MATCH Tab for Product Identification */}
+        <TabsContent value="spectra" className="mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="bg-gradient-to-br from-purple-500/5 to-cyan-500/5 border-purple-500/30 rounded-xl">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Target className="w-5 h-5 text-purple-400" />
+                  Product Verification
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  Use run ticket values to identify the product being transported
+                </p>
+              </CardHeader>
+              <CardContent>
+                <SpectraMatchWidget
+                  compact={false}
+                  showSaveButton={true}
+                  onIdentify={(result) => {
+                    toast.success(`Product identified: ${result.primaryMatch.name} (${result.primaryMatch.confidence}% confidence)`);
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Beaker className="w-5 h-5 text-cyan-400" />
+                  Why Verify Product?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <p className="text-white font-medium mb-1">Run Ticket Accuracy</p>
+                  <p className="text-sm text-slate-400">Verify the crude/fuel type matches the BOL before signing off</p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <p className="text-white font-medium mb-1">Quality Assurance</p>
+                  <p className="text-sm text-slate-400">Confirm API gravity and BS&W match expected values</p>
+                </div>
+                <div className="p-3 rounded-lg bg-slate-700/30">
+                  <p className="text-white font-medium mb-1">Documentation</p>
+                  <p className="text-sm text-slate-400">Save identification results to the run ticket record</p>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                  <p className="text-purple-400 font-medium mb-1">SPECTRA-MATCH™</p>
+                  <p className="text-sm text-slate-400">Powered by ESANG AI™ for accurate product identification</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
 

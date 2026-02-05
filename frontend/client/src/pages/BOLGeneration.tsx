@@ -11,13 +11,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { trpc } from "@/lib/trpc";
 import {
   FileText, Search, Plus, Download, Printer, CheckCircle,
-  Clock, AlertTriangle, Truck, Calendar, Eye
+  Clock, AlertTriangle, Truck, Calendar, Eye, Beaker, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
 export default function BOLGeneration() {
   const [search, setSearch] = useState("");
@@ -143,6 +145,33 @@ export default function BOLGeneration() {
           </>
         )}
       </div>
+
+      {/* SPECTRA-MATCH Quick Access */}
+      <Card className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border-purple-500/30 rounded-xl">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-purple-500/20">
+                <Beaker className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-white font-bold flex items-center gap-2">
+                  SPECTRA-MATCH™ Product Verification
+                  <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">AI</Badge>
+                </p>
+                <p className="text-sm text-slate-400">Verify crude/fuel product identity before generating BOL</p>
+              </div>
+            </div>
+            <Button 
+              className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+              onClick={() => window.location.href = '/spectra-match'}
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Open SPECTRA-MATCH
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-4">

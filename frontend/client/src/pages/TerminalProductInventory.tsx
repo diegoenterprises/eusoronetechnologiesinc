@@ -14,9 +14,11 @@ import { Progress } from "@/components/ui/progress";
 import { trpc } from "@/lib/trpc";
 import {
   Database, Search, AlertTriangle, TrendingUp, TrendingDown,
-  Droplet, ArrowUpRight, ArrowDownRight, RefreshCw
+  Droplet, ArrowUpRight, ArrowDownRight, RefreshCw, Beaker, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
 export default function TerminalProductInventory() {
   const [search, setSearch] = useState("");
@@ -99,6 +101,33 @@ export default function TerminalProductInventory() {
           ))
         )}
       </div>
+
+      {/* SPECTRA-MATCH Product Verification */}
+      <Card className="bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border-purple-500/30 rounded-xl">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-lg bg-purple-500/20">
+                <Beaker className="w-6 h-6 text-purple-400" />
+              </div>
+              <div>
+                <p className="text-white font-bold">SPECTRA-MATCH™ Product Identification</p>
+                <p className="text-sm text-slate-400">Verify crude/fuel identity using tank gauge readings</p>
+              </div>
+            </div>
+            <Button 
+              className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+              onClick={() => {
+                window.location.href = '/terminal/scada';
+                toast.info("Navigate to SCADA for SPECTRA-MATCH verification");
+              }}
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Verify Product
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Low Inventory Alerts */}
       {alerts.length > 0 && (
