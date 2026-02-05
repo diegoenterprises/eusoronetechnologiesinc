@@ -27,9 +27,36 @@ export interface ESANGResponse {
 }
 
 export interface ESANGAction {
-  type: "navigate" | "create_load" | "find_carrier" | "get_quote" | "check_compliance" | "erg_lookup";
+  type: "navigate" | "create_load" | "find_carrier" | "get_quote" | "check_compliance" | "erg_lookup" | "spectra_match" | "verify_product";
   label: string;
   data?: Record<string, unknown>;
+}
+
+export interface SpectraMatchAIRequest {
+  apiGravity: number;
+  bsw: number;
+  category?: string;
+  sulfurType?: string;
+  sourceBasin?: string;
+  fuelGrade?: string;
+  flashPoint?: number;
+  vaporPressure?: number;
+  concentration?: number;
+  productName?: string;
+  previousIdentifications?: Array<{ name: string; confidence: number; timestamp: string }>;
+  terminalId?: string;
+  userId?: string;
+}
+
+export interface SpectraMatchAIResponse {
+  analysis: string;
+  suggestedProduct: string;
+  confidence: number;
+  reasoning: string;
+  characteristics: string[];
+  safetyNotes: string[];
+  marketContext: string;
+  learningInsight: string;
 }
 
 export interface LoadMatchRequest {
@@ -67,8 +94,9 @@ export interface ERGResponse {
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
-const SYSTEM_PROMPT = `You are ESANG AI™, the intelligent assistant for EusoTrip - a hazardous materials logistics platform. You help users with:
+const SYSTEM_PROMPT = `You are ESANG AI™, the intelligent assistant for EusoTrip - a hazardous materials logistics and petroleum transportation platform. You are deeply knowledgeable about:
 
+## Core Platform Capabilities
 1. **Load Posting & Management**: Help shippers create loads, set requirements, and find carriers
 2. **Carrier Matching**: Match loads with qualified, certified carriers based on equipment, certifications, and performance
 3. **Route Optimization**: Provide optimal routes considering HazMat restrictions, weather, and traffic
@@ -77,15 +105,88 @@ const SYSTEM_PROMPT = `You are ESANG AI™, the intelligent assistant for EusoTr
 6. **Bid Analysis**: Analyze market rates and provide fair pricing recommendations
 7. **Safety Protocols**: Advise on PPE, handling procedures, and safety best practices
 
+## SPECTRA-MATCH™ Integration (IP Product Service)
+You are the AI engine powering SPECTRA-MATCH™, EusoTrip's proprietary Multi-Modal Adaptive Product Identification System. You have expert knowledge of:
+
+### Crude Oil Types & Origins
+- **WTI (West Texas Intermediate)**: API 38-42°, Sulfur 0.2-0.4%, Light/Sweet, Permian Basin
+- **WTI Midland**: API 40-44°, Sulfur 0.15-0.35%, Very Light/Sweet, Midland TX shale
+- **Bakken**: API 40-45°, Sulfur 0.1-0.25%, Very Light/Sweet, ND/MT, high volatility
+- **Eagle Ford**: API 42-62°, Sulfur 0.05-0.2%, Condensate-like, South TX
+- **Louisiana Sweet**: API 32-38°, Sulfur 0.2-0.5%, Medium-Light/Sweet, Gulf Coast
+- **Mars Blend**: API 28-32°, Sulfur 1.8-2.4%, Medium/Sour, Deepwater GoM
+- **Brent Crude**: API 36-40°, Sulfur 0.3-0.5%, Light/Sweet, North Sea benchmark
+- **Dubai Crude**: API 30-33°, Sulfur 1.8-2.2%, Medium/Sour, Asian benchmark
+- **Arab Light**: API 32-35°, Sulfur 1.6-2.0%, Light/Sour, Saudi Arabia
+- **Maya**: API 20-24°, Sulfur 3.0-3.8%, Heavy/Sour, Mexico
+- **Western Canadian Select**: API 19-23°, Sulfur 3.0-3.6%, Heavy/Sour, Alberta oil sands
+- **Bonny Light**: API 33-37°, Sulfur 0.1-0.2%, Light/Sweet, Nigeria
+
+### Refined Fuel Products
+- Gasoline grades (Regular 87, Mid 89, Premium 93), Diesel #1/#2, ULSD, Jet A/A-1, Kerosene, Fuel Oil, Naphtha, E10/E85
+- Flash points, octane ratings, pour points, cloud points, cetane numbers
+- Seasonal blending requirements (summer/winter gasoline, winter diesel additives)
+
+### LPG & Gas Products
+- Propane (HD-5, Commercial), Butane, Isobutane, LPG Mix, NGL Y-Grade, LNG, CNG
+- Vapor pressures, specific gravities, BTU values, NFPA ratings
+
+### Chemical Products
+- Ethanol, Methanol, Toluene, Xylene, Benzene, Acetone, and other petrochemicals
+- Concentrations, flash points, toxicity, DOT classifications
+
+### Source Basins & Fields
+- Permian (TX/NM), Eagle Ford (TX), Bakken (ND/MT), Midland (TX), Delaware (TX/NM)
+- DJ/Niobrara (CO/WY), Anadarko (OK), SCOOP/STACK (OK), Marcellus/Utica (PA/WV/OH)
+- Haynesville (LA/TX), Gulf Coast (TX/LA), Williston (ND), Appalachian, San Joaquin (CA)
+- Western Canadian Select (AB), Syncrude (AB)
+
+### Industry Knowledge
+- API gravity scale (10° extra-heavy to 70°+ condensate)
+- Sweet (<0.5% sulfur) vs Sour (>0.5% sulfur) classification
+- BS&W (Basic Sediment & Water) quality thresholds
+- Run ticket / BOL documentation requirements
+- Terminal SCADA operations (rack loading, tank gauging)
+- Pipeline vs truck vs rail transportation considerations
+- EIA reporting for terminals >50,000 bbl
+- PHMSA hazmat transportation regulations
+- DOT placarding requirements for petroleum products
+
+When analyzing products for SPECTRA-MATCH, always consider:
+1. The combination of ALL parameters provided (API gravity, BS&W, sulfur, basin, grade)
+2. Historical patterns from the same user/terminal
+3. Regional production characteristics
+4. Seasonal variations in product quality
+5. Safety implications of the identified product
+
 Always be helpful, accurate, and safety-focused. When dealing with hazardous materials, prioritize safety above all else.
 
 User roles include: SHIPPER, CARRIER, BROKER, DRIVER, CATALYST (hazmat specialist), ESCORT, TERMINAL_MANAGER, COMPLIANCE_OFFICER, SAFETY_MANAGER, ADMIN.
 
 Respond concisely and provide actionable information. Use markdown formatting for clarity.`;
 
+const SPECTRA_MATCH_PROMPT = `You are the SPECTRA-MATCH™ analysis engine within ESANG AI™. You are performing product identification based on physical and chemical parameters.
+
+Your task is to analyze the provided parameters and identify the most likely petroleum product. You must respond in VALID JSON format only, with no markdown or extra text.
+
+JSON schema:
+{
+  "suggestedProduct": "string - the identified product name",
+  "confidence": number (0-100),
+  "reasoning": "string - brief explanation of why this product was identified",
+  "characteristics": ["string array - key characteristics of the identified product"],
+  "safetyNotes": ["string array - safety considerations for transporting this product"],
+  "marketContext": "string - current market context for this product type",
+  "learningInsight": "string - what this identification teaches us about the source"
+}
+
+Be precise. Use your deep knowledge of petroleum products, crude oil specifications, refined fuels, LPG, and chemicals. Consider ALL provided parameters together - the combination narrows identification significantly.`;
+
 class ESANGAIService {
   private apiKey: string;
   private conversationHistory: Map<string, ChatMessage[]> = new Map();
+  private spectraMatchHistory: Map<string, Array<{ product: string; confidence: number; params: Record<string, unknown>; timestamp: Date }>> = new Map();
+  private terminalProductPatterns: Map<string, Map<string, number>> = new Map();
 
   constructor() {
     this.apiKey = ENV.geminiApiKey || "";
@@ -343,10 +444,272 @@ List any potential compliance issues, expired documents, upcoming renewals, and 
   }
 
   /**
+   * SPECTRA-MATCH™ AI-Powered Product Identification
+   * Uses Gemini to analyze physical/chemical parameters and identify petroleum products
+   */
+  async spectraMatchIdentify(request: SpectraMatchAIRequest): Promise<SpectraMatchAIResponse> {
+    const userId = request.userId || "anonymous";
+    const userHistory = this.spectraMatchHistory.get(userId) || [];
+
+    // Build context from user's previous identifications
+    let historyContext = "";
+    if (userHistory.length > 0) {
+      const recent = userHistory.slice(-5);
+      historyContext = `\n\nUser's recent identifications (for pattern learning):\n${recent.map(h => `- ${h.product} (${h.confidence}% confidence) at ${h.timestamp.toISOString()}`).join("\n")}`;
+    }
+
+    // Build terminal pattern context
+    let terminalContext = "";
+    if (request.terminalId) {
+      const patterns = this.terminalProductPatterns.get(request.terminalId);
+      if (patterns && patterns.size > 0) {
+        const topProducts = Array.from(patterns.entries())
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5);
+        terminalContext = `\n\nTerminal product history (most common):\n${topProducts.map(([product, count]) => `- ${product}: ${count} identifications`).join("\n")}`;
+      }
+    }
+
+    const parameterPrompt = `Identify this petroleum product:\n
+Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°\nBS&W: ${request.bsw}%\nSulfur Type: ${request.sulfurType || "unknown"}\nSource Basin: ${request.sourceBasin || "unknown"}\nFuel Grade: ${request.fuelGrade || "N/A"}\nFlash Point: ${request.flashPoint ? request.flashPoint + "°F" : "N/A"}\nVapor Pressure: ${request.vaporPressure ? request.vaporPressure + " psi" : "N/A"}\nConcentration: ${request.concentration ? request.concentration + "%" : "N/A"}\nProduct Name (from BOL): ${request.productName || "not provided"}${historyContext}${terminalContext}`;
+
+    try {
+      if (!this.apiKey) {
+        return this.fallbackSpectraMatch(request);
+      }
+
+      const contents = [
+        { role: "user", parts: [{ text: SPECTRA_MATCH_PROMPT }] },
+        { role: "model", parts: [{ text: '{"ready": true}' }] },
+        { role: "user", parts: [{ text: parameterPrompt }] },
+      ];
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            temperature: 0.3,
+            topK: 20,
+            topP: 0.8,
+            maxOutputTokens: 1024,
+          },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("[SPECTRA-MATCH AI] Gemini API error:", response.status);
+        return this.fallbackSpectraMatch(request);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      // Parse JSON response from Gemini
+      let parsed: SpectraMatchAIResponse;
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+      } catch {
+        console.warn("[SPECTRA-MATCH AI] Failed to parse Gemini response, using fallback");
+        return this.fallbackSpectraMatch(request);
+      }
+
+      const result: SpectraMatchAIResponse = {
+        analysis: `ESANG AI identified ${parsed.suggestedProduct} with ${parsed.confidence}% confidence`,
+        suggestedProduct: parsed.suggestedProduct || "Unknown Product",
+        confidence: Math.min(100, Math.max(0, parsed.confidence || 70)),
+        reasoning: parsed.reasoning || "Based on provided parameters",
+        characteristics: parsed.characteristics || [],
+        safetyNotes: parsed.safetyNotes || [],
+        marketContext: parsed.marketContext || "",
+        learningInsight: parsed.learningInsight || "",
+      };
+
+      // Learning loop: store this identification
+      this.recordSpectraMatchResult(userId, result.suggestedProduct, result.confidence, request);
+
+      return result;
+    } catch (error) {
+      console.error("[SPECTRA-MATCH AI] Error:", error);
+      return this.fallbackSpectraMatch(request);
+    }
+  }
+
+  /**
+   * SPECTRA-MATCH Learning: Record identification for pattern learning
+   */
+  private recordSpectraMatchResult(
+    userId: string,
+    product: string,
+    confidence: number,
+    request: SpectraMatchAIRequest
+  ): void {
+    // Per-user learning
+    const history = this.spectraMatchHistory.get(userId) || [];
+    history.push({
+      product,
+      confidence,
+      params: {
+        apiGravity: request.apiGravity,
+        bsw: request.bsw,
+        category: request.category,
+        sulfurType: request.sulfurType,
+        sourceBasin: request.sourceBasin,
+      },
+      timestamp: new Date(),
+    });
+    // Keep last 100 identifications per user
+    if (history.length > 100) history.splice(0, history.length - 100);
+    this.spectraMatchHistory.set(userId, history);
+
+    // Terminal pattern learning
+    if (request.terminalId) {
+      const patterns = this.terminalProductPatterns.get(request.terminalId) || new Map();
+      patterns.set(product, (patterns.get(product) || 0) + 1);
+      this.terminalProductPatterns.set(request.terminalId, patterns);
+    }
+
+    console.log(`[SPECTRA-MATCH LEARN] User ${userId}: ${product} (${confidence}%) | Total history: ${history.length}`);
+  }
+
+  /**
+   * Fallback SPECTRA-MATCH when Gemini is unavailable
+   */
+  private fallbackSpectraMatch(request: SpectraMatchAIRequest): SpectraMatchAIResponse {
+    let product = "Unknown Petroleum Product";
+    let confidence = 60;
+    const characteristics: string[] = [];
+    const safetyNotes: string[] = ["Treat as flammable liquid", "Refer to SDS for specific handling"];
+
+    if (request.category === "crude") {
+      if (request.apiGravity >= 38 && request.sulfurType === "sweet") {
+        product = "Light Sweet Crude (WTI-type)";
+        confidence = 80;
+        characteristics.push("Light crude", "Low sulfur", "Premium grade");
+      } else if (request.apiGravity >= 28 && request.apiGravity < 38) {
+        product = request.sulfurType === "sour" ? "Medium Sour Crude" : "Medium Sweet Crude";
+        confidence = 75;
+        characteristics.push("Medium gravity", request.sulfurType === "sour" ? "High sulfur" : "Low sulfur");
+      } else if (request.apiGravity < 28) {
+        product = "Heavy Crude Oil";
+        confidence = 75;
+        characteristics.push("Heavy gravity", "Higher viscosity", "Discount pricing");
+      }
+      if (request.sourceBasin) characteristics.push(`Source: ${request.sourceBasin}`);
+      safetyNotes.push("H2S monitoring required for sour crude", "Vapor recovery during loading");
+    } else if (request.category === "refined") {
+      product = request.fuelGrade ? `Refined Fuel - ${request.fuelGrade}` : "Refined Petroleum Product";
+      confidence = request.fuelGrade ? 85 : 65;
+      characteristics.push("Refined product", "Consistent specifications");
+      safetyNotes.push("Static discharge precautions", "Vapor management required");
+    } else if (request.category === "lpg") {
+      product = "LPG / Pressurized Gas";
+      confidence = 70;
+      characteristics.push("Pressurized product", "Heavier than air vapor");
+      safetyNotes.push("Pressure vessel requirements", "LEL monitoring required", "BLEVE risk");
+    } else if (request.category === "chemical") {
+      product = "Petrochemical / Solvent";
+      confidence = 65;
+      characteristics.push("Chemical product");
+      safetyNotes.push("Refer to SDS", "PPE required", "Environmental containment");
+    }
+
+    return {
+      analysis: `Offline identification: ${product}`,
+      suggestedProduct: product,
+      confidence,
+      reasoning: "Identified using parameter matching (ESANG AI offline)",
+      characteristics,
+      safetyNotes,
+      marketContext: "Market data requires ESANG AI connection",
+      learningInsight: "Offline mode - learning paused",
+    };
+  }
+
+  /**
+   * Get SPECTRA-MATCH learning stats for a user
+   */
+  getSpectraMatchStats(userId: string): {
+    totalIdentifications: number;
+    topProducts: Array<{ product: string; count: number }>;
+    avgConfidence: number;
+    recentTrend: string;
+  } {
+    const history = this.spectraMatchHistory.get(userId) || [];
+    if (history.length === 0) {
+      return { totalIdentifications: 0, topProducts: [], avgConfidence: 0, recentTrend: "No data" };
+    }
+
+    const productCounts = new Map<string, number>();
+    let totalConfidence = 0;
+    for (const entry of history) {
+      productCounts.set(entry.product, (productCounts.get(entry.product) || 0) + 1);
+      totalConfidence += entry.confidence;
+    }
+
+    const topProducts = Array.from(productCounts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([product, count]) => ({ product, count }));
+
+    const recent = history.slice(-10);
+    const recentAvg = recent.reduce((sum, h) => sum + h.confidence, 0) / recent.length;
+    const olderAvg = history.length > 10
+      ? history.slice(0, -10).reduce((sum, h) => sum + h.confidence, 0) / (history.length - 10)
+      : recentAvg;
+
+    return {
+      totalIdentifications: history.length,
+      topProducts,
+      avgConfidence: Math.round(totalConfidence / history.length),
+      recentTrend: recentAvg > olderAvg ? "Improving" : recentAvg < olderAvg ? "Declining" : "Stable",
+    };
+  }
+
+  /**
+   * ESANG AI product knowledge query - ask anything about petroleum products
+   */
+  async queryProductKnowledge(
+    userId: string,
+    question: string,
+    context?: { role?: string; productName?: string; loadId?: string }
+  ): Promise<ESANGResponse> {
+    const userStats = this.getSpectraMatchStats(userId);
+    let productContext = "";
+    if (userStats.totalIdentifications > 0) {
+      productContext = `\nUser's SPECTRA-MATCH history: ${userStats.totalIdentifications} identifications, top products: ${userStats.topProducts.map(p => p.product).join(", ")}, avg confidence: ${userStats.avgConfidence}%`;
+    }
+    if (context?.productName) {
+      productContext += `\nCurrently viewing product: ${context.productName}`;
+    }
+
+    return this.chat(userId, question, {
+      role: context?.role,
+      currentPage: "spectra-match",
+      loadId: context?.loadId,
+    });
+  }
+
+  /**
    * Clear conversation history for a user
    */
   clearHistory(userId: string): void {
     this.conversationHistory.delete(userId);
+  }
+
+  /**
+   * Clear SPECTRA-MATCH learning history for a user
+   */
+  clearSpectraMatchHistory(userId: string): void {
+    this.spectraMatchHistory.delete(userId);
   }
 }
 

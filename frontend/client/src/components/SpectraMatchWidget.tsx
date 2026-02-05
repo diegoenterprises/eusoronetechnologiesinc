@@ -79,6 +79,15 @@ interface SpectraMatchResult {
   };
   parameterAnalysis: Record<string, any>;
   alternativeMatches: Array<{ id: string; name: string; type: string; confidence: number }>;
+  esangAI?: {
+    analysis: string;
+    reasoning: string;
+    safetyNotes: string[];
+    marketContext: string;
+    learningInsight: string;
+    poweredBy: string;
+  } | null;
+  esangVerified?: boolean;
 }
 
 interface SpectraMatchWidgetProps {
@@ -490,6 +499,36 @@ export default function SpectraMatchWidget({
                       <span className="text-cyan-400 ml-1">{alt.confidence}%</span>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* ESANG AI Intelligence Layer */}
+              {result.esangAI && (
+                <div className="space-y-2 pt-2 border-t border-slate-700/50">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <span className="text-[10px] text-purple-400 font-medium">ESANG AI Analysis</span>
+                    {result.esangVerified && (
+                      <Badge className="bg-green-500/20 text-green-400 border-0 text-[9px] px-1 py-0 ml-auto">Verified</Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">{result.esangAI.reasoning}</p>
+                  {result.esangAI.safetyNotes.length > 0 && (
+                    <div className="space-y-1">
+                      {result.esangAI.safetyNotes.slice(0, 2).map((note: string, i: number) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[10px] text-yellow-400/80">
+                          <Flame className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                          <span>{note}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {result.esangAI.marketContext && (
+                    <p className="text-[10px] text-cyan-400/70">{result.esangAI.marketContext}</p>
+                  )}
+                  {result.esangAI.learningInsight && (
+                    <p className="text-[10px] text-slate-500 italic">{result.esangAI.learningInsight}</p>
+                  )}
                 </div>
               )}
 

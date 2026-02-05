@@ -18,6 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Droplets,
   Thermometer,
@@ -33,8 +34,17 @@ import {
   MapPin,
   Clock,
   FileText,
+  Brain,
+  Flame,
+  TrendingUp,
+  MessageSquare,
+  Send,
+  Shield,
+  BarChart3,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function SpectraMatch() {
   // Input state
@@ -43,14 +53,28 @@ export default function SpectraMatch() {
   const [boilingPoint, setBoilingPoint] = useState<number | undefined>(180);
   const [sulfur, setSulfur] = useState<number | undefined>(0.24);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
   
   // Queries
   const crudeTypesQuery = (trpc as any).spectraMatch.getCrudeTypes.useQuery();
   const historyQuery = (trpc as any).spectraMatch.getHistory.useQuery({ limit: 5 });
+  const learningStatsQuery = (trpc as any).spectraMatch.getLearningStats.useQuery();
   
   // Mutations
-  const identifyMutation = (trpc as any).spectraMatch.identify.useMutation();
+  const identifyMutation = (trpc as any).spectraMatch.identify.useMutation({
+    onSuccess: (data: any) => {
+      if (data.esangVerified) {
+        toast.success("ESANG AI verified identification");
+      }
+    },
+  });
   const saveToRunTicketMutation = (trpc as any).spectraMatch.saveToRunTicket.useMutation();
+  const askAIMutation = (trpc as any).spectraMatch.askAboutProduct.useMutation({
+    onSuccess: (data: any) => {
+      setAiResponse(data.message);
+    },
+  });
 
   const handleIdentify = () => {
     identifyMutation.mutate({
@@ -59,6 +83,16 @@ export default function SpectraMatch() {
       boilingPoint,
       sulfur,
     });
+  };
+
+  const handleAskAI = () => {
+    if (!aiQuestion.trim()) return;
+    const productName = identifyMutation.data?.primaryMatch?.name;
+    askAIMutation.mutate({
+      question: aiQuestion,
+      productName,
+    });
+    setAiQuestion("");
   };
 
   const handleReset = () => {
@@ -423,6 +457,122 @@ export default function SpectraMatch() {
                 </CardContent>
               </Card>
 
+              {/* ESANG AI Intelligence Panel */}
+              {identifyMutation.data?.esangAI && (
+                <Card className="bg-gradient-to-br from-purple-500/5 to-cyan-500/5 border-purple-500/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-purple-400" />
+                      ESANG AI Intelligence
+                      <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs ml-auto">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        {identifyMutation.data.esangAI.poweredBy}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* AI Reasoning */}
+                    <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-4 h-4 text-cyan-400" />
+                        <span className="text-sm text-white font-medium">Reasoning</span>
+                      </div>
+                      <p className="text-sm text-slate-300 leading-relaxed">{identifyMutation.data.esangAI.reasoning}</p>
+                    </div>
+
+                    {/* Safety Notes */}
+                    {identifyMutation.data.esangAI.safetyNotes?.length > 0 && (
+                      <div className="p-3 rounded-lg bg-yellow-500/5 border border-yellow-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Shield className="w-4 h-4 text-yellow-400" />
+                          <span className="text-sm text-yellow-400 font-medium">Safety Notes</span>
+                        </div>
+                        <div className="space-y-1">
+                          {identifyMutation.data.esangAI.safetyNotes.map((note: string, i: number) => (
+                            <div key={i} className="flex items-start gap-2 text-sm text-slate-300">
+                              <Flame className="w-3.5 h-3.5 text-orange-400 mt-0.5 flex-shrink-0" />
+                              <span>{note}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Market Context */}
+                    {identifyMutation.data.esangAI.marketContext && (
+                      <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <TrendingUp className="w-4 h-4 text-green-400" />
+                          <span className="text-sm text-white font-medium">Market Context</span>
+                        </div>
+                        <p className="text-sm text-slate-300">{identifyMutation.data.esangAI.marketContext}</p>
+                      </div>
+                    )}
+
+                    {/* Learning Insight */}
+                    {identifyMutation.data.esangAI.learningInsight && (
+                      <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Brain className="w-4 h-4 text-purple-400" />
+                          <span className="text-sm text-purple-400 font-medium">Learning Insight</span>
+                        </div>
+                        <p className="text-sm text-slate-400 italic">{identifyMutation.data.esangAI.learningInsight}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Ask ESANG AI About This Product */}
+              <Card className="bg-slate-900/50 border-slate-700/50">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-white flex items-center gap-2 text-base">
+                    <MessageSquare className="w-4 h-4 text-cyan-400" />
+                    Ask ESANG AI About This Product
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={aiQuestion}
+                      onChange={(e: any) => setAiQuestion(e.target.value)}
+                      placeholder="Ask anything about this product (safety, handling, pricing, regulations, compatibility...)"
+                      className="bg-slate-800/50 border-slate-700/50 text-white min-h-[60px] resize-none"
+                      onKeyDown={(e: any) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleAskAI())}
+                    />
+                    <Button
+                      className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 px-3"
+                      onClick={handleAskAI}
+                      disabled={askAIMutation.isPending || !aiQuestion.trim()}
+                    >
+                      {askAIMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  {aiResponse && (
+                    <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <span className="text-xs text-purple-400 font-medium">ESANG AI Response</span>
+                      </div>
+                      <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {["Safety handling procedures?", "DOT placard requirements?", "Compatible with other products?", "Current market pricing?"].map((q) => (
+                      <Button
+                        key={q}
+                        variant="outline"
+                        size="sm"
+                        className="border-slate-700 text-slate-400 hover:text-white text-xs h-7"
+                        onClick={() => { setAiQuestion(q); }}
+                      >
+                        {q}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Actions */}
               <div className="flex gap-3">
                 <Button
@@ -470,6 +620,64 @@ export default function SpectraMatch() {
               </CardContent>
             </Card>
           )}
+
+          {/* ESANG AI Learning Stats */}
+          <Card className="bg-gradient-to-br from-purple-500/5 to-cyan-500/5 border-purple-500/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white flex items-center gap-2 text-base">
+                <BarChart3 className="w-4 h-4 text-purple-400" />
+                SPECTRA-MATCH Learning Stats
+                <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px] ml-auto">
+                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />ESANG AI
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {learningStatsQuery.isLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-16 w-full" />
+                  <Skeleton className="h-16 w-full" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                      <p className="text-2xl font-bold text-cyan-400">{learningStatsQuery.data?.totalIdentifications || 0}</p>
+                      <p className="text-[10px] text-slate-500">Identifications</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                      <p className="text-2xl font-bold text-green-400">{learningStatsQuery.data?.avgConfidence || 0}%</p>
+                      <p className="text-[10px] text-slate-500">Avg Confidence</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-800/50 text-center">
+                      <p className={cn(
+                        "text-2xl font-bold",
+                        learningStatsQuery.data?.recentTrend === "Improving" ? "text-green-400" :
+                        learningStatsQuery.data?.recentTrend === "Declining" ? "text-red-400" : "text-yellow-400"
+                      )}>
+                        {learningStatsQuery.data?.recentTrend === "Improving" ? "Up" :
+                         learningStatsQuery.data?.recentTrend === "Declining" ? "Down" : "--"}
+                      </p>
+                      <p className="text-[10px] text-slate-500">Trend</p>
+                    </div>
+                  </div>
+                  {learningStatsQuery.data?.topProducts?.length > 0 && (
+                    <div>
+                      <p className="text-xs text-slate-400 mb-2">Most Identified Products</p>
+                      <div className="space-y-1">
+                        {learningStatsQuery.data.topProducts.map((p: any) => (
+                          <div key={p.product} className="flex items-center justify-between p-2 rounded bg-slate-800/30">
+                            <span className="text-sm text-white">{p.product}</span>
+                            <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">{p.count}x</Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Crude Oil Database Reference */}
           <Card className="bg-slate-900/50 border-slate-700/50">

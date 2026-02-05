@@ -16,6 +16,7 @@ import { sql, desc } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
+import { esangAI, type SpectraMatchAIRequest } from "../_core/esangAI";
 
 // Crude oil database with known specifications
 const CRUDE_OIL_DATABASE = [
@@ -255,7 +256,7 @@ function matchCrudeOil(params: {
 }
 
 export const spectraMatchRouter = router({
-  // Identify crude oil origin based on parameters
+  // Identify crude oil origin based on parameters — HYBRID: Static + ESANG AI
   identify: protectedProcedure
     .input(
       z.object({
@@ -263,6 +264,14 @@ export const spectraMatchRouter = router({
         bsw: z.number().min(0).max(5).describe("Basic Sediment & Water percentage"),
         boilingPoint: z.number().min(50).max(600).optional().describe("Boiling point in Celsius"),
         sulfur: z.number().min(0).max(6).optional().describe("Sulfur content percentage"),
+        category: z.string().optional(),
+        sulfurType: z.string().optional(),
+        sourceBasin: z.string().optional(),
+        fuelGrade: z.string().optional(),
+        flashPoint: z.number().optional(),
+        vaporPressure: z.number().optional(),
+        concentration: z.number().optional(),
+        productName: z.string().optional(),
         location: z.object({
           lat: z.number().optional(),
           lng: z.number().optional(),
@@ -270,19 +279,46 @@ export const spectraMatchRouter = router({
         }).optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Run static matching
       const matches = matchCrudeOil(input);
       const topMatch = matches[0];
       const alternativeMatches = matches.slice(1, 5);
+
+      // Run ESANG AI analysis in parallel (non-blocking)
+      const aiRequest: SpectraMatchAIRequest = {
+        apiGravity: input.apiGravity,
+        bsw: input.bsw,
+        category: input.category,
+        sulfurType: input.sulfurType,
+        sourceBasin: input.sourceBasin,
+        fuelGrade: input.fuelGrade,
+        flashPoint: input.flashPoint,
+        vaporPressure: input.vaporPressure,
+        concentration: input.concentration,
+        productName: input.productName,
+        terminalId: input.location?.terminalId,
+        userId: String(ctx.user?.id || "anonymous"),
+      };
+
+      let aiAnalysis = null;
+      try {
+        aiAnalysis = await esangAI.spectraMatchIdentify(aiRequest);
+      } catch (err) {
+        console.warn("[SPECTRA-MATCH] ESANG AI analysis failed, using static only", err);
+      }
+
+      // Merge: if AI gives higher confidence, prefer AI product name but keep static data structure
+      const useAI = aiAnalysis && aiAnalysis.confidence > topMatch.confidence;
       
       return {
         primaryMatch: {
-          id: topMatch.crude.id,
-          name: topMatch.crude.name,
+          id: useAI ? aiAnalysis!.suggestedProduct.toLowerCase().replace(/\s+/g, "_") : topMatch.crude.id,
+          name: useAI ? aiAnalysis!.suggestedProduct : topMatch.crude.name,
           type: topMatch.crude.type,
           region: topMatch.crude.region,
-          confidence: topMatch.confidence,
-          characteristics: topMatch.crude.characteristics,
+          confidence: useAI ? aiAnalysis!.confidence : topMatch.confidence,
+          characteristics: useAI ? aiAnalysis!.characteristics : topMatch.crude.characteristics,
         },
         parameterAnalysis: {
           apiGravity: {
@@ -328,9 +364,74 @@ export const spectraMatchRouter = router({
           type: m.crude.type,
           confidence: m.confidence,
         })),
+        // ESANG AI Intelligence Layer
+        esangAI: aiAnalysis ? {
+          analysis: aiAnalysis.analysis,
+          reasoning: aiAnalysis.reasoning,
+          safetyNotes: aiAnalysis.safetyNotes,
+          marketContext: aiAnalysis.marketContext,
+          learningInsight: aiAnalysis.learningInsight,
+          poweredBy: "ESANG AI™ / Gemini",
+        } : null,
         timestamp: new Date().toISOString(),
-        esangVerified: true,
+        esangVerified: !!aiAnalysis,
       };
+    }),
+
+  // ESANG AI-only identification (full AI mode)
+  identifyWithAI: protectedProcedure
+    .input(
+      z.object({
+        apiGravity: z.number().min(10).max(70),
+        bsw: z.number().min(0).max(5),
+        category: z.string().optional(),
+        sulfurType: z.string().optional(),
+        sourceBasin: z.string().optional(),
+        fuelGrade: z.string().optional(),
+        flashPoint: z.number().optional(),
+        vaporPressure: z.number().optional(),
+        concentration: z.number().optional(),
+        productName: z.string().optional(),
+        terminalId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const result = await esangAI.spectraMatchIdentify({
+        ...input,
+        userId: String(ctx.user?.id || "anonymous"),
+      });
+      return {
+        ...result,
+        poweredBy: "ESANG AI™ / Gemini",
+        timestamp: new Date().toISOString(),
+      };
+    }),
+
+  // Get SPECTRA-MATCH learning stats for the current user
+  getLearningStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      const stats = esangAI.getSpectraMatchStats(String(ctx.user?.id || "anonymous"));
+      return {
+        ...stats,
+        poweredBy: "ESANG AI™",
+      };
+    }),
+
+  // Ask ESANG AI about a product (knowledge query)
+  askAboutProduct: protectedProcedure
+    .input(
+      z.object({
+        question: z.string().min(1).max(2000),
+        productName: z.string().optional(),
+        loadId: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      return esangAI.queryProductKnowledge(
+        String(ctx.user?.id || "anonymous"),
+        input.question,
+        { role: ctx.user?.role, productName: input.productName, loadId: input.loadId }
+      );
     }),
 
   // Get all known crude oil types in database
