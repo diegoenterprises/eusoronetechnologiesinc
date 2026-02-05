@@ -15,10 +15,11 @@ import {
   Gauge, Fuel, Thermometer, Droplets, AlertTriangle, CheckCircle,
   Play, Square, Clock, Truck, RefreshCw, Activity, BarChart3,
   Bell, Settings, Eye, ArrowUp, ArrowDown, Zap, Calendar,
-  Beaker, Target, FileText, Sparkles
+  Beaker, Target, FileText, Sparkles, FlaskConical
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
 interface Rack {
   id: string;
@@ -387,10 +388,23 @@ export default function TerminalSCADA() {
                   )}
 
                   {rack.status === "loading" && (
-                    <Button size="sm" variant="outline" className="w-full mt-2 border-red-500/50 text-red-400">
-                      <Square className="w-3 h-3 mr-1" />
-                      Stop
-                    </Button>
+                    <div className="space-y-2 mt-2">
+                      <Button 
+                        size="sm" 
+                        className="w-full bg-purple-500/20 border border-purple-500/30 text-purple-400 hover:bg-purple-500/30"
+                        onClick={() => {
+                          setActiveTab("spectra");
+                          toast.info(`Verify ${rack.product || "product"} on Rack ${rack.number}`);
+                        }}
+                      >
+                        <Target className="w-3 h-3 mr-1" />
+                        Verify Product
+                      </Button>
+                      <Button size="sm" variant="outline" className="w-full border-red-500/50 text-red-400">
+                        <Square className="w-3 h-3 mr-1" />
+                        Stop
+                      </Button>
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -454,6 +468,19 @@ export default function TerminalSCADA() {
                       </div>
                     )}
                   </div>
+                  {/* SPECTRA-MATCH Product ID */}
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    className="w-full mt-3 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                    onClick={() => {
+                      setActiveTab("spectra");
+                      toast.info(`Identify ${tank.product} in ${tank.name}`);
+                    }}
+                  >
+                    <Beaker className="w-3 h-3 mr-1" />
+                    Verify Product ID
+                  </Button>
                 </CardContent>
               </Card>
             ))}
@@ -596,33 +623,106 @@ export default function TerminalSCADA() {
 
         {/* SpectraMatch / Oil ID Tab */}
         <TabsContent value="spectra" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Inline SPECTRA-MATCH Widget - PRIMARY TERMINAL INTERFACE */}
+            <Card className="bg-gradient-to-br from-purple-500/5 to-cyan-500/5 border-purple-500/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-white flex items-center gap-2">
+                  <FlaskConical className="w-5 h-5 text-purple-400" />
+                  Product Verification
+                </CardTitle>
+                <p className="text-xs text-slate-400 mt-1">
+                  Use run ticket values to verify product at loading rack
+                </p>
+              </CardHeader>
+              <CardContent>
+                <SpectraMatchWidget
+                  compact={false}
+                  showSaveButton={true}
+                  onIdentify={(result) => {
+                    toast.success(`[TERMINAL] Product verified: ${result.primaryMatch.name} (${result.primaryMatch.confidence}% confidence)`);
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Active Rack Product Status */}
+            <Card className="bg-slate-800/50 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Fuel className="w-5 h-5 text-cyan-400" />
+                  Active Rack Products
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {racks.filter((r: any) => r.status === "loading" && r.product).map((rack: any) => (
+                    <div key={rack.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-blue-500/20">
+                          <Fuel className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">Rack {rack.number}</p>
+                          <p className="text-xs text-slate-400">{rack.product} • {rack.currentLoad?.loadNumber}</p>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30"
+                        onClick={() => {
+                          setActiveTab("spectra");
+                          toast.info(`Ready to verify ${rack.product} on Rack ${rack.number}`);
+                        }}
+                      >
+                        <Target className="w-3 h-3 mr-1" />
+                        Verify
+                      </Button>
+                    </div>
+                  ))}
+                  {racks.filter((r: any) => r.status === "loading" && r.product).length === 0 && (
+                    <div className="text-center py-4 text-slate-500 text-sm">
+                      No active loading operations
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
             {/* Quick Actions */}
             <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-purple-400" />
-                  SPECTRA-MATCH™
+                  Quick Actions
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-slate-400">
-                  Multi-modal crude oil identification system powered by ESANG AI™
-                </p>
+              <CardContent className="space-y-3">
                 <Button 
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                  variant="outline" 
+                  className="w-full border-purple-500/30 text-purple-400 justify-start"
                   onClick={() => window.location.href = '/spectra-match'}
                 >
                   <Target className="w-4 h-4 mr-2" />
-                  New Oil Identification
+                  Full Analysis Mode
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="w-full border-purple-500/30 text-purple-400"
+                  className="w-full border-cyan-500/30 text-cyan-400 justify-start"
                   onClick={() => window.location.href = '/euso-ticket'}
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Run Tickets & BOL
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-green-500/30 text-green-400 justify-start"
+                  onClick={() => window.location.href = '/terminal/tank-inventory'}
+                >
+                  <Gauge className="w-4 h-4 mr-2" />
+                  Tank Inventory
                 </Button>
               </CardContent>
             </Card>
