@@ -130,11 +130,11 @@ export default function SystemConfiguration() {
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Auto Backup</p><p className="text-xs text-slate-500">Daily automatic backups</p></div>
-                <Switch checked={localConfig(data as any)?.autoBackup || false} onCheckedChange={(checked) => updateField("data", "autoBackup", checked)} />
+                <Switch checked={(localConfig as any)?.data?.autoBackup || false} onCheckedChange={(checked) => updateField("data", "autoBackup", checked)} />
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Audit Logging</p><p className="text-xs text-slate-500">Log all user actions</p></div>
-                <Switch checked={localConfig(data as any)?.auditLogging || false} onCheckedChange={(checked) => updateField("data", "auditLogging", checked)} />
+                <Switch checked={(localConfig as any)?.data?.auditLogging || false} onCheckedChange={(checked) => updateField("data", "auditLogging", checked)} />
               </div>
             </CardContent>
           </Card>

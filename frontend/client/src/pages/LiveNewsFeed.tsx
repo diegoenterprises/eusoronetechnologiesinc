@@ -254,7 +254,7 @@ export default function LiveNewsFeed() {
               <Badge
                 key={feed.id}
                 variant="outline"
-                className={cn("text-xs", FEED_CATEGORY_COLORS[feed.category])}
+                className={cn("text-xs", (FEED_CATEGORY_COLORS as Record<string, string>)[feed.category])}
               >
                 {feed.name}
               </Badge>

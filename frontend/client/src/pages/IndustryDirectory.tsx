@@ -248,7 +248,7 @@ export default function IndustryDirectory() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                {(Object.keys(COMPANY_TYPE_LABELS) as CompanyType[]).map((type: any) => (
+                {(Object.keys(COMPANY_TYPE_LABELS) as CompanyType[]).map((type: CompanyType) => (
                   <SelectItem key={type} value={type}>{COMPANY_TYPE_LABELS[type]}</SelectItem>
                 ))}
               </SelectContent>
@@ -327,9 +327,9 @@ function CompanyGrid({
             <div className="flex items-start justify-between mb-3">
               <div className={cn(
                 "w-10 h-10 rounded-lg flex items-center justify-center",
-                TYPE_COLORS[company.type]
+                (TYPE_COLORS as Record<string, string>)[company.type]
               )}>
-                {TYPE_ICONS[company.type]}
+                {(TYPE_ICONS as Record<string, React.ReactNode>)[company.type]}
               </div>
               <div className="flex items-center gap-2">
                 {company.isVerified && (
@@ -344,8 +344,8 @@ function CompanyGrid({
             <h3 className="text-white font-medium mb-1">{company.name}</h3>
             
             <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
-              <Badge className={TYPE_COLORS[company.type]} variant="outline">
-                {COMPANY_TYPE_LABELS[company.type]}
+              <Badge className={(TYPE_COLORS as Record<string, string>)[company.type]} variant="outline">
+                {(COMPANY_TYPE_LABELS as Record<string, string>)[company.type]}
               </Badge>
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" />

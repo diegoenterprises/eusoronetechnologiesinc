@@ -212,7 +212,7 @@ export default function DriverPreTripInspection() {
           <div className="flex gap-2 overflow-x-auto pb-2">
             {inspectionCategories.map((cat: any, idx: number) => {
               const Icon = cat.icon;
-              const categoryChecked = cat.items.filter(item => checkedItems[item.id]).length;
+              const categoryChecked = cat.items.filter((item: any) => checkedItems[item.id]).length;
               const isComplete = categoryChecked === cat.items.length;
               
               return (

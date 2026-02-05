@@ -279,8 +279,8 @@ export default function DriverPerformance() {
                     <div key={key} className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-slate-400 capitalize">{key === "customerRating" ? "Customer Rating" : key}</span>
-                        <span className={cn("font-bold", getScoreColor(typeof value === "number" && value <= 5 ? value * 20 : value as number))}>
-                          {key === "customerRating" ? `${value}/5` : value}
+                        <span className={cn("font-bold", getScoreColor(typeof value === "number" && (value as number) <= 5 ? (value as number) * 20 : value as number))}>
+                          {key === "customerRating" ? `${value}/5` : String(value)}
                         </span>
                       </div>
                       <Progress value={key === "customerRating" ? (value as number) * 20 : value as number} className="h-2" />

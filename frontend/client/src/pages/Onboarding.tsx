@@ -134,7 +134,7 @@ export default function Onboarding() {
           <CardContent className="p-4 text-center">
             <FileText className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
             {documentsQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-yellow-400">{(documentsQuery.data as any)?.filter(d => d.status === "pending").length || 0}</p>
+              <p className="text-2xl font-bold text-yellow-400">{(documentsQuery.data as any)?.filter((d: any) => d.status === "pending").length || 0}</p>
             )}
             <p className="text-xs text-slate-400">Docs Pending</p>
           </CardContent>

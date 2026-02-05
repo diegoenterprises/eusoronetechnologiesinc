@@ -90,7 +90,7 @@ export default function SCADA() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Terminals</SelectItem>
-              {(terminalsQuery.data as any)?.map(t => (
+              {(terminalsQuery.data as any)?.map((t: any) => (
                 <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
               ))}
             </SelectContent>

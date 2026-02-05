@@ -66,7 +66,7 @@ export default function MessagingCenter() {
     );
   }
 
-  const selectedConv = (conversationsQuery.data as any)?.find(c => c.id === selectedConversation);
+  const selectedConv = (conversationsQuery.data as any)?.find((c: any) => c.id === selectedConversation);
 
   const handleSendMessage = () => {
     if (!messageText.trim() || !selectedConversation) return;
