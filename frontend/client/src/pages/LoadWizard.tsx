@@ -101,6 +101,10 @@ export default function LoadWizard() {
     rate: "",
     rateType: "flat",
     notes: "",
+    // SPECTRA-MATCH™ identification data
+    spectraMatchId: "",
+    spectraMatchName: "",
+    spectraMatchConfidence: 0,
   });
 
   const classifyMutation = (trpc as any).esang.classifyHazmat.useMutation({
@@ -211,11 +215,29 @@ export default function LoadWizard() {
               <SpectraMatchWidget
                 compact={true}
                 showSaveButton={false}
+                productName={formData.productName}
                 onIdentify={(result) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    spectraMatchId: result.primaryMatch.id,
+                    spectraMatchName: result.primaryMatch.name,
+                    spectraMatchConfidence: result.primaryMatch.confidence,
+                  }));
                   toast.success(`SPECTRA-MATCH™: ${result.primaryMatch.name} (${result.primaryMatch.confidence}% confidence)`);
                 }}
                 className="mt-2"
               />
+            )}
+            {/* Show identified product if set */}
+            {formData.spectraMatchName && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <div className="flex-1">
+                  <p className="text-sm text-white font-medium">{formData.spectraMatchName}</p>
+                  <p className="text-xs text-slate-400">Product identified via SPECTRA-MATCH™</p>
+                </div>
+                <span className="text-green-400 font-bold">{formData.spectraMatchConfidence}%</span>
+              </div>
             )}
           </div>
         );
