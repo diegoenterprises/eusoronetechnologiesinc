@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function PaymentMethods() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const methodsQuery = (trpc as any).billing.getPaymentMethods.useQuery();
 
   const setDefaultMutation = (trpc as any).billing.setDefaultPaymentMethod.useMutation({
@@ -98,7 +100,7 @@ export default function PaymentMethods() {
                           <CheckCircle className="w-4 h-4 mr-1" />Set Default
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => deleteMutation.mutate({ methodId: method.id })} disabled={method.isDefault}>
+                      <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => setDeleteId(method.id)} disabled={method.isDefault}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -136,6 +138,14 @@ export default function PaymentMethods() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this item"
+        onConfirm={() => { if (deleteId) deleteMutation.mutate({ methodId: deleteId }); setDeleteId(null); }}
+        isLoading={deleteMutation?.isPending}
+      />
     </div>
   );
 }

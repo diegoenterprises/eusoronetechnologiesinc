@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 import { useLocation } from "wouter";
 
 export default function Bookmarks() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -159,7 +161,7 @@ export default function Bookmarks() {
                     <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => setLocation(bookmark.path)}>
                       <ExternalLink className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => deleteMutation.mutate({ id: bookmark.id })}>
+                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => setDeleteId(bookmark.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -169,6 +171,14 @@ export default function Bookmarks() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this item"
+        onConfirm={() => { if (deleteId) deleteMutation.mutate({ id: deleteId }); setDeleteId(null); }}
+        isLoading={deleteMutation?.isPending}
+      />
     </div>
   );
 }

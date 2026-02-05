@@ -16,8 +16,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function CompanyDocuments() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
 
   const documentsQuery = (trpc as any).companies.getDocuments.useQuery({ category: categoryFilter === "all" ? undefined : categoryFilter });
@@ -107,7 +109,7 @@ export default function CompanyDocuments() {
                       <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
                         <Download className="w-4 h-4" />
                       </Button>
-                      <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300" onClick={() => deleteMutation.mutate({ documentId: doc.id })}>
+                      <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300" onClick={() => setDeleteId(doc.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
@@ -118,6 +120,14 @@ export default function CompanyDocuments() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this item"
+        onConfirm={() => { if (deleteId) deleteMutation.mutate({ documentId: deleteId }); setDeleteId(null); }}
+        isLoading={deleteMutation?.isPending}
+      />
     </div>
   );
 }

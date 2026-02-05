@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function WebhookManagement() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   const webhooksQuery = (trpc as any).admin.getWebhooks.useQuery({ search });
@@ -129,7 +131,7 @@ export default function WebhookManagement() {
                     <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg" onClick={() => testMutation.mutate({ id: webhook.id })}>
                       <RefreshCw className="w-4 h-4 mr-1" />Test
                     </Button>
-                    <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 rounded-lg" onClick={() => deleteMutation.mutate({ id: webhook.id })}>
+                    <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 rounded-lg" onClick={() => setDeleteId(webhook.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -139,6 +141,14 @@ export default function WebhookManagement() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this item"
+        onConfirm={() => { if (deleteId) deleteMutation.mutate({ id: deleteId }); setDeleteId(null); }}
+        isLoading={deleteMutation?.isPending}
+      />
     </div>
   );
 }

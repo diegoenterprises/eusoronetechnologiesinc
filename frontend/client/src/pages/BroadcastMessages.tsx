@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function BroadcastMessages() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [audience, setAudience] = useState("all");
@@ -120,7 +122,7 @@ export default function BroadcastMessages() {
                         <span>{broadcast.sentAt}</span>
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300" onClick={() => deleteMutation.mutate({ broadcastId: broadcast.id })}>
+                    <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300" onClick={() => setDeleteId(broadcast.id)}>
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
@@ -130,6 +132,14 @@ export default function BroadcastMessages() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this item"
+        onConfirm={() => { if (deleteId) deleteMutation.mutate({ broadcastId: deleteId }); setDeleteId(null); }}
+        isLoading={deleteMutation?.isPending}
+      />
     </div>
   );
 }

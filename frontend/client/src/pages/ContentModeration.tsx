@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function ContentModeration() {
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [typeFilter, setTypeFilter] = useState("all");
 
   const reportsQuery = (trpc as any).admin.getContentReports.useQuery({ type: typeFilter === "all" ? undefined : typeFilter, limit: 50 });
@@ -189,7 +191,7 @@ export default function ContentModeration() {
                       <Button size="sm" className="bg-green-600 hover:bg-green-700 rounded-lg" onClick={() => approveMutation.mutate({ reportId: report.id })}>
                         <CheckCircle className="w-4 h-4 mr-1" />Approve
                       </Button>
-                      <Button size="sm" variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg" onClick={() => removeMutation.mutate({ reportId: report.id })}>
+                      <Button size="sm" variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg" onClick={() => setDeleteId(report.id)}>
                         <XCircle className="w-4 h-4 mr-1" />Remove
                       </Button>
                     </div>
@@ -200,6 +202,14 @@ export default function ContentModeration() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this item"
+        onConfirm={() => { if (deleteId) removeMutation.mutate({ reportId: deleteId }); setDeleteId(null); }}
+        isLoading={removeMutation?.isPending}
+      />
     </div>
   );
 }

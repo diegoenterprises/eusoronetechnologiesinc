@@ -20,12 +20,14 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import { CancelConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function ShipperLoads() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const summaryQuery = (trpc as any).loads.getShipperSummary.useQuery();
   const loadsQuery = (trpc as any).loads.list.useQuery({
@@ -186,7 +188,7 @@ export default function ShipperLoads() {
                       {load.status === "pending" && (
                         <>
                           <Button variant="ghost" size="sm"><Edit className="w-4 h-4" /></Button>
-                          <Button variant="ghost" size="sm" onClick={() => cancelMutation.mutate({ loadId: load.id })} disabled={cancelMutation.isPending}>
+                          <Button variant="ghost" size="sm" onClick={() => setCancelId(load.id)} disabled={cancelMutation.isPending}>
                             {cancelMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4 text-red-400" />}
                           </Button>
                         </>
@@ -199,6 +201,14 @@ export default function ShipperLoads() {
           )}
         </CardContent>
       </Card>
+
+      <CancelConfirmationDialog
+        open={!!cancelId}
+        onOpenChange={(open) => !open && setCancelId(null)}
+        actionName="this load"
+        onConfirm={() => { if (cancelId) cancelMutation.mutate({ loadId: cancelId }); setCancelId(null); }}
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }

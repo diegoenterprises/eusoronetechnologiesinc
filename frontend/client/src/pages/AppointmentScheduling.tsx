@@ -18,10 +18,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CancelConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function AppointmentScheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTerminal, setSelectedTerminal] = useState("all");
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const appointmentsQuery = (trpc as any).terminals.getAppointments.useQuery({ date: selectedDate, terminal: selectedTerminal });
   const terminalsQuery = (trpc as any).terminals.getTerminals.useQuery();
@@ -155,7 +157,7 @@ export default function AppointmentScheduling() {
                       </div>
                     </div>
                     {apt.status !== "cancelled" && apt.status !== "completed" && (
-                      <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30 rounded-lg" onClick={() => cancelMutation.mutate({ appointmentId: apt.id })}>
+                      <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30 rounded-lg" onClick={() => setCancelId(apt.id)}>
                         <XCircle className="w-4 h-4 mr-1" />Cancel
                       </Button>
                     )}
@@ -166,6 +168,14 @@ export default function AppointmentScheduling() {
           )}
         </CardContent>
       </Card>
+
+      <CancelConfirmationDialog
+        open={!!cancelId}
+        onOpenChange={(open) => !open && setCancelId(null)}
+        actionName="this appointment"
+        onConfirm={() => { if (cancelId) cancelMutation.mutate({ appointmentId: cancelId }); setCancelId(null); }}
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { CancelConfirmationDialog } from "@/components/ConfirmationDialog";
 
 const timeSlots = [
   "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
@@ -25,6 +26,7 @@ const timeSlots = [
 export default function TerminalAppointmentSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedRack, setSelectedRack] = useState("all");
+  const [cancelId, setCancelId] = useState<string | null>(null);
 
   const appointmentsQuery = (trpc as any).terminals.getAppointments.useQuery({ date: selectedDate } as any);
   const racksQuery = (trpc as any).terminals.getRacks.useQuery();
@@ -255,7 +257,7 @@ export default function TerminalAppointmentSchedule() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => cancelMutation.mutate({ appointmentId: apt.id })}
+                        onClick={() => setCancelId(apt.id)}
                         className="text-red-400"
                       >
                         <XCircle className="w-4 h-4" />
@@ -268,6 +270,14 @@ export default function TerminalAppointmentSchedule() {
           )}
         </CardContent>
       </Card>
+
+      <CancelConfirmationDialog
+        open={!!cancelId}
+        onOpenChange={(open) => !open && setCancelId(null)}
+        actionName="this appointment"
+        onConfirm={() => { if (cancelId) cancelMutation.mutate({ appointmentId: cancelId }); setCancelId(null); }}
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }
