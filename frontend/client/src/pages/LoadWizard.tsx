@@ -21,6 +21,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import LoadVisualization from "@/components/LoadVisualization";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
+
+// Products that qualify for SPECTRA-MATCH™ oil identification
+const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
+function isSpectraQualified(productName: string, hazmatClass: string): boolean {
+  const p = productName.toLowerCase();
+  if (SPECTRA_KEYWORDS.some(k => p.includes(k))) return true;
+  if (["2", "3"].includes(hazmatClass)) return true;
+  return false;
+}
 
 const STEPS = [
   { id: 1, title: "Hazmat Classification", icon: AlertTriangle },
@@ -196,6 +206,17 @@ export default function LoadWizard() {
                 </Select>
               </div>
             </div>
+            {/* SPECTRA-MATCH™ Oil Identification */}
+            {isSpectraQualified(formData.productName, formData.hazmatClass) && (
+              <SpectraMatchWidget
+                compact={true}
+                showSaveButton={false}
+                onIdentify={(result) => {
+                  toast.success(`SPECTRA-MATCH™: ${result.primaryMatch.name} (${result.primaryMatch.confidence}% confidence)`);
+                }}
+                className="mt-2"
+              />
+            )}
           </div>
         );
       case 2: {

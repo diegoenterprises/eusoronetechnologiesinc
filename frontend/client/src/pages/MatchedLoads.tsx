@@ -17,6 +17,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
+
+const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
+function isSpectraQualified(commodity: string): boolean {
+  const c = (commodity || "").toLowerCase();
+  return SPECTRA_KEYWORDS.some(k => c.includes(k));
+}
 
 export default function MatchedLoads() {
   const [search, setSearch] = useState("");
@@ -128,6 +135,21 @@ export default function MatchedLoads() {
                       <p className="text-white text-sm flex items-center gap-1"><Clock className="w-3 h-3" />{load.pickupDate}</p>
                     </div>
                   </div>
+
+                  {/* SPECTRA-MATCH™ indicator for qualifying oil/gas loads */}
+                  {isSpectraQualified(load.commodity) && (
+                    <div className="mb-3">
+                      <SpectraMatchWidget
+                        compact={true}
+                        loadId={load.id}
+                        showSaveButton={false}
+                        onIdentify={(result) => {
+                          toast.info(`${load.commodity}: ${result.primaryMatch.name} — ${result.primaryMatch.confidence}% match`);
+                        }}
+                        className="border-purple-500/20"
+                      />
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs text-slate-500">

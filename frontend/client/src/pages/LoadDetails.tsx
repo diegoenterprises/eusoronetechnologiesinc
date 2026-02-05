@@ -16,6 +16,15 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
+import SpectraMatchWidget from "@/components/SpectraMatchWidget";
+
+const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
+function isSpectraQualified(commodity: string, hazmatClass?: string): boolean {
+  const c = (commodity || "").toLowerCase();
+  if (SPECTRA_KEYWORDS.some(k => c.includes(k))) return true;
+  if (["2", "3"].includes(hazmatClass || "")) return true;
+  return false;
+}
 
 export default function LoadDetails() {
   const [, setLocation] = useLocation();
@@ -183,6 +192,22 @@ export default function LoadDetails() {
             )}
           </CardContent>
         </Card>
+
+        {/* SPECTRA-MATCH™ Oil Identification - for drivers/catalysts/carriers */}
+        {isSpectraQualified(load.commodity, load.hazmatClass) && (
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardContent className="p-4">
+              <SpectraMatchWidget
+                compact={true}
+                loadId={loadId}
+                showSaveButton={true}
+                onIdentify={(result) => {
+                  console.log("SpectraMatch result:", result);
+                }}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Driver/Carrier Info */}
         {load.driver && (
