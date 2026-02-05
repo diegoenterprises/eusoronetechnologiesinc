@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
+import LoadVisualization from "@/components/LoadVisualization";
 
 const STEPS = [
   { id: 1, title: "Hazmat Classification", icon: AlertTriangle },
@@ -31,6 +32,39 @@ const STEPS = [
   { id: 7, title: "Pricing", icon: DollarSign },
 ];
 
+// Get max capacity based on hazmat class, equipment, and unit
+function getMaxCapacity(hazmatClass: string, equipmentType: string, unit: string): number {
+  const capacities: Record<string, Record<string, number>> = {
+    gal: { tanker: 9500, reefer: 0, dry_van: 0, flatbed: 0, step_deck: 0, default: 9500 },
+    bbl: { tanker: 226, reefer: 0, dry_van: 0, flatbed: 0, step_deck: 0, default: 226 },
+    lbs: { tanker: 48000, reefer: 44000, dry_van: 45000, flatbed: 48000, step_deck: 43000, default: 45000 },
+    tons: { tanker: 24, reefer: 22, dry_van: 22.5, flatbed: 24, step_deck: 21.5, default: 22 },
+    cu_ft: { tanker: 0, reefer: 2500, dry_van: 3000, flatbed: 0, step_deck: 0, default: 2500 },
+    units: { tanker: 1, reefer: 40, dry_van: 52, flatbed: 20, step_deck: 18, default: 40 },
+  };
+  const unitCaps = capacities[unit] || capacities.gal;
+  const eqKey = equipmentType || "default";
+  // For hazmat classes 2/3 (gases/flammable liquids) default to tanker capacity
+  if (["2", "3"].includes(hazmatClass) && !equipmentType) {
+    return unitCaps.tanker || unitCaps.default;
+  }
+  return unitCaps[eqKey] || unitCaps.default;
+}
+
+// Determine visualization product type from form state
+function getVizProductType(hazmatClass: string, equipmentType: string, productName: string): string {
+  if (equipmentType === "reefer") return "refrigerated";
+  if (equipmentType === "flatbed" || equipmentType === "step_deck") return "flatbed";
+  if (equipmentType === "dry_van") return "dry_van";
+  if (["2"].includes(hazmatClass)) return "gas";
+  if (["3", "8"].includes(hazmatClass) || productName.toLowerCase().includes("crude") || productName.toLowerCase().includes("oil")) return "hazardous tanker";
+  if (["1", "4", "5", "6", "7", "9"].includes(hazmatClass)) return "hazardous";
+  if (productName.toLowerCase().includes("grain") || productName.toLowerCase().includes("sand") || productName.toLowerCase().includes("cement")) return "dry bulk";
+  if (productName.toLowerCase().includes("milk") || productName.toLowerCase().includes("water") || productName.toLowerCase().includes("chemical")) return "liquid bulk";
+  if (equipmentType === "tanker") return "tanker";
+  return "dry_van";
+}
+
 export default function LoadWizard() {
   const [, setLocation] = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
@@ -40,6 +74,7 @@ export default function LoadWizard() {
     unNumber: "",
     packingGroup: "",
     quantity: "",
+    quantityUnit: "gal",
     weight: "",
     originCity: "",
     originState: "",
@@ -163,19 +198,52 @@ export default function LoadWizard() {
             </div>
           </div>
         );
-      case 2:
+      case 2: {
+        const qty = parseFloat(formData.quantity) || 0;
+        const maxCap = getMaxCapacity(formData.hazmatClass, formData.equipmentType, formData.quantityUnit);
         return (
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-slate-400">Quantity (gallons)</Label>
-              <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, quantity: e.target.value })} placeholder="Enter quantity" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-slate-400">Weight (lbs)</Label>
+                <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, weight: e.target.value })} placeholder="Enter weight" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-400">Quantity</Label>
+                <div className="flex gap-2">
+                  <Input type="number" value={formData.quantity} onChange={(e: any) => setFormData({ ...formData, quantity: e.target.value })} placeholder="Enter quantity" className="flex-1 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                  <Select value={formData.quantityUnit} onValueChange={(v: any) => setFormData({ ...formData, quantityUnit: v })}>
+                    <SelectTrigger className="w-28 bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gal">Gallons</SelectItem>
+                      <SelectItem value="bbl">Barrels</SelectItem>
+                      <SelectItem value="lbs">Pounds</SelectItem>
+                      <SelectItem value="tons">Tons</SelectItem>
+                      <SelectItem value="cu_ft">Cu. Ft</SelectItem>
+                      <SelectItem value="units">Units</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label className="text-slate-400">Weight (lbs)</Label>
-              <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, weight: e.target.value })} placeholder="Enter weight" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+            {/* Quick Reference */}
+            <div className="flex items-center gap-3 text-xs text-slate-500">
+              <span className="flex items-center gap-1">Max Legal Weight: <strong className="text-slate-300">80,000 lbs</strong></span>
+              <span>|</span>
+              <span className="flex items-center gap-1">Typical Capacity: <strong className="text-slate-300">{maxCap.toLocaleString()} {formData.quantityUnit}</strong></span>
             </div>
+            {/* Load Visualization */}
+            <LoadVisualization
+              productType={getVizProductType(formData.hazmatClass, formData.equipmentType, formData.productName)}
+              quantity={qty}
+              maxCapacity={maxCap}
+              unit={formData.quantityUnit}
+              hazmatClass={formData.hazmatClass}
+              productName={formData.productName}
+            />
           </div>
         );
+      }
       case 3:
         return (
           <div className="space-y-4">
@@ -319,7 +387,7 @@ export default function LoadWizard() {
           <ArrowLeft className="w-4 h-4 mr-2" />Back
         </Button>
         {currentStep < STEPS.length ? (
-          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleNext}>
+          <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] rounded-lg" onClick={handleNext}>
             Next<ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (
