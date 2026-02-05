@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Edit3, RotateCcw, X, Plus, Settings, LayoutGrid } from "lucide-react";
+import { Edit3, RotateCcw, X, Plus, Settings, LayoutGrid, Store } from "lucide-react";
 import { UserRole } from '@/hooks/useRoleAccess';
 import { getWidgetsForRole, WidgetDefinition, ALL_WIDGETS } from '@/lib/widgetLibrary';
 import {
@@ -26,6 +26,60 @@ import {
   RouteOptimizationWidget, MaintenanceScheduleWidget, EquipmentUtilizationWidget,
   ProfitMarginWidget, LoadMatchingWidget, DetentionTrackerWidget
 } from "./widgets/DynamicWidgets";
+import {
+  DeliveryTimelineWidget, CarrierNetworkWidget, CostSavingsWidget,
+  ShippingCalendarWidget, PODDocumentsWidget, FreightAuditWidget,
+  CarrierCapacityWidget, ShipmentAnalyticsWidget
+} from "./widgets/ShipperWidgets";
+import {
+  DriverAvailabilityWidget, DetentionTimeWidget, InsuranceTrackerWidget,
+  BrokerRelationshipsWidget
+} from "./widgets/CarrierExtWidgets";
+import {
+  CustomerAccountsWidget, RateTrendsWidget, BidManagementWidget,
+  CoverageMapWidget, CommissionTrackerWidget, ShipperPipelineWidget,
+  CarrierScorecardsWidget, LoadMatchingAIWidget, PaymentStatusWidget,
+  LaneAnalysisWidget, ContractManagementWidget, MarketIntelligenceWidget
+} from "./widgets/BrokerExtWidgets";
+import {
+  NextDeliveryWidget, RestAreasWidget, TripSummaryWidget,
+  WeatherAlertsWidget, TrafficUpdatesWidget, DeliveryChecklistWidget,
+  DispatcherChatWidget, MileageTrackerWidget, LoadDocumentsWidget,
+  PerformanceScoreWidget
+} from "./widgets/DriverExtWidgets";
+import {
+  OversizedLoadsWidget, CoordinationMapWidget, SafetyProtocolsWidget,
+  CommunicationHubWidget, IncidentReportsWidget, EquipmentChecklistWidget,
+  RouteRestrictionsWidget, EscortEarningsWidget,
+  RouteNavigationWidget, LoadDimensionsWidget, ClearanceAlertsWidget,
+  EscortChecklistWidget, DriverCommunicationWidget, EmergencyContactsWidget,
+  TripLogWidget, PermitVerificationWidget, EscortPayWidget
+} from "./widgets/CatalystEscortWidgets";
+import {
+  OutboundShipmentsWidget, EquipmentInventoryWidget, LoadingEfficiencyWidget,
+  DamageReportsWidget, StorageCapacityWidget, CrossDockOperationsWidget,
+  SafetyIncidentsWidget, DetentionChargesWidget, InventoryAccuracyWidget,
+  TerminalKPIsWidget
+} from "./widgets/TerminalExtWidgets";
+import {
+  VehicleInspectionsWidget, HOSViolationsWidget, DrugTestingWidget,
+  InsuranceComplianceWidget, AuditTrackerWidget, TrainingRecordsWidget,
+  IFTAReportingWidget, DOTNumberStatusWidget, ViolationTrendsWidget,
+  PermitManagementWidget, CSAScoresWidget, ComplianceCostsWidget,
+  DriverSafetyScoresWidget, SafetyTrainingWidget, NearMissReportsWidget,
+  VehicleMaintenanceWidget, SafetyMeetingsWidget, HazmatComplianceWidget,
+  SafetyEquipmentWidget, RiskAssessmentWidget, InjuryRatesWidget,
+  EmergencyProceduresWidget, SafetyInspectionsWidget, ClaimsManagementWidget,
+  SafetyROIWidget
+} from "./widgets/ComplianceSafetyWidgets";
+import {
+  RevenueForecastingWidget, RouteOptimizationAIWidget, PredictiveMaintenanceWidget,
+  DemandHeatmapWidget, DriverPerformanceAnalyticsWidget, FuelEfficiencyAnalyticsWidget,
+  LoadUtilizationWidget, ComplianceScoreWidget, AdvancedMarketRatesWidget,
+  BidWinRateWidget, RealTimeTrackingWidget, CostBreakdownWidget,
+  CustomerSatisfactionWidget
+} from "./widgets/PremiumAnalyticsWidgets";
+import WidgetStore from "./widgets/WidgetStore";
 import Weather from "./Weather";
 import RoleBasedMap from "./RoleBasedMap";
 import ReactGridLayout from 'react-grid-layout';
@@ -180,7 +234,126 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'profit_margin': return <ProfitMarginWidget />;
     case 'load_matching': return <LoadMatchingWidget />;
     case 'detention_tracker': return <DetentionTrackerWidget />;
-    
+
+    // Shipper extended widgets
+    case 'delivery_timeline': return <DeliveryTimelineWidget />;
+    case 'carrier_network': return <CarrierNetworkWidget />;
+    case 'cost_savings': return <CostSavingsWidget />;
+    case 'shipping_calendar': return <ShippingCalendarWidget />;
+    case 'pod_documents': return <PODDocumentsWidget />;
+    case 'freight_audit': return <FreightAuditWidget />;
+    case 'carrier_capacity': return <CarrierCapacityWidget />;
+    case 'shipment_analytics': return <ShipmentAnalyticsWidget />;
+
+    // Carrier extended widgets
+    case 'driver_availability': return <DriverAvailabilityWidget />;
+    case 'detention_time': return <DetentionTimeWidget />;
+    case 'insurance_tracker': return <InsuranceTrackerWidget />;
+    case 'broker_relationships': return <BrokerRelationshipsWidget />;
+
+    // Broker extended widgets
+    case 'customer_accounts': return <CustomerAccountsWidget />;
+    case 'rate_trends': return <RateTrendsWidget />;
+    case 'bid_management': return <BidManagementWidget />;
+    case 'coverage_map': return <CoverageMapWidget />;
+    case 'commission_tracker': return <CommissionTrackerWidget />;
+    case 'shipper_pipeline': return <ShipperPipelineWidget />;
+    case 'carrier_scorecards': return <CarrierScorecardsWidget />;
+    case 'load_matching_ai': return <LoadMatchingAIWidget />;
+    case 'payment_status': return <PaymentStatusWidget />;
+    case 'lane_analysis': return <LaneAnalysisWidget />;
+    case 'contract_management': return <ContractManagementWidget />;
+    case 'market_intelligence': return <MarketIntelligenceWidget />;
+
+    // Driver extended widgets
+    case 'next_delivery': return <NextDeliveryWidget />;
+    case 'rest_areas': return <RestAreasWidget />;
+    case 'trip_summary': return <TripSummaryWidget />;
+    case 'weather_alerts': return <WeatherAlertsWidget />;
+    case 'traffic_updates': return <TrafficUpdatesWidget />;
+    case 'delivery_checklist': return <DeliveryChecklistWidget />;
+    case 'dispatcher_chat': return <DispatcherChatWidget />;
+    case 'mileage_tracker': return <MileageTrackerWidget />;
+    case 'load_documents': return <LoadDocumentsWidget />;
+    case 'performance_score': return <PerformanceScoreWidget />;
+
+    // Catalyst extended widgets
+    case 'oversized_loads': return <OversizedLoadsWidget />;
+    case 'coordination_map': return <CoordinationMapWidget />;
+    case 'safety_protocols': return <SafetyProtocolsWidget />;
+    case 'communication_hub': return <CommunicationHubWidget />;
+    case 'incident_reports': return <IncidentReportsWidget />;
+    case 'equipment_checklist': return <EquipmentChecklistWidget />;
+    case 'route_restrictions': return <RouteRestrictionsWidget />;
+    case 'escort_earnings': return <EscortEarningsWidget />;
+
+    // Escort extended widgets
+    case 'route_navigation': return <RouteNavigationWidget />;
+    case 'load_dimensions': return <LoadDimensionsWidget />;
+    case 'clearance_alerts': return <ClearanceAlertsWidget />;
+    case 'escort_checklist': return <EscortChecklistWidget />;
+    case 'driver_communication': return <DriverCommunicationWidget />;
+    case 'emergency_contacts': return <EmergencyContactsWidget />;
+    case 'trip_log': return <TripLogWidget />;
+    case 'permit_verification': return <PermitVerificationWidget />;
+    case 'escort_pay': return <EscortPayWidget />;
+
+    // Terminal Manager extended widgets
+    case 'outbound_shipments': return <OutboundShipmentsWidget />;
+    case 'equipment_inventory': return <EquipmentInventoryWidget />;
+    case 'loading_efficiency': return <LoadingEfficiencyWidget />;
+    case 'damage_reports': return <DamageReportsWidget />;
+    case 'storage_capacity': return <StorageCapacityWidget />;
+    case 'cross_dock_operations': return <CrossDockOperationsWidget />;
+    case 'safety_incidents': return <SafetyIncidentsWidget />;
+    case 'detention_charges': return <DetentionChargesWidget />;
+    case 'inventory_accuracy': return <InventoryAccuracyWidget />;
+    case 'terminal_kpis': return <TerminalKPIsWidget />;
+
+    // Compliance Officer extended widgets
+    case 'vehicle_inspections': return <VehicleInspectionsWidget />;
+    case 'hos_violations': return <HOSViolationsWidget />;
+    case 'drug_testing': return <DrugTestingWidget />;
+    case 'insurance_compliance': return <InsuranceComplianceWidget />;
+    case 'audit_tracker': return <AuditTrackerWidget />;
+    case 'training_records': return <TrainingRecordsWidget />;
+    case 'ifta_reporting': return <IFTAReportingWidget />;
+    case 'dot_number_status': return <DOTNumberStatusWidget />;
+    case 'violation_trends': return <ViolationTrendsWidget />;
+    case 'permit_management': return <PermitManagementWidget />;
+    case 'csa_scores': return <CSAScoresWidget />;
+    case 'compliance_costs': return <ComplianceCostsWidget />;
+
+    // Safety Manager extended widgets
+    case 'driver_safety_scores': return <DriverSafetyScoresWidget />;
+    case 'safety_training': return <SafetyTrainingWidget />;
+    case 'near_miss_reports': return <NearMissReportsWidget />;
+    case 'vehicle_maintenance': return <VehicleMaintenanceWidget />;
+    case 'safety_meetings': return <SafetyMeetingsWidget />;
+    case 'hazmat_compliance': return <HazmatComplianceWidget />;
+    case 'safety_equipment': return <SafetyEquipmentWidget />;
+    case 'risk_assessment': return <RiskAssessmentWidget />;
+    case 'injury_rates': return <InjuryRatesWidget />;
+    case 'emergency_procedures': return <EmergencyProceduresWidget />;
+    case 'safety_inspections': return <SafetyInspectionsWidget />;
+    case 'claims_management': return <ClaimsManagementWidget />;
+    case 'safety_roi': return <SafetyROIWidget />;
+
+    // Premium Analytics widgets
+    case 'revenue_forecasting': return <RevenueForecastingWidget />;
+    case 'route_optimization_ai': return <RouteOptimizationAIWidget />;
+    case 'predictive_maintenance': return <PredictiveMaintenanceWidget />;
+    case 'demand_heatmap': return <DemandHeatmapWidget />;
+    case 'driver_performance_analytics': return <DriverPerformanceAnalyticsWidget />;
+    case 'fuel_efficiency_analytics': return <FuelEfficiencyAnalyticsWidget />;
+    case 'load_utilization': return <LoadUtilizationWidget />;
+    case 'compliance_score': return <ComplianceScoreWidget />;
+    case 'advanced_market_rates': return <AdvancedMarketRatesWidget />;
+    case 'bid_win_rate': return <BidWinRateWidget />;
+    case 'real_time_tracking': return <RealTimeTrackingWidget />;
+    case 'cost_breakdown': return <CostBreakdownWidget />;
+    case 'customer_satisfaction': return <CustomerSatisfactionWidget />;
+
     default: {
       const widget = ALL_WIDGETS.find(w => w.id === widgetId);
       if (widget) return <PlaceholderWidget widget={widget} />;
@@ -242,7 +415,6 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
       minW: 2,
       minH: 2,
     }]);
-    setShowAddWidget(false);
   };
 
   const resetLayout = () => {
@@ -288,11 +460,11 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
             <>
               <Button
                 variant="outline"
-                onClick={() => setShowAddWidget(!showAddWidget)}
-                className="bg-green-500/20 border-green-500/50 text-green-300 hover:bg-green-500/30"
+                onClick={() => setShowAddWidget(true)}
+                className="bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 border-purple-500/50 text-purple-300 hover:from-[#1473FF]/30 hover:to-[#BE01FF]/30"
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Widget
+                <Store className="w-4 h-4 mr-2" />
+                Widget Store ({availableWidgets.length})
               </Button>
               <Button
                 variant="outline"
@@ -315,23 +487,14 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
         </div>
       </div>
 
-      {/* Add Widget Panel */}
-      {showAddWidget && addableWidgets.length > 0 && (
-        <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10">
-          <h3 className="text-white font-semibold mb-3">Add a Widget</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {addableWidgets.slice(0, 12).map((widget) => (
-              <button
-                key={widget.id}
-                onClick={() => addWidget(widget.id)}
-                className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-purple-500/50 transition-all"
-              >
-                <widget.icon className="w-6 h-6 text-purple-400" />
-                <span className="text-xs text-white text-center">{widget.name}</span>
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* Widget Store */}
+      {showAddWidget && (
+        <WidgetStore
+          role={role}
+          activeWidgetIds={activeWidgetIds}
+          onAddWidget={addWidget}
+          onClose={() => setShowAddWidget(false)}
+        />
       )}
 
       {/* Stats Row */}
