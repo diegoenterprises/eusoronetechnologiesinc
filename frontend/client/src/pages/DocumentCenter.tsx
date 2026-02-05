@@ -18,10 +18,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function DocumentCenter() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const documentsQuery = (trpc as any).documents.getAll.useQuery({ search, category });
   const statsQuery = (trpc as any).documents.getStats.useQuery();
@@ -136,7 +138,7 @@ export default function DocumentCenter() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg"><Download className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 rounded-lg" onClick={() => deleteMutation.mutate({ id: doc.id })}><Trash2 className="w-4 h-4" /></Button>
+                    <Button size="sm" variant="outline" className="bg-red-500/20 border-red-500/30 text-red-400 rounded-lg" onClick={() => setDeleteId(doc.id)}><Trash2 className="w-4 h-4" /></Button>
                   </div>
                 </div>
               ))}
@@ -144,6 +146,14 @@ export default function DocumentCenter() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        itemName="this document"
+        onConfirm={() => { if (deleteId) deleteMutation.mutate({ id: deleteId }); setDeleteId(null); }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

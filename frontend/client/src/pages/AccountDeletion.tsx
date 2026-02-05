@@ -17,10 +17,13 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 export default function AccountDeletion() {
   const [confirmText, setConfirmText] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const accountQuery = (trpc as any).users.getAccountInfo.useQuery();
 
@@ -61,7 +64,7 @@ export default function AccountDeletion() {
                 <p className="text-white text-xl font-bold">Account Deletion Pending</p>
                 <p className="text-slate-400">Your account is scheduled for deletion on {account?.deletionDate}</p>
               </div>
-              <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => cancelMutation.mutate({})}>
+              <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setShowCancelDialog(true)}>
                 <XCircle className="w-4 h-4 mr-2" />Cancel Deletion
               </Button>
             </div>
@@ -146,12 +149,37 @@ export default function AccountDeletion() {
               <Input value={confirmText} onChange={(e: any) => setConfirmText(e.target.value)} placeholder="DELETE" className={cn("bg-slate-800/50 border-slate-700/50 rounded-lg", confirmText === "DELETE" && "border-red-500/50")} />
             </div>
 
-            <Button className="w-full bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => deleteMutation.mutate({})} disabled={!canDelete}>
+            <Button className="w-full bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => setShowDeleteDialog(true)} disabled={!canDelete}>
               <Trash2 className="w-4 h-4 mr-2" />Permanently Delete Account
             </Button>
           </CardContent>
         </Card>
       )}
+
+      {/* Confirmation Dialogs */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Are you sure you want to permanently delete your account?"
+        description="This action cannot be undone. All your data will be permanently removed."
+        confirmText="Delete Account"
+        cancelText="Cancel"
+        onConfirm={() => deleteMutation.mutate({})}
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+      />
+
+      <ConfirmationDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Cancel account deletion?"
+        description="Your account will be restored and the scheduled deletion will be cancelled."
+        confirmText="Yes, Cancel Deletion"
+        cancelText="Go Back"
+        onConfirm={() => cancelMutation.mutate({})}
+        variant="default"
+        isLoading={cancelMutation.isPending}
+      />
     </div>
   );
 }
