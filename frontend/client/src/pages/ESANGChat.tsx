@@ -7,12 +7,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { useLocation } from "wouter";
 import {
   Sparkles, Send, User, Bot, Trash2,
-  MessageSquare, Lightbulb, HelpCircle
+  MessageSquare, Lightbulb, HelpCircle, Beaker,
+  Target, Brain, Shield, Flame, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -20,17 +23,46 @@ import { toast } from "sonner";
 export default function ESANGChat() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
+  const [lastActions, setLastActions] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [, navigate] = useLocation();
 
   const historyQuery = (trpc as any).esang.getChatHistory.useQuery();
   const suggestionsQuery = (trpc as any).esang.getSuggestions.useQuery();
+  const learningStatsQuery = (trpc as any).spectraMatch.getLearningStats.useQuery();
 
   const sendMutation = (trpc as any).esang.chat.useMutation({
     onSuccess: (data: any) => {
-      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+      setMessages(prev => [...prev, { role: "assistant", content: data.message || data.response }]);
+      if (data.actions?.length > 0) setLastActions(data.actions);
+      if (data.suggestions?.length > 0) {
+        // Suggestions are handled via the sidebar
+      }
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
+
+  const handleAction = (action: any) => {
+    switch (action.type) {
+      case "spectra_match":
+        navigate("/spectra-match");
+        break;
+      case "verify_product":
+        navigate("/terminal/scada");
+        break;
+      case "create_load":
+        navigate("/shipper/create-load");
+        break;
+      case "erg_lookup":
+        navigate("/erg");
+        break;
+      case "check_compliance":
+        navigate("/compliance");
+        break;
+      default:
+        break;
+    }
+  };
 
   const clearMutation = (trpc as any).esang.clearHistory.useMutation({
     onSuccess: () => { setMessages([]); toast.success("Chat cleared"); },
@@ -97,6 +129,27 @@ export default function ESANGChat() {
                     )}
                     <div className={cn("max-w-[70%] p-4 rounded-2xl", msg.role === "user" ? "bg-gradient-to-r from-cyan-600 to-emerald-600 text-white" : "bg-slate-700/50 text-slate-200")}>
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      {msg.role === "assistant" && lastActions.length > 0 && i === messages.length - 1 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-600/30">
+                          {lastActions.map((action: any, ai: number) => (
+                            <Button
+                              key={ai}
+                              size="sm"
+                              variant="outline"
+                              className={cn(
+                                "text-xs h-7 rounded-full",
+                                action.type === "spectra_match" || action.type === "verify_product"
+                                  ? "border-purple-500/50 text-purple-400 hover:bg-purple-500/10"
+                                  : "border-slate-600 text-slate-300 hover:bg-slate-700"
+                              )}
+                              onClick={() => handleAction(action)}
+                            >
+                              {(action.type === "spectra_match" || action.type === "verify_product") && <Beaker className="w-3 h-3 mr-1" />}
+                              {action.label}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {msg.role === "user" && (
                       <div className="p-2 rounded-full bg-cyan-500/20 h-fit">
@@ -158,6 +211,54 @@ export default function ESANGChat() {
               <p>- Bid fairness analysis</p>
               <p>- Compliance guidance</p>
               <p>- Route optimization</p>
+              <div className="pt-2 border-t border-slate-700/50 mt-2">
+                <p className="text-purple-400 font-medium flex items-center gap-1"><Beaker className="w-3 h-3" /> SPECTRA-MATCH™</p>
+                <p>- Product identification</p>
+                <p>- Crude oil analysis</p>
+                <p>- Safety info</p>
+                <p>- Market context</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* SPECTRA-MATCH Learning Stats */}
+          <Card className="bg-gradient-to-br from-purple-500/5 to-cyan-500/5 border-purple-500/30 rounded-xl">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-white text-sm flex items-center gap-2">
+                <Brain className="w-4 h-4 text-purple-400" />
+                Learning
+                <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[9px] ml-auto">AI</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {learningStatsQuery.isLoading ? (
+                <Skeleton className="h-12 w-full" />
+              ) : (
+                <>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Identifications</span>
+                    <span className="text-cyan-400 font-bold">{learningStatsQuery.data?.totalIdentifications || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Avg Confidence</span>
+                    <span className="text-green-400 font-bold">{learningStatsQuery.data?.avgConfidence || 0}%</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-400">Trend</span>
+                    <span className={cn("font-bold text-xs",
+                      learningStatsQuery.data?.recentTrend === "Improving" ? "text-green-400" : "text-yellow-400"
+                    )}>{learningStatsQuery.data?.recentTrend || "--"}</span>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10 text-xs h-7 mt-1"
+                    onClick={() => navigate("/spectra-match")}
+                  >
+                    <Target className="w-3 h-3 mr-1" />Open SPECTRA-MATCH
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

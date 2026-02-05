@@ -342,6 +342,12 @@ class ESANGAIService {
     if (text.toLowerCase().includes("compliance") || text.toLowerCase().includes("regulation")) {
       actions.push({ type: "check_compliance", label: "Check Compliance" });
     }
+    if (text.toLowerCase().includes("spectra-match") || text.toLowerCase().includes("identify") && (text.toLowerCase().includes("crude") || text.toLowerCase().includes("product") || text.toLowerCase().includes("oil"))) {
+      actions.push({ type: "spectra_match", label: "Open SPECTRA-MATCH" });
+    }
+    if (text.toLowerCase().includes("verify product") || text.toLowerCase().includes("product identification") || text.toLowerCase().includes("oil identification")) {
+      actions.push({ type: "verify_product", label: "Verify Product ID" });
+    }
 
     return actions;
   }
@@ -361,8 +367,14 @@ class ESANGAIService {
     if (text.toLowerCase().includes("hazmat") || text.toLowerCase().includes("hazardous")) {
       suggestions.push("ERG lookup", "Safety requirements");
     }
+    if (text.toLowerCase().includes("crude") || text.toLowerCase().includes("petroleum") || text.toLowerCase().includes("fuel") || text.toLowerCase().includes("oil")) {
+      suggestions.push("Identify with SPECTRA-MATCH", "Product safety info");
+    }
+    if (text.toLowerCase().includes("api gravity") || text.toLowerCase().includes("bs&w") || text.toLowerCase().includes("sulfur")) {
+      suggestions.push("Run SPECTRA-MATCH analysis");
+    }
 
-    return suggestions.slice(0, 3);
+    return suggestions.slice(0, 4);
   }
 
   /**
