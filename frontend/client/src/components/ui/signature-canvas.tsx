@@ -1,7 +1,7 @@
 /**
  * SIGNATURE CANVAS COMPONENT
  * DocuSign-style signature capture with gradient ink
- * Gradient flows from cyan-400 to emerald-400 across the signature
+ * Gradient flows from #1473FF (blue) to #BE01FF (magenta) — official EusoTrip brand gradient ink
  */
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -51,8 +51,8 @@ export function SignatureCanvas({
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
 
   // Gradient colors matching app theme
-  const gradientStart = "#22d3ee"; // cyan-400
-  const gradientEnd = "#34d399"; // emerald-400
+  const gradientStart = "#1473FF"; // EusoTrip brand blue
+  const gradientEnd = "#BE01FF"; // EusoTrip brand magenta
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -201,7 +201,7 @@ export function SignatureCanvas({
     <Card className={cn("bg-slate-800/50 border-slate-700/50 rounded-xl", className)}>
       <CardHeader className="pb-3">
         <CardTitle className="text-white flex items-center gap-2">
-          <FileSignature className="w-5 h-5 text-cyan-400" />
+          <FileSignature className="w-5 h-5 text-purple-400" />
           Sign Document
         </CardTitle>
         {documentName && (
@@ -216,7 +216,7 @@ export function SignatureCanvas({
             <span className="text-sm text-slate-400">Signing as:</span>
             <span className="text-white font-medium">{signerName}</span>
             {signerRole && (
-              <span className="text-xs text-cyan-400 bg-cyan-500/20 px-2 py-1 rounded">{signerRole}</span>
+              <span className="text-xs text-purple-400 bg-purple-500/20 px-2 py-1 rounded">{signerRole}</span>
             )}
           </div>
         </div>
@@ -275,7 +275,7 @@ export function SignatureCanvas({
           <Button
             onClick={saveSignature}
             disabled={!hasSignature}
-            className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg"
+            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] rounded-lg"
           >
             <Check className="w-4 h-4 mr-2" />
             Sign & Accept
@@ -358,7 +358,7 @@ export function SignatureField({
           onClick={() => setShowCanvas(true)}
           className="w-full h-16 bg-slate-900/50 border-slate-700/50 border-dashed hover:bg-slate-800/50 rounded-lg"
         >
-          <FileSignature className="w-5 h-5 mr-2 text-cyan-400" />
+          <FileSignature className="w-5 h-5 mr-2 text-purple-400" />
           <span className="text-slate-400">Click to sign</span>
         </Button>
       )}

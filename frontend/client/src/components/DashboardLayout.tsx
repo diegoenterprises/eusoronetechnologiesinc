@@ -57,6 +57,11 @@ import {
   Activity,
   Fuel,
   Award,
+  Flame,
+  Gift,
+  Target,
+  Navigation,
+  Trophy,
 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
@@ -112,6 +117,11 @@ const iconMap: Record<string, React.ReactNode> = {
   Activity: <Activity size={20} />,
   Fuel: <Fuel size={20} />,
   Award: <Award size={20} />,
+  Flame: <Flame size={20} />,
+  Gift: <Gift size={20} />,
+  Target: <Target size={20} />,
+  Navigation: <Navigation size={20} />,
+  Trophy: <Trophy size={20} />,
 };
 
 interface DashboardLayoutProps {

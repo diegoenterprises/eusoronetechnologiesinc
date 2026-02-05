@@ -135,6 +135,9 @@ import { integrationsRouter } from "./routers/integrations";
 import { superAdminRouter } from "./routers/superAdmin";
 import { widgetsRouter } from "./routers/widgets";
 import { messagingRouter } from "./routers/messaging";
+import { marketPricingRouter } from "./routers/marketPricing";
+import { hotZonesRouter } from "./routers/hotZones";
+import { signaturesRouter } from "./routers/signatures";
 
 export const appRouter = router({
   system: systemRouter,
@@ -566,6 +569,15 @@ export const appRouter = router({
 
   // Messaging System
   messaging: messagingRouter,
+
+  // Market Pricing Intelligence (Platts/Argus-style)
+  marketPricing: marketPricingRouter,
+
+  // Hot Zones - Demand Intelligence & Surge Pricing
+  hotZones: hotZonesRouter,
+
+  // Gradient Ink Digital Signatures
+  signatures: signaturesRouter,
 });
 
 export type AppRouter = typeof appRouter;

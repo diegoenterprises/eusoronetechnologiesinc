@@ -928,6 +928,7 @@ import HazmatCertifications from "./pages/HazmatCertifications";
 import HazmatShipments from "./pages/HazmatShipments";
 import HelpCenter from "./pages/HelpCenter";
 import Home from "./pages/Home";
+import HotZones from "./pages/HotZones";
 import IFTAReporting from "./pages/IFTAReporting";
 import InTransit from "./pages/InTransit";
 import IncidentReport from "./pages/IncidentReport";
@@ -1123,6 +1124,7 @@ import MVRReports from "./pages/MVRReports";
 import Maintenance from "./pages/Maintenance";
 import MaintenanceSchedule from "./pages/MaintenanceSchedule";
 import MarketIntelligence from "./pages/MarketIntelligence";
+import MarketPricingDashboard from "./pages/MarketPricingDashboard";
 import Marketplace from "./pages/Marketplace";
 import MatchedLoads from "./pages/MatchedLoads";
 import MedicalCertifications from "./pages/MedicalCertifications";
@@ -2924,6 +2926,7 @@ function Router() {
       <Route path={"/hazmat-shipments"} component={() => (<DashboardLayout><HazmatShipments /></DashboardLayout>)} />
       <Route path={"/help-center"} component={() => (<DashboardLayout><HelpCenter /></DashboardLayout>)} />
       <Route path={"/home"} component={() => (<DashboardLayout><Home /></DashboardLayout>)} />
+      <Route path={"/hot-zones"} component={() => (<DashboardLayout><HotZones /></DashboardLayout>)} />
       <Route path={"/ifta-reporting"} component={() => (<DashboardLayout><IFTAReporting /></DashboardLayout>)} />
       <Route path={"/in-transit"} component={() => (<DashboardLayout><InTransit /></DashboardLayout>)} />
       <Route path={"/incident-report"} component={() => (<DashboardLayout><IncidentReport /></DashboardLayout>)} />
@@ -3119,6 +3122,7 @@ function Router() {
       <Route path={"/maintenance"} component={() => (<DashboardLayout><Maintenance /></DashboardLayout>)} />
       <Route path={"/maintenance-schedule"} component={() => (<DashboardLayout><MaintenanceSchedule /></DashboardLayout>)} />
       <Route path={"/market-intelligence"} component={() => (<DashboardLayout><MarketIntelligence /></DashboardLayout>)} />
+      <Route path={"/market-pricing"} component={() => (<DashboardLayout><MarketPricingDashboard /></DashboardLayout>)} />
       <Route path={"/marketplace"} component={() => (<DashboardLayout><Marketplace /></DashboardLayout>)} />
       <Route path={"/matched-loads"} component={() => (<DashboardLayout><MatchedLoads /></DashboardLayout>)} />
       <Route path={"/medical-certifications"} component={() => (<DashboardLayout><MedicalCertifications /></DashboardLayout>)} />

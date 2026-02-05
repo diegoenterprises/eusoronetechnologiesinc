@@ -123,6 +123,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Personal information"
     },
     { 
+      icon: "BarChart3", 
+      label: "Market Pricing", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Platts/Argus-style freight rate intelligence"
+    },
+    { 
+      icon: "Flame", 
+      label: "Hot Zones", 
+      path: "/hot-zones", 
+      badge: 0,
+      description: "Demand heatmap & surge pricing"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -253,6 +267,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Personal information"
     },
     { 
+      icon: "BarChart3", 
+      label: "Market Pricing", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rate intelligence"
+    },
+    { 
+      icon: "Flame", 
+      label: "Hot Zones", 
+      path: "/hot-zones", 
+      badge: 0,
+      description: "Demand heatmap & surge pricing"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -367,6 +395,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/profile", 
       badge: 0,
       description: "Personal information"
+    },
+    { 
+      icon: "BarChart3", 
+      label: "Market Pricing", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rate intelligence"
+    },
+    { 
+      icon: "Flame", 
+      label: "Hot Zones", 
+      path: "/hot-zones", 
+      badge: 0,
+      description: "Demand heatmap & surge pricing"
     },
     { 
       icon: "Settings", 
@@ -511,6 +553,20 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/profile", 
       badge: 0,
       description: "Personal information"
+    },
+    { 
+      icon: "BarChart3", 
+      label: "Market Pricing", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rate intelligence"
+    },
+    { 
+      icon: "Flame", 
+      label: "Hot Zones", 
+      path: "/hot-zones", 
+      badge: 0,
+      description: "Demand heatmap & surge pricing"
     },
     { 
       icon: "Settings", 
@@ -803,6 +859,27 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/reports", 
       badge: 0,
       description: "Operations reports"
+    },
+    { 
+      icon: "Activity", 
+      label: "SpectraMatch", 
+      path: "/spectra-match", 
+      badge: 0,
+      description: "SPECTRA-MATCH\u2122 crude oil identification"
+    },
+    { 
+      icon: "BarChart3", 
+      label: "Market Pricing", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rate intelligence"
+    },
+    { 
+      icon: "Flame", 
+      label: "Hot Zones", 
+      path: "/hot-zones", 
+      badge: 0,
+      description: "Demand heatmap & surge pricing"
     },
     { 
       icon: "MessageSquare", 
