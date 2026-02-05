@@ -105,3 +105,24 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Production secrets (never commit)
+.env.production
+*.pem
+*.key
+secrets/
+
+# Manus AI remnants (deprecated)
+.manus/
+
+# Development utilities
+scripts/add-confirmation-dialogs.cjs
+
+# Local testing
+*.local
+.turbo/
+
+# Deployment artifacts
+.netlify/
+.vercel/
+.serverless/
