@@ -70,7 +70,7 @@ export default function ChannelsPage() {
                 </div>
                 <div>
                   <h3 className="text-white font-semibold">{channel.name}</h3>
-                  <p className="text-gray-400 text-sm">{channel.description}</p>
+                  <p className="text-slate-400 text-sm">{channel.description}</p>
                 </div>
               </div>
               {channel.unreadCount > 0 && (
@@ -79,7 +79,7 @@ export default function ChannelsPage() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2 text-gray-400 text-sm">
+            <div className="flex items-center gap-2 text-slate-400 text-sm">
               <Users size={16} />
               {channel.memberCount} members
             </div>

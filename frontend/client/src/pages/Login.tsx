@@ -51,13 +51,13 @@ export default function Login() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
             EusoTrip
           </h1>
-          <p className="text-gray-400 mt-2">Hazardous Materials Transportation Platform</p>
+          <p className="text-slate-400 mt-2">Hazardous Materials Transportation Platform</p>
         </div>
 
-        <Card className="bg-white/10 backdrop-blur-xl border-white/20">
+        <Card className="bg-slate-800/10 backdrop-blur-xl border-white/20">
           <CardHeader className="text-center">
             <CardTitle className="text-white text-xl">Welcome Back</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-slate-400">
               Sign in to access your dashboard
             </CardDescription>
           </CardHeader>
@@ -71,24 +71,24 @@ export default function Login() {
               )}
               <div className="space-y-4">
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     type="email"
                     placeholder="Email address"
                     value={email}
                     onChange={(e: any) => setEmail(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-12"
+                    className="pl-10 bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400 h-12"
                     disabled={loginMutation.isPending}
                   />
                 </div>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     type="password"
                     placeholder="Password"
                     value={password}
                     onChange={(e: any) => setPassword(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-12"
+                    className="pl-10 bg-slate-800/10 border-white/20 text-white placeholder:text-slate-400 h-12"
                     disabled={loginMutation.isPending}
                   />
                 </div>
@@ -104,7 +104,7 @@ export default function Login() {
             </form>
 
             <div className="text-center">
-              <p className="text-gray-400 text-sm">
+              <p className="text-slate-400 text-sm">
                 Don't have an account?{' '}
                 <a href="/register" className="text-purple-400 hover:text-purple-300 underline">
                   Register here
@@ -114,7 +114,7 @@ export default function Login() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="text-center text-slate-500 text-sm mt-6">
           © 2026 EusoTrip - Eusoro Technologies Inc. All rights reserved.
         </p>
       </div>

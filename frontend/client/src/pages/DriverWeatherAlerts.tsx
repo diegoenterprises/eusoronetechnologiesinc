@@ -115,7 +115,7 @@ export default function DriverWeatherAlerts() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Weather Data</h3>
-            <p className="text-gray-600 mb-4">{error.message}</p>
+            <p className="text-slate-600 mb-4">{error.message}</p>
             <Button onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
@@ -140,7 +140,7 @@ export default function DriverWeatherAlerts() {
             </div>
             <Button
               variant="outline"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-slate-800/10 border-white/20 text-white hover:bg-slate-800/20"
               onClick={() => refetch()}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -163,7 +163,7 @@ export default function DriverWeatherAlerts() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Active Alerts</p>
+                    <p className="text-sm text-slate-500">Active Alerts</p>
                     <p className="text-2xl font-bold">{weatherData?.summary?.activeAlerts || 0}</p>
                   </div>
                   <div className="p-3 bg-red-100 rounded-full">
@@ -176,7 +176,7 @@ export default function DriverWeatherAlerts() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">On Route</p>
+                    <p className="text-sm text-slate-500">On Route</p>
                     <p className="text-2xl font-bold">{weatherData?.summary?.onRouteAlerts || 0}</p>
                   </div>
                   <div className="p-3 bg-orange-100 rounded-full">
@@ -189,7 +189,7 @@ export default function DriverWeatherAlerts() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Current Temp</p>
+                    <p className="text-sm text-slate-500">Current Temp</p>
                     <p className="text-2xl font-bold">{weatherData?.currentConditions?.temperature || "--"}F</p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-full">
@@ -202,7 +202,7 @@ export default function DriverWeatherAlerts() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Visibility</p>
+                    <p className="text-sm text-slate-500">Visibility</p>
                     <p className="text-2xl font-bold">{weatherData?.currentConditions?.visibility || "--"} mi</p>
                   </div>
                   <div className="p-3 bg-purple-100 rounded-full">
@@ -225,7 +225,7 @@ export default function DriverWeatherAlerts() {
             <CardContent>
               <div className="space-y-3">
                 {weatherData.urgentAlerts.map((alert: any) => (
-                  <div key={alert.id} className="p-4 bg-white rounded-lg border border-red-200">
+                  <div key={alert.id} className="p-4 bg-slate-800 rounded-lg border border-red-200">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-red-100 rounded-lg text-red-600">
@@ -236,8 +236,8 @@ export default function DriverWeatherAlerts() {
                             <h4 className="font-semibold">{alert.title}</h4>
                             {getSeverityBadge(alert.severity)}
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                          <p className="text-sm text-slate-600 mt-1">{alert.description}</p>
+                          <div className="flex items-center gap-4 text-sm text-slate-500 mt-2">
                             <span className="flex items-center gap-1">
                               <MapPin className="h-3 w-3" />
                               {alert.location}
@@ -310,7 +310,7 @@ export default function DriverWeatherAlerts() {
                   <div className="text-center py-12">
                     <Sun className="h-12 w-12 text-yellow-500 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Alerts</h3>
-                    <p className="text-gray-500">Weather conditions are clear along your route</p>
+                    <p className="text-slate-500">Weather conditions are clear along your route</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -321,7 +321,7 @@ export default function DriverWeatherAlerts() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
-                            <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <div className="p-2 bg-slate-800 rounded-lg shadow-sm">
                               {getWeatherIcon(alert.type)}
                             </div>
                             <div>
@@ -334,8 +334,8 @@ export default function DriverWeatherAlerts() {
                                   </Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
-                              <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
+                              <p className="text-sm text-slate-600 mt-1">{alert.description}</p>
+                              <div className="flex items-center gap-4 text-sm text-slate-500 mt-2">
                                 <span className="flex items-center gap-1">
                                   <MapPin className="h-3 w-3" />
                                   {alert.location}
@@ -346,7 +346,7 @@ export default function DriverWeatherAlerts() {
                                 </span>
                               </div>
                               {alert.recommendations && (
-                                <div className="mt-3 p-2 bg-white/50 rounded">
+                                <div className="mt-3 p-2 bg-slate-800/50 rounded">
                                   <p className="text-sm">
                                     <strong>Recommendations:</strong> {alert.recommendations}
                                   </p>
@@ -381,23 +381,23 @@ export default function DriverWeatherAlerts() {
                         {getWeatherIcon(weatherData?.currentConditions?.type || "clear")}
                         <span className="text-3xl font-bold">{weatherData?.currentConditions?.temperature || "--"}F</span>
                       </div>
-                      <p className="text-gray-500 capitalize">{weatherData?.currentConditions?.description || "Loading..."}</p>
+                      <p className="text-slate-500 capitalize">{weatherData?.currentConditions?.description || "Loading..."}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">Wind</p>
+                      <div className="p-3 bg-slate-800/50 rounded-lg">
+                        <p className="text-slate-500">Wind</p>
                         <p className="font-medium">{weatherData?.currentConditions?.windSpeed || "--"} mph</p>
                       </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">Humidity</p>
+                      <div className="p-3 bg-slate-800/50 rounded-lg">
+                        <p className="text-slate-500">Humidity</p>
                         <p className="font-medium">{weatherData?.currentConditions?.humidity || "--"}%</p>
                       </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">Precipitation</p>
+                      <div className="p-3 bg-slate-800/50 rounded-lg">
+                        <p className="text-slate-500">Precipitation</p>
                         <p className="font-medium">{weatherData?.currentConditions?.precipitation || "0"}%</p>
                       </div>
-                      <div className="p-3 bg-gray-50 rounded-lg">
-                        <p className="text-gray-500">UV Index</p>
+                      <div className="p-3 bg-slate-800/50 rounded-lg">
+                        <p className="text-slate-500">UV Index</p>
                         <p className="font-medium">{weatherData?.currentConditions?.uvIndex || "--"}</p>
                       </div>
                     </div>

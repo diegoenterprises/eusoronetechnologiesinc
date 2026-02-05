@@ -83,7 +83,7 @@ export default function DriverTimeOff() {
       case "rejected":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       case "cancelled":
-        return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>;
+        return <Badge className="bg-slate-800 text-gray-800">Cancelled</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -96,7 +96,7 @@ export default function DriverTimeOff() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Time Off Data</h3>
-            <p className="text-gray-600 mb-4">{error.message}</p>
+            <p className="text-slate-600 mb-4">{error.message}</p>
             <Button onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
@@ -119,7 +119,7 @@ export default function DriverTimeOff() {
                 <p className="text-indigo-100">Request and manage your time off</p>
               </div>
             </div>
-            <Button className="bg-white text-indigo-700 hover:bg-indigo-50">
+            <Button className="bg-slate-800 text-indigo-700 hover:bg-indigo-50">
               <Plus className="h-4 w-4 mr-2" />
               New Request
             </Button>
@@ -140,7 +140,7 @@ export default function DriverTimeOff() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Available PTO</p>
+                    <p className="text-sm text-slate-500">Available PTO</p>
                     <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.availableDays || 0} days</p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
@@ -153,7 +153,7 @@ export default function DriverTimeOff() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Used This Year</p>
+                    <p className="text-sm text-slate-500">Used This Year</p>
                     <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.usedDays || 0} days</p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-full">
@@ -166,7 +166,7 @@ export default function DriverTimeOff() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Pending Requests</p>
+                    <p className="text-sm text-slate-500">Pending Requests</p>
                     <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.pendingDays || 0} days</p>
                   </div>
                   <div className="p-3 bg-yellow-100 rounded-full">
@@ -179,7 +179,7 @@ export default function DriverTimeOff() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Sick Days Used</p>
+                    <p className="text-sm text-slate-500">Sick Days Used</p>
                     <p className="text-2xl font-bold">{(timeOffData as any)?.balance?.sickDaysUsed || 0} days</p>
                   </div>
                   <div className="p-3 bg-red-100 rounded-full">
@@ -235,9 +235,9 @@ export default function DriverTimeOff() {
                   </div>
                 ) : (timeOffData as any)?.requests?.length === 0 ? (
                   <div className="text-center py-12">
-                    <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No requests found</h3>
-                    <p className="text-gray-500">Submit your first time off request</p>
+                    <p className="text-slate-500">Submit your first time off request</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -248,7 +248,7 @@ export default function DriverTimeOff() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4">
-                            <div className="p-2 bg-gray-100 rounded-lg">
+                            <div className="p-2 bg-slate-800 rounded-lg">
                               {getTypeIcon(request.type)}
                             </div>
                             <div>
@@ -256,16 +256,16 @@ export default function DriverTimeOff() {
                                 <h4 className="font-medium capitalize">{request.type} Leave</h4>
                                 {getStatusBadge(request.status)}
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                              <div className="flex items-center gap-2 text-sm text-slate-500 mt-1">
                                 <Calendar className="h-3 w-3" />
                                 <span>
                                   {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
                                 </span>
-                                <span className="text-gray-400">|</span>
+                                <span className="text-slate-400">|</span>
                                 <span>{request.totalDays} day(s)</span>
                               </div>
                               {request.reason && (
-                                <p className="text-sm text-gray-600 mt-2">{request.reason}</p>
+                                <p className="text-sm text-slate-600 mt-2">{request.reason}</p>
                               )}
                             </div>
                           </div>
@@ -290,7 +290,7 @@ export default function DriverTimeOff() {
                           </div>
                         )}
                         {request.approvedBy && (
-                          <div className="mt-3 text-sm text-gray-500">
+                          <div className="mt-3 text-sm text-slate-500">
                             Approved by: {request.approvedBy} on {new Date(request.approvedAt).toLocaleDateString()}
                           </div>
                         )}
@@ -318,7 +318,7 @@ export default function DriverTimeOff() {
                     ))}
                   </div>
                 ) : (timeOffData as any)?.upcoming?.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No upcoming time off scheduled</p>
+                  <p className="text-slate-500 text-center py-4">No upcoming time off scheduled</p>
                 ) : (
                   <div className="space-y-3">
                     {(timeOffData as any)?.upcoming?.map((item: any) => (
@@ -328,9 +328,9 @@ export default function DriverTimeOff() {
                             {getTypeIcon(item.type)}
                             <span className="font-medium capitalize">{item.type}</span>
                           </div>
-                          <span className="text-sm text-gray-600">{item.totalDays} day(s)</span>
+                          <span className="text-sm text-slate-600">{item.totalDays} day(s)</span>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-slate-600 mt-1">
                           {new Date(item.startDate).toLocaleDateString()} - {new Date(item.endDate).toLocaleDateString()}
                         </p>
                       </div>
@@ -347,7 +347,7 @@ export default function DriverTimeOff() {
                   PTO Policy
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm text-gray-600">
+              <CardContent className="space-y-3 text-sm text-slate-600">
                 <p>- Requests must be submitted at least 2 weeks in advance for vacation</p>
                 <p>- Sick leave can be submitted same-day with documentation</p>
                 <p>- Maximum consecutive days: 14</p>

@@ -178,7 +178,7 @@ export default function RateCalculator() {
                       <p className="text-xs text-slate-500">Low</p>
                     </div>
                     <div className="flex-1 mx-4 h-2 bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full relative">
-                      <div className="absolute w-3 h-3 bg-white rounded-full top-1/2 -translate-y-1/2" style={{ left: `${((result.recommendedRate - result.lowRate) / (result.highRate - result.lowRate)) * 100}%` }} />
+                      <div className="absolute w-3 h-3 bg-slate-800 rounded-full top-1/2 -translate-y-1/2" style={{ left: `${((result.recommendedRate - result.lowRate) / (result.highRate - result.lowRate)) * 100}%` }} />
                     </div>
                     <div className="text-center">
                       <p className="text-green-400 font-medium">${result.highRate?.toLocaleString()}</p>

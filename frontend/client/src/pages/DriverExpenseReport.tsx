@@ -83,7 +83,7 @@ export default function DriverExpenseReport() {
       case "rejected":
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       case "draft":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-slate-800 text-gray-800">Draft</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -96,7 +96,7 @@ export default function DriverExpenseReport() {
           <CardContent className="pt-6 text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-semibold mb-2">Error Loading Expenses</h3>
-            <p className="text-gray-600 mb-4">{error.message}</p>
+            <p className="text-slate-600 mb-4">{error.message}</p>
             <Button onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
@@ -119,7 +119,7 @@ export default function DriverExpenseReport() {
                 <p className="text-green-100">Submit and track your expense claims</p>
               </div>
             </div>
-            <Button className="bg-white text-green-700 hover:bg-green-50">
+            <Button className="bg-slate-800 text-green-700 hover:bg-green-50">
               <Plus className="h-4 w-4 mr-2" />
               New Expense
             </Button>
@@ -140,7 +140,7 @@ export default function DriverExpenseReport() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Total Submitted</p>
+                    <p className="text-sm text-slate-500">Total Submitted</p>
                     <p className="text-2xl font-bold">${expensesData?.summary?.totalSubmitted?.toLocaleString() || "0"}</p>
                   </div>
                   <div className="p-3 bg-blue-100 rounded-full">
@@ -153,7 +153,7 @@ export default function DriverExpenseReport() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Pending Review</p>
+                    <p className="text-sm text-slate-500">Pending Review</p>
                     <p className="text-2xl font-bold">${expensesData?.summary?.pendingAmount?.toLocaleString() || "0"}</p>
                   </div>
                   <div className="p-3 bg-yellow-100 rounded-full">
@@ -166,7 +166,7 @@ export default function DriverExpenseReport() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Approved</p>
+                    <p className="text-sm text-slate-500">Approved</p>
                     <p className="text-2xl font-bold">${expensesData?.summary?.approvedAmount?.toLocaleString() || "0"}</p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-full">
@@ -179,7 +179,7 @@ export default function DriverExpenseReport() {
               <CardContent className="pt-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-gray-500">Rejected</p>
+                    <p className="text-sm text-slate-500">Rejected</p>
                     <p className="text-2xl font-bold">${expensesData?.summary?.rejectedAmount?.toLocaleString() || "0"}</p>
                   </div>
                   <div className="p-3 bg-red-100 rounded-full">
@@ -200,7 +200,7 @@ export default function DriverExpenseReport() {
               </CardTitle>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder="Search expenses..."
                     value={searchQuery}
@@ -256,9 +256,9 @@ export default function DriverExpenseReport() {
               </div>
             ) : expensesData?.expenses?.length === 0 ? (
               <div className="text-center py-12">
-                <Receipt className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <Receipt className="h-12 w-12 text-slate-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No expenses found</h3>
-                <p className="text-gray-500 mb-4">Start by submitting your first expense report</p>
+                <p className="text-slate-500 mb-4">Start by submitting your first expense report</p>
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   Submit Expense
@@ -273,7 +273,7 @@ export default function DriverExpenseReport() {
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
-                        <div className="p-2 bg-gray-100 rounded-lg">
+                        <div className="p-2 bg-slate-800 rounded-lg">
                           {getCategoryIcon(expense.category)}
                         </div>
                         <div>
@@ -281,7 +281,7 @@ export default function DriverExpenseReport() {
                             <h4 className="font-medium">{expense.description}</h4>
                             {getStatusBadge(expense.status)}
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                          <div className="flex items-center gap-4 text-sm text-slate-500 mt-1">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               {new Date(expense.date).toLocaleDateString()}
@@ -292,7 +292,7 @@ export default function DriverExpenseReport() {
                             )}
                           </div>
                           {expense.notes && (
-                            <p className="text-sm text-gray-600 mt-2">{expense.notes}</p>
+                            <p className="text-sm text-slate-600 mt-2">{expense.notes}</p>
                           )}
                         </div>
                       </div>
@@ -336,10 +336,10 @@ export default function DriverExpenseReport() {
           </CardHeader>
           <CardContent>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition-colors cursor-pointer">
-              <Upload className="h-10 w-10 text-gray-400 mx-auto mb-4" />
+              <Upload className="h-10 w-10 text-slate-400 mx-auto mb-4" />
               <p className="text-lg font-medium text-gray-700">Upload Receipt</p>
-              <p className="text-sm text-gray-500 mt-1">Drag and drop or click to upload</p>
-              <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG, PDF up to 10MB</p>
+              <p className="text-sm text-slate-500 mt-1">Drag and drop or click to upload</p>
+              <p className="text-xs text-slate-400 mt-2">Supports JPG, PNG, PDF up to 10MB</p>
             </div>
           </CardContent>
         </Card>

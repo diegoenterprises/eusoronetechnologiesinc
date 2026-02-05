@@ -65,7 +65,7 @@ export default function ZeunProviderNetwork() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Provider Network</h1>
-        <p className="text-gray-400 mt-1">Find repair facilities and service providers nationwide</p>
+        <p className="text-slate-400 mt-1">Find repair facilities and service providers nationwide</p>
       </div>
 
       {/* Search Section */}
@@ -165,7 +165,7 @@ export default function ZeunProviderNetwork() {
                       <h3 className="text-lg font-bold text-white">{provider.name}</h3>
                       <div className="flex items-center gap-2 mt-2">
                         <MapPin size={16} className="text-blue-400" />
-                        <span className="text-sm text-gray-400">
+                        <span className="text-sm text-slate-400">
                           {provider.distance} miles away
                         </span>
                       </div>
@@ -175,17 +175,17 @@ export default function ZeunProviderNetwork() {
                         <Star size={18} className="text-yellow-400 fill-yellow-400" />
                         <span className="text-xl font-bold text-white">{provider.rating}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Rating</p>
+                      <p className="text-xs text-slate-400 mt-1">Rating</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mb-4 pb-4 border-b border-slate-700">
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Availability</p>
+                      <p className="text-xs text-slate-400 mb-1">Availability</p>
                       <p className="text-sm text-white font-semibold">{provider.availability}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 mb-1">Est. Wait Time</p>
+                      <p className="text-xs text-slate-400 mb-1">Est. Wait Time</p>
                       <p className="text-sm text-white font-semibold">
                         {provider.estimatedWaitTime} min
                       </p>
@@ -193,7 +193,7 @@ export default function ZeunProviderNetwork() {
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-xs text-gray-400 mb-2">Services Offered</p>
+                    <p className="text-xs text-slate-400 mb-2">Services Offered</p>
                     <div className="flex flex-wrap gap-2">
                       {provider.serviceTypes?.map((type: string, i: number) => (
                         <span
@@ -244,7 +244,7 @@ export default function ZeunProviderNetwork() {
             <Wrench size={20} className="text-blue-500" />
           </div>
           <p className="text-3xl font-bold text-white">10,000+</p>
-          <p className="text-xs text-gray-400 mt-1">Across all 50 states</p>
+          <p className="text-xs text-slate-400 mt-1">Across all 50 states</p>
         </Card>
 
         <Card className="bg-slate-800 border-slate-700 p-4">
@@ -253,7 +253,7 @@ export default function ZeunProviderNetwork() {
             <Star size={20} className="text-yellow-500" />
           </div>
           <p className="text-3xl font-bold text-white">4.7</p>
-          <p className="text-xs text-gray-400 mt-1">Out of 5 stars</p>
+          <p className="text-xs text-slate-400 mt-1">Out of 5 stars</p>
         </Card>
 
         <Card className="bg-slate-800 border-slate-700 p-4">
@@ -262,7 +262,7 @@ export default function ZeunProviderNetwork() {
             <Clock size={20} className="text-green-500" />
           </div>
           <p className="text-3xl font-bold text-white">Always</p>
-          <p className="text-xs text-gray-400 mt-1">Available when you need us</p>
+          <p className="text-xs text-slate-400 mt-1">Available when you need us</p>
         </Card>
       </div>
 

@@ -147,7 +147,7 @@ export default function JobsPage() {
       case "FLATBED":
         return "bg-purple-900/30 text-purple-400 border-purple-700";
       default:
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
     }
   };
 
@@ -162,9 +162,9 @@ export default function JobsPage() {
       case "IN_TRANSIT":
         return "bg-purple-900/30 text-purple-400 border-purple-700";
       case "COMPLETED":
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
       default:
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
     }
   };
 
@@ -177,7 +177,7 @@ export default function JobsPage() {
       case "LOW":
         return "text-red-400";
       default:
-        return "text-gray-400";
+        return "text-slate-400";
     }
   };
 
@@ -203,7 +203,7 @@ export default function JobsPage() {
       case "LOW":
         return "text-green-400";
       default:
-        return "text-gray-400";
+        return "text-slate-400";
     }
   };
 
@@ -298,12 +298,12 @@ export default function JobsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Load Board</h1>
-          <p className="text-gray-400">Browse available loads and manage your bids</p>
+          <p className="text-slate-400">Browse available loads and manage your bids</p>
         </div>
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="border-gray-600 text-gray-400 hover:bg-gray-800"
+            className="border-gray-600 text-slate-400 hover:bg-gray-800"
           >
             <Bell size={18} className="mr-2" />
             Alerts
@@ -323,7 +323,7 @@ export default function JobsPage() {
           <div className="flex items-center gap-3">
             <Package size={32} className="text-blue-400" />
             <div>
-              <p className="text-gray-300 text-sm">Available Loads</p>
+              <p className="text-slate-300 text-sm">Available Loads</p>
               <p className="text-white text-2xl font-bold">{loads.filter((l: any) => l.status === "AVAILABLE").length}</p>
             </div>
           </div>
@@ -333,7 +333,7 @@ export default function JobsPage() {
           <div className="flex items-center gap-3">
             <Activity size={32} className="text-yellow-400" />
             <div>
-              <p className="text-gray-300 text-sm">Active Bids</p>
+              <p className="text-slate-300 text-sm">Active Bids</p>
               <p className="text-white text-2xl font-bold">{loads.filter((l: any) => l.myBid?.status === "PENDING").length}</p>
             </div>
           </div>
@@ -343,7 +343,7 @@ export default function JobsPage() {
           <div className="flex items-center gap-3">
             <CheckCircle size={32} className="text-green-400" />
             <div>
-              <p className="text-gray-300 text-sm">Assigned</p>
+              <p className="text-slate-300 text-sm">Assigned</p>
               <p className="text-white text-2xl font-bold">{loads.filter((l: any) => l.status === "ASSIGNED").length}</p>
             </div>
           </div>
@@ -353,7 +353,7 @@ export default function JobsPage() {
           <div className="flex items-center gap-3">
             <DollarSign size={32} className="text-purple-400" />
             <div>
-              <p className="text-gray-300 text-sm">Potential Earnings</p>
+              <p className="text-slate-300 text-sm">Potential Earnings</p>
               <p className="text-white text-2xl font-bold">
                 ${loads.filter((l: any) => l.status === "AVAILABLE").reduce((sum: any, l: any) => sum + l.pay, 0).toLocaleString()}
               </p>
@@ -367,7 +367,7 @@ export default function JobsPage() {
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1">
             <div className="relative">
-              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
               <Input
                 placeholder="Search by origin, destination, or commodity..."
                 value={searchTerm}
@@ -393,7 +393,7 @@ export default function JobsPage() {
 
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-400 hover:bg-gray-800"
+              className="border-gray-600 text-slate-400 hover:bg-gray-800"
             >
               <Filter size={18} className="mr-2" />
               More Filters
@@ -411,11 +411,11 @@ export default function JobsPage() {
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
               activeTab === tab.id
                 ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                : "bg-slate-800 text-gray-400 hover:bg-slate-700 hover:text-white"
+                : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
             }`}
           >
             {tab.label}
-            <span className="bg-white/20 px-2 py-0.5 rounded-full text-xs">{tab.count}</span>
+            <span className="bg-slate-800/20 px-2 py-0.5 rounded-full text-xs">{tab.count}</span>
           </button>
         ))}
       </div>
@@ -424,9 +424,9 @@ export default function JobsPage() {
       <div className="space-y-4">
         {filteredLoads.length === 0 ? (
           <Card className="bg-slate-800 border-slate-700 p-12 text-center">
-            <Package size={48} className="mx-auto text-gray-600 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-400 mb-2">No loads found</h3>
-            <p className="text-gray-500">Try adjusting your filters or check back later</p>
+            <Package size={48} className="mx-auto text-slate-600 mb-4" />
+            <h3 className="text-xl font-semibold text-slate-400 mb-2">No loads found</h3>
+            <p className="text-slate-500">Try adjusting your filters or check back later</p>
           </Card>
         ) : (
           filteredLoads.map((load: any) => (
@@ -443,7 +443,7 @@ export default function JobsPage() {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-4 text-gray-400 text-sm">
+                  <div className="flex items-center gap-4 text-slate-400 text-sm">
                     <span className="flex items-center gap-1">
                       <MapPin size={14} />
                       {load.origin}
@@ -453,7 +453,7 @@ export default function JobsPage() {
                       <MapPin size={14} />
                       {load.destination}
                     </span>
-                    <span className="text-gray-500">•</span>
+                    <span className="text-slate-500">•</span>
                     <span>{load.distance} miles</span>
                   </div>
                 </div>
@@ -471,7 +471,7 @@ export default function JobsPage() {
               {/* Load Details Grid */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4 pb-4 border-b border-slate-700">
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Pay</p>
+                  <p className="text-xs text-slate-500 mb-1">Pay</p>
                   <p className="text-white text-xl font-bold flex items-center gap-1">
                     <DollarSign size={18} className="text-green-400" />
                     {load.pay.toLocaleString()}
@@ -485,7 +485,7 @@ export default function JobsPage() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Pickup</p>
+                  <p className="text-xs text-slate-500 mb-1">Pickup</p>
                   <p className="text-white font-semibold flex items-center gap-1">
                     <Calendar size={14} className="text-blue-400" />
                     {new Date(load.pickupDate).toLocaleDateString()}
@@ -493,7 +493,7 @@ export default function JobsPage() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Delivery</p>
+                  <p className="text-xs text-slate-500 mb-1">Delivery</p>
                   <p className="text-white font-semibold flex items-center gap-1">
                     <Calendar size={14} className="text-purple-400" />
                     {new Date(load.deliveryDate).toLocaleDateString()}
@@ -501,12 +501,12 @@ export default function JobsPage() {
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Weight</p>
+                  <p className="text-xs text-slate-500 mb-1">Weight</p>
                   <p className="text-white font-semibold">{load.weight.toLocaleString()} lbs</p>
                 </div>
 
                 <div>
-                  <p className="text-xs text-gray-500 mb-1">Urgency</p>
+                  <p className="text-xs text-slate-500 mb-1">Urgency</p>
                   <p className={`font-semibold flex items-center gap-1 ${getUrgencyColor(load.urgency)}`}>
                     <Zap size={14} />
                     {load.urgency}
@@ -522,18 +522,18 @@ export default function JobsPage() {
                   </div>
                   <div>
                     <p className="text-white font-semibold">{load.shipper.name}</p>
-                    <div className="flex items-center gap-2 text-sm text-gray-400">
+                    <div className="flex items-center gap-2 text-sm text-slate-400">
                       <div className="flex items-center gap-1">
                         <Star size={12} className="text-yellow-400 fill-yellow-400" />
                         <span>{load.shipper.rating}</span>
                       </div>
-                      <span className="text-gray-600">•</span>
+                      <span className="text-slate-600">•</span>
                       <span>{load.shipper.totalLoads.toLocaleString()} loads</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="flex items-center gap-2 text-sm text-slate-400">
                   <Activity size={14} />
                   <span>{load.bidsCount} bids</span>
                 </div>
@@ -541,7 +541,7 @@ export default function JobsPage() {
 
               {/* Required Certifications */}
               <div className="mb-4">
-                <p className="text-xs text-gray-500 mb-2">Required Certifications</p>
+                <p className="text-xs text-slate-500 mb-2">Required Certifications</p>
                 <div className="flex flex-wrap gap-2">
                   {load.requiredCerts.map((cert: any) => (
                     <span
@@ -560,9 +560,9 @@ export default function JobsPage() {
                 <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-700 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-300 mb-1">Your Bid</p>
+                      <p className="text-sm text-slate-300 mb-1">Your Bid</p>
                       <p className="text-white text-lg font-bold">${load.myBid.amount.toLocaleString()}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-slate-400">
                         Submitted {new Date(load.myBid.submittedAt).toLocaleString()}
                       </p>
                     </div>
@@ -639,7 +639,7 @@ export default function JobsPage() {
 
                 <Button
                   variant="outline"
-                  className="border-gray-600 text-gray-400 hover:bg-gray-800"
+                  className="border-gray-600 text-slate-400 hover:bg-gray-800"
                   onClick={() => toast.info("Chat opened")}
                 >
                   <MessageSquare size={16} />
@@ -658,26 +658,26 @@ export default function JobsPage() {
               <h2 className="text-xl font-bold text-white">Place Bid</h2>
               <button
                 onClick={() => setShowBidModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-slate-400 hover:text-white"
               >
                 <X size={20} />
               </button>
             </div>
 
             <div className="mb-4">
-              <p className="text-gray-400 text-sm mb-2">{selectedLoad.title}</p>
+              <p className="text-slate-400 text-sm mb-2">{selectedLoad.title}</p>
               <p className="text-white font-semibold">{selectedLoad.origin} → {selectedLoad.destination}</p>
             </div>
 
             <div className="mb-4">
-              <label className="text-gray-400 text-sm font-semibold mb-2 block">Asking Price</label>
+              <label className="text-slate-400 text-sm font-semibold mb-2 block">Asking Price</label>
               <p className="text-white text-2xl font-bold">${selectedLoad.pay.toLocaleString()}</p>
             </div>
 
             <div className="mb-4">
-              <label className="text-gray-400 text-sm font-semibold mb-2 block">Your Bid Amount</label>
+              <label className="text-slate-400 text-sm font-semibold mb-2 block">Your Bid Amount</label>
               <div className="relative">
-                <DollarSign size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <DollarSign size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                 <Input
                   type="number"
                   value={bidAmount}
@@ -694,7 +694,7 @@ export default function JobsPage() {
                 onChange={(e: any) => setBidAmount(parseFloat(e.target.value))}
                 className="w-full mt-3"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-slate-500 mt-1">
                 <span>${(selectedLoad.pay * 0.7).toLocaleString()}</span>
                 <span>${(selectedLoad.pay * 1.1).toLocaleString()}</span>
               </div>
@@ -702,7 +702,7 @@ export default function JobsPage() {
 
             <div className="mb-6">
               <div className="flex items-center justify-between p-3 bg-slate-700/50 rounded-lg">
-                <span className="text-gray-400 text-sm">Fairness Meter</span>
+                <span className="text-slate-400 text-sm">Fairness Meter</span>
                 <div className="flex items-center gap-2">
                   {bidAmount >= selectedLoad.pay * 0.95 ? (
                     <>
@@ -727,7 +727,7 @@ export default function JobsPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="flex-1 border-gray-600 text-gray-400 hover:bg-gray-800"
+                className="flex-1 border-gray-600 text-slate-400 hover:bg-gray-800"
                 onClick={() => setShowBidModal(false)}
               >
                 Cancel
@@ -752,32 +752,32 @@ export default function JobsPage() {
               <h2 className="text-xl font-bold text-white">Counter Offer Received</h2>
               <button
                 onClick={() => setShowNegotiationModal(false)}
-                className="text-gray-400 hover:text-white"
+                className="text-slate-400 hover:text-white"
               >
                 <X size={20} />
               </button>
             </div>
 
             <div className="mb-4">
-              <p className="text-gray-400 text-sm mb-2">{selectedLoad.title}</p>
+              <p className="text-slate-400 text-sm mb-2">{selectedLoad.title}</p>
               <p className="text-white font-semibold">{selectedLoad.origin} → {selectedLoad.destination}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="p-3 bg-slate-700/50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Your Bid</p>
+                <p className="text-xs text-slate-500 mb-1">Your Bid</p>
                 <p className="text-white text-xl font-bold">${selectedLoad.myBid.amount.toLocaleString()}</p>
               </div>
               <div className="p-3 bg-blue-900/30 border border-blue-700 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">Their Counter</p>
+                <p className="text-xs text-slate-500 mb-1">Their Counter</p>
                 <p className="text-white text-xl font-bold">${selectedLoad.myBid.counterOffer.toLocaleString()}</p>
               </div>
             </div>
 
             <div className="mb-4">
-              <label className="text-gray-400 text-sm font-semibold mb-2 block">Your Counter Offer (Optional)</label>
+              <label className="text-slate-400 text-sm font-semibold mb-2 block">Your Counter Offer (Optional)</label>
               <div className="relative">
-                <DollarSign size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <DollarSign size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
                 <Input
                   type="number"
                   value={counterOfferAmount}
@@ -788,7 +788,7 @@ export default function JobsPage() {
             </div>
 
             <div className="mb-6">
-              <label className="text-gray-400 text-sm font-semibold mb-2 block">Message (Optional)</label>
+              <label className="text-slate-400 text-sm font-semibold mb-2 block">Message (Optional)</label>
               <textarea
                 value={negotiationMessage}
                 onChange={(e: any) => setNegotiationMessage(e.target.value)}

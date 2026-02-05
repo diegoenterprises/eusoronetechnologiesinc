@@ -155,7 +155,7 @@ export default function DiagnosticsPage() {
       case "critical":
         return "text-red-400 bg-red-600/20 border-red-600";
       default:
-        return "text-gray-400 bg-gray-600/20 border-gray-600";
+        return "text-slate-400 bg-gray-600/20 border-gray-600";
     }
   };
 
@@ -168,7 +168,7 @@ export default function DiagnosticsPage() {
       case "low":
         return "border-blue-600 text-blue-400 bg-blue-600/10";
       default:
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
     }
   };
 
@@ -181,7 +181,7 @@ export default function DiagnosticsPage() {
       case "overdue":
         return "border-red-600 text-red-400 bg-red-600/10";
       default:
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
     }
   };
 
@@ -202,7 +202,7 @@ export default function DiagnosticsPage() {
             <h1 className="text-3xl font-bold text-white mb-2">
               Truck Diagnostics
             </h1>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Powered by Zeun Mechanics™ - Real-time vehicle health monitoring
             </p>
           </div>
@@ -210,7 +210,7 @@ export default function DiagnosticsPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-slate-300 hover:bg-gray-700"
             >
               <Settings className="mr-2" size={18} />
               Settings
@@ -233,7 +233,7 @@ export default function DiagnosticsPage() {
                 <h2 className="text-2xl font-bold text-white">
                   {vehicle.year} {vehicle.make} {vehicle.model}
                 </h2>
-                <p className="text-gray-400">VIN: {vehicle.vin}</p>
+                <p className="text-slate-400">VIN: {vehicle.vin}</p>
               </div>
             </div>
 
@@ -247,41 +247,41 @@ export default function DiagnosticsPage() {
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Gauge className="text-blue-400" size={20} />
-                <span className="text-gray-400 text-sm">Engine</span>
+                <span className="text-slate-400 text-sm">Engine</span>
               </div>
               <p className="text-2xl font-bold text-white">Normal</p>
-              <p className="text-gray-500 text-xs">2,100 RPM</p>
+              <p className="text-slate-500 text-xs">2,100 RPM</p>
             </div>
 
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Thermometer className="text-orange-400" size={20} />
-                <span className="text-gray-400 text-sm">Temperature</span>
+                <span className="text-slate-400 text-sm">Temperature</span>
               </div>
               <p className="text-2xl font-bold text-white">195°F</p>
-              <p className="text-gray-500 text-xs">Optimal range</p>
+              <p className="text-slate-500 text-xs">Optimal range</p>
             </div>
 
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Droplet className="text-green-400" size={20} />
-                <span className="text-gray-400 text-sm">Oil Pressure</span>
+                <span className="text-slate-400 text-sm">Oil Pressure</span>
               </div>
               <p className="text-2xl font-bold text-white">45 PSI</p>
-              <p className="text-gray-500 text-xs">Good</p>
+              <p className="text-slate-500 text-xs">Good</p>
             </div>
 
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Battery className="text-yellow-400" size={20} />
-                <span className="text-gray-400 text-sm">Battery</span>
+                <span className="text-slate-400 text-sm">Battery</span>
               </div>
               <p className="text-2xl font-bold text-white">12.6V</p>
-              <p className="text-gray-500 text-xs">Fully charged</p>
+              <p className="text-slate-500 text-xs">Fully charged</p>
             </div>
           </div>
 
-          <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
+          <div className="mt-4 flex items-center gap-4 text-sm text-slate-400">
             <div className="flex items-center gap-2">
               <TrendingUp size={16} />
               <span>Mileage: {vehicle.mileage.toLocaleString()} mi</span>
@@ -309,7 +309,7 @@ export default function DiagnosticsPage() {
               </h3>
               <Button
                 variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="border-gray-600 text-slate-300 hover:bg-gray-700"
               >
                 Clear Codes
               </Button>
@@ -335,8 +335,8 @@ export default function DiagnosticsPage() {
                             {code.code}
                           </span>
                         </div>
-                        <p className="text-gray-300 mb-2">{code.description}</p>
-                        <p className="text-gray-500 text-sm">
+                        <p className="text-slate-300 mb-2">{code.description}</p>
+                        <p className="text-slate-500 text-sm">
                           Detected: {formatDate(code.detected)}
                         </p>
                       </div>
@@ -357,7 +357,7 @@ export default function DiagnosticsPage() {
                 <h3 className="text-xl font-bold text-white mb-2">
                   No Active Codes
                 </h3>
-                <p className="text-gray-400">
+                <p className="text-slate-400">
                   Your vehicle is running smoothly with no diagnostic codes
                 </p>
               </Card>
@@ -394,7 +394,7 @@ export default function DiagnosticsPage() {
                           {item.service}
                         </span>
                       </div>
-                      <div className="flex items-center gap-6 text-sm text-gray-400">
+                      <div className="flex items-center gap-6 text-sm text-slate-400">
                         <div className="flex items-center gap-2">
                           <Calendar size={16} />
                           <span>Due: {formatDate(item.dueDate)}</span>
@@ -411,7 +411,7 @@ export default function DiagnosticsPage() {
                       <p className="text-2xl font-bold text-white">
                         ${item.estimatedCost}
                       </p>
-                      <p className="text-gray-400 text-sm">Estimated</p>
+                      <p className="text-slate-400 text-sm">Estimated</p>
                     </div>
                   </div>
                 </Card>
@@ -427,7 +427,7 @@ export default function DiagnosticsPage() {
               </h3>
               <Button
                 variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="border-gray-600 text-slate-300 hover:bg-gray-700"
               >
                 <MapPin className="mr-2" size={18} />
                 Find Nearby
@@ -445,7 +445,7 @@ export default function DiagnosticsPage() {
                       <h4 className="text-lg font-bold text-white mb-1">
                         {provider.name}
                       </h4>
-                      <div className="space-y-2 text-sm text-gray-400">
+                      <div className="space-y-2 text-sm text-slate-400">
                         <div className="flex items-center gap-2">
                           <MapPin size={16} />
                           <span>{provider.address}</span>
@@ -463,7 +463,7 @@ export default function DiagnosticsPage() {
                           {provider.rating}
                         </span>
                       </div>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-slate-400 text-sm">
                         {provider.distance} mi away
                       </p>
                     </div>
@@ -485,7 +485,7 @@ export default function DiagnosticsPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="flex-1 border-gray-600 text-slate-300 hover:bg-gray-700"
                     >
                       <Phone className="mr-2" size={16} />
                       Call Now

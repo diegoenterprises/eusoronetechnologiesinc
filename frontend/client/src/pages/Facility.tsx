@@ -166,9 +166,9 @@ export default function FacilityPage() {
         return "border-orange-600 text-orange-400 bg-orange-600/10";
       case "break":
       case "offline":
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
       default:
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
     }
   };
 
@@ -189,7 +189,7 @@ export default function FacilityPage() {
             <h1 className="text-3xl font-bold text-white mb-2">
               Facility Management
             </h1>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Terminal operations and shipment coordination
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function FacilityPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-slate-300 hover:bg-gray-700"
             >
               <Calendar className="mr-2" size={18} />
               Schedule
@@ -217,7 +217,7 @@ export default function FacilityPage() {
                 <Activity className="text-blue-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Active Shipments</p>
+                <p className="text-slate-400 text-sm">Active Shipments</p>
                 <p className="text-2xl font-bold text-white">
                   {stats.activeShipments}
                 </p>
@@ -231,7 +231,7 @@ export default function FacilityPage() {
                 <TruckIcon className="text-green-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Incoming Today</p>
+                <p className="text-slate-400 text-sm">Incoming Today</p>
                 <p className="text-2xl font-bold text-white">
                   {stats.incomingToday}
                 </p>
@@ -245,7 +245,7 @@ export default function FacilityPage() {
                 <Package className="text-purple-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Outgoing Today</p>
+                <p className="text-slate-400 text-sm">Outgoing Today</p>
                 <p className="text-2xl font-bold text-white">
                   {stats.outgoingToday}
                 </p>
@@ -259,7 +259,7 @@ export default function FacilityPage() {
                 <Building2 className="text-yellow-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Available Bays</p>
+                <p className="text-slate-400 text-sm">Available Bays</p>
                 <p className="text-2xl font-bold text-white">
                   {stats.availableBays}/{stats.totalBays}
                 </p>
@@ -277,7 +277,7 @@ export default function FacilityPage() {
                   <Users className="text-blue-400" size={24} />
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Staff On Duty</p>
+                  <p className="text-slate-400 text-sm">Staff On Duty</p>
                   <p className="text-2xl font-bold text-white">
                     {stats.staffOnDuty}
                   </p>
@@ -286,7 +286,7 @@ export default function FacilityPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="border-gray-600 text-slate-300 hover:bg-gray-700"
               >
                 View Schedule
               </Button>
@@ -300,7 +300,7 @@ export default function FacilityPage() {
                   <CheckCircle className="text-green-400" size={24} />
                 </div>
                 <div>
-                  <p className="text-gray-400 text-sm">Safety Incidents (30d)</p>
+                  <p className="text-slate-400 text-sm">Safety Incidents (30d)</p>
                   <p className="text-2xl font-bold text-white">
                     {stats.safetyIncidents}
                   </p>
@@ -331,14 +331,14 @@ export default function FacilityPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  className="border-gray-600 text-slate-300 hover:bg-gray-700"
                 >
                   Incoming
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  className="border-gray-600 text-slate-300 hover:bg-gray-700"
                 >
                   Outgoing
                 </Button>
@@ -370,39 +370,39 @@ export default function FacilityPage() {
                         >
                           {shipment.type.toUpperCase()}
                         </Badge>
-                        <span className="text-gray-400 text-sm">
+                        <span className="text-slate-400 text-sm">
                           {shipment.id}
                         </span>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 mb-3">
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Carrier</p>
+                          <p className="text-slate-400 text-sm mb-1">Carrier</p>
                           <p className="text-white font-semibold">
                             {shipment.carrier}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Driver</p>
+                          <p className="text-slate-400 text-sm mb-1">Driver</p>
                           <p className="text-white font-semibold">
                             {shipment.driver}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Commodity</p>
+                          <p className="text-slate-400 text-sm mb-1">Commodity</p>
                           <p className="text-white font-semibold">
                             {shipment.commodity}
                           </p>
                         </div>
                         <div>
-                          <p className="text-gray-400 text-sm mb-1">Quantity</p>
+                          <p className="text-slate-400 text-sm mb-1">Quantity</p>
                           <p className="text-white font-semibold">
                             {((shipment as any).weight || shipment.quantity || 0).toLocaleString()} gal
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6 text-sm text-gray-400">
+                      <div className="flex items-center gap-6 text-sm text-slate-400">
                         <div className="flex items-center gap-2">
                           <Clock size={16} />
                           <span>
@@ -437,7 +437,7 @@ export default function FacilityPage() {
               <h3 className="text-xl font-bold text-white">Bay Status</h3>
               <Button
                 variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="border-gray-600 text-slate-300 hover:bg-gray-700"
               >
                 <Activity className="mr-2" size={18} />
                 Live View
@@ -463,7 +463,7 @@ export default function FacilityPage() {
                           {bay.status.toUpperCase()}
                         </Badge>
                       </div>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-slate-400 text-sm">
                         Type: {bay.type.charAt(0).toUpperCase() + bay.type.slice(1)}
                       </p>
                     </div>
@@ -471,7 +471,7 @@ export default function FacilityPage() {
 
                   {bay.currentShipment && (
                     <div className="mb-4 p-3 bg-gray-800 rounded">
-                      <p className="text-gray-400 text-xs mb-1">
+                      <p className="text-slate-400 text-xs mb-1">
                         Current Shipment
                       </p>
                       <p className="text-white font-semibold">
@@ -481,13 +481,13 @@ export default function FacilityPage() {
                   )}
 
                   <div className="mb-4">
-                    <p className="text-gray-400 text-sm mb-2">Equipment</p>
+                    <p className="text-slate-400 text-sm mb-2">Equipment</p>
                     <div className="flex flex-wrap gap-2">
                       {bay.equipment.map((eq: any) => (
                         <Badge
                           key={eq}
                           variant="outline"
-                          className="border-gray-600 text-gray-300 bg-gray-800"
+                          className="border-gray-600 text-slate-300 bg-gray-800"
                         >
                           {eq}
                         </Badge>
@@ -498,7 +498,7 @@ export default function FacilityPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full border-gray-600 text-gray-300 hover:bg-gray-700"
+                    className="w-full border-gray-600 text-slate-300 hover:bg-gray-700"
                     disabled={bay.status === "maintenance"}
                   >
                     {bay.status === "available"
@@ -537,17 +537,17 @@ export default function FacilityPage() {
                         <h4 className="text-lg font-bold text-white mb-1">
                           {member.name}
                         </h4>
-                        <p className="text-gray-400 text-sm">{member.role}</p>
+                        <p className="text-slate-400 text-sm">{member.role}</p>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="text-gray-400 text-sm mb-1">Shift</p>
+                        <p className="text-slate-400 text-sm mb-1">Shift</p>
                         <p className="text-white font-semibold">{member.shift}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-gray-400 text-sm mb-1">Tasks</p>
+                        <p className="text-slate-400 text-sm mb-1">Tasks</p>
                         <p className="text-white font-semibold">
                           {member.tasksCompleted}
                         </p>

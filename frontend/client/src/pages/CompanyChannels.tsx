@@ -138,7 +138,7 @@ export default function CompanyChannels() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Company Channels</h1>
-          <p className="text-gray-400 mt-1">Team communication and collaboration</p>
+          <p className="text-slate-400 mt-1">Team communication and collaboration</p>
         </div>
         <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all">
           <Plus size={18} className="mr-2" />
@@ -157,7 +157,7 @@ export default function CompanyChannels() {
               onClick={() => setShowCreateChannel(true)}
               className="p-1 hover:bg-gray-800 rounded transition-colors"
             >
-              <Plus size={20} className="text-gray-400" />
+              <Plus size={20} className="text-slate-400" />
             </button>
           </div>
 
@@ -165,7 +165,7 @@ export default function CompanyChannels() {
           <div className="relative">
             <Search
               size={16}
-              className="absolute left-3 top-3 text-gray-500"
+              className="absolute left-3 top-3 text-slate-500"
             />
             <input
               type="text"
@@ -186,7 +186,7 @@ export default function CompanyChannels() {
               className={`w-full text-left px-4 py-3 border-l-4 transition-colors ${
                 selectedChannel === channel.id
                   ? "bg-blue-900/30 border-l-blue-600 text-white"
-                  : "border-l-transparent text-gray-400 hover:bg-gray-800"
+                  : "border-l-transparent text-slate-400 hover:bg-gray-800"
               }`}
             >
               <div className="flex items-start justify-between">
@@ -201,7 +201,7 @@ export default function CompanyChannels() {
                       {channel.name}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 truncate">
+                  <p className="text-xs text-slate-500 mt-1 truncate">
                     {channel.description}
                   </p>
                 </div>
@@ -225,7 +225,7 @@ export default function CompanyChannels() {
               <p className="text-sm font-semibold text-white truncate">
                 Diego Usoro
               </p>
-              <p className="text-xs text-gray-500">Admin</p>
+              <p className="text-xs text-slate-500">Admin</p>
             </div>
           </div>
         </div>
@@ -240,15 +240,15 @@ export default function CompanyChannels() {
               <div>
                 <div className="flex items-center gap-2">
                   {activeChannel.type === "private" ? (
-                    <Lock size={18} className="text-gray-400" />
+                    <Lock size={18} className="text-slate-400" />
                   ) : (
-                    <Hash size={18} className="text-gray-400" />
+                    <Hash size={18} className="text-slate-400" />
                   )}
                   <h1 className="text-xl font-bold text-white">
                     {activeChannel.name}
                   </h1>
                 </div>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-slate-400 mt-1">
                   {activeChannel.description}
                 </p>
               </div>
@@ -257,7 +257,7 @@ export default function CompanyChannels() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 text-gray-400 hover:bg-slate-700"
+                  className="border-slate-700 text-slate-400 hover:bg-slate-700"
                 >
                   <Users size={18} />
                   <span className="ml-2">{activeChannel.memberCount}</span>
@@ -265,14 +265,14 @@ export default function CompanyChannels() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 text-gray-400 hover:bg-slate-700"
+                  className="border-slate-700 text-slate-400 hover:bg-slate-700"
                 >
                   <Bell size={18} />
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 text-gray-400 hover:bg-slate-700"
+                  className="border-slate-700 text-slate-400 hover:bg-slate-700"
                 >
                   <Settings size={18} />
                 </Button>
@@ -295,19 +295,19 @@ export default function CompanyChannels() {
                       <span className="font-semibold text-white">
                         {message.author}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         {new Date(message.timestamp).toLocaleTimeString()}
                       </span>
                     </div>
 
-                    <p className="text-gray-300 mt-1">{message.content}</p>
+                    <p className="text-slate-300 mt-1">{message.content}</p>
 
                     {(message as any).attachments && (message as any).attachments.length > 0 && (
                       <div className="mt-2 space-y-1">
                         {(message as any).attachments.map((att: { name: string }, idx: number) => (
                           <div
                             key={idx}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 rounded border border-gray-700 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer"
+                            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 rounded border border-gray-700 text-sm text-slate-300 hover:bg-gray-700 cursor-pointer"
                           >
                             <Paperclip size={14} />
                             {att.name}
@@ -322,7 +322,7 @@ export default function CompanyChannels() {
                           ([reaction, count]) => (
                             <button
                               key={reaction}
-                              className="px-2 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700 transition-colors text-gray-300"
+                              className="px-2 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700 transition-colors text-slate-300"
                             >
                               {reaction}: {String(count)}
                             </button>
@@ -333,7 +333,7 @@ export default function CompanyChannels() {
                   </div>
 
                   <button className="p-1 hover:bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreVertical size={16} className="text-gray-500" />
+                    <MoreVertical size={16} className="text-slate-500" />
                   </button>
                 </div>
               ))}
@@ -343,7 +343,7 @@ export default function CompanyChannels() {
             <div className="bg-slate-800 border-t border-slate-700 px-6 py-4">
               <div className="flex gap-3">
                 <button className="p-2 hover:bg-slate-700 rounded transition-colors">
-                  <Paperclip size={20} className="text-gray-400" />
+                  <Paperclip size={20} className="text-slate-400" />
                 </button>
 
                 <input
@@ -373,7 +373,7 @@ export default function CompanyChannels() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <MessageSquare className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-              <p className="text-gray-400">Select a channel to start chatting</p>
+              <p className="text-slate-400">Select a channel to start chatting</p>
             </div>
           </div>
         )}
@@ -390,7 +390,7 @@ export default function CompanyChannels() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Channel Name
                 </label>
                 <input
@@ -403,7 +403,7 @@ export default function CompanyChannels() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Description
                 </label>
                 <textarea
@@ -416,7 +416,7 @@ export default function CompanyChannels() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Channel Type
                 </label>
                 <div className="flex gap-4">
@@ -429,7 +429,7 @@ export default function CompanyChannels() {
                       onChange={() => setNewChannelType("public")}
                       className="rounded"
                     />
-                    <span className="text-gray-300">Public</span>
+                    <span className="text-slate-300">Public</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -440,7 +440,7 @@ export default function CompanyChannels() {
                       onChange={() => setNewChannelType("private")}
                       className="rounded"
                     />
-                    <span className="text-gray-300">Private</span>
+                    <span className="text-slate-300">Private</span>
                   </label>
                 </div>
               </div>
@@ -449,7 +449,7 @@ export default function CompanyChannels() {
                 <Button
                   onClick={() => setShowCreateChannel(false)}
                   variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
+                  className="flex-1 border-gray-700 text-slate-300 hover:bg-gray-800"
                   disabled={createChannelMutation.isPending}
                 >
                   Cancel

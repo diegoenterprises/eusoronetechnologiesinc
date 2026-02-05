@@ -74,13 +74,13 @@ export default function AssignedLoadsPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 bg-clip-text text-transparent mb-2">
                 Assigned Loads
               </h1>
-              <p className="text-gray-400 text-lg">Accepted loads awaiting pickup and preparation</p>
+              <p className="text-slate-400 text-lg">Accepted loads awaiting pickup and preparation</p>
             </div>
             <Card className="bg-gray-900/50 border-gray-800 px-4 py-3">
               <div className="flex items-center gap-3">
                 <ClipboardCheck className="w-6 h-6 text-cyan-500" />
                 <div>
-                  <p className="text-xs text-gray-500">Awaiting Pickup</p>
+                  <p className="text-xs text-slate-500">Awaiting Pickup</p>
                   <p className="text-2xl font-bold text-cyan-400">{filteredLoads.length}</p>
                 </div>
               </div>
@@ -89,7 +89,7 @@ export default function AssignedLoadsPage() {
 
           <div className="flex gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
               <Input
                 placeholder="Search by load number, origin, or destination..."
                 value={searchQuery}
@@ -113,13 +113,13 @@ export default function AssignedLoadsPage() {
         {isLoading ? (
           <div className="text-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-cyan-500 mx-auto mb-4"></div>
-            <p className="text-gray-400 text-lg">Loading assigned loads...</p>
+            <p className="text-slate-400 text-lg">Loading assigned loads...</p>
           </div>
         ) : filteredLoads.length === 0 ? (
           <Card className="bg-gray-900/50 border-gray-800 p-16 text-center">
-            <Package className="w-20 h-20 text-gray-600 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-gray-300 mb-3">No assigned loads</h3>
-            <p className="text-gray-500 mb-8">Browse the marketplace to find and bid on available loads</p>
+            <Package className="w-20 h-20 text-slate-600 mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold text-slate-300 mb-3">No assigned loads</h3>
+            <p className="text-slate-500 mb-8">Browse the marketplace to find and bid on available loads</p>
             <Button
               onClick={() => setLocation("/marketplace")}
               className="bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
@@ -150,7 +150,7 @@ export default function AssignedLoadsPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-lg">Load #{load.loadNumber}</p>
-                        <p className="text-sm text-gray-400 capitalize">{load.cargoType} Freight</p>
+                        <p className="text-sm text-slate-400 capitalize">{load.cargoType} Freight</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -161,7 +161,7 @@ export default function AssignedLoadsPage() {
                         </Badge>
                       )}
                       <div className="text-right">
-                        <p className="text-xs text-gray-500">Pickup In</p>
+                        <p className="text-xs text-slate-500">Pickup In</p>
                         <p className={`font-semibold ${isUrgent ? "text-yellow-400" : "text-cyan-400"}`}>
                           {timeRemaining}
                         </p>
@@ -170,7 +170,7 @@ export default function AssignedLoadsPage() {
                   </div>
 
                   <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                    <div className="flex justify-between text-xs text-slate-500 mb-2">
                       <span>Preparation Progress</span>
                       <span>{progress}%</span>
                     </div>
@@ -186,27 +186,27 @@ export default function AssignedLoadsPage() {
                     <div className="flex items-center gap-3 flex-1">
                       <div className="w-3 h-3 rounded-full bg-green-500"></div>
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Pickup</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Pickup</p>
                         <p className="font-semibold">
                           {load.pickupLocation?.city || "N/A"}, {load.pickupLocation?.state || "N/A"}
                         </p>
                         {load.pickupDate && (
-                          <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
+                          <p className="text-sm text-slate-400 flex items-center gap-1 mt-1">
                             <Calendar className="w-3 h-3" />
                             {new Date(load.pickupDate).toLocaleString()}
                           </p>
                         )}
                       </div>
                     </div>
-                    <ArrowRight className="w-6 h-6 text-gray-600" />
+                    <ArrowRight className="w-6 h-6 text-slate-600" />
                     <div className="flex items-center gap-3 flex-1 justify-end">
                       <div className="text-right">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Delivery</p>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Delivery</p>
                         <p className="font-semibold">
                           {load.deliveryLocation?.city || "N/A"}, {load.deliveryLocation?.state || "N/A"}
                         </p>
                         {load.deliveryDate && (
-                          <p className="text-sm text-gray-400 flex items-center gap-1 mt-1 justify-end">
+                          <p className="text-sm text-slate-400 flex items-center gap-1 mt-1 justify-end">
                             <Clock className="w-3 h-3" />
                             {new Date(load.deliveryDate).toLocaleString()}
                           </p>
@@ -218,19 +218,19 @@ export default function AssignedLoadsPage() {
 
                   <div className="grid grid-cols-4 gap-3 mb-4">
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Weight</p>
+                      <p className="text-slate-500 text-xs mb-1">Weight</p>
                       <p className="font-medium">{load.weight ? `${load.weight} ${load.weightUnit}` : "N/A"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Distance</p>
+                      <p className="text-slate-500 text-xs mb-1">Distance</p>
                       <p className="font-medium">{load.distance ? `${load.distance} ${load.distanceUnit}` : "TBD"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Your Rate</p>
+                      <p className="text-slate-500 text-xs mb-1">Your Rate</p>
                       <p className="font-medium text-green-400">${load.rate ? Number(load.rate).toLocaleString() : "N/A"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Driver</p>
+                      <p className="text-slate-500 text-xs mb-1">Driver</p>
                       <p className="font-medium">{load.driverId ? `#${load.driverId}` : "Unassigned"}</p>
                     </div>
                   </div>
@@ -255,11 +255,11 @@ export default function AssignedLoadsPage() {
                         ) : (
                           <div className="w-4 h-4 rounded-full border-2 border-gray-600"></div>
                         )}
-                        <span className={load.driverId ? "" : "text-gray-500"}>Route planning confirmed</span>
+                        <span className={load.driverId ? "" : "text-slate-500"}>Route planning confirmed</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <div className="w-4 h-4 rounded-full border-2 border-gray-600"></div>
-                        <span className="text-gray-500">Insurance verification</span>
+                        <span className="text-slate-500">Insurance verification</span>
                       </div>
                     </div>
                   </div>

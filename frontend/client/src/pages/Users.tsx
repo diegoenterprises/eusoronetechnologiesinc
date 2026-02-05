@@ -102,11 +102,11 @@ export default function UsersPage() {
       case "active":
         return "bg-green-900/30 text-green-400 border-green-700";
       case "inactive":
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
       case "suspended":
         return "bg-red-900/30 text-red-400 border-red-700";
       default:
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
     }
   };
 
@@ -119,7 +119,7 @@ export default function UsersPage() {
       case "expired":
         return <AlertCircle size={16} className="text-red-400" />;
       default:
-        return <Clock size={16} className="text-gray-400" />;
+        return <Clock size={16} className="text-slate-400" />;
     }
   };
 
@@ -132,7 +132,7 @@ export default function UsersPage() {
       case "expired":
         return "bg-red-900/30 text-red-300 border-red-700";
       default:
-        return "bg-gray-900/30 text-gray-300 border-gray-700";
+        return "bg-gray-900/30 text-slate-300 border-gray-700";
     }
   };
 
@@ -151,7 +151,7 @@ export default function UsersPage() {
       case "insurance":
         return <ShieldCheck size={20} className="text-cyan-400" />;
       default:
-        return <FileIcon size={20} className="text-gray-400" />;
+        return <FileIcon size={20} className="text-slate-400" />;
     }
   };
 
@@ -161,7 +161,7 @@ export default function UsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Users</h1>
-          <p className="text-gray-400 mt-1">Manage user profiles and compliance documentation</p>
+          <p className="text-slate-400 mt-1">Manage user profiles and compliance documentation</p>
         </div>
       </div>
 
@@ -183,7 +183,7 @@ export default function UsersPage() {
                   className={`text-xs ${
                     filterRole === role
                       ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                      : "bg-slate-700 text-gray-300 hover:bg-slate-600"
+                      : "bg-slate-700 text-slate-300 hover:bg-slate-600"
                   } transition-all`}
                 >
                   {role === "all" ? "All" : role}
@@ -206,7 +206,7 @@ export default function UsersPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-white font-semibold">{u.name}</p>
-                    <p className="text-gray-400 text-xs">{u.role}</p>
+                    <p className="text-slate-400 text-xs">{u.role}</p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(
@@ -217,7 +217,7 @@ export default function UsersPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">{u.documents.length} docs</span>
+                  <span className="text-slate-400">{u.documents.length} docs</span>
                   <span className="text-green-400 font-semibold">{u.complianceScore}%</span>
                 </div>
               </Card>
@@ -232,7 +232,7 @@ export default function UsersPage() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">{currentUserData.name}</h2>
-                <p className="text-gray-400 text-sm">Joined {currentUserData.joinDate}</p>
+                <p className="text-slate-400 text-sm">Joined {currentUserData.joinDate}</p>
               </div>
               <span
                 className={`px-3 py-1 rounded text-sm font-semibold border ${getStatusColor(
@@ -246,19 +246,19 @@ export default function UsersPage() {
             {/* User Info Grid */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">Email</p>
+                <p className="text-xs text-slate-500 mb-1">Email</p>
                 <p className="text-white font-semibold text-sm">{currentUserData.email}</p>
               </div>
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">Phone</p>
+                <p className="text-xs text-slate-500 mb-1">Phone</p>
                 <p className="text-white font-semibold text-sm">{currentUserData.phone}</p>
               </div>
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">Role</p>
+                <p className="text-xs text-slate-500 mb-1">Role</p>
                 <p className="text-white font-semibold text-sm">{currentUserData.role}</p>
               </div>
               <div className="p-3 bg-gradient-to-br from-green-900/20 to-green-900/10 rounded-lg border border-green-700">
-                <p className="text-xs text-gray-500 mb-1">Compliance Score</p>
+                <p className="text-xs text-slate-500 mb-1">Compliance Score</p>
                 <p className="text-green-400 font-bold text-lg">{currentUserData.complianceScore}%</p>
               </div>
             </div>
@@ -292,14 +292,14 @@ export default function UsersPage() {
                         <div className="flex items-center justify-center w-8 h-8">{getDocumentTypeIcon(doc.type)}</div>
                         <div className="flex-1">
                           <p className="text-white font-semibold">{doc.name}</p>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-slate-400">
                             Uploaded: {doc.uploadedAt}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {getDocumentStatusIcon(doc.status)}
-                        <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white">
+                        <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
                           <Download size={16} />
                         </Button>
                       </div>
@@ -307,10 +307,10 @@ export default function UsersPage() {
 
                     <div className="flex items-center justify-between text-xs">
                       <div className="space-y-1">
-                        <p className="text-gray-400">
+                        <p className="text-slate-400">
                           Issued: <span className="text-white">{doc.issueDate}</span>
                         </p>
-                        <p className="text-gray-400">
+                        <p className="text-slate-400">
                           Expires: <span className="text-white">{doc.expiryDate}</span>
                         </p>
                       </div>
@@ -335,8 +335,8 @@ export default function UsersPage() {
               </div>
             ) : (
               <div className="text-center py-8">
-                <FileText size={32} className="text-gray-500 mx-auto mb-2" />
-                <p className="text-gray-400">No compliance documents uploaded</p>
+                <FileText size={32} className="text-slate-500 mx-auto mb-2" />
+                <p className="text-slate-400">No compliance documents uploaded</p>
                 <Button
                   onClick={() => setShowUploadModal(true)}
                   className="mt-4 bg-blue-600 hover:bg-blue-700"

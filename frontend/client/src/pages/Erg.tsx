@@ -223,7 +223,7 @@ export default function Erg() {
                 <Card className="bg-slate-800/50 border-slate-700">
                   <CardHeader className={cn("text-white", selectedClass.color)}>
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-lg bg-white/20 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-lg bg-slate-800/20 flex items-center justify-center">
                         {selectedClass.icon}
                       </div>
                       <div>

@@ -100,12 +100,12 @@ export default function TheHaulAchievements() {
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">
                     <div className={`p-3 rounded-full ${
-                      achievement.unlocked ? 'bg-purple-100' : 'bg-gray-100'
+                      achievement.unlocked ? 'bg-purple-100' : 'bg-slate-800'
                     }`}>
                       {achievement.unlocked ? (
                         <Award className="h-6 w-6 text-purple-600" />
                       ) : (
-                        <Lock className="h-6 w-6 text-gray-400" />
+                        <Lock className="h-6 w-6 text-slate-400" />
                       )}
                     </div>
                     <div className="flex-1">

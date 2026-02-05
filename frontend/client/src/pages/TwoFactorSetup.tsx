@@ -21,15 +21,15 @@ import { toast } from "sonner";
 export default function TwoFactorSetup() {
   const [verificationCode, setVerificationCode] = useState("");
 
-  const statusQuery = trpc.users.get2FAStatus.useQuery();
-  const setupQuery = trpc.users.setup2FA.useQuery(undefined, { enabled: !(statusQuery.data as any)?.enabled });
+  const statusQuery = (trpc as any).users.get2FAStatus.useQuery();
+  const setupQuery = (trpc as any).users.setup2FA.useQuery(undefined, { enabled: !(statusQuery.data as any)?.enabled });
 
-  const enableMutation = trpc.users.enable2FA.useMutation({
+  const enableMutation = (trpc as any).users.enable2FA.useMutation({
     onSuccess: () => { toast.success("2FA enabled successfully"); statusQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const disableMutation = trpc.users.disable2FA.useMutation({
+  const disableMutation = (trpc as any).users.disable2FA.useMutation({
     onSuccess: () => { toast.success("2FA disabled"); statusQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -106,7 +106,7 @@ export default function TwoFactorSetup() {
                 <Skeleton className="h-48 w-48 mx-auto rounded-xl" />
               ) : (
                 <>
-                  <div className="bg-white p-4 rounded-xl w-fit mx-auto">
+                  <div className="bg-slate-800 p-4 rounded-xl w-fit mx-auto">
                     <img src={setup?.qrCode} alt="2FA QR Code" className="w-40 h-40" />
                   </div>
                   <p className="text-sm text-slate-400 text-center">Scan this QR code with your authenticator app</p>

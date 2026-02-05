@@ -119,7 +119,7 @@ export default function ZeunBreakdownReport() {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Breakdown Diagnostic Results</h1>
-          <p className="text-gray-400 mt-1">Report ID: {reportId}</p>
+          <p className="text-slate-400 mt-1">Report ID: {reportId}</p>
         </div>
 
         {/* Severity Alert */}
@@ -148,7 +148,7 @@ export default function ZeunBreakdownReport() {
                     <h3 className="font-bold text-white">
                       SPN {code.spn} FMI {code.fmi}
                     </h3>
-                    <p className="text-sm text-gray-400 mt-1">{code.description}</p>
+                    <p className="text-sm text-slate-400 mt-1">{code.description}</p>
                   </div>
                   <span
                     className={`px-3 py-1 rounded text-xs font-bold ${
@@ -165,8 +165,8 @@ export default function ZeunBreakdownReport() {
 
                 <div className="space-y-2 text-sm">
                   <div>
-                    <p className="text-gray-400">Possible Causes:</p>
-                    <ul className="list-disc list-inside text-gray-300 mt-1">
+                    <p className="text-slate-400">Possible Causes:</p>
+                    <ul className="list-disc list-inside text-slate-300 mt-1">
                       {code.possibleCauses?.map((cause: string, i: number) => (
                         <li key={i}>{cause}</li>
                       ))}
@@ -175,13 +175,13 @@ export default function ZeunBreakdownReport() {
 
                   <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-700">
                     <div>
-                      <p className="text-gray-400 text-xs">Repair Time</p>
+                      <p className="text-slate-400 text-xs">Repair Time</p>
                       <p className="text-white font-bold">
                         {code.estimatedRepairTime?.[0]}-{code.estimatedRepairTime?.[1]} hrs
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-400 text-xs">Cost Range</p>
+                      <p className="text-slate-400 text-xs">Cost Range</p>
                       <p className="text-white font-bold">
                         ${code.estimatedCost?.[0]}-${code.estimatedCost?.[1]}
                       </p>
@@ -209,7 +209,7 @@ export default function ZeunBreakdownReport() {
               {diagnosticResult.recommendedActions.map((action: string, idx: number) => (
                 <div key={idx} className="flex items-start gap-3">
                   <CheckCircle size={20} className="text-green-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-gray-300">{action}</p>
+                  <p className="text-slate-300">{action}</p>
                 </div>
               ))}
             </Card>
@@ -228,7 +228,7 @@ export default function ZeunBreakdownReport() {
                       <h3 className="font-bold text-white">{provider.name}</h3>
                       <div className="flex items-center gap-2 mt-1">
                         <MapPin size={16} className="text-blue-400" />
-                        <span className="text-sm text-gray-400">{provider.distance} miles away</span>
+                        <span className="text-sm text-slate-400">{provider.distance} miles away</span>
                       </div>
                     </div>
                     <div className="text-right">
@@ -236,7 +236,7 @@ export default function ZeunBreakdownReport() {
                         <span className="text-yellow-400">★</span>
                         <span className="font-bold text-white">{provider.rating}</span>
                       </div>
-                      <p className="text-xs text-gray-400 mt-1">Rating</p>
+                      <p className="text-xs text-slate-400 mt-1">Rating</p>
                     </div>
                   </div>
 
@@ -292,7 +292,7 @@ export default function ZeunBreakdownReport() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-white">Report Breakdown</h1>
-        <p className="text-gray-400 mt-1">Get instant diagnostics and find repair facilities</p>
+        <p className="text-slate-400 mt-1">Get instant diagnostics and find repair facilities</p>
       </div>
 
       {/* Breakdown Form */}
@@ -377,7 +377,7 @@ export default function ZeunBreakdownReport() {
                 className={`py-2 rounded text-sm font-bold transition ${
                   formData.severity === level
                     ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                    : "bg-slate-700 text-gray-400 hover:bg-slate-600"
+                    : "bg-slate-700 text-slate-400 hover:bg-slate-600"
                 }`}
               >
                 {level}
@@ -405,7 +405,7 @@ export default function ZeunBreakdownReport() {
             </Button>
           </div>
           {formData.latitude !== 0 && (
-            <p className="text-xs text-gray-400 mt-2 flex items-center gap-1">
+            <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
               <MapPin size={12} className="text-blue-400" />
               {formData.latitude.toFixed(4)}, {formData.longitude.toFixed(4)}
             </p>
@@ -433,7 +433,7 @@ export default function ZeunBreakdownReport() {
               className={`w-full py-2 rounded font-bold transition ${
                 formData.isHazmat
                   ? "bg-red-600 text-white"
-                  : "bg-slate-700 text-gray-400 hover:bg-slate-600"
+                  : "bg-slate-700 text-slate-400 hover:bg-slate-600"
               }`}
             >
               {formData.isHazmat ? "YES - HazMat" : "NO - Regular"}
@@ -450,7 +450,7 @@ export default function ZeunBreakdownReport() {
               className={`flex-1 py-2 rounded font-bold transition ${
                 formData.canDrive
                   ? "bg-green-600 text-white"
-                  : "bg-slate-700 text-gray-400 hover:bg-slate-600"
+                  : "bg-slate-700 text-slate-400 hover:bg-slate-600"
               }`}
             >
               Yes, I can drive
@@ -460,7 +460,7 @@ export default function ZeunBreakdownReport() {
               className={`flex-1 py-2 rounded font-bold transition ${
                 !formData.canDrive
                   ? "bg-red-600 text-white"
-                  : "bg-slate-700 text-gray-400 hover:bg-slate-600"
+                  : "bg-slate-700 text-slate-400 hover:bg-slate-600"
               }`}
             >
               No, I cannot drive

@@ -127,7 +127,7 @@ export default function ProceduresPage() {
       case "hazmat":
         return <Flame className="text-orange-400" size={20} />;
       default:
-        return <FileText className="text-gray-400" size={20} />;
+        return <FileText className="text-slate-400" size={20} />;
     }
   };
 
@@ -144,7 +144,7 @@ export default function ProceduresPage() {
       case "hazmat":
         return "border-orange-600 text-orange-400 bg-orange-600/10";
       default:
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
     }
   };
 
@@ -166,7 +166,7 @@ export default function ProceduresPage() {
             <h1 className="text-3xl font-bold text-white mb-2">
               Job Procedures & SOPs
             </h1>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Standard Operating Procedures and safety protocols
             </p>
           </div>
@@ -174,7 +174,7 @@ export default function ProceduresPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-slate-300 hover:bg-gray-700"
             >
               <BookOpen className="mr-2" size={18} />
               Training Center
@@ -191,7 +191,7 @@ export default function ProceduresPage() {
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400"
                 size={20}
               />
               <Input
@@ -211,7 +211,7 @@ export default function ProceduresPage() {
                 className={
                   selectedCategory === "all"
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                    : "border-gray-600 text-slate-300 hover:bg-gray-700"
                 }
               >
                 All
@@ -223,7 +223,7 @@ export default function ProceduresPage() {
                 className={
                   selectedCategory === "safety"
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                    : "border-gray-600 text-slate-300 hover:bg-gray-700"
                 }
               >
                 Safety
@@ -235,7 +235,7 @@ export default function ProceduresPage() {
                 className={
                   selectedCategory === "loading"
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                    : "border-gray-600 text-slate-300 hover:bg-gray-700"
                 }
               >
                 Loading
@@ -249,7 +249,7 @@ export default function ProceduresPage() {
                 className={
                   selectedCategory === "emergency"
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                    : "border-gray-600 text-slate-300 hover:bg-gray-700"
                 }
               >
                 Emergency
@@ -263,7 +263,7 @@ export default function ProceduresPage() {
                 className={
                   selectedCategory === "compliance"
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                    : "border-gray-600 text-slate-300 hover:bg-gray-700"
                 }
               >
                 Compliance
@@ -275,7 +275,7 @@ export default function ProceduresPage() {
                 className={
                   selectedCategory === "hazmat"
                     ? "bg-blue-600 hover:bg-blue-700"
-                    : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                    : "border-gray-600 text-slate-300 hover:bg-gray-700"
                 }
               >
                 HazMat
@@ -321,7 +321,7 @@ export default function ProceduresPage() {
                           </Badge>
                         )}
                       </div>
-                      <p className="text-gray-400 mb-4">
+                      <p className="text-slate-400 mb-4">
                         {procedure.description}
                       </p>
 
@@ -333,7 +333,7 @@ export default function ProceduresPage() {
                           {procedure.steps.map((step: any, index: number) => (
                             <li
                               key={index}
-                              className="flex items-start gap-3 text-gray-300 text-sm"
+                              className="flex items-start gap-3 text-slate-300 text-sm"
                             >
                               <span className="flex-shrink-0 w-6 h-6 bg-blue-600/20 rounded-full flex items-center justify-center text-blue-400 text-xs font-semibold">
                                 {index + 1}
@@ -344,7 +344,7 @@ export default function ProceduresPage() {
                         </ol>
                       </div>
 
-                      <p className="text-gray-500 text-xs mt-4">
+                      <p className="text-slate-500 text-xs mt-4">
                         Last updated:{" "}
                         {procedure.lastUpdated.toLocaleDateString("en-US", {
                           month: "short",
@@ -366,7 +366,7 @@ export default function ProceduresPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        className="border-gray-600 text-slate-300 hover:bg-gray-700"
                       >
                         <CheckCircle className="mr-2" size={16} />
                         Mark Complete
@@ -403,7 +403,7 @@ export default function ProceduresPage() {
                               }}
                             />
                           </div>
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-slate-400">
                             {checklist.completed}/{checklist.total} completed
                           </span>
                         </div>
@@ -412,7 +412,7 @@ export default function ProceduresPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="border-gray-600 text-slate-300 hover:bg-gray-700"
                     >
                       Reset
                     </Button>
@@ -432,7 +432,7 @@ export default function ProceduresPage() {
                         />
                         <span
                           className={`flex-1 ${
-                            item.checked ? "text-gray-500 line-through" : "text-white"
+                            item.checked ? "text-slate-500 line-through" : "text-white"
                           }`}
                         >
                           {item.text}

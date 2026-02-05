@@ -19,8 +19,8 @@ export default function LoadCreationStep1() {
   const [productName, setProductName] = useState("");
   const [hazmatClass, setHazmatClass] = useState("");
 
-  const classifyMutation = trpc.esang.classifyHazmat.useMutation();
-  const hazmatClassesQuery = trpc.loads.list.useQuery({});
+  const classifyMutation = (trpc as any).esang.classifyHazmat.useMutation();
+  const hazmatClassesQuery = (trpc as any).loads.getHazmatClasses.useQuery({});
 
   const handleAISuggest = () => {
     if (productName) classifyMutation.mutate({ productName });

@@ -182,7 +182,7 @@ export default function LoadCreatePage() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent mb-2">
             Create New Load
           </h1>
-          <p className="text-gray-400 text-lg">Post a new shipment to the EusoTrip marketplace</p>
+          <p className="text-slate-400 text-lg">Post a new shipment to the EusoTrip marketplace</p>
         </div>
 
         {/* Progress Steps */}
@@ -218,10 +218,10 @@ export default function LoadCreatePage() {
                       <Icon className="w-7 h-7" />
                     )}
                   </div>
-                  <p className={`text-sm font-semibold mb-1 ${isActive ? "text-white" : "text-gray-400"}`}>
+                  <p className={`text-sm font-semibold mb-1 ${isActive ? "text-white" : "text-slate-400"}`}>
                     {step.title}
                   </p>
-                  <p className="text-xs text-gray-500 text-center max-w-[120px]">
+                  <p className="text-xs text-slate-500 text-center max-w-[120px]">
                     {step.description}
                   </p>
                 </div>
@@ -238,12 +238,12 @@ export default function LoadCreatePage() {
                 <Package className="w-8 h-8 text-blue-400" />
                 <div>
                   <h2 className="text-2xl font-bold">Load Details</h2>
-                  <p className="text-gray-400">Specify cargo type and specifications</p>
+                  <p className="text-slate-400">Specify cargo type and specifications</p>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Cargo Type *</label>
+                <label className="block text-sm font-medium mb-2 text-slate-300">Cargo Type *</label>
                 <select
                   value={formData.cargoType}
                   onChange={(e: any) => setFormData({ ...formData, cargoType: e.target.value as any })}
@@ -268,7 +268,7 @@ export default function LoadCreatePage() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">HazMat Class *</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">HazMat Class *</label>
                       <Input
                         value={formData.hazmatClass}
                         onChange={(e: any) => setFormData({ ...formData, hazmatClass: e.target.value })}
@@ -277,7 +277,7 @@ export default function LoadCreatePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">UN Number *</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">UN Number *</label>
                       <Input
                         value={formData.unNumber}
                         onChange={(e: any) => setFormData({ ...formData, unNumber: e.target.value })}
@@ -291,7 +291,7 @@ export default function LoadCreatePage() {
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Weight</label>
+                  <label className="block text-sm font-medium mb-2 text-slate-300">Weight</label>
                   <div className="flex gap-2">
                     <Input
                       type="number"
@@ -312,7 +312,7 @@ export default function LoadCreatePage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Volume</label>
+                  <label className="block text-sm font-medium mb-2 text-slate-300">Volume</label>
                   <div className="flex gap-2">
                     <Input
                       type="number"
@@ -350,7 +350,7 @@ export default function LoadCreatePage() {
                 <MapPin className="w-8 h-8 text-blue-400" />
                 <div>
                   <h2 className="text-2xl font-bold">Pickup & Delivery Locations</h2>
-                  <p className="text-gray-400">Enter complete addresses for accurate routing</p>
+                  <p className="text-slate-400">Enter complete addresses for accurate routing</p>
                 </div>
               </div>
               
@@ -361,7 +361,7 @@ export default function LoadCreatePage() {
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Street Address</label>
+                    <label className="block text-sm font-medium mb-2 text-slate-300">Street Address</label>
                     <Input
                       value={formData.pickupAddress}
                       onChange={(e: any) => setFormData({ ...formData, pickupAddress: e.target.value })}
@@ -371,7 +371,7 @@ export default function LoadCreatePage() {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">City *</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">City *</label>
                       <Input
                         value={formData.pickupCity}
                         onChange={(e: any) => setFormData({ ...formData, pickupCity: e.target.value })}
@@ -380,7 +380,7 @@ export default function LoadCreatePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">State *</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">State *</label>
                       <Input
                         value={formData.pickupState}
                         onChange={(e: any) => setFormData({ ...formData, pickupState: e.target.value })}
@@ -389,7 +389,7 @@ export default function LoadCreatePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">ZIP Code</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">ZIP Code</label>
                       <Input
                         value={formData.pickupZip}
                         onChange={(e: any) => setFormData({ ...formData, pickupZip: e.target.value })}
@@ -408,7 +408,7 @@ export default function LoadCreatePage() {
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Street Address</label>
+                    <label className="block text-sm font-medium mb-2 text-slate-300">Street Address</label>
                     <Input
                       value={formData.deliveryAddress}
                       onChange={(e: any) => setFormData({ ...formData, deliveryAddress: e.target.value })}
@@ -418,7 +418,7 @@ export default function LoadCreatePage() {
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">City *</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">City *</label>
                       <Input
                         value={formData.deliveryCity}
                         onChange={(e: any) => setFormData({ ...formData, deliveryCity: e.target.value })}
@@ -427,7 +427,7 @@ export default function LoadCreatePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">State *</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">State *</label>
                       <Input
                         value={formData.deliveryState}
                         onChange={(e: any) => setFormData({ ...formData, deliveryState: e.target.value })}
@@ -436,7 +436,7 @@ export default function LoadCreatePage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">ZIP Code</label>
+                      <label className="block text-sm font-medium mb-2 text-slate-300">ZIP Code</label>
                       <Input
                         value={formData.deliveryZip}
                         onChange={(e: any) => setFormData({ ...formData, deliveryZip: e.target.value })}
@@ -456,13 +456,13 @@ export default function LoadCreatePage() {
                 <Calendar className="w-8 h-8 text-blue-400" />
                 <div>
                   <h2 className="text-2xl font-bold">Pickup & Delivery Schedule</h2>
-                  <p className="text-gray-400">Set your preferred dates and times</p>
+                  <p className="text-slate-400">Set your preferred dates and times</p>
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Pickup Date & Time *</label>
+                  <label className="block text-sm font-medium mb-2 text-slate-300">Pickup Date & Time *</label>
                   <Input
                     type="datetime-local"
                     value={formData.pickupDate}
@@ -472,7 +472,7 @@ export default function LoadCreatePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-300">Delivery Date & Time (Optional)</label>
+                  <label className="block text-sm font-medium mb-2 text-slate-300">Delivery Date & Time (Optional)</label>
                   <Input
                     type="datetime-local"
                     value={formData.deliveryDate}
@@ -502,14 +502,14 @@ export default function LoadCreatePage() {
                 <DollarSign className="w-8 h-8 text-blue-400" />
                 <div>
                   <h2 className="text-2xl font-bold">Pricing & Instructions</h2>
-                  <p className="text-gray-400">Set your rate and add special requirements</p>
+                  <p className="text-slate-400">Set your rate and add special requirements</p>
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Rate (USD) *</label>
+                <label className="block text-sm font-medium mb-2 text-slate-300">Rate (USD) *</label>
                 <div className="relative">
-                  <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <DollarSign className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <Input
                     type="number"
                     value={formData.rate}
@@ -518,11 +518,11 @@ export default function LoadCreatePage() {
                     className="pl-12 bg-gray-800 border-gray-700 text-lg"
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-2">This is the total amount you're willing to pay for this shipment</p>
+                <p className="text-sm text-slate-500 mt-2">This is the total amount you're willing to pay for this shipment</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Special Instructions</label>
+                <label className="block text-sm font-medium mb-2 text-slate-300">Special Instructions</label>
                 <textarea
                   value={formData.specialInstructions}
                   onChange={(e: any) => setFormData({ ...formData, specialInstructions: e.target.value })}
@@ -548,7 +548,7 @@ export default function LoadCreatePage() {
                 <FileText className="w-8 h-8 text-blue-400" />
                 <div>
                   <h2 className="text-2xl font-bold">Review & Submit</h2>
-                  <p className="text-gray-400">Verify all details before posting your load</p>
+                  <p className="text-slate-400">Verify all details before posting your load</p>
                 </div>
               </div>
               
@@ -560,27 +560,27 @@ export default function LoadCreatePage() {
                   </h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500">Cargo Type</p>
+                      <p className="text-slate-500">Cargo Type</p>
                       <p className="font-medium capitalize">{formData.cargoType}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Weight</p>
+                      <p className="text-slate-500">Weight</p>
                       <p className="font-medium">{formData.weight} {formData.weightUnit}</p>
                     </div>
                     {formData.volume && (
                       <div>
-                        <p className="text-gray-500">Volume</p>
+                        <p className="text-slate-500">Volume</p>
                         <p className="font-medium">{formData.volume} {formData.volumeUnit}</p>
                       </div>
                     )}
                     {formData.cargoType === "hazmat" && (
                       <>
                         <div>
-                          <p className="text-gray-500">HazMat Class</p>
+                          <p className="text-slate-500">HazMat Class</p>
                           <p className="font-medium">{formData.hazmatClass}</p>
                         </div>
                         <div>
-                          <p className="text-gray-500">UN Number</p>
+                          <p className="text-slate-500">UN Number</p>
                           <p className="font-medium">{formData.unNumber}</p>
                         </div>
                       </>
@@ -597,17 +597,17 @@ export default function LoadCreatePage() {
                     <div className="flex items-start gap-3">
                       <div className="w-3 h-3 rounded-full bg-green-500 mt-1"></div>
                       <div>
-                        <p className="text-gray-500 text-sm">Pickup</p>
+                        <p className="text-slate-500 text-sm">Pickup</p>
                         <p className="font-medium">{formData.pickupCity}, {formData.pickupState} {formData.pickupZip}</p>
-                        {formData.pickupAddress && <p className="text-sm text-gray-400">{formData.pickupAddress}</p>}
+                        {formData.pickupAddress && <p className="text-sm text-slate-400">{formData.pickupAddress}</p>}
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <div className="w-3 h-3 rounded-full bg-red-500 mt-1"></div>
                       <div>
-                        <p className="text-gray-500 text-sm">Delivery</p>
+                        <p className="text-slate-500 text-sm">Delivery</p>
                         <p className="font-medium">{formData.deliveryCity}, {formData.deliveryState} {formData.deliveryZip}</p>
-                        {formData.deliveryAddress && <p className="text-sm text-gray-400">{formData.deliveryAddress}</p>}
+                        {formData.deliveryAddress && <p className="text-sm text-slate-400">{formData.deliveryAddress}</p>}
                       </div>
                     </div>
                   </div>
@@ -620,11 +620,11 @@ export default function LoadCreatePage() {
                   </h3>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500">Pickup Date</p>
+                      <p className="text-slate-500">Pickup Date</p>
                       <p className="font-medium">{formData.pickupDate ? new Date(formData.pickupDate).toLocaleString() : "Not set"}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Delivery Date</p>
+                      <p className="text-slate-500">Delivery Date</p>
                       <p className="font-medium">{formData.deliveryDate ? new Date(formData.deliveryDate).toLocaleString() : "Flexible"}</p>
                     </div>
                   </div>
@@ -638,8 +638,8 @@ export default function LoadCreatePage() {
                   <p className="text-3xl font-bold text-green-400">${formData.rate}</p>
                   {formData.specialInstructions && (
                     <div className="mt-4">
-                      <p className="text-gray-500 text-sm mb-1">Special Instructions</p>
-                      <p className="text-sm text-gray-300">{formData.specialInstructions}</p>
+                      <p className="text-slate-500 text-sm mb-1">Special Instructions</p>
+                      <p className="text-sm text-slate-300">{formData.specialInstructions}</p>
                     </div>
                   )}
                 </div>

@@ -225,7 +225,7 @@ export default function CompanyPage() {
       case "MAINTENANCE":
         return "text-orange-400 bg-orange-900/30";
       default:
-        return "text-gray-400 bg-gray-900/30";
+        return "text-slate-400 bg-gray-900/30";
     }
   };
 
@@ -240,7 +240,7 @@ export default function CompanyPage() {
       case "INACTIVE":
         return <XCircle size={16} className="text-red-400" />;
       default:
-        return <AlertCircle size={16} className="text-gray-400" />;
+        return <AlertCircle size={16} className="text-slate-400" />;
     }
   };
 
@@ -258,7 +258,7 @@ export default function CompanyPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Company Profile</h1>
-          <p className="text-gray-400">Manage your company information, compliance, and fleet</p>
+          <p className="text-slate-400">Manage your company information, compliance, and fleet</p>
         </div>
         {!isEditing ? (
           <Button
@@ -273,7 +273,7 @@ export default function CompanyPage() {
             <Button
               onClick={() => setIsEditing(false)}
               variant="outline"
-              className="border-gray-600 text-gray-400 hover:bg-gray-800"
+              className="border-gray-600 text-slate-400 hover:bg-gray-800"
             >
               Cancel
             </Button>
@@ -296,22 +296,22 @@ export default function CompanyPage() {
           </div>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-white mb-2">{companyData.name}</h2>
-            <p className="text-gray-400 mb-4">{companyData.description}</p>
+            <p className="text-slate-400 mb-4">{companyData.description}</p>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-gray-500 mb-1">MC Number</p>
+                <p className="text-xs text-slate-500 mb-1">MC Number</p>
                 <p className="text-white font-semibold">{companyData.mcNumber}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">DOT Number</p>
+                <p className="text-xs text-slate-500 mb-1">DOT Number</p>
                 <p className="text-white font-semibold">{companyData.dotNumber}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Safety Rating</p>
+                <p className="text-xs text-slate-500 mb-1">Safety Rating</p>
                 <p className="text-green-400 font-semibold">{companyData.safetyRating}</p>
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-1">Founded</p>
+                <p className="text-xs text-slate-500 mb-1">Founded</p>
                 <p className="text-white font-semibold">{companyData.founded}</p>
               </div>
             </div>
@@ -330,7 +330,7 @@ export default function CompanyPage() {
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                  : "bg-slate-800 text-gray-400 hover:bg-slate-700 hover:text-white"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white"
               }`}
             >
               <Icon size={18} />
@@ -351,7 +351,7 @@ export default function CompanyPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-gray-400 text-sm font-semibold">Company Name</label>
+                <label className="text-slate-400 text-sm font-semibold">Company Name</label>
                 <Input
                   value={companyData.name}
                   onChange={(e: any) => setCompanyData({ ...companyData, name: e.target.value })}
@@ -361,7 +361,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">Legal Name</label>
+                <label className="text-slate-400 text-sm font-semibold">Legal Name</label>
                 <Input
                   value={companyData.legalName}
                   onChange={(e: any) => setCompanyData({ ...companyData, legalName: e.target.value })}
@@ -371,7 +371,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">MC Number</label>
+                <label className="text-slate-400 text-sm font-semibold">MC Number</label>
                 <Input
                   value={companyData.mcNumber}
                   onChange={(e: any) => setCompanyData({ ...companyData, mcNumber: e.target.value })}
@@ -381,7 +381,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">DOT Number</label>
+                <label className="text-slate-400 text-sm font-semibold">DOT Number</label>
                 <Input
                   value={companyData.dotNumber}
                   onChange={(e: any) => setCompanyData({ ...companyData, dotNumber: e.target.value })}
@@ -391,7 +391,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">SCAC Code</label>
+                <label className="text-slate-400 text-sm font-semibold">SCAC Code</label>
                 <Input
                   value={companyData.scacCode}
                   onChange={(e: any) => setCompanyData({ ...companyData, scacCode: e.target.value })}
@@ -401,7 +401,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">Tax ID (EIN)</label>
+                <label className="text-slate-400 text-sm font-semibold">Tax ID (EIN)</label>
                 <Input
                   value={companyData.taxId}
                   onChange={(e: any) => setCompanyData({ ...companyData, taxId: e.target.value })}
@@ -411,7 +411,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">DUNS Number</label>
+                <label className="text-slate-400 text-sm font-semibold">DUNS Number</label>
                 <Input
                   value={companyData.dunsNumber}
                   onChange={(e: any) => setCompanyData({ ...companyData, dunsNumber: e.target.value })}
@@ -421,7 +421,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">Operating Authority</label>
+                <label className="text-slate-400 text-sm font-semibold">Operating Authority</label>
                 <select
                   value={companyData.operatingAuthority}
                   onChange={(e: any) => setCompanyData({ ...companyData, operatingAuthority: e.target.value })}
@@ -435,7 +435,7 @@ export default function CompanyPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-gray-400 text-sm font-semibold">Address</label>
+                <label className="text-slate-400 text-sm font-semibold">Address</label>
                 <Input
                   value={companyData.address}
                   onChange={(e: any) => setCompanyData({ ...companyData, address: e.target.value })}
@@ -445,7 +445,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">Phone</label>
+                <label className="text-slate-400 text-sm font-semibold">Phone</label>
                 <Input
                   value={companyData.phone}
                   onChange={(e: any) => setCompanyData({ ...companyData, phone: e.target.value })}
@@ -455,7 +455,7 @@ export default function CompanyPage() {
               </div>
 
               <div>
-                <label className="text-gray-400 text-sm font-semibold">Email</label>
+                <label className="text-slate-400 text-sm font-semibold">Email</label>
                 <Input
                   value={companyData.email}
                   onChange={(e: any) => setCompanyData({ ...companyData, email: e.target.value })}
@@ -465,7 +465,7 @@ export default function CompanyPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-gray-400 text-sm font-semibold">Website</label>
+                <label className="text-slate-400 text-sm font-semibold">Website</label>
                 <Input
                   value={companyData.website}
                   onChange={(e: any) => setCompanyData({ ...companyData, website: e.target.value })}
@@ -475,7 +475,7 @@ export default function CompanyPage() {
               </div>
 
               <div className="md:col-span-2">
-                <label className="text-gray-400 text-sm font-semibold">Company Description</label>
+                <label className="text-slate-400 text-sm font-semibold">Company Description</label>
                 <textarea
                   value={companyData.description}
                   onChange={(e: any) => setCompanyData({ ...companyData, description: e.target.value })}
@@ -498,33 +498,33 @@ export default function CompanyPage() {
                 <div className="flex items-center gap-3 mb-2">
                   <Truck size={24} className="text-blue-400" />
                   <div>
-                    <p className="text-gray-400 text-sm">Fleet Size</p>
+                    <p className="text-slate-400 text-sm">Fleet Size</p>
                     <p className="text-white text-2xl font-bold">{companyData.fleetSize}</p>
                   </div>
                 </div>
-                <p className="text-gray-500 text-xs">Active vehicles</p>
+                <p className="text-slate-500 text-xs">Active vehicles</p>
               </div>
 
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-3 mb-2">
                   <Users size={24} className="text-green-400" />
                   <div>
-                    <p className="text-gray-400 text-sm">Drivers</p>
+                    <p className="text-slate-400 text-sm">Drivers</p>
                     <p className="text-white text-2xl font-bold">{companyData.driverCount}</p>
                   </div>
                 </div>
-                <p className="text-gray-500 text-xs">Active drivers</p>
+                <p className="text-slate-500 text-xs">Active drivers</p>
               </div>
 
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-3 mb-2">
                   <Calendar size={24} className="text-purple-400" />
                   <div>
-                    <p className="text-gray-400 text-sm">Founded</p>
+                    <p className="text-slate-400 text-sm">Founded</p>
                     <p className="text-white text-2xl font-bold">{companyData.founded}</p>
                   </div>
                 </div>
-                <p className="text-gray-500 text-xs">Years in business: {new Date().getFullYear() - parseInt(companyData.founded)}</p>
+                <p className="text-slate-500 text-xs">Years in business: {new Date().getFullYear() - parseInt(companyData.founded)}</p>
               </div>
             </div>
           </Card>
@@ -559,7 +559,7 @@ export default function CompanyPage() {
                     <FileText size={24} className="text-blue-400" />
                     <div>
                       <p className="text-white font-semibold">{doc.name}</p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-slate-400 text-sm">
                         Uploaded: {doc.uploadedAt}
                         {doc.expiresAt && ` • Expires: ${doc.expiresAt}`}
                       </p>
@@ -645,7 +645,7 @@ export default function CompanyPage() {
                       <p className="text-white font-semibold">
                         {vehicle.year} {vehicle.make} {vehicle.model}
                       </p>
-                      <p className="text-gray-400 text-sm">
+                      <p className="text-slate-400 text-sm">
                         {vehicle.type} • VIN: {vehicle.vin}
                       </p>
                     </div>
@@ -671,17 +671,17 @@ export default function CompanyPage() {
             <h2 className="text-xl font-bold text-white mb-6">Fleet Summary</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
-                <p className="text-gray-400 text-sm mb-2">Total Vehicles</p>
+                <p className="text-slate-400 text-sm mb-2">Total Vehicles</p>
                 <p className="text-white text-3xl font-bold">{fleet.length}</p>
               </div>
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
-                <p className="text-gray-400 text-sm mb-2">Active</p>
+                <p className="text-slate-400 text-sm mb-2">Active</p>
                 <p className="text-green-400 text-3xl font-bold">
                   {fleet.filter((v: any) => v.status === "ACTIVE").length}
                 </p>
               </div>
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
-                <p className="text-gray-400 text-sm mb-2">In Maintenance</p>
+                <p className="text-slate-400 text-sm mb-2">In Maintenance</p>
                 <p className="text-orange-400 text-3xl font-bold">
                   {fleet.filter((v: any) => v.status === "MAINTENANCE").length}
                 </p>
@@ -709,7 +709,7 @@ export default function CompanyPage() {
                   <Award size={20} className="text-yellow-400" />
                   <div>
                     <p className="text-white font-semibold">{cert.name}</p>
-                    <p className="text-gray-400 text-sm">Expires: {cert.expires}</p>
+                    <p className="text-slate-400 text-sm">Expires: {cert.expires}</p>
                   </div>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(cert.status)}`}>
@@ -734,7 +734,7 @@ export default function CompanyPage() {
               <div className="bg-gradient-to-br from-blue-900/50 to-blue-800/30 p-6 rounded-lg border border-blue-700">
                 <div className="flex items-center gap-2 mb-2">
                   <Clock size={20} className="text-blue-400" />
-                  <p className="text-gray-300 text-sm">On-Time Delivery</p>
+                  <p className="text-slate-300 text-sm">On-Time Delivery</p>
                 </div>
                 <p className="text-white text-4xl font-bold">{performanceMetrics.onTimeDelivery}%</p>
               </div>
@@ -742,7 +742,7 @@ export default function CompanyPage() {
               <div className="bg-gradient-to-br from-green-900/50 to-green-800/30 p-6 rounded-lg border border-green-700">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield size={20} className="text-green-400" />
-                  <p className="text-gray-300 text-sm">Safety Score</p>
+                  <p className="text-slate-300 text-sm">Safety Score</p>
                 </div>
                 <p className="text-white text-4xl font-bold">{performanceMetrics.safetyScore}%</p>
               </div>
@@ -750,7 +750,7 @@ export default function CompanyPage() {
               <div className="bg-gradient-to-br from-purple-900/50 to-purple-800/30 p-6 rounded-lg border border-purple-700">
                 <div className="flex items-center gap-2 mb-2">
                   <Award size={20} className="text-purple-400" />
-                  <p className="text-gray-300 text-sm">Customer Rating</p>
+                  <p className="text-slate-300 text-sm">Customer Rating</p>
                 </div>
                 <p className="text-white text-4xl font-bold">{performanceMetrics.customerRating}/5.0</p>
               </div>
@@ -758,7 +758,7 @@ export default function CompanyPage() {
               <div className="bg-slate-700/50 p-6 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <Package size={20} className="text-blue-400" />
-                  <p className="text-gray-400 text-sm">Total Loads</p>
+                  <p className="text-slate-400 text-sm">Total Loads</p>
                 </div>
                 <p className="text-white text-3xl font-bold">{performanceMetrics.totalLoads.toLocaleString()}</p>
               </div>
@@ -766,7 +766,7 @@ export default function CompanyPage() {
               <div className="bg-slate-700/50 p-6 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <MapPin size={20} className="text-green-400" />
-                  <p className="text-gray-400 text-sm">Total Miles</p>
+                  <p className="text-slate-400 text-sm">Total Miles</p>
                 </div>
                 <p className="text-white text-3xl font-bold">{performanceMetrics.totalMiles.toLocaleString()}</p>
               </div>
@@ -774,7 +774,7 @@ export default function CompanyPage() {
               <div className="bg-slate-700/50 p-6 rounded-lg border border-slate-600">
                 <div className="flex items-center gap-2 mb-2">
                   <DollarSign size={20} className="text-yellow-400" />
-                  <p className="text-gray-400 text-sm">Avg Load Value</p>
+                  <p className="text-slate-400 text-sm">Avg Load Value</p>
                 </div>
                 <p className="text-white text-3xl font-bold">${performanceMetrics.avgLoadValue.toLocaleString()}</p>
               </div>

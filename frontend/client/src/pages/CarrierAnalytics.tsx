@@ -58,7 +58,7 @@ export default function CarrierAnalyticsPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 bg-clip-text text-transparent mb-2">
                 Carrier Analytics
               </h1>
-              <p className="text-gray-400 text-lg">Revenue tracking and performance metrics</p>
+              <p className="text-slate-400 text-lg">Revenue tracking and performance metrics</p>
             </div>
             <select
               value={timeRange}
@@ -85,11 +85,11 @@ export default function CarrierAnalyticsPage() {
                 {Math.abs(analytics.revenue.change)}%
               </Badge>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Total Revenue</p>
+            <p className="text-slate-400 text-sm mb-1">Total Revenue</p>
             <p className="text-3xl font-bold text-green-400 mb-1">
               ${analytics.revenue.current.toLocaleString()}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               vs ${analytics.revenue.previous.toLocaleString()} last period
             </p>
           </Card>
@@ -104,11 +104,11 @@ export default function CarrierAnalyticsPage() {
                 {analytics.loads.inProgress} active
               </Badge>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Loads Completed</p>
+            <p className="text-slate-400 text-sm mb-1">Loads Completed</p>
             <p className="text-3xl font-bold text-blue-400 mb-1">
               {analytics.loads.completed}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               {analytics.loads.total} total loads
             </p>
           </Card>
@@ -123,11 +123,11 @@ export default function CarrierAnalyticsPage() {
                 Excellent
               </Badge>
             </div>
-            <p className="text-gray-400 text-sm mb-1">On-Time Delivery</p>
+            <p className="text-slate-400 text-sm mb-1">On-Time Delivery</p>
             <p className="text-3xl font-bold text-purple-400 mb-1">
               {analytics.efficiency.onTimeDelivery}%
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               Industry avg: 89%
             </p>
           </Card>
@@ -142,11 +142,11 @@ export default function CarrierAnalyticsPage() {
                 Top Rated
               </Badge>
             </div>
-            <p className="text-gray-400 text-sm mb-1">Carrier Rating</p>
+            <p className="text-slate-400 text-sm mb-1">Carrier Rating</p>
             <p className="text-3xl font-bold text-yellow-400 mb-1">
               {analytics.performance.rating}/5.0
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-slate-500">
               Based on {analytics.loads.completed} deliveries
             </p>
           </Card>
@@ -161,9 +161,9 @@ export default function CarrierAnalyticsPage() {
             </h3>
             <div className="h-64 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-lg flex items-center justify-center border border-gray-800">
               <div className="text-center">
-                <BarChart3 className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">Revenue chart visualization</p>
-                <p className="text-sm text-gray-500 mt-2">Integration with charting library coming soon</p>
+                <BarChart3 className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">Revenue chart visualization</p>
+                <p className="text-sm text-slate-500 mt-2">Integration with charting library coming soon</p>
               </div>
             </div>
           </Card>
@@ -173,7 +173,7 @@ export default function CarrierAnalyticsPage() {
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Avg Delivery Time</span>
+                  <span className="text-slate-400">Avg Delivery Time</span>
                   <span className="font-medium">{analytics.efficiency.avgDeliveryTime} days</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2">
@@ -183,7 +183,7 @@ export default function CarrierAnalyticsPage() {
 
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Fuel Efficiency</span>
+                  <span className="text-slate-400">Fuel Efficiency</span>
                   <span className="font-medium">{analytics.efficiency.fuelEfficiency} MPG</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2">
@@ -193,7 +193,7 @@ export default function CarrierAnalyticsPage() {
 
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Repeat Customers</span>
+                  <span className="text-slate-400">Repeat Customers</span>
                   <span className="font-medium">{analytics.performance.repeatCustomers}%</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2">
@@ -203,13 +203,13 @@ export default function CarrierAnalyticsPage() {
 
               <div>
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Cancellation Rate</span>
+                  <span className="text-slate-400">Cancellation Rate</span>
                   <span className="font-medium text-green-400">{analytics.performance.cancellationRate}%</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2">
                   <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style={{ width: "97.9%" }}></div>
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Lower is better</p>
+                <p className="text-xs text-slate-500 mt-1">Lower is better</p>
               </div>
             </div>
           </Card>
@@ -230,7 +230,7 @@ export default function CarrierAnalyticsPage() {
                   </div>
                   <div>
                     <p className="font-semibold">Load #{load.number}</p>
-                    <p className="text-sm text-gray-400 flex items-center gap-1">
+                    <p className="text-sm text-slate-400 flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {new Date(load.date).toLocaleDateString()}
                     </p>
@@ -241,7 +241,7 @@ export default function CarrierAnalyticsPage() {
                     Completed
                   </Badge>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Revenue</p>
+                    <p className="text-xs text-slate-500">Revenue</p>
                     <p className="font-semibold text-green-400 text-lg">
                       ${load.revenue.toLocaleString()}
                     </p>

@@ -106,11 +106,11 @@ export default function CompaniesPage() {
       case "active":
         return "bg-green-900/30 text-green-400 border-green-700";
       case "inactive":
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
       case "suspended":
         return "bg-red-900/30 text-red-400 border-red-700";
       default:
-        return "bg-gray-900/30 text-gray-400 border-gray-700";
+        return "bg-gray-900/30 text-slate-400 border-gray-700";
     }
   };
 
@@ -123,7 +123,7 @@ export default function CompaniesPage() {
       case "expired":
         return <AlertCircle size={16} className="text-red-400" />;
       default:
-        return <Clock size={16} className="text-gray-400" />;
+        return <Clock size={16} className="text-slate-400" />;
     }
   };
 
@@ -136,7 +136,7 @@ export default function CompaniesPage() {
       case "expired":
         return "bg-red-900/30 text-red-300 border-red-700";
       default:
-        return "bg-gray-900/30 text-gray-300 border-gray-700";
+        return "bg-gray-900/30 text-slate-300 border-gray-700";
     }
   };
 
@@ -146,7 +146,7 @@ export default function CompaniesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Companies</h1>
-          <p className="text-gray-400 mt-1">Manage company profiles and compliance documentation</p>
+          <p className="text-slate-400 mt-1">Manage company profiles and compliance documentation</p>
         </div>
         <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all">
           <Plus size={18} className="mr-2" />
@@ -180,7 +180,7 @@ export default function CompaniesPage() {
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
                     <p className="text-white font-semibold">{company.name}</p>
-                    <p className="text-gray-400 text-xs">{company.dotNumber}</p>
+                    <p className="text-slate-400 text-xs">{company.dotNumber}</p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded text-xs font-semibold border ${getStatusColor(
@@ -191,7 +191,7 @@ export default function CompaniesPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-400">{company.employees} employees</span>
+                  <span className="text-slate-400">{company.employees} employees</span>
                   <span className="text-green-400 font-semibold">{company.complianceScore}%</span>
                 </div>
               </Card>
@@ -206,7 +206,7 @@ export default function CompaniesPage() {
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">{currentCompany.name}</h2>
-                <p className="text-gray-400">{currentCompany.contact.address}</p>
+                <p className="text-slate-400">{currentCompany.contact.address}</p>
               </div>
               <div className="flex gap-2">
                 <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
@@ -221,34 +221,34 @@ export default function CompaniesPage() {
             {/* Company Info Grid */}
             <div className="grid grid-cols-2 gap-4">
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">DOT Number</p>
+                <p className="text-xs text-slate-500 mb-1">DOT Number</p>
                 <p className="text-white font-semibold">{currentCompany.dotNumber}</p>
               </div>
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">MC Number</p>
+                <p className="text-xs text-slate-500 mb-1">MC Number</p>
                 <p className="text-white font-semibold">{currentCompany.mcNumber}</p>
               </div>
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">EIN</p>
+                <p className="text-xs text-slate-500 mb-1">EIN</p>
                 <p className="text-white font-semibold">{currentCompany.ein}</p>
               </div>
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">Founded</p>
+                <p className="text-xs text-slate-500 mb-1">Founded</p>
                 <p className="text-white font-semibold">{currentCompany.founded}</p>
               </div>
               <div className="p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                <p className="text-xs text-gray-500 mb-1">Employees</p>
+                <p className="text-xs text-slate-500 mb-1">Employees</p>
                 <p className="text-white font-semibold">{currentCompany.employees}</p>
               </div>
               <div className="p-3 bg-gradient-to-br from-green-900/20 to-green-900/10 rounded-lg border border-green-700">
-                <p className="text-xs text-gray-500 mb-1">Compliance Score</p>
+                <p className="text-xs text-slate-500 mb-1">Compliance Score</p>
                 <p className="text-green-400 font-bold text-lg">{currentCompany.complianceScore}%</p>
               </div>
             </div>
 
             {/* Contact Info */}
             <div className="mt-6 pt-6 border-t border-slate-700 space-y-2">
-              <p className="text-xs text-gray-500">Contact Information</p>
+              <p className="text-xs text-slate-500">Contact Information</p>
               <div className="space-y-1">
                 <p className="text-white text-sm">{currentCompany.contact.email}</p>
                 <p className="text-white text-sm">{currentCompany.contact.phone}</p>
@@ -284,20 +284,20 @@ export default function CompaniesPage() {
                       <div className="mt-1">{getDocumentStatusIcon(doc.status)}</div>
                       <div className="flex-1">
                         <p className="text-white font-semibold">{doc.name}</p>
-                        {doc.provider && <p className="text-xs text-gray-400">{doc.provider}</p>}
+                        {doc.provider && <p className="text-xs text-slate-400">{doc.provider}</p>}
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" className="text-gray-400 hover:text-white">
+                    <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
                       <Download size={16} />
                     </Button>
                   </div>
 
                   <div className="flex items-center justify-between text-xs">
                     <div className="space-y-1">
-                      <p className="text-gray-400">
+                      <p className="text-slate-400">
                         Issued: <span className="text-white">{doc.issueDate}</span>
                       </p>
-                      <p className="text-gray-400">
+                      <p className="text-slate-400">
                         Expires: <span className="text-white">{doc.expiryDate}</span>
                       </p>
                     </div>

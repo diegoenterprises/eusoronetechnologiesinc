@@ -194,8 +194,8 @@ export default function TheHaul() {
                 <Card key={achievement.id} className={achievement.unlocked ? '' : 'opacity-50'}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-full ${achievement.unlocked ? 'bg-yellow-100' : 'bg-gray-100'}`}>
-                        <Award className={`h-6 w-6 ${achievement.unlocked ? 'text-yellow-600' : 'text-gray-400'}`} />
+                      <div className={`p-3 rounded-full ${achievement.unlocked ? 'bg-yellow-100' : 'bg-slate-800'}`}>
+                        <Award className={`h-6 w-6 ${achievement.unlocked ? 'text-yellow-600' : 'text-slate-400'}`} />
                       </div>
                       <div>
                         <p className="font-medium">{achievement.name}</p>
@@ -224,9 +224,9 @@ export default function TheHaul() {
                       <div className="flex items-center gap-4">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
                           index === 0 ? 'bg-yellow-100 text-yellow-600' :
-                          index === 1 ? 'bg-gray-100 text-gray-600' :
+                          index === 1 ? 'bg-slate-800 text-slate-600' :
                           index === 2 ? 'bg-orange-100 text-orange-600' :
-                          'bg-gray-50 text-gray-500'
+                          'bg-slate-800/50 text-slate-500'
                         }`}>
                           {index === 0 ? <Crown className="h-4 w-4" /> : index + 1}
                         </div>

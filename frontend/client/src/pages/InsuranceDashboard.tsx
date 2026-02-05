@@ -38,7 +38,7 @@ const POLICY_TYPE_LABELS: Record<string, string> = {
 const STATUS_VARIANTS: Record<string, string> = {
   active: "bg-green-500",
   expired: "bg-red-500",
-  cancelled: "bg-gray-500",
+  cancelled: "bg-slate-800/500",
   pending: "bg-yellow-500",
   lapsed: "bg-orange-500",
 };
@@ -228,7 +228,7 @@ export default function InsuranceDashboard() {
                           <p className="font-medium">{claim.claimNumber}</p>
                           <p className="text-sm text-muted-foreground">{claim.claimType}</p>
                         </div>
-                        <Badge className={STATUS_VARIANTS[claim.status] || "bg-gray-500"}>
+                        <Badge className={STATUS_VARIANTS[claim.status] || "bg-slate-800/500"}>
                           {claim.status}
                         </Badge>
                       </div>
@@ -267,7 +267,7 @@ export default function InsuranceDashboard() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <Badge className={STATUS_VARIANTS[policy.status] || "bg-gray-500"}>
+                          <Badge className={STATUS_VARIANTS[policy.status] || "bg-slate-800/500"}>
                             {policy.status}
                           </Badge>
                           <p className="text-sm text-muted-foreground mt-1">
@@ -324,7 +324,7 @@ export default function InsuranceDashboard() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <Badge className={STATUS_VARIANTS[claim.status] || "bg-gray-500"}>
+                          <Badge className={STATUS_VARIANTS[claim.status] || "bg-slate-800/500"}>
                             {claim.status}
                           </Badge>
                           <p className="text-sm text-muted-foreground mt-1">
@@ -375,7 +375,7 @@ export default function InsuranceDashboard() {
                         </p>
                       </div>
                       <div className="flex items-center gap-4">
-                        <Badge className={STATUS_VARIANTS[cert.status] || "bg-gray-500"}>
+                        <Badge className={STATUS_VARIANTS[cert.status] || "bg-slate-800/500"}>
                           {cert.status}
                         </Badge>
                         <Button variant="ghost" size="icon">

@@ -104,7 +104,7 @@ export default function InTransitPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-green-400 via-emerald-500 to-teal-500 bg-clip-text text-transparent mb-2">
                 In Transit
               </h1>
-              <p className="text-gray-400 text-lg">Real-time tracking of active deliveries</p>
+              <p className="text-slate-400 text-lg">Real-time tracking of active deliveries</p>
             </div>
             <div className="flex items-center gap-3">
               <Button
@@ -119,7 +119,7 @@ export default function InTransitPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
                   <div>
-                    <p className="text-xs text-gray-500">Active Deliveries</p>
+                    <p className="text-xs text-slate-500">Active Deliveries</p>
                     <p className="text-2xl font-bold text-green-400">{filteredLoads.length}</p>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function InTransitPage() {
           </div>
 
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
             <Input
               placeholder="Search by load number, origin, or destination..."
               value={searchQuery}
@@ -141,13 +141,13 @@ export default function InTransitPage() {
         {isLoading ? (
           <div className="text-center py-20">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-green-500 mx-auto mb-4"></div>
-            <p className="text-gray-400 text-lg">Loading active deliveries...</p>
+            <p className="text-slate-400 text-lg">Loading active deliveries...</p>
           </div>
         ) : filteredLoads.length === 0 ? (
           <Card className="bg-gray-900/50 border-gray-800 p-16 text-center">
-            <Truck className="w-20 h-20 text-gray-600 mx-auto mb-6" />
-            <h3 className="text-2xl font-semibold text-gray-300 mb-3">No active deliveries</h3>
-            <p className="text-gray-500 mb-8">
+            <Truck className="w-20 h-20 text-slate-600 mx-auto mb-6" />
+            <h3 className="text-2xl font-semibold text-slate-300 mb-3">No active deliveries</h3>
+            <p className="text-slate-500 mb-8">
               {searchQuery
                 ? "Try adjusting your search"
                 : "Check assigned loads to start pickups"}
@@ -184,7 +184,7 @@ export default function InTransitPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-lg">Load #{load.loadNumber}</p>
-                        <p className="text-sm text-gray-400 capitalize">{load.cargoType} Freight</p>
+                        <p className="text-sm text-slate-400 capitalize">{load.cargoType} Freight</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -193,7 +193,7 @@ export default function InTransitPage() {
                         {isDelayed ? "Delayed" : "On Track"}
                       </Badge>
                       <div className="text-right">
-                        <p className="text-xs text-gray-500">ETA</p>
+                        <p className="text-xs text-slate-500">ETA</p>
                         <p className={`font-semibold ${isDelayed ? "text-red-400" : "text-green-400"}`}>
                           {eta}
                         </p>
@@ -202,7 +202,7 @@ export default function InTransitPage() {
                   </div>
 
                   <div className="mb-4">
-                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                    <div className="flex justify-between text-xs text-slate-500 mb-2">
                       <span>Delivery Progress</span>
                       <span>{Math.round(progress)}%</span>
                     </div>
@@ -224,16 +224,16 @@ export default function InTransitPage() {
                         <MapPin className="w-4 h-4 text-green-500" />
                         Current Location
                       </h4>
-                      <span className="text-sm text-gray-400">Updated 2 min ago</span>
+                      <span className="text-sm text-slate-400">Updated 2 min ago</span>
                     </div>
-                    <p className="text-gray-300 mb-2">{location}</p>
+                    <p className="text-slate-300 mb-2">{location}</p>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="flex items-center gap-1 text-green-400">
                         <TrendingUp className="w-3 h-3" />
                         {speed} mph
                       </span>
-                      <span className="text-gray-500">•</span>
-                      <span className="text-gray-400">
+                      <span className="text-slate-500">•</span>
+                      <span className="text-slate-400">
                         Driver: {load.driverId ? `#${load.driverId}` : "Unassigned"}
                       </span>
                     </div>
@@ -241,24 +241,24 @@ export default function InTransitPage() {
 
                   <div className="grid grid-cols-2 gap-4 mb-4">
                     <div className="bg-gray-800/20 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 uppercase mb-1">Origin</p>
+                      <p className="text-xs text-slate-500 uppercase mb-1">Origin</p>
                       <p className="font-medium">
                         {load.pickupLocation?.city}, {load.pickupLocation?.state}
                       </p>
                       {load.pickupDate && (
-                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                           <CheckCircle className="w-3 h-3 text-green-500" />
                           Picked up {new Date(load.pickupDate).toLocaleDateString()}
                         </p>
                       )}
                     </div>
                     <div className="bg-gray-800/20 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 uppercase mb-1">Destination</p>
+                      <p className="text-xs text-slate-500 uppercase mb-1">Destination</p>
                       <p className="font-medium">
                         {load.deliveryLocation?.city}, {load.deliveryLocation?.state}
                       </p>
                       {load.deliveryDate && (
-                        <p className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
                           <Clock className="w-3 h-3" />
                           Due {new Date(load.deliveryDate).toLocaleDateString()}
                         </p>
@@ -268,19 +268,19 @@ export default function InTransitPage() {
 
                   <div className="grid grid-cols-4 gap-3 mb-4">
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Weight</p>
+                      <p className="text-slate-500 text-xs mb-1">Weight</p>
                       <p className="font-medium">{load.weight ? `${load.weight} ${load.weightUnit}` : "N/A"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Distance</p>
+                      <p className="text-slate-500 text-xs mb-1">Distance</p>
                       <p className="font-medium">{load.distance ? `${load.distance} ${load.distanceUnit}` : "TBD"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Your Rate</p>
+                      <p className="text-slate-500 text-xs mb-1">Your Rate</p>
                       <p className="font-medium text-green-400">${load.rate ? Number(load.rate).toLocaleString() : "N/A"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
-                      <p className="text-gray-500 text-xs mb-1">Shipper</p>
+                      <p className="text-slate-500 text-xs mb-1">Shipper</p>
                       <p className="font-medium">#{load.shipperId}</p>
                     </div>
                   </div>

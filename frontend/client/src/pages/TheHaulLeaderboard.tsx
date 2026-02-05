@@ -39,7 +39,7 @@ export default function TheHaulLeaderboard() {
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-6 w-6 text-yellow-500" />;
-    if (rank === 2) return <Medal className="h-6 w-6 text-gray-400" />;
+    if (rank === 2) return <Medal className="h-6 w-6 text-slate-400" />;
     if (rank === 3) return <Medal className="h-6 w-6 text-orange-400" />;
     return <span className="text-lg font-bold text-muted-foreground">{rank}</span>;
   };
@@ -117,9 +117,9 @@ export default function TheHaulLeaderboard() {
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                         index === 0 ? 'bg-yellow-100' :
-                        index === 1 ? 'bg-gray-100' :
+                        index === 1 ? 'bg-slate-800' :
                         index === 2 ? 'bg-orange-100' :
-                        'bg-gray-50'
+                        'bg-slate-800/50'
                       }`}>
                         {getRankIcon(index + 1)}
                       </div>

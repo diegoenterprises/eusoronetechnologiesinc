@@ -121,8 +121,8 @@ export default function FleetTracking() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-800">
-                <MapPin className="h-5 w-5 text-gray-600" />
+              <div className="p-2 rounded-full bg-slate-800 dark:bg-gray-800">
+                <MapPin className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Stationary</p>
@@ -229,7 +229,7 @@ export default function FleetTracking() {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${driver.isMoving ? "bg-green-500" : "bg-gray-400"}`} />
+                          <div className={`w-2 h-2 rounded-full ${driver.isMoving ? "bg-green-500" : "bg-slate-400"}`} />
                           <span className="font-medium">{driver.name}</span>
                         </div>
                         <Badge variant={driver.isMoving ? "default" : "secondary"}>

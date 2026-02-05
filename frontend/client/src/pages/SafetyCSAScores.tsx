@@ -157,7 +157,7 @@ export default function SafetyCSAScores() {
                         style={{ width: `${Math.min(score, 100)}%` }}
                       />
                       <div
-                        className="absolute inset-y-0 w-0.5 bg-white/50"
+                        className="absolute inset-y-0 w-0.5 bg-slate-800/50"
                         style={{ left: `${category.threshold}%` }}
                       />
                     </div>

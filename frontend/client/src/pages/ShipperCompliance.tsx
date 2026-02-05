@@ -92,11 +92,11 @@ export default function ShipperCompliance() {
       <Card className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
         <CardContent className="pt-6">
           <div className="grid grid-cols-5 gap-4 items-center">
-            <div className="text-center"><div className="text-4xl font-bold">{score}%</div><div className="text-sm">Compliance Score</div><Progress value={score} className="mt-2 h-2 bg-white/20" /></div>
-            <div className="text-center p-3 bg-white/10 rounded"><div className="text-xl font-bold">9</div><div className="text-xs">Verified</div></div>
-            <div className="text-center p-3 bg-white/10 rounded"><div className="text-xl font-bold">2</div><div className="text-xs">Pending</div></div>
-            <div className="text-center p-3 bg-white/10 rounded"><div className="text-xl font-bold text-orange-300">0</div><div className="text-xs">Expiring</div></div>
-            <div className="text-center p-3 bg-white/10 rounded"><div className="text-xl font-bold text-yellow-300">1</div><div className="text-xs">Optional Missing</div></div>
+            <div className="text-center"><div className="text-4xl font-bold">{score}%</div><div className="text-sm">Compliance Score</div><Progress value={score} className="mt-2 h-2 bg-slate-800/20" /></div>
+            <div className="text-center p-3 bg-slate-800/10 rounded"><div className="text-xl font-bold">9</div><div className="text-xs">Verified</div></div>
+            <div className="text-center p-3 bg-slate-800/10 rounded"><div className="text-xl font-bold">2</div><div className="text-xs">Pending</div></div>
+            <div className="text-center p-3 bg-slate-800/10 rounded"><div className="text-xl font-bold text-orange-300">0</div><div className="text-xs">Expiring</div></div>
+            <div className="text-center p-3 bg-slate-800/10 rounded"><div className="text-xl font-bold text-yellow-300">1</div><div className="text-xs">Optional Missing</div></div>
           </div>
         </CardContent>
       </Card>
@@ -124,7 +124,7 @@ export default function ShipperCompliance() {
                     {doc.category === "credit" && <CreditCard className="w-5 h-5 text-green-500" />}
                     {doc.category === "insurance" && <Shield className="w-5 h-5 text-purple-500" />}
                     {doc.category === "financial" && <DollarSign className="w-5 h-5 text-yellow-500" />}
-                    {doc.category === "facility" && <Factory className="w-5 h-5 text-gray-500" />}
+                    {doc.category === "facility" && <Factory className="w-5 h-5 text-slate-500" />}
                     <div><div className="font-medium">{doc.label}</div><div className="text-sm text-muted-foreground">{doc.required ? "Required" : "Optional"}</div></div>
                   </div>
                   {getStatusBadge("verified")}

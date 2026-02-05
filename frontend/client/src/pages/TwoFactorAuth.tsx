@@ -21,15 +21,15 @@ import { toast } from "sonner";
 export default function TwoFactorAuth() {
   const [verificationCode, setVerificationCode] = useState("");
 
-  const statusQuery = trpc.auth.get2FAStatus.useQuery();
-  const setupQuery = trpc.auth.setup2FA.useQuery(undefined, { enabled: false });
+  const statusQuery = (trpc as any).auth.get2FAStatus.useQuery();
+  const setupQuery = (trpc as any).auth.setup2FA.useQuery(undefined, { enabled: false });
 
-  const enableMutation = trpc.auth.enable2FA.useMutation({
+  const enableMutation = (trpc as any).auth.enable2FA.useMutation({
     onSuccess: () => { toast.success("2FA enabled"); statusQuery.refetch(); setVerificationCode(""); },
     onError: (error: any) => toast.error("Failed to enable 2FA", { description: error.message }),
   });
 
-  const disableMutation = trpc.auth.disable2FA.useMutation({
+  const disableMutation = (trpc as any).auth.disable2FA.useMutation({
     onSuccess: () => { toast.success("2FA disabled"); statusQuery.refetch(); },
     onError: (error: any) => toast.error("Failed to disable 2FA", { description: error.message }),
   });

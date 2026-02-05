@@ -42,9 +42,9 @@ export default function CreateLoad() {
     targetRate: "", maxBudget: "", paymentTerms: "30", notes: "",
   });
 
-  const hazmatQuery = trpc.esang.chat.useMutation();
-  const createLoadMutation = trpc.loads.create.useMutation({
-    onSuccess: (data) => { toast.success("Load created successfully"); navigate(`/shipper/loads/${data.id}`); },
+  const hazmatQuery = (trpc as any).esang.chat.useMutation();
+  const createLoadMutation = (trpc as any).loads.createLoad.useMutation({
+    onSuccess: (data: any) => { toast.success("Load created successfully"); navigate(`/shipper/loads/${data.id}`); },
     onError: (err: any) => toast.error("Failed to create load", { description: err.message }),
   });
 

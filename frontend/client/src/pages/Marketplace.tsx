@@ -203,7 +203,7 @@ export default function Marketplace() {
       case "delivered":
         return "bg-purple-900/20 border-purple-800 text-purple-400";
       default:
-        return "bg-gray-900/20 border-gray-800 text-gray-400";
+        return "bg-gray-900/20 border-gray-800 text-slate-400";
     }
   };
 
@@ -213,13 +213,13 @@ export default function Marketplace() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white">Load Marketplace</h1>
-          <p className="text-gray-400 mt-1">
+          <p className="text-slate-400 mt-1">
             Browse available loads and place bids
           </p>
         </div>
 
         <div className="text-right">
-          <p className="text-gray-400 text-sm">Available Loads</p>
+          <p className="text-slate-400 text-sm">Available Loads</p>
           <p className="text-3xl font-bold text-green-400">{loads.length}</p>
         </div>
       </div>
@@ -230,7 +230,7 @@ export default function Marketplace() {
           <div className="flex-1 relative">
             <Search
               size={18}
-              className="absolute left-3 top-3 text-gray-500"
+              className="absolute left-3 top-3 text-slate-500"
             />
             <input
               type="text"
@@ -294,43 +294,43 @@ export default function Marketplace() {
                   </span>
                 </div>
 
-                <p className="text-gray-400 text-sm mb-3">{load.description}</p>
+                <p className="text-slate-400 text-sm mb-3">{load.description}</p>
 
                 <div className="grid grid-cols-5 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500 text-xs">Shipper</p>
+                    <p className="text-slate-500 text-xs">Shipper</p>
                     <p className="text-white font-semibold">{load.shipper}</p>
                     <div className="flex items-center gap-1 mt-1">
                       <Star size={14} className="text-yellow-500 fill-yellow-500" />
-                      <span className="text-gray-400 text-xs">
+                      <span className="text-slate-400 text-xs">
                         {load.shipperRating}
                       </span>
                     </div>
                   </div>
 
                   <div>
-                    <p className="text-gray-500 text-xs">Pickup</p>
+                    <p className="text-slate-500 text-xs">Pickup</p>
                     <p className="text-white font-semibold">
                       {formatDate(load.pickupDate)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-gray-500 text-xs">Delivery</p>
+                    <p className="text-slate-500 text-xs">Delivery</p>
                     <p className="text-white font-semibold">
                       {formatDate(load.deliveryDate)}
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-gray-500 text-xs">Weight</p>
+                    <p className="text-slate-500 text-xs">Weight</p>
                     <p className="text-white font-semibold">
                       {(load.weight / 1000).toFixed(1)}K lbs
                     </p>
                   </div>
 
                   <div>
-                    <p className="text-gray-500 text-xs">Rate</p>
+                    <p className="text-slate-500 text-xs">Rate</p>
                     <p className="text-green-400 font-bold text-lg">
                       {formatCurrency(load.rate)}
                     </p>
@@ -348,7 +348,7 @@ export default function Marketplace() {
                   className={`border-gray-700 ${
                     favorites.includes(load.id)
                       ? "text-red-400 border-red-700"
-                      : "text-gray-400"
+                      : "text-slate-400"
                   } hover:bg-gray-800`}
                 >
                   <Heart
@@ -360,7 +360,7 @@ export default function Marketplace() {
                 </Button>
 
                 <div className="text-right">
-                  <p className="text-gray-400 text-xs">{load.bids} bids</p>
+                  <p className="text-slate-400 text-xs">{load.bids} bids</p>
                   <p className="text-white font-semibold">{load.type}</p>
                 </div>
               </div>
@@ -371,7 +371,7 @@ export default function Marketplace() {
               {load.requirements.map((req: any, idx: number) => (
                 <span
                   key={idx}
-                  className="px-2 py-1 text-xs bg-gray-800 text-gray-300 rounded"
+                  className="px-2 py-1 text-xs bg-gray-800 text-slate-300 rounded"
                 >
                   {req}
                 </span>
@@ -392,12 +392,12 @@ export default function Marketplace() {
                   <h2 className="text-2xl font-bold text-white mb-2">
                     {selectedLoad.origin} → {selectedLoad.destination}
                   </h2>
-                  <p className="text-gray-400">{selectedLoad.description}</p>
+                  <p className="text-slate-400">{selectedLoad.description}</p>
                 </div>
                 <Button
                   onClick={() => setSelectedLoad(null)}
                   variant="outline"
-                  className="border-gray-700 text-gray-400 hover:bg-gray-800"
+                  className="border-gray-700 text-slate-400 hover:bg-gray-800"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -406,48 +406,48 @@ export default function Marketplace() {
               {/* Details Grid */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Shipper</p>
+                  <p className="text-slate-400 text-sm mb-2">Shipper</p>
                   <p className="text-white font-semibold">
                     {selectedLoad.shipper}
                   </p>
                   <div className="flex items-center gap-1 mt-1">
                     <Star size={16} className="text-yellow-500 fill-yellow-500" />
-                    <span className="text-gray-400">
+                    <span className="text-slate-400">
                       {selectedLoad.shipperRating}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Rate</p>
+                  <p className="text-slate-400 text-sm mb-2">Rate</p>
                   <p className="text-green-400 font-bold text-2xl">
                     {formatCurrency(selectedLoad.rate)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Pickup Date</p>
+                  <p className="text-slate-400 text-sm mb-2">Pickup Date</p>
                   <p className="text-white font-semibold">
                     {formatDate(selectedLoad.pickupDate)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Delivery Date</p>
+                  <p className="text-slate-400 text-sm mb-2">Delivery Date</p>
                   <p className="text-white font-semibold">
                     {formatDate(selectedLoad.deliveryDate)}
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Weight</p>
+                  <p className="text-slate-400 text-sm mb-2">Weight</p>
                   <p className="text-white font-semibold">
                     {(selectedLoad.weight / 1000).toFixed(1)}K lbs
                   </p>
                 </div>
 
                 <div>
-                  <p className="text-gray-400 text-sm mb-2">Dimensions</p>
+                  <p className="text-slate-400 text-sm mb-2">Dimensions</p>
                   <p className="text-white font-semibold">
                     {selectedLoad.dimensions}
                   </p>
@@ -456,7 +456,7 @@ export default function Marketplace() {
 
               {/* Requirements */}
               <div>
-                <p className="text-gray-400 text-sm mb-3">Requirements</p>
+                <p className="text-slate-400 text-sm mb-3">Requirements</p>
                 <div className="flex flex-wrap gap-2">
                   {selectedLoad.requirements.map((req: any, idx: number) => (
                     <span
@@ -471,7 +471,7 @@ export default function Marketplace() {
 
               {/* Bids */}
               <div>
-                <p className="text-gray-400 text-sm mb-3">
+                <p className="text-slate-400 text-sm mb-3">
                   Recent Bids ({selectedLoad.bids})
                 </p>
                 <div className="space-y-3">
@@ -484,7 +484,7 @@ export default function Marketplace() {
                         <p className="text-white font-semibold">
                           {bid.carrier}
                         </p>
-                        <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                        <div className="flex items-center gap-4 text-sm text-slate-400 mt-1">
                           <span className="flex items-center gap-1">
                             <Star
                               size={14}
@@ -509,7 +509,7 @@ export default function Marketplace() {
                 <Button
                   onClick={() => setSelectedLoad(null)}
                   variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
+                  className="flex-1 border-gray-700 text-slate-300 hover:bg-gray-800"
                 >
                   Close
                 </Button>
@@ -535,13 +535,13 @@ export default function Marketplace() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Your Bid Amount
                 </label>
                 <div className="relative">
                   <DollarSign
                     size={18}
-                    className="absolute left-3 top-3 text-gray-500"
+                    className="absolute left-3 top-3 text-slate-500"
                   />
                   <input
                     type="number"
@@ -551,13 +551,13 @@ export default function Marketplace() {
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
-                <p className="text-gray-400 text-xs mt-2">
+                <p className="text-slate-400 text-xs mt-2">
                   Shipper's asking rate: {formatCurrency(selectedLoad.rate)}
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Estimated Delivery
                 </label>
                 <input
@@ -567,7 +567,7 @@ export default function Marketplace() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                <label className="block text-sm font-semibold text-slate-300 mb-2">
                   Message (Optional)
                 </label>
                 <textarea
@@ -584,7 +584,7 @@ export default function Marketplace() {
                     setSelectedLoad(null);
                   }}
                   variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800"
+                  className="flex-1 border-gray-700 text-slate-300 hover:bg-gray-800"
                 >
                   Cancel
                 </Button>

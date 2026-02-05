@@ -103,8 +103,8 @@ export default function AdminTelemetry() {
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gray-100 dark:bg-gray-800">
-                <MapPin className="h-5 w-5 text-gray-600" />
+              <div className="p-2 rounded-full bg-slate-800 dark:bg-gray-800">
+                <MapPin className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Stationary</p>

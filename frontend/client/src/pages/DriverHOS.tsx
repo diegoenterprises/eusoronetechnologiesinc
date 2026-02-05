@@ -92,7 +92,7 @@ export default function DriverHOS() {
       case "DRIVING": return "bg-green-500";
       case "ON_DUTY": return "bg-blue-500";
       case "SLEEPER": return "bg-purple-500";
-      case "OFF_DUTY": return "bg-gray-500";
+      case "OFF_DUTY": return "bg-slate-800/500";
     }
   };
 

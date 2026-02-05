@@ -139,11 +139,11 @@ export default function ShippersPage() {
       case "active":
         return "border-green-600 text-green-400 bg-green-600/10";
       case "inactive":
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
       case "pending":
         return "border-yellow-600 text-yellow-400 bg-yellow-600/10";
       default:
-        return "border-gray-600 text-gray-400 bg-gray-600/10";
+        return "border-gray-600 text-slate-400 bg-gray-600/10";
     }
   };
 
@@ -154,7 +154,7 @@ export default function ShippersPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Shipper Management</h1>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Manage relationships with your shipper partners
             </p>
           </div>
@@ -162,7 +162,7 @@ export default function ShippersPage() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              className="border-gray-600 text-slate-300 hover:bg-gray-700"
             >
               <Filter className="mr-2" size={18} />
               Filters
@@ -182,7 +182,7 @@ export default function ShippersPage() {
                 <Building2 className="text-blue-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Total Shippers</p>
+                <p className="text-slate-400 text-sm">Total Shippers</p>
                 <p className="text-2xl font-bold text-white">{totalShippers}</p>
               </div>
             </div>
@@ -194,7 +194,7 @@ export default function ShippersPage() {
                 <TrendingUp className="text-green-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Active</p>
+                <p className="text-slate-400 text-sm">Active</p>
                 <p className="text-2xl font-bold text-white">{activeShippers}</p>
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function ShippersPage() {
                 <DollarSign className="text-purple-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Total Revenue</p>
+                <p className="text-slate-400 text-sm">Total Revenue</p>
                 <p className="text-2xl font-bold text-white">
                   ${totalRevenue.toLocaleString()}
                 </p>
@@ -220,7 +220,7 @@ export default function ShippersPage() {
                 <Star className="text-yellow-400" size={24} />
               </div>
               <div>
-                <p className="text-gray-400 text-sm">Avg Rating</p>
+                <p className="text-slate-400 text-sm">Avg Rating</p>
                 <p className="text-2xl font-bold text-white">
                   {avgRating.toFixed(1)}
                 </p>
@@ -234,7 +234,7 @@ export default function ShippersPage() {
           <div className="flex gap-4">
             <div className="flex-1 relative">
               <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"
                 size={20}
               />
               <Input
@@ -274,7 +274,7 @@ export default function ShippersPage() {
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-white">{shipper.name}</h3>
-                      <p className="text-gray-400 text-sm">{shipper.contactPerson}</p>
+                      <p className="text-slate-400 text-sm">{shipper.contactPerson}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className={getStatusColor(shipper.status)}>
@@ -284,16 +284,16 @@ export default function ShippersPage() {
 
                 {/* Contact Info */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <Mail className="text-gray-500" size={16} />
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <Mail className="text-slate-500" size={16} />
                     <span>{shipper.email}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <Phone className="text-gray-500" size={16} />
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <Phone className="text-slate-500" size={16} />
                     <span>{shipper.phone}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-300">
-                    <MapPin className="text-gray-500" size={16} />
+                  <div className="flex items-center gap-2 text-slate-300">
+                    <MapPin className="text-slate-500" size={16} />
                     <span>{shipper.location}</span>
                   </div>
                 </div>
@@ -301,21 +301,21 @@ export default function ShippersPage() {
                 {/* Stats */}
                 <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-700">
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Total Loads</p>
+                    <p className="text-slate-400 text-xs mb-1">Total Loads</p>
                     <p className="text-white font-semibold">{shipper.totalLoads}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Active Loads</p>
+                    <p className="text-slate-400 text-xs mb-1">Active Loads</p>
                     <p className="text-white font-semibold">{shipper.activeLoads}</p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Revenue</p>
+                    <p className="text-slate-400 text-xs mb-1">Revenue</p>
                     <p className="text-white font-semibold">
                       ${shipper.totalRevenue.toLocaleString()}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-400 text-xs mb-1">Avg Commission</p>
+                    <p className="text-slate-400 text-xs mb-1">Avg Commission</p>
                     <p className="text-white font-semibold">{shipper.avgCommission}%</p>
                   </div>
                 </div>
@@ -325,14 +325,14 @@ export default function ShippersPage() {
                   <div className="flex items-center gap-2">
                     <Star className="text-yellow-400 fill-yellow-400" size={16} />
                     <span className="text-white font-semibold">{shipper.rating}</span>
-                    <span className="text-gray-400 text-sm">
+                    <span className="text-slate-400 text-sm">
                       • Last active {formatDate(shipper.lastActivity)}
                     </span>
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                    className="border-gray-600 text-slate-300 hover:bg-gray-700"
                   >
                     View Details
                   </Button>
@@ -344,9 +344,9 @@ export default function ShippersPage() {
 
         {filteredShippers.length === 0 && (
           <Card className="bg-gray-900 border-gray-700 p-12 text-center">
-            <Building2 className="mx-auto text-gray-600 mb-4" size={48} />
+            <Building2 className="mx-auto text-slate-600 mb-4" size={48} />
             <h3 className="text-xl font-bold text-white mb-2">No shippers found</h3>
-            <p className="text-gray-400">
+            <p className="text-slate-400">
               Try adjusting your filters or search criteria
             </p>
           </Card>

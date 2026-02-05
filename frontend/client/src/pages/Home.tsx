@@ -1,7 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 import DashboardLayout from "@/components/DashboardLayout";
 import AdminDashboard from "./AdminDashboard";
+import { Truck, LogIn, Loader2 } from "lucide-react";
 
 export default function Home() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -18,16 +18,19 @@ export default function Home() {
   // If not authenticated, show login prompt
   if (!loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-black flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <div className="max-w-md w-full text-center">
-          <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-32 h-32 mx-auto mb-8" />
-          <h1 className="text-4xl font-bold text-white mb-4">EusoTrip</h1>
-          <p className="text-gray-300 mb-8">Professional Logistics & Freight Management Platform</p>
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 flex items-center justify-center">
+            <Truck className="w-10 h-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent mb-4">EusoTrip</h1>
+          <p className="text-slate-400 mb-8">Professional Logistics & Freight Management Platform</p>
           <a
-            href={getLoginUrl()}
-            className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:shadow-lg transition"
+            href="/login"
+            className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-600 to-emerald-600 text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-cyan-500/20 transition"
           >
-            Sign In with Manus
+            <LogIn className="w-5 h-5" />
+            Sign In
           </a>
         </div>
       </div>
@@ -35,10 +38,10 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="text-gray-600 mt-4">Loading...</p>
+        <Loader2 className="w-12 h-12 text-cyan-500 animate-spin mx-auto" />
+        <p className="text-slate-400 mt-4">Loading...</p>
       </div>
     </div>
   );

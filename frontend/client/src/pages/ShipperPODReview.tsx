@@ -241,7 +241,7 @@ export default function ShipperPODReview() {
               <p className="text-slate-400 text-sm">Signed at {(pod as any)?.signedAt || "N/A"}</p>
             </div>
             {(pod as any)?.signatureImage && (
-              <div className="w-48 h-20 rounded-lg bg-white/10 overflow-hidden">
+              <div className="w-48 h-20 rounded-lg bg-slate-800/10 overflow-hidden">
                 <img src={(pod as any).signatureImage} alt="Signature" className="w-full h-full object-contain" />
               </div>
             )}
