@@ -23,15 +23,15 @@ export default function DriverCheckIn() {
   const [, navigate] = useLocation();
   const [checkInCode, setCheckInCode] = useState("");
 
-  const loadQuery = trpc.loads.getTrackedLoads.useQuery({ search: "" });
-  const appointmentQuery = trpc.appointments.getById.useQuery({ 
-    id: loadQuery.data?.[0]?.id?.toString() || "" 
-  }, { enabled: !!loadQuery.data?.[0]?.id });
-  const facilityQuery = trpc.facilities.getById.useQuery({ 
-    id: (loadQuery.data?.[0] as any)?.originFacilityId?.toString() || "" 
-  }, { enabled: !!(loadQuery.data?.[0] as any)?.originFacilityId });
+  const loadQuery = (trpc as any).loads.getTrackedLoads.useQuery({ search: "" });
+  const appointmentQuery = (trpc as any).appointments.getById.useQuery({ 
+    id: (loadQuery.data as any)?.[0]?.id?.toString() || "" 
+  }, { enabled: !!(loadQuery.data as any)?.[0]?.id });
+  const facilityQuery = (trpc as any).facilities.getById.useQuery({ 
+    id: ((loadQuery.data as any)?.[0] as any)?.originFacilityId?.toString() || "" 
+  }, { enabled: !!((loadQuery.data as any)?.[0] as any)?.originFacilityId });
 
-  const checkInMutation = trpc.appointments.checkIn.useMutation({
+  const checkInMutation = (trpc as any).appointments.checkIn.useMutation({
     onSuccess: () => {
       toast.success("Check-in successful");
       navigate("/driver/dashboard");
@@ -39,7 +39,7 @@ export default function DriverCheckIn() {
     onError: (error: any) => toast.error("Check-in failed", { description: error.message }),
   });
 
-  const load = loadQuery.data?.[0];
+  const load = (loadQuery.data as any)?.[0];
   const appointment = appointmentQuery.data;
   const facility = facilityQuery.data;
 
@@ -178,7 +178,7 @@ export default function DriverCheckIn() {
             <label className="text-slate-300 text-sm">Enter Check-In Code (if provided)</label>
             <Input
               value={checkInCode}
-              onChange={(e) => setCheckInCode(e.target.value.toUpperCase())}
+              onChange={(e: any) => setCheckInCode(e.target.value.toUpperCase())}
               placeholder="e.g., ABC123"
               className="bg-slate-700/50 border-slate-600/50 rounded-lg text-center text-xl tracking-widest font-mono"
               maxLength={10}

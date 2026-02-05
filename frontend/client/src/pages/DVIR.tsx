@@ -22,10 +22,10 @@ export default function DVIR() {
   const [selectedDefects, setSelectedDefects] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
 
-  const templateQuery = trpc.inspections.getTemplate.useQuery({ type: "dvir" });
-  const recentQuery = trpc.inspections.getRecent.useQuery({ type: "dvir", limit: 5 });
+  const templateQuery = (trpc as any).inspections.getTemplate.useQuery({ type: "dvir" });
+  const recentQuery = (trpc as any).inspections.getRecent.useQuery({ type: "dvir", limit: 5 });
 
-  const submitMutation = trpc.inspections.submit.useMutation({
+  const submitMutation = (trpc as any).inspections.submit.useMutation({
     onSuccess: () => {
       toast.success("DVIR submitted successfully");
       setSelectedDefects([]);
@@ -42,7 +42,7 @@ export default function DVIR() {
   };
 
   const handleSubmit = () => {
-    const items = templateQuery.data?.categories?.flatMap((cat: any) =>
+    const items = (templateQuery.data as any)?.categories?.flatMap((cat: any) =>
       cat.items.map((item: any) => ({
         id: item.id,
         category: cat.id,
@@ -64,7 +64,7 @@ export default function DVIR() {
     });
   };
 
-  const totalItems = templateQuery.data?.categories?.reduce((acc: number, cat: any) => acc + cat.items.length, 0) || 0;
+  const totalItems = (templateQuery.data as any)?.categories?.reduce((acc: number, cat: any) => acc + cat.items.length, 0) || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -154,10 +154,10 @@ export default function DVIR() {
           <p className="text-slate-400 mb-4 text-sm">Select any defects found during inspection:</p>
 
           {templateQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-6 mb-6">
-              {templateQuery.data?.categories?.map((category: any) => (
+              {(templateQuery.data as any)?.categories?.map((category: any) => (
                 <div key={category.id}>
                   <h3 className="text-white font-medium mb-3 text-sm uppercase tracking-wide">{category.name}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
@@ -190,7 +190,7 @@ export default function DVIR() {
           <div className="mb-6">
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e: any) => setNotes(e.target.value)}
               placeholder="Additional notes or defect details..."
               className="bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-cyan-500/50"
               rows={3}
@@ -235,8 +235,8 @@ export default function DVIR() {
         </CardHeader>
         <CardContent>
           {recentQuery.isLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : recentQuery.data?.length === 0 ? (
+            <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (recentQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                 <FileText className="w-8 h-8 text-slate-500" />
@@ -245,7 +245,7 @@ export default function DVIR() {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentQuery.data?.map((inspection: any) => (
+              {(recentQuery.data as any)?.map((inspection: any) => (
                 <div key={inspection.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-full", inspection.defectsFound ? "bg-yellow-500/20" : "bg-green-500/20")}>

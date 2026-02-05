@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CatalystPerformance() {
-  const statsQuery = trpc.catalysts.getPerformanceStats.useQuery();
-  const metricsQuery = trpc.catalysts.getPerformanceMetrics.useQuery();
-  const historyQuery = trpc.catalysts.getPerformanceHistory.useQuery({ limit: 10 });
+  const statsQuery = (trpc as any).catalysts.getPerformanceStats.useQuery();
+  const metricsQuery = (trpc as any).catalysts.getPerformanceMetrics.useQuery();
+  const historyQuery = (trpc as any).catalysts.getPerformanceHistory.useQuery({ limit: 10 });
 
   const stats = statsQuery.data;
 
@@ -80,10 +80,10 @@ export default function CatalystPerformance() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><BarChart3 className="w-5 h-5 text-cyan-400" />Performance Metrics</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {metricsQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <>
-                {metricsQuery.data?.map((metric: any) => (
+                {(metricsQuery.data as any)?.map((metric: any) => (
                   <div key={metric.id} className="p-3 rounded-lg bg-slate-700/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-slate-400">{metric.name}</span>
@@ -102,7 +102,7 @@ export default function CatalystPerformance() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Award className="w-5 h-5 text-yellow-400" />Achievements</CardTitle></CardHeader>
           <CardContent>
             {statsQuery.isLoading ? (
-              <div className="grid grid-cols-2 gap-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+              <div className="grid grid-cols-2 gap-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
             ) : (
               <div className="grid grid-cols-2 gap-3">
                 {stats?.achievements?.map((achievement: any) => (
@@ -122,7 +122,7 @@ export default function CatalystPerformance() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-400" />Recent Performance</CardTitle></CardHeader>
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
           ) : !historyQuery.data || (Array.isArray(historyQuery.data) && historyQuery.data.length === 0) ? (
             <div className="text-center py-16"><BarChart3 className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No performance history</p></div>
           ) : (

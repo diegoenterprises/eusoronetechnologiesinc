@@ -81,10 +81,10 @@ export default function FacilityPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   // tRPC queries for facility data
-  const statsQuery = trpc.terminals.getStats.useQuery();
-  const shipmentsQuery = trpc.terminals.getShipments.useQuery({ date: selectedDate.toISOString() });
-  const baysQuery = trpc.terminals.getBays.useQuery();
-  const staffQuery = trpc.terminals.getStaff.useQuery({ search: '' });
+  const statsQuery = (trpc as any).terminals.getStats.useQuery();
+  const shipmentsQuery = (trpc as any).terminals.getShipments.useQuery({ date: selectedDate.toISOString() });
+  const baysQuery = (trpc as any).terminals.getBays.useQuery();
+  const staffQuery = (trpc as any).terminals.getStaff.useQuery({ search: '' });
 
   if (statsQuery.isLoading) {
     return (
@@ -346,7 +346,7 @@ export default function FacilityPage() {
             </div>
 
             <div className="space-y-3">
-              {shipments.map((shipment) => (
+              {shipments.map((shipment: any) => (
                 <Card
                   key={shipment.id}
                   className="bg-gray-900 border-gray-700 p-6"
@@ -445,7 +445,7 @@ export default function FacilityPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {bays.map((bay) => (
+              {bays.map((bay: any) => (
                 <Card
                   key={bay.id}
                   className="bg-gray-900 border-gray-700 p-6"
@@ -483,7 +483,7 @@ export default function FacilityPage() {
                   <div className="mb-4">
                     <p className="text-gray-400 text-sm mb-2">Equipment</p>
                     <div className="flex flex-wrap gap-2">
-                      {bay.equipment.map((eq) => (
+                      {bay.equipment.map((eq: any) => (
                         <Badge
                           key={eq}
                           variant="outline"
@@ -523,7 +523,7 @@ export default function FacilityPage() {
             </div>
 
             <div className="space-y-3">
-              {staff.map((member) => (
+              {staff.map((member: any) => (
                 <Card
                   key={member.id}
                   className="bg-gray-900 border-gray-700 p-6"

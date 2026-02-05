@@ -25,12 +25,12 @@ export default function EscortVehicleInspection() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showNewInspection, setShowNewInspection] = useState(false);
 
-  const inspectionsQuery = trpc.escorts.getJobs.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
-  const statsQuery = trpc.escorts.getDashboardStats.useQuery();
-  const vehiclesQuery = trpc.escorts.getJobs.useQuery({});
-  const checklistQuery = trpc.escorts.getJobs.useQuery({});
+  const inspectionsQuery = (trpc as any).escorts.getJobs.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
+  const statsQuery = (trpc as any).escorts.getDashboardStats.useQuery();
+  const vehiclesQuery = (trpc as any).escorts.getJobs.useQuery({});
+  const checklistQuery = (trpc as any).escorts.getJobs.useQuery({});
 
-  const submitInspectionMutation = trpc.escorts.acceptJob.useMutation({
+  const submitInspectionMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Inspection submitted");
       inspectionsQuery.refetch();
@@ -73,7 +73,7 @@ export default function EscortVehicleInspection() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -180,7 +180,7 @@ export default function EscortVehicleInspection() {
 
               <Textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e: any) => setNotes(e.target.value)}
                 placeholder="Additional notes or issues found..."
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-24"
               />
@@ -216,7 +216,7 @@ export default function EscortVehicleInspection() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search inspections..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -239,7 +239,7 @@ export default function EscortVehicleInspection() {
       {/* Inspections List */}
       <div className="space-y-4">
         {inspectionsQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-40 rounded-xl" />)
         ) : filteredInspections.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

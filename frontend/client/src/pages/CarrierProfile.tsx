@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CarrierProfile() {
-  const profileQuery = trpc.carriers.getProfile.useQuery();
-  const statsQuery = trpc.carriers.getStats.useQuery();
-  const fleetQuery = trpc.carriers.getFleetSummary.useQuery();
-  const safetyQuery = trpc.carriers.getSafetyRating.useQuery();
+  const profileQuery = (trpc as any).carriers.getProfile.useQuery();
+  const statsQuery = (trpc as any).carriers.getStats.useQuery();
+  const fleetQuery = (trpc as any).carriers.getFleetSummary.useQuery();
+  const safetyQuery = (trpc as any).carriers.getSafetyRating.useQuery();
 
   const profile = profileQuery.data;
   const stats = statsQuery.data;
@@ -179,7 +179,7 @@ export default function CarrierProfile() {
             <CardContent>
               {fleetQuery.isLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+                  {[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -214,7 +214,7 @@ export default function CarrierProfile() {
             </CardHeader>
             <CardContent>
               {safetyQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full rounded-xl" />)}</div>
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-8 w-full rounded-xl" />)}</div>
               ) : (
                 <div className="space-y-3">
                   {safety?.basicScores?.map((basic: any) => (

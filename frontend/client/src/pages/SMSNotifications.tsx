@@ -22,19 +22,19 @@ import { toast } from "sonner";
 export default function SMSNotifications() {
   const [testNumber, setTestNumber] = useState("");
 
-  const settingsQuery = trpc.sms.getSettings.useQuery();
-  const usageQuery = trpc.sms.getUsage.useQuery();
-  const templatesQuery = trpc.sms.getTemplates.useQuery();
-  const logsQuery = trpc.sms.getLogs.useQuery({ limit: 10 });
+  const settingsQuery = (trpc as any).sms.getSettings.useQuery();
+  const usageQuery = (trpc as any).sms.getUsage.useQuery();
+  const templatesQuery = (trpc as any).sms.getTemplates.useQuery();
+  const logsQuery = (trpc as any).sms.getLogs.useQuery({ limit: 10 });
 
-  const testMutation = trpc.sms.sendTest.useMutation({
+  const testMutation = (trpc as any).sms.sendTest.useMutation({
     onSuccess: () => { toast.success("Test SMS sent"); setTestNumber(""); },
-    onError: (error) => toast.error("Failed to send", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
   });
 
-  const toggleMutation = trpc.sms.toggleTemplate.useMutation({
+  const toggleMutation = (trpc as any).sms.toggleTemplate.useMutation({
     onSuccess: () => { toast.success("Template updated"); templatesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
   const usage = usageQuery.data;
@@ -128,7 +128,7 @@ export default function SMSNotifications() {
           <div className="flex items-center gap-4">
             <div className="relative flex-1 max-w-md">
               <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={testNumber} onChange={(e) => setTestNumber(e.target.value)} placeholder="+1 (555) 123-4567" className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+              <Input value={testNumber} onChange={(e: any) => setTestNumber(e.target.value)} placeholder="+1 (555) 123-4567" className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
             </div>
             <Button className="bg-cyan-600 hover:bg-cyan-700 rounded-lg" onClick={() => testMutation.mutate({ phoneNumber: testNumber })} disabled={!testNumber || testMutation.isPending}>
               <Send className="w-4 h-4 mr-2" />Send Test
@@ -148,10 +148,10 @@ export default function SMSNotifications() {
           </CardHeader>
           <CardContent className="p-0">
             {templatesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {templatesQuery.data?.map((template: any) => (
+                {(templatesQuery.data as any)?.map((template: any) => (
                   <div key={template.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{template.name}</p>
@@ -172,12 +172,12 @@ export default function SMSNotifications() {
           </CardHeader>
           <CardContent className="p-0">
             {logsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : logsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (logsQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No recent messages</p>
             ) : (
               <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
-                {logsQuery.data?.map((log: any) => (
+                {(logsQuery.data as any)?.map((log: any) => (
                   <div key={log.id} className="p-4">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-white font-medium">{log.recipient}</span>

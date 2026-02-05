@@ -18,8 +18,8 @@ import { cn } from "@/lib/utils";
 export default function Commission() {
   const [period, setPeriod] = useState("month");
 
-  const summaryQuery = trpc.brokers.getCommissionSummary.useQuery({ period });
-  const historyQuery = trpc.brokers.getCommissionHistory.useQuery({ period, limit: 20 });
+  const summaryQuery = (trpc as any).brokers.getCommissionSummary.useQuery({ period });
+  const historyQuery = (trpc as any).brokers.getCommissionHistory.useQuery({ period, limit: 20 });
 
   const summary = summaryQuery.data;
 
@@ -43,7 +43,7 @@ export default function Commission() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            {["week", "month", "year"].map((p) => (
+            {["week", "month", "year"].map((p: any) => (
               <Button key={p} variant={period === p ? "default" : "outline"} size="sm" className={period === p ? "bg-cyan-600 hover:bg-cyan-700 rounded-lg" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"} onClick={() => setPeriod(p)}>
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </Button>
@@ -146,8 +146,8 @@ export default function Commission() {
         </CardHeader>
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : historyQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (historyQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <DollarSign className="w-10 h-10 text-slate-500" />
@@ -157,7 +157,7 @@ export default function Commission() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {historyQuery.data?.map((commission: any) => (
+              {(historyQuery.data as any)?.map((commission: any) => (
                 <div key={commission.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

@@ -22,15 +22,15 @@ import { toast } from "sonner";
 export default function DispatchBoard() {
   const [filter, setFilter] = useState("all");
 
-  const boardQuery = trpc.dispatch.getBoard.useQuery({ status: filter === 'all' ? undefined : filter as any }, { refetchInterval: 30000 });
-  const driversQuery = trpc.dispatch.getAvailableDrivers.useQuery({});
+  const boardQuery = (trpc as any).dispatch.getBoard.useQuery({ status: filter === 'all' ? undefined : filter as any }, { refetchInterval: 30000 });
+  const driversQuery = (trpc as any).dispatch.getAvailableDrivers.useQuery({});
 
-  const assignMutation = trpc.dispatch.assignDriver.useMutation({
+  const assignMutation = (trpc as any).dispatch.assignDriver.useMutation({
     onSuccess: () => { toast.success("Driver assigned"); boardQuery.refetch(); driversQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const stats = boardQuery.data?.summary;
+  const stats = (boardQuery.data as any)?.summary;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -130,12 +130,12 @@ export default function DispatchBoard() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-cyan-400" />Active Loads</CardTitle></CardHeader>
         <CardContent className="p-0">
           {boardQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
-          ) : boardQuery.data?.loads?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
+          ) : (boardQuery.data as any)?.loads?.length === 0 ? (
             <div className="text-center py-16"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No active loads</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {boardQuery.data?.loads?.map((load: any) => (
+              {(boardQuery.data as any)?.loads?.map((load: any) => (
                 <div key={load.id} className={cn("p-4", load.status === "unassigned" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -153,10 +153,10 @@ export default function DispatchBoard() {
                         )}
                       </div>
                     </div>
-                    {load.status === "unassigned" && (driversQuery.data?.length ?? 0) > 0 && (
+                    {load.status === "unassigned" && ((driversQuery.data as any)?.length ?? 0) > 0 && (
                       <Select onValueChange={(driverId) => assignMutation.mutate({ loadId: load.id, driverId })}>
                         <SelectTrigger className="w-[180px] bg-slate-700/50 border-slate-600/50 rounded-lg"><User className="w-4 h-4 mr-2" /><SelectValue placeholder="Assign Driver" /></SelectTrigger>
-                        <SelectContent>{driversQuery.data?.map((driver: any) => (<SelectItem key={driver.id} value={driver.id}>{driver.name}</SelectItem>))}</SelectContent>
+                        <SelectContent>{(driversQuery.data as any)?.map((driver: any) => (<SelectItem key={driver.id} value={driver.id}>{driver.name}</SelectItem>))}</SelectContent>
                       </Select>
                     )}
                   </div>

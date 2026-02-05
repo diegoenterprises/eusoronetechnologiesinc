@@ -17,8 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CSAScores() {
-  const scoresQuery = trpc.safety.getCSAScores.useQuery();
-  const historyQuery = trpc.safety.getCSAHistory.useQuery();
+  const scoresQuery = (trpc as any).safety.getCSAScores.useQuery();
+  const historyQuery = (trpc as any).safety.getCSAHistory.useQuery();
 
   const scores = scoresQuery.data;
 
@@ -92,10 +92,10 @@ export default function CSAScores() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />BASIC Categories</CardTitle></CardHeader>
         <CardContent>
           {scoresQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3, 4, 5, 6, 7].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            <div className="space-y-4">{[1, 2, 3, 4, 5, 6, 7].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
           ) : (
             <div className="space-y-4">
-              {basicCategories.map((category) => {
+              {basicCategories.map((category: any) => {
                 const score = (scores?.categories as any)?.[category.key] || 0;
                 const isAlert = score >= category.threshold;
                 return (
@@ -123,12 +123,12 @@ export default function CSAScores() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-purple-400" />Score History</CardTitle></CardHeader>
         <CardContent>
           {historyQuery.isLoading ? (
-            <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-          ) : historyQuery.data?.length === 0 ? (
+            <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+          ) : (historyQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8"><Shield className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No history</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {historyQuery.data?.map((entry: any) => (
+              {(historyQuery.data as any)?.map((entry: any) => (
                 <div key={entry.id} className="py-3 flex items-center justify-between">
                   <div>
                     <p className="text-white font-medium">{entry.date}</p>

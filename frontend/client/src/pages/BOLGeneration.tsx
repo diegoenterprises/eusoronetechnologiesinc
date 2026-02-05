@@ -23,15 +23,15 @@ export default function BOLGeneration() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const bolsQuery = trpc.terminals.getBOLs.useQuery({
+  const bolsQuery = (trpc as any).terminals.getBOLs.useQuery({
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
 
-  const statsQuery = trpc.terminals.getBOLStats.useQuery();
+  const statsQuery = (trpc as any).terminals.getBOLStats.useQuery();
 
-  const generateMutation = trpc.terminals.generateBOL.useMutation({
-    onSuccess: (data) => {
+  const generateMutation = (trpc as any).terminals.generateBOL.useMutation({
+    onSuccess: (data: any) => {
       toast.success("BOL generated successfully", { description: `BOL #${data.bolNumber}` });
       bolsQuery.refetch();
     },
@@ -85,7 +85,7 @@ export default function BOLGeneration() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 rounded-xl">
@@ -95,7 +95,7 @@ export default function BOLGeneration() {
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.generated || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.generated || 0}</p>
                     <p className="text-xs text-slate-400">Generated Today</p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export default function BOLGeneration() {
                     <Clock className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.pending || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.pending || 0}</p>
                     <p className="text-xs text-slate-400">Pending Signature</p>
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function BOLGeneration() {
                     <FileText className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.thisMonth || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.thisMonth || 0}</p>
                     <p className="text-xs text-slate-400">This Month</p>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function BOLGeneration() {
                     <Truck className="w-5 h-5 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.delivered || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.delivered || 0}</p>
                     <p className="text-xs text-slate-400">Delivered</p>
                   </div>
                 </div>
@@ -157,7 +157,7 @@ export default function BOLGeneration() {
                 <Input
                   placeholder="Search BOL number..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
@@ -180,16 +180,16 @@ export default function BOLGeneration() {
         <CardContent>
           {bolsQuery.isLoading ? (
             <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
-          ) : bolsQuery.data?.length === 0 ? (
+          ) : (bolsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No BOLs found</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {bolsQuery.data?.map((bol: any) => (
+              {(bolsQuery.data as any)?.map((bol: any) => (
                 <div
                   key={bol.id}
                   className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-emerald-500/50 transition-colors"

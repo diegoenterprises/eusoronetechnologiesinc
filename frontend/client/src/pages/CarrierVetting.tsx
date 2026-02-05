@@ -22,17 +22,17 @@ import { toast } from "sonner";
 export default function CarrierVetting() {
   const [search, setSearch] = useState("");
 
-  const carriersQuery = trpc.brokers.getPendingVetting.useQuery({ search });
-  const statsQuery = trpc.brokers.getVettingStats.useQuery();
+  const carriersQuery = (trpc as any).brokers.getPendingVetting.useQuery({ search });
+  const statsQuery = (trpc as any).brokers.getVettingStats.useQuery();
 
-  const approveMutation = trpc.brokers.approveCarrier.useMutation({
+  const approveMutation = (trpc as any).brokers.approveCarrier.useMutation({
     onSuccess: () => { toast.success("Carrier approved"); carriersQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.brokers.rejectCarrier.useMutation({
+  const rejectMutation = (trpc as any).brokers.rejectCarrier.useMutation({
     onSuccess: () => { toast.success("Carrier rejected"); carriersQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -92,19 +92,19 @@ export default function CarrierVetting() {
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search carriers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search carriers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Pending Vetting</CardTitle></CardHeader>
         <CardContent className="p-0">
           {carriersQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-          ) : carriersQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
+          ) : (carriersQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" /><p className="text-slate-400">No pending carriers</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {carriersQuery.data?.map((carrier: any) => (
+              {(carriersQuery.data as any)?.map((carrier: any) => (
                 <div key={carrier.id} className="p-4">
                   <div className="flex items-start justify-between mb-4">
                     <div>

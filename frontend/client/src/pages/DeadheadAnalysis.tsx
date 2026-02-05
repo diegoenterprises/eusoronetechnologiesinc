@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 export default function DeadheadAnalysis() {
   const [dateRange, setDateRange] = useState("month");
 
-  const summaryQuery = trpc.analytics.getDeadheadSummary.useQuery({ dateRange });
-  const byDriverQuery = trpc.analytics.getDeadheadByDriver.useQuery({ dateRange, limit: 10 });
-  const byLaneQuery = trpc.analytics.getDeadheadByLane.useQuery({ dateRange, limit: 10 });
-  const trendsQuery = trpc.analytics.getDeadheadTrends.useQuery({ dateRange });
+  const summaryQuery = (trpc as any).analytics.getDeadheadSummary.useQuery({ dateRange });
+  const byDriverQuery = (trpc as any).analytics.getDeadheadByDriver.useQuery({ dateRange, limit: 10 });
+  const byLaneQuery = (trpc as any).analytics.getDeadheadByLane.useQuery({ dateRange, limit: 10 });
+  const trendsQuery = (trpc as any).analytics.getDeadheadTrends.useQuery({ dateRange });
 
   const summary = summaryQuery.data;
 
@@ -154,10 +154,10 @@ export default function DeadheadAnalysis() {
           </CardHeader>
           <CardContent className="p-0">
             {byDriverQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {byDriverQuery.data?.map((driver: any) => (
+                {(byDriverQuery.data as any)?.map((driver: any) => (
                   <div key={driver.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{driver.name}</p>
@@ -181,10 +181,10 @@ export default function DeadheadAnalysis() {
           </CardHeader>
           <CardContent className="p-0">
             {byLaneQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {byLaneQuery.data?.map((lane: any) => (
+                {(byLaneQuery.data as any)?.map((lane: any) => (
                   <div key={lane.id} className={cn("p-4", lane.percentage > 20 && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{lane.origin} → {lane.destination}</p>

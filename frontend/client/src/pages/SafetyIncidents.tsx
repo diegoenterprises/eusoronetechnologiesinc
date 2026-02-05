@@ -24,15 +24,15 @@ export default function SafetyIncidents() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const incidentsQuery = trpc.safety.getIncidents.useQuery({
+  const incidentsQuery = (trpc as any).safety.getIncidents.useQuery({
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
   });
 
-  const statsQuery = trpc.safety.getIncidentStats.useQuery();
+  const statsQuery = (trpc as any).safety.getIncidentStats.useQuery();
 
-  const closeMutation = trpc.safety.closeIncident.useMutation({
+  const closeMutation = (trpc as any).safety.closeIncident.useMutation({
     onSuccess: () => {
       toast.success("Incident closed successfully");
       incidentsQuery.refetch();
@@ -105,7 +105,7 @@ export default function SafetyIncidents() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20 rounded-xl">
@@ -115,7 +115,7 @@ export default function SafetyIncidents() {
                     <XCircle className="w-5 h-5 text-red-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.open || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.open || 0}</p>
                     <p className="text-xs text-slate-400">Open Incidents</p>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function SafetyIncidents() {
                     <Clock className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.investigating || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.investigating || 0}</p>
                     <p className="text-xs text-slate-400">Under Investigation</p>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export default function SafetyIncidents() {
                     <AlertCircle className="w-5 h-5 text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.thisMonth || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.thisMonth || 0}</p>
                     <p className="text-xs text-slate-400">This Month</p>
                   </div>
                 </div>
@@ -154,7 +154,7 @@ export default function SafetyIncidents() {
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.resolved || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.resolved || 0}</p>
                     <p className="text-xs text-slate-400">Resolved This Month</p>
                   </div>
                 </div>
@@ -177,7 +177,7 @@ export default function SafetyIncidents() {
                 <Input
                   placeholder="Search incidents..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
@@ -212,9 +212,9 @@ export default function SafetyIncidents() {
         <CardContent>
           {incidentsQuery.isLoading ? (
             <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
-          ) : incidentsQuery.data?.length === 0 ? (
+          ) : (incidentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
               <p className="text-slate-400">No incidents found</p>
@@ -222,7 +222,7 @@ export default function SafetyIncidents() {
             </div>
           ) : (
             <div className="space-y-3">
-              {incidentsQuery.data?.map((incident: any) => (
+              {(incidentsQuery.data as any)?.map((incident: any) => (
                 <div
                   key={incident.id}
                   className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-slate-500/50 transition-colors"

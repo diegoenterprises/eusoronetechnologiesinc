@@ -18,8 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function PlatformHealth() {
-  const healthQuery = trpc.admin.getPlatformHealth.useQuery({}, { refetchInterval: 30000 });
-  const servicesQuery = trpc.admin.getServiceStatus.useQuery({}, { refetchInterval: 30000 });
+  const healthQuery = (trpc as any).admin.getPlatformHealth.useQuery({}, { refetchInterval: 30000 });
+  const servicesQuery = (trpc as any).admin.getServiceStatus.useQuery({}, { refetchInterval: 30000 });
 
   const health = healthQuery.data;
 
@@ -109,10 +109,10 @@ export default function PlatformHealth() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Server className="w-5 h-5 text-cyan-400" />Services</CardTitle></CardHeader>
         <CardContent className="p-0">
           {servicesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {servicesQuery.data?.map((service: any) => (
+              {(servicesQuery.data as any)?.map((service: any) => (
                 <div key={service.name} className={cn("p-4 flex items-center justify-between", service.status === "down" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", service.status === "healthy" ? "bg-green-500/20" : service.status === "degraded" ? "bg-yellow-500/20" : "bg-red-500/20")}>

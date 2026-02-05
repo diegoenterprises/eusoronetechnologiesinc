@@ -20,17 +20,17 @@ import { toast } from "sonner";
 export default function TimeOffRequests() {
   const [status, setStatus] = useState("all");
 
-  const requestsQuery = trpc.payroll.getTimeOffRequests.useQuery({ status });
-  const statsQuery = trpc.payroll.getTimeOffStats.useQuery();
+  const requestsQuery = (trpc as any).payroll.getTimeOffRequests.useQuery({ status });
+  const statsQuery = (trpc as any).payroll.getTimeOffStats.useQuery();
 
-  const approveMutation = trpc.payroll.approveTimeOff.useMutation({
+  const approveMutation = (trpc as any).payroll.approveTimeOff.useMutation({
     onSuccess: () => { toast.success("Request approved"); requestsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const denyMutation = trpc.payroll.denyTimeOff.useMutation({
+  const denyMutation = (trpc as any).payroll.denyTimeOff.useMutation({
     onSuccess: () => { toast.success("Request denied"); requestsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -114,12 +114,12 @@ export default function TimeOffRequests() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-cyan-400" />Requests</CardTitle></CardHeader>
         <CardContent className="p-0">
           {requestsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : requestsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (requestsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No requests found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {requestsQuery.data?.map((request: any) => (
+              {(requestsQuery.data as any)?.map((request: any) => (
                 <div key={request.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{request.employeeName?.charAt(0)}</div>

@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function EscortPayHistory() {
   const [periodFilter, setPeriodFilter] = useState("30d");
 
-  const paymentsQuery = trpc.escorts.getJobs.useQuery({});
-  const summaryQuery = trpc.escorts.getDashboardStats.useQuery();
-  const pendingQuery = trpc.escorts.getJobs.useQuery({});
+  const paymentsQuery = (trpc as any).escorts.getJobs.useQuery({});
+  const summaryQuery = (trpc as any).escorts.getDashboardStats.useQuery();
+  const pendingQuery = (trpc as any).escorts.getJobs.useQuery({});
 
   const payments = paymentsQuery.data || [];
   const summary = summaryQuery.data;
@@ -52,7 +52,7 @@ export default function EscortPayHistory() {
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {summaryQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30 rounded-xl">
@@ -149,7 +149,7 @@ export default function EscortPayHistory() {
         </CardHeader>
         <CardContent className="p-0">
           {paymentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
           ) : payments.length === 0 ? (
             <div className="text-center py-16">
               <DollarSign className="w-12 h-12 text-slate-500 mx-auto mb-4" />

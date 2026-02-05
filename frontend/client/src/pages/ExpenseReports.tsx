@@ -20,12 +20,12 @@ import { toast } from "sonner";
 export default function ExpenseReports() {
   const [status, setStatus] = useState("all");
 
-  const expensesQuery = trpc.payroll.getExpenseReports.useQuery({ status });
-  const statsQuery = trpc.payroll.getExpenseStats.useQuery();
+  const expensesQuery = (trpc as any).payroll.getExpenseReports.useQuery({ status });
+  const statsQuery = (trpc as any).payroll.getExpenseStats.useQuery();
 
-  const approveMutation = trpc.payroll.approveExpense.useMutation({
+  const approveMutation = (trpc as any).payroll.approveExpense.useMutation({
     onSuccess: () => { toast.success("Expense approved"); expensesQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -102,12 +102,12 @@ export default function ExpenseReports() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Receipt className="w-5 h-5 text-cyan-400" />Expense Reports</CardTitle></CardHeader>
         <CardContent className="p-0">
           {expensesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : expensesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (expensesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Receipt className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No expense reports found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {expensesQuery.data?.map((expense: any) => (
+              {(expensesQuery.data as any)?.map((expense: any) => (
                 <div key={expense.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", expense.status === "reimbursed" ? "bg-purple-500/20" : expense.status === "approved" ? "bg-green-500/20" : "bg-yellow-500/20")}>

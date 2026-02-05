@@ -49,7 +49,7 @@ export default function CompaniesPage() {
   const [showAddDocument, setShowAddDocument] = useState(false);
 
   // tRPC query for companies
-  const companiesQuery = trpc.companies.list.useQuery({ search: searchTerm || undefined });
+  const companiesQuery = (trpc as any).companies.list.useQuery({ search: searchTerm || undefined });
 
   if (companiesQuery.isLoading) {
     return (
@@ -93,7 +93,7 @@ export default function CompaniesPage() {
     documents: c.documents || [],
   }));
 
-  const filteredCompanies = companies.filter((comp) =>
+  const filteredCompanies = companies.filter((comp: any) =>
     comp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     comp.dotNumber.includes(searchTerm) ||
     comp.mcNumber.includes(searchTerm)
@@ -161,13 +161,13 @@ export default function CompaniesPage() {
             <Input
               placeholder="Search companies..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: any) => setSearchTerm(e.target.value)}
               className="bg-slate-700 border-slate-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
             />
           </div>
 
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {filteredCompanies.map((company, idx) => (
+            {filteredCompanies.map((company: any, idx: number) => (
               <Card
                 key={company.id}
                 onClick={() => setSelectedCompany(idx)}
@@ -274,7 +274,7 @@ export default function CompaniesPage() {
             </div>
 
             <div className="space-y-3">
-              {currentCompany.documents.map((doc) => (
+              {currentCompany.documents.map((doc: any) => (
                 <div
                   key={doc.id}
                   className={`p-4 rounded-lg border ${getDocumentStatusColor(doc.status)}`}

@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function DataImport() {
   const [dataType, setDataType] = useState("all");
 
-  const importsQuery = trpc.admin.getImports.useQuery({ dataType });
-  const statsQuery = trpc.admin.getImportStats.useQuery();
+  const importsQuery = (trpc as any).admin.getImports.useQuery({ dataType });
+  const statsQuery = (trpc as any).admin.getImportStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -97,12 +97,12 @@ export default function DataImport() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Upload className="w-5 h-5 text-cyan-400" />Import History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {importsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : importsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (importsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Upload className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No imports found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {importsQuery.data?.map((imp: any) => (
+              {(importsQuery.data as any)?.map((imp: any) => (
                 <div key={imp.id} className={cn("p-4 flex items-center justify-between", imp.status === "failed" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", imp.status === "completed" ? "bg-green-500/20" : imp.status === "processing" ? "bg-blue-500/20" : imp.status === "partial" ? "bg-yellow-500/20" : "bg-red-500/20")}>

@@ -99,17 +99,17 @@ export default function RegisterCatalyst() {
   const [formData, setFormData] = useState<CatalystFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<CatalystFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerCatalyst.useMutation({
+  const registerMutation = (trpc as any).registration.registerCatalyst.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", {
         description: "Your account is pending company verification.",
       });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", { description: error.message });
     },
   });
@@ -142,7 +142,7 @@ export default function RegisterCatalyst() {
               </Label>
               <Input
                 value={formData.firstName}
-                onChange={(e) => updateFormData({ firstName: e.target.value })}
+                onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -153,7 +153,7 @@ export default function RegisterCatalyst() {
               </Label>
               <Input
                 value={formData.lastName}
-                onChange={(e) => updateFormData({ lastName: e.target.value })}
+                onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -168,7 +168,7 @@ export default function RegisterCatalyst() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
+                onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@company.com"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -180,7 +180,7 @@ export default function RegisterCatalyst() {
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => updateFormData({ phone: e.target.value })}
+                onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -223,7 +223,7 @@ export default function RegisterCatalyst() {
                 { value: "employee", label: "W-2 Employee", desc: "Full-time or part-time employee" },
                 { value: "contractor", label: "1099 Contractor", desc: "Independent contractor" },
                 { value: "agency", label: "Staffing Agency", desc: "Placed by staffing agency" },
-              ].map((type) => (
+              ].map((type: any) => (
                 <div
                   key={type.value}
                   onClick={() => updateFormData({ employmentType: type.value })}
@@ -247,7 +247,7 @@ export default function RegisterCatalyst() {
               </Label>
               <Input
                 value={formData.companyName}
-                onChange={(e) => updateFormData({ companyName: e.target.value })}
+                onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Trucking LLC"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -258,7 +258,7 @@ export default function RegisterCatalyst() {
               </Label>
               <Input
                 value={formData.companyUsdot}
-                onChange={(e) => updateFormData({ companyUsdot: e.target.value })}
+                onChange={(e: any) => updateFormData({ companyUsdot: e.target.value })}
                 placeholder="1234567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -270,14 +270,14 @@ export default function RegisterCatalyst() {
               <Label className="text-slate-300">Job Title</Label>
               <Input
                 value={formData.jobTitle}
-                onChange={(e) => updateFormData({ jobTitle: e.target.value })}
+                onChange={(e: any) => updateFormData({ jobTitle: e.target.value })}
                 placeholder="Dispatcher, Load Coordinator, etc."
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Department</Label>
-              <Select value={formData.department} onValueChange={(v) => updateFormData({ department: v })}>
+              <Select value={formData.department} onValueChange={(v: any) => updateFormData({ department: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select department" />
                 </SelectTrigger>
@@ -310,7 +310,7 @@ export default function RegisterCatalyst() {
         <div className="space-y-6">
           <div className="space-y-2">
             <Label className="text-slate-300">Years of Dispatch Experience</Label>
-            <Select value={formData.yearsExperience} onValueChange={(v) => updateFormData({ yearsExperience: v })}>
+            <Select value={formData.yearsExperience} onValueChange={(v: any) => updateFormData({ yearsExperience: v })}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                 <SelectValue placeholder="Select experience level" />
               </SelectTrigger>
@@ -327,7 +327,7 @@ export default function RegisterCatalyst() {
           <div className="space-y-2">
             <Label className="text-slate-300">Dispatch Software Experience</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {DISPATCH_SOFTWARE.map((software) => (
+              {DISPATCH_SOFTWARE.map((software: any) => (
                 <div key={software} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
                   <Checkbox
                     id={software}
@@ -367,7 +367,7 @@ export default function RegisterCatalyst() {
               <Input
                 type="date"
                 value={formData.hazmatTrainingDate}
-                onChange={(e) => updateFormData({ hazmatTrainingDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -375,7 +375,7 @@ export default function RegisterCatalyst() {
               <Label className="text-slate-300">Training Provider</Label>
               <Input
                 value={formData.hazmatTrainingProvider}
-                onChange={(e) => updateFormData({ hazmatTrainingProvider: e.target.value })}
+                onChange={(e: any) => updateFormData({ hazmatTrainingProvider: e.target.value })}
                 placeholder="J.J. Keller, company training, etc."
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -394,7 +394,7 @@ export default function RegisterCatalyst() {
           <div className="space-y-2">
             <Label className="text-slate-300">Industry Certifications</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {CERTIFICATIONS.map((cert) => (
+              {CERTIFICATIONS.map((cert: any) => (
                 <div key={cert} className="flex items-center space-x-2 p-3 rounded bg-slate-700/30">
                   <Checkbox
                     id={cert}
@@ -419,7 +419,7 @@ export default function RegisterCatalyst() {
             <Label className="text-slate-300">Other Certifications</Label>
             <Input
               value={formData.otherCertifications}
-              onChange={(e) => updateFormData({ otherCertifications: e.target.value })}
+              onChange={(e: any) => updateFormData({ otherCertifications: e.target.value })}
               placeholder="List any other relevant certifications"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -429,7 +429,7 @@ export default function RegisterCatalyst() {
             <div className="p-4 rounded-lg bg-slate-700/30">
               <p className="text-sm text-slate-300 mb-2">Selected Certifications:</p>
               <div className="flex flex-wrap gap-2">
-                {formData.certifications.map((cert) => (
+                {formData.certifications.map((cert: any) => (
                   <Badge key={cert} className="bg-red-500/20 text-red-400">
                     {cert}
                   </Badge>
@@ -452,7 +452,7 @@ export default function RegisterCatalyst() {
               <Checkbox
                 id="terms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a> and 
@@ -465,7 +465,7 @@ export default function RegisterCatalyst() {
               <Checkbox
                 id="privacy"
                 checked={formData.acceptPrivacy}
-                onCheckedChange={(c) => updateFormData({ acceptPrivacy: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptPrivacy: c as boolean })}
               />
               <Label htmlFor="privacy" className="text-sm text-slate-300 cursor-pointer">
                 I understand that my employer will be notified of my registration and must approve my access
@@ -477,7 +477,7 @@ export default function RegisterCatalyst() {
               <Checkbox
                 id="responsibility"
                 checked={formData.acceptResponsibility}
-                onCheckedChange={(c) => updateFormData({ acceptResponsibility: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptResponsibility: c as boolean })}
               />
               <Label htmlFor="responsibility" className="text-sm text-slate-300 cursor-pointer">
                 I understand my responsibility to comply with FMCSA HOS regulations when dispatching drivers 

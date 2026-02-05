@@ -16,9 +16,9 @@ export default function ShipperLoadTracking() {
   const [, params] = useRoute("/shipper/track/:loadId");
   const loadId = params?.loadId;
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const trackingQuery = trpc.tracking.getRealtimePositions.useQuery({ loadIds: [loadId || ""] }, { refetchInterval: 30000 });
-  const eventsQuery = trpc.tracking.trackShipment.useQuery({ loadNumber: loadId || "" });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const trackingQuery = (trpc as any).tracking.getRealtimePositions.useQuery({ loadIds: [loadId || ""] }, { refetchInterval: 30000 });
+  const eventsQuery = (trpc as any).tracking.trackShipment.useQuery({ loadNumber: loadId || "" });
 
   const load = loadQuery.data;
   const tracking = trackingQuery.data as any;

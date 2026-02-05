@@ -22,16 +22,16 @@ export default function ComplianceClearinghouse() {
   const [searchTerm, setSearchTerm] = useState("");
   const [queryType, setQueryType] = useState("pre_employment");
 
-  const driversQuery = trpc.compliance.getDQDrivers.useQuery({});
-  const queriesQuery = trpc.compliance.getClearinghouseQueries.useQuery();
-  const statsQuery = trpc.compliance.getClearinghouseStats.useQuery();
+  const driversQuery = (trpc as any).compliance.getDQDrivers.useQuery({});
+  const queriesQuery = (trpc as any).compliance.getClearinghouseQueries.useQuery();
+  const statsQuery = (trpc as any).compliance.getClearinghouseStats.useQuery();
 
-  const runQueryMutation = trpc.compliance.runClearinghouseQuery.useMutation({
+  const runQueryMutation = (trpc as any).compliance.runClearinghouseQuery.useMutation({
     onSuccess: () => {
       toast.success("Query submitted to Clearinghouse");
       queriesQuery.refetch();
     },
-    onError: (error) => toast.error("Query failed", { description: error.message }),
+    onError: (error: any) => toast.error("Query failed", { description: error.message }),
   });
 
   const drivers = driversQuery.data || [];
@@ -61,7 +61,7 @@ export default function ComplianceClearinghouse() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -130,7 +130,7 @@ export default function ComplianceClearinghouse() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search driver by name or CDL..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -186,7 +186,7 @@ export default function ComplianceClearinghouse() {
         </CardHeader>
         <CardContent>
           {queriesQuery.isLoading ? (
-            <div className="space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : queries.length === 0 ? (
             <div className="text-center py-12">
               <Search className="w-10 h-10 text-slate-500 mx-auto mb-3" />

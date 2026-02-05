@@ -25,12 +25,12 @@ export default function RateConfirmations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const confirmationsQuery = trpc.rateConfirmations.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
-  const summaryQuery = trpc.rateConfirmations.getSummary.useQuery();
+  const confirmationsQuery = (trpc as any).rateConfirmations.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const summaryQuery = (trpc as any).rateConfirmations.getSummary.useQuery();
 
-  const sendMutation = trpc.rateConfirmations.send.useMutation({
+  const sendMutation = (trpc as any).rateConfirmations.send.useMutation({
     onSuccess: () => { toast.success("Rate confirmation sent"); confirmationsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to send", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -45,7 +45,7 @@ export default function RateConfirmations() {
     }
   };
 
-  const filteredConfirmations = confirmationsQuery.data?.filter((conf: any) =>
+  const filteredConfirmations = (confirmationsQuery.data as any)?.filter((conf: any) =>
     !searchTerm || conf.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || conf.carrierName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -135,7 +135,7 @@ export default function RateConfirmations() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search rate confirmations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search rate confirmations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -155,7 +155,7 @@ export default function RateConfirmations() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {confirmationsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredConfirmations?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
@@ -188,7 +188,7 @@ export default function RateConfirmations() {
                     </div>
                     <div className="flex items-center gap-2">
                       {conf.status === "pending" && (
-                        <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 rounded-lg" onClick={(e) => { e.stopPropagation(); sendMutation.mutate({ id: conf.id }); }}>
+                        <Button size="sm" className="bg-cyan-600 hover:bg-cyan-700 rounded-lg" onClick={(e: any) => { e.stopPropagation(); sendMutation.mutate({ id: conf.id }); }}>
                           <Send className="w-3 h-3 mr-1" />Send
                         </Button>
                       )}

@@ -26,17 +26,17 @@ export default function TwoFactorAuth() {
 
   const enableMutation = trpc.auth.enable2FA.useMutation({
     onSuccess: () => { toast.success("2FA enabled"); statusQuery.refetch(); setVerificationCode(""); },
-    onError: (error) => toast.error("Failed to enable 2FA", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to enable 2FA", { description: error.message }),
   });
 
   const disableMutation = trpc.auth.disable2FA.useMutation({
     onSuccess: () => { toast.success("2FA disabled"); statusQuery.refetch(); },
-    onError: (error) => toast.error("Failed to disable 2FA", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to disable 2FA", { description: error.message }),
   });
 
-  const regenerateMutation = trpc.auth.regenerateBackupCodes.useMutation({
+  const regenerateMutation = (trpc as any).auth.regenerateBackupCodes.useMutation({
     onSuccess: () => { toast.success("Backup codes regenerated"); statusQuery.refetch(); },
-    onError: (error) => toast.error("Failed to regenerate", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to regenerate", { description: error.message }),
   });
 
   const status = statusQuery.data;
@@ -98,8 +98,8 @@ export default function TwoFactorAuth() {
                 <div className="p-4 rounded-xl bg-slate-700/30 text-center">
                   {setupQuery.isLoading ? (
                     <Skeleton className="h-48 w-48 mx-auto rounded-xl" />
-                  ) : setupQuery.data?.qrCode ? (
-                    <img src={setupQuery.data.qrCode} alt="2FA QR Code" className="mx-auto rounded-xl" />
+                  ) : (setupQuery.data as any)?.qrCode ? (
+                    <img src={(setupQuery.data as any).qrCode} alt="2FA QR Code" className="mx-auto rounded-xl" />
                   ) : (
                     <div className="h-48 w-48 mx-auto rounded-xl bg-slate-600/50 flex items-center justify-center">
                       <QrCode className="w-16 h-16 text-slate-500" />
@@ -108,12 +108,12 @@ export default function TwoFactorAuth() {
                 </div>
 
                 {/* Secret Key */}
-                {setupQuery.data?.secret && (
+                {(setupQuery.data as any)?.secret && (
                   <div className="p-3 rounded-xl bg-slate-700/30">
                     <p className="text-xs text-slate-500 mb-1">Manual Entry Key</p>
                     <div className="flex items-center gap-2">
-                      <code className="text-cyan-400 font-mono text-sm flex-1">{setupQuery.data.secret}</code>
-                      <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => copyToClipboard(setupQuery.data.secret)}>
+                      <code className="text-cyan-400 font-mono text-sm flex-1">{(setupQuery.data as any).secret}</code>
+                      <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => copyToClipboard((setupQuery.data as any).secret)}>
                         <Copy className="w-4 h-4" />
                       </Button>
                     </div>
@@ -123,7 +123,7 @@ export default function TwoFactorAuth() {
                 {/* Verification */}
                 <div className="space-y-2">
                   <p className="text-white font-medium">Enter verification code</p>
-                  <Input value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                  <Input value={verificationCode} onChange={(e: any) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 </div>
 
                 <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => enableMutation.mutate({ code: verificationCode })} disabled={verificationCode.length !== 6 || enableMutation.isPending}>
@@ -166,7 +166,7 @@ export default function TwoFactorAuth() {
             {!status?.enabled ? (
               <p className="text-slate-400">Enable 2FA to generate backup codes.</p>
             ) : statusQuery.isLoading ? (
-              <div className="grid grid-cols-2 gap-2">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+              <div className="grid grid-cols-2 gap-2">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
             ) : (
               <>
                 <p className="text-slate-400 text-sm mb-4">Save these codes in a secure place. Each code can only be used once.</p>

@@ -53,10 +53,10 @@ export default function DriverIssueReport() {
   const [hazmatFire, setHazmatFire] = useState(false);
   const [hazmatDamage, setHazmatDamage] = useState(false);
 
-  const locationQuery = trpc.tracking.trackShipment.useQuery({ loadNumber: "" }, { enabled: false });
-  const currentLoadQuery = trpc.drivers.getCurrentAssignment.useQuery();
+  const locationQuery = (trpc as any).tracking.trackShipment.useQuery({ loadNumber: "" }, { enabled: false });
+  const currentLoadQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
 
-  const submitMutation = trpc.incidents.report.useMutation({
+  const submitMutation = (trpc as any).incidents.report.useMutation({
     onSuccess: () => {
       toast.success("Issue reported successfully");
       navigate("/driver/dashboard");
@@ -114,7 +114,7 @@ export default function DriverIssueReport() {
               {locationQuery.isLoading ? (
                 <Skeleton className="h-5 w-48 mt-1" />
               ) : (
-                <p className="text-white font-medium">{(locationQuery.data as any)?.address || locationQuery.data?.loadNumber || "Location detected"}</p>
+                <p className="text-white font-medium">{(locationQuery.data as any)?.address || (locationQuery.data as any)?.loadNumber || "Location detected"}</p>
               )}
             </div>
             <Badge className="bg-green-500/20 text-green-400 border-0">GPS Active</Badge>
@@ -132,7 +132,7 @@ export default function DriverIssueReport() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {issueTypes.map((type) => {
+            {issueTypes.map((type: any) => {
               const Icon = type.icon;
               const isSelected = issueType === type.value;
               return (
@@ -167,7 +167,7 @@ export default function DriverIssueReport() {
         </CardHeader>
         <CardContent>
           <RadioGroup value={severity} onValueChange={setSeverity} className="space-y-3">
-            {severityLevels.map((level) => (
+            {severityLevels.map((level: any) => (
               <div
                 key={level.value}
                 className={cn(
@@ -193,7 +193,7 @@ export default function DriverIssueReport() {
         <CardContent>
           <Textarea
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e: any) => setDescription(e.target.value)}
             placeholder="Describe the issue in detail..."
             className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[120px]"
           />
@@ -210,7 +210,7 @@ export default function DriverIssueReport() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map((i: any) => (
               <Button
                 key={i}
                 variant="outline"

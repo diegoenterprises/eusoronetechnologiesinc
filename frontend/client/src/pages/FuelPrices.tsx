@@ -22,14 +22,14 @@ export default function FuelPrices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [fuelType, setFuelType] = useState("diesel");
 
-  const pricesQuery = trpc.fuel.getPrices.useQuery({});
-  const averagesQuery = trpc.fuel.getAverages.useQuery({});
-  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({});
-  const trendsQuery = trpc.fuel.getTrends.useQuery({ days: 30 });
+  const pricesQuery = (trpc as any).fuel.getPrices.useQuery({});
+  const averagesQuery = (trpc as any).fuel.getAverages.useQuery({});
+  const stationsQuery = (trpc as any).fuel.getNearbyStations.useQuery({});
+  const trendsQuery = (trpc as any).fuel.getTrends.useQuery({ days: 30 });
 
   const averages = averagesQuery.data;
 
-  const filteredStations = stationsQuery.data?.filter((station: any) =>
+  const filteredStations = (stationsQuery.data as any)?.filter((station: any) =>
     !searchTerm || station.name?.toLowerCase().includes(searchTerm.toLowerCase()) || station.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -132,7 +132,7 @@ export default function FuelPrices() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search stations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search stations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -146,7 +146,7 @@ export default function FuelPrices() {
           </CardHeader>
           <CardContent className="p-0">
             {stationsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : filteredStations?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
@@ -189,7 +189,7 @@ export default function FuelPrices() {
           </CardHeader>
           <CardContent>
             {pricesQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-3">
                 {(pricesQuery.data as any)?.regions?.map((region: any) => (
@@ -220,7 +220,7 @@ export default function FuelPrices() {
             <Skeleton className="h-48 w-full rounded-xl" />
           ) : (
             <div className="flex items-end gap-1 h-48">
-              {trendsQuery.data?.map((day: any, idx: number) => (
+              {(trendsQuery.data as any)?.map((day: any, idx: number) => (
                 <div key={idx} className="flex-1 flex flex-col items-center">
                   <div className="w-full bg-gradient-to-t from-cyan-500 to-emerald-500 rounded-t" style={{ height: `${(day.price / trendsQuery.data[0]?.price) * 100}%` }} />
                   {idx % 5 === 0 && <p className="text-xs text-slate-500 mt-1">{day.date}</p>}

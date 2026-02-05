@@ -22,17 +22,17 @@ export default function ESANGChat() {
   const [messages, setMessages] = useState<any[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const historyQuery = trpc.esang.getChatHistory.useQuery();
-  const suggestionsQuery = trpc.esang.getSuggestions.useQuery();
+  const historyQuery = (trpc as any).esang.getChatHistory.useQuery();
+  const suggestionsQuery = (trpc as any).esang.getSuggestions.useQuery();
 
-  const sendMutation = trpc.esang.chat.useMutation({
-    onSuccess: (data) => {
+  const sendMutation = (trpc as any).esang.chat.useMutation({
+    onSuccess: (data: any) => {
       setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const clearMutation = trpc.esang.clearHistory.useMutation({
+  const clearMutation = (trpc as any).esang.clearHistory.useMutation({
     onSuccess: () => { setMessages([]); toast.success("Chat cleared"); },
   });
 
@@ -77,7 +77,7 @@ export default function ESANGChat() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl flex-1 flex flex-col">
           <CardContent className="flex-1 p-4 overflow-y-auto">
             {historyQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
                 <div className="p-4 rounded-full bg-purple-500/20 mb-4">
@@ -88,7 +88,7 @@ export default function ESANGChat() {
               </div>
             ) : (
               <div className="space-y-4">
-                {messages.map((msg, i) => (
+                {messages.map((msg: any, i: number) => (
                   <div key={i} className={cn("flex gap-3", msg.role === "user" ? "justify-end" : "justify-start")}>
                     {msg.role === "assistant" && (
                       <div className="p-2 rounded-full bg-purple-500/20 h-fit">
@@ -125,7 +125,7 @@ export default function ESANGChat() {
           </CardContent>
           <div className="p-4 border-t border-slate-700/50">
             <div className="flex gap-2">
-              <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ask ESANG anything..." className="bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()} />
+              <Input value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Ask ESANG anything..." className="bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && !e.shiftKey && handleSend()} />
               <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg" onClick={handleSend} disabled={sendMutation.isPending || !message.trim()}>
                 <Send className="w-4 h-4" />
               </Button>
@@ -138,9 +138,9 @@ export default function ESANGChat() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-sm flex items-center gap-2"><Lightbulb className="w-4 h-4 text-yellow-400" />Suggestions</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               {suggestionsQuery.isLoading ? (
-                <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+                <div className="space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
               ) : (
-                suggestionsQuery.data?.map((suggestion: string, i: number) => (
+                (suggestionsQuery.data as any)?.map((suggestion: string, i: number) => (
                   <Button key={i} variant="outline" className="w-full justify-start text-left text-xs bg-slate-700/30 border-slate-600/50 hover:bg-slate-700 rounded-lg h-auto py-2" onClick={() => handleSuggestion(suggestion)}>
                     {suggestion}
                   </Button>

@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function GPSTracking() {
   const [filter, setFilter] = useState("all");
 
-  const vehiclesQuery = trpc.fleet.getGPSLocations.useQuery({ filter }, { refetchInterval: 30000 });
-  const statsQuery = trpc.fleet.getGPSStats.useQuery({}, { refetchInterval: 30000 });
+  const vehiclesQuery = (trpc as any).fleet.getGPSLocations.useQuery({ filter }, { refetchInterval: 30000 });
+  const statsQuery = (trpc as any).fleet.getGPSStats.useQuery({}, { refetchInterval: 30000 });
 
   const stats = statsQuery.data;
 
@@ -111,12 +111,12 @@ export default function GPSTracking() {
           </CardHeader>
           <CardContent className="p-0 max-h-[420px] overflow-y-auto">
             {vehiclesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : vehiclesQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (vehiclesQuery.data as any)?.length === 0 ? (
               <div className="text-center py-16"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No vehicles</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {vehiclesQuery.data?.map((vehicle: any) => (
+                {(vehiclesQuery.data as any)?.map((vehicle: any) => (
                   <div key={vehicle.id} className={cn("p-3 hover:bg-slate-700/20 cursor-pointer", vehicle.status === "offline" && "opacity-60")}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium text-sm">{vehicle.unitNumber}</p>

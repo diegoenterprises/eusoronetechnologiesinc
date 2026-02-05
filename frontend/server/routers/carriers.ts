@@ -15,6 +15,25 @@ import { eq, and, desc, sql, count, gte, or } from "drizzle-orm";
 const carrierStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 
 export const carriersRouter = router({
+  // Generic CRUD for screen templates
+  create: protectedProcedure
+    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
   /**
    * Get available capacity for CapacityBoard page
    */

@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function EscortTraining() {
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const coursesQuery = trpc.escorts.getAvailableJobs.useQuery({});
-  const progressQuery = trpc.escorts.getDashboardStats.useQuery();
-  const certsQuery = trpc.escorts.getCertifications.useQuery();
+  const coursesQuery = (trpc as any).escorts.getAvailableJobs.useQuery({});
+  const progressQuery = (trpc as any).escorts.getDashboardStats.useQuery();
+  const certsQuery = (trpc as any).escorts.getCertifications.useQuery();
 
   const courses = coursesQuery.data || [];
   const progress = progressQuery.data as any;
@@ -42,7 +42,7 @@ export default function EscortTraining() {
       {/* Progress Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {progressQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 rounded-xl">
@@ -147,7 +147,7 @@ export default function EscortTraining() {
 
       {coursesQuery.isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
+          {Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)}
         </div>
       ) : courses.length === 0 ? (
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

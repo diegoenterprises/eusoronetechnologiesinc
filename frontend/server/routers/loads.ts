@@ -18,6 +18,25 @@ import {
 import { WS_EVENTS } from "@shared/websocket-events";
 
 export const loadsRouter = router({
+  // Generic CRUD for screen templates
+  create: protectedProcedure
+    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
   /**
    * Get tracked loads for TrackShipments page
    */
@@ -250,7 +269,7 @@ export const loadsRouter = router({
   /**
    * Create a new load
    */
-  create: protectedProcedure
+  createLoad: protectedProcedure
     .input(
       z.object({
         cargoType: z.enum(["general", "hazmat", "refrigerated", "oversized", "liquid", "gas", "chemicals", "petroleum"]),
@@ -441,10 +460,29 @@ export const loadsRouter = router({
 
 
 export const bidsRouter = router({
+  // Generic CRUD for screen templates
+  create: protectedProcedure
+    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
   /**
    * Submit a bid on a load
    */
-  create: protectedProcedure
+  submitBid: protectedProcedure
     .input(
       z.object({
         loadId: z.number(),

@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function TerminalManagerDashboard() {
-  const statsQuery = trpc.terminals.getDashboardStats.useQuery();
-  const appointmentsQuery = trpc.terminals.getTodayAppointments.useQuery({ limit: 5 });
-  const racksQuery = trpc.terminals.getRackStatus.useQuery({});
-  const inventoryQuery = trpc.terminals.getInventorySummary.useQuery();
+  const statsQuery = (trpc as any).terminals.getDashboardStats.useQuery();
+  const appointmentsQuery = (trpc as any).terminals.getTodayAppointments.useQuery({ limit: 5 });
+  const racksQuery = (trpc as any).terminals.getRackStatus.useQuery({});
+  const inventoryQuery = (trpc as any).terminals.getInventorySummary.useQuery();
 
   const stats = statsQuery.data;
 
@@ -85,10 +85,10 @@ export default function TerminalManagerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Gauge className="w-5 h-5 text-cyan-400" />Rack Status</CardTitle></CardHeader>
           <CardContent>
             {racksQuery.isLoading ? (
-              <div className="grid grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+              <div className="grid grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
             ) : (
               <div className="grid grid-cols-4 gap-3">
-                {racksQuery.data?.map((rack: any) => (
+                {(racksQuery.data as any)?.map((rack: any) => (
                   <div key={rack.id} className={cn("p-3 rounded-lg border text-center", rack.status === "active" ? "bg-green-500/10 border-green-500/30" : rack.status === "idle" ? "bg-yellow-500/10 border-yellow-500/30" : rack.status === "maintenance" ? "bg-orange-500/10 border-orange-500/30" : "bg-slate-700/30 border-slate-600/50")}>
                     <p className="text-white font-bold">{rack.name}</p>
                     <p className={cn("text-xs capitalize", rack.status === "active" ? "text-green-400" : rack.status === "idle" ? "text-yellow-400" : rack.status === "maintenance" ? "text-orange-400" : "text-slate-400")}>{rack.status}</p>
@@ -104,12 +104,12 @@ export default function TerminalManagerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-yellow-400" />Today's Schedule</CardTitle></CardHeader>
           <CardContent className="p-0">
             {appointmentsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
-            ) : appointmentsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
+            ) : (appointmentsQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Calendar className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No appointments today</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {appointmentsQuery.data?.map((apt: any) => (
+                {(appointmentsQuery.data as any)?.map((apt: any) => (
                   <div key={apt.id} className="p-3 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -131,10 +131,10 @@ export default function TerminalManagerDashboard() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Fuel className="w-5 h-5 text-blue-400" />Tank Inventory</CardTitle></CardHeader>
         <CardContent>
           {inventoryQuery.isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {inventoryQuery.data?.tanks?.map((tank: any) => (
+              {(inventoryQuery.data as any)?.tanks?.map((tank: any) => (
                 <div key={tank.id} className="p-4 rounded-lg bg-slate-700/30">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-white font-medium">{tank.name}</p>

@@ -21,14 +21,14 @@ import { toast } from "sonner";
 export default function AlertManagement() {
   const [filter, setFilter] = useState("all");
 
-  const alertsQuery = trpc.alerts.getAll.useQuery({ filter });
-  const statsQuery = trpc.alerts.getStats.useQuery();
+  const alertsQuery = (trpc as any).alerts.getAll.useQuery({ filter });
+  const statsQuery = (trpc as any).alerts.getStats.useQuery();
 
-  const dismissMutation = trpc.alerts.dismiss.useMutation({
+  const dismissMutation = (trpc as any).alerts.dismiss.useMutation({
     onSuccess: () => { toast.success("Alert dismissed"); alertsQuery.refetch(); statsQuery.refetch(); },
   });
 
-  const dismissAllMutation = trpc.alerts.dismissAll.useMutation({
+  const dismissAllMutation = (trpc as any).alerts.dismissAll.useMutation({
     onSuccess: () => { toast.success("All alerts dismissed"); alertsQuery.refetch(); statsQuery.refetch(); },
   });
 
@@ -109,12 +109,12 @@ export default function AlertManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Bell className="w-5 h-5 text-cyan-400" />Alerts</CardTitle></CardHeader>
         <CardContent className="p-0">
           {alertsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : alertsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (alertsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" /><p className="text-slate-400">No alerts</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {alertsQuery.data?.map((alert: any) => (
+              {(alertsQuery.data as any)?.map((alert: any) => (
                 <div key={alert.id} className={cn("p-4 flex items-start gap-4", alert.severity === "critical" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className={cn("p-2 rounded-full mt-1", alert.severity === "critical" ? "bg-red-500/20" : alert.severity === "warning" ? "bg-yellow-500/20" : "bg-blue-500/20")}>
                     <AlertTriangle className={cn("w-4 h-4", alert.severity === "critical" ? "text-red-400" : alert.severity === "warning" ? "text-yellow-400" : "text-blue-400")} />

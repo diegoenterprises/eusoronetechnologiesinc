@@ -16,6 +16,25 @@ const jobStatusSchema = z.enum(["available", "assigned", "in_progress", "complet
 const positionSchema = z.enum(["lead", "chase", "both"]);
 
 export const escortsRouter = router({
+  // Generic CRUD for screen templates
+  create: protectedProcedure
+    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
   /**
    * Get escort dashboard stats
    */

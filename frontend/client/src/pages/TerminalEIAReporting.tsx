@@ -21,16 +21,16 @@ export default function TerminalEIAReporting() {
   const [reportPeriod, setReportPeriod] = useState("weekly");
   const [selectedWeek, setSelectedWeek] = useState("");
 
-  const reportQuery = trpc.terminals.getEIAReport.useQuery({ period: reportPeriod });
-  const historyQuery = trpc.terminals.getAppointments.useQuery({});
-  const inventoryQuery = trpc.terminals.getInventory.useQuery({});
+  const reportQuery = (trpc as any).terminals.getEIAReport.useQuery({ period: reportPeriod });
+  const historyQuery = (trpc as any).terminals.getAppointments.useQuery({});
+  const inventoryQuery = (trpc as any).terminals.getInventory.useQuery({});
 
-  const submitMutation = trpc.terminals.submitEIAReport.useMutation({
+  const submitMutation = (trpc as any).terminals.submitEIAReport.useMutation({
     onSuccess: () => {
       toast.success("EIA report submitted");
       historyQuery.refetch();
     },
-    onError: (error) => toast.error("Submission failed", { description: error.message }),
+    onError: (error: any) => toast.error("Submission failed", { description: error.message }),
   });
 
   const report = reportQuery.data;
@@ -66,7 +66,7 @@ export default function TerminalEIAReporting() {
       {/* Current Inventory Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {inventoryQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -141,7 +141,7 @@ export default function TerminalEIAReporting() {
         </CardHeader>
         <CardContent>
           {reportQuery.isLoading ? (
-            <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">

@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function Wallet() {
   const [activeTab, setActiveTab] = useState("all");
 
-  const balanceQuery = trpc.wallet.getBalance.useQuery();
-  const transactionsQuery = trpc.wallet.getTransactions.useQuery({ limit: 50 });
+  const balanceQuery = (trpc as any).wallet.getBalance.useQuery();
+  const transactionsQuery = (trpc as any).wallet.getTransactions.useQuery({ limit: 50 });
 
   const balance = balanceQuery.data;
 
@@ -37,7 +37,7 @@ export default function Wallet() {
     );
   };
 
-  const filteredTransactions = transactionsQuery.data?.filter((t: any) => {
+  const filteredTransactions = (transactionsQuery.data as any)?.filter((t: any) => {
     if (activeTab === "all") return true;
     return t.type === activeTab;
   });
@@ -161,7 +161,7 @@ export default function Wallet() {
             </CardHeader>
             <CardContent className="p-0">
               {transactionsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
               ) : filteredTransactions?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

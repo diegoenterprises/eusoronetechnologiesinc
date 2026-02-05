@@ -6,15 +6,15 @@ import { trpc } from "@/lib/trpc";
 import { Truck, AlertTriangle, CheckCircle, Wrench, Fuel, MapPin, Calendar, FileText } from "lucide-react";
 
 export default function Vehicle() {
-  const vehicleQuery = trpc.vehicle.getAssigned.useQuery();
-  const maintenanceQuery = trpc.vehicle.getMaintenanceHistory.useQuery({ limit: 5 });
+  const vehicleQuery = (trpc as any).vehicle.getAssigned.useQuery();
+  const maintenanceQuery = (trpc as any).vehicle.getMaintenanceHistory.useQuery({ limit: 5 });
 
   if (vehicleQuery.isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -158,13 +158,13 @@ export default function Vehicle() {
         <CardContent>
           {maintenanceQuery.isLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map((i: any) => (
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
           ) : (
             <div className="space-y-3">
-              {(maintenanceQuery.data?.records || [
+              {((maintenanceQuery.data as any)?.records || [
                 { id: "1", type: "Oil Change", date: "2026-01-15", mileage: 85000, cost: 150 },
                 { id: "2", type: "Tire Rotation", date: "2026-01-01", mileage: 83500, cost: 75 },
                 { id: "3", type: "Brake Inspection", date: "2025-12-15", mileage: 82000, cost: 200 },

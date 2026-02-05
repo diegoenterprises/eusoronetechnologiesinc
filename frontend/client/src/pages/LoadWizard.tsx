@@ -58,10 +58,10 @@ export default function LoadWizard() {
     notes: "",
   });
 
-  const classifyMutation = trpc.esang.classifyHazmat.useMutation({
-    onSuccess: (data) => {
+  const classifyMutation = (trpc as any).esang.classifyHazmat.useMutation({
+    onSuccess: (data: any) => {
       if (data.hazmatClass) {
-        setFormData((prev) => ({
+        setFormData((prev: any) => ({
           ...prev,
           hazmatClass: data.hazmatClass,
           unNumber: data.unNumber || "",
@@ -72,12 +72,12 @@ export default function LoadWizard() {
     },
   });
 
-  const createMutation = trpc.loads.create.useMutation({
-    onSuccess: (data) => {
+  const createMutation = (trpc as any).loads.create.useMutation({
+    onSuccess: (data: any) => {
       toast.success("Load created successfully");
       setLocation(`/loads/${data.id}`);
     },
-    onError: (error) => toast.error("Failed to create load", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to create load", { description: error.message }),
   });
 
   const handleNext = () => {
@@ -118,7 +118,7 @@ export default function LoadWizard() {
             <div className="space-y-2">
               <Label className="text-slate-400">Product Name</Label>
               <div className="flex gap-2">
-                <Input value={formData.productName} onChange={(e) => setFormData({ ...formData, productName: e.target.value })} placeholder="Enter product name" className="flex-1 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input value={formData.productName} onChange={(e: any) => setFormData({ ...formData, productName: e.target.value })} placeholder="Enter product name" className="flex-1 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 hover:bg-purple-500/30 text-purple-400 rounded-lg" onClick={handleClassify} disabled={classifyMutation.isPending}>
                   {classifyMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4 mr-1" />}
                   Classify
@@ -129,7 +129,7 @@ export default function LoadWizard() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">Hazmat Class</Label>
-                <Select value={formData.hazmatClass} onValueChange={(v) => setFormData({ ...formData, hazmatClass: v })}>
+                <Select value={formData.hazmatClass} onValueChange={(v: any) => setFormData({ ...formData, hazmatClass: v })}>
                   <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">Class 1 - Explosives</SelectItem>
@@ -147,11 +147,11 @@ export default function LoadWizard() {
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">UN Number</Label>
-                <Input value={formData.unNumber} onChange={(e) => setFormData({ ...formData, unNumber: e.target.value })} placeholder="UN1234" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input value={formData.unNumber} onChange={(e: any) => setFormData({ ...formData, unNumber: e.target.value })} placeholder="UN1234" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Packing Group</Label>
-                <Select value={formData.packingGroup} onValueChange={(v) => setFormData({ ...formData, packingGroup: v })}>
+                <Select value={formData.packingGroup} onValueChange={(v: any) => setFormData({ ...formData, packingGroup: v })}>
                   <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="I">PG I - High Danger</SelectItem>
@@ -168,11 +168,11 @@ export default function LoadWizard() {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-slate-400">Quantity (gallons)</Label>
-              <Input type="number" value={formData.weight} onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} placeholder="Enter quantity" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, quantity: e.target.value })} placeholder="Enter quantity" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Weight (lbs)</Label>
-              <Input type="number" value={formData.weight} onChange={(e) => setFormData({ ...formData, weight: e.target.value })} placeholder="Enter weight" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="number" value={formData.weight} onChange={(e: any) => setFormData({ ...formData, weight: e.target.value })} placeholder="Enter weight" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
           </div>
         );
@@ -182,20 +182,20 @@ export default function LoadWizard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">City</Label>
-                <Input value={formData.originCity} onChange={(e) => setFormData({ ...formData, originCity: e.target.value })} placeholder="City" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input value={formData.originCity} onChange={(e: any) => setFormData({ ...formData, originCity: e.target.value })} placeholder="City" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">State</Label>
-                <Input value={formData.originState} onChange={(e) => setFormData({ ...formData, originState: e.target.value })} placeholder="State" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input value={formData.originState} onChange={(e: any) => setFormData({ ...formData, originState: e.target.value })} placeholder="State" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Address</Label>
-              <Input value={formData.originAddress} onChange={(e) => setFormData({ ...formData, originAddress: e.target.value })} placeholder="Full address" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input value={formData.originAddress} onChange={(e: any) => setFormData({ ...formData, originAddress: e.target.value })} placeholder="Full address" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Pickup Date</Label>
-              <Input type="date" value={formData.pickupDate} onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="date" value={formData.pickupDate} onChange={(e: any) => setFormData({ ...formData, pickupDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
           </div>
         );
@@ -205,20 +205,20 @@ export default function LoadWizard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">City</Label>
-                <Input value={formData.destinationCity} onChange={(e) => setFormData({ ...formData, destinationCity: e.target.value })} placeholder="City" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input value={formData.destinationCity} onChange={(e: any) => setFormData({ ...formData, destinationCity: e.target.value })} placeholder="City" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">State</Label>
-                <Input value={formData.destinationState} onChange={(e) => setFormData({ ...formData, destinationState: e.target.value })} placeholder="State" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input value={formData.destinationState} onChange={(e: any) => setFormData({ ...formData, destinationState: e.target.value })} placeholder="State" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Address</Label>
-              <Input value={formData.destinationAddress} onChange={(e) => setFormData({ ...formData, destinationAddress: e.target.value })} placeholder="Full address" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input value={formData.destinationAddress} onChange={(e: any) => setFormData({ ...formData, destinationAddress: e.target.value })} placeholder="Full address" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Delivery Date</Label>
-              <Input type="date" value={formData.deliveryDate} onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="date" value={formData.deliveryDate} onChange={(e: any) => setFormData({ ...formData, deliveryDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
           </div>
         );
@@ -226,7 +226,7 @@ export default function LoadWizard() {
         return (
           <div className="space-y-2">
             <Label className="text-slate-400">Equipment Type</Label>
-            <Select value={formData.equipmentType} onValueChange={(v) => setFormData({ ...formData, equipmentType: v })}>
+            <Select value={formData.equipmentType} onValueChange={(v: any) => setFormData({ ...formData, equipmentType: v })}>
               <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select equipment" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="tanker">Tanker</SelectItem>
@@ -243,11 +243,11 @@ export default function LoadWizard() {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-slate-400">Minimum Rating</Label>
-              <Input type="number" value={formData.minRating} onChange={(e) => setFormData({ ...formData, minRating: e.target.value })} placeholder="e.g., 4.0" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="number" value={formData.minRating} onChange={(e: any) => setFormData({ ...formData, minRating: e.target.value })} placeholder="e.g., 4.0" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Minimum Loads Completed</Label>
-              <Input type="number" value={formData.minLoads} onChange={(e) => setFormData({ ...formData, minLoads: e.target.value })} placeholder="e.g., 50" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input type="number" value={formData.minLoads} onChange={(e: any) => setFormData({ ...formData, minLoads: e.target.value })} placeholder="e.g., 50" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
           </div>
         );
@@ -257,11 +257,11 @@ export default function LoadWizard() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">Rate ($)</Label>
-                <Input type="number" value={formData.rate} onChange={(e) => setFormData({ ...formData, rate: e.target.value })} placeholder="Enter rate" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={formData.rate} onChange={(e: any) => setFormData({ ...formData, rate: e.target.value })} placeholder="Enter rate" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Rate Type</Label>
-                <Select value={formData.rateType} onValueChange={(v) => setFormData({ ...formData, rateType: v })}>
+                <Select value={formData.rateType} onValueChange={(v: any) => setFormData({ ...formData, rateType: v })}>
                   <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="flat">Flat Rate</SelectItem>
@@ -273,7 +273,7 @@ export default function LoadWizard() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Notes</Label>
-              <Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Additional notes..." className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" />
+              <Textarea value={formData.notes} onChange={(e: any) => setFormData({ ...formData, notes: e.target.value })} placeholder="Additional notes..." className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" />
             </div>
           </div>
         );
@@ -294,7 +294,7 @@ export default function LoadWizard() {
 
       {/* Progress */}
       <div className="flex items-center gap-2">
-        {STEPS.map((step, idx) => (
+        {STEPS.map((step: any, idx: number) => (
           <React.Fragment key={step.id}>
             <div className={cn("flex items-center gap-2 px-3 py-2 rounded-lg", currentStep === step.id ? "bg-cyan-500/20 text-cyan-400" : currentStep > step.id ? "bg-green-500/20 text-green-400" : "bg-slate-700/30 text-slate-500")}>
               {currentStep > step.id ? <CheckCircle className="w-4 h-4" /> : <step.icon className="w-4 h-4" />}

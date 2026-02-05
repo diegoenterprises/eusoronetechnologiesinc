@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ComplianceDashboard() {
-  const statsQuery = trpc.compliance.getDashboardStats.useQuery();
-  const expiringQuery = trpc.compliance.getExpiringItems.useQuery({ limit: 5 });
-  const violationsQuery = trpc.compliance.getRecentViolations.useQuery({ limit: 5 });
-  const scoresQuery = trpc.compliance.getComplianceScores.useQuery();
+  const statsQuery = (trpc as any).compliance.getDashboardStats.useQuery();
+  const expiringQuery = (trpc as any).compliance.getExpiringItems.useQuery({ limit: 5 });
+  const violationsQuery = (trpc as any).compliance.getRecentViolations.useQuery({ limit: 5 });
+  const scoresQuery = (trpc as any).compliance.getComplianceScores.useQuery();
 
   const stats = statsQuery.data;
   const scores = scoresQuery.data;
@@ -103,7 +103,7 @@ export default function ComplianceDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Compliance by Category</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {scoresQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="space-y-3">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               scores?.categories?.map((cat: any) => (
                 <div key={cat.name} className="p-3 rounded-lg bg-slate-700/30">
@@ -131,12 +131,12 @@ export default function ComplianceDashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Clock className="w-5 h-5 text-yellow-400" />Expiring Soon</CardTitle></CardHeader>
             <CardContent className="p-0">
               {expiringQuery.isLoading ? (
-                <div className="p-4 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-              ) : expiringQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              ) : (expiringQuery.data as any)?.length === 0 ? (
                 <div className="p-4 text-center text-slate-400">No items expiring soon</div>
               ) : (
                 <div className="divide-y divide-yellow-500/20">
-                  {expiringQuery.data?.map((item: any) => (
+                  {(expiringQuery.data as any)?.map((item: any) => (
                     <div key={item.id} className="p-3 flex items-center justify-between">
                       <div>
                         <p className="text-white font-medium">{item.name}</p>
@@ -154,12 +154,12 @@ export default function ComplianceDashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Recent Violations</CardTitle></CardHeader>
             <CardContent className="p-0">
               {violationsQuery.isLoading ? (
-                <div className="p-4 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-              ) : violationsQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              ) : (violationsQuery.data as any)?.length === 0 ? (
                 <div className="p-4 text-center text-green-400 flex items-center justify-center gap-2"><CheckCircle className="w-5 h-5" />No recent violations</div>
               ) : (
                 <div className="divide-y divide-red-500/20">
-                  {violationsQuery.data?.map((v: any) => (
+                  {(violationsQuery.data as any)?.map((v: any) => (
                     <div key={v.id} className="p-3 flex items-center justify-between">
                       <div>
                         <p className="text-white font-medium">{v.type}</p>

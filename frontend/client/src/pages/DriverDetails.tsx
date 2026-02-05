@@ -23,9 +23,9 @@ export default function DriverDetails() {
   const params = useParams();
   const driverId = params.id as string;
 
-  const driverQuery = trpc.drivers.getById.useQuery({ id: driverId });
-  const hosQuery = trpc.drivers.getHOS.useQuery({ driverId });
-  const loadsQuery = trpc.drivers.getRecentLoads.useQuery({ driverId, limit: 5 });
+  const driverQuery = (trpc as any).drivers.getById.useQuery({ id: driverId });
+  const hosQuery = (trpc as any).drivers.getHOS.useQuery({ driverId });
+  const loadsQuery = (trpc as any).drivers.getRecentLoads.useQuery({ driverId, limit: 5 });
 
   const driver = driverQuery.data;
   const hos = hosQuery.data;
@@ -108,7 +108,7 @@ export default function DriverDetails() {
             <p className="text-slate-400 text-sm mb-4">{driver.truckNumber}</p>
             
             <div className="flex items-center justify-center gap-1 mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
+              {[1, 2, 3, 4, 5].map((star: any) => (
                 <Star key={star} className={cn("w-5 h-5", star <= (driver.rating || 0) ? "text-yellow-400 fill-yellow-400" : "text-slate-600")} />
               ))}
               <span className="text-white ml-2">{driver.rating?.toFixed(1)}</span>
@@ -138,7 +138,7 @@ export default function DriverDetails() {
           </CardHeader>
           <CardContent className="space-y-6">
             {hosQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <>
                 <div className="p-4 rounded-xl bg-slate-700/30">
@@ -199,8 +199,8 @@ export default function DriverDetails() {
           </CardHeader>
           <CardContent>
             {loadsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : loadsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (loadsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Truck className="w-8 h-8 text-slate-500" />
@@ -209,7 +209,7 @@ export default function DriverDetails() {
               </div>
             ) : (
               <div className="space-y-3">
-                {loadsQuery.data?.map((load: any) => (
+                {(loadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => setLocation(`/loads/${load.id}`)}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">

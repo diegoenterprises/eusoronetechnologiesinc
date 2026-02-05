@@ -27,11 +27,11 @@ export default function ShipperPODReview() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showReject, setShowReject] = useState(false);
 
-  const podQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const photosQuery = trpc.documents.getAll.useQuery({ category: "pod" });
+  const podQuery = (trpc as any).documents.getById.useQuery({ id: loadId || "" });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const photosQuery = (trpc as any).documents.getAll.useQuery({ category: "pod" });
 
-  const approveMutation = trpc.documents.verifyDocument.useMutation({
+  const approveMutation = (trpc as any).documents.verifyDocument.useMutation({
     onSuccess: () => {
       toast.success("POD approved");
       navigate("/shipper/loads");
@@ -39,7 +39,7 @@ export default function ShipperPODReview() {
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.documents.verifyDocument.useMutation({
+  const rejectMutation = (trpc as any).documents.verifyDocument.useMutation({
     onSuccess: () => {
       toast.success("POD rejected");
       navigate("/shipper/loads");
@@ -256,7 +256,7 @@ export default function ShipperPODReview() {
             <p className="text-red-400 font-medium">Rejection Reason</p>
             <Textarea
               value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
+              onChange={(e: any) => setRejectionReason(e.target.value)}
               placeholder="Explain why you are rejecting this POD..."
               className="bg-slate-800/50 border-slate-700/50 rounded-lg"
             />

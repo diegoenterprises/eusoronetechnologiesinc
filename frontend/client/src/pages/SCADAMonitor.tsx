@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 export default function SCADAMonitor() {
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
-  const racksQuery = trpc.terminals.getRackStatus.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
-  const tanksQuery = trpc.terminals.getTankLevels.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
-  const alertsQuery = trpc.terminals.getActiveAlerts.useQuery({ terminal: selectedTerminal });
+  const terminalsQuery = (trpc as any).terminals.getTerminals.useQuery();
+  const racksQuery = (trpc as any).terminals.getRackStatus.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
+  const tanksQuery = (trpc as any).terminals.getTankLevels.useQuery({ terminal: selectedTerminal }, { refetchInterval: 10000 });
+  const alertsQuery = (trpc as any).terminals.getActiveAlerts.useQuery({ terminal: selectedTerminal });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -59,7 +59,7 @@ export default function SCADAMonitor() {
               <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Terminals</SelectItem>
-                {terminalsQuery.data?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                {(terminalsQuery.data as any)?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
@@ -69,11 +69,11 @@ export default function SCADAMonitor() {
         </div>
       </div>
 
-      {(alertsQuery.data?.length ?? 0) > 0 && (
+      {((alertsQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 rounded-xl">
-          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Active Alerts ({alertsQuery.data?.length ?? 0})</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Active Alerts ({(alertsQuery.data as any)?.length ?? 0})</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {alertsQuery.data?.map((alert: any) => (
+            {(alertsQuery.data as any)?.map((alert: any) => (
               <div key={alert.id} className="p-3 rounded-lg bg-red-500/10 flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-red-400" />
                 <div className="flex-1">
@@ -91,12 +91,12 @@ export default function SCADAMonitor() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Gauge className="w-5 h-5 text-cyan-400" />Rack Status</CardTitle></CardHeader>
         <CardContent>
           {racksQuery.isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
-          ) : racksQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : (racksQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8"><Gauge className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No racks found</p></div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {racksQuery.data?.map((rack: any) => (
+              {(racksQuery.data as any)?.map((rack: any) => (
                 <div key={rack.id} className={cn("p-4 rounded-xl border", getStatusBg(rack.status), rack.status === "active" ? "border-green-500/30" : rack.status === "offline" ? "border-red-500/30" : "border-slate-600/50")}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-white font-bold">{rack.name}</p>
@@ -126,12 +126,12 @@ export default function SCADAMonitor() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Fuel className="w-5 h-5 text-purple-400" />Tank Inventory</CardTitle></CardHeader>
         <CardContent>
           {tanksQuery.isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-          ) : tanksQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
+          ) : (tanksQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8"><Fuel className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No tanks found</p></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {tanksQuery.data?.map((tank: any) => (
+              {(tanksQuery.data as any)?.map((tank: any) => (
                 <div key={tank.id} className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/50">
                   <div className="flex items-center justify-between mb-3">
                     <div>

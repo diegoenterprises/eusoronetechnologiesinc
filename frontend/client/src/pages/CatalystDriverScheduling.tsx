@@ -21,10 +21,10 @@ export default function CatalystDriverScheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [viewMode, setViewMode] = useState<"day" | "week">("day");
 
-  const scheduleQuery = trpc.catalysts.getMatchedLoads.useQuery({});
-  const driversQuery = trpc.catalysts.getDriverStatusBoard.useQuery();
+  const scheduleQuery = (trpc as any).catalysts.getMatchedLoads.useQuery({});
+  const driversQuery = (trpc as any).catalysts.getDriverStatusBoard.useQuery();
 
-  const assignMutation = trpc.catalysts.assignDriver.useMutation({
+  const assignMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned");
       scheduleQuery.refetch();
@@ -114,7 +114,7 @@ export default function CatalystDriverScheduling() {
           </CardHeader>
           <CardContent className="p-0">
             {driversQuery.isLoading ? (
-              <div className="p-3 space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+              <div className="p-3 space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
             ) : (
               <div className="max-h-[500px] overflow-y-auto">
                 {drivers.map((driver: any) => (
@@ -155,7 +155,7 @@ export default function CatalystDriverScheduling() {
             </CardHeader>
             <CardContent>
               {scheduleQuery.isLoading ? (
-                <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+                <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
               ) : schedule.length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />

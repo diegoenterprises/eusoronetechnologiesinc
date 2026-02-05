@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function EscortCertifications() {
-  const certsQuery = trpc.escorts.getMyCertifications.useQuery();
-  const statesQuery = trpc.escorts.getStateRequirements.useQuery();
-  const statsQuery = trpc.escorts.getCertificationStats.useQuery();
+  const certsQuery = (trpc as any).escorts.getMyCertifications.useQuery();
+  const statesQuery = (trpc as any).escorts.getStateRequirements.useQuery();
+  const statsQuery = (trpc as any).escorts.getCertificationStats.useQuery();
 
-  const uploadMutation = trpc.escorts.uploadCertification.useMutation({
+  const uploadMutation = (trpc as any).escorts.uploadCertification.useMutation({
     onSuccess: () => { toast.success("Certification uploaded"); certsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -132,8 +132,8 @@ export default function EscortCertifications() {
         </CardHeader>
         <CardContent>
           {certsQuery.isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
-          ) : certsQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : (certsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Award className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No certifications uploaded</p>
@@ -141,7 +141,7 @@ export default function EscortCertifications() {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {certsQuery.data?.map((cert: any) => (
+              {(certsQuery.data as any)?.map((cert: any) => (
                 <div key={cert.id} className={cn("p-4 rounded-xl border", cert.status === "valid" ? "bg-green-500/5 border-green-500/30" : cert.status === "expiring" ? "bg-yellow-500/5 border-yellow-500/30" : cert.status === "expired" ? "bg-red-500/5 border-red-500/30" : "bg-slate-700/30 border-slate-600/50")}>
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-white font-bold text-lg">{cert.state}</p>
@@ -172,10 +172,10 @@ export default function EscortCertifications() {
         </CardHeader>
         <CardContent className="p-0">
           {statesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {statesQuery.data?.map((state: any) => (
+              {(statesQuery.data as any)?.map((state: any) => (
                 <div key={state.code} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center font-bold", state.certified ? "bg-green-500/20 text-green-400" : "bg-slate-700/50 text-slate-400")}>

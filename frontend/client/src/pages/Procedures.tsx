@@ -66,8 +66,8 @@ export default function ProceduresPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
   // tRPC queries for procedures data
-  const proceduresQuery = trpc.compliance.getProcedures.useQuery({ category: selectedCategory !== "all" ? selectedCategory : undefined });
-  const checklistsQuery = trpc.compliance.getChecklists.useQuery({});
+  const proceduresQuery = (trpc as any).compliance.getProcedures.useQuery({ category: selectedCategory !== "all" ? selectedCategory : undefined });
+  const checklistsQuery = (trpc as any).compliance.getChecklists.useQuery({});
 
   if (proceduresQuery.isLoading) {
     return (
@@ -148,7 +148,7 @@ export default function ProceduresPage() {
     }
   };
 
-  const filteredProcedures = procedures.filter((proc) => {
+  const filteredProcedures = procedures.filter((proc: any) => {
     const matchesSearch =
       proc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       proc.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -198,7 +198,7 @@ export default function ProceduresPage() {
                 type="text"
                 placeholder="Search procedures..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-gray-800 border-gray-700 text-white"
               />
             </div>
@@ -294,7 +294,7 @@ export default function ProceduresPage() {
           {/* Procedures Tab */}
           <TabsContent value="procedures" className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
-              {filteredProcedures.map((procedure) => (
+              {filteredProcedures.map((procedure: any) => (
                 <Card
                   key={procedure.id}
                   className="bg-gray-900 border-gray-700 p-6"
@@ -330,7 +330,7 @@ export default function ProceduresPage() {
                           Procedure Steps:
                         </p>
                         <ol className="space-y-2">
-                          {procedure.steps.map((step, index) => (
+                          {procedure.steps.map((step: any, index: number) => (
                             <li
                               key={index}
                               className="flex items-start gap-3 text-gray-300 text-sm"
@@ -381,7 +381,7 @@ export default function ProceduresPage() {
           {/* Checklists Tab */}
           <TabsContent value="checklists" className="space-y-4">
             <div className="space-y-4">
-              {checklists.map((checklist) => (
+              {checklists.map((checklist: any) => (
                 <Card
                   key={checklist.id}
                   className="bg-gray-900 border-gray-700 p-6"
@@ -419,7 +419,7 @@ export default function ProceduresPage() {
                   </div>
 
                   <div className="space-y-2">
-                    {checklist.items.map((item) => (
+                    {checklist.items.map((item: any) => (
                       <div
                         key={item.id}
                         className="flex items-center gap-3 p-3 bg-gray-800 rounded"

@@ -26,11 +26,11 @@ export default function TerminalAppointmentSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedRack, setSelectedRack] = useState("all");
 
-  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate } as any);
-  const racksQuery = trpc.terminals.getRacks.useQuery();
-  const statsQuery = trpc.terminals.getAppointmentStats.useQuery({ date: selectedDate });
+  const appointmentsQuery = (trpc as any).terminals.getAppointments.useQuery({ date: selectedDate } as any);
+  const racksQuery = (trpc as any).terminals.getRacks.useQuery();
+  const statsQuery = (trpc as any).terminals.getAppointmentStats.useQuery({ date: selectedDate });
 
-  const cancelMutation = trpc.terminals.cancelAppointment.useMutation({
+  const cancelMutation = (trpc as any).terminals.cancelAppointment.useMutation({
     onSuccess: () => {
       toast.success("Appointment cancelled");
       appointmentsQuery.refetch();
@@ -69,7 +69,7 @@ export default function TerminalAppointmentSchedule() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -124,7 +124,7 @@ export default function TerminalAppointmentSchedule() {
                 <input
                   type="date"
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(e: any) => setSelectedDate(e.target.value)}
                   className="bg-transparent border-0 text-white font-bold text-lg text-center cursor-pointer"
                 />
               </div>
@@ -174,7 +174,7 @@ export default function TerminalAppointmentSchedule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {timeSlots.map((time) => (
+                  {timeSlots.map((time: any) => (
                     <tr key={time} className="border-b border-slate-700/30 hover:bg-slate-700/20">
                       <td className="p-3 text-white font-medium sticky left-0 bg-slate-800/50">{time}</td>
                       {(selectedRack === "all" ? racks : racks.filter((r: any) => r.id === selectedRack)).map((rack: any) => {

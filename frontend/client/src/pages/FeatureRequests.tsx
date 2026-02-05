@@ -24,17 +24,17 @@ export default function FeatureRequests() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
-  const requestsQuery = trpc.features.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.features.getSummary.useQuery();
+  const requestsQuery = (trpc as any).features.list.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).features.getSummary.useQuery();
 
-  const submitMutation = trpc.features.submit.useMutation({
+  const submitMutation = (trpc as any).features.submit.useMutation({
     onSuccess: () => { toast.success("Feature request submitted"); requestsQuery.refetch(); setTitle(""); setDescription(""); },
-    onError: (error) => toast.error("Failed to submit", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit", { description: error.message }),
   });
 
-  const voteMutation = trpc.features.vote.useMutation({
+  const voteMutation = (trpc as any).features.vote.useMutation({
     onSuccess: () => { toast.success("Vote recorded"); requestsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to vote", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to vote", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -49,7 +49,7 @@ export default function FeatureRequests() {
     }
   };
 
-  const filteredRequests = requestsQuery.data?.filter((request: any) =>
+  const filteredRequests = (requestsQuery.data as any)?.filter((request: any) =>
     !searchTerm || request.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -139,8 +139,8 @@ export default function FeatureRequests() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Feature title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the feature..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[100px]" />
+          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Feature title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Textarea value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Describe the feature..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[100px]" />
           <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => submitMutation.mutate({ title, description })} disabled={!title || !description || submitMutation.isPending}>
             <Plus className="w-4 h-4 mr-2" />Submit Request
           </Button>
@@ -150,14 +150,14 @@ export default function FeatureRequests() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search requests..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search requests..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Requests List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {requestsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredRequests?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

@@ -15,14 +15,14 @@ export default function ChannelsPage() {
   const { user } = useAuth();
   const [selectedChannel, setSelectedChannel] = useState(0);
 
-  const channelsQuery = trpc.channels.list.useQuery({});
+  const channelsQuery = (trpc as any).channels.list.useQuery({});
 
   if (channelsQuery.isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3].map((i: any) => (
             <Skeleton key={i} className="h-40" />
           ))}
         </div>
@@ -55,7 +55,7 @@ export default function ChannelsPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {channels.map((channel, idx) => (
+        {channels.map((channel: any, idx: number) => (
           <div
             key={channel.id}
             onClick={() => setSelectedChannel(idx)}

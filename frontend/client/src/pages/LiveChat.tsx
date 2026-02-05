@@ -22,22 +22,22 @@ export default function LiveChat() {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const chatQuery = trpc.support.getChatSession.useQuery();
-  const messagesQuery = trpc.support.getChatMessages.useQuery({ sessionId: chatQuery.data?.sessionId }, { enabled: !!chatQuery.data?.sessionId, refetchInterval: 3000 });
+  const chatQuery = (trpc as any).support.getChatSession.useQuery();
+  const messagesQuery = (trpc as any).support.getChatMessages.useQuery({ sessionId: (chatQuery.data as any)?.sessionId }, { enabled: !!(chatQuery.data as any)?.sessionId, refetchInterval: 3000 });
 
-  const sendMutation = trpc.support.sendChatMessage.useMutation({
+  const sendMutation = (trpc as any).support.sendChatMessage.useMutation({
     onSuccess: () => { setMessage(""); messagesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to send", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
   });
 
-  const startChatMutation = trpc.support.startChatSession.useMutation({
+  const startChatMutation = (trpc as any).support.startChatSession.useMutation({
     onSuccess: () => { chatQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const endChatMutation = trpc.support.endChatSession.useMutation({
+  const endChatMutation = (trpc as any).support.endChatSession.useMutation({
     onSuccess: () => { toast.success("Chat ended"); chatQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function LiveChat() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl flex-1 flex flex-col overflow-hidden">
         {chatQuery.isLoading ? (
           <div className="flex-1 p-4 space-y-4">
-            {[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-3/4 rounded-xl" />)}
+            {[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-3/4 rounded-xl" />)}
           </div>
         ) : !session?.active ? (
           <div className="flex-1 flex items-center justify-center">
@@ -104,15 +104,15 @@ export default function LiveChat() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messagesQuery.isLoading ? (
-                [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-3/4 rounded-xl" />)
-              ) : messagesQuery.data?.length === 0 ? (
+                [1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-3/4 rounded-xl" />)
+              ) : (messagesQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-8">
                   <MessageCircle className="w-8 h-8 text-slate-500 mx-auto mb-2" />
                   <p className="text-slate-400">No messages yet</p>
                   <p className="text-sm text-slate-500">Start the conversation!</p>
                 </div>
               ) : (
-                messagesQuery.data?.map((msg: any) => (
+                (messagesQuery.data as any)?.map((msg: any) => (
                   <div key={msg.id} className={cn("flex", msg.isUser ? "justify-end" : "justify-start")}>
                     <div className={cn("max-w-[70%] rounded-xl p-3", msg.isUser ? "bg-gradient-to-r from-cyan-600 to-emerald-600 text-white" : "bg-slate-700/50 text-white")}>
                       <div className="flex items-center gap-2 mb-1">
@@ -138,7 +138,7 @@ export default function LiveChat() {
                 <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
                   <Paperclip className="w-5 h-5" />
                 </Button>
-                <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Type your message..." className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e) => { if (e.key === "Enter" && message.trim()) { sendMutation.mutate({ sessionId: session.sessionId, content: message }); } }} />
+                <Input value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Type your message..." className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e: any) => { if (e.key === "Enter" && message.trim()) { sendMutation.mutate({ sessionId: session.sessionId, content: message }); } }} />
                 <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
                   <Smile className="w-5 h-5" />
                 </Button>

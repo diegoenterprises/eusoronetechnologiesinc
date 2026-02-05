@@ -22,8 +22,8 @@ export default function LoadHistory() {
   const [status, setStatus] = useState("all");
   const [period, setPeriod] = useState("month");
 
-  const loadsQuery = trpc.loads.getHistory.useQuery({ search, status, period });
-  const statsQuery = trpc.loads.getHistoryStats.useQuery({ period });
+  const loadsQuery = (trpc as any).loads.getHistory.useQuery({ search, status, period });
+  const statsQuery = (trpc as any).loads.getHistoryStats.useQuery({ period });
 
   const stats = statsQuery.data;
 
@@ -92,7 +92,7 @@ export default function LoadHistory() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -108,12 +108,12 @@ export default function LoadHistory() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Load History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : loadsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (loadsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No loads found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {loadsQuery.data?.map((load: any) => (
+              {(loadsQuery.data as any)?.map((load: any) => (
                 <div key={load.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", load.status === "delivered" ? "bg-green-500/20" : load.status === "cancelled" ? "bg-red-500/20" : "bg-slate-700/50")}>

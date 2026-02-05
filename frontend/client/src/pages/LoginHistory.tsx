@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function LoginHistory() {
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const historyQuery = trpc.users.getLoginHistory.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
-  const summaryQuery = trpc.users.getLoginSummary.useQuery();
+  const historyQuery = (trpc as any).users.getLoginHistory.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const summaryQuery = (trpc as any).users.getLoginSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -140,15 +140,15 @@ export default function LoginHistory() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : historyQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (historyQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <LogIn className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No login history found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
-              {historyQuery.data?.map((entry: any) => (
+              {(historyQuery.data as any)?.map((entry: any) => (
                 <div key={entry.id} className={cn("p-4", entry.status === "failed" && "bg-red-500/5 border-l-2 border-red-500", entry.status === "blocked" && "bg-orange-500/5 border-l-2 border-orange-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

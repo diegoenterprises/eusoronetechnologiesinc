@@ -19,19 +19,19 @@ export default function ZeunAdminDashboard() {
   const [providerSearch, setProviderSearch] = useState("");
   const [searchLocation, setSearchLocation] = useState({ lat: 32.7767, lng: -96.7970 }); // Dallas default
 
-  const { data: fleetBreakdowns, isLoading: breakdownsLoading, refetch } = trpc.zeunMechanics.getFleetBreakdowns.useQuery({
+  const { data: fleetBreakdowns, isLoading: breakdownsLoading, refetch } = (trpc as any).zeunMechanics.getFleetBreakdowns.useQuery({
     status: "ALL",
     limit: 100,
   });
 
-  const { data: providers, isLoading: providersLoading } = trpc.zeunMechanics.findProviders.useQuery({
+  const { data: providers, isLoading: providersLoading } = (trpc as any).zeunMechanics.findProviders.useQuery({
     latitude: searchLocation.lat,
     longitude: searchLocation.lng,
     radiusMiles: 100,
     maxResults: 20,
   });
 
-  const { data: costAnalytics, isLoading: costLoading } = trpc.zeunMechanics.getFleetCostAnalytics.useQuery({
+  const { data: costAnalytics, isLoading: costLoading } = (trpc as any).zeunMechanics.getFleetCostAnalytics.useQuery({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     endDate: new Date().toISOString().split("T")[0],
   });
@@ -260,7 +260,7 @@ export default function ZeunAdminDashboard() {
               <Input
                 placeholder="Search providers..."
                 value={providerSearch}
-                onChange={(e) => setProviderSearch(e.target.value)}
+                onChange={(e: any) => setProviderSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -315,7 +315,7 @@ export default function ZeunAdminDashboard() {
                     </div>
                     {provider.services && provider.services.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {provider.services.slice(0, 4).map((service) => (
+                        {provider.services.slice(0, 4).map((service: any) => (
                           <Badge key={service} variant="outline" className="text-xs">
                             {service.replace(/_/g, " ")}
                           </Badge>
@@ -364,7 +364,7 @@ export default function ZeunAdminDashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {fleetBreakdowns.slice(0, 15).map((b) => (
+                  {fleetBreakdowns.slice(0, 15).map((b: any) => (
                     <tr key={b.id} className="border-b hover:bg-muted/50">
                       <td className="py-2 px-2 font-mono">#{b.id}</td>
                       <td className="py-2 px-2">{b.driverName || "Unknown"}</td>

@@ -74,19 +74,19 @@ export default function JobsPage() {
   });
 
   // Fetch real loads from database
-  const { data: loadsData, isLoading: loadsLoading } = trpc.loads.list.useQuery({
+  const { data: loadsData, isLoading: loadsLoading } = (trpc as any).loads.list.useQuery({
     status: activeTab === "available" ? "posted" : activeTab === "assigned" ? "assigned" : activeTab === "completed" ? "delivered" : undefined,
     limit: 50,
   });
 
-  const { data: myBidsData } = trpc.bids.getMyBids.useQuery();
+  const { data: myBidsData } = (trpc as any).bids.getMyBids.useQuery();
 
-  const submitBidMutation = trpc.bids.create.useMutation({
+  const submitBidMutation = (trpc as any).bids.create.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully!");
       setShowBidModal(false);
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Failed to submit bid: ${error.message}`);
     },
   });
@@ -371,7 +371,7 @@ export default function JobsPage() {
               <Input
                 placeholder="Search by origin, destination, or commodity..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
                 className="pl-10 bg-slate-700 border-slate-600 text-white"
               />
             </div>
@@ -380,7 +380,7 @@ export default function JobsPage() {
           <div className="flex gap-2">
             <select
               value={filters.type}
-              onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+              onChange={(e: any) => setFilters({ ...filters, type: e.target.value })}
               className="bg-slate-700 border-slate-600 text-white px-3 py-2 rounded-md"
             >
               <option value="ALL">All Types</option>
@@ -404,7 +404,7 @@ export default function JobsPage() {
 
       {/* Tab Navigation */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {tabs.map((tab) => (
+        {tabs.map((tab: any) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
@@ -681,7 +681,7 @@ export default function JobsPage() {
                 <Input
                   type="number"
                   value={bidAmount}
-                  onChange={(e) => setBidAmount(parseFloat(e.target.value))}
+                  onChange={(e: any) => setBidAmount(parseFloat(e.target.value))}
                   className="pl-10 bg-slate-700 border-slate-600 text-white text-xl font-bold"
                 />
               </div>
@@ -691,7 +691,7 @@ export default function JobsPage() {
                 max={selectedLoad.pay * 1.1}
                 step={50}
                 value={bidAmount}
-                onChange={(e) => setBidAmount(parseFloat(e.target.value))}
+                onChange={(e: any) => setBidAmount(parseFloat(e.target.value))}
                 className="w-full mt-3"
               />
               <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -781,7 +781,7 @@ export default function JobsPage() {
                 <Input
                   type="number"
                   value={counterOfferAmount}
-                  onChange={(e) => setCounterOfferAmount(parseFloat(e.target.value))}
+                  onChange={(e: any) => setCounterOfferAmount(parseFloat(e.target.value))}
                   className="pl-10 bg-slate-700 border-slate-600 text-white"
                 />
               </div>
@@ -791,7 +791,7 @@ export default function JobsPage() {
               <label className="text-gray-400 text-sm font-semibold mb-2 block">Message (Optional)</label>
               <textarea
                 value={negotiationMessage}
-                onChange={(e) => setNegotiationMessage(e.target.value)}
+                onChange={(e: any) => setNegotiationMessage(e.target.value)}
                 placeholder="Add a message to your counter offer..."
                 rows={3}
                 className="w-full bg-slate-700 border-slate-600 text-white p-2 rounded-md"

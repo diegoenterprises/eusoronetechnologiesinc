@@ -28,9 +28,9 @@ interface DocumentRequirement {
 export default function OnboardingDocuments() {
   const [uploading, setUploading] = useState<string | null>(null);
 
-  const { data: requirements, isLoading, error, refetch } = trpc.documents.getDriverDocuments.useQuery();
-  const { data: uploadedDocs } = trpc.documents.list.useQuery({ limit: 100 });
-  const uploadMutation = trpc.documents.upload.useMutation({
+  const { data: requirements, isLoading, error, refetch } = (trpc as any).documents.getDriverDocuments.useQuery();
+  const { data: uploadedDocs } = (trpc as any).documents.list.useQuery({ limit: 100 });
+  const uploadMutation = (trpc as any).documents.upload.useMutation({
     onSuccess: () => {
       refetch();
       setUploading(null);
@@ -58,7 +58,7 @@ export default function OnboardingDocuments() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-4 w-full max-w-md" />
         <div className="grid gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
@@ -181,7 +181,7 @@ export default function OnboardingDocuments() {
                           type="file"
                           className="hidden"
                           accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
+                          onChange={(e: any) => {
                             const file = e.target.files?.[0];
                             if (file) handleFileUpload(doc.id, file);
                           }}

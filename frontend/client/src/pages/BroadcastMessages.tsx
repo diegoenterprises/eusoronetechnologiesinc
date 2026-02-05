@@ -25,17 +25,17 @@ export default function BroadcastMessages() {
   const [message, setMessage] = useState("");
   const [audience, setAudience] = useState("all");
 
-  const broadcastsQuery = trpc.admin.getBroadcasts.useQuery({ limit: 20 });
-  const audiencesQuery = trpc.admin.getAudiences.useQuery();
+  const broadcastsQuery = (trpc as any).admin.getBroadcasts.useQuery({ limit: 20 });
+  const audiencesQuery = (trpc as any).admin.getAudiences.useQuery();
 
-  const sendMutation = trpc.admin.sendBroadcast.useMutation({
+  const sendMutation = (trpc as any).admin.sendBroadcast.useMutation({
     onSuccess: () => { toast.success("Broadcast sent"); broadcastsQuery.refetch(); setTitle(""); setMessage(""); },
-    onError: (error) => toast.error("Failed to send", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
   });
 
-  const deleteMutation = trpc.admin.deleteBroadcast.useMutation({
+  const deleteMutation = (trpc as any).admin.deleteBroadcast.useMutation({
     onSuccess: () => { toast.success("Broadcast deleted"); broadcastsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to delete", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to delete", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {
@@ -66,8 +66,8 @@ export default function BroadcastMessages() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Broadcast title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Write your message..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[120px]" />
+          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Broadcast title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Write your message..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[120px]" />
           <div className="flex items-center gap-4">
             <Select value={audience} onValueChange={setAudience}>
               <SelectTrigger className="w-[200px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -76,7 +76,7 @@ export default function BroadcastMessages() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Users</SelectItem>
-                {audiencesQuery.data?.map((aud: any) => (
+                {(audiencesQuery.data as any)?.map((aud: any) => (
                   <SelectItem key={aud.id} value={aud.id}>{aud.name} ({aud.count})</SelectItem>
                 ))}
               </SelectContent>
@@ -95,8 +95,8 @@ export default function BroadcastMessages() {
         </CardHeader>
         <CardContent className="p-0">
           {broadcastsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : broadcastsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (broadcastsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Megaphone className="w-10 h-10 text-slate-500" />
@@ -105,7 +105,7 @@ export default function BroadcastMessages() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {broadcastsQuery.data?.map((broadcast: any) => (
+              {(broadcastsQuery.data as any)?.map((broadcast: any) => (
                 <div key={broadcast.id} className="p-4">
                   <div className="flex items-start justify-between">
                     <div>

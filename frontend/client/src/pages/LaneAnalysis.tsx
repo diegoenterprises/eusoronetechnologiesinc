@@ -21,8 +21,8 @@ export default function LaneAnalysis() {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
 
-  const lanesQuery = trpc.rates.getLaneAnalysis.useQuery({ origin, destination });
-  const statsQuery = trpc.rates.getLaneStats.useQuery();
+  const lanesQuery = (trpc as any).rates.getLaneAnalysis.useQuery({ origin, destination });
+  const statsQuery = (trpc as any).rates.getLaneStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -73,12 +73,12 @@ export default function LaneAnalysis() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-xs">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-green-400" />
-          <Input value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="Origin city/state..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={origin} onChange={(e: any) => setOrigin(e.target.value)} placeholder="Origin city/state..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <ArrowRight className="w-5 h-5 text-slate-500" />
         <div className="relative flex-1 max-w-xs">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-red-400" />
-          <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="Destination city/state..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={destination} onChange={(e: any) => setDestination(e.target.value)} placeholder="Destination city/state..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
       </div>
 
@@ -86,12 +86,12 @@ export default function LaneAnalysis() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-cyan-400" />Lane Performance</CardTitle></CardHeader>
         <CardContent className="p-0">
           {lanesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : lanesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (lanesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><MapPin className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No lanes found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {lanesQuery.data?.map((lane: any) => (
+              {(lanesQuery.data as any)?.map((lane: any) => (
                 <div key={lane.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">

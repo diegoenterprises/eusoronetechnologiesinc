@@ -19,7 +19,7 @@ import { useLocation } from "wouter";
 export default function Profile() {
   const [, setLocation] = useLocation();
 
-  const profileQuery = trpc.users.getProfile.useQuery();
+  const profileQuery = (trpc as any).users.getProfile.useQuery();
   const profile = profileQuery.data;
 
   return (
@@ -76,7 +76,7 @@ export default function Profile() {
           </CardHeader>
           <CardContent>
             {profileQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-slate-700/30">

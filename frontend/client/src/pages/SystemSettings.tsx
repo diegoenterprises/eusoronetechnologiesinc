@@ -18,11 +18,11 @@ import {
 import { toast } from "sonner";
 
 export default function SystemSettings() {
-  const settingsQuery = trpc.admin.getSystemSettings.useQuery();
+  const settingsQuery = (trpc as any).admin.getSystemSettings.useQuery();
 
-  const updateMutation = trpc.admin.updateSystemSettings.useMutation({
+  const updateMutation = (trpc as any).admin.updateSystemSettings.useMutation({
     onSuccess: () => { toast.success("Settings updated"); settingsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const settings = settingsQuery.data;
@@ -40,7 +40,7 @@ export default function SystemSettings() {
       </div>
 
       {settingsQuery.isLoading ? (
-        <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
+        <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
       ) : (
         <div className="grid gap-6">
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

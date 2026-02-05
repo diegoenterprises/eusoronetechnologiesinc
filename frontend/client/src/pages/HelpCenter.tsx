@@ -19,9 +19,9 @@ import {
 export default function HelpCenter() {
   const [search, setSearch] = useState("");
 
-  const articlesQuery = trpc.help.getArticles.useQuery({ search });
-  const categoriesQuery = trpc.help.getCategories.useQuery();
-  const statsQuery = trpc.help.getStats.useQuery();
+  const articlesQuery = (trpc as any).help.getArticles.useQuery({ search });
+  const categoriesQuery = (trpc as any).help.getCategories.useQuery();
+  const statsQuery = (trpc as any).help.getStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -71,7 +71,7 @@ export default function HelpCenter() {
 
       <div className="relative max-w-lg mx-auto">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search for help..." className="pl-12 py-6 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search for help..." className="pl-12 py-6 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" />
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
@@ -79,10 +79,10 @@ export default function HelpCenter() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Book className="w-5 h-5 text-purple-400" />Categories</CardTitle></CardHeader>
           <CardContent className="p-0">
             {categoriesQuery.isLoading ? (
-              <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {categoriesQuery.data?.map((category: any) => (
+                {(categoriesQuery.data as any)?.map((category: any) => (
                   <div key={category.id} className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-700/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-slate-700/50"><FileText className="w-4 h-4 text-cyan-400" /></div>
@@ -103,12 +103,12 @@ export default function HelpCenter() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Popular Articles</CardTitle></CardHeader>
           <CardContent className="p-0">
             {articlesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : articlesQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (articlesQuery.data as any)?.length === 0 ? (
               <div className="text-center py-16"><HelpCircle className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No articles found</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {articlesQuery.data?.map((article: any) => (
+                {(articlesQuery.data as any)?.map((article: any) => (
                   <div key={article.id} className="p-4 cursor-pointer hover:bg-slate-700/30 transition-colors">
                     <div className="flex items-start justify-between">
                       <div>

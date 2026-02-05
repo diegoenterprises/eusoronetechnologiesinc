@@ -18,17 +18,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function IntegrationSettings() {
-  const integrationsQuery = trpc.admin.getIntegrations.useQuery();
-  const statsQuery = trpc.admin.getIntegrationStats.useQuery();
+  const integrationsQuery = (trpc as any).admin.getIntegrations.useQuery();
+  const statsQuery = (trpc as any).admin.getIntegrationStats.useQuery();
 
-  const toggleMutation = trpc.admin.toggleIntegration.useMutation({
+  const toggleMutation = (trpc as any).admin.toggleIntegration.useMutation({
     onSuccess: () => { toast.success("Integration updated"); integrationsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const syncMutation = trpc.admin.syncIntegration.useMutation({
+  const syncMutation = (trpc as any).admin.syncIntegration.useMutation({
     onSuccess: () => toast.success("Sync started"),
-    onError: (error) => toast.error("Sync failed", { description: error.message }),
+    onError: (error: any) => toast.error("Sync failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -90,10 +90,10 @@ export default function IntegrationSettings() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Plug className="w-5 h-5 text-cyan-400" />Available Integrations</CardTitle></CardHeader>
         <CardContent>
           {integrationsQuery.isLoading ? (
-            <div className="grid md:grid-cols-2 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+            <div className="grid md:grid-cols-2 gap-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid md:grid-cols-2 gap-4">
-              {integrationsQuery.data?.map((integration: any) => (
+              {(integrationsQuery.data as any)?.map((integration: any) => (
                 <div key={integration.id} className={cn("p-4 rounded-xl border", integration.status === "connected" ? "bg-green-500/5 border-green-500/30" : integration.status === "error" ? "bg-yellow-500/5 border-yellow-500/30" : "bg-slate-700/30 border-slate-600/30")}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">

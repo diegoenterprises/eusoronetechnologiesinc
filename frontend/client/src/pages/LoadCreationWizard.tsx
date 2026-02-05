@@ -55,7 +55,7 @@ export default function LoadCreationWizard() {
   const [formData, setFormData] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createLoadMutation = trpc.loads.create.useMutation({
+  const createLoadMutation = (trpc as any).loads.create.useMutation({
     onSuccess: () => { toast.success("Load created successfully"); setStep(0); setFormData({}); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -123,7 +123,7 @@ export default function LoadCreationWizard() {
       </div>
 
       <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        {STEPS.map((s, i) => (
+        {STEPS.map((s: any, i: number) => (
           <div key={i} className="flex items-center gap-2">
             <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold", i < step ? "bg-green-500 text-white" : i === step ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white" : "bg-slate-700 text-slate-400")}>
               {i < step ? <CheckCircle className="w-4 h-4" /> : i + 1}
@@ -140,7 +140,7 @@ export default function LoadCreationWizard() {
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Product Name</label>
                 <div className="flex gap-2">
-                  <Input value={formData.productName || ""} onChange={(e) => updateField("productName", e.target.value)} placeholder="e.g., Gasoline, Diesel Fuel" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                  <Input value={formData.productName || ""} onChange={(e: any) => updateField("productName", e.target.value)} placeholder="e.g., Gasoline, Diesel Fuel" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
                   <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest}>
                     <Sparkles className="w-4 h-4 mr-2" />ESANG AI
                   </Button>
@@ -148,14 +148,14 @@ export default function LoadCreationWizard() {
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
-                <Select value={formData.hazmatClass || ""} onValueChange={(v) => updateField("hazmatClass", v)}>
+                <Select value={formData.hazmatClass || ""} onValueChange={(v: any) => updateField("hazmatClass", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select class" /></SelectTrigger>
-                  <SelectContent>{HAZMAT_CLASSES.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{HAZMAT_CLASSES.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">UN Number (optional)</label>
-                <Input value={formData.unNumber || ""} onChange={(e) => updateField("unNumber", e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={formData.unNumber || ""} onChange={(e: any) => updateField("unNumber", e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               
               {formData.hazmatClass && (
@@ -174,8 +174,8 @@ export default function LoadCreationWizard() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Weight</label>
                   <div className="flex gap-2">
-                    <Input type="number" value={formData.weight || ""} onChange={(e) => updateField("weight", e.target.value)} placeholder="42000" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={formData.weightUnit || "lbs"} onValueChange={(v) => updateField("weightUnit", v)}>
+                    <Input type="number" value={formData.weight || ""} onChange={(e: any) => updateField("weight", e.target.value)} placeholder="42000" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                    <Select value={formData.weightUnit || "lbs"} onValueChange={(v: any) => updateField("weightUnit", v)}>
                       <SelectTrigger className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="lbs">lbs</SelectItem>
@@ -188,8 +188,8 @@ export default function LoadCreationWizard() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Quantity</label>
                   <div className="flex gap-2">
-                    <Input type="number" value={formData.weight || ""} onChange={(e) => updateField("quantity", e.target.value)} placeholder="8500" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={formData.weightUnit || "Gallons"} onValueChange={(v) => updateField("quantityUnit", v)}>
+                    <Input type="number" value={formData.weight || ""} onChange={(e: any) => updateField("quantity", e.target.value)} placeholder="8500" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                    <Select value={formData.weightUnit || "Gallons"} onValueChange={(v: any) => updateField("quantityUnit", v)}>
                       <SelectTrigger className="w-28 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Gallons">Gallons</SelectItem>
@@ -235,11 +235,11 @@ export default function LoadCreationWizard() {
 
           {step === 2 && (
             <div className="space-y-4">
-              <div><label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin</label><Input value={formData.origin || ""} onChange={(e) => updateField("origin", e.target.value)} placeholder="City, State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
-              <div><label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400" />Destination</label><Input value={formData.destination || ""} onChange={(e) => updateField("destination", e.target.value)} placeholder="City, State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin</label><Input value={formData.origin || ""} onChange={(e: any) => updateField("origin", e.target.value)} placeholder="City, State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400" />Destination</label><Input value={formData.destination || ""} onChange={(e: any) => updateField("destination", e.target.value)} placeholder="City, State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm text-slate-400 mb-1 block">Pickup Date</label><Input type="date" value={formData.pickupDate || ""} onChange={(e) => updateField("pickupDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Delivery Date</label><Input type="date" value={formData.deliveryDate || ""} onChange={(e) => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Pickup Date</label><Input type="date" value={formData.pickupDate || ""} onChange={(e: any) => updateField("pickupDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Delivery Date</label><Input type="date" value={formData.deliveryDate || ""} onChange={(e: any) => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               </div>
             </div>
           )}
@@ -247,9 +247,9 @@ export default function LoadCreationWizard() {
           {step === 3 && (
             <div className="space-y-4">
               <div><label className="text-sm text-slate-400 mb-1 block">Equipment Type</label>
-                <Select value={formData.equipment || ""} onValueChange={(v) => updateField("equipment", v)}>
+                <Select value={formData.equipment || ""} onValueChange={(v: any) => updateField("equipment", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select equipment" /></SelectTrigger>
-                  <SelectContent>{EQUIPMENT_TYPES.map((e) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>{EQUIPMENT_TYPES.map((e: any) => <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
@@ -257,15 +257,15 @@ export default function LoadCreationWizard() {
 
           {step === 4 && (
             <div className="space-y-4">
-              <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e) => updateField("endorsements", e.target.value)} placeholder="e.g., Hazmat, Tanker" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e: any) => updateField("endorsements", e.target.value)} placeholder="e.g., Hazmat, Tanker" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
             </div>
           )}
 
           {step === 5 && (
             <div className="space-y-4">
-              <div><label className="text-sm text-slate-400 mb-1 block">Rate ($)</label><Input type="number" value={formData.rate || ""} onChange={(e) => updateField("rate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Rate Per Mile ($)</label><Input type="number" step="0.01" value={formData.ratePerMile || ""} onChange={(e) => updateField("ratePerMile", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Rate ($)</label><Input type="number" value={formData.rate || ""} onChange={(e: any) => updateField("rate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Rate Per Mile ($)</label><Input type="number" step="0.01" value={formData.ratePerMile || ""} onChange={(e: any) => updateField("ratePerMile", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
             </div>
           )}
 

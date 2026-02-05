@@ -20,7 +20,7 @@ export default function ShipmentPage() {
   const [filterType, setFilterType] = useState("all");
 
   // tRPC query for shipments
-  const shipmentsQuery = trpc.loads.getTrackedLoads.useQuery({ search: searchTerm || undefined });
+  const shipmentsQuery = (trpc as any).loads.getTrackedLoads.useQuery({ search: searchTerm || undefined });
 
   if (shipmentsQuery.isLoading) {
     return (
@@ -78,14 +78,14 @@ export default function ShipmentPage() {
   // Calculate analytics
   const analytics = {
     total: shipments.length,
-    inTransit: shipments.filter(s => s.status === "IN_TRANSIT").length,
-    pending: shipments.filter(s => s.status === "PENDING").length,
-    delivered: shipments.filter(s => s.status === "DELIVERED").length,
-    extended: shipments.filter(s => s.type === "extended").length,
-    refrigerated: shipments.filter(s => s.type === "refrigerated").length,
-    hazmat: shipments.filter(s => s.type === "hazmat").length,
-    totalRevenue: shipments.reduce((sum, s) => sum + parseInt(s.rate.replace(/[$,]/g, "")), 0),
-    avgDistance: Math.round(shipments.reduce((sum, s) => sum + parseInt(s.distance.replace(/[,\s]/g, "")), 0) / shipments.length),
+    inTransit: shipments.filter((s: any) => s.status === "IN_TRANSIT").length,
+    pending: shipments.filter((s: any) => s.status === "PENDING").length,
+    delivered: shipments.filter((s: any) => s.status === "DELIVERED").length,
+    extended: shipments.filter((s: any) => s.type === "extended").length,
+    refrigerated: shipments.filter((s: any) => s.type === "refrigerated").length,
+    hazmat: shipments.filter((s: any) => s.type === "hazmat").length,
+    totalRevenue: shipments.reduce((sum: any, s: any) => sum + parseInt(s.rate.replace(/[$,]/g, "")), 0),
+    avgDistance: Math.round(shipments.reduce((sum: any, s: any) => sum + parseInt(s.distance.replace(/[,\s]/g, "")), 0) / shipments.length),
   };
 
   const getStatusColor = (status: string) => {
@@ -116,7 +116,7 @@ export default function ShipmentPage() {
 
   const filteredShipments = filterType === "all"
     ? shipments
-    : shipments.filter(s => s.type === filterType);
+    : shipments.filter((s: any) => s.type === filterType);
 
   return (
     <div className="space-y-6">
@@ -211,13 +211,13 @@ export default function ShipmentPage() {
           <Input
             placeholder="Search shipments by ID, origin, or destination..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
             className="pl-10 bg-slate-700 border-slate-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
           />
         </div>
 
         <div className="flex gap-2">
-          {["all", "standard", "extended", "refrigerated", "hazmat"].map((type) => (
+          {["all", "standard", "extended", "refrigerated", "hazmat"].map((type: any) => (
             <Button
               key={type}
               onClick={() => setFilterType(type)}
@@ -235,7 +235,7 @@ export default function ShipmentPage() {
 
       {/* Shipments List */}
       <div className="space-y-4">
-        {filteredShipments.map((shipment) => (
+        {filteredShipments.map((shipment: any) => (
           <Card
             key={shipment.id}
             className="bg-slate-800 border-slate-700 p-6 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-500/20 transition-all"

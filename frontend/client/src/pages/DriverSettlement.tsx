@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 export default function DriverSettlement() {
   const [periodFilter, setPeriodFilter] = useState("current");
 
-  const settlementQuery = trpc.drivers.getAll.useQuery({});
-  const historyQuery = trpc.drivers.getAll.useQuery({});
+  const settlementQuery = (trpc as any).drivers.getAll.useQuery({});
+  const historyQuery = (trpc as any).drivers.getAll.useQuery({});
 
   const settlement = (settlementQuery.data as any)?.[0];
   const history = historyQuery.data || [];
@@ -101,7 +101,7 @@ export default function DriverSettlement() {
           </CardHeader>
           <CardContent>
             {settlementQuery.isLoading ? (
-              <div className="space-y-2">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}</div>
+              <div className="space-y-2">{Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-10 rounded" />)}</div>
             ) : (
               <div className="space-y-2">
                 {settlement?.earnings?.map((item: any, idx: number) => (
@@ -129,7 +129,7 @@ export default function DriverSettlement() {
           </CardHeader>
           <CardContent>
             {settlementQuery.isLoading ? (
-              <div className="space-y-2">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-10 rounded" />)}</div>
+              <div className="space-y-2">{Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-10 rounded" />)}</div>
             ) : (
               <div className="space-y-2">
                 {settlement?.deductions?.map((item: any, idx: number) => (
@@ -158,7 +158,7 @@ export default function DriverSettlement() {
         </CardHeader>
         <CardContent>
           {historyQuery.isLoading ? (
-            <div className="space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : history.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-8 h-8 text-slate-500 mx-auto mb-2" />

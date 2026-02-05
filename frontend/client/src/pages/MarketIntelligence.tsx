@@ -21,10 +21,10 @@ export default function MarketIntelligence() {
   const [region, setRegion] = useState("national");
   const [timeframe, setTimeframe] = useState("week");
 
-  const marketQuery = trpc.market.getIntelligence.useQuery({ region, timeframe });
-  const trendsQuery = trpc.market.getTrends.useQuery({ region, timeframe });
-  const hotLanesQuery = trpc.market.getHotLanes.useQuery({ limit: 10 });
-  const capacityQuery = trpc.market.getCapacity.useQuery({ region });
+  const marketQuery = (trpc as any).market.getIntelligence.useQuery({ region, timeframe });
+  const trendsQuery = (trpc as any).market.getTrends.useQuery({ region, timeframe });
+  const hotLanesQuery = (trpc as any).market.getHotLanes.useQuery({ limit: 10 });
+  const capacityQuery = (trpc as any).market.getCapacity.useQuery({ region });
 
   const market = marketQuery.data;
 
@@ -148,10 +148,10 @@ export default function MarketIntelligence() {
           </CardHeader>
           <CardContent className="p-0">
             {hotLanesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {hotLanesQuery.data?.map((lane: any) => (
+                {(hotLanesQuery.data as any)?.map((lane: any) => (
                   <div key={lane.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -184,10 +184,10 @@ export default function MarketIntelligence() {
           </CardHeader>
           <CardContent>
             {capacityQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-4">
-                {capacityQuery.data?.regions?.map((region: any) => (
+                {(capacityQuery.data as any)?.regions?.map((region: any) => (
                   <div key={region.name} className="p-3 rounded-xl bg-slate-700/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">{region.name}</span>
@@ -216,7 +216,7 @@ export default function MarketIntelligence() {
             <Skeleton className="h-48 w-full rounded-xl" />
           ) : (
             <div className="flex items-end gap-2 h-48">
-              {trendsQuery.data?.map((point: any, idx: number) => (
+              {(trendsQuery.data as any)?.map((point: any, idx: number) => (
                 <div key={idx} className="flex-1 flex flex-col items-center">
                   <div className={cn("w-full rounded-t transition-all", point.rate > trendsQuery.data[0]?.rate ? "bg-gradient-to-t from-green-500 to-emerald-500" : "bg-gradient-to-t from-cyan-500 to-blue-500")} style={{ height: `${(point.rate / Math.max(...trendsQuery.data.map((p: any) => p.rate))) * 100}%` }} />
                   <p className="text-xs text-slate-500 mt-2">{point.date}</p>

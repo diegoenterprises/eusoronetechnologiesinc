@@ -46,13 +46,13 @@ export default function EusoTicket() {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Queries
-  const ticketsQuery = trpc.eusoTicket.listRunTickets.useQuery({ limit: 20 });
-  const bolsQuery = trpc.eusoTicket.listBOLs.useQuery({ limit: 20 });
-  const statsQuery = trpc.eusoTicket.getTerminalStats.useQuery({ terminalId: "TERM-001" });
+  const ticketsQuery = (trpc as any).eusoTicket.listRunTickets.useQuery({ limit: 20 });
+  const bolsQuery = (trpc as any).eusoTicket.listBOLs.useQuery({ limit: 20 });
+  const statsQuery = (trpc as any).eusoTicket.getTerminalStats.useQuery({ terminalId: "TERM-001" });
   
   // Mutations
-  const generateTicketPDF = trpc.eusoTicket.generateRunTicketPDF.useMutation();
-  const generateBOLPDF = trpc.eusoTicket.generateBOLPDF.useMutation();
+  const generateTicketPDF = (trpc as any).eusoTicket.generateRunTicketPDF.useMutation();
+  const generateBOLPDF = (trpc as any).eusoTicket.generateBOLPDF.useMutation();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -118,7 +118,7 @@ export default function EusoTicket() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {statsQuery.isLoading ? (
-          [...Array(4)].map((_, i) => <Skeleton key={i} className="h-24" />)
+          [...Array(4)].map((_: any, i: number) => <Skeleton key={i} className="h-24" />)
         ) : (
           <>
             <Card className="bg-slate-900/50 border-slate-700/50">
@@ -128,7 +128,7 @@ export default function EusoTicket() {
                     <Clipboard className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.todayTickets || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.todayTickets || 0}</p>
                     <p className="text-xs text-slate-400">Today's Tickets</p>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function EusoTicket() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold text-white">
-                      {((statsQuery.data?.todayVolume || 0) / 1000).toFixed(1)}K
+                      {(((statsQuery.data as any)?.todayVolume || 0) / 1000).toFixed(1)}K
                     </p>
                     <p className="text-xs text-slate-400">Today's Volume (gal)</p>
                   </div>
@@ -156,7 +156,7 @@ export default function EusoTicket() {
                     <Clock className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.pendingTickets || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.pendingTickets || 0}</p>
                     <p className="text-xs text-slate-400">Pending Tickets</p>
                   </div>
                 </div>
@@ -169,7 +169,7 @@ export default function EusoTicket() {
                     <Activity className="w-5 h-5 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.avgApiGravity?.toFixed(1) || 0}°</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.avgApiGravity?.toFixed(1) || 0}°</p>
                     <p className="text-xs text-slate-400">Avg API Gravity</p>
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export default function EusoTicket() {
                 <Input
                   placeholder="Search tickets..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: any) => setSearchTerm(e.target.value)}
                   className="pl-9 bg-slate-800/50 border-slate-700 w-64"
                 />
               </div>
@@ -214,11 +214,11 @@ export default function EusoTicket() {
             <CardContent>
               {ticketsQuery.isLoading ? (
                 <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20" />)}
+                  {[...Array(5)].map((_: any, i: number) => <Skeleton key={i} className="h-20" />)}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {ticketsQuery.data?.tickets.map((ticket) => (
+                  {(ticketsQuery.data as any)?.tickets.map((ticket: any) => (
                     <div
                       key={ticket.ticketNumber}
                       className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/30 hover:border-amber-500/30 transition-colors cursor-pointer"
@@ -294,7 +294,7 @@ export default function EusoTicket() {
                 <Input
                   placeholder="Search BOLs..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: any) => setSearchTerm(e.target.value)}
                   className="pl-9 bg-slate-800/50 border-slate-700 w-64"
                 />
               </div>
@@ -302,11 +302,11 @@ export default function EusoTicket() {
             <CardContent>
               {bolsQuery.isLoading ? (
                 <div className="space-y-3">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20" />)}
+                  {[...Array(5)].map((_: any, i: number) => <Skeleton key={i} className="h-20" />)}
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {bolsQuery.data?.bols.map((bol) => (
+                  {(bolsQuery.data as any)?.bols.map((bol: any) => (
                     <div
                       key={bol.bolNumber}
                       className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/30 hover:border-orange-500/30 transition-colors cursor-pointer"
@@ -383,17 +383,17 @@ export default function EusoTicket() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30">
                       <span className="text-slate-400">Weekly Tickets</span>
-                      <span className="text-2xl font-bold text-white">{statsQuery.data?.weekTickets}</span>
+                      <span className="text-2xl font-bold text-white">{(statsQuery.data as any)?.weekTickets}</span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30">
                       <span className="text-slate-400">Weekly Volume</span>
                       <span className="text-2xl font-bold text-white">
-                        {((statsQuery.data?.weekVolume || 0) / 1000).toFixed(1)}K gal
+                        {(((statsQuery.data as any)?.weekVolume || 0) / 1000).toFixed(1)}K gal
                       </span>
                     </div>
                     <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/30">
                       <span className="text-slate-400">Avg Load Time</span>
-                      <span className="text-2xl font-bold text-white">{statsQuery.data?.avgLoadTime} min</span>
+                      <span className="text-2xl font-bold text-white">{(statsQuery.data as any)?.avgLoadTime} min</span>
                     </div>
                   </div>
                 )}
@@ -410,7 +410,7 @@ export default function EusoTicket() {
                   <Skeleton className="h-40" />
                 ) : (
                   <div className="space-y-3">
-                    {statsQuery.data?.topCrudeTypes.map((crude) => (
+                    {(statsQuery.data as any)?.topCrudeTypes.map((crude: any) => (
                       <div key={crude.type} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-slate-300">{crude.type}</span>
@@ -441,19 +441,19 @@ export default function EusoTicket() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 rounded-lg bg-slate-800/30 text-center">
                       <p className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                        {statsQuery.data?.monthTickets}
+                        {(statsQuery.data as any)?.monthTickets}
                       </p>
                       <p className="text-sm text-slate-400 mt-1">Monthly Tickets</p>
                     </div>
                     <div className="p-4 rounded-lg bg-slate-800/30 text-center">
                       <p className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                        {((statsQuery.data?.monthVolume || 0) / 1000000).toFixed(2)}M
+                        {(((statsQuery.data as any)?.monthVolume || 0) / 1000000).toFixed(2)}M
                       </p>
                       <p className="text-sm text-slate-400 mt-1">Monthly Volume (gal)</p>
                     </div>
                     <div className="p-4 rounded-lg bg-slate-800/30 text-center">
                       <p className="text-3xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-                        {statsQuery.data?.pendingBOLs}
+                        {(statsQuery.data as any)?.pendingBOLs}
                       </p>
                       <p className="text-sm text-slate-400 mt-1">Pending BOLs</p>
                     </div>

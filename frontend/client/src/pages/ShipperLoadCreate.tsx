@@ -55,16 +55,16 @@ export default function ShipperLoadCreate() {
     notes: "",
   });
 
-  const classifyMutation = trpc.esang.classifyHazmat.useMutation();
+  const classifyMutation = (trpc as any).esang.classifyHazmat.useMutation();
   const classifyData = classifyMutation.data;
   const rateQuery = { data: { lowEstimate: 0, midEstimate: 0, highEstimate: 0 }, isLoading: false }; // Placeholder until proper procedure
 
-  const createMutation = trpc.loads.create.useMutation({
-    onSuccess: (data) => {
+  const createMutation = (trpc as any).loads.create.useMutation({
+    onSuccess: (data: any) => {
       toast.success("Load created successfully");
       navigate(`/shipper/loads/${data.id}`);
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const updateField = (field: string, value: any) => {
@@ -83,7 +83,7 @@ export default function ShipperLoadCreate() {
               <label className="text-slate-300 text-sm">Product Name</label>
               <Input
                 value={formData.productName}
-                onChange={(e) => updateField("productName", e.target.value)}
+                onChange={(e: any) => updateField("productName", e.target.value)}
                 placeholder="e.g., Diesel Fuel, Gasoline"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -108,7 +108,7 @@ export default function ShipperLoadCreate() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Hazmat Class</label>
-                <Select value={formData.hazmatClass} onValueChange={(v) => updateField("hazmatClass", v)}>
+                <Select value={formData.hazmatClass} onValueChange={(v: any) => updateField("hazmatClass", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="3">Class 3 - Flammable Liquid</SelectItem>
@@ -120,18 +120,18 @@ export default function ShipperLoadCreate() {
               </div>
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">UN Number</label>
-                <Input value={formData.unNumber} onChange={(e) => updateField("unNumber", e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={formData.unNumber} onChange={(e: any) => updateField("unNumber", e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Quantity</label>
-                <Input type="number" value={formData.quantity} onChange={(e) => updateField("quantity", e.target.value)} placeholder="0" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={formData.quantity} onChange={(e: any) => updateField("quantity", e.target.value)} placeholder="0" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Unit</label>
-                <Select value={formData.unit} onValueChange={(v) => updateField("unit", v)}>
+                <Select value={formData.unit} onValueChange={(v: any) => updateField("unit", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="gallons">Gallons</SelectItem>
@@ -150,26 +150,26 @@ export default function ShipperLoadCreate() {
             <div>
               <p className="text-white font-medium mb-3 flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-400" />Origin</p>
               <div className="grid grid-cols-2 gap-4">
-                <Input value={formData.originCity} onChange={(e) => updateField("originCity", e.target.value)} placeholder="City" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
-                <Input value={formData.originState} onChange={(e) => updateField("originState", e.target.value)} placeholder="State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={formData.originCity} onChange={(e: any) => updateField("originCity", e.target.value)} placeholder="City" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={formData.originState} onChange={(e: any) => updateField("originState", e.target.value)} placeholder="State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
-              <Input value={formData.originFacility} onChange={(e) => updateField("originFacility", e.target.value)} placeholder="Facility Name" className="mt-2 bg-slate-700/50 border-slate-600/50 rounded-lg" />
+              <Input value={formData.originFacility} onChange={(e: any) => updateField("originFacility", e.target.value)} placeholder="Facility Name" className="mt-2 bg-slate-700/50 border-slate-600/50 rounded-lg" />
               <div className="grid grid-cols-2 gap-4 mt-2">
-                <Input type="date" value={formData.pickupDate} onChange={(e) => updateField("pickupDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
-                <Input type="time" value={formData.pickupTime} onChange={(e) => updateField("pickupTime", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="date" value={formData.pickupDate} onChange={(e: any) => updateField("pickupDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="time" value={formData.pickupTime} onChange={(e: any) => updateField("pickupTime", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
             </div>
 
             <div>
               <p className="text-white font-medium mb-3 flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-400" />Destination</p>
               <div className="grid grid-cols-2 gap-4">
-                <Input value={formData.destCity} onChange={(e) => updateField("destCity", e.target.value)} placeholder="City" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
-                <Input value={formData.destState} onChange={(e) => updateField("destState", e.target.value)} placeholder="State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={formData.destCity} onChange={(e: any) => updateField("destCity", e.target.value)} placeholder="City" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={formData.destState} onChange={(e: any) => updateField("destState", e.target.value)} placeholder="State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
-              <Input value={formData.destFacility} onChange={(e) => updateField("destFacility", e.target.value)} placeholder="Facility Name" className="mt-2 bg-slate-700/50 border-slate-600/50 rounded-lg" />
+              <Input value={formData.destFacility} onChange={(e: any) => updateField("destFacility", e.target.value)} placeholder="Facility Name" className="mt-2 bg-slate-700/50 border-slate-600/50 rounded-lg" />
               <div className="grid grid-cols-2 gap-4 mt-2">
-                <Input type="date" value={formData.deliveryDate} onChange={(e) => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
-                <Input type="time" value={formData.deliveryTime} onChange={(e) => updateField("deliveryTime", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="date" value={formData.deliveryDate} onChange={(e: any) => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="time" value={formData.deliveryTime} onChange={(e: any) => updateField("deliveryTime", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
             </div>
           </div>
@@ -180,7 +180,7 @@ export default function ShipperLoadCreate() {
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="text-slate-300 text-sm">Equipment Type</label>
-              <Select value={formData.equipment} onValueChange={(v) => updateField("equipment", v)}>
+              <Select value={formData.equipment} onValueChange={(v: any) => updateField("equipment", v)}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="tanker">Tanker</SelectItem>
@@ -194,7 +194,7 @@ export default function ShipperLoadCreate() {
             <div className="space-y-2">
               <label className="text-slate-300 text-sm">Special Requirements</label>
               <div className="grid grid-cols-2 gap-2">
-                {["Hazmat Endorsed", "TWIC Required", "Tank Wash", "Dedicated Clean"].map((req) => (
+                {["Hazmat Endorsed", "TWIC Required", "Tank Wash", "Dedicated Clean"].map((req: any) => (
                   <Button
                     key={req}
                     variant="outline"
@@ -215,7 +215,7 @@ export default function ShipperLoadCreate() {
 
             <div className="space-y-2">
               <label className="text-slate-300 text-sm">Notes</label>
-              <Textarea value={formData.notes} onChange={(e) => updateField("notes", e.target.value)} placeholder="Additional instructions..." className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+              <Textarea value={formData.notes} onChange={(e: any) => updateField("notes", e.target.value)} placeholder="Additional instructions..." className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
             </div>
           </div>
         );
@@ -241,7 +241,7 @@ export default function ShipperLoadCreate() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-slate-300 text-sm">Rate Type</label>
-                <Select value={formData.rateType} onValueChange={(v) => updateField("rateType", v)}>
+                <Select value={formData.rateType} onValueChange={(v: any) => updateField("rateType", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="flat">Flat Rate</SelectItem>
@@ -254,7 +254,7 @@ export default function ShipperLoadCreate() {
                 <label className="text-slate-300 text-sm">{formData.rateType === "bid" ? "Max Budget" : "Rate"}</label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400" />
-                  <Input type="number" value={formData.rate} onChange={(e) => updateField("rate", e.target.value)} placeholder="0.00" className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={formData.rate} onChange={(e: any) => updateField("rate", e.target.value)} placeholder="0.00" className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg" />
                 </div>
               </div>
             </div>
@@ -287,7 +287,7 @@ export default function ShipperLoadCreate() {
 
       {/* Progress */}
       <div className="flex items-center justify-between">
-        {steps.map((step, idx) => (
+        {steps.map((step: any, idx: number) => (
           <React.Fragment key={step.id}>
             <div className="flex flex-col items-center">
               <div className={cn(

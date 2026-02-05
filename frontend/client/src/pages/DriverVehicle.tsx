@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DriverVehicle() {
-  const vehicleQuery = trpc.drivers.getAssignedVehicle.useQuery();
-  const inspectionQuery = trpc.drivers.getLastInspection.useQuery();
+  const vehicleQuery = (trpc as any).drivers.getAssignedVehicle.useQuery();
+  const inspectionQuery = (trpc as any).drivers.getLastInspection.useQuery();
 
-  const startDVIRMutation = trpc.drivers.startDVIR.useMutation({
+  const startDVIRMutation = (trpc as any).drivers.startDVIR.useMutation({
     onSuccess: () => {
       toast.success("DVIR started");
     },

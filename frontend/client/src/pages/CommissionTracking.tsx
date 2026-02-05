@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 export default function CommissionTracking() {
   const [period, setPeriod] = useState("month");
 
-  const commissionsQuery = trpc.brokers.getCommissions.useQuery({ period });
-  const statsQuery = trpc.brokers.getCommissionStats.useQuery({ period });
+  const commissionsQuery = (trpc as any).brokers.getCommissions.useQuery({ period });
+  const statsQuery = (trpc as any).brokers.getCommissionStats.useQuery({ period });
 
   const stats = statsQuery.data;
 
@@ -112,12 +112,12 @@ export default function CommissionTracking() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-400" />Commission History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {commissionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : commissionsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (commissionsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No commissions found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {commissionsQuery.data?.map((commission: any) => (
+              {(commissionsQuery.data as any)?.map((commission: any) => (
                 <div key={commission.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", commission.status === "paid" ? "bg-green-500/20" : "bg-slate-700/50")}>

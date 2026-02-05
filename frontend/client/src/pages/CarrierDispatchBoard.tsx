@@ -22,11 +22,11 @@ export default function CarrierDispatchBoard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 50 });
-  const driversQuery = trpc.carriers.getDrivers.useQuery({});
-  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
+  const loadsQuery = (trpc as any).carriers.getActiveLoads.useQuery({ limit: 50 });
+  const driversQuery = (trpc as any).carriers.getDrivers.useQuery({});
+  const statsQuery = (trpc as any).carriers.getDashboardStats.useQuery();
 
-  const assignDriverMutation = trpc.catalysts.assignDriver.useMutation({
+  const assignDriverMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       loadsQuery.refetch();
@@ -77,7 +77,7 @@ export default function CarrierDispatchBoard() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -170,7 +170,7 @@ export default function CarrierDispatchBoard() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search loads..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -196,7 +196,7 @@ export default function CarrierDispatchBoard() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
           ) : filteredLoads.length === 0 ? (
             <div className="text-center py-16">
               <LayoutGrid className="w-12 h-12 text-slate-500 mx-auto mb-4" />

@@ -24,20 +24,20 @@ export default function DriverPerformance() {
   const [selectedDriver, setSelectedDriver] = useState<string>("");
   const [timePeriod, setTimePeriod] = useState("month");
 
-  const driversQuery = trpc.drivers.list.useQuery({ limit: 50 });
-  const performanceQuery = trpc.drivers.getPerformance.useQuery(
+  const driversQuery = (trpc as any).drivers.list.useQuery({ limit: 50 });
+  const performanceQuery = (trpc as any).drivers.getPerformance.useQuery(
     { driverId: selectedDriver, period: timePeriod },
     { enabled: !!selectedDriver }
   );
-  const eventsQuery = trpc.drivers.getRecentEvents.useQuery(
+  const eventsQuery = (trpc as any).drivers.getRecentEvents.useQuery(
     { driverId: selectedDriver },
     { enabled: !!selectedDriver }
   );
-  const leaderboardQuery = trpc.drivers.getLeaderboard.useQuery({ period: timePeriod });
+  const leaderboardQuery = (trpc as any).drivers.getLeaderboard.useQuery({ period: timePeriod });
 
   // Set first driver as default when loaded
   React.useEffect(() => {
-    if (driversQuery.data?.drivers?.length && !selectedDriver) {
+    if ((driversQuery.data as any)?.drivers?.length && !selectedDriver) {
       setSelectedDriver(driversQuery.data.drivers[0].id);
     }
   }, [driversQuery.data, selectedDriver]);
@@ -85,7 +85,7 @@ export default function DriverPerformance() {
               {driversQuery.isLoading ? (
                 <div className="p-2"><Skeleton className="h-6 w-full" /></div>
               ) : (
-                driversQuery.data?.drivers?.map(d => (
+                (driversQuery.data as any)?.drivers?.map((d: any) => (
                   <SelectItem key={d.id} value={d.id}>{d.firstName} {d.lastName}</SelectItem>
                 ))
               )}
@@ -180,7 +180,7 @@ export default function DriverPerformance() {
       {/* Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {performanceQuery.isLoading ? (
-          [1, 2, 3, 4, 5].map((i) => (
+          [1, 2, 3, 4, 5].map((i: any) => (
             <Card key={i} className="bg-slate-800/50 border-slate-700">
               <CardContent className="p-4 text-center"><Skeleton className="h-16 w-full" /></CardContent>
             </Card>
@@ -239,7 +239,7 @@ export default function DriverPerformance() {
               <CardHeader><CardTitle className="text-white">Performance Stats</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {performanceQuery.isLoading ? (
-                  [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-8 w-full" />)
+                  [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-8 w-full" />)
                 ) : (
                   <>
                     <div className="flex justify-between items-center">
@@ -273,7 +273,7 @@ export default function DriverPerformance() {
               <CardHeader><CardTitle className="text-white">Score Breakdown</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {performanceQuery.isLoading ? (
-                  [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-8 w-full" />)
+                  [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-8 w-full" />)
                 ) : (
                   Object.entries(driver?.metrics || {}).map(([key, value]) => (
                     <div key={key} className="space-y-2">
@@ -297,12 +297,12 @@ export default function DriverPerformance() {
             <CardHeader><CardTitle className="text-white">Recent Performance Events</CardTitle></CardHeader>
             <CardContent>
               {eventsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : eventsQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : (eventsQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No recent events</p>
               ) : (
                 <div className="space-y-3">
-                  {eventsQuery.data?.map((event) => (
+                  {(eventsQuery.data as any)?.map((event: any) => (
                     <div key={event.id} className={cn(
                       "flex items-center justify-between p-4 rounded-lg",
                       event.type === "positive" ? "bg-green-500/10 border border-green-500/20" :
@@ -341,10 +341,10 @@ export default function DriverPerformance() {
             <CardHeader><CardTitle className="text-white">Team Comparison</CardTitle></CardHeader>
             <CardContent>
               {leaderboardQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+                <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
               ) : (
                 <div className="space-y-4">
-                  {leaderboardQuery.data?.map((d, idx) => (
+                  {(leaderboardQuery.data as any)?.map((d: any, idx: number) => (
                     <div key={d.id} className={cn(
                       "flex items-center justify-between p-4 rounded-lg transition-colors",
                       d.id === selectedDriver ? "bg-blue-500/20 border border-blue-500/30" : "bg-slate-700/30 hover:bg-slate-700/50"

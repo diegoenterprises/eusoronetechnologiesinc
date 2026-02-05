@@ -25,12 +25,12 @@ export default function RateCalculator() {
   const [equipmentType, setEquipmentType] = useState("");
   const [weight, setWeight] = useState("");
 
-  const calculateQuery = trpc.rates.calculate.useQuery(
+  const calculateQuery = (trpc as any).rates.calculate.useQuery(
     { origin, destination, equipmentType, weight: parseFloat(weight) || 0 },
     { enabled: !!origin && !!destination && !!equipmentType }
   );
 
-  const marketRatesQuery = trpc.rates.getMarketRates.useQuery({ originState: origin || "TX", destState: destination || "TX", equipment: equipmentType as "tanker" | "flatbed" | "reefer" | "van" | "specialized" });
+  const marketRatesQuery = (trpc as any).rates.getMarketRates.useQuery({ originState: origin || "TX", destState: destination || "TX", equipment: equipmentType as "tanker" | "flatbed" | "reefer" | "van" | "specialized" });
 
   const result = calculateQuery.data;
 
@@ -60,7 +60,7 @@ export default function RateCalculator() {
                 <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
                 <Input
                   value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
+                  onChange={(e: any) => setOrigin(e.target.value)}
                   placeholder="City, State"
                   className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
@@ -73,7 +73,7 @@ export default function RateCalculator() {
                 <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-red-400" />
                 <Input
                   value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
+                  onChange={(e: any) => setDestination(e.target.value)}
                   placeholder="City, State"
                   className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
@@ -101,7 +101,7 @@ export default function RateCalculator() {
               <Input
                 type="number"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
+                onChange={(e: any) => setWeight(e.target.value)}
                 placeholder="Enter weight"
                 className="bg-slate-700/30 border-slate-600/50 rounded-lg"
               />
@@ -204,7 +204,7 @@ export default function RateCalculator() {
           <CardContent>
             {marketRatesQuery.isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+                {[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

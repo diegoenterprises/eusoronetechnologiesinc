@@ -22,21 +22,21 @@ export default function TwoFactorSetup() {
   const [verificationCode, setVerificationCode] = useState("");
 
   const statusQuery = trpc.users.get2FAStatus.useQuery();
-  const setupQuery = trpc.users.setup2FA.useQuery(undefined, { enabled: !statusQuery.data?.enabled });
+  const setupQuery = trpc.users.setup2FA.useQuery(undefined, { enabled: !(statusQuery.data as any)?.enabled });
 
   const enableMutation = trpc.users.enable2FA.useMutation({
     onSuccess: () => { toast.success("2FA enabled successfully"); statusQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const disableMutation = trpc.users.disable2FA.useMutation({
     onSuccess: () => { toast.success("2FA disabled"); statusQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const regenerateBackupMutation = trpc.users.regenerateBackupCodes.useMutation({
+  const regenerateBackupMutation = (trpc as any).users.regenerateBackupCodes.useMutation({
     onSuccess: () => { toast.success("Backup codes regenerated"); statusQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const status = statusQuery.data;
@@ -134,7 +134,7 @@ export default function TwoFactorSetup() {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-slate-400">Enter the 6-digit code from your authenticator app to verify setup</p>
-              <Input value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-800/50 border-slate-700/50 rounded-lg" />
+              <Input value={verificationCode} onChange={(e: any) => setVerificationCode(e.target.value)} placeholder="000000" maxLength={6} className="text-center text-2xl tracking-widest bg-slate-800/50 border-slate-700/50 rounded-lg" />
               <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => enableMutation.mutate({ code: verificationCode })} disabled={verificationCode.length !== 6}>
                 <Shield className="w-4 h-4 mr-2" />Enable 2FA
               </Button>
@@ -160,7 +160,7 @@ export default function TwoFactorSetup() {
           <CardContent>
             <p className="text-sm text-slate-400 mb-4">Save these backup codes in a secure place. Each code can only be used once.</p>
             {statusQuery.isLoading ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {status?.backupCodes?.map((code: string, idx: number) => (

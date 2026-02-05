@@ -23,18 +23,18 @@ export default function TerminalAppointments() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate, terminalId: selectedTerminal === "all" ? undefined : selectedTerminal });
-  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
-  const statsQuery = trpc.terminals.getAppointmentStats.useQuery({ date: selectedDate });
+  const appointmentsQuery = (trpc as any).terminals.getAppointments.useQuery({ date: selectedDate, terminalId: selectedTerminal === "all" ? undefined : selectedTerminal });
+  const terminalsQuery = (trpc as any).terminals.getTerminals.useQuery();
+  const statsQuery = (trpc as any).terminals.getAppointmentStats.useQuery({ date: selectedDate });
 
-  const cancelMutation = trpc.terminals.cancelAppointment.useMutation({
+  const cancelMutation = (trpc as any).terminals.cancelAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment cancelled"); appointmentsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const reschedMutation = trpc.terminals.rescheduleAppointment.useMutation({
+  const reschedMutation = (trpc as any).terminals.rescheduleAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment rescheduled"); appointmentsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -134,14 +134,14 @@ export default function TerminalAppointments() {
 
       {/* Filters */}
       <div className="flex items-center gap-4">
-        <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input type="date" value={selectedDate} onChange={(e: any) => setSelectedDate(e.target.value)} className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg" />
         <Select value={selectedTerminal} onValueChange={setSelectedTerminal}>
           <SelectTrigger className="w-[200px] bg-slate-800/50 border-slate-700/50 rounded-lg">
             <MapPin className="w-4 h-4 mr-2" /><SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Terminals</SelectItem>
-            {terminalsQuery.data?.map((terminal: any) => (
+            {(terminalsQuery.data as any)?.map((terminal: any) => (
               <SelectItem key={terminal.id} value={terminal.id}>{terminal.name}</SelectItem>
             ))}
           </SelectContent>
@@ -161,15 +161,15 @@ export default function TerminalAppointments() {
         </CardHeader>
         <CardContent className="p-0">
           {appointmentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : appointmentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (appointmentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No appointments for this date</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {appointmentsQuery.data?.map((appointment: any) => (
+              {(appointmentsQuery.data as any)?.map((appointment: any) => (
                 <div key={appointment.id} className={cn("p-4", appointment.status === "late" && "bg-orange-500/5 border-l-2 border-orange-500")}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">

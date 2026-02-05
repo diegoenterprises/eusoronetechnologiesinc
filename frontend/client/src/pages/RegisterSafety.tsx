@@ -100,15 +100,15 @@ export default function RegisterSafety() {
   const [formData, setFormData] = useState<SafetyFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<SafetyFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerSafetyManager.useMutation({
+  const registerMutation = (trpc as any).registration.registerSafetyManager.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", { description: "Your account is pending verification." });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", { description: error.message });
     },
   });
@@ -139,7 +139,7 @@ export default function RegisterSafety() {
               <Label className="text-slate-300">First Name <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.firstName}
-                onChange={(e) => updateFormData({ firstName: e.target.value })}
+                onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -148,7 +148,7 @@ export default function RegisterSafety() {
               <Label className="text-slate-300">Last Name <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.lastName}
-                onChange={(e) => updateFormData({ lastName: e.target.value })}
+                onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -161,7 +161,7 @@ export default function RegisterSafety() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
+                onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@company.com"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -171,7 +171,7 @@ export default function RegisterSafety() {
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => updateFormData({ phone: e.target.value })}
+                onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -199,7 +199,7 @@ export default function RegisterSafety() {
               <Label className="text-slate-300">Company Name <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.companyName}
-                onChange={(e) => updateFormData({ companyName: e.target.value })}
+                onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Trucking LLC"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -208,7 +208,7 @@ export default function RegisterSafety() {
               <Label className="text-slate-300">Company USDOT <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.companyUsdot}
-                onChange={(e) => updateFormData({ companyUsdot: e.target.value })}
+                onChange={(e: any) => updateFormData({ companyUsdot: e.target.value })}
                 placeholder="1234567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -218,7 +218,7 @@ export default function RegisterSafety() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Job Title</Label>
-              <Select value={formData.jobTitle} onValueChange={(v) => updateFormData({ jobTitle: v })}>
+              <Select value={formData.jobTitle} onValueChange={(v: any) => updateFormData({ jobTitle: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select title" />
                 </SelectTrigger>
@@ -233,7 +233,7 @@ export default function RegisterSafety() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Years in Safety</Label>
-              <Select value={formData.yearsInSafety} onValueChange={(v) => updateFormData({ yearsInSafety: v })}>
+              <Select value={formData.yearsInSafety} onValueChange={(v: any) => updateFormData({ yearsInSafety: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select experience" />
                 </SelectTrigger>
@@ -252,7 +252,7 @@ export default function RegisterSafety() {
             <Label className="text-slate-300">Reports To</Label>
             <Input
               value={formData.reportsTo}
-              onChange={(e) => updateFormData({ reportsTo: e.target.value })}
+              onChange={(e: any) => updateFormData({ reportsTo: e.target.value })}
               placeholder="CEO, VP Operations, etc."
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -277,7 +277,7 @@ export default function RegisterSafety() {
           <div className="space-y-2">
             <Label className="text-slate-300">Professional Certifications</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {CERTIFICATIONS.map((cert) => (
+              {CERTIFICATIONS.map((cert: any) => (
                 <div key={cert} className="flex items-center space-x-2 p-3 rounded bg-slate-700/30">
                   <Checkbox
                     id={cert}
@@ -304,7 +304,7 @@ export default function RegisterSafety() {
               <Input
                 type="date"
                 value={formData.csaTrainingDate}
-                onChange={(e) => updateFormData({ csaTrainingDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ csaTrainingDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -313,7 +313,7 @@ export default function RegisterSafety() {
               <Input
                 type="date"
                 value={formData.accidentInvestigationDate}
-                onChange={(e) => updateFormData({ accidentInvestigationDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ accidentInvestigationDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -331,7 +331,7 @@ export default function RegisterSafety() {
           <div className="space-y-2">
             <Label className="text-slate-300">Safety Responsibilities</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {RESPONSIBILITIES.map((resp) => (
+              {RESPONSIBILITIES.map((resp: any) => (
                 <div key={resp} className="flex items-center space-x-2 p-3 rounded bg-slate-700/30">
                   <Checkbox
                     id={resp}
@@ -355,7 +355,7 @@ export default function RegisterSafety() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Fleet Size (Power Units)</Label>
-              <Select value={formData.fleetSize} onValueChange={(v) => updateFormData({ fleetSize: v })}>
+              <Select value={formData.fleetSize} onValueChange={(v: any) => updateFormData({ fleetSize: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select fleet size" />
                 </SelectTrigger>
@@ -370,7 +370,7 @@ export default function RegisterSafety() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Driver Count</Label>
-              <Select value={formData.driverCount} onValueChange={(v) => updateFormData({ driverCount: v })}>
+              <Select value={formData.driverCount} onValueChange={(v: any) => updateFormData({ driverCount: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select driver count" />
                 </SelectTrigger>
@@ -411,7 +411,7 @@ export default function RegisterSafety() {
               <Checkbox
                 id="terms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a>
@@ -423,7 +423,7 @@ export default function RegisterSafety() {
               <Checkbox
                 id="privacy"
                 checked={formData.acceptPrivacy}
-                onCheckedChange={(c) => updateFormData({ acceptPrivacy: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptPrivacy: c as boolean })}
               />
               <Label htmlFor="privacy" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>
@@ -435,7 +435,7 @@ export default function RegisterSafety() {
               <Checkbox
                 id="safetyCommitment"
                 checked={formData.acceptSafetyCommitment}
-                onCheckedChange={(c) => updateFormData({ acceptSafetyCommitment: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptSafetyCommitment: c as boolean })}
               />
               <Label htmlFor="safetyCommitment" className="text-sm text-pink-300 cursor-pointer">
                 <strong>Safety Commitment:</strong> I pledge to prioritize safety in all operations, 

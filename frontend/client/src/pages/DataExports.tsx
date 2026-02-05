@@ -21,17 +21,17 @@ import { toast } from "sonner";
 export default function DataExports() {
   const [exportType, setExportType] = useState("loads");
 
-  const exportsQuery = trpc.exports.list.useQuery({ limit: 20 });
-  const templatesQuery = trpc.exports.getTemplates.useQuery();
+  const exportsQuery = (trpc as any).exports.list.useQuery({ limit: 20 });
+  const templatesQuery = (trpc as any).exports.getTemplates.useQuery();
 
-  const createMutation = trpc.exports.create.useMutation({
+  const createMutation = (trpc as any).exports.create.useMutation({
     onSuccess: () => { toast.success("Export started"); exportsQuery.refetch(); },
-    onError: (error) => toast.error("Export failed", { description: error.message }),
+    onError: (error: any) => toast.error("Export failed", { description: error.message }),
   });
 
-  const deleteMutation = trpc.exports.delete.useMutation({
+  const deleteMutation = (trpc as any).exports.delete.useMutation({
     onSuccess: () => { toast.success("Export deleted"); exportsQuery.refetch(); },
-    onError: (error) => toast.error("Delete failed", { description: error.message }),
+    onError: (error: any) => toast.error("Delete failed", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {
@@ -94,11 +94,11 @@ export default function DataExports() {
         <CardContent>
           {templatesQuery.isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+              {[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {templatesQuery.data?.map((template: any) => (
+              {(templatesQuery.data as any)?.map((template: any) => (
                 <div key={template.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => createMutation.mutate({ type: template.type, templateId: template.id })}>
                   <div className="p-2 rounded-lg bg-cyan-500/20 w-fit mb-3">
                     <FileSpreadsheet className="w-5 h-5 text-cyan-400" />
@@ -119,8 +119,8 @@ export default function DataExports() {
         </CardHeader>
         <CardContent className="p-0">
           {exportsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : exportsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (exportsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                 <Download className="w-8 h-8 text-slate-500" />
@@ -129,7 +129,7 @@ export default function DataExports() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {exportsQuery.data?.map((exp: any) => (
+              {(exportsQuery.data as any)?.map((exp: any) => (
                 <div key={exp.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-2 rounded-lg bg-slate-700/50">

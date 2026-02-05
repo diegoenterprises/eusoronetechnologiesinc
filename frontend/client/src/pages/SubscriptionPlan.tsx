@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function SubscriptionPlan() {
-  const subscriptionQuery = trpc.billing.getSubscription.useQuery();
-  const plansQuery = trpc.billing.getPlans.useQuery();
-  const usageQuery = trpc.billing.getUsage.useQuery();
+  const subscriptionQuery = (trpc as any).billing.getSubscription.useQuery();
+  const plansQuery = (trpc as any).billing.getPlans.useQuery();
+  const usageQuery = (trpc as any).billing.getUsage.useQuery();
 
-  const upgradeMutation = trpc.billing.upgradePlan.useMutation({
+  const upgradeMutation = (trpc as any).billing.upgradePlan.useMutation({
     onSuccess: () => { toast.success("Plan upgraded"); subscriptionQuery.refetch(); },
-    onError: (error) => toast.error("Failed to upgrade", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to upgrade", { description: error.message }),
   });
 
   const subscription = subscriptionQuery.data;
@@ -78,7 +78,7 @@ export default function SubscriptionPlan() {
         </CardHeader>
         <CardContent>
           {usageQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-slate-700/30">
@@ -123,10 +123,10 @@ export default function SubscriptionPlan() {
         </CardHeader>
         <CardContent>
           {plansQuery.isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-64 w-full rounded-xl" />)}</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-64 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {plansQuery.data?.map((plan: any) => (
+              {(plansQuery.data as any)?.map((plan: any) => (
                 <div key={plan.id} className={cn("p-6 rounded-xl border transition-all", plan.id === subscription?.planId ? "bg-cyan-500/10 border-cyan-500/30" : "bg-slate-700/30 border-slate-600/50 hover:border-slate-500/50")}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-white text-xl font-bold">{plan.name}</p>

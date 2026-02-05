@@ -22,9 +22,9 @@ export default function CarrierDetails() {
   const params = useParams();
   const carrierId = params.id as string;
 
-  const carrierQuery = trpc.carriers.getById.useQuery({ id: carrierId });
-  const driversQuery = trpc.carriers.getDrivers.useQuery({ carrierId, limit: 10 });
-  const loadsQuery = trpc.carriers.getRecentLoads.useQuery({ carrierId, limit: 5 });
+  const carrierQuery = (trpc as any).carriers.getById.useQuery({ id: carrierId });
+  const driversQuery = (trpc as any).carriers.getDrivers.useQuery({ carrierId, limit: 10 });
+  const loadsQuery = (trpc as any).carriers.getRecentLoads.useQuery({ carrierId, limit: 5 });
 
   const carrier = carrierQuery.data;
 
@@ -288,8 +288,8 @@ export default function CarrierDetails() {
           </CardHeader>
           <CardContent>
             {loadsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : loadsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (loadsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Package className="w-8 h-8 text-slate-500" />
@@ -298,7 +298,7 @@ export default function CarrierDetails() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {loadsQuery.data?.map((load: any) => (
+                {(loadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => setLocation(`/loads/${load.id}`)}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-white font-medium">{load.loadNumber}</p>

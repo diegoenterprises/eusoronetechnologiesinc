@@ -22,7 +22,7 @@ export default function Drivers() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const driversQuery = trpc.drivers.list.useQuery({ limit: 50 });
+  const driversQuery = (trpc as any).drivers.list.useQuery({ limit: 50 });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -34,14 +34,14 @@ export default function Drivers() {
     }
   };
 
-  const filteredDrivers = driversQuery.data?.filter((driver: any) => {
+  const filteredDrivers = (driversQuery.data as any)?.filter((driver: any) => {
     return !searchTerm || 
       driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       driver.cdlNumber?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const totalDrivers = driversQuery.data?.length || 0;
-  const activeDrivers = driversQuery.data?.filter((d: any) => d.status === "active" || d.status === "driving").length || 0;
+  const totalDrivers = (driversQuery.data as any)?.length || 0;
+  const activeDrivers = (driversQuery.data as any)?.filter((d: any) => d.status === "active" || d.status === "driving").length || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -100,7 +100,7 @@ export default function Drivers() {
               </div>
               <div>
                 {driversQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{driversQuery.data?.filter((d: any) => d.status === "driving").length || 0}</p>
+                  <p className="text-2xl font-bold text-cyan-400">{(driversQuery.data as any)?.filter((d: any) => d.status === "driving").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Driving</p>
               </div>
@@ -116,7 +116,7 @@ export default function Drivers() {
               </div>
               <div>
                 {driversQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{driversQuery.data?.filter((d: any) => d.hosRemaining && d.hosRemaining < 2).length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(driversQuery.data as any)?.filter((d: any) => d.hosRemaining && d.hosRemaining < 2).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Low HOS</p>
               </div>
@@ -130,7 +130,7 @@ export default function Drivers() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search drivers..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -140,7 +140,7 @@ export default function Drivers() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {driversQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredDrivers?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

@@ -23,16 +23,16 @@ export default function BidManagement() {
   const [filter, setFilter] = useState("pending");
   const [bidAmount, setBidAmount] = useState<Record<string, string>>({});
 
-  const bidsQuery = trpc.carriers.getBids.useQuery({ filter });
-  const statsQuery = trpc.carriers.getBidStats.useQuery();
-  const availableLoadsQuery = trpc.carriers.getAvailableLoads.useQuery({ limit: 5 });
+  const bidsQuery = (trpc as any).carriers.getBids.useQuery({ filter });
+  const statsQuery = (trpc as any).carriers.getBidStats.useQuery();
+  const availableLoadsQuery = (trpc as any).carriers.getAvailableLoads.useQuery({ limit: 5 });
 
-  const submitBidMutation = trpc.carriers.submitBid.useMutation({
+  const submitBidMutation = (trpc as any).carriers.submitBid.useMutation({
     onSuccess: () => { toast.success("Bid submitted"); bidsQuery.refetch(); availableLoadsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const analyzeMutation = trpc.esang.analyzeBidFairness.useMutation();
+  const analyzeMutation = (trpc as any).esang.analyzeBidFairness.useMutation();
 
   const stats = statsQuery.data;
 
@@ -90,18 +90,18 @@ export default function BidManagement() {
         </Card>
       </div>
 
-      {(availableLoadsQuery.data?.length ?? 0) > 0 && (
+      {((availableLoadsQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Available Loads</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            {availableLoadsQuery.data?.map((load: any) => (
+            {(availableLoadsQuery.data as any)?.map((load: any) => (
               <div key={load.id} className="p-3 rounded-lg bg-slate-800/50 flex items-center justify-between">
                 <div>
                   <p className="text-white font-medium">#{load.loadNumber} - {load.origin} → {load.destination}</p>
                   <p className="text-xs text-slate-500">{load.product} | {load.distance} mi | Target: ${load.targetRate}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Input type="number" placeholder="Your bid" value={bidAmount[load.id] || ""} onChange={(e) => setBidAmount(prev => ({ ...prev, [load.id]: e.target.value }))} className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg h-8 text-sm" />
+                  <Input type="number" placeholder="Your bid" value={bidAmount[load.id] || ""} onChange={(e: any) => setBidAmount(prev => ({ ...prev, [load.id]: e.target.value }))} className="w-24 bg-slate-700/50 border-slate-600/50 rounded-lg h-8 text-sm" />
                   <Button size="sm" variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 rounded-lg h-8" onClick={() => analyzeMutation.mutate({ loadId: load.id, bidAmount: parseFloat(bidAmount[load.id] || "0") })}>
                     <Sparkles className="w-3 h-3" />
                   </Button>
@@ -129,12 +129,12 @@ export default function BidManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Gavel className="w-5 h-5 text-cyan-400" />My Bids</CardTitle></CardHeader>
         <CardContent className="p-0">
           {bidsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : bidsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (bidsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Gavel className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No bids found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {bidsQuery.data?.map((bid: any) => (
+              {(bidsQuery.data as any)?.map((bid: any) => (
                 <div key={bid.id} className={cn("p-4", bid.status === "accepted" && "bg-green-500/5 border-l-2 border-green-500")}>
                   <div className="flex items-center justify-between">
                     <div>

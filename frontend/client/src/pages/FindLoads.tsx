@@ -24,9 +24,9 @@ export default function FindLoads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [equipmentFilter, setEquipmentFilter] = useState("all");
 
-  const loadsQuery = trpc.loads.list.useQuery({ status: "posted", limit: 50 });
+  const loadsQuery = (trpc as any).loads.list.useQuery({ status: "posted", limit: 50 });
 
-  const filteredLoads = loadsQuery.data?.filter((load: any) => {
+  const filteredLoads = (loadsQuery.data as any)?.filter((load: any) => {
     const matchesSearch = !searchTerm || 
       load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -34,7 +34,7 @@ export default function FindLoads() {
     return matchesSearch && matchesEquipment;
   });
 
-  const totalLoads = loadsQuery.data?.length || 0;
+  const totalLoads = (loadsQuery.data as any)?.length || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -59,7 +59,7 @@ export default function FindLoads() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search by origin or destination..."
             className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
           />
@@ -85,7 +85,7 @@ export default function FindLoads() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : filteredLoads?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

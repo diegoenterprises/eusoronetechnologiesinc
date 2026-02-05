@@ -23,8 +23,8 @@ export default function BrokerCustomerManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [tierFilter, setTierFilter] = useState("all");
 
-  const customersQuery = trpc.brokers.getCustomers.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
-  const statsQuery = trpc.brokers.getCustomerStats.useQuery();
+  const customersQuery = (trpc as any).brokers.getCustomers.useQuery({ status: statusFilter !== "all" ? statusFilter : undefined });
+  const statsQuery = (trpc as any).brokers.getCustomerStats.useQuery();
 
   const customers = customersQuery.data || [];
   const stats = statsQuery.data;
@@ -52,7 +52,7 @@ export default function BrokerCustomerManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -147,7 +147,7 @@ export default function BrokerCustomerManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search customers..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -181,7 +181,7 @@ export default function BrokerCustomerManagement() {
       {/* Customers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {customersQuery.isLoading ? (
-          Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+          Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)
         ) : filteredCustomers.length === 0 ? (
           <Card className="col-span-full bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

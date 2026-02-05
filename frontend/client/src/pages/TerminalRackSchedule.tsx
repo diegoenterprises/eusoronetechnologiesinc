@@ -21,11 +21,11 @@ export default function TerminalRackSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [rackFilter, setRackFilter] = useState("all");
 
-  const scheduleQuery = trpc.terminals.getAppointments.useQuery({});
-  const racksQuery = trpc.terminals.getRacks.useQuery();
-  const statsQuery = trpc.terminals.getSummary.useQuery();
+  const scheduleQuery = (trpc as any).terminals.getAppointments.useQuery({});
+  const racksQuery = (trpc as any).terminals.getRacks.useQuery();
+  const statsQuery = (trpc as any).terminals.getSummary.useQuery();
 
-  const confirmSlotMutation = trpc.terminals.createAppointment.useMutation({
+  const confirmSlotMutation = (trpc as any).terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Appointment confirmed");
       scheduleQuery.refetch();
@@ -77,7 +77,7 @@ export default function TerminalRackSchedule() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -176,7 +176,7 @@ export default function TerminalRackSchedule() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl overflow-hidden">
         <CardContent className="p-0">
           {scheduleQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -198,7 +198,7 @@ export default function TerminalRackSchedule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {timeSlots.map((time) => (
+                  {timeSlots.map((time: any) => (
                     <tr key={time} className="border-b border-slate-700/30 hover:bg-slate-700/20">
                       <td className="p-3 text-slate-400 text-sm font-medium">{time}</td>
                       {(rackFilter === "all" ? racks : racks.filter((r: any) => r.id === rackFilter)).map((rack: any) => {

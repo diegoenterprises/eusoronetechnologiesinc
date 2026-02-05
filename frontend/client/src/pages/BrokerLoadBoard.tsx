@@ -22,12 +22,12 @@ export default function BrokerLoadBoard() {
   const [activeTab, setActiveTab] = useState("available");
 
   const { data: availableLoads, isLoading: loadsLoading, error: loadsError, refetch: refetchLoads } = 
-    trpc.loads.list.useQuery({});
+    (trpc as any).loads.list.useQuery({});
   const { data: carriers, isLoading: carriersLoading } = 
-    trpc.carriers.list.useQuery({ limit: 20 });
-  const { data: stats } = trpc.brokers.getDashboardStats.useQuery();
+    (trpc as any).carriers.list.useQuery({ limit: 20 });
+  const { data: stats } = (trpc as any).brokers.getDashboardStats.useQuery();
 
-  const assignMutation = trpc.loads.create.useMutation({
+  const assignMutation = (trpc as any).loads.create.useMutation({
     onSuccess: () => refetchLoads(),
   });
 
@@ -36,7 +36,7 @@ export default function BrokerLoadBoard() {
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
@@ -130,7 +130,7 @@ export default function BrokerLoadBoard() {
             placeholder="Search loads by number, origin, or destination..."
             className="pl-10"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
           />
         </div>
         <Button variant="outline">

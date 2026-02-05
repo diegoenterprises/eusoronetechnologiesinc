@@ -23,8 +23,8 @@ export default function PaymentHistory() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateRange, setDateRange] = useState("month");
 
-  const paymentsQuery = trpc.payments.getHistory.useQuery({ type: typeFilter, dateRange, limit: 50 });
-  const summaryQuery = trpc.payments.getSummary.useQuery({ dateRange });
+  const paymentsQuery = (trpc as any).payments.getHistory.useQuery({ type: typeFilter, dateRange, limit: 50 });
+  const summaryQuery = (trpc as any).payments.getSummary.useQuery({ dateRange });
 
   const summary = summaryQuery.data;
 
@@ -38,7 +38,7 @@ export default function PaymentHistory() {
     }
   };
 
-  const filteredPayments = paymentsQuery.data?.filter((payment: any) =>
+  const filteredPayments = (paymentsQuery.data as any)?.filter((payment: any) =>
     !searchTerm || payment.reference?.toLowerCase().includes(searchTerm.toLowerCase()) || payment.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -128,7 +128,7 @@ export default function PaymentHistory() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search payments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search payments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -157,7 +157,7 @@ export default function PaymentHistory() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {paymentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : filteredPayments?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

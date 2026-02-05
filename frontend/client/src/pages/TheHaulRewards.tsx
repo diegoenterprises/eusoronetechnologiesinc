@@ -19,14 +19,14 @@ import { toast } from 'sonner';
 export default function TheHaulRewards() {
   const [category, setCategory] = useState('all');
 
-  const { data: profile } = trpc.gamification.getProfile.useQuery({});
-  const { data: rewards, isLoading, refetch } = trpc.gamification.getLeaderboard.useQuery({});
-  const redeemMutation = trpc.gamification.redeemReward.useMutation({
+  const { data: profile } = (trpc as any).gamification.getProfile.useQuery({});
+  const { data: rewards, isLoading, refetch } = (trpc as any).gamification.getLeaderboard.useQuery({});
+  const redeemMutation = (trpc as any).gamification.redeemReward.useMutation({
     onSuccess: () => {
       toast.success('Reward redeemed successfully!');
       refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(error.message || 'Failed to redeem reward');
     },
   });
@@ -36,7 +36,7 @@ export default function TheHaulRewards() {
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
+          {[...Array(6)].map((_: any, i: number) => (
             <Skeleton key={i} className="h-48" />
           ))}
         </div>

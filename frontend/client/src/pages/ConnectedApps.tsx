@@ -18,16 +18,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ConnectedApps() {
-  const appsQuery = trpc.users.getConnectedApps.useQuery();
+  const appsQuery = (trpc as any).users.getConnectedApps.useQuery();
 
-  const disconnectMutation = trpc.users.disconnectApp.useMutation({
+  const disconnectMutation = (trpc as any).users.disconnectApp.useMutation({
     onSuccess: () => { toast.success("App disconnected"); appsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const refreshMutation = trpc.users.refreshAppConnection.useMutation({
+  const refreshMutation = (trpc as any).users.refreshAppConnection.useMutation({
     onSuccess: () => { toast.success("Connection refreshed"); appsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   return (
@@ -52,7 +52,7 @@ export default function ConnectedApps() {
               </div>
               <div>
                 {appsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{appsQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(appsQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Connected Apps</p>
               </div>
@@ -68,7 +68,7 @@ export default function ConnectedApps() {
               </div>
               <div>
                 {appsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{appsQuery.data?.filter((a: any) => a.status === "active").length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(appsQuery.data as any)?.filter((a: any) => a.status === "active").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Active</p>
               </div>
@@ -84,7 +84,7 @@ export default function ConnectedApps() {
               </div>
               <div>
                 {appsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{appsQuery.data?.filter((a: any) => a.status === "expired").length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(appsQuery.data as any)?.filter((a: any) => a.status === "expired").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Expired</p>
               </div>
@@ -103,8 +103,8 @@ export default function ConnectedApps() {
         </CardHeader>
         <CardContent className="p-0">
           {appsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : appsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (appsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Link2 className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No connected apps</p>
@@ -112,7 +112,7 @@ export default function ConnectedApps() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {appsQuery.data?.map((app: any) => (
+              {(appsQuery.data as any)?.map((app: any) => (
                 <div key={app.id} className={cn("p-4", app.status === "expired" && "bg-yellow-500/5 border-l-2 border-yellow-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

@@ -23,9 +23,9 @@ export default function DQFileManagement() {
   const [search, setSearch] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
 
-  const driversQuery = trpc.compliance.getDQDrivers.useQuery({ search });
-  const driverDQQuery = trpc.compliance.getDriverDQFile.useQuery({ driverId: selectedDriver! }, { enabled: !!selectedDriver });
-  const statsQuery = trpc.compliance.getDQStats.useQuery();
+  const driversQuery = (trpc as any).compliance.getDQDrivers.useQuery({ search });
+  const driverDQQuery = (trpc as any).compliance.getDriverDQFile.useQuery({ driverId: selectedDriver! }, { enabled: !!selectedDriver });
+  const statsQuery = (trpc as any).compliance.getDQStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -145,28 +145,28 @@ export default function DQFileManagement() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center text-xl font-bold text-white">
-                    {driverDQQuery.data?.name?.charAt(0)}
+                    {(driverDQQuery.data as any)?.name?.charAt(0)}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-white text-xl font-bold">{driverDQQuery.data?.name}</p>
-                      {getStatusBadge(driverDQQuery.data?.dqStatus || "")}
+                      <p className="text-white text-xl font-bold">{(driverDQQuery.data as any)?.name}</p>
+                      {getStatusBadge((driverDQQuery.data as any)?.dqStatus || "")}
                     </div>
-                    <p className="text-slate-400">CDL: {driverDQQuery.data?.cdlNumber} | Hired: {driverDQQuery.data?.hireDate}</p>
+                    <p className="text-slate-400">CDL: {(driverDQQuery.data as any)?.cdlNumber} | Hired: {(driverDQQuery.data as any)?.hireDate}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm text-slate-400">Completion</p>
-                    <p className={cn("text-2xl font-bold", (driverDQQuery.data?.completionPercent ?? 0) >= 100 ? "text-green-400" : (driverDQQuery.data?.completionPercent ?? 0) >= 80 ? "text-yellow-400" : "text-red-400")}>
-                      {driverDQQuery.data?.completionPercent}%
+                    <p className={cn("text-2xl font-bold", ((driverDQQuery.data as any)?.completionPercent ?? 0) >= 100 ? "text-green-400" : ((driverDQQuery.data as any)?.completionPercent ?? 0) >= 80 ? "text-yellow-400" : "text-red-400")}>
+                      {(driverDQQuery.data as any)?.completionPercent}%
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Progress value={driverDQQuery.data?.completionPercent} className="h-2" />
+                <Progress value={(driverDQQuery.data as any)?.completionPercent} className="h-2" />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {driverDQQuery.data?.documents?.map((doc: any) => (
+                  {(driverDQQuery.data as any)?.documents?.map((doc: any) => (
                     <div key={doc.id} className={cn("p-4 rounded-xl border flex items-center justify-between", doc.status === "valid" ? "bg-slate-700/30 border-slate-600/50" : doc.status === "expiring" ? "bg-yellow-500/5 border-yellow-500/30" : "bg-red-500/5 border-red-500/30")}>
                       <div className="flex items-center gap-3">
                         {getDocStatusIcon(doc.status)}
@@ -197,7 +197,7 @@ export default function DQFileManagement() {
           {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+            <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
           </div>
 
           {/* Drivers List */}
@@ -210,15 +210,15 @@ export default function DQFileManagement() {
             </CardHeader>
             <CardContent className="p-0">
               {driversQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : driversQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (driversQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
                   <p className="text-slate-400">No drivers found</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {driversQuery.data?.map((driver: any) => (
+                  {(driversQuery.data as any)?.map((driver: any) => (
                     <div key={driver.id} className={cn("p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors cursor-pointer", driver.dqStatus === "expired" && "bg-red-500/5 border-l-2 border-red-500")} onClick={() => setSelectedDriver(driver.id)}>
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white">

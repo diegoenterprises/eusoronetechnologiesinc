@@ -33,18 +33,18 @@ export default function PreTripInspection() {
   const [inspectionResults, setInspectionResults] = useState<Record<string, "pass" | "fail" | null>>({});
   const [notes, setNotes] = useState("");
 
-  const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
-  const previousQuery = trpc.inspections.getPrevious.useQuery();
+  const vehicleQuery = (trpc as any).drivers.getCurrentVehicle.useQuery();
+  const previousQuery = (trpc as any).inspections.getPrevious.useQuery();
 
-  const submitMutation = trpc.inspections.submit.useMutation({
+  const submitMutation = (trpc as any).inspections.submit.useMutation({
     onSuccess: () => { toast.success("Inspection submitted"); setLocation("/driver"); },
-    onError: (error) => toast.error("Failed to submit inspection", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit inspection", { description: error.message }),
   });
 
   const vehicle = vehicleQuery.data;
 
   const handleItemResult = (itemId: string, result: "pass" | "fail") => {
-    setInspectionResults((prev) => ({ ...prev, [itemId]: result }));
+    setInspectionResults((prev: any) => ({ ...prev, [itemId]: result }));
   };
 
   const getCompletionPercentage = () => {
@@ -53,7 +53,7 @@ export default function PreTripInspection() {
     return Math.round((completedItems / totalItems) * 100);
   };
 
-  const hasDefects = Object.values(inspectionResults).some((r) => r === "fail");
+  const hasDefects = Object.values(inspectionResults).some((r: any) => r === "fail");
 
   const handleSubmit = () => {
     if (getCompletionPercentage() < 100) {
@@ -119,13 +119,13 @@ export default function PreTripInspection() {
       </Card>
 
       {/* Inspection Categories */}
-      {INSPECTION_CATEGORIES.map((category) => (
+      {INSPECTION_CATEGORIES.map((category: any) => (
         <Card key={category.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-white text-lg">{category.name}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {category.items.map((item) => {
+            {category.items.map((item: any) => {
               const itemId = `${category.id}_${item.toLowerCase().replace(/\s/g, "_")}`;
               const result = inspectionResults[itemId];
               
@@ -153,7 +153,7 @@ export default function PreTripInspection() {
           <CardTitle className="text-white text-lg">Notes / Defects</CardTitle>
         </CardHeader>
         <CardContent>
-          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Describe any defects or issues found..." className="bg-slate-700/30 border-slate-600/50 rounded-xl min-h-[100px]" />
+          <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Describe any defects or issues found..." className="bg-slate-700/30 border-slate-600/50 rounded-xl min-h-[100px]" />
           <Button variant="outline" className="mt-3 bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-lg">
             <Camera className="w-4 h-4 mr-2" />Add Photo
           </Button>

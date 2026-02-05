@@ -24,12 +24,12 @@ export default function PreTripChecklist() {
   const [notes, setNotes] = useState("");
   const [defects, setDefects] = useState<string[]>([]);
 
-  const checklistQuery = trpc.drivers.getPreTripChecklist.useQuery();
-  const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
+  const checklistQuery = (trpc as any).drivers.getPreTripChecklist.useQuery();
+  const vehicleQuery = (trpc as any).drivers.getCurrentVehicle.useQuery();
 
-  const submitMutation = trpc.drivers.submitPreTripInspection.useMutation({
+  const submitMutation = (trpc as any).drivers.submitPreTripInspection.useMutation({
     onSuccess: () => { toast.success("Pre-trip inspection submitted"); setCheckedItems({}); setNotes(""); setDefects([]); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const toggleItem = (itemId: string, hasDefect: boolean = false) => {
@@ -43,7 +43,7 @@ export default function PreTripChecklist() {
     submitMutation.mutate({ checkedItems, notes, defects });
   };
 
-  const allChecked = checklistQuery.data?.categories?.every((cat: any) => cat.items.every((item: any) => checkedItems[item.id]));
+  const allChecked = (checklistQuery.data as any)?.categories?.every((cat: any) => cat.items.every((item: any) => checkedItems[item.id]));
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -70,10 +70,10 @@ export default function PreTripChecklist() {
       )}
 
       {checklistQuery.isLoading ? (
-        <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
+        <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
       ) : (
         <>
-          {checklistQuery.data?.categories?.map((category: any) => (
+          {(checklistQuery.data as any)?.categories?.map((category: any) => (
             <Card key={category.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3">
                 <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -115,7 +115,7 @@ export default function PreTripChecklist() {
               <CardContent>
                 <div className="flex flex-wrap gap-2">
                   {defects.map(defectId => {
-                    const item = checklistQuery.data?.categories?.flatMap((c: any) => c.items).find((i: any) => i.id === defectId);
+                    const item = (checklistQuery.data as any)?.categories?.flatMap((c: any) => c.items).find((i: any) => i.id === defectId);
                     return <Badge key={defectId} className="bg-red-500/20 text-red-400 border-0">{item?.name}</Badge>;
                   })}
                 </div>
@@ -126,7 +126,7 @@ export default function PreTripChecklist() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Notes</CardTitle></CardHeader>
             <CardContent>
-              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add any additional notes..." className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[100px]" />
+              <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Add any additional notes..." className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[100px]" />
             </CardContent>
           </Card>
 

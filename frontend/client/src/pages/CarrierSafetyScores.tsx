@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CarrierSafetyScores() {
-  const scoresQuery = trpc.carriers.getCSAScores.useQuery({});
-  const basicsQuery = trpc.carriers.getCSAScores.useQuery({});
-  const trendQuery = trpc.carriers.getCSAScores.useQuery({});
+  const scoresQuery = (trpc as any).carriers.getCSAScores.useQuery({});
+  const basicsQuery = (trpc as any).carriers.getCSAScores.useQuery({});
+  const trendQuery = (trpc as any).carriers.getCSAScores.useQuery({});
 
   const scores = scoresQuery.data as any;
   const basics = (basicsQuery.data as any) || [];
@@ -128,7 +128,7 @@ export default function CarrierSafetyScores() {
         <CardContent>
           {basicsQuery.isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array(7).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}
+              {Array(7).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

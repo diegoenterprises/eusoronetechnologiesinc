@@ -56,7 +56,7 @@ export default function ShippersPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   // tRPC query for shippers
-  const shippersQuery = trpc.brokers.getShippers.useQuery({ 
+  const shippersQuery = (trpc as any).brokers.getShippers.useQuery({ 
     search: searchQuery || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined 
   });
@@ -102,7 +102,7 @@ export default function ShippersPage() {
     lastActivity: new Date(s.lastActivity || Date.now()),
   }));
 
-  const filteredShippers = shippers.filter((shipper) => {
+  const filteredShippers = shippers.filter((shipper: any) => {
     if (statusFilter !== "all" && shipper.status !== statusFilter) return false;
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -116,7 +116,7 @@ export default function ShippersPage() {
   });
 
   const totalShippers = shippers.length;
-  const activeShippers = shippers.filter((s) => s.status === "active").length;
+  const activeShippers = shippers.filter((s: any) => s.status === "active").length;
   const totalRevenue = shippers.reduce((sum, s) => sum + s.totalRevenue, 0);
   const avgRating =
     shippers.reduce((sum, s) => sum + s.rating, 0) / shippers.length;
@@ -240,14 +240,14 @@ export default function ShippersPage() {
               <Input
                 placeholder="Search by name, contact, or location..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-gray-800 border-gray-700 text-white"
               />
             </div>
 
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={(e: any) => setStatusFilter(e.target.value)}
               className="bg-gray-800 border-gray-700 text-white rounded px-4 py-2"
             >
               <option value="all">All Status</option>
@@ -260,7 +260,7 @@ export default function ShippersPage() {
 
         {/* Shipper List */}
         <div className="grid grid-cols-2 gap-4">
-          {filteredShippers.map((shipper) => (
+          {filteredShippers.map((shipper: any) => (
             <Card
               key={shipper.id}
               className="bg-gray-900 border-gray-700 p-6 hover:border-blue-500 transition-all"

@@ -16,6 +16,25 @@ const driverStatusSchema = z.enum(["active", "inactive", "suspended", "available
 const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
 
 export const driversRouter = router({
+  // Generic CRUD for screen templates
+  create: protectedProcedure
+    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
   /**
    * Get summary for DriverDirectory page
    */

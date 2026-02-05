@@ -23,8 +23,8 @@ export default function ShipperCarrierScorecard() {
   const [periodFilter, setPeriodFilter] = useState("90d");
   const [sortBy, setSortBy] = useState("overall");
 
-  const scorecardsQuery = trpc.shippers.getCarrierPerformance.useQuery({ period: periodFilter as any });
-  const statsQuery = trpc.shippers.getStats.useQuery();
+  const scorecardsQuery = (trpc as any).shippers.getCarrierPerformance.useQuery({ period: periodFilter as any });
+  const statsQuery = (trpc as any).shippers.getStats.useQuery();
 
   const scorecards = scorecardsQuery.data || [];
   const stats = statsQuery.data as any;
@@ -78,7 +78,7 @@ export default function ShipperCarrierScorecard() {
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -131,7 +131,7 @@ export default function ShipperCarrierScorecard() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search carriers..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -155,7 +155,7 @@ export default function ShipperCarrierScorecard() {
       {/* Scorecards */}
       <div className="space-y-4">
         {scorecardsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-xl" />)
         ) : filteredScorecards.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

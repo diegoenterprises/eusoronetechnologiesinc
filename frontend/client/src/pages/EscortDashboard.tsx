@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function EscortDashboard() {
-  const statsQuery = trpc.escorts.getDashboardStats.useQuery();
-  const activeJobsQuery = trpc.escorts.getActiveJobs.useQuery();
-  const upcomingQuery = trpc.escorts.getUpcomingJobs.useQuery({ limit: 5 });
-  const certificationsQuery = trpc.escorts.getCertificationStatus.useQuery();
+  const statsQuery = (trpc as any).escorts.getDashboardStats.useQuery();
+  const activeJobsQuery = (trpc as any).escorts.getActiveJobs.useQuery();
+  const upcomingQuery = (trpc as any).escorts.getUpcomingJobs.useQuery({ limit: 5 });
+  const certificationsQuery = (trpc as any).escorts.getCertificationStatus.useQuery();
 
   const stats = statsQuery.data;
 
@@ -79,11 +79,11 @@ export default function EscortDashboard() {
         </Card>
       </div>
 
-      {(activeJobsQuery.data?.length ?? 0) > 0 && (
+      {((activeJobsQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Car className="w-5 h-5 text-cyan-400" />Active Job</CardTitle></CardHeader>
           <CardContent>
-            {activeJobsQuery.data?.map((job: any) => (
+            {(activeJobsQuery.data as any)?.map((job: any) => (
               <div key={job.id} className="p-4 rounded-lg bg-slate-800/50">
                 <div className="flex items-center justify-between mb-3">
                   <div>
@@ -114,12 +114,12 @@ export default function EscortDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-yellow-400" />Upcoming Jobs</CardTitle></CardHeader>
           <CardContent className="p-0">
             {upcomingQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : upcomingQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (upcomingQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Calendar className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No upcoming jobs</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {upcomingQuery.data?.map((job: any) => (
+                {(upcomingQuery.data as any)?.map((job: any) => (
                   <div key={job.id} className="p-3 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -141,10 +141,10 @@ export default function EscortDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-green-400" />Certifications</CardTitle></CardHeader>
           <CardContent className="p-0">
             {certificationsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {certificationsQuery.data?.states?.map((state: any) => (
+                {(certificationsQuery.data as any)?.states?.map((state: any) => (
                   <div key={state.code} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm", state.status === "active" ? "bg-green-500/20 text-green-400" : state.status === "expiring" ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400")}>{state.code}</div>

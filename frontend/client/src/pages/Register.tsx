@@ -179,7 +179,7 @@ export default function Register() {
 
         {/* Role Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {REGISTRATION_ROLES.map((roleData) => {
+          {REGISTRATION_ROLES.map((roleData: any) => {
             const Icon = roleData.icon;
             return (
               <Card
@@ -213,7 +213,7 @@ export default function Register() {
                   <div>
                     <p className="text-xs font-semibold text-slate-300 mb-2">Requirements:</p>
                     <div className="flex flex-wrap gap-1">
-                      {roleData.requirements.slice(0, 3).map((req, idx) => (
+                      {roleData.requirements.slice(0, 3).map((req: any, idx: number) => (
                         <Badge key={idx} variant="secondary" className="text-xs bg-slate-700/50 text-slate-300">
                           {req}
                         </Badge>
@@ -230,7 +230,7 @@ export default function Register() {
                   <div>
                     <p className="text-xs font-semibold text-slate-300 mb-2">Regulatory Bodies:</p>
                     <div className="flex flex-wrap gap-1">
-                      {roleData.regulations.map((reg, idx) => (
+                      {roleData.regulations.map((reg: any, idx: number) => (
                         <Badge key={idx} variant="outline" className="text-xs text-blue-400 border-blue-500/30">
                           {reg}
                         </Badge>

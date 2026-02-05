@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 export default function ELDLogs() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const logsQuery = trpc.eld.getLogs.useQuery({ date: selectedDate });
-  const summaryQuery = trpc.eld.getSummary.useQuery();
+  const logsQuery = (trpc as any).eld.getLogs.useQuery({ date: selectedDate });
+  const summaryQuery = (trpc as any).eld.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -122,7 +122,7 @@ export default function ELDLogs() {
           <input
             type="date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={(e: any) => setSelectedDate(e.target.value)}
             className="bg-transparent border-none text-white focus:outline-none"
           />
         </div>
@@ -135,8 +135,8 @@ export default function ELDLogs() {
         </CardHeader>
         <CardContent className="p-0">
           {logsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : logsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (logsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <FileText className="w-10 h-10 text-slate-500" />
@@ -146,7 +146,7 @@ export default function ELDLogs() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {logsQuery.data?.map((log: any) => (
+              {(logsQuery.data as any)?.map((log: any) => (
                 <div key={log.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

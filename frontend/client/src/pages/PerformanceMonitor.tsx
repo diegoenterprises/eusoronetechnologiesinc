@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 export default function PerformanceMonitor() {
   const [timeRange, setTimeRange] = useState("1h");
 
-  const metricsQuery = trpc.admin.getPerformanceMetrics.useQuery({ timeRange });
-  const endpointsQuery = trpc.admin.getSlowEndpoints.useQuery({ timeRange, limit: 10 });
+  const metricsQuery = (trpc as any).admin.getPerformanceMetrics.useQuery({ timeRange });
+  const endpointsQuery = (trpc as any).admin.getSlowEndpoints.useQuery({ timeRange, limit: 10 });
 
   const metrics = metricsQuery.data;
 
@@ -128,7 +128,7 @@ export default function PerformanceMonitor() {
         </CardHeader>
         <CardContent>
           {metricsQuery.isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl bg-slate-700/30 text-center">
@@ -162,15 +162,15 @@ export default function PerformanceMonitor() {
         </CardHeader>
         <CardContent className="p-0">
           {endpointsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
-          ) : endpointsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+          ) : (endpointsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <Activity className="w-8 h-8 text-green-400 mx-auto mb-2" />
               <p className="text-slate-400">All endpoints performing well</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {endpointsQuery.data?.map((endpoint: any, idx: number) => (
+              {(endpointsQuery.data as any)?.map((endpoint: any, idx: number) => (
                 <div key={endpoint.path} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", idx < 3 ? "bg-red-500/20 text-red-400" : "bg-slate-700/50 text-slate-400")}>

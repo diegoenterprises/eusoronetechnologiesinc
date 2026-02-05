@@ -13,13 +13,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (data) => {
+  const loginMutation = (trpc as any).auth.login.useMutation({
+    onSuccess: (data: any) => {
       toast.success(`Welcome back, ${data.user.name}!`);
       setLocation('/');
       window.location.reload();
     },
-    onError: (err) => {
+    onError: (err: any) => {
       setError(err.message || 'Invalid credentials');
       toast.error('Login failed. Please check your credentials.');
     },
@@ -76,7 +76,7 @@ export default function Login() {
                     type="email"
                     placeholder="Email address"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e: any) => setEmail(e.target.value)}
                     className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-12"
                     disabled={loginMutation.isPending}
                   />
@@ -87,7 +87,7 @@ export default function Login() {
                     type="password"
                     placeholder="Password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e: any) => setPassword(e.target.value)}
                     className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400 h-12"
                     disabled={loginMutation.isPending}
                   />

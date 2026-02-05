@@ -23,12 +23,12 @@ export default function UserManagement() {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("all");
 
-  const usersQuery = trpc.admin.getUsers.useQuery({ search, role });
-  const statsQuery = trpc.admin.getUserStats.useQuery();
+  const usersQuery = (trpc as any).admin.getUsers.useQuery({ search, role });
+  const statsQuery = (trpc as any).admin.getUserStats.useQuery();
 
-  const toggleStatusMutation = trpc.admin.toggleUserStatus.useMutation({
+  const toggleStatusMutation = (trpc as any).admin.toggleUserStatus.useMutation({
     onSuccess: () => { toast.success("User status updated"); usersQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -103,7 +103,7 @@ export default function UserManagement() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search users..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search users..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={role} onValueChange={setRole}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -122,12 +122,12 @@ export default function UserManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" />Users</CardTitle></CardHeader>
         <CardContent className="p-0">
           {usersQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : usersQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (usersQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Users className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No users found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {usersQuery.data?.map((user: any) => (
+              {(usersQuery.data as any)?.map((user: any) => (
                 <div key={user.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{user.name?.charAt(0)}</div>

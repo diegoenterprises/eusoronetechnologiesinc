@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function DriverScorecard() {
   const [period, setPeriod] = useState("month");
 
-  const scorecardQuery = trpc.drivers.getScorecard.useQuery({ period });
-  const eventsQuery = trpc.drivers.getRecentEvents.useQuery({ limit: 10 });
-  const achievementsQuery = trpc.gamification.getMyAchievements.useQuery();
+  const scorecardQuery = (trpc as any).drivers.getScorecard.useQuery({ period });
+  const eventsQuery = (trpc as any).drivers.getRecentEvents.useQuery({ limit: 10 });
+  const achievementsQuery = (trpc as any).gamification.getMyAchievements.useQuery();
 
   if (scorecardQuery.error) {
     return (
@@ -108,7 +108,7 @@ export default function DriverScorecard() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               {scorecardQuery.isLoading ? (
-                [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-24" />)
+                [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-24" />)
               ) : (
                 <>
                   <div className="text-center p-3 rounded-lg bg-slate-800/50">
@@ -137,7 +137,7 @@ export default function DriverScorecard() {
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {scorecardQuery.isLoading ? (
-          [1, 2, 3, 4].map((i) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>)
+          [1, 2, 3, 4].map((i: any) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-20 w-full" /></CardContent></Card>)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700">
@@ -190,15 +190,15 @@ export default function DriverScorecard() {
           <CardHeader><CardTitle className="text-white flex items-center gap-2"><Activity className="w-5 h-5 text-blue-400" />Recent Events</CardTitle></CardHeader>
           <CardContent>
             {eventsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-            ) : eventsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+            ) : (eventsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
                 <p className="text-slate-400">No recent events</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {eventsQuery.data?.map((event) => (
+                {(eventsQuery.data as any)?.map((event: any) => (
                   <div key={event.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                     <div>
                       <p className="text-white">{event.type}</p>
@@ -220,15 +220,15 @@ export default function DriverScorecard() {
           <CardHeader><CardTitle className="text-white flex items-center gap-2"><Award className="w-5 h-5 text-yellow-400" />Achievements</CardTitle></CardHeader>
           <CardContent>
             {achievementsQuery.isLoading ? (
-              <div className="grid grid-cols-3 gap-3">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-            ) : achievementsQuery.data?.length === 0 ? (
+              <div className="grid grid-cols-3 gap-3">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+            ) : (achievementsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <Award className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                 <p className="text-slate-400">No achievements yet</p>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-3">
-                {achievementsQuery.data?.slice(0, 6).map((achievement) => (
+                {(achievementsQuery.data as any)?.slice(0, 6).map((achievement: any) => (
                   <div key={achievement.id} className={cn("p-3 rounded-lg text-center", achievement.unlocked ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-slate-700/30 opacity-50")}>
                     <Award className={cn("w-6 h-6 mx-auto mb-1", achievement.unlocked ? "text-yellow-400" : "text-slate-500")} />
                     <p className="text-xs text-white">{achievement.name}</p>

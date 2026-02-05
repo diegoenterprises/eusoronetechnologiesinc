@@ -21,17 +21,17 @@ export default function ERGGuide() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedGuide, setSelectedGuide] = useState<string | null>(null);
 
-  const searchQuery = trpc.esang.searchERG.useQuery(
+  const searchQuery = (trpc as any).esang.searchERG.useQuery(
     { query: searchTerm },
     { enabled: searchTerm.length >= 2 }
   );
 
-  const guideQuery = trpc.esang.getERGGuide.useQuery(
+  const guideQuery = (trpc as any).esang.getERGGuide.useQuery(
     { guideNumber: selectedGuide! },
     { enabled: !!selectedGuide }
   );
 
-  const recentQuery = trpc.esang.getRecentERGLookups.useQuery({ limit: 10 });
+  const recentQuery = (trpc as any).esang.getRecentERGLookups.useQuery({ limit: 10 });
 
   const guide = guideQuery.data;
 
@@ -68,7 +68,7 @@ export default function ERGGuide() {
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
             <Input
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: any) => setSearchTerm(e.target.value)}
               placeholder="Search by UN number, name, or guide number..."
               className="pl-12 py-6 text-lg bg-slate-700/30 border-slate-600/50 rounded-xl focus:border-cyan-500/50"
             />
@@ -78,12 +78,12 @@ export default function ERGGuide() {
           {searchTerm.length >= 2 && (
             <div className="mt-4 max-w-2xl mx-auto">
               {searchQuery.isLoading ? (
-                <div className="space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-              ) : searchQuery.data?.length === 0 ? (
+                <div className="space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              ) : (searchQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-4">No results found</p>
               ) : (
                 <div className="space-y-2">
-                  {searchQuery.data?.map((result: any) => (
+                  {(searchQuery.data as any)?.map((result: any) => (
                     <div 
                       key={result.id} 
                       className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer flex items-center justify-between"
@@ -231,14 +231,14 @@ export default function ERGGuide() {
           </CardHeader>
           <CardContent>
             {recentQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-            ) : recentQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+            ) : (recentQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-slate-400">No recent lookups</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {recentQuery.data?.map((item: any) => (
+                {(recentQuery.data as any)?.map((item: any) => (
                   <div 
                     key={item.id} 
                     className="p-3 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer"

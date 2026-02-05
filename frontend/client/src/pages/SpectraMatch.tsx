@@ -45,12 +45,12 @@ export default function SpectraMatch() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   
   // Queries
-  const crudeTypesQuery = trpc.spectraMatch.getCrudeTypes.useQuery();
-  const historyQuery = trpc.spectraMatch.getHistory.useQuery({ limit: 5 });
+  const crudeTypesQuery = (trpc as any).spectraMatch.getCrudeTypes.useQuery();
+  const historyQuery = (trpc as any).spectraMatch.getHistory.useQuery({ limit: 5 });
   
   // Mutations
-  const identifyMutation = trpc.spectraMatch.identify.useMutation();
-  const saveToRunTicketMutation = trpc.spectraMatch.saveToRunTicket.useMutation();
+  const identifyMutation = (trpc as any).spectraMatch.identify.useMutation();
+  const saveToRunTicketMutation = (trpc as any).spectraMatch.saveToRunTicket.useMutation();
 
   const handleIdentify = () => {
     identifyMutation.mutate({
@@ -146,7 +146,7 @@ export default function SpectraMatch() {
                 </div>
                 <Slider
                   value={[apiGravity]}
-                  onValueChange={(v) => setApiGravity(v[0])}
+                  onValueChange={(v: any) => setApiGravity(v[0])}
                   min={10}
                   max={70}
                   step={0.1}
@@ -168,7 +168,7 @@ export default function SpectraMatch() {
                 </div>
                 <Slider
                   value={[bsw]}
-                  onValueChange={(v) => setBsw(v[0])}
+                  onValueChange={(v: any) => setBsw(v[0])}
                   min={0}
                   max={3}
                   step={0.01}
@@ -202,7 +202,7 @@ export default function SpectraMatch() {
                     </div>
                     <Slider
                       value={[boilingPoint || 180]}
-                      onValueChange={(v) => setBoilingPoint(v[0])}
+                      onValueChange={(v: any) => setBoilingPoint(v[0])}
                       min={50}
                       max={500}
                       step={5}
@@ -223,7 +223,7 @@ export default function SpectraMatch() {
                     </div>
                     <Slider
                       value={[sulfur || 0.24]}
-                      onValueChange={(v) => setSulfur(v[0])}
+                      onValueChange={(v: any) => setSulfur(v[0])}
                       min={0}
                       max={5}
                       step={0.01}
@@ -272,7 +272,7 @@ export default function SpectraMatch() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {historyQuery.data?.identifications.map((item) => (
+                  {(historyQuery.data as any)?.identifications.map((item: any) => (
                     <div
                       key={item.id}
                       className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/30"
@@ -365,7 +365,7 @@ export default function SpectraMatch() {
 
                   {/* Characteristics */}
                   <div className="flex flex-wrap gap-2 justify-center">
-                    {identifyMutation.data.primaryMatch.characteristics.map((char, i) => (
+                    {identifyMutation.data.primaryMatch.characteristics.map((char: any, i: number) => (
                       <Badge key={i} variant="outline" className="border-slate-600 text-slate-300">
                         {char}
                       </Badge>
@@ -387,15 +387,15 @@ export default function SpectraMatch() {
                           {key.replace(/([A-Z])/g, ' $1').trim()}
                         </span>
                         <span className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
-                          {param.value}{(param as any).weightUnit || param.unit}
+                          {(param as any).value}{(param as any).weightUnit || (param as any).unit}
                         </span>
                       </div>
-                      <Progress value={param.score} className="h-2 mb-2" />
+                      <Progress value={(param as any).score} className="h-2 mb-2" />
                       <div className="flex items-center justify-between text-xs">
-                        <Badge className={getAccuracyColor(param.accuracy)}>
-                          {param.accuracy}
+                        <Badge className={getAccuracyColor((param as any).accuracy)}>
+                          {(param as any).accuracy}
                         </Badge>
-                        <span className="text-purple-400">Weight: {param.weight}</span>
+                        <span className="text-purple-400">Weight: {(param as any).weight}</span>
                       </div>
                     </div>
                   ))}
@@ -409,7 +409,7 @@ export default function SpectraMatch() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {identifyMutation.data.alternativeMatches.map((match) => (
+                    {identifyMutation.data.alternativeMatches.map((match: any) => (
                       <div
                         key={match.id}
                         className="p-4 rounded-lg bg-slate-800/30 border border-slate-700/30 text-center"
@@ -479,13 +479,13 @@ export default function SpectraMatch() {
             <CardContent>
               {crudeTypesQuery.isLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {[...Array(6)].map((_, i) => (
+                  {[...Array(6)].map((_: any, i: number) => (
                     <Skeleton key={i} className="h-20 w-full" />
                   ))}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {crudeTypesQuery.data?.slice(0, 6).map((crude) => (
+                  {(crudeTypesQuery.data as any)?.slice(0, 6).map((crude: any) => (
                     <div
                       key={crude.id}
                       className="p-3 rounded-lg bg-slate-800/30 border border-slate-700/30"

@@ -20,17 +20,17 @@ import {
 export default function TheHaul() {
   const [activeTab, setActiveTab] = useState('overview');
 
-  const { data: profile, isLoading: profileLoading } = trpc.gamification.getProfile.useQuery({ userId: "current" });
-  const { data: missions, isLoading: missionsLoading } = trpc.gamification.getMissions.useQuery({ type: "all" });
-  const { data: achievements, isLoading: achievementsLoading } = trpc.gamification.getAchievements.useQuery({ category: "all" });
-  const { data: leaderboard, isLoading: leaderboardLoading } = trpc.gamification.getLeaderboard.useQuery({ limit: 10 });
+  const { data: profile, isLoading: profileLoading } = (trpc as any).gamification.getProfile.useQuery({ userId: "current" });
+  const { data: missions, isLoading: missionsLoading } = (trpc as any).gamification.getMissions.useQuery({ type: "all" });
+  const { data: achievements, isLoading: achievementsLoading } = (trpc as any).gamification.getAchievements.useQuery({ category: "all" });
+  const { data: leaderboard, isLoading: leaderboardLoading } = (trpc as any).gamification.getLeaderboard.useQuery({ limit: 10 });
 
   if (profileLoading) {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(4)].map((_: any, i: number) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>

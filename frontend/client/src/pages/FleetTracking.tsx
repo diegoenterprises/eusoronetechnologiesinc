@@ -17,33 +17,33 @@ export default function FleetTracking() {
   const [selectedDriver, setSelectedDriver] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { data: fleetLocations, isLoading: fleetLoading, refetch: refetchFleet } = trpc.telemetry.getFleetLocations.useQuery(
+  const { data: fleetLocations, isLoading: fleetLoading, refetch: refetchFleet } = (trpc as any).telemetry.getFleetLocations.useQuery(
     {},
     { refetchInterval: 10000 }
   );
 
-  const { data: geofences, isLoading: geofencesLoading } = trpc.geofencing.getGeofences.useQuery(
+  const { data: geofences, isLoading: geofencesLoading } = (trpc as any).geofencing.getGeofences.useQuery(
     { activeOnly: true },
     { refetchInterval: 60000 }
   );
 
-  const { data: activeAlerts } = trpc.safetyAlerts.getActiveAlerts.useQuery(
+  const { data: activeAlerts } = (trpc as any).safetyAlerts.getActiveAlerts.useQuery(
     { limit: 10 },
     { refetchInterval: 15000 }
   );
 
-  const { data: activeConvoys } = trpc.convoy.getActiveConvoys.useQuery(
+  const { data: activeConvoys } = (trpc as any).convoy.getActiveConvoys.useQuery(
     { limit: 5 }
   );
 
-  const filteredLocations = fleetLocations?.filter((loc) =>
+  const filteredLocations = fleetLocations?.filter((loc: any) =>
     loc.name.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const movingCount = filteredLocations.filter((l) => l.isMoving).length;
+  const movingCount = filteredLocations.filter((l: any) => l.isMoving).length;
   const stationaryCount = filteredLocations.length - movingCount;
 
-  const mapMarkers = filteredLocations.map((loc) => ({
+  const mapMarkers = filteredLocations.map((loc: any) => ({
     lat: loc.lat,
     lng: loc.lng,
     label: loc.name,
@@ -53,7 +53,7 @@ export default function FleetTracking() {
     heading: loc.heading ?? undefined,
   }));
 
-  const mapGeofences = geofences?.map((gf) => ({
+  const mapGeofences = geofences?.map((gf: any) => ({
     id: gf.id,
     name: gf.name,
     type: gf.type,
@@ -181,7 +181,7 @@ export default function FleetTracking() {
                   height="500px"
                   onMarkerClick={(marker) => {
                     const driver = filteredLocations.find(
-                      (l) => l.lat === marker.lat && l.lng === marker.lng
+                      (l: any) => l.lat === marker.lat && l.lng === marker.lng
                     );
                     if (driver) setSelectedDriver(driver.userId);
                   }}
@@ -202,14 +202,14 @@ export default function FleetTracking() {
               <Input
                 placeholder="Search drivers..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="mt-2"
               />
             </CardHeader>
             <CardContent className="max-h-[400px] overflow-y-auto">
               {fleetLoading ? (
                 <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map((i) => (
+                  {[1, 2, 3, 4, 5].map((i: any) => (
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
@@ -217,7 +217,7 @@ export default function FleetTracking() {
                 <p className="text-center text-muted-foreground py-4">No drivers found</p>
               ) : (
                 <div className="space-y-2">
-                  {filteredLocations.map((driver) => (
+                  {filteredLocations.map((driver: any) => (
                     <div
                       key={driver.userId}
                       className={`p-3 rounded-lg border cursor-pointer transition-colors ${
@@ -264,7 +264,7 @@ export default function FleetTracking() {
                 <p className="text-center text-muted-foreground py-4">No geofences</p>
               ) : (
                 <div className="space-y-2">
-                  {geofences?.slice(0, 5).map((gf) => (
+                  {geofences?.slice(0, 5).map((gf: any) => (
                     <div key={gf.id} className="flex items-center justify-between p-2 rounded border">
                       <div>
                         <p className="font-medium text-sm">{gf.name}</p>
@@ -291,7 +291,7 @@ export default function FleetTracking() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activeAlerts.map((alert) => (
+              {activeAlerts.map((alert: any) => (
                 <div key={alert.id} className="p-4 rounded-lg border bg-muted/50">
                   <div className="flex items-center justify-between mb-2">
                     <Badge variant={alert.severity === "emergency" || alert.severity === "critical" ? "destructive" : "secondary"}>

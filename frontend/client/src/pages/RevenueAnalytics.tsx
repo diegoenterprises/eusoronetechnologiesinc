@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 export default function RevenueAnalytics() {
   const [dateRange, setDateRange] = useState("month");
 
-  const revenueQuery = trpc.analytics.getRevenue.useQuery({ dateRange });
-  const breakdownQuery = trpc.analytics.getRevenueBreakdown.useQuery({ dateRange });
-  const trendsQuery = trpc.analytics.getRevenueTrends.useQuery({ dateRange });
-  const goalsQuery = trpc.analytics.getRevenueGoals.useQuery();
+  const revenueQuery = (trpc as any).analytics.getRevenue.useQuery({ dateRange });
+  const breakdownQuery = (trpc as any).analytics.getRevenueBreakdown.useQuery({ dateRange });
+  const trendsQuery = (trpc as any).analytics.getRevenueTrends.useQuery({ dateRange });
+  const goalsQuery = (trpc as any).analytics.getRevenueGoals.useQuery();
 
   const revenue = revenueQuery.data;
   const breakdown = breakdownQuery.data;
@@ -171,7 +171,7 @@ export default function RevenueAnalytics() {
           </CardHeader>
           <CardContent>
             {breakdownQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-4">
                 {breakdown?.byCategory?.map((cat: any) => (
@@ -196,7 +196,7 @@ export default function RevenueAnalytics() {
           </CardHeader>
           <CardContent>
             {breakdownQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-3">
                 {breakdown?.topSources?.map((source: any, idx: number) => (
@@ -226,10 +226,10 @@ export default function RevenueAnalytics() {
         </CardHeader>
         <CardContent>
           {trendsQuery.isLoading ? (
-            <div className="grid grid-cols-6 md:grid-cols-12 gap-2">{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+            <div className="grid grid-cols-6 md:grid-cols-12 gap-2">{[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
-              {trendsQuery.data?.map((month: any) => (
+              {(trendsQuery.data as any)?.map((month: any) => (
                 <div key={month.month} className="text-center">
                   <div className="h-32 bg-slate-700/30 rounded-lg relative overflow-hidden">
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-500 to-cyan-500" style={{ height: `${month.percentage}%` }} />

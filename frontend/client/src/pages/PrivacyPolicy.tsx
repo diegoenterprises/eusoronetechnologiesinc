@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { Shield, Calendar, ChevronRight, Mail } from "lucide-react";
 
 export default function PrivacyPolicy() {
-  const privacyQuery = trpc.legal.getPrivacyPolicy.useQuery();
+  const privacyQuery = (trpc as any).legal.getPrivacyPolicy.useQuery();
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -29,7 +29,7 @@ export default function PrivacyPolicy() {
       ) : (
         <div className="flex items-center gap-2 text-slate-400">
           <Calendar className="w-4 h-4" />
-          <span>Last updated: {privacyQuery.data?.lastUpdated}</span>
+          <span>Last updated: {(privacyQuery.data as any)?.lastUpdated}</span>
         </div>
       )}
 
@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
         <CardContent className="p-6">
           {privacyQuery.isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-6 w-48" />
                   <Skeleton className="h-4 w-full" />
@@ -49,7 +49,7 @@ export default function PrivacyPolicy() {
             </div>
           ) : (
             <div className="space-y-8">
-              {privacyQuery.data?.sections?.map((section: any, idx: number) => (
+              {(privacyQuery.data as any)?.sections?.map((section: any, idx: number) => (
                 <div key={idx}>
                   <h2 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
                     <ChevronRight className="w-5 h-5 text-cyan-400" />
@@ -76,7 +76,7 @@ export default function PrivacyPolicy() {
               <p className="text-white font-medium">Privacy Concerns?</p>
               <p className="text-sm text-slate-400 flex items-center gap-1">
                 <Mail className="w-3 h-3" />
-                Contact our Data Protection Officer at {privacyQuery.data?.dpoEmail || "privacy@eusotrip.com"}
+                Contact our Data Protection Officer at {(privacyQuery.data as any)?.dpoEmail || "privacy@eusotrip.com"}
               </p>
             </div>
           </div>

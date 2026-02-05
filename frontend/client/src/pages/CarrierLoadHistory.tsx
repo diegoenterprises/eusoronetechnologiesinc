@@ -22,8 +22,8 @@ export default function CarrierLoadHistory() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.carriers.getLoadHistory.useQuery({});
-  const statsQuery = trpc.carriers.getDirectoryStats.useQuery();
+  const loadsQuery = (trpc as any).carriers.getLoadHistory.useQuery({});
+  const statsQuery = (trpc as any).carriers.getDirectoryStats.useQuery();
 
   const loads = loadsQuery.data || [];
   const stats = statsQuery.data as any;
@@ -66,7 +66,7 @@ export default function CarrierLoadHistory() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -132,7 +132,7 @@ export default function CarrierLoadHistory() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search loads..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -156,7 +156,7 @@ export default function CarrierLoadHistory() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : filteredLoads.length === 0 ? (
             <div className="text-center py-16">
               <Package className="w-12 h-12 text-slate-500 mx-auto mb-4" />

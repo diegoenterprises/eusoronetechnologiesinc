@@ -22,19 +22,19 @@ export default function ShipperBidEvaluation() {
   const [counterBidId, setCounterBidId] = useState<string | null>(null);
   const [counterAmount, setCounterAmount] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const bidsQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId || "" });
-  const aiRateQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId || "" });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const bidsQuery = (trpc as any).bids.getByLoad.useQuery({ loadId: loadId || "" });
+  const aiRateQuery = (trpc as any).bids.getByLoad.useQuery({ loadId: loadId || "" });
 
-  const awardMutation = trpc.bids.accept.useMutation({
+  const awardMutation = (trpc as any).bids.accept.useMutation({
     onSuccess: () => { toast.success("Bid awarded"); bidsQuery.refetch(); },
     onError: (e: any) => toast.error("Failed", { description: e.message }),
   });
-  const counterMutation = trpc.bids.reject.useMutation({
+  const counterMutation = (trpc as any).bids.reject.useMutation({
     onSuccess: () => { toast.success("Counter sent"); setCounterBidId(null); bidsQuery.refetch(); },
     onError: (e: any) => toast.error("Failed", { description: e.message }),
   });
-  const declineMutation = trpc.bids.reject.useMutation({
+  const declineMutation = (trpc as any).bids.reject.useMutation({
     onSuccess: () => { toast.success("Declined"); bidsQuery.refetch(); },
   });
 
@@ -111,7 +111,7 @@ export default function ShipperBidEvaluation() {
         <DialogContent className="bg-slate-800 border-slate-700">
           <DialogHeader><DialogTitle className="text-white">Counter Offer</DialogTitle></DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2"><label className="text-slate-300 text-sm">Your Counter Amount</label><Input type="number" value={counterAmount} onChange={(e) => setCounterAmount(e.target.value)} className="bg-slate-700/50 border-slate-600/50" /></div>
+            <div className="space-y-2"><label className="text-slate-300 text-sm">Your Counter Amount</label><Input type="number" value={counterAmount} onChange={(e: any) => setCounterAmount(e.target.value)} className="bg-slate-700/50 border-slate-600/50" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCounterBidId(null)} className="bg-slate-700/50 border-slate-600/50">Cancel</Button>

@@ -17,9 +17,9 @@ import { AlertTriangle, Zap, DollarSign, Clock, CheckCircle, RefreshCw } from "l
 export default function WalletInstantPay() {
   const [amount, setAmount] = useState("");
 
-  const { data: eligibility, isLoading, error, refetch } = trpc.wallet.getInstantPayoutEligibility.useQuery();
-  const { data: balance } = trpc.wallet.getBalance.useQuery();
-  const instantPayMutation = trpc.wallet.requestInstantPay.useMutation({
+  const { data: eligibility, isLoading, error, refetch } = (trpc as any).wallet.getInstantPayoutEligibility.useQuery();
+  const { data: balance } = (trpc as any).wallet.getBalance.useQuery();
+  const instantPayMutation = (trpc as any).wallet.requestInstantPay.useMutation({
     onSuccess: () => {
       refetch();
       setAmount("");
@@ -123,7 +123,7 @@ export default function WalletInstantPay() {
                   placeholder="0.00"
                   className="pl-9 text-2xl h-14"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e: any) => setAmount(e.target.value)}
                   max={eligibility.maxAmount}
                   min={0}
                   step={0.01}

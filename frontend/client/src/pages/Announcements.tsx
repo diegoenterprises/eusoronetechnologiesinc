@@ -20,16 +20,16 @@ import { toast } from "sonner";
 export default function Announcements() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const announcementsQuery = trpc.announcements.list.useQuery({ limit: 20 });
-  const unreadQuery = trpc.announcements.getUnreadCount.useQuery();
+  const announcementsQuery = (trpc as any).announcements.list.useQuery({ limit: 20 });
+  const unreadQuery = (trpc as any).announcements.getUnreadCount.useQuery();
 
-  const markReadMutation = trpc.announcements.markRead.useMutation({
+  const markReadMutation = (trpc as any).announcements.markRead.useMutation({
     onSuccess: () => { unreadQuery.refetch(); },
   });
 
-  const markAllReadMutation = trpc.announcements.markAllRead.useMutation({
+  const markAllReadMutation = (trpc as any).announcements.markAllRead.useMutation({
     onSuccess: () => { toast.success("All marked as read"); unreadQuery.refetch(); announcementsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const getTypeBadge = (type: string) => {
@@ -62,8 +62,8 @@ export default function Announcements() {
           <p className="text-slate-400 text-sm mt-1">Important updates and notifications</p>
         </div>
         <div className="flex items-center gap-3">
-          {(unreadQuery.data?.count ?? 0) > 0 && (
-            <Badge className="bg-cyan-500/20 text-cyan-400 border-0">{unreadQuery.data?.count} unread</Badge>
+          {((unreadQuery.data as any)?.count ?? 0) > 0 && (
+            <Badge className="bg-cyan-500/20 text-cyan-400 border-0">{(unreadQuery.data as any)?.count} unread</Badge>
           )}
           <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => markAllReadMutation.mutate({})}>
             <CheckCircle className="w-4 h-4 mr-2" />Mark All Read
@@ -75,8 +75,8 @@ export default function Announcements() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {announcementsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : announcementsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (announcementsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Megaphone className="w-10 h-10 text-slate-500" />
@@ -85,7 +85,7 @@ export default function Announcements() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {announcementsQuery.data?.map((announcement: any) => (
+              {(announcementsQuery.data as any)?.map((announcement: any) => (
                 <div key={announcement.id} className={cn("p-4 transition-colors", !announcement.read && "bg-cyan-500/5 border-l-2 border-cyan-500")} onClick={() => { setExpandedId(expandedId === announcement.id ? null : announcement.id); if (!announcement.read) markReadMutation.mutate({ id: announcement.id }); }}>
                   <div className="flex items-start gap-4 cursor-pointer">
                     <div className={cn("p-3 rounded-xl", announcement.type === "important" ? "bg-red-500/20" : announcement.type === "maintenance" ? "bg-yellow-500/20" : "bg-cyan-500/20")}>

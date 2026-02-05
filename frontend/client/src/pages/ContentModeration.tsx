@@ -21,17 +21,17 @@ import { toast } from "sonner";
 export default function ContentModeration() {
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const reportsQuery = trpc.admin.getContentReports.useQuery({ type: typeFilter === "all" ? undefined : typeFilter, limit: 50 });
-  const summaryQuery = trpc.admin.getModerationSummary.useQuery();
+  const reportsQuery = (trpc as any).admin.getContentReports.useQuery({ type: typeFilter === "all" ? undefined : typeFilter, limit: 50 });
+  const summaryQuery = (trpc as any).admin.getModerationSummary.useQuery();
 
-  const approveMutation = trpc.admin.approveContent.useMutation({
+  const approveMutation = (trpc as any).admin.approveContent.useMutation({
     onSuccess: () => { toast.success("Content approved"); reportsQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const removeMutation = trpc.admin.removeContent.useMutation({
+  const removeMutation = (trpc as any).admin.removeContent.useMutation({
     onSuccess: () => { toast.success("Content removed"); reportsQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -150,8 +150,8 @@ export default function ContentModeration() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {reportsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : reportsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (reportsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Shield className="w-10 h-10 text-green-400" />
@@ -161,7 +161,7 @@ export default function ContentModeration() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {reportsQuery.data?.map((report: any) => (
+              {(reportsQuery.data as any)?.map((report: any) => (
                 <div key={report.id} className={cn("p-4", report.severity === "high" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">

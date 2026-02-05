@@ -21,8 +21,8 @@ export default function LoadTracking() {
   const [loadNumber, setLoadNumber] = useState("");
   const [trackedLoad, setTrackedLoad] = useState<any>(null);
 
-  const trackMutation = trpc.loads.trackLoad.useMutation({
-    onSuccess: (data) => setTrackedLoad(data),
+  const trackMutation = (trpc as any).loads.trackLoad.useMutation({
+    onSuccess: (data: any) => setTrackedLoad(data),
     onError: () => setTrackedLoad(null),
   });
 
@@ -56,7 +56,7 @@ export default function LoadTracking() {
           <div className="flex items-center gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input value={loadNumber} onChange={(e) => setLoadNumber(e.target.value)} placeholder="Enter load number..." className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e) => e.key === "Enter" && handleTrack()} />
+              <Input value={loadNumber} onChange={(e: any) => setLoadNumber(e.target.value)} placeholder="Enter load number..." className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && handleTrack()} />
             </div>
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleTrack} disabled={trackMutation.isPending}>
               <Navigation className="w-4 h-4 mr-2" />Track

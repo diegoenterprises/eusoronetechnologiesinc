@@ -23,10 +23,10 @@ export default function AdminUserVerification() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  const usersQuery = trpc.admin.getPendingVerifications.useQuery({ filter: statusFilter !== "all" ? statusFilter : undefined });
-  const statsQuery = trpc.admin.getVerificationStats.useQuery();
+  const usersQuery = (trpc as any).admin.getPendingVerifications.useQuery({ filter: statusFilter !== "all" ? statusFilter : undefined });
+  const statsQuery = (trpc as any).admin.getVerificationStats.useQuery();
 
-  const approveMutation = trpc.admin.approveUser.useMutation({
+  const approveMutation = (trpc as any).admin.approveUser.useMutation({
     onSuccess: () => {
       toast.success("User approved successfully");
       usersQuery.refetch();
@@ -34,7 +34,7 @@ export default function AdminUserVerification() {
     },
   });
 
-  const rejectMutation = trpc.admin.rejectUser.useMutation({
+  const rejectMutation = (trpc as any).admin.rejectUser.useMutation({
     onSuccess: () => {
       toast.success("User rejected");
       usersQuery.refetch();
@@ -85,7 +85,7 @@ export default function AdminUserVerification() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-yellow-500/10 border-yellow-500/30 rounded-xl">
@@ -158,7 +158,7 @@ export default function AdminUserVerification() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search users..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -196,7 +196,7 @@ export default function AdminUserVerification() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {usersQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
           ) : filteredUsers.length === 0 ? (
             <div className="text-center py-16">
               <UserCheck className="w-12 h-12 text-slate-500 mx-auto mb-4" />

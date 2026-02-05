@@ -23,11 +23,11 @@ export default function TerminalYardManagement() {
   const [zoneFilter, setZoneFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const yardQuery = trpc.terminals.getAppointments.useQuery({});
-  const statsQuery = trpc.terminals.getStats.useQuery();
-  const zonesQuery = trpc.terminals.getBays.useQuery();
+  const yardQuery = (trpc as any).terminals.getAppointments.useQuery({});
+  const statsQuery = (trpc as any).terminals.getStats.useQuery();
+  const zonesQuery = (trpc as any).terminals.getBays.useQuery();
 
-  const moveTrailerMutation = trpc.terminals.createAppointment.useMutation({
+  const moveTrailerMutation = (trpc as any).terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Trailer moved");
       yardQuery.refetch();
@@ -66,7 +66,7 @@ export default function TerminalYardManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         {statsQuery.isLoading ? (
-          Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -138,7 +138,7 @@ export default function TerminalYardManagement() {
         <CardContent>
           {zonesQuery.isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -183,7 +183,7 @@ export default function TerminalYardManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search trailers or spots..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -218,7 +218,7 @@ export default function TerminalYardManagement() {
       {/* Trailers Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {yardQuery.isLoading ? (
-          Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+          Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-xl" />)
         ) : filteredTrailers.length === 0 ? (
           <Card className="col-span-full bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">
@@ -309,7 +309,7 @@ export default function TerminalYardManagement() {
                 )}
 
                 <div className="flex items-center gap-2">
-                  <Select onValueChange={(spot) => moveTrailerMutation.mutate({ terminalId: trailer.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "", notes: spot } as any)}>
+                  <Select onValueChange={(spot: any) => moveTrailerMutation.mutate({ terminalId: trailer.id, carrierId: "", driverId: "", truckNumber: "", productId: "", quantity: 0, scheduledDate: "", scheduledTime: "", notes: spot } as any)}>
                     <SelectTrigger className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg text-sm">
                       <SelectValue placeholder="Move to spot..." />
                     </SelectTrigger>

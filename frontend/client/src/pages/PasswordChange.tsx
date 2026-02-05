@@ -27,9 +27,9 @@ export default function PasswordChange() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const securityQuery = trpc.users.getPasswordSecurity.useQuery();
+  const securityQuery = (trpc as any).users.getPasswordSecurity.useQuery();
 
-  const changeMutation = trpc.users.changePassword.useMutation({
+  const changeMutation = (trpc as any).users.changePassword.useMutation({
     onSuccess: () => {
       toast.success("Password changed successfully");
       setCurrentPassword("");
@@ -37,7 +37,7 @@ export default function PasswordChange() {
       setConfirmPassword("");
       securityQuery.refetch();
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const security = securityQuery.data;
@@ -130,7 +130,7 @@ export default function PasswordChange() {
             <div className="space-y-2">
               <label className="text-sm text-slate-400">Current Password</label>
               <div className="relative">
-                <Input type={showCurrent ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="pr-10 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                <Input type={showCurrent ? "text" : "password"} value={currentPassword} onChange={(e: any) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="pr-10 bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 <Button type="button" size="sm" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-slate-400 hover:text-white" onClick={() => setShowCurrent(!showCurrent)}>
                   {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -140,7 +140,7 @@ export default function PasswordChange() {
             <div className="space-y-2">
               <label className="text-sm text-slate-400">New Password</label>
               <div className="relative">
-                <Input type={showNew ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="pr-10 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+                <Input type={showNew ? "text" : "password"} value={newPassword} onChange={(e: any) => setNewPassword(e.target.value)} placeholder="Enter new password" className="pr-10 bg-slate-800/50 border-slate-700/50 rounded-lg" />
                 <Button type="button" size="sm" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-slate-400 hover:text-white" onClick={() => setShowNew(!showNew)}>
                   {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -159,7 +159,7 @@ export default function PasswordChange() {
             <div className="space-y-2">
               <label className="text-sm text-slate-400">Confirm New Password</label>
               <div className="relative">
-                <Input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className={cn("pr-10 bg-slate-800/50 border-slate-700/50 rounded-lg", confirmPassword && (passwordsMatch ? "border-green-500/50" : "border-red-500/50"))} />
+                <Input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e: any) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className={cn("pr-10 bg-slate-800/50 border-slate-700/50 rounded-lg", confirmPassword && (passwordsMatch ? "border-green-500/50" : "border-red-500/50"))} />
                 <Button type="button" size="sm" variant="ghost" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-slate-400 hover:text-white" onClick={() => setShowConfirm(!showConfirm)}>
                   {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -187,7 +187,7 @@ export default function PasswordChange() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {requirements.map((req, idx) => (
+            {requirements.map((req: any, idx: number) => (
               <div key={idx} className={cn("flex items-center gap-3 p-3 rounded-lg", req.met ? "bg-green-500/10" : "bg-slate-700/30")}>
                 {req.met ? <CheckCircle className="w-5 h-5 text-green-400" /> : <XCircle className="w-5 h-5 text-slate-500" />}
                 <span className={cn("text-sm", req.met ? "text-green-400" : "text-slate-400")}>{req.label}</span>

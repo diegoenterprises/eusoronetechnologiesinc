@@ -21,9 +21,9 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("overview");
 
-  const summaryQuery = trpc.admin.getDashboardSummary.useQuery();
-  const pendingVerificationsQuery = trpc.admin.getPendingVerifications.useQuery({ limit: 10 });
-  const recentActivityQuery = trpc.admin.getRecentActivity.useQuery({ limit: 10 });
+  const summaryQuery = (trpc as any).admin.getDashboardSummary.useQuery();
+  const pendingVerificationsQuery = (trpc as any).admin.getPendingVerifications.useQuery({ limit: 10 });
+  const recentActivityQuery = (trpc as any).admin.getRecentActivity.useQuery({ limit: 10 });
 
   const summary = summaryQuery.data;
 
@@ -204,8 +204,8 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               {pendingVerificationsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-              ) : pendingVerificationsQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+              ) : (pendingVerificationsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <CheckCircle className="w-8 h-8 text-green-400" />
@@ -215,7 +215,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {pendingVerificationsQuery.data?.map((item) => (
+                  {(pendingVerificationsQuery.data as any)?.map((item: any) => (
                     <div key={item.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30 border border-slate-600/30">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-full bg-yellow-500/20">
@@ -244,8 +244,8 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               {recentActivityQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
-              ) : recentActivityQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              ) : (recentActivityQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Activity className="w-8 h-8 text-slate-500" />
@@ -254,7 +254,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {recentActivityQuery.data?.map((activity, idx) => (
+                  {(recentActivityQuery.data as any)?.map((activity: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-full bg-cyan-500/20">

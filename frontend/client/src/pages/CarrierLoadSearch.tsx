@@ -32,7 +32,7 @@ export default function CarrierLoadSearch() {
   const [hazmatOnly, setHazmatOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const loadsQuery = trpc.loads.getTrackedLoads.useQuery({
+  const loadsQuery = (trpc as any).loads.getTrackedLoads.useQuery({
   });
 
   const loads = loadsQuery.data || [];
@@ -54,7 +54,7 @@ export default function CarrierLoadSearch() {
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-400" />
               <Input
                 value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
+                onChange={(e: any) => setOrigin(e.target.value)}
                 placeholder="Origin city or state"
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -64,7 +64,7 @@ export default function CarrierLoadSearch() {
               <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-400" />
               <Input
                 value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                onChange={(e: any) => setDestination(e.target.value)}
                 placeholder="Destination city or state"
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -120,7 +120,7 @@ export default function CarrierLoadSearch() {
                 <Input
                   type="number"
                   value={minRate}
-                  onChange={(e) => setMinRate(e.target.value)}
+                  onChange={(e: any) => setMinRate(e.target.value)}
                   placeholder="0.00"
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg"
                 />
@@ -130,7 +130,7 @@ export default function CarrierLoadSearch() {
                 <Checkbox
                   id="hazmat"
                   checked={hazmatOnly}
-                  onCheckedChange={(c) => setHazmatOnly(c === true)}
+                  onCheckedChange={(c: any) => setHazmatOnly(c === true)}
                 />
                 <label htmlFor="hazmat" className="text-slate-300 cursor-pointer">
                   Hazmat loads only
@@ -162,7 +162,7 @@ export default function CarrierLoadSearch() {
       {/* Load Cards */}
       {loadsQuery.isLoading ? (
         <div className="space-y-4">
-          {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
+          {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-40 rounded-xl" />)}
         </div>
       ) : loads.length === 0 ? (
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -227,7 +227,7 @@ export default function CarrierLoadSearch() {
 
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((s) => (
+                      {[1, 2, 3, 4, 5].map((s: any) => (
                         <Star
                           key={s}
                           className={cn("w-3 h-3", s <= (load.shipper?.rating || 4) ? "text-yellow-400 fill-yellow-400" : "text-slate-600")}

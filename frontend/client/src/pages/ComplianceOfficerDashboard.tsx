@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ComplianceOfficerDashboard() {
-  const statsQuery = trpc.compliance.getDashboardStats.useQuery();
-  const scoresQuery = trpc.compliance.getComplianceScores.useQuery();
-  const expiringQuery = trpc.compliance.getExpiringItems.useQuery({ limit: 5 });
-  const violationsQuery = trpc.compliance.getRecentViolations.useQuery({ limit: 5 });
+  const statsQuery = (trpc as any).compliance.getDashboardStats.useQuery();
+  const scoresQuery = (trpc as any).compliance.getComplianceScores.useQuery();
+  const expiringQuery = (trpc as any).compliance.getExpiringItems.useQuery({ limit: 5 });
+  const violationsQuery = (trpc as any).compliance.getRecentViolations.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
   const scores = scoresQuery.data;
@@ -100,7 +100,7 @@ export default function ComplianceOfficerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Score Breakdown</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {scoresQuery.isLoading ? (
-              [1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
+              [1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)
             ) : (
               scores?.categories?.map((cat: any) => (
                 <div key={cat.name} className="p-4 rounded-lg bg-slate-700/30">
@@ -126,10 +126,10 @@ export default function ComplianceOfficerDashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-sm flex items-center gap-2"><Clock className="w-4 h-4 text-yellow-400" />Expiring Soon</CardTitle></CardHeader>
             <CardContent className="p-0">
               {expiringQuery.isLoading ? (
-                <div className="p-3 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+                <div className="p-3 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
               ) : (
                 <div className="divide-y divide-yellow-500/20">
-                  {expiringQuery.data?.map((item: any) => (
+                  {(expiringQuery.data as any)?.map((item: any) => (
                     <div key={item.id} className="p-2 flex items-center justify-between">
                       <div>
                         <p className="text-white text-sm">{item.name}</p>
@@ -147,12 +147,12 @@ export default function ComplianceOfficerDashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-sm flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-red-400" />Violations</CardTitle></CardHeader>
             <CardContent className="p-0">
               {violationsQuery.isLoading ? (
-                <div className="p-3 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
-              ) : violationsQuery.data?.length === 0 ? (
+                <div className="p-3 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+              ) : (violationsQuery.data as any)?.length === 0 ? (
                 <div className="p-3 text-center text-green-400 text-sm flex items-center justify-center gap-1"><CheckCircle className="w-4 h-4" />No violations</div>
               ) : (
                 <div className="divide-y divide-red-500/20">
-                  {violationsQuery.data?.map((v: any) => (
+                  {(violationsQuery.data as any)?.map((v: any) => (
                     <div key={v.id} className="p-2 flex items-center justify-between">
                       <div>
                         <p className="text-white text-sm">{v.type}</p>

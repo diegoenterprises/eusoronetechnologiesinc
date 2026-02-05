@@ -23,12 +23,12 @@ export default function CompanyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
 
-  const companyQuery = trpc.companies.getProfile.useQuery();
-  const statsQuery = trpc.companies.getStats.useQuery();
+  const companyQuery = (trpc as any).companies.getProfile.useQuery();
+  const statsQuery = (trpc as any).companies.getStats.useQuery();
 
-  const updateMutation = trpc.companies.updateProfile.useMutation({
+  const updateMutation = (trpc as any).companies.updateProfile.useMutation({
     onSuccess: () => { toast.success("Company profile updated"); companyQuery.refetch(); setIsEditing(false); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
   const company = companyQuery.data;
@@ -161,17 +161,17 @@ export default function CompanyProfile() {
         </CardHeader>
         <CardContent>
           {companyQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+            <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
           ) : isEditing ? (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label className="text-sm text-slate-400 mb-1 block">Company Name</label><Input value={formData.name || ""} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Phone</label><Input value={formData.phone || ""} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Email</label><Input value={formData.email || ""} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Website</label><Input value={formData.website || ""} onChange={(e) => setFormData({ ...formData, website: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Company Name</label><Input value={formData.name || ""} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Phone</label><Input value={formData.phone || ""} onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Email</label><Input value={formData.email || ""} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Website</label><Input value={formData.website || ""} onChange={(e: any) => setFormData({ ...formData, website: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
               </div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Address</label><Input value={formData.address || ""} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
-              <div><label className="text-sm text-slate-400 mb-1 block">Description</label><Textarea value={formData.description || ""} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Address</label><Input value={formData.address || ""} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+              <div><label className="text-sm text-slate-400 mb-1 block">Description</label><Textarea value={formData.description || ""} onChange={(e: any) => setFormData({ ...formData, description: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" /></div>
               <div className="flex gap-3">
                 <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => updateMutation.mutate(formData)}>Save Changes</Button>
                 <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setIsEditing(false)}>Cancel</Button>

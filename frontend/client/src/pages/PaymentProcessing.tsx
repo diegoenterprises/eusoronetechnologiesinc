@@ -23,12 +23,12 @@ export default function PaymentProcessing() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("all");
 
-  const paymentsQuery = trpc.billing.getPayments.useQuery({ search, type });
-  const statsQuery = trpc.billing.getPaymentStats.useQuery();
+  const paymentsQuery = (trpc as any).billing.getPayments.useQuery({ search, type });
+  const statsQuery = (trpc as any).billing.getPaymentStats.useQuery();
 
-  const processPaymentMutation = trpc.billing.processPayment.useMutation({
+  const processPaymentMutation = (trpc as any).billing.processPayment.useMutation({
     onSuccess: () => { toast.success("Payment processed"); paymentsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -89,7 +89,7 @@ export default function PaymentProcessing() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search payments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search payments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={type} onValueChange={setType}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -105,12 +105,12 @@ export default function PaymentProcessing() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CreditCard className="w-5 h-5 text-cyan-400" />Transactions</CardTitle></CardHeader>
         <CardContent className="p-0">
           {paymentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : paymentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (paymentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><CreditCard className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No transactions found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {paymentsQuery.data?.map((payment: any) => (
+              {(paymentsQuery.data as any)?.map((payment: any) => (
                 <div key={payment.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", payment.type === "incoming" ? "bg-green-500/20" : "bg-red-500/20")}>

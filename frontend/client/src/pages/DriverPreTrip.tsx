@@ -32,32 +32,32 @@ export default function DriverPreTrip() {
   const [items, setItems] = useState<InspectionItem[]>([]);
   const [notes, setNotes] = useState("");
 
-  const { data: checklist, isLoading, error, refetch } = trpc.inspections.getTemplate.useQuery({ type: "pre_trip" });
-  const { data: vehicle } = trpc.vehicles.list.useQuery({});
-  const submitMutation = trpc.inspections.submit.useMutation({
+  const { data: checklist, isLoading, error, refetch } = (trpc as any).inspections.getTemplate.useQuery({ type: "pre_trip" });
+  const { data: vehicle } = (trpc as any).vehicles.list.useQuery({});
+  const submitMutation = (trpc as any).inspections.submit.useMutation({
     onSuccess: () => {
       refetch();
     },
   });
 
   const handleItemCheck = (itemId: string, checked: boolean) => {
-    setItems((prev) => 
-      prev.map((item) => 
+    setItems((prev: any) => 
+      prev.map((item: any) => 
         item.id === itemId ? { ...item, checked } : item
       )
     );
   };
 
   const handleDefectToggle = (itemId: string, defect: boolean) => {
-    setItems((prev) => 
-      prev.map((item) => 
+    setItems((prev: any) => 
+      prev.map((item: any) => 
         item.id === itemId ? { ...item, defect } : item
       )
     );
   };
 
   const handleSubmit = () => {
-    const defects = items.filter((i) => i.defect).map((i) => ({
+    const defects = items.filter((i: any) => i.defect).map((i: any) => ({
       itemId: i.id,
       description: i.notes,
     }));
@@ -66,7 +66,7 @@ export default function DriverPreTrip() {
       vehicleId: (vehicle as any)?.[0]?.id || "",
       type: "pre_trip" as const,
       odometer: 0,
-      items: items.map((i) => ({ id: i.id, category: "general", name: String((i as any).name || i.id), status: (i.checked && !i.defect ? "pass" : "fail") as "pass" | "fail" | "na" })),
+      items: items.map((i: any) => ({ id: i.id, category: "general", name: String((i as any).name || i.id), status: (i.checked && !i.defect ? "pass" : "fail") as "pass" | "fail" | "na" })),
       notes,
     } as any);
   };
@@ -77,7 +77,7 @@ export default function DriverPreTrip() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24 w-full" />
         <div className="grid gap-4">
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3].map((i: any) => (
             <Skeleton key={i} className="h-48 w-full" />
           ))}
         </div>
@@ -106,10 +106,10 @@ export default function DriverPreTrip() {
 
   const checklistItems = checklist || [];
   const categories = Array.from(new Set((checklistItems as any).categories?.map((cat: any) => cat.name) || []));
-  const completedCount = items.filter((i) => i.checked).length;
+  const completedCount = items.filter((i: any) => i.checked).length;
   const totalCount = (checklistItems as any)?.categories?.length || 0;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-  const hasDefects = items.some((i) => i.defect);
+  const hasDefects = items.some((i: any) => i.defect);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -153,7 +153,7 @@ export default function DriverPreTrip() {
             {((checklistItems as any)?.categories || [])
               .filter((item: any) => item.name === category)
               .map((item: any) => {
-                const currentItem = items.find((i) => i.id === item.id) || {
+                const currentItem = items.find((i: any) => i.id === item.id) || {
                   ...item,
                   checked: false,
                   defect: false,
@@ -204,7 +204,7 @@ export default function DriverPreTrip() {
           <Textarea
             placeholder="Add any additional notes or observations..."
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e: any) => setNotes(e.target.value)}
             rows={4}
           />
         </CardContent>

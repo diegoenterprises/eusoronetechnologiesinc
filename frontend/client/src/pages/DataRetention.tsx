@@ -18,17 +18,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DataRetention() {
-  const retentionQuery = trpc.legal.getDataRetention.useQuery();
-  const myDataQuery = trpc.legal.getMyDataSummary.useQuery();
+  const retentionQuery = (trpc as any).legal.getDataRetention.useQuery();
+  const myDataQuery = (trpc as any).legal.getMyDataSummary.useQuery();
 
-  const requestDeletionMutation = trpc.legal.requestDataDeletion.useMutation({
+  const requestDeletionMutation = (trpc as any).legal.requestDataDeletion.useMutation({
     onSuccess: () => toast.success("Deletion request submitted"),
-    onError: (error) => toast.error("Failed to submit", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit", { description: error.message }),
   });
 
-  const requestExportMutation = trpc.legal.requestDataExport.useMutation({
+  const requestExportMutation = (trpc as any).legal.requestDataExport.useMutation({
     onSuccess: () => toast.success("Export request submitted"),
-    onError: (error) => toast.error("Failed to submit", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit", { description: error.message }),
   });
 
   return (
@@ -52,24 +52,24 @@ export default function DataRetention() {
         <CardContent>
           {myDataQuery.isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
+              {[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="p-4 rounded-xl bg-slate-800/50">
-                <p className="text-2xl font-bold text-white">{myDataQuery.data?.accountAge}</p>
+                <p className="text-2xl font-bold text-white">{(myDataQuery.data as any)?.accountAge}</p>
                 <p className="text-xs text-slate-400">Account Age</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-800/50">
-                <p className="text-2xl font-bold text-white">{myDataQuery.data?.dataPoints?.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-white">{(myDataQuery.data as any)?.dataPoints?.toLocaleString()}</p>
                 <p className="text-xs text-slate-400">Data Points</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-800/50">
-                <p className="text-2xl font-bold text-white">{myDataQuery.data?.storageUsed}</p>
+                <p className="text-2xl font-bold text-white">{(myDataQuery.data as any)?.storageUsed}</p>
                 <p className="text-xs text-slate-400">Storage Used</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-800/50">
-                <p className="text-2xl font-bold text-white">{myDataQuery.data?.lastActivity}</p>
+                <p className="text-2xl font-bold text-white">{(myDataQuery.data as any)?.lastActivity}</p>
                 <p className="text-xs text-slate-400">Last Activity</p>
               </div>
             </div>
@@ -95,10 +95,10 @@ export default function DataRetention() {
         </CardHeader>
         <CardContent className="p-0">
           {retentionQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {retentionQuery.data?.categories?.map((category: any) => (
+              {(retentionQuery.data as any)?.categories?.map((category: any) => (
                 <div key={category.name} className="p-4 flex items-center justify-between">
                   <div>
                     <p className="text-white font-medium">{category.name}</p>

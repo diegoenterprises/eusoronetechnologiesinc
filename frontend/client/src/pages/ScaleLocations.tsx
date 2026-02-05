@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 export default function ScaleLocations() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const scalesQuery = trpc.scales.list.useQuery({ limit: 50 });
-  const nearbyQuery = trpc.scales.getNearby.useQuery({ limit: 10 });
+  const scalesQuery = (trpc as any).scales.list.useQuery({ limit: 50 });
+  const nearbyQuery = (trpc as any).scales.getNearby.useQuery({ limit: 10 });
 
-  const filteredScales = scalesQuery.data?.filter((scale: any) =>
+  const filteredScales = (scalesQuery.data as any)?.filter((scale: any) =>
     !searchTerm || scale.name?.toLowerCase().includes(searchTerm.toLowerCase()) || scale.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -56,7 +56,7 @@ export default function ScaleLocations() {
               </div>
               <div>
                 {scalesQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{scalesQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(scalesQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Scales</p>
               </div>
@@ -72,7 +72,7 @@ export default function ScaleLocations() {
               </div>
               <div>
                 {scalesQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{scalesQuery.data?.filter((s: any) => s.status === "open").length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(scalesQuery.data as any)?.filter((s: any) => s.status === "open").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Open Now</p>
               </div>
@@ -88,7 +88,7 @@ export default function ScaleLocations() {
               </div>
               <div>
                 {nearbyQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{nearbyQuery.data?.[0]?.distance || 0} mi</p>
+                  <p className="text-2xl font-bold text-cyan-400">{(nearbyQuery.data as any)?.[0]?.distance || 0} mi</p>
                 )}
                 <p className="text-xs text-slate-400">Nearest Scale</p>
               </div>
@@ -116,7 +116,7 @@ export default function ScaleLocations() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search scale locations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search scale locations..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -130,12 +130,12 @@ export default function ScaleLocations() {
           </CardHeader>
           <CardContent className="p-0">
             {nearbyQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : nearbyQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (nearbyQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No nearby scales</p>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {nearbyQuery.data?.map((scale: any) => (
+                {(nearbyQuery.data as any)?.map((scale: any) => (
                   <div key={scale.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{scale.name}</p>
@@ -159,7 +159,7 @@ export default function ScaleLocations() {
           </CardHeader>
           <CardContent className="p-0">
             {scalesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredScales?.length === 0 ? (
               <div className="text-center py-16">
                 <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

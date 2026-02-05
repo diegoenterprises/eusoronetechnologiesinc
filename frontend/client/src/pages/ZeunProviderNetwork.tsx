@@ -26,7 +26,7 @@ export default function ZeunProviderNetwork() {
   const [serviceType, setServiceType] = useState("MOBILE_REPAIR");
   const [searched, setSearched] = useState(false);
 
-  const providersQuery = trpc.zeunMechanics.findProviders.useQuery(
+  const providersQuery = (trpc as any).zeunMechanics.findProviders.useQuery(
     { latitude, longitude, providerType: serviceType, radiusMiles: maxDistance },
     { enabled: searched }
   );
@@ -76,7 +76,7 @@ export default function ZeunProviderNetwork() {
             <label className="block text-sm font-semibold text-white mb-2">Service Type</label>
             <select
               value={serviceType}
-              onChange={(e) => setServiceType(e.target.value)}
+              onChange={(e: any) => setServiceType(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
             >
               <option value="MOBILE_REPAIR">Mobile Repair</option>
@@ -96,7 +96,7 @@ export default function ZeunProviderNetwork() {
               <input
                 type="number"
                 value={latitude}
-                onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
+                onChange={(e: any) => setLatitude(parseFloat(e.target.value) || 0)}
                 placeholder="e.g., 29.7604"
                 className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-gray-400"
               />
@@ -106,7 +106,7 @@ export default function ZeunProviderNetwork() {
               <input
                 type="number"
                 value={longitude}
-                onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
+                onChange={(e: any) => setLongitude(parseFloat(e.target.value) || 0)}
                 placeholder="e.g., -95.3698"
                 className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-gray-400"
               />
@@ -121,7 +121,7 @@ export default function ZeunProviderNetwork() {
                 min="10"
                 max="200"
                 value={maxDistance}
-                onChange={(e) => setMaxDistance(parseInt(e.target.value))}
+                onChange={(e: any) => setMaxDistance(parseInt(e.target.value))}
                 className="flex-1"
               />
               <span className="text-white font-bold w-16">{maxDistance} mi</span>

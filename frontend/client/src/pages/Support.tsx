@@ -25,12 +25,12 @@ export default function Support() {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
-  const ticketsQuery = trpc.support.getTickets.useQuery();
-  const summaryQuery = trpc.support.getSummary.useQuery();
+  const ticketsQuery = (trpc as any).support.getTickets.useQuery();
+  const summaryQuery = (trpc as any).support.getSummary.useQuery();
 
-  const createTicketMutation = trpc.support.createTicket.useMutation({
+  const createTicketMutation = (trpc as any).support.createTicket.useMutation({
     onSuccess: () => { toast.success("Ticket created"); setSubject(""); setMessage(""); ticketsQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -134,8 +134,8 @@ export default function Support() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {ticketsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-              ) : ticketsQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              ) : (ticketsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <MessageSquare className="w-10 h-10 text-slate-500" />
@@ -148,7 +148,7 @@ export default function Support() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {ticketsQuery.data?.map((ticket: any) => (
+                  {(ticketsQuery.data as any)?.map((ticket: any) => (
                     <div key={ticket.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-start justify-between">
                         <div>
@@ -180,11 +180,11 @@ export default function Support() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-slate-400 text-sm">Subject</label>
-                  <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Brief description of your issue" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
+                  <Input value={subject} onChange={(e: any) => setSubject(e.target.value)} placeholder="Brief description of your issue" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-slate-400 text-sm">Message</label>
-                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Describe your issue in detail..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[150px]" />
+                  <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Describe your issue in detail..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[150px]" />
                 </div>
                 <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => createTicketMutation.mutate({ subject, message })} disabled={createTicketMutation.isPending || !subject || !message}>
                   {createTicketMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}

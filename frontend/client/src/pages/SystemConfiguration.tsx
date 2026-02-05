@@ -18,11 +18,11 @@ import {
 import { toast } from "sonner";
 
 export default function SystemConfiguration() {
-  const configQuery = trpc.admin.getSystemConfig.useQuery();
+  const configQuery = (trpc as any).admin.getSystemConfig.useQuery();
 
-  const updateMutation = trpc.admin.updateSystemConfig.useMutation({
+  const updateMutation = (trpc as any).admin.updateSystemConfig.useMutation({
     onSuccess: () => { toast.success("Configuration saved"); configQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const [localConfig, setLocalConfig] = useState<any>(null);
@@ -64,7 +64,7 @@ export default function SystemConfiguration() {
       </div>
 
       {configQuery.isLoading || !localConfig ? (
-        <div className="space-y-6">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
+        <div className="space-y-6">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -72,11 +72,11 @@ export default function SystemConfiguration() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Platform Name</label>
-                <Input value={localConfig.general?.platformName || ""} onChange={(e) => updateField("general", "platformName", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={localConfig.general?.platformName || ""} onChange={(e: any) => updateField("general", "platformName", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Support Email</label>
-                <Input value={localConfig.general?.supportEmail || ""} onChange={(e) => updateField("general", "supportEmail", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input value={localConfig.general?.supportEmail || ""} onChange={(e: any) => updateField("general", "supportEmail", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Maintenance Mode</p><p className="text-xs text-slate-500">Disable access for non-admins</p></div>
@@ -94,11 +94,11 @@ export default function SystemConfiguration() {
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Session Timeout (minutes)</label>
-                <Input type="number" value={localConfig.security?.sessionTimeout || 30} onChange={(e) => updateField("security", "sessionTimeout", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={localConfig.security?.sessionTimeout || 30} onChange={(e: any) => updateField("security", "sessionTimeout", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Max Login Attempts</label>
-                <Input type="number" value={localConfig.security?.maxLoginAttempts || 5} onChange={(e) => updateField("security", "maxLoginAttempts", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={localConfig.security?.maxLoginAttempts || 5} onChange={(e: any) => updateField("security", "maxLoginAttempts", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
             </CardContent>
           </Card>
@@ -126,15 +126,15 @@ export default function SystemConfiguration() {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Data Retention (days)</label>
-                <Input type="number" value={localConfig.data?.retentionDays || 365} onChange={(e) => updateField("data", "retentionDays", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <Input type="number" value={(localConfig as any)?.retentionDays || 365} onChange={(e: any) => updateField("data", "retentionDays", parseInt(e.target.value))} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Auto Backup</p><p className="text-xs text-slate-500">Daily automatic backups</p></div>
-                <Switch checked={localConfig.data?.autoBackup || false} onCheckedChange={(checked) => updateField("data", "autoBackup", checked)} />
+                <Switch checked={localConfig(data as any)?.autoBackup || false} onCheckedChange={(checked) => updateField("data", "autoBackup", checked)} />
               </div>
               <div className="flex items-center justify-between">
                 <div><p className="text-white">Audit Logging</p><p className="text-xs text-slate-500">Log all user actions</p></div>
-                <Switch checked={localConfig.data?.auditLogging || false} onCheckedChange={(checked) => updateField("data", "auditLogging", checked)} />
+                <Switch checked={localConfig(data as any)?.auditLogging || false} onCheckedChange={(checked) => updateField("data", "auditLogging", checked)} />
               </div>
             </CardContent>
           </Card>

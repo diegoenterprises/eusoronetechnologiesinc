@@ -22,9 +22,9 @@ export default function AdminBilling() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("current");
 
-  const invoicesQuery = trpc.admin.getAuditLogs.useQuery({});
-  const statsQuery = trpc.admin.getLogStats.useQuery();
-  const subscriptionsQuery = trpc.admin.getUsers.useQuery({});
+  const invoicesQuery = (trpc as any).admin.getAuditLogs.useQuery({});
+  const statsQuery = (trpc as any).admin.getLogStats.useQuery();
+  const subscriptionsQuery = (trpc as any).admin.getUsers.useQuery({});
 
   const invoices = invoicesQuery.data || [];
   const stats = statsQuery.data as any;
@@ -70,7 +70,7 @@ export default function AdminBilling() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -128,7 +128,7 @@ export default function AdminBilling() {
         <CardContent>
           {subscriptionsQuery.isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}
+              {Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -157,7 +157,7 @@ export default function AdminBilling() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search invoices..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -190,7 +190,7 @@ export default function AdminBilling() {
         </CardHeader>
         <CardContent className="p-0">
           {invoicesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
           ) : filteredInvoices.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="w-12 h-12 text-slate-500 mx-auto mb-4" />

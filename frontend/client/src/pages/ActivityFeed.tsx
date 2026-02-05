@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function ActivityFeed() {
   const [filter, setFilter] = useState("all");
 
-  const activityQuery = trpc.users.getActivityFeed.useQuery({ filter, limit: 50 });
-  const statsQuery = trpc.users.getActivityStats.useQuery();
+  const activityQuery = (trpc as any).users.getActivityFeed.useQuery({ filter, limit: 50 });
+  const statsQuery = (trpc as any).users.getActivityStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -154,8 +154,8 @@ export default function ActivityFeed() {
         </CardHeader>
         <CardContent className="p-0">
           {activityQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : activityQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (activityQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Activity className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No activity found</p>
@@ -163,7 +163,7 @@ export default function ActivityFeed() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[600px] overflow-y-auto">
-              {activityQuery.data?.map((activity: any) => (
+              {(activityQuery.data as any)?.map((activity: any) => (
                 <div key={activity.id} className="p-4 flex items-start gap-4 hover:bg-slate-700/20 transition-colors">
                   <div className={cn("p-2 rounded-lg mt-1", getActivityColor(activity.type))}>
                     {getActivityIcon(activity.type)}

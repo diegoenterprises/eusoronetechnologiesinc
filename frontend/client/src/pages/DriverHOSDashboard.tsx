@@ -28,18 +28,18 @@ const dutyStatuses = [
 export default function DriverHOSDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const hosQuery = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
-  const logsQuery = trpc.hos.getStatus.useQuery();
-  const violationsQuery = trpc.hos.getViolations.useQuery({ driverId: "current" });
-  const eldQuery = trpc.eld.getSummary.useQuery();
+  const hosQuery = (trpc as any).hos.getCurrentStatus.useQuery({ driverId: "current" });
+  const logsQuery = (trpc as any).hos.getStatus.useQuery();
+  const violationsQuery = (trpc as any).hos.getViolations.useQuery({ driverId: "current" });
+  const eldQuery = (trpc as any).eld.getSummary.useQuery();
 
-  const changeStatusMutation = trpc.drivers.changeHOSStatus.useMutation({
+  const changeStatusMutation = (trpc as any).drivers.changeHOSStatus.useMutation({
     onSuccess: () => {
       toast.success("Status updated");
       hosQuery.refetch();
       logsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const hos = hosQuery.data;
@@ -71,7 +71,7 @@ export default function DriverHOSDashboard() {
           <input
             type="date"
             value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
+            onChange={(e: any) => setSelectedDate(e.target.value)}
             className="bg-slate-800/50 border border-slate-700/50 rounded-lg px-3 py-2 text-white"
           />
         </div>
@@ -102,7 +102,7 @@ export default function DriverHOSDashboard() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {dutyStatuses.map((status) => (
+              {dutyStatuses.map((status: any) => (
                 <Button
                   key={status.value}
                   variant="outline"
@@ -127,7 +127,7 @@ export default function DriverHOSDashboard() {
       {/* HOS Clocks */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {hosQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-40 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -253,7 +253,7 @@ export default function DriverHOSDashboard() {
         </CardHeader>
         <CardContent>
           {logsQuery.isLoading ? (
-            <div className="space-y-2">{Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
+            <div className="space-y-2">{Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
           ) : (logs as any)?.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-8 h-8 text-slate-500 mx-auto mb-2" />

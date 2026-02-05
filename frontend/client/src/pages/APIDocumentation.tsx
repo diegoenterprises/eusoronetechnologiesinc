@@ -23,13 +23,13 @@ export default function APIDocumentation() {
   const [activeTab, setActiveTab] = useState("overview");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const apiKeyQuery = trpc.developer.getAPIKey.useQuery();
-  const endpointsQuery = trpc.developer.getEndpoints.useQuery();
-  const usageQuery = trpc.developer.getAPIUsage.useQuery();
+  const apiKeyQuery = (trpc as any).developer.getAPIKey.useQuery();
+  const endpointsQuery = (trpc as any).developer.getEndpoints.useQuery();
+  const usageQuery = (trpc as any).developer.getAPIUsage.useQuery();
 
-  const regenerateMutation = trpc.developer.regenerateAPIKey.useMutation({
+  const regenerateMutation = (trpc as any).developer.regenerateAPIKey.useMutation({
     onSuccess: () => { toast.success("API key regenerated"); apiKeyQuery.refetch(); },
-    onError: (error) => toast.error("Failed to regenerate key", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to regenerate key", { description: error.message }),
   });
 
   const copyToClipboard = (text: string) => {
@@ -37,7 +37,7 @@ export default function APIDocumentation() {
     toast.success("Copied to clipboard");
   };
 
-  const filteredEndpoints = endpointsQuery.data?.filter((endpoint: any) =>
+  const filteredEndpoints = (endpointsQuery.data as any)?.filter((endpoint: any) =>
     !searchTerm || endpoint.name?.toLowerCase().includes(searchTerm.toLowerCase()) || endpoint.path?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -80,9 +80,9 @@ export default function APIDocumentation() {
           ) : (
             <div className="flex items-center gap-3">
               <div className="flex-1 p-3 rounded-xl bg-slate-800/50 font-mono text-sm text-slate-300 overflow-x-auto">
-                {apiKeyQuery.data?.key || "No API key generated"}
+                {(apiKeyQuery.data as any)?.key || "No API key generated"}
               </div>
-              <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => copyToClipboard(apiKeyQuery.data?.key || "")}>
+              <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => copyToClipboard((apiKeyQuery.data as any)?.key || "")}>
                 <Copy className="w-4 h-4" />
               </Button>
               <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => regenerateMutation.mutate()}>
@@ -104,7 +104,7 @@ export default function APIDocumentation() {
               </div>
               <div>
                 {usageQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{usageQuery.data?.totalRequests?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(usageQuery.data as any)?.totalRequests?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Requests</p>
               </div>
@@ -120,7 +120,7 @@ export default function APIDocumentation() {
               </div>
               <div>
                 {usageQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{usageQuery.data?.successRate}%</p>
+                  <p className="text-2xl font-bold text-green-400">{(usageQuery.data as any)?.successRate}%</p>
                 )}
                 <p className="text-xs text-slate-400">Success Rate</p>
               </div>
@@ -136,7 +136,7 @@ export default function APIDocumentation() {
               </div>
               <div>
                 {usageQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-purple-400">{usageQuery.data?.avgLatency}ms</p>
+                  <p className="text-2xl font-bold text-purple-400">{(usageQuery.data as any)?.avgLatency}ms</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Latency</p>
               </div>
@@ -152,7 +152,7 @@ export default function APIDocumentation() {
               </div>
               <div>
                 {usageQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{usageQuery.data?.remainingQuota?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-cyan-400">{(usageQuery.data as any)?.remainingQuota?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Remaining Quota</p>
               </div>
@@ -164,7 +164,7 @@ export default function APIDocumentation() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search endpoints..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search endpoints..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Endpoints */}
@@ -174,7 +174,7 @@ export default function APIDocumentation() {
         </CardHeader>
         <CardContent className="p-0">
           {endpointsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : filteredEndpoints?.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No endpoints found</p>
           ) : (

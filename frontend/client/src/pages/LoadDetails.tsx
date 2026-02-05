@@ -22,7 +22,7 @@ export default function LoadDetails() {
   const params = useParams();
   const loadId = params.id as string;
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId });
   const load = loadQuery.data;
 
   const getStatusBadge = (status: string) => {

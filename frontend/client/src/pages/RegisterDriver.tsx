@@ -121,15 +121,15 @@ export default function RegisterDriver() {
   const [formData, setFormData] = useState<DriverFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<DriverFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerDriver.useMutation({
+  const registerMutation = (trpc as any).registration.registerDriver.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", { description: "Background check and CDL verification in progress." });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", { description: error.message });
     },
   });
@@ -179,7 +179,7 @@ export default function RegisterDriver() {
               </Label>
               <Input
                 value={formData.firstName}
-                onChange={(e) => updateFormData({ firstName: e.target.value })}
+                onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -191,7 +191,7 @@ export default function RegisterDriver() {
               </Label>
               <Input
                 value={formData.lastName}
-                onChange={(e) => updateFormData({ lastName: e.target.value })}
+                onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -206,7 +206,7 @@ export default function RegisterDriver() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
+                onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john.smith@email.com"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -218,7 +218,7 @@ export default function RegisterDriver() {
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => updateFormData({ phone: e.target.value })}
+                onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -233,7 +233,7 @@ export default function RegisterDriver() {
               <Input
                 type="date"
                 value={formData.dateOfBirth}
-                onChange={(e) => updateFormData({ dateOfBirth: e.target.value })}
+                onChange={(e: any) => updateFormData({ dateOfBirth: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -245,7 +245,7 @@ export default function RegisterDriver() {
                 type="password"
                 maxLength={4}
                 value={formData.ssn}
-                onChange={(e) => updateFormData({ ssn: e.target.value })}
+                onChange={(e: any) => updateFormData({ ssn: e.target.value })}
                 placeholder="••••"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -275,7 +275,7 @@ export default function RegisterDriver() {
             </Label>
             <Input
               value={formData.streetAddress}
-              onChange={(e) => updateFormData({ streetAddress: e.target.value })}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Main St"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -288,7 +288,7 @@ export default function RegisterDriver() {
               </Label>
               <Input
                 value={formData.city}
-                onChange={(e) => updateFormData({ city: e.target.value })}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -297,12 +297,12 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 State <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.state} onValueChange={(v) => updateFormData({ state: v })}>
+              <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((st) => (
+                  {US_STATES.map((st: any) => (
                     <SelectItem key={st} value={st}>{st}</SelectItem>
                   ))}
                 </SelectContent>
@@ -314,7 +314,7 @@ export default function RegisterDriver() {
               </Label>
               <Input
                 value={formData.zipCode}
-                onChange={(e) => updateFormData({ zipCode: e.target.value })}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -344,7 +344,7 @@ export default function RegisterDriver() {
                 { value: "company", label: "Company Driver", desc: "W-2 employee of a carrier" },
                 { value: "owner_op", label: "Owner-Operator", desc: "Leased to a carrier (1099)" },
                 { value: "independent", label: "Independent", desc: "Own authority/USDOT" },
-              ].map((type) => (
+              ].map((type: any) => (
                 <div
                   key={type.value}
                   onClick={() => updateFormData({ employmentType: type.value })}
@@ -367,7 +367,7 @@ export default function RegisterDriver() {
                 <Label className="text-slate-300">Carrier USDOT Number</Label>
                 <Input
                   value={formData.carrierUsdot}
-                  onChange={(e) => updateFormData({ carrierUsdot: e.target.value })}
+                  onChange={(e: any) => updateFormData({ carrierUsdot: e.target.value })}
                   placeholder="1234567"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -376,7 +376,7 @@ export default function RegisterDriver() {
                 <Label className="text-slate-300">Carrier Name</Label>
                 <Input
                   value={formData.carrierName}
-                  onChange={(e) => updateFormData({ carrierName: e.target.value })}
+                  onChange={(e: any) => updateFormData({ carrierName: e.target.value })}
                   placeholder="ABC Trucking LLC"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -420,7 +420,7 @@ export default function RegisterDriver() {
               </Label>
               <Input
                 value={formData.cdlNumber}
-                onChange={(e) => updateFormData({ cdlNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ cdlNumber: e.target.value })}
                 placeholder="12345678"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -429,12 +429,12 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 Issuing State <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.cdlState} onValueChange={(v) => updateFormData({ cdlState: v })}>
+              <Select value={formData.cdlState} onValueChange={(v: any) => updateFormData({ cdlState: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((st) => (
+                  {US_STATES.map((st: any) => (
                     <SelectItem key={st} value={st}>{st}</SelectItem>
                   ))}
                 </SelectContent>
@@ -447,7 +447,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">
                 CDL Class <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.cdlClass} onValueChange={(v) => updateFormData({ cdlClass: v })}>
+              <Select value={formData.cdlClass} onValueChange={(v: any) => updateFormData({ cdlClass: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
@@ -465,7 +465,7 @@ export default function RegisterDriver() {
               <Input
                 type="date"
                 value={formData.cdlExpiration}
-                onChange={(e) => updateFormData({ cdlExpiration: e.target.value })}
+                onChange={(e: any) => updateFormData({ cdlExpiration: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -474,7 +474,7 @@ export default function RegisterDriver() {
           <div className="space-y-2">
             <Label className="text-slate-300">Endorsements</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {CDL_ENDORSEMENTS.map((end) => (
+              {CDL_ENDORSEMENTS.map((end: any) => (
                 <div key={end.code} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
                   <Checkbox
                     id={`end-${end.code}`}
@@ -483,7 +483,7 @@ export default function RegisterDriver() {
                       if (checked) {
                         updateFormData({ endorsements: [...formData.endorsements, end.code] });
                       } else {
-                        updateFormData({ endorsements: formData.endorsements.filter((e) => e !== end.code) });
+                        updateFormData({ endorsements: formData.endorsements.filter((e: any) => e !== end.code) });
                       }
                     }}
                   />
@@ -522,7 +522,7 @@ export default function RegisterDriver() {
                 <Label className="text-slate-300">Medical Examiner's Certificate Number</Label>
                 <Input
                   value={formData.medicalCardNumber}
-                  onChange={(e) => updateFormData({ medicalCardNumber: e.target.value })}
+                  onChange={(e: any) => updateFormData({ medicalCardNumber: e.target.value })}
                   placeholder="ME Certificate #"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -534,7 +534,7 @@ export default function RegisterDriver() {
                 <Input
                   type="date"
                   value={formData.medicalExpiration}
-                  onChange={(e) => updateFormData({ medicalExpiration: e.target.value })}
+                  onChange={(e: any) => updateFormData({ medicalExpiration: e.target.value })}
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
@@ -554,7 +554,7 @@ export default function RegisterDriver() {
                 <Label className="text-slate-300">TWIC Card Number</Label>
                 <Input
                   value={formData.twicNumber}
-                  onChange={(e) => updateFormData({ twicNumber: e.target.value })}
+                  onChange={(e: any) => updateFormData({ twicNumber: e.target.value })}
                   placeholder="TWIC #"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -564,7 +564,7 @@ export default function RegisterDriver() {
                 <Input
                   type="date"
                   value={formData.twicExpiration}
-                  onChange={(e) => updateFormData({ twicExpiration: e.target.value })}
+                  onChange={(e: any) => updateFormData({ twicExpiration: e.target.value })}
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
@@ -608,7 +608,7 @@ export default function RegisterDriver() {
               <Input
                 type="date"
                 value={formData.hazmatTrainingDate}
-                onChange={(e) => updateFormData({ hazmatTrainingDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -616,7 +616,7 @@ export default function RegisterDriver() {
               <Label className="text-slate-300">Training Provider</Label>
               <Input
                 value={formData.hazmatTrainingProvider}
-                onChange={(e) => updateFormData({ hazmatTrainingProvider: e.target.value })}
+                onChange={(e: any) => updateFormData({ hazmatTrainingProvider: e.target.value })}
                 placeholder="J.J. Keller, Luma, etc."
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -628,7 +628,7 @@ export default function RegisterDriver() {
             <Input
               type="date"
               value={formData.securityTrainingDate}
-              onChange={(e) => updateFormData({ securityTrainingDate: e.target.value })}
+              onChange={(e: any) => updateFormData({ securityTrainingDate: e.target.value })}
               className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
@@ -636,7 +636,7 @@ export default function RegisterDriver() {
           <div className="space-y-2">
             <Label className="text-slate-300">Additional Certifications</Label>
             <div className="flex flex-wrap gap-2">
-              {["Tanker Specialist", "Bulk Loading", "Chlorine Institute", "Ammonia Safety", "LPG Certified"].map((cert) => (
+              {["Tanker Specialist", "Bulk Loading", "Chlorine Institute", "Ammonia Safety", "LPG Certified"].map((cert: any) => (
                 <Badge
                   key={cert}
                   variant={formData.additionalCerts.includes(cert) ? "default" : "outline"}
@@ -676,7 +676,7 @@ export default function RegisterDriver() {
               <Checkbox
                 id="terms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a> and 
@@ -689,7 +689,7 @@ export default function RegisterDriver() {
               <Checkbox
                 id="background"
                 checked={formData.acceptBackgroundCheck}
-                onCheckedChange={(c) => updateFormData({ acceptBackgroundCheck: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptBackgroundCheck: c as boolean })}
               />
               <Label htmlFor="background" className="text-sm text-slate-300 cursor-pointer">
                 I consent to a TSA Security Threat Assessment (STA) background check as required for 
@@ -702,7 +702,7 @@ export default function RegisterDriver() {
               <Checkbox
                 id="drugtest"
                 checked={formData.acceptDrugTest}
-                onCheckedChange={(c) => updateFormData({ acceptDrugTest: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptDrugTest: c as boolean })}
               />
               <Label htmlFor="drugtest" className="text-sm text-slate-300 cursor-pointer">
                 I understand I am subject to pre-employment and random drug & alcohol testing per 

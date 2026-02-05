@@ -23,8 +23,8 @@ export default function BrokerCarrierNetwork() {
   const [tierFilter, setTierFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const carriersQuery = trpc.brokers.getCarrierNetwork.useQuery({ tier: tierFilter, status: statusFilter });
-  const statsQuery = trpc.brokers.getNetworkStats.useQuery();
+  const carriersQuery = (trpc as any).brokers.getCarrierNetwork.useQuery({ tier: tierFilter, status: statusFilter });
+  const statsQuery = (trpc as any).brokers.getNetworkStats.useQuery();
 
   const carriers = carriersQuery.data || [];
   const stats = statsQuery.data;
@@ -61,7 +61,7 @@ export default function BrokerCarrierNetwork() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -121,7 +121,7 @@ export default function BrokerCarrierNetwork() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search carriers..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -156,7 +156,7 @@ export default function BrokerCarrierNetwork() {
       {/* Carriers Grid */}
       {carriersQuery.isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
+          {Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)}
         </div>
       ) : filteredCarriers.length === 0 ? (
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

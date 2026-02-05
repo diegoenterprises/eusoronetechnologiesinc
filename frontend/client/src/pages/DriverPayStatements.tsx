@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function DriverPayStatements() {
   const [periodFilter, setPeriodFilter] = useState("current");
 
-  const statementsQuery = trpc.drivers.getAll.useQuery({});
-  const summaryQuery = trpc.drivers.getSummary.useQuery();
-  const currentStatementQuery = trpc.drivers.getSummary.useQuery();
+  const statementsQuery = (trpc as any).drivers.getAll.useQuery({});
+  const summaryQuery = (trpc as any).drivers.getSummary.useQuery();
+  const currentStatementQuery = (trpc as any).drivers.getSummary.useQuery();
 
   const statements = statementsQuery.data || [];
   const summary = summaryQuery.data as any;
@@ -86,7 +86,7 @@ export default function DriverPayStatements() {
       {/* YTD Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {summaryQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -139,7 +139,7 @@ export default function DriverPayStatements() {
         </CardHeader>
         <CardContent className="p-0">
           {statementsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : statements.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="w-12 h-12 text-slate-500 mx-auto mb-4" />

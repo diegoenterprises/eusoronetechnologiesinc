@@ -24,8 +24,8 @@ export default function DriverDirectory() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const driversQuery = trpc.drivers.list.useQuery({ status: activeTab === "all" ? undefined : activeTab as "available" | "off_duty" | "inactive" | "on_load", limit: 50 });
-  const summaryQuery = trpc.drivers.getSummary.useQuery();
+  const driversQuery = (trpc as any).drivers.list.useQuery({ status: activeTab === "all" ? undefined : activeTab as "available" | "off_duty" | "inactive" | "on_load", limit: 50 });
+  const summaryQuery = (trpc as any).drivers.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -39,7 +39,7 @@ export default function DriverDirectory() {
     }
   };
 
-  const filteredDrivers = driversQuery.data?.filter((driver: any) =>
+  const filteredDrivers = (driversQuery.data as any)?.filter((driver: any) =>
     !searchTerm || driver.name?.toLowerCase().includes(searchTerm.toLowerCase()) || driver.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -128,7 +128,7 @@ export default function DriverDirectory() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -143,7 +143,7 @@ export default function DriverDirectory() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {driversQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
               ) : filteredDrivers?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

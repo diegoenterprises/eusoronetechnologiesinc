@@ -21,9 +21,9 @@ import { toast } from "sonner";
 export default function HazmatCertifications() {
   const [search, setSearch] = useState("");
 
-  const driversQuery = trpc.compliance.getHazmatDrivers.useQuery({ search });
-  const statsQuery = trpc.compliance.getHazmatStats.useQuery();
-  const expiringQuery = trpc.compliance.getExpiringHazmat.useQuery({ limit: 5 });
+  const driversQuery = (trpc as any).compliance.getHazmatDrivers.useQuery({ search });
+  const statsQuery = (trpc as any).compliance.getHazmatStats.useQuery();
+  const expiringQuery = (trpc as any).compliance.getExpiringHazmat.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -117,7 +117,7 @@ export default function HazmatCertifications() {
       </div>
 
       {/* Expiring Soon */}
-      {(expiringQuery.data?.length ?? 0) > 0 && (
+      {((expiringQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -127,7 +127,7 @@ export default function HazmatCertifications() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-yellow-500/20">
-              {expiringQuery.data?.map((driver: any) => (
+              {(expiringQuery.data as any)?.map((driver: any) => (
                 <div key={driver.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-yellow-500/20">
@@ -152,7 +152,7 @@ export default function HazmatCertifications() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Drivers List */}
@@ -165,15 +165,15 @@ export default function HazmatCertifications() {
         </CardHeader>
         <CardContent className="p-0">
           {driversQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : driversQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (driversQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No drivers found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {driversQuery.data?.map((driver: any) => (
+              {(driversQuery.data as any)?.map((driver: any) => (
                 <div key={driver.id} className={cn("p-4", driver.status === "expired" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

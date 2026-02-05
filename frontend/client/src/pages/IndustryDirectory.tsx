@@ -74,7 +74,7 @@ export default function IndustryDirectory() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
 
   // tRPC query for companies
-  const companiesQuery = trpc.companies.list.useQuery({ search: searchTerm || undefined });
+  const companiesQuery = (trpc as any).companies.list.useQuery({ search: searchTerm || undefined });
 
   if (companiesQuery.isLoading) {
     return (
@@ -224,7 +224,7 @@ export default function IndustryDirectory() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search companies, services..."
                 className="pl-9 bg-slate-700/50 border-slate-600 text-white"
               />
@@ -236,7 +236,7 @@ export default function IndustryDirectory() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All States</SelectItem>
-                {(Object.keys(STATE_NAMES) as State[]).map((state) => (
+                {(Object.keys(STATE_NAMES) as State[]).map((state: any) => (
                   <SelectItem key={state} value={state}>{STATE_NAMES[state]}</SelectItem>
                 ))}
               </SelectContent>
@@ -248,7 +248,7 @@ export default function IndustryDirectory() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Types</SelectItem>
-                {(Object.keys(COMPANY_TYPE_LABELS) as CompanyType[]).map((type) => (
+                {(Object.keys(COMPANY_TYPE_LABELS) as CompanyType[]).map((type: any) => (
                   <SelectItem key={type} value={type}>{COMPANY_TYPE_LABELS[type]}</SelectItem>
                 ))}
               </SelectContent>
@@ -314,7 +314,7 @@ function CompanyGrid({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {companies.map((company) => (
+      {companies.map((company: any) => (
         <Card 
           key={company.id}
           onClick={() => onSelect(company)}
@@ -354,7 +354,7 @@ function CompanyGrid({
             </div>
 
             <div className="flex flex-wrap gap-1 mb-3">
-              {company.services.slice(0, 3).map((service, idx) => (
+              {company.services.slice(0, 3).map((service: any, idx: number) => (
                 <Badge key={idx} variant="outline" className="text-[10px] text-slate-400 border-slate-600">
                   {service}
                 </Badge>
@@ -458,7 +458,7 @@ function CompanyDetailModal({ company, onClose }: { company: Company; onClose: (
           <div className="space-y-3">
             <h4 className="text-sm font-medium text-slate-300">Services</h4>
             <div className="flex flex-wrap gap-2">
-              {company.services.map((service, idx) => (
+              {company.services.map((service: any, idx: number) => (
                 <Badge key={idx} className="bg-slate-700/50 text-slate-300">
                   {service}
                 </Badge>

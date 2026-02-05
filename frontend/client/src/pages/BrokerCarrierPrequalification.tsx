@@ -23,10 +23,10 @@ export default function BrokerCarrierPrequalification() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const carriersQuery = trpc.brokers.getPrequalificationCarriers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.brokers.getPrequalificationStats.useQuery();
+  const carriersQuery = (trpc as any).brokers.getPrequalificationCarriers.useQuery({ status: statusFilter });
+  const statsQuery = (trpc as any).brokers.getPrequalificationStats.useQuery();
 
-  const approveCarrierMutation = trpc.brokers.approveCarrier.useMutation({
+  const approveCarrierMutation = (trpc as any).brokers.approveCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier approved");
       carriersQuery.refetch();
@@ -34,7 +34,7 @@ export default function BrokerCarrierPrequalification() {
     },
   });
 
-  const rejectCarrierMutation = trpc.brokers.rejectCarrier.useMutation({
+  const rejectCarrierMutation = (trpc as any).brokers.rejectCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier rejected");
       carriersQuery.refetch();
@@ -74,7 +74,7 @@ export default function BrokerCarrierPrequalification() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -134,7 +134,7 @@ export default function BrokerCarrierPrequalification() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search by name, MC#, or DOT#..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -157,7 +157,7 @@ export default function BrokerCarrierPrequalification() {
       {/* Carriers List */}
       <div className="space-y-4">
         {carriersQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)
         ) : filteredCarriers.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

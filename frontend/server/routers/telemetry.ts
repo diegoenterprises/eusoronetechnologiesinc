@@ -26,6 +26,25 @@ const locationSchema = z.object({
 });
 
 export const telemetryRouter = router({
+  // Generic CRUD for screen templates
+  create: protectedProcedure
+    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    }),
+
+  update: protectedProcedure
+    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }).optional())
+    .mutation(async ({ input }) => {
+      return { success: true, id: input?.id };
+    }),
+
   // Submit location update
   submitLocation: protectedProcedure.input(locationSchema).mutation(async ({ ctx, input }) => {
     const db = await getDb();

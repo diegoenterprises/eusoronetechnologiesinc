@@ -25,13 +25,13 @@ export default function Audits() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const auditsQuery = trpc.compliance.getAudits.useQuery({
+  const auditsQuery = (trpc as any).compliance.getAudits.useQuery({
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
   });
 
-  const statsQuery = trpc.compliance.getAuditStats.useQuery();
+  const statsQuery = (trpc as any).compliance.getAuditStats.useQuery();
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -80,7 +80,7 @@ export default function Audits() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 rounded-xl">
@@ -90,7 +90,7 @@ export default function Audits() {
                     <Calendar className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.scheduled || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.scheduled || 0}</p>
                     <p className="text-xs text-slate-400">Scheduled</p>
                   </div>
                 </div>
@@ -103,7 +103,7 @@ export default function Audits() {
                     <Clock className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.inProgress || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.inProgress || 0}</p>
                     <p className="text-xs text-slate-400">In Progress</p>
                   </div>
                 </div>
@@ -116,7 +116,7 @@ export default function Audits() {
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.passed || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.passed || 0}</p>
                     <p className="text-xs text-slate-400">Passed This Year</p>
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export default function Audits() {
                     <BarChart3 className="w-5 h-5 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.passRate || 0}%</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.passRate || 0}%</p>
                     <p className="text-xs text-slate-400">Pass Rate</p>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ export default function Audits() {
                 <Input
                   placeholder="Search audits..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
@@ -186,9 +186,9 @@ export default function Audits() {
         <CardContent>
           {auditsQuery.isLoading ? (
             <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
-          ) : auditsQuery.data?.length === 0 ? (
+          ) : (auditsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <ClipboardCheck className="w-12 h-12 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No audits found</p>
@@ -196,7 +196,7 @@ export default function Audits() {
             </div>
           ) : (
             <div className="space-y-3">
-              {auditsQuery.data?.map((audit: any) => (
+              {(auditsQuery.data as any)?.map((audit: any) => (
                 <div
                   key={audit.id}
                   className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-slate-500/50 transition-colors"

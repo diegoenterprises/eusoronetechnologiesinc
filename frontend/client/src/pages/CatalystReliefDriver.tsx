@@ -27,11 +27,11 @@ export default function CatalystReliefDriver() {
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const currentDriverQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const availableQuery = trpc.drivers.getAvailable.useQuery({});
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const currentDriverQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const availableQuery = (trpc as any).drivers.getAvailable.useQuery({});
 
-  const dispatchMutation = trpc.catalysts.assignDriver.useMutation({
+  const dispatchMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Relief driver dispatched");
       navigate("/catalyst/dashboard");
@@ -156,7 +156,7 @@ export default function CatalystReliefDriver() {
         </CardHeader>
         <CardContent>
           {availableQuery.isLoading ? (
-            <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : availableDrivers.length === 0 ? (
             <div className="text-center py-12">
               <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
@@ -233,7 +233,7 @@ export default function CatalystReliefDriver() {
           <label className="text-slate-300 text-sm">Dispatch Notes</label>
           <Textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e: any) => setNotes(e.target.value)}
             placeholder="Add any special instructions for the relief driver..."
             className="bg-slate-700/50 border-slate-600/50 rounded-lg"
           />

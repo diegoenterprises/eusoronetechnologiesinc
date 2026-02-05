@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function SystemStatus() {
-  const statusQuery = trpc.system.getStatus.useQuery(undefined, { refetchInterval: 30000 });
-  const incidentsQuery = trpc.system.getIncidents.useQuery({ limit: 10 });
-  const uptimeQuery = trpc.system.getUptime.useQuery();
+  const statusQuery = (trpc as any).system.getStatus.useQuery(undefined, { refetchInterval: 30000 });
+  const incidentsQuery = (trpc as any).system.getIncidents.useQuery({ limit: 10 });
+  const uptimeQuery = (trpc as any).system.getUptime.useQuery();
 
   const status = statusQuery.data;
 
@@ -93,7 +93,7 @@ export default function SystemStatus() {
               </div>
               <div>
                 {uptimeQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-green-400">{uptimeQuery.data?.last24h}%</p>
+                  <p className="text-2xl font-bold text-green-400">{(uptimeQuery.data as any)?.last24h}%</p>
                 )}
                 <p className="text-xs text-slate-400">24h Uptime</p>
               </div>
@@ -109,7 +109,7 @@ export default function SystemStatus() {
               </div>
               <div>
                 {uptimeQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{uptimeQuery.data?.last7d}%</p>
+                  <p className="text-2xl font-bold text-blue-400">{(uptimeQuery.data as any)?.last7d}%</p>
                 )}
                 <p className="text-xs text-slate-400">7d Uptime</p>
               </div>
@@ -125,7 +125,7 @@ export default function SystemStatus() {
               </div>
               <div>
                 {uptimeQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-purple-400">{uptimeQuery.data?.last30d}%</p>
+                  <p className="text-2xl font-bold text-purple-400">{(uptimeQuery.data as any)?.last30d}%</p>
                 )}
                 <p className="text-xs text-slate-400">30d Uptime</p>
               </div>
@@ -141,7 +141,7 @@ export default function SystemStatus() {
               </div>
               <div>
                 {uptimeQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{uptimeQuery.data?.responseTime}ms</p>
+                  <p className="text-2xl font-bold text-cyan-400">{(uptimeQuery.data as any)?.responseTime}ms</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Response</p>
               </div>
@@ -160,7 +160,7 @@ export default function SystemStatus() {
         </CardHeader>
         <CardContent className="p-0">
           {statusQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="divide-y divide-slate-700/50">
               {status?.services?.map((service: any) => (
@@ -201,8 +201,8 @@ export default function SystemStatus() {
         </CardHeader>
         <CardContent className="p-0">
           {incidentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : incidentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (incidentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
               <p className="text-slate-400">No recent incidents</p>
@@ -210,7 +210,7 @@ export default function SystemStatus() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {incidentsQuery.data?.map((incident: any) => (
+              {(incidentsQuery.data as any)?.map((incident: any) => (
                 <div key={incident.id} className="p-4">
                   <div className="flex items-start gap-3">
                     <div className={cn("p-2 rounded-lg mt-1", incident.resolved ? "bg-green-500/20" : "bg-yellow-500/20")}>

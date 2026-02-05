@@ -25,7 +25,7 @@ export default function AssignedLoadsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<string>("ALL");
 
-  const { data: loads, isLoading, refetch } = trpc.loads.list.useQuery({
+  const { data: loads, isLoading, refetch } = (trpc as any).loads.list.useQuery({
     status: "assigned",
     limit: 100,
   });
@@ -93,13 +93,13 @@ export default function AssignedLoadsPage() {
               <Input
                 placeholder="Search by load number, origin, or destination..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: any) => setSearchQuery(e.target.value)}
                 className="pl-10 bg-gray-900/50 border-gray-800"
               />
             </div>
             <select
               value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
+              onChange={(e: any) => setPriorityFilter(e.target.value)}
               className="px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg text-white"
             >
               <option value="ALL">All Priorities</option>

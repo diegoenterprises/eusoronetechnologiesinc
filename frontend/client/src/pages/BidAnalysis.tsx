@@ -22,12 +22,12 @@ export default function BidAnalysis() {
   const [bidAmount, setBidAmount] = useState("");
   const [loadId, setLoadId] = useState("");
 
-  const analyzeQuery = trpc.esang.analyzeBid.useQuery(
+  const analyzeQuery = (trpc as any).esang.analyzeBid.useQuery(
     { loadId, bidAmount: parseFloat(bidAmount) || 0 },
     { enabled: !!loadId && !!bidAmount }
   );
 
-  const recentQuery = trpc.bids.getRecentAnalysis.useQuery({ limit: 5 });
+  const recentQuery = (trpc as any).bids.getRecentAnalysis.useQuery({ limit: 5 });
 
   const analysis = analyzeQuery.data;
 
@@ -69,7 +69,7 @@ export default function BidAnalysis() {
               <Label className="text-slate-400">Load ID</Label>
               <Input
                 value={loadId}
-                onChange={(e) => setLoadId(e.target.value)}
+                onChange={(e: any) => setLoadId(e.target.value)}
                 placeholder="Enter load ID"
                 className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
               />
@@ -82,7 +82,7 @@ export default function BidAnalysis() {
                 <Input
                   type="number"
                   value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
+                  onChange={(e: any) => setBidAmount(e.target.value)}
                   placeholder="Enter bid amount"
                   className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
@@ -191,12 +191,12 @@ export default function BidAnalysis() {
           </CardHeader>
           <CardContent>
             {recentQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : recentQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (recentQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-4">No recent analysis</p>
             ) : (
               <div className="space-y-3">
-                {recentQuery.data?.map((item: any) => (
+                {(recentQuery.data as any)?.map((item: any) => (
                   <div key={item.id} className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={cn("p-2 rounded-full", item.fairnessScore >= 80 ? "bg-green-500/20" : item.fairnessScore >= 60 ? "bg-yellow-500/20" : "bg-red-500/20")}>

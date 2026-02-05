@@ -22,8 +22,8 @@ export default function EquipmentTracking() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("all");
 
-  const equipmentQuery = trpc.fleet.getEquipment.useQuery({ search, type });
-  const statsQuery = trpc.fleet.getEquipmentStats.useQuery();
+  const equipmentQuery = (trpc as any).fleet.getEquipment.useQuery({ search, type });
+  const statsQuery = (trpc as any).fleet.getEquipmentStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -87,7 +87,7 @@ export default function EquipmentTracking() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search equipment..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search equipment..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={type} onValueChange={setType}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -105,12 +105,12 @@ export default function EquipmentTracking() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-cyan-400" />Equipment</CardTitle></CardHeader>
         <CardContent className="p-0">
           {equipmentQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : equipmentQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (equipmentQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No equipment found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {equipmentQuery.data?.map((eq: any) => (
+              {(equipmentQuery.data as any)?.map((eq: any) => (
                 <div key={eq.id} className={cn("p-4 flex items-center justify-between", eq.status === "out_of_service" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", eq.status === "available" ? "bg-green-500/20" : eq.status === "in_use" ? "bg-cyan-500/20" : eq.status === "maintenance" ? "bg-yellow-500/20" : "bg-red-500/20")}>

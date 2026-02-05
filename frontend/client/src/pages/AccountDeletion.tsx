@@ -22,16 +22,16 @@ export default function AccountDeletion() {
   const [confirmText, setConfirmText] = useState("");
   const [acknowledged, setAcknowledged] = useState(false);
 
-  const accountQuery = trpc.users.getAccountInfo.useQuery();
+  const accountQuery = (trpc as any).users.getAccountInfo.useQuery();
 
-  const deleteMutation = trpc.users.requestAccountDeletion.useMutation({
+  const deleteMutation = (trpc as any).users.requestAccountDeletion.useMutation({
     onSuccess: () => { toast.success("Account deletion requested", { description: "You will receive a confirmation email" }); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const cancelMutation = trpc.users.cancelAccountDeletion.useMutation({
+  const cancelMutation = (trpc as any).users.cancelAccountDeletion.useMutation({
     onSuccess: () => { toast.success("Deletion cancelled"); accountQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const account = accountQuery.data;
@@ -143,7 +143,7 @@ export default function AccountDeletion() {
 
             <div className="space-y-2">
               <label className="text-sm text-slate-400">Type DELETE to confirm</label>
-              <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="DELETE" className={cn("bg-slate-800/50 border-slate-700/50 rounded-lg", confirmText === "DELETE" && "border-red-500/50")} />
+              <Input value={confirmText} onChange={(e: any) => setConfirmText(e.target.value)} placeholder="DELETE" className={cn("bg-slate-800/50 border-slate-700/50 rounded-lg", confirmText === "DELETE" && "border-red-500/50")} />
             </div>
 
             <Button className="w-full bg-red-600 hover:bg-red-700 rounded-lg" onClick={() => deleteMutation.mutate({})} disabled={!canDelete}>

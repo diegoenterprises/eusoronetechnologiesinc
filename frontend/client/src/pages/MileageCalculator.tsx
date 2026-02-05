@@ -20,9 +20,9 @@ import { toast } from "sonner";
 export default function MileageCalculator() {
   const [stops, setStops] = useState([{ id: 1, location: "" }, { id: 2, location: "" }]);
 
-  const recentCalculationsQuery = trpc.mileage.getRecent.useQuery({ limit: 5 });
-  const calculateMutation = trpc.mileage.calculate.useMutation({
-    onError: (error) => toast.error("Calculation failed", { description: error.message }),
+  const recentCalculationsQuery = (trpc as any).mileage.getRecent.useQuery({ limit: 5 });
+  const calculateMutation = (trpc as any).mileage.calculate.useMutation({
+    onError: (error: any) => toast.error("Calculation failed", { description: error.message }),
   });
 
   const addStop = () => {
@@ -70,7 +70,7 @@ export default function MileageCalculator() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {stops.map((stop, idx) => (
+            {stops.map((stop: any, idx: number) => (
               <div key={stop.id} className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${idx === 0 ? "bg-green-500/20 text-green-400" : idx === stops.length - 1 ? "bg-red-500/20 text-red-400" : "bg-blue-500/20 text-blue-400"}`}>
                   {idx + 1}
@@ -79,7 +79,7 @@ export default function MileageCalculator() {
                   <MapPin className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${idx === 0 ? "text-green-400" : idx === stops.length - 1 ? "text-red-400" : "text-blue-400"}`} />
                   <Input
                     value={stop.location}
-                    onChange={(e) => updateStop(stop.id, e.target.value)}
+                    onChange={(e: any) => updateStop(stop.id, e.target.value)}
                     placeholder={idx === 0 ? "Origin" : idx === stops.length - 1 ? "Destination" : `Stop ${idx}`}
                     className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg"
                   />
@@ -154,14 +154,14 @@ export default function MileageCalculator() {
           </CardHeader>
           <CardContent className="p-0">
             {recentCalculationsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : recentCalculationsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (recentCalculationsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-slate-400">No recent calculations</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {recentCalculationsQuery.data?.map((calc: any) => (
+                {(recentCalculationsQuery.data as any)?.map((calc: any) => (
                   <div key={calc.id} className="p-4 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setStops(calc.stops.map((s: string, i: number) => ({ id: i, location: s })))}>
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
                       {calc.stops?.map((stop: string, idx: number) => (

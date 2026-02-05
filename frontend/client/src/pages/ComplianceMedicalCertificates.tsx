@@ -22,10 +22,10 @@ export default function ComplianceMedicalCertificates() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const certificatesQuery = trpc.compliance.getMedicalCerts.useQuery({ search: statusFilter === 'all' ? undefined : statusFilter });
-  const statsQuery = trpc.compliance.getMedicalCertStats.useQuery();
+  const certificatesQuery = (trpc as any).compliance.getMedicalCerts.useQuery({ search: statusFilter === 'all' ? undefined : statusFilter });
+  const statsQuery = (trpc as any).compliance.getMedicalCertStats.useQuery();
 
-  const sendReminderMutation = trpc.compliance.scheduleTest.useMutation({
+  const sendReminderMutation = (trpc as any).compliance.scheduleTest.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 
@@ -54,7 +54,7 @@ export default function ComplianceMedicalCertificates() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -168,7 +168,7 @@ export default function ComplianceMedicalCertificates() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search drivers..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -192,7 +192,7 @@ export default function ComplianceMedicalCertificates() {
       {/* Certificates List */}
       <div className="space-y-4">
         {certificatesQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-36 rounded-xl" />)
         ) : filteredCerts.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

@@ -72,14 +72,14 @@ export default function ZeunBreakdown() {
     estimatedCost: { min: number; max: number };
   } | null>(null);
 
-  const reportMutation = trpc.zeunMechanics.reportBreakdown.useMutation({
-    onSuccess: (result) => {
+  const reportMutation = (trpc as any).zeunMechanics.reportBreakdown.useMutation({
+    onSuccess: (result: any) => {
       setReportResult(result);
       setStep(5);
     },
   });
 
-  const { data: myBreakdowns, isLoading: breakdownsLoading, refetch } = trpc.zeunMechanics.getMyBreakdowns.useQuery({
+  const { data: myBreakdowns, isLoading: breakdownsLoading, refetch } = (trpc as any).zeunMechanics.getMyBreakdowns.useQuery({
     limit: 5,
     status: "OPEN",
   });
@@ -171,7 +171,7 @@ export default function ZeunBreakdown() {
               </div>
             ) : myBreakdowns && myBreakdowns.length > 0 ? (
               <div className="space-y-2">
-                {myBreakdowns.map((b) => (
+                {myBreakdowns.map((b: any) => (
                   <div key={b.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                       <p className="font-medium">{b.issueCategory.replace(/_/g, " ")}</p>
@@ -198,7 +198,7 @@ export default function ZeunBreakdown() {
       {/* Step Progress */}
       {step < 5 && (
         <div className="flex justify-between mb-6">
-          {[1, 2, 3, 4].map((s) => (
+          {[1, 2, 3, 4].map((s: any) => (
             <div key={s} className={`flex items-center ${s < 4 ? "flex-1" : ""}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${step >= s ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                 {s}
@@ -218,7 +218,7 @@ export default function ZeunBreakdown() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {ISSUE_CATEGORIES.map((category) => {
+              {ISSUE_CATEGORIES.map((category: any) => {
                 const Icon = category.icon;
                 return (
                   <button
@@ -250,8 +250,8 @@ export default function ZeunBreakdown() {
             <div className="flex gap-2">
               <Input
                 value={symptomInput}
-                onChange={(e) => setSymptomInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && addSymptom(symptomInput)}
+                onChange={(e: any) => setSymptomInput(e.target.value)}
+                onKeyDown={(e: any) => e.key === "Enter" && addSymptom(symptomInput)}
                 placeholder="Type a symptom and press Enter"
               />
               <Button onClick={() => addSymptom(symptomInput)}>Add</Button>
@@ -259,7 +259,7 @@ export default function ZeunBreakdown() {
 
             {symptoms.length > 0 && (
               <div className="space-y-2">
-                {symptoms.map((symptom, index) => (
+                {symptoms.map((symptom: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <span>{symptom}</span>
                     <Button variant="ghost" size="sm" onClick={() => removeSymptom(index)}>
@@ -274,7 +274,7 @@ export default function ZeunBreakdown() {
               <div>
                 <p className="text-sm text-muted-foreground mb-2">Common symptoms:</p>
                 <div className="flex flex-wrap gap-2">
-                  {COMMON_SYMPTOMS[issueCategory].map((symptom) => (
+                  {COMMON_SYMPTOMS[issueCategory].map((symptom: any) => (
                     <Button
                       key={symptom}
                       variant="outline"
@@ -307,7 +307,7 @@ export default function ZeunBreakdown() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-3">
-              {SEVERITY_OPTIONS.map((option) => (
+              {SEVERITY_OPTIONS.map((option: any) => (
                 <button
                   key={option.value}
                   onClick={() => setSeverity(option.value)}
@@ -359,7 +359,7 @@ export default function ZeunBreakdown() {
           <CardContent className="space-y-6">
             <Textarea
               value={driverNotes}
-              onChange={(e) => setDriverNotes(e.target.value)}
+              onChange={(e: any) => setDriverNotes(e.target.value)}
               placeholder="Any additional details about the issue..."
               rows={4}
             />
@@ -367,7 +367,7 @@ export default function ZeunBreakdown() {
             <div className="bg-muted p-4 rounded-lg">
               <h3 className="font-bold mb-2">Summary</h3>
               <div className="text-sm space-y-1">
-                <div><strong>Issue:</strong> {ISSUE_CATEGORIES.find((c) => c.value === issueCategory)?.label}</div>
+                <div><strong>Issue:</strong> {ISSUE_CATEGORIES.find((c: any) => c.value === issueCategory)?.label}</div>
                 <div><strong>Severity:</strong> {severity}</div>
                 <div><strong>Symptoms:</strong> {symptoms.length} reported</div>
                 <div><strong>Can Drive:</strong> {canDrive ? "Yes" : "No"}</div>
@@ -451,7 +451,7 @@ export default function ZeunBreakdown() {
             <CardContent>
               {reportResult.providers.length > 0 ? (
                 <div className="space-y-3">
-                  {reportResult.providers.map((provider, index) => (
+                  {reportResult.providers.map((provider: any, index: number) => (
                     <div key={provider.id} className={`p-4 border rounded-lg ${index === 0 ? "border-primary bg-primary/5" : ""}`}>
                       {index === 0 && <Badge className="mb-2">Recommended</Badge>}
                       <div className="flex justify-between items-start">

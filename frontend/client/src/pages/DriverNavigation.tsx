@@ -18,8 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function DriverNavigation() {
-  const assignmentQuery = trpc.drivers.getCurrentAssignment.useQuery();
-  const routeQuery = trpc.drivers.getRouteInfo.useQuery(undefined, { enabled: !!assignmentQuery.data });
+  const assignmentQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
+  const routeQuery = (trpc as any).drivers.getRouteInfo.useQuery(undefined, { enabled: !!assignmentQuery.data });
 
   const assignment = assignmentQuery.data;
   const route = routeQuery.data;

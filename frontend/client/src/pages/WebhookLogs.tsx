@@ -24,12 +24,12 @@ export default function WebhookLogs() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const logsQuery = trpc.admin.getWebhookLogs.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
-  const summaryQuery = trpc.admin.getWebhookSummary.useQuery();
+  const logsQuery = (trpc as any).admin.getWebhookLogs.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const summaryQuery = (trpc as any).admin.getWebhookSummary.useQuery();
 
-  const retryMutation = trpc.admin.retryWebhook.useMutation({
+  const retryMutation = (trpc as any).admin.retryWebhook.useMutation({
     onSuccess: () => { toast.success("Webhook retried"); logsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -41,7 +41,7 @@ export default function WebhookLogs() {
     return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
   };
 
-  const filteredLogs = logsQuery.data?.filter((log: any) =>
+  const filteredLogs = (logsQuery.data as any)?.filter((log: any) =>
     !searchTerm || log.url?.toLowerCase().includes(searchTerm.toLowerCase()) || log.event?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -131,7 +131,7 @@ export default function WebhookLogs() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search by URL or event..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search by URL or event..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -150,7 +150,7 @@ export default function WebhookLogs() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {logsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredLogs?.length === 0 ? (
             <div className="text-center py-16">
               <Webhook className="w-10 h-10 text-slate-500 mx-auto mb-3" />
@@ -176,7 +176,7 @@ export default function WebhookLogs() {
                     </div>
                     <div className="flex items-center gap-3">
                       {log.status === "failed" && (
-                        <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={(e) => { e.stopPropagation(); retryMutation.mutate({ webhookId: log.id }); }}>
+                        <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={(e: any) => { e.stopPropagation(); retryMutation.mutate({ webhookId: log.id }); }}>
                           <RefreshCw className="w-4 h-4 mr-1" />Retry
                         </Button>
                       )}

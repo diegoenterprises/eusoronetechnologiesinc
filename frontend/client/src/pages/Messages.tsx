@@ -21,13 +21,13 @@ export default function Messages() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
 
-  const conversationsQuery = trpc.messages.getConversations.useQuery();
-  const messagesQuery = trpc.messages.getMessages.useQuery(
+  const conversationsQuery = (trpc as any).messages.getConversations.useQuery();
+  const messagesQuery = (trpc as any).messages.getMessages.useQuery(
     { conversationId: selectedConversation! },
     { enabled: !!selectedConversation }
   );
 
-  const unreadCount = conversationsQuery.data?.filter((c: any) => c.unread > 0).length || 0;
+  const unreadCount = (conversationsQuery.data as any)?.filter((c: any) => c.unread > 0).length || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -60,7 +60,7 @@ export default function Messages() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search conversations..."
                 className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
               />
@@ -68,8 +68,8 @@ export default function Messages() {
           </CardHeader>
           <CardContent className="p-0 overflow-y-auto max-h-[calc(100vh-340px)]">
             {conversationsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : conversationsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (conversationsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <MessageSquare className="w-8 h-8 text-slate-500" />
@@ -78,7 +78,7 @@ export default function Messages() {
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {conversationsQuery.data?.map((conversation: any) => (
+                {(conversationsQuery.data as any)?.map((conversation: any) => (
                   <div
                     key={conversation.id}
                     className={cn(
@@ -127,7 +127,7 @@ export default function Messages() {
                   </div>
                   <div>
                     <p className="text-white font-medium">
-                      {conversationsQuery.data?.find((c: any) => c.id === selectedConversation)?.participantName}
+                      {(conversationsQuery.data as any)?.find((c: any) => c.id === selectedConversation)?.participantName}
                     </p>
                     <p className="text-xs text-slate-500">Online</p>
                   </div>
@@ -135,14 +135,14 @@ export default function Messages() {
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messagesQuery.isLoading ? (
-                  <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-3/4 rounded-xl" />)}</div>
-                ) : messagesQuery.data?.length === 0 ? (
+                  <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-3/4 rounded-xl" />)}</div>
+                ) : (messagesQuery.data as any)?.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-slate-400">No messages yet</p>
                     <p className="text-slate-500 text-sm">Start the conversation!</p>
                   </div>
                 ) : (
-                  messagesQuery.data?.map((message: any) => (
+                  (messagesQuery.data as any)?.map((message: any) => (
                     <div key={message.id} className={cn("flex", message.isMe ? "justify-end" : "justify-start")}>
                       <div className={cn(
                         "max-w-[70%] p-3 rounded-xl",
@@ -161,7 +161,7 @@ export default function Messages() {
                 <div className="flex items-center gap-3">
                   <Input
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e: any) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                   />

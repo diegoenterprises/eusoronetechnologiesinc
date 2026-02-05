@@ -22,11 +22,11 @@ export default function TerminalWeighScales() {
   const [search, setSearch] = useState("");
   const [scaleFilter, setScaleFilter] = useState("all");
 
-  const scalesQuery = trpc.terminals.getBays.useQuery();
-  const weightsQuery = trpc.terminals.getAppointments.useQuery({});
-  const statsQuery = trpc.terminals.getStats.useQuery();
+  const scalesQuery = (trpc as any).terminals.getBays.useQuery();
+  const weightsQuery = (trpc as any).terminals.getAppointments.useQuery({});
+  const statsQuery = (trpc as any).terminals.getStats.useQuery();
 
-  const recordWeightMutation = trpc.terminals.createAppointment.useMutation({
+  const recordWeightMutation = (trpc as any).terminals.createAppointment.useMutation({
     onSuccess: () => {
       toast.success("Weight recorded");
       weightsQuery.refetch();
@@ -68,7 +68,7 @@ export default function TerminalWeighScales() {
       {/* Scale Status */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {scalesQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-xl" />)
         ) : (
           scales.map((scale: any) => (
             <Card key={scale.id} className={cn(
@@ -116,7 +116,7 @@ export default function TerminalWeighScales() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -167,7 +167,7 @@ export default function TerminalWeighScales() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search by truck or driver..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -197,7 +197,7 @@ export default function TerminalWeighScales() {
         </CardHeader>
         <CardContent className="p-0">
           {weightsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}</div>
           ) : filteredWeights.length === 0 ? (
             <div className="text-center py-16">
               <Scale className="w-12 h-12 text-slate-500 mx-auto mb-4" />

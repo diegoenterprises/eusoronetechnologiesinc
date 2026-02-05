@@ -25,12 +25,12 @@ export default function EscortJobs() {
   const [activeTab, setActiveTab] = useState("available");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const jobsQuery = trpc.escorts.getJobs.useQuery({ limit: 50 });
-  const summaryQuery = trpc.escorts.getJobsSummary.useQuery();
+  const jobsQuery = (trpc as any).escorts.getJobs.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).escorts.getJobsSummary.useQuery();
 
-  const acceptMutation = trpc.escorts.acceptJob.useMutation({
+  const acceptMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => { toast.success("Job accepted"); jobsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to accept job", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to accept job", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -53,7 +53,7 @@ export default function EscortJobs() {
     }
   };
 
-  const filteredJobs = jobsQuery.data?.filter((job: any) => {
+  const filteredJobs = (jobsQuery.data as any)?.filter((job: any) => {
     const matchesSearch = !searchTerm || 
       job.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       job.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -145,7 +145,7 @@ export default function EscortJobs() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search jobs..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -163,7 +163,7 @@ export default function EscortJobs() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {jobsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
               ) : filteredJobs?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

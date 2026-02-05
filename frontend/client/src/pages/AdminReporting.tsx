@@ -161,7 +161,7 @@ export default function AdminReporting() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsLoading ? (
-          Array(4).fill(0).map((_, i) => (
+          Array(4).fill(0).map((_: any, i: number) => (
             <Card key={i}>
               <CardContent className="p-4">
                 <Skeleton className="h-4 w-24 mb-2" />
@@ -232,7 +232,7 @@ export default function AdminReporting() {
                 <Input
                   placeholder="Search reports..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: any) => setSearchQuery(e.target.value)}
                   className="pl-10 w-64"
                 />
               </div>
@@ -266,7 +266,7 @@ export default function AdminReporting() {
         <CardContent>
           {reportsLoading ? (
             <div className="space-y-4">
-              {Array(5).fill(0).map((_, i) => (
+              {Array(5).fill(0).map((_: any, i: number) => (
                 <div key={i} className="flex items-center gap-4 p-4 border rounded-lg">
                   <Skeleton className="h-10 w-10 rounded" />
                   <div className="flex-1 space-y-2">
@@ -280,7 +280,7 @@ export default function AdminReporting() {
             </div>
           ) : reports && reports.length > 0 ? (
             <div className="space-y-3">
-              {reports.map((report) => (
+              {reports.map((report: any) => (
                 <div
                   key={report.id}
                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-slate-50 transition-colors"

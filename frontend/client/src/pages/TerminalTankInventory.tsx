@@ -22,9 +22,9 @@ export default function TerminalTankInventory() {
   const [selectedProduct, setSelectedProduct] = useState("all");
   const [timeRange, setTimeRange] = useState("24h");
 
-  const tanksQuery = trpc.terminals.getTanks.useQuery();
-  const scadaQuery = trpc.terminals.getScadaStats.useQuery(undefined, { refetchInterval: 5000 });
-  const movementQuery = trpc.terminals.getInventoryStats.useQuery();
+  const tanksQuery = (trpc as any).terminals.getTanks.useQuery();
+  const scadaQuery = (trpc as any).terminals.getScadaStats.useQuery(undefined, { refetchInterval: 5000 });
+  const movementQuery = (trpc as any).terminals.getInventoryStats.useQuery();
 
   const tanks = tanksQuery.data || [];
   const scada = scadaQuery.data;
@@ -75,7 +75,7 @@ export default function TerminalTankInventory() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {tanksQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -144,7 +144,7 @@ export default function TerminalTankInventory() {
         <CardContent>
           {tanksQuery.isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-lg" />)}
+              {Array(8).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

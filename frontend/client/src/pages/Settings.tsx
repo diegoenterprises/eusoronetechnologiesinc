@@ -22,17 +22,17 @@ import { toast } from "sonner";
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("profile");
 
-  const profileQuery = trpc.users.getProfile.useQuery();
-  const preferencesQuery = trpc.users.getPreferences.useQuery();
+  const profileQuery = (trpc as any).users.getProfile.useQuery();
+  const preferencesQuery = (trpc as any).users.getPreferences.useQuery();
 
-  const updateProfileMutation = trpc.users.updateProfile.useMutation({
+  const updateProfileMutation = (trpc as any).users.updateProfile.useMutation({
     onSuccess: () => { toast.success("Profile updated"); profileQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const updatePreferencesMutation = trpc.users.updatePreferences.useMutation({
+  const updatePreferencesMutation = (trpc as any).users.updatePreferences.useMutation({
     onSuccess: () => { toast.success("Preferences updated"); preferencesQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const profile = profileQuery.data;
@@ -75,7 +75,7 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               {profileQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+                <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -119,7 +119,7 @@ export default function Settings() {
             </CardHeader>
             <CardContent>
               {preferencesQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+                <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
               ) : (
                 <div className="space-y-6">
                   <div className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">

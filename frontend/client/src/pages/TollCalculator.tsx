@@ -25,9 +25,9 @@ export default function TollCalculator() {
   const [destination, setDestination] = useState("");
   const [vehicleType, setVehicleType] = useState("5_axle");
 
-  const recentRoutesQuery = trpc.tolls.getRecentRoutes.useQuery({ limit: 5 });
-  const calculateMutation = trpc.tolls.calculate.useMutation({
-    onError: (error) => toast.error("Calculation failed", { description: error.message }),
+  const recentRoutesQuery = (trpc as any).tolls.getRecentRoutes.useQuery({ limit: 5 });
+  const calculateMutation = (trpc as any).tolls.calculate.useMutation({
+    onError: (error: any) => toast.error("Calculation failed", { description: error.message }),
   });
 
   const handleCalculate = () => {
@@ -65,14 +65,14 @@ export default function TollCalculator() {
                 <Label className="text-slate-400">Origin</Label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
-                  <Input value={origin} onChange={(e) => setOrigin(e.target.value)} placeholder="City, State or ZIP" className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                  <Input value={origin} onChange={(e: any) => setOrigin(e.target.value)} placeholder="City, State or ZIP" className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Destination</Label>
                 <div className="relative">
                   <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-red-400" />
-                  <Input value={destination} onChange={(e) => setDestination(e.target.value)} placeholder="City, State or ZIP" className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                  <Input value={destination} onChange={(e: any) => setDestination(e.target.value)} placeholder="City, State or ZIP" className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 </div>
               </div>
             </div>
@@ -143,14 +143,14 @@ export default function TollCalculator() {
           </CardHeader>
           <CardContent className="p-0">
             {recentRoutesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : recentRoutesQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (recentRoutesQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-slate-400">No recent routes</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {recentRoutesQuery.data?.map((route: any) => (
+                {(recentRoutesQuery.data as any)?.map((route: any) => (
                   <div key={route.id} className="p-4 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => { setOrigin(route.origin); setDestination(route.destination); }}>
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-white text-sm">{route.origin}</p>

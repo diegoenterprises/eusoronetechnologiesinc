@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 export default function TaxDocuments() {
   const [year, setYear] = useState("2024");
 
-  const documentsQuery = trpc.payroll.getTaxDocuments.useQuery({ year });
-  const statsQuery = trpc.payroll.getTaxDocStats.useQuery({ year });
+  const documentsQuery = (trpc as any).payroll.getTaxDocuments.useQuery({ year });
+  const statsQuery = (trpc as any).payroll.getTaxDocStats.useQuery({ year });
 
   const stats = statsQuery.data;
 
@@ -89,12 +89,12 @@ export default function TaxDocuments() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Tax Documents</CardTitle></CardHeader>
         <CardContent className="p-0">
           {documentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : documentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (documentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No documents found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {documentsQuery.data?.map((doc: any) => (
+              {(documentsQuery.data as any)?.map((doc: any) => (
                 <div key={doc.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", doc.status === "available" ? "bg-green-500/20" : "bg-yellow-500/20")}>

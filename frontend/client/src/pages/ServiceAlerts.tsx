@@ -21,17 +21,17 @@ import { toast } from "sonner";
 export default function ServiceAlerts() {
   const [severityFilter, setSeverityFilter] = useState("all");
 
-  const alertsQuery = trpc.alerts.list.useQuery({ severity: severityFilter === "all" ? undefined : severityFilter as "error" | "info" | "warning" | "critical", limit: 50 });
-  const summaryQuery = trpc.alerts.getSummary.useQuery();
+  const alertsQuery = (trpc as any).alerts.list.useQuery({ severity: severityFilter === "all" ? undefined : severityFilter as "error" | "info" | "warning" | "critical", limit: 50 });
+  const summaryQuery = (trpc as any).alerts.getSummary.useQuery();
 
-  const acknowledgeMutation = trpc.alerts.acknowledge.useMutation({
+  const acknowledgeMutation = (trpc as any).alerts.acknowledge.useMutation({
     onSuccess: () => { toast.success("Alert acknowledged"); alertsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to acknowledge", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to acknowledge", { description: error.message }),
   });
 
-  const dismissMutation = trpc.alerts.dismiss.useMutation({
+  const dismissMutation = (trpc as any).alerts.dismiss.useMutation({
     onSuccess: () => { toast.success("Alert dismissed"); alertsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to dismiss", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to dismiss", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -146,8 +146,8 @@ export default function ServiceAlerts() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {alertsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : alertsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (alertsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Bell className="w-10 h-10 text-slate-500" />
@@ -156,7 +156,7 @@ export default function ServiceAlerts() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {alertsQuery.data?.map((alert: any) => (
+              {(alertsQuery.data as any)?.map((alert: any) => (
                 <div key={alert.id} className={cn("p-4", alert.severity === "critical" && "bg-red-500/5 border-l-2 border-red-500", alert.severity === "warning" && "bg-yellow-500/5 border-l-2 border-yellow-500")}>
                   <div className="flex items-start justify-between mb-2">
                     <div>

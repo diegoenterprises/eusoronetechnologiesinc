@@ -30,10 +30,10 @@ const basicCategories = [
 export default function SafetyCSAScores() {
   const [selectedCarrier, setSelectedCarrier] = useState("company");
 
-  const scoresQuery = trpc.safety.getCSAScores.useQuery();
-  const historyQuery = trpc.safety.getCSAHistory.useQuery({ months: 12 });
-  const inspectionsQuery = trpc.safety.getVehicleInspections.useQuery({ vehicleId: "all" });
-  const carriersQuery = trpc.carriers.list.useQuery({});
+  const scoresQuery = (trpc as any).safety.getCSAScores.useQuery();
+  const historyQuery = (trpc as any).safety.getCSAHistory.useQuery({ months: 12 });
+  const inspectionsQuery = (trpc as any).safety.getVehicleInspections.useQuery({ vehicleId: "all" });
+  const carriersQuery = (trpc as any).carriers.list.useQuery({});
 
   const scores = scoresQuery.data as any;
   const history = (historyQuery.data as any) || [];
@@ -125,10 +125,10 @@ export default function SafetyCSAScores() {
         </CardHeader>
         <CardContent>
           {scoresQuery.isLoading ? (
-            <div className="space-y-4">{Array(7).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-4">{Array(7).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : (
             <div className="space-y-4">
-              {basicCategories.map((category) => {
+              {basicCategories.map((category: any) => {
                 const score = scores?.basics?.[category.id] || 0;
                 const colors = getScoreColor(score, category.threshold);
                 const Icon = category.icon;
@@ -182,7 +182,7 @@ export default function SafetyCSAScores() {
         </CardHeader>
         <CardContent>
           {inspectionsQuery.isLoading ? (
-            <div className="space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : inspections.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-8 h-8 text-slate-500 mx-auto mb-2" />
@@ -243,7 +243,7 @@ export default function SafetyCSAScores() {
             </div>
           ) : (
             <div className="space-y-3">
-              {basicCategories.slice(0, 3).map((category) => {
+              {basicCategories.slice(0, 3).map((category: any) => {
                 const current = scores?.basics?.[category.id] || 0;
                 const previous = history[0]?.basics?.[category.id] || current;
                 const trend = current - previous;

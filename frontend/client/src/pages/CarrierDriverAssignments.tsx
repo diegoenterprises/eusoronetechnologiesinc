@@ -22,11 +22,11 @@ export default function CarrierDriverAssignments() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("pending");
 
-  const assignmentsQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 50 });
-  const driversQuery = trpc.carriers.getDrivers.useQuery({});
-  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
+  const assignmentsQuery = (trpc as any).carriers.getActiveLoads.useQuery({ limit: 50 });
+  const driversQuery = (trpc as any).carriers.getDrivers.useQuery({});
+  const statsQuery = (trpc as any).carriers.getDashboardStats.useQuery();
 
-  const assignDriverMutation = trpc.carriers.submitBid.useMutation({
+  const assignDriverMutation = (trpc as any).carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       assignmentsQuery.refetch();
@@ -35,7 +35,7 @@ export default function CarrierDriverAssignments() {
     },
   });
 
-  const unassignDriverMutation = trpc.carriers.submitBid.useMutation({
+  const unassignDriverMutation = (trpc as any).carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Driver unassigned");
       assignmentsQuery.refetch();
@@ -68,7 +68,7 @@ export default function CarrierDriverAssignments() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -131,7 +131,7 @@ export default function CarrierDriverAssignments() {
         <CardContent>
           {driversQuery.isLoading ? (
             <div className="flex gap-4 overflow-x-auto pb-2">
-              {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-48 flex-shrink-0 rounded-lg" />)}
+              {Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 w-48 flex-shrink-0 rounded-lg" />)}
             </div>
           ) : availableDrivers.length === 0 ? (
             <p className="text-slate-400 text-center py-4">No drivers currently available</p>
@@ -171,7 +171,7 @@ export default function CarrierDriverAssignments() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search loads, drivers, or locations..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -195,7 +195,7 @@ export default function CarrierDriverAssignments() {
       {/* Assignments List */}
       <div className="space-y-4">
         {assignmentsQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-xl" />)
         ) : filteredAssignments.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

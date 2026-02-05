@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function ExceptionManagement() {
   const [filter, setFilter] = useState("open");
 
-  const exceptionsQuery = trpc.dispatch.getExceptions.useQuery({ filter });
-  const statsQuery = trpc.dispatch.getExceptionStats.useQuery();
+  const exceptionsQuery = (trpc as any).dispatch.getExceptions.useQuery({ filter });
+  const statsQuery = (trpc as any).dispatch.getExceptionStats.useQuery();
 
-  const resolveMutation = trpc.dispatch.resolveException.useMutation({
+  const resolveMutation = (trpc as any).dispatch.resolveException.useMutation({
     onSuccess: () => { toast.success("Exception resolved"); exceptionsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -112,12 +112,12 @@ export default function ExceptionManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Exceptions</CardTitle></CardHeader>
         <CardContent className="p-0">
           {exceptionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
-          ) : exceptionsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
+          ) : (exceptionsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" /><p className="text-slate-400">No exceptions found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {exceptionsQuery.data?.map((exception: any) => (
+              {(exceptionsQuery.data as any)?.map((exception: any) => (
                 <div key={exception.id} className={cn("p-4", exception.priority === "critical" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-3">
                     <div>

@@ -24,8 +24,8 @@ export default function EquipmentManagement() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const equipmentQuery = trpc.vehicles.list.useQuery({ status: activeTab === "all" ? undefined : activeTab, limit: 50 });
-  const summaryQuery = trpc.vehicles.getSummary.useQuery();
+  const equipmentQuery = (trpc as any).vehicles.list.useQuery({ status: activeTab === "all" ? undefined : activeTab, limit: 50 });
+  const summaryQuery = (trpc as any).vehicles.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -39,7 +39,7 @@ export default function EquipmentManagement() {
     }
   };
 
-  const filteredEquipment = equipmentQuery.data?.filter((eq: any) =>
+  const filteredEquipment = (equipmentQuery.data as any)?.filter((eq: any) =>
     !searchTerm || eq.unitNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || eq.make?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -128,7 +128,7 @@ export default function EquipmentManagement() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search equipment..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search equipment..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -143,7 +143,7 @@ export default function EquipmentManagement() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {equipmentQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
               ) : filteredEquipment?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

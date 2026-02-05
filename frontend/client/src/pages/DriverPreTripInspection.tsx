@@ -105,10 +105,10 @@ export default function DriverPreTripInspection() {
   const [showSignature, setShowSignature] = useState(false);
   const [currentCategory, setCurrentCategory] = useState(0);
 
-  const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
-  const userQuery = trpc.users.me.useQuery();
+  const vehicleQuery = (trpc as any).drivers.getCurrentVehicle.useQuery();
+  const userQuery = (trpc as any).users.me.useQuery();
 
-  const submitMutation = trpc.inspections.submit.useMutation({
+  const submitMutation = (trpc as any).inspections.submit.useMutation({
     onSuccess: () => {
       toast.success("Pre-trip inspection submitted");
       navigate("/driver/dashboard");
@@ -210,7 +210,7 @@ export default function DriverPreTripInspection() {
 
           {/* Category Tabs */}
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {inspectionCategories.map((cat, idx) => {
+            {inspectionCategories.map((cat: any, idx: number) => {
               const Icon = cat.icon;
               const categoryChecked = cat.items.filter(item => checkedItems[item.id]).length;
               const isComplete = categoryChecked === cat.items.length;
@@ -245,7 +245,7 @@ export default function DriverPreTripInspection() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {category.items.map((item) => (
+              {category.items.map((item: any) => (
                 <div key={item.id} className="space-y-2">
                   <div
                     onClick={() => toggleItem(item.id)}
@@ -271,7 +271,7 @@ export default function DriverPreTripInspection() {
                     <div className="ml-8">
                       <Textarea
                         value={defects[item.id] || ""}
-                        onChange={(e) => setDefects(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        onChange={(e: any) => setDefects(prev => ({ ...prev, [item.id]: e.target.value }))}
                         placeholder="Note any defects (leave blank if none)..."
                         className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm"
                         rows={2}

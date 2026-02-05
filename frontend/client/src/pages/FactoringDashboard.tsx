@@ -9,7 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { DollarSign, Plus, Fuel, Building, Receipt } from "lucide-react";
 
 export default function FactoringDashboard() {
-  const overviewQuery = trpc.factoring.getOverview.useQuery();
+  const overviewQuery = (trpc as any).factoring.getOverview.useQuery();
   const account = (overviewQuery.data as any)?.account;
   const stats = (overviewQuery.data as any)?.currentPeriod;
 
@@ -44,7 +44,7 @@ export default function FactoringDashboard() {
       )}
 
       <div className="grid grid-cols-4 gap-4">
-        {overviewQuery.isLoading ? Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />) : (
+        {overviewQuery.isLoading ? Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl"><CardContent className="p-5 flex items-center gap-4"><div className="p-3 rounded-full bg-cyan-500/20"><Receipt className="w-6 h-6 text-cyan-400" /></div><div><p className="text-2xl font-bold text-cyan-400">{stats?.invoicesSubmitted || 0}</p><p className="text-xs text-slate-400">Total Invoices</p></div></CardContent></Card>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl"><CardContent className="p-5 flex items-center gap-4"><div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div><div><p className="text-2xl font-bold text-green-400">${stats?.totalFactored?.toLocaleString() || 0}</p><p className="text-xs text-slate-400">Total Factored</p></div></CardContent></Card>

@@ -38,14 +38,14 @@ export default function AccidentReporting() {
     policeReport: "",
   });
 
-  const incidentsQuery = trpc.safety.getIncidents.useQuery({ limit: 20 });
-  const summaryQuery = trpc.safety.getIncidentSummary.useQuery();
-  const driversQuery = trpc.drivers.list.useQuery({ limit: 100 });
-  const vehiclesQuery = trpc.vehicles.list.useQuery({ limit: 100 });
+  const incidentsQuery = (trpc as any).safety.getIncidents.useQuery({ limit: 20 });
+  const summaryQuery = (trpc as any).safety.getIncidentSummary.useQuery();
+  const driversQuery = (trpc as any).drivers.list.useQuery({ limit: 100 });
+  const vehiclesQuery = (trpc as any).vehicles.list.useQuery({ limit: 100 });
 
-  const submitMutation = trpc.safety.reportIncident.useMutation({
+  const submitMutation = (trpc as any).safety.reportIncident.useMutation({
     onSuccess: () => { toast.success("Incident reported"); setShowForm(false); incidentsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to submit report", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit report", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -168,15 +168,15 @@ export default function AccidentReporting() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">Date</Label>
-                <Input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input type="date" value={formData.date} onChange={(e: any) => setFormData({ ...formData, date: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Time</Label>
-                <Input type="time" value={formData.time} onChange={(e) => setFormData({ ...formData, time: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input type="time" value={formData.time} onChange={(e: any) => setFormData({ ...formData, time: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Severity</Label>
-                <Select value={formData.severity} onValueChange={(v) => setFormData({ ...formData, severity: v })}>
+                <Select value={formData.severity} onValueChange={(v: any) => setFormData({ ...formData, severity: v })}>
                   <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="minor">Minor</SelectItem>
@@ -189,31 +189,31 @@ export default function AccidentReporting() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Location</Label>
-              <Input value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} placeholder="Address or intersection" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <Input value={formData.location} onChange={(e: any) => setFormData({ ...formData, location: e.target.value })} placeholder="Address or intersection" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-400">Driver</Label>
-                <Select value={formData.driverId} onValueChange={(v) => setFormData({ ...formData, driverId: v })}>
+                <Select value={formData.driverId} onValueChange={(v: any) => setFormData({ ...formData, driverId: v })}>
                   <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select driver" /></SelectTrigger>
                   <SelectContent>
-                    {driversQuery.data?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    {(driversQuery.data as any)?.map((d: any) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-400">Vehicle</Label>
-                <Select value={formData.vehicleId} onValueChange={(v) => setFormData({ ...formData, vehicleId: v })}>
+                <Select value={formData.vehicleId} onValueChange={(v: any) => setFormData({ ...formData, vehicleId: v })}>
                   <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select vehicle" /></SelectTrigger>
                   <SelectContent>
-                    {vehiclesQuery.data?.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.unitNumber}</SelectItem>)}
+                    {(vehiclesQuery.data as any)?.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.unitNumber}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Description</Label>
-              <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} placeholder="Describe what happened..." className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" />
+              <Textarea value={formData.description} onChange={(e: any) => setFormData({ ...formData, description: e.target.value })} placeholder="Describe what happened..." className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" />
             </div>
             <div className="flex gap-3">
               <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
@@ -236,8 +236,8 @@ export default function AccidentReporting() {
         </CardHeader>
         <CardContent className="p-0">
           {incidentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : incidentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (incidentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <FileText className="w-10 h-10 text-slate-500" />
@@ -246,7 +246,7 @@ export default function AccidentReporting() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {incidentsQuery.data?.map((incident: any) => (
+              {(incidentsQuery.data as any)?.map((incident: any) => (
                 <div key={incident.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors cursor-pointer", incident.severity === "severe" && "bg-red-500/5 border-l-2 border-red-500")} onClick={() => setLocation(`/incidents/${incident.id}`)}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">

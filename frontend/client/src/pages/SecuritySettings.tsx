@@ -22,12 +22,12 @@ import { useLocation } from "wouter";
 export default function SecuritySettings() {
   const [, setLocation] = useLocation();
 
-  const securityQuery = trpc.security.getSettings.useQuery();
-  const alertsQuery = trpc.security.getAlerts.useQuery({ limit: 5 });
+  const securityQuery = (trpc as any).security.getSettings.useQuery();
+  const alertsQuery = (trpc as any).security.getAlerts.useQuery({ limit: 5 });
 
-  const updateMutation = trpc.security.updateSetting.useMutation({
+  const updateMutation = (trpc as any).security.updateSetting.useMutation({
     onSuccess: () => { toast.success("Setting updated"); securityQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
   const settings = securityQuery.data;
@@ -72,7 +72,7 @@ export default function SecuritySettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             {securityQuery.isLoading ? (
-              [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+              [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
             ) : (
               <>
                 <div className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">
@@ -140,15 +140,15 @@ export default function SecuritySettings() {
           </CardHeader>
           <CardContent className="p-0">
             {alertsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : alertsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (alertsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
                 <p className="text-slate-400">No security alerts</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {alertsQuery.data?.map((alert: any) => (
+                {(alertsQuery.data as any)?.map((alert: any) => (
                   <div key={alert.id} className={cn("p-4", alert.severity === "high" && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{alert.title}</p>

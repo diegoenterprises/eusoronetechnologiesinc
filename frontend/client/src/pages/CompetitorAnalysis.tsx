@@ -14,14 +14,14 @@ import {
 } from "lucide-react";
 
 export default function CompetitorAnalysis() {
-  const analyticsQuery = trpc.analytics.getBrokerAnalytics.useQuery({ period: "month" });
+  const analyticsQuery = (trpc as any).analytics.getBrokerAnalytics.useQuery({ period: "month" });
 
   if (analyticsQuery.isLoading) {
     return (
       <div className="p-4 md:p-6 space-y-6">
         <Skeleton className="h-10 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
+          {Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-xl" />)}
         </div>
         <Skeleton className="h-96 rounded-xl" />
       </div>

@@ -22,7 +22,7 @@ export default function ActiveLoadsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: loads, isLoading, refetch } = trpc.loads.list.useQuery({
+  const { data: loads, isLoading, refetch } = (trpc as any).loads.list.useQuery({
     status: "in_transit",
     limit: 100,
   });
@@ -76,7 +76,7 @@ export default function ActiveLoadsPage() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e: any) => setSearchQuery(e.target.value)}
             placeholder="Search by load number, origin, or destination..."
             className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
           />
@@ -100,7 +100,7 @@ export default function ActiveLoadsPage() {
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-4 space-y-4">
-              {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+              {[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
             </div>
           ) : filteredLoads?.length === 0 ? (
             <div className="text-center py-16">

@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function GeofenceManagement() {
   const [search, setSearch] = useState("");
 
-  const geofencesQuery = trpc.fleet.getGeofences.useQuery({ search });
-  const statsQuery = trpc.fleet.getGeofenceStats.useQuery();
+  const geofencesQuery = (trpc as any).fleet.getGeofences.useQuery({ search });
+  const statsQuery = (trpc as any).fleet.getGeofenceStats.useQuery();
 
-  const deleteMutation = trpc.fleet.deleteGeofence.useMutation({
+  const deleteMutation = (trpc as any).fleet.deleteGeofence.useMutation({
     onSuccess: () => { toast.success("Geofence deleted"); geofencesQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -80,19 +80,19 @@ export default function GeofenceManagement() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search geofences..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search geofences..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-cyan-400" />Geofences</CardTitle></CardHeader>
         <CardContent className="p-0">
           {geofencesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : geofencesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (geofencesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><MapPin className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No geofences found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {geofencesQuery.data?.map((geofence: any) => (
+              {(geofencesQuery.data as any)?.map((geofence: any) => (
                 <div key={geofence.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", geofence.active ? "bg-green-500/20" : "bg-slate-500/20")}>

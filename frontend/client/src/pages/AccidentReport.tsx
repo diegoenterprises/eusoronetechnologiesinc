@@ -27,21 +27,21 @@ export default function AccidentReport() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const summaryQuery = trpc.safety.getAccidentSummary.useQuery();
-  const reportsQuery = trpc.safety.getAccidentReports.useQuery({
+  const summaryQuery = (trpc as any).safety.getAccidentSummary.useQuery();
+  const reportsQuery = (trpc as any).safety.getAccidentReports.useQuery({
     search: searchTerm || undefined,
     status: statusFilter !== "all" ? statusFilter : undefined,
   });
-  const pendingQuery = trpc.safety.getPendingReports.useQuery();
+  const pendingQuery = (trpc as any).safety.getPendingReports.useQuery();
 
-  const submitReportMutation = trpc.safety.submitAccidentReport.useMutation({
+  const submitReportMutation = (trpc as any).safety.submitAccidentReport.useMutation({
     onSuccess: () => { toast.success("Report submitted"); reportsQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed to submit", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit", { description: error.message }),
   });
 
-  const updateStatusMutation = trpc.safety.updateReportStatus.useMutation({
+  const updateStatusMutation = (trpc as any).safety.updateReportStatus.useMutation({
     onSuccess: () => { toast.success("Status updated"); reportsQuery.refetch(); pendingQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   if (summaryQuery.error) {
@@ -167,7 +167,7 @@ export default function AccidentReport() {
         <TabsContent value="reports" className="mt-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1 max-w-sm">
-              <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search reports..." className="bg-slate-700/50 border-slate-600" />
+              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search reports..." className="bg-slate-700/50 border-slate-600" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
@@ -184,15 +184,15 @@ export default function AccidentReport() {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-0">
               {reportsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-              ) : reportsQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+              ) : (reportsQuery.data as any)?.length === 0 ? (
                 <div className="p-12 text-center">
                   <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />
                   <p className="text-slate-400">No accident reports found</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700">
-                  {reportsQuery.data?.map((report) => (
+                  {(reportsQuery.data as any)?.map((report: any) => (
                     <div key={report.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={cn("p-2 rounded-lg", report.severity === "critical" ? "bg-red-500/20" : report.severity === "major" ? "bg-orange-500/20" : "bg-yellow-500/20")}>
@@ -290,7 +290,7 @@ export default function AccidentReport() {
                     { label: "Major", count: summary?.bySeverity?.major || 0, color: "bg-orange-500" },
                     { label: "Minor", count: summary?.bySeverity?.minor || 0, color: "bg-yellow-500" },
                     { label: "Near Miss", count: summary?.bySeverity?.nearMiss || 0, color: "bg-blue-500" },
-                  ].map((item) => (
+                  ].map((item: any) => (
                     <div key={item.label} className="flex items-center gap-4">
                       <div className={cn("w-4 h-4 rounded", item.color)} />
                       <span className="text-slate-400 flex-1">{item.label}</span>

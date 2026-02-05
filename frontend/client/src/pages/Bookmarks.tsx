@@ -23,12 +23,12 @@ export default function Bookmarks() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const bookmarksQuery = trpc.bookmarks.list.useQuery({ limit: 50 });
-  const foldersQuery = trpc.bookmarks.getFolders.useQuery();
+  const bookmarksQuery = (trpc as any).bookmarks.list.useQuery({ limit: 50 });
+  const foldersQuery = (trpc as any).bookmarks.getFolders.useQuery();
 
-  const deleteMutation = trpc.bookmarks.delete.useMutation({
+  const deleteMutation = (trpc as any).bookmarks.delete.useMutation({
     onSuccess: () => { toast.success("Bookmark removed"); bookmarksQuery.refetch(); },
-    onError: (error) => toast.error("Failed to remove", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to remove", { description: error.message }),
   });
 
   const getTypeColor = (type: string) => {
@@ -41,7 +41,7 @@ export default function Bookmarks() {
     }
   };
 
-  const filteredBookmarks = bookmarksQuery.data?.filter((bookmark: any) =>
+  const filteredBookmarks = (bookmarksQuery.data as any)?.filter((bookmark: any) =>
     !searchTerm || bookmark.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -65,7 +65,7 @@ export default function Bookmarks() {
               </div>
               <div>
                 {bookmarksQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{bookmarksQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-cyan-400">{(bookmarksQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Bookmarks</p>
               </div>
@@ -81,7 +81,7 @@ export default function Bookmarks() {
               </div>
               <div>
                 {bookmarksQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{bookmarksQuery.data?.filter((b: any) => b.starred).length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(bookmarksQuery.data as any)?.filter((b: any) => b.starred).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Starred</p>
               </div>
@@ -97,7 +97,7 @@ export default function Bookmarks() {
               </div>
               <div>
                 {foldersQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-purple-400">{foldersQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-purple-400">{(foldersQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Folders</p>
               </div>
@@ -113,7 +113,7 @@ export default function Bookmarks() {
               </div>
               <div>
                 {bookmarksQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{bookmarksQuery.data?.filter((b: any) => b.recentlyUsed).length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(bookmarksQuery.data as any)?.filter((b: any) => b.recentlyUsed).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Recently Used</p>
               </div>
@@ -125,14 +125,14 @@ export default function Bookmarks() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search bookmarks..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search bookmarks..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Bookmarks List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {bookmarksQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : filteredBookmarks?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

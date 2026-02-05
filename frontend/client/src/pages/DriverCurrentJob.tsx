@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DriverCurrentJob() {
-  const jobQuery = trpc.drivers.getCurrentAssignment.useQuery();
-  const hosQuery = trpc.drivers.getMyHOSStatus.useQuery();
+  const jobQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
+  const hosQuery = (trpc as any).drivers.getMyHOSStatus.useQuery();
 
-  const updateStatusMutation = trpc.drivers.updateLoadStatus.useMutation({
+  const updateStatusMutation = (trpc as any).drivers.updateLoadStatus.useMutation({
     onSuccess: () => {
       toast.success("Status updated");
       jobQuery.refetch();
@@ -256,30 +256,30 @@ export default function DriverCurrentJob() {
                 <>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-green-400">{hosQuery.data?.drivingRemaining}</p>
+                      <p className="text-2xl font-bold text-green-400">{(hosQuery.data as any)?.drivingRemaining}</p>
                       <p className="text-xs text-slate-400">Drive Time Left</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-blue-400">{hosQuery.data?.onDutyRemaining}</p>
+                      <p className="text-2xl font-bold text-blue-400">{(hosQuery.data as any)?.onDutyRemaining}</p>
                       <p className="text-xs text-slate-400">On-Duty Left</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-cyan-400">{hosQuery.data?.cycleRemaining}</p>
+                      <p className="text-2xl font-bold text-cyan-400">{(hosQuery.data as any)?.cycleRemaining}</p>
                       <p className="text-xs text-slate-400">70hr Cycle</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-700/30 text-center">
-                      <p className="text-2xl font-bold text-purple-400">{hosQuery.data?.breakRemaining}</p>
+                      <p className="text-2xl font-bold text-purple-400">{(hosQuery.data as any)?.breakRemaining}</p>
                       <p className="text-xs text-slate-400">Until Break</p>
                     </div>
                   </div>
                   <Badge className={cn(
                     "w-full justify-center py-2",
-                    hosQuery.data?.status === "driving" ? "bg-green-500/20 text-green-400 border-green-500/30" :
-                    hosQuery.data?.status === "on_duty" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
-                    hosQuery.data?.status === "sleeper" ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
+                    (hosQuery.data as any)?.status === "driving" ? "bg-green-500/20 text-green-400 border-green-500/30" :
+                    (hosQuery.data as any)?.status === "on_duty" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" :
+                    (hosQuery.data as any)?.status === "sleeper" ? "bg-purple-500/20 text-purple-400 border-purple-500/30" :
                     "bg-slate-500/20 text-slate-400 border-slate-500/30"
                   )}>
-                    Current: {hosQuery.data?.status?.replace("_", " ").toUpperCase()}
+                    Current: {(hosQuery.data as any)?.status?.replace("_", " ").toUpperCase()}
                   </Badge>
                 </>
               )}

@@ -22,11 +22,11 @@ import { toast } from "sonner";
 export default function EscortPermits() {
   const [stateFilter, setStateFilter] = useState("all");
 
-  const permitsQuery = trpc.escorts.getPermits.useQuery();
-  const statsQuery = trpc.escorts.getPermitStats.useQuery();
-  const certificationsQuery = trpc.escorts.getCertifications.useQuery();
+  const permitsQuery = (trpc as any).escorts.getPermits.useQuery();
+  const statsQuery = (trpc as any).escorts.getPermitStats.useQuery();
+  const certificationsQuery = (trpc as any).escorts.getCertifications.useQuery();
 
-  const renewPermitMutation = trpc.escorts.renewPermit.useMutation({
+  const renewPermitMutation = (trpc as any).escorts.renewPermit.useMutation({
     onSuccess: () => {
       toast.success("Permit renewal submitted");
       permitsQuery.refetch();
@@ -76,7 +76,7 @@ export default function EscortPermits() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 rounded-xl">
@@ -86,7 +86,7 @@ export default function EscortPermits() {
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.activePermits || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.activePermits || 0}</p>
                     <p className="text-xs text-slate-400">Active Permits</p>
                   </div>
                 </div>
@@ -99,7 +99,7 @@ export default function EscortPermits() {
                     <Clock className="w-5 h-5 text-yellow-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.expiringSoon || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.expiringSoon || 0}</p>
                     <p className="text-xs text-slate-400">Expiring Soon</p>
                   </div>
                 </div>
@@ -112,7 +112,7 @@ export default function EscortPermits() {
                     <MapPin className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.statesCovered || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.statesCovered || 0}</p>
                     <p className="text-xs text-slate-400">States Covered</p>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ export default function EscortPermits() {
                     <Shield className="w-5 h-5 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.certifications || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.certifications || 0}</p>
                     <p className="text-xs text-slate-400">Certifications</p>
                   </div>
                 </div>
@@ -146,11 +146,11 @@ export default function EscortPermits() {
           <CardContent>
             {permitsQuery.isLoading ? (
               <div className="space-y-3">
-                {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+                {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-3">
-                {permitsQuery.data?.map((permit: any) => (
+                {(permitsQuery.data as any)?.map((permit: any) => (
                   <div
                     key={permit.id}
                     className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-amber-500/50 transition-colors"
@@ -224,11 +224,11 @@ export default function EscortPermits() {
           <CardContent>
             {certificationsQuery.isLoading ? (
               <div className="space-y-3">
-                {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+                {Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-3">
-                {certificationsQuery.data?.map((cert: any) => (
+                {(certificationsQuery.data as any)?.map((cert: any) => (
                   <div
                     key={cert.id}
                     className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30"

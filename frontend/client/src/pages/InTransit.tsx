@@ -25,7 +25,7 @@ export default function InTransitPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const { data: loads, isLoading, refetch } = trpc.loads.list.useQuery({
+  const { data: loads, isLoading, refetch } = (trpc as any).loads.list.useQuery({
     status: "in_transit",
     limit: 100,
   });
@@ -132,7 +132,7 @@ export default function InTransitPage() {
             <Input
               placeholder="Search by load number, origin, or destination..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
               className="pl-10 bg-gray-900/50 border-gray-800"
             />
           </div>

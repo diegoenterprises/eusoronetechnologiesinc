@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function FleetInsurance() {
-  const policiesQuery = trpc.insurance.getPolicies.useQuery();
-  const coverageQuery = trpc.insurance.getCoverage.useQuery();
-  const claimsQuery = trpc.insurance.getClaimsSummary.useQuery();
-  const vehiclesQuery = trpc.insurance.getInsuredVehicles.useQuery({ limit: 10 });
+  const policiesQuery = (trpc as any).insurance.getPolicies.useQuery();
+  const coverageQuery = (trpc as any).insurance.getCoverage.useQuery();
+  const claimsQuery = (trpc as any).insurance.getClaimsSummary.useQuery();
+  const vehiclesQuery = (trpc as any).insurance.getInsuredVehicles.useQuery({ limit: 10 });
 
   const coverage = coverageQuery.data && !Array.isArray(coverageQuery.data) ? coverageQuery.data : null;
 
@@ -117,12 +117,12 @@ export default function FleetInsurance() {
         </CardHeader>
         <CardContent>
           {policiesQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : policiesQuery.data?.length === 0 ? (
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (policiesQuery.data as any)?.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No active policies</p>
           ) : (
             <div className="space-y-4">
-              {policiesQuery.data?.map((policy: any) => (
+              {(policiesQuery.data as any)?.map((policy: any) => (
                 <div key={policy.id} className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/30">
                   <div className="flex items-start justify-between mb-3">
                     <div>
@@ -162,7 +162,7 @@ export default function FleetInsurance() {
           </CardHeader>
           <CardContent>
             {coverageQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-4">
                 {coverage?.breakdown?.map((item: any) => (
@@ -186,10 +186,10 @@ export default function FleetInsurance() {
           </CardHeader>
           <CardContent className="p-0">
             {vehiclesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {vehiclesQuery.data?.map((vehicle: any) => (
+                {(vehiclesQuery.data as any)?.map((vehicle: any) => (
                   <div key={vehicle.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{vehicle.unitNumber}</p>

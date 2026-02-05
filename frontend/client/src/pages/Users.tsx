@@ -45,7 +45,7 @@ export default function UsersPage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
 
   // tRPC query for users
-  const usersQuery = trpc.users.list.useQuery({ 
+  const usersQuery = (trpc as any).users.list.useQuery({ 
     search: searchTerm || undefined, 
     role: filterRole !== "all" ? filterRole : undefined 
   });
@@ -86,7 +86,7 @@ export default function UsersPage() {
     documents: u.documents || [],
   }));
 
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = users.filter((u: any) => {
     const matchesSearch =
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.includes(searchTerm) ||
@@ -172,11 +172,11 @@ export default function UsersPage() {
             <Input
               placeholder="Search users..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e: any) => setSearchTerm(e.target.value)}
               className="bg-slate-700 border-slate-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
             />
             <div className="flex gap-2">
-              {["all", "DRIVER", "SHIPPER", "CARRIER"].map((role) => (
+              {["all", "DRIVER", "SHIPPER", "CARRIER"].map((role: any) => (
                 <Button
                   key={role}
                   onClick={() => setFilterRole(role)}
@@ -193,7 +193,7 @@ export default function UsersPage() {
           </div>
 
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {filteredUsers.map((u, idx) => (
+            {filteredUsers.map((u: any, idx: number) => (
               <Card
                 key={u.id}
                 onClick={() => setSelectedUser(idx)}
@@ -282,7 +282,7 @@ export default function UsersPage() {
 
             {currentUserData.documents.length > 0 ? (
               <div className="space-y-3">
-                {currentUserData.documents.map((doc) => (
+                {currentUserData.documents.map((doc: any) => (
                   <div
                     key={doc.id}
                     className={`p-4 rounded-lg border ${getDocumentStatusColor(doc.status)}`}

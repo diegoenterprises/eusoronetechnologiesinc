@@ -23,8 +23,8 @@ export default function AccidentInvestigation() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const incidentsQuery = trpc.safety.getAccidentIncidents.useQuery({ filter, search });
-  const statsQuery = trpc.safety.getAccidentStats.useQuery();
+  const incidentsQuery = (trpc as any).safety.getAccidentIncidents.useQuery({ filter, search });
+  const statsQuery = (trpc as any).safety.getAccidentStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -134,7 +134,7 @@ export default function AccidentInvestigation() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search incidents..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search incidents..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -160,15 +160,15 @@ export default function AccidentInvestigation() {
         </CardHeader>
         <CardContent className="p-0">
           {incidentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
-          ) : incidentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
+          ) : (incidentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
               <p className="text-slate-400">No incidents found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {incidentsQuery.data?.map((incident: any) => (
+              {(incidentsQuery.data as any)?.map((incident: any) => (
                 <div key={incident.id} className={cn("p-4", incident.status === "open" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

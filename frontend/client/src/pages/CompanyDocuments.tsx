@@ -20,12 +20,12 @@ import { toast } from "sonner";
 export default function CompanyDocuments() {
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const documentsQuery = trpc.companies.getDocuments.useQuery({ category: categoryFilter === "all" ? undefined : categoryFilter });
-  const categoriesQuery = trpc.companies.getDocumentCategories.useQuery();
+  const documentsQuery = (trpc as any).companies.getDocuments.useQuery({ category: categoryFilter === "all" ? undefined : categoryFilter });
+  const categoriesQuery = (trpc as any).companies.getDocumentCategories.useQuery();
 
-  const deleteMutation = trpc.companies.deleteDocument.useMutation({
+  const deleteMutation = (trpc as any).companies.deleteDocument.useMutation({
     onSuccess: () => { toast.success("Document deleted"); documentsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to delete", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to delete", { description: error.message }),
   });
 
   const getStatusBadge = (status: string, expiresAt?: string) => {
@@ -56,9 +56,9 @@ export default function CompanyDocuments() {
           All
         </Button>
         {categoriesQuery.isLoading ? (
-          [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-9 w-24 rounded-lg" />)
+          [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-9 w-24 rounded-lg" />)
         ) : (
-          categoriesQuery.data?.map((category: any) => (
+          (categoriesQuery.data as any)?.map((category: any) => (
             <Button key={category.id} variant={categoryFilter === category.id ? "default" : "outline"} size="sm" className={cn("rounded-lg", categoryFilter === category.id ? "bg-cyan-600" : "bg-slate-700/50 border-slate-600/50")} onClick={() => setCategoryFilter(category.id)}>
               {category.name} ({category.count})
             </Button>
@@ -70,8 +70,8 @@ export default function CompanyDocuments() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {documentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : documentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (documentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <FolderOpen className="w-10 h-10 text-slate-500" />
@@ -81,7 +81,7 @@ export default function CompanyDocuments() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {documentsQuery.data?.map((doc: any) => (
+              {(documentsQuery.data as any)?.map((doc: any) => (
                 <div key={doc.id} className={cn("p-4 hover:bg-slate-700/20 transition-colors", doc.status === "expired" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

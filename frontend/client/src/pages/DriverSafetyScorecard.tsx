@@ -22,9 +22,9 @@ export default function DriverSafetyScorecard() {
   const [search, setSearch] = useState("");
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
 
-  const driversQuery = trpc.safety.getDriverScores.useQuery({ search });
-  const driverDetailQuery = trpc.safety.getDriverScoreDetail.useQuery({ driverId: selectedDriver! }, { enabled: !!selectedDriver });
-  const statsQuery = trpc.safety.getDriverSafetyStats.useQuery();
+  const driversQuery = (trpc as any).safety.getDriverScores.useQuery({ search });
+  const driverDetailQuery = (trpc as any).safety.getDriverScoreDetail.useQuery({ driverId: selectedDriver! }, { enabled: !!selectedDriver });
+  const statsQuery = (trpc as any).safety.getDriverSafetyStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -138,24 +138,24 @@ export default function DriverSafetyScorecard() {
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center text-2xl font-bold text-white">
-                    {driverDetailQuery.data?.name?.charAt(0)}
+                    {(driverDetailQuery.data as any)?.name?.charAt(0)}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="text-white text-xl font-bold">{driverDetailQuery.data?.name}</p>
-                      {getScoreBadge(driverDetailQuery.data?.overallScore || 0)}
+                      <p className="text-white text-xl font-bold">{(driverDetailQuery.data as any)?.name}</p>
+                      {getScoreBadge((driverDetailQuery.data as any)?.overallScore || 0)}
                     </div>
-                    <p className="text-slate-400">{driverDetailQuery.data?.licenseNumber}</p>
+                    <p className="text-slate-400">{(driverDetailQuery.data as any)?.licenseNumber}</p>
                   </div>
                   <div className="text-right">
-                    <p className={cn("text-4xl font-bold", getScoreColor(driverDetailQuery.data?.overallScore || 0))}>{driverDetailQuery.data?.overallScore}</p>
+                    <p className={cn("text-4xl font-bold", getScoreColor((driverDetailQuery.data as any)?.overallScore || 0))}>{(driverDetailQuery.data as any)?.overallScore}</p>
                     <p className="text-sm text-slate-500">Overall Score</p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {driverDetailQuery.data?.categories?.map((cat: any) => (
+                  {(driverDetailQuery.data as any)?.categories?.map((cat: any) => (
                     <div key={cat.name} className="p-4 rounded-xl bg-slate-700/30">
                       <p className="text-sm text-slate-400 mb-2">{cat.name}</p>
                       <p className={cn("text-2xl font-bold", getScoreColor(cat.score))}>{cat.score}</p>
@@ -166,11 +166,11 @@ export default function DriverSafetyScorecard() {
 
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <p className="text-white font-medium mb-3">Recent Events</p>
-                  {driverDetailQuery.data?.recentEvents?.length === 0 ? (
+                  {(driverDetailQuery.data as any)?.recentEvents?.length === 0 ? (
                     <p className="text-sm text-slate-500">No recent events</p>
                   ) : (
                     <div className="space-y-2">
-                      {driverDetailQuery.data?.recentEvents?.map((event: any, idx: number) => (
+                      {(driverDetailQuery.data as any)?.recentEvents?.map((event: any, idx: number) => (
                         <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-800/50">
                           <div className="flex items-center gap-2">
                             {event.type === "positive" ? <CheckCircle className="w-4 h-4 text-green-400" /> : <AlertTriangle className="w-4 h-4 text-red-400" />}
@@ -191,7 +191,7 @@ export default function DriverSafetyScorecard() {
           {/* Search */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+            <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
           </div>
 
           {/* Drivers List */}
@@ -204,15 +204,15 @@ export default function DriverSafetyScorecard() {
             </CardHeader>
             <CardContent className="p-0">
               {driversQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : driversQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (driversQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
                   <p className="text-slate-400">No drivers found</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {driversQuery.data?.map((driver: any, idx: number) => (
+                  {(driversQuery.data as any)?.map((driver: any, idx: number) => (
                     <div key={driver.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setSelectedDriver(driver.id)}>
                       <div className="flex items-center gap-4">
                         <div className="w-8 text-center font-bold text-slate-500">#{idx + 1}</div>

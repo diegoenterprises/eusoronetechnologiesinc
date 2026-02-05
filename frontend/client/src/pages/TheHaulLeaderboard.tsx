@@ -18,10 +18,10 @@ import { Link } from 'wouter';
 export default function TheHaulLeaderboard() {
   const [period, setPeriod] = useState('weekly');
 
-  const { data: leaderboard, isLoading } = trpc.gamification.getLeaderboard.useQuery({ 
+  const { data: leaderboard, isLoading } = (trpc as any).gamification.getLeaderboard.useQuery({ 
     period: period === 'daily' ? 'week' : period === 'weekly' ? 'week' : period === 'monthly' ? 'month' : 'all'
   });
-  const { data: myRank } = trpc.gamification.getProfile.useQuery({});
+  const { data: myRank } = (trpc as any).gamification.getProfile.useQuery({});
 
   if (isLoading) {
     return (
@@ -29,7 +29,7 @@ export default function TheHaulLeaderboard() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-32" />
         <div className="space-y-2">
-          {[...Array(10)].map((_, i) => (
+          {[...Array(10)].map((_: any, i: number) => (
             <Skeleton key={i} className="h-16" />
           ))}
         </div>

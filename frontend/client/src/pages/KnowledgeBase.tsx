@@ -23,17 +23,17 @@ export default function KnowledgeBase() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
 
-  const categoriesQuery = trpc.support.getKBCategories.useQuery();
-  const articlesQuery = trpc.support.getKBArticles.useQuery({ categoryId: selectedCategory, search: searchQuery });
-  const articleDetailQuery = trpc.support.getKBArticle.useQuery({ articleId: selectedArticle! }, { enabled: !!selectedArticle });
-  const bookmarksQuery = trpc.support.getKBBookmarks.useQuery();
+  const categoriesQuery = (trpc as any).support.getKBCategories.useQuery();
+  const articlesQuery = (trpc as any).support.getKBArticles.useQuery({ categoryId: selectedCategory, search: searchQuery });
+  const articleDetailQuery = (trpc as any).support.getKBArticle.useQuery({ articleId: selectedArticle! }, { enabled: !!selectedArticle });
+  const bookmarksQuery = (trpc as any).support.getKBBookmarks.useQuery();
 
-  const bookmarkMutation = trpc.support.toggleKBBookmark.useMutation({
-    onSuccess: (data) => { toast.success(data.bookmarked ? "Bookmarked" : "Removed from bookmarks"); bookmarksQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+  const bookmarkMutation = (trpc as any).support.toggleKBBookmark.useMutation({
+    onSuccess: (data: any) => { toast.success(data.bookmarked ? "Bookmarked" : "Removed from bookmarks"); bookmarksQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const isBookmarked = (articleId: string) => bookmarksQuery.data?.some((b: any) => b.articleId === articleId);
+  const isBookmarked = (articleId: string) => (bookmarksQuery.data as any)?.some((b: any) => b.articleId === articleId);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -56,7 +56,7 @@ export default function KnowledgeBase() {
       {!selectedArticle && (
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-          <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search knowledge base..." className="pl-10 bg-slate-800/50 border-slate-700/50 rounded-lg h-12" />
+          <Input value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} placeholder="Search knowledge base..." className="pl-10 bg-slate-800/50 border-slate-700/50 rounded-lg h-12" />
         </div>
       )}
 
@@ -74,11 +74,11 @@ export default function KnowledgeBase() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <Badge className="bg-slate-700/50 text-slate-300 border-0 mb-2">{articleDetailQuery.data?.category}</Badge>
-                    <CardTitle className="text-white text-2xl">{articleDetailQuery.data?.title}</CardTitle>
+                    <Badge className="bg-slate-700/50 text-slate-300 border-0 mb-2">{(articleDetailQuery.data as any)?.category}</Badge>
+                    <CardTitle className="text-white text-2xl">{(articleDetailQuery.data as any)?.title}</CardTitle>
                     <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
-                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" />Updated: {articleDetailQuery.data?.updatedAt}</span>
-                      <span className="flex items-center gap-1"><Eye className="w-4 h-4" />{articleDetailQuery.data?.views} views</span>
+                      <span className="flex items-center gap-1"><Clock className="w-4 h-4" />Updated: {(articleDetailQuery.data as any)?.updatedAt}</span>
+                      <span className="flex items-center gap-1"><Eye className="w-4 h-4" />{(articleDetailQuery.data as any)?.views} views</span>
                     </div>
                   </div>
                   <Button variant="ghost" className={cn("text-slate-400 hover:text-yellow-400", isBookmarked(selectedArticle) && "text-yellow-400")} onClick={() => bookmarkMutation.mutate({ articleId: selectedArticle })}>
@@ -87,7 +87,7 @@ export default function KnowledgeBase() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: articleDetailQuery.data?.content || "" }} />
+                <div className="prose prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: (articleDetailQuery.data as any)?.content || "" }} />
               </CardContent>
             </>
           )}
@@ -104,14 +104,14 @@ export default function KnowledgeBase() {
             </CardHeader>
             <CardContent className="p-0">
               {categoriesQuery.isLoading ? (
-                <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+                <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
                   <div className={cn("p-3 cursor-pointer transition-colors flex items-center justify-between", !selectedCategory && "bg-cyan-500/10 border-l-2 border-cyan-500")} onClick={() => setSelectedCategory(null)}>
                     <span className={cn("text-sm", !selectedCategory ? "text-cyan-400" : "text-slate-400")}>All Articles</span>
-                    <Badge className="bg-slate-700/50 text-slate-300 border-0">{categoriesQuery.data?.reduce((acc: number, c: any) => acc + c.articleCount, 0)}</Badge>
+                    <Badge className="bg-slate-700/50 text-slate-300 border-0">{(categoriesQuery.data as any)?.reduce((acc: number, c: any) => acc + c.articleCount, 0)}</Badge>
                   </div>
-                  {categoriesQuery.data?.map((category: any) => (
+                  {(categoriesQuery.data as any)?.map((category: any) => (
                     <div key={category.id} className={cn("p-3 cursor-pointer transition-colors flex items-center justify-between hover:bg-slate-700/20", selectedCategory === category.id && "bg-cyan-500/10 border-l-2 border-cyan-500")} onClick={() => setSelectedCategory(category.id)}>
                       <span className={cn("text-sm", selectedCategory === category.id ? "text-cyan-400" : "text-slate-400")}>{category.name}</span>
                       <Badge className="bg-slate-700/50 text-slate-300 border-0">{category.articleCount}</Badge>
@@ -125,11 +125,11 @@ export default function KnowledgeBase() {
                 <p className="text-sm text-slate-500 mb-2 flex items-center gap-1"><Bookmark className="w-4 h-4" />Bookmarks</p>
                 {bookmarksQuery.isLoading ? (
                   <Skeleton className="h-8 w-full rounded-lg" />
-                ) : bookmarksQuery.data?.length === 0 ? (
+                ) : (bookmarksQuery.data as any)?.length === 0 ? (
                   <p className="text-xs text-slate-600">No bookmarks</p>
                 ) : (
                   <div className="space-y-1">
-                    {bookmarksQuery.data?.slice(0, 5).map((bookmark: any) => (
+                    {(bookmarksQuery.data as any)?.slice(0, 5).map((bookmark: any) => (
                       <div key={bookmark.articleId} className="text-xs text-slate-400 hover:text-cyan-400 cursor-pointer truncate" onClick={() => setSelectedArticle(bookmark.articleId)}>
                         {bookmark.title}
                       </div>
@@ -150,15 +150,15 @@ export default function KnowledgeBase() {
             </CardHeader>
             <CardContent className="p-0">
               {articlesQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-              ) : articlesQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              ) : (articlesQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <Book className="w-10 h-10 text-slate-500 mx-auto mb-3" />
                   <p className="text-slate-400">No articles found</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {articlesQuery.data?.map((article: any) => (
+                  {(articlesQuery.data as any)?.map((article: any) => (
                     <div key={article.id} className="p-4 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setSelectedArticle(article.id)}>
                       <div className="flex items-start justify-between">
                         <div className="flex-1">

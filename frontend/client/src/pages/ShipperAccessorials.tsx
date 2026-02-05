@@ -22,8 +22,8 @@ export default function ShipperAccessorials() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const accessorialsQuery = trpc.shippers.getMyLoads.useQuery({});
-  const statsQuery = trpc.shippers.getStats.useQuery();
+  const accessorialsQuery = (trpc as any).shippers.getMyLoads.useQuery({});
+  const statsQuery = (trpc as any).shippers.getStats.useQuery();
 
   const accessorials = (accessorialsQuery.data as any)?.loads || accessorialsQuery.data || [];
   const stats = statsQuery.data as any;
@@ -57,7 +57,7 @@ export default function ShipperAccessorials() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -135,7 +135,7 @@ export default function ShipperAccessorials() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search by load or carrier..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -173,7 +173,7 @@ export default function ShipperAccessorials() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {accessorialsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : filteredAccessorials.length === 0 ? (
             <div className="text-center py-16">
               <Receipt className="w-12 h-12 text-slate-500 mx-auto mb-4" />

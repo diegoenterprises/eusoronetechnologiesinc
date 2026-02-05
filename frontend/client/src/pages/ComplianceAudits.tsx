@@ -23,8 +23,8 @@ export default function ComplianceAudits() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const auditsQuery = trpc.compliance.getAudits.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.compliance.getAuditStats.useQuery();
+  const auditsQuery = (trpc as any).compliance.getAudits.useQuery({ status: statusFilter, type: typeFilter });
+  const statsQuery = (trpc as any).compliance.getAuditStats.useQuery();
 
   const audits = auditsQuery.data || [];
   const stats = statsQuery.data;
@@ -62,7 +62,7 @@ export default function ComplianceAudits() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -122,7 +122,7 @@ export default function ComplianceAudits() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search audits..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -159,7 +159,7 @@ export default function ComplianceAudits() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {auditsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
           ) : filteredAudits.length === 0 ? (
             <div className="text-center py-16">
               <ClipboardCheck className="w-12 h-12 text-slate-500 mx-auto mb-4" />

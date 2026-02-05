@@ -23,13 +23,13 @@ export default function TeamManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
 
-  const membersQuery = trpc.team.getMembers.useQuery({ role: roleFilter === "all" ? undefined : roleFilter, limit: 50 });
-  const rolesQuery = trpc.team.getRoles.useQuery();
-  const invitesQuery = trpc.team.getPendingInvites.useQuery();
+  const membersQuery = (trpc as any).team.getMembers.useQuery({ role: roleFilter === "all" ? undefined : roleFilter, limit: 50 });
+  const rolesQuery = (trpc as any).team.getRoles.useQuery();
+  const invitesQuery = (trpc as any).team.getPendingInvites.useQuery();
 
-  const inviteMutation = trpc.team.invite.useMutation({
+  const inviteMutation = (trpc as any).team.invite.useMutation({
     onSuccess: () => { toast.success("Invitation sent"); invitesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to invite", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to invite", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {
@@ -51,7 +51,7 @@ export default function TeamManagement() {
     }
   };
 
-  const filteredMembers = membersQuery.data?.filter((member: any) =>
+  const filteredMembers = (membersQuery.data as any)?.filter((member: any) =>
     !searchTerm || member.name?.toLowerCase().includes(searchTerm.toLowerCase()) || member.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -80,7 +80,7 @@ export default function TeamManagement() {
               </div>
               <div>
                 {membersQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{membersQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(membersQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Members</p>
               </div>
@@ -96,7 +96,7 @@ export default function TeamManagement() {
               </div>
               <div>
                 {membersQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{membersQuery.data?.filter((m: any) => m.status === "active").length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(membersQuery.data as any)?.filter((m: any) => m.status === "active").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Active</p>
               </div>
@@ -112,7 +112,7 @@ export default function TeamManagement() {
               </div>
               <div>
                 {invitesQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{invitesQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(invitesQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Pending Invites</p>
               </div>
@@ -128,7 +128,7 @@ export default function TeamManagement() {
               </div>
               <div>
                 {membersQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{membersQuery.data?.filter((m: any) => m.role === "admin").length || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(membersQuery.data as any)?.filter((m: any) => m.role === "admin").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Admins</p>
               </div>
@@ -141,7 +141,7 @@ export default function TeamManagement() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search members..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search members..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={roleFilter} onValueChange={setRoleFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -149,7 +149,7 @@ export default function TeamManagement() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
-            {rolesQuery.data?.map((role: any) => (
+            {(rolesQuery.data as any)?.map((role: any) => (
               <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
             ))}
           </SelectContent>
@@ -160,7 +160,7 @@ export default function TeamManagement() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {membersQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredMembers?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

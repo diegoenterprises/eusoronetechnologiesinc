@@ -22,10 +22,10 @@ export default function TerminalProductInventory() {
   const [search, setSearch] = useState("");
   const [productFilter, setProductFilter] = useState("all");
 
-  const inventoryQuery = trpc.terminals.getInventory.useQuery({});
-  const tanksQuery = trpc.terminals.getTanks.useQuery();
-  const movementsQuery = trpc.terminals.getInventoryStats.useQuery();
-  const alertsQuery = trpc.terminals.getAlerts.useQuery();
+  const inventoryQuery = (trpc as any).terminals.getInventory.useQuery({});
+  const tanksQuery = (trpc as any).terminals.getTanks.useQuery();
+  const movementsQuery = (trpc as any).terminals.getInventoryStats.useQuery();
+  const alertsQuery = (trpc as any).terminals.getAlerts.useQuery();
 
   const inventory = inventoryQuery.data || [];
   const tanks = tanksQuery.data || [];
@@ -68,7 +68,7 @@ export default function TerminalProductInventory() {
       {/* Inventory Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {inventoryQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           inventory.slice(0, 4).map((product: any) => (
             <Card key={product.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -136,7 +136,7 @@ export default function TerminalProductInventory() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search tanks or products..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -168,7 +168,7 @@ export default function TerminalProductInventory() {
             </CardHeader>
             <CardContent className="p-0">
               {tanksQuery.isLoading ? (
-                <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+                <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
               ) : filteredTanks.length === 0 ? (
                 <div className="text-center py-16">
                   <Database className="w-12 h-12 text-slate-500 mx-auto mb-4" />
@@ -236,7 +236,7 @@ export default function TerminalProductInventory() {
             </CardHeader>
             <CardContent className="p-0">
               {movementsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
               ) : (movements as any[]).length === 0 ? (
                 <div className="text-center py-10">
                   <p className="text-slate-400 text-sm">No recent movements</p>

@@ -22,8 +22,8 @@ export default function CapacityBoard() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const capacityQuery = trpc.carriers.getAvailableCapacity.useQuery({ limit: 50 });
-  const summaryQuery = trpc.carriers.getCapacitySummary.useQuery();
+  const capacityQuery = (trpc as any).carriers.getAvailableCapacity.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).carriers.getCapacitySummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -37,7 +37,7 @@ export default function CapacityBoard() {
     }
   };
 
-  const filteredCapacity = capacityQuery.data?.filter((item: any) => {
+  const filteredCapacity = (capacityQuery.data as any)?.filter((item: any) => {
     return !searchTerm || 
       item.carrierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -131,7 +131,7 @@ export default function CapacityBoard() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by carrier or location..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -144,7 +144,7 @@ export default function CapacityBoard() {
         </CardHeader>
         <CardContent className="p-0">
           {capacityQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredCapacity?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

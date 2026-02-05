@@ -20,11 +20,11 @@ export default function ShipperInvoiceReview() {
   const [disputeReason, setDisputeReason] = useState("");
   const [showDispute, setShowDispute] = useState(false);
 
-  const invoiceQuery = trpc.loads.getById.useQuery({ id: invoiceId || "" });
-  const approveMutation = trpc.loads.create.useMutation({
+  const invoiceQuery = (trpc as any).loads.getById.useQuery({ id: invoiceId || "" });
+  const approveMutation = (trpc as any).loads.create.useMutation({
     onSuccess: () => { toast.success("Invoice approved"); navigate("/shipper/invoices"); },
   });
-  const disputeMutation = trpc.loads.create.useMutation({
+  const disputeMutation = (trpc as any).loads.create.useMutation({
     onSuccess: () => { toast.success("Dispute submitted"); navigate("/shipper/invoices"); },
   });
 
@@ -78,7 +78,7 @@ export default function ShipperInvoiceReview() {
         <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
           <CardContent className="p-4 space-y-4">
             <p className="text-red-400 font-medium">Dispute Reason</p>
-            <Textarea value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)} placeholder="Explain..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+            <Textarea value={disputeReason} onChange={(e: any) => setDisputeReason(e.target.value)} placeholder="Explain..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
           </CardContent>
         </Card>
       )}

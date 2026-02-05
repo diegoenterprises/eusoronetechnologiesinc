@@ -19,17 +19,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function CacheManagement() {
-  const cacheQuery = trpc.admin.getCacheStats.useQuery();
-  const keysQuery = trpc.admin.getCacheKeys.useQuery({ limit: 20 });
+  const cacheQuery = (trpc as any).admin.getCacheStats.useQuery();
+  const keysQuery = (trpc as any).admin.getCacheKeys.useQuery({ limit: 20 });
 
-  const clearAllMutation = trpc.admin.clearAllCache.useMutation({
+  const clearAllMutation = (trpc as any).admin.clearAllCache.useMutation({
     onSuccess: () => { toast.success("All cache cleared"); cacheQuery.refetch(); keysQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const clearKeyMutation = trpc.admin.clearCacheKey.useMutation({
+  const clearKeyMutation = (trpc as any).admin.clearCacheKey.useMutation({
     onSuccess: () => { toast.success("Cache key cleared"); keysQuery.refetch(); cacheQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = cacheQuery.data;
@@ -154,15 +154,15 @@ export default function CacheManagement() {
         </CardHeader>
         <CardContent className="p-0">
           {keysQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
-          ) : keysQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+          ) : (keysQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Database className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No cache keys</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
-              {keysQuery.data?.map((key: any) => (
+              {(keysQuery.data as any)?.map((key: any) => (
                 <div key={key.name} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-slate-700/50">

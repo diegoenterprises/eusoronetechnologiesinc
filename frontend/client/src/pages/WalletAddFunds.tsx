@@ -22,10 +22,10 @@ export default function WalletAddFunds() {
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('bank');
 
-  const { data: balance, isLoading: balanceLoading } = trpc.wallet.getBalance.useQuery();
-  const { data: accounts } = trpc.wallet.getPayoutMethods.useQuery();
+  const { data: balance, isLoading: balanceLoading } = (trpc as any).wallet.getBalance.useQuery();
+  const { data: accounts } = (trpc as any).wallet.getPayoutMethods.useQuery();
   
-  const addFundsMutation = trpc.wallet.requestCashAdvance.useMutation({
+  const addFundsMutation = (trpc as any).wallet.requestCashAdvance.useMutation({
     onSuccess: () => {
       toast.success('Funds added successfully!');
       setLocation('/wallet');
@@ -93,7 +93,7 @@ export default function WalletAddFunds() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-4 gap-2">
-            {quickAmounts.map((amt) => (
+            {quickAmounts.map((amt: any) => (
               <Button
                 key={amt}
                 variant={amount === String(amt) ? 'default' : 'outline'}
@@ -113,7 +113,7 @@ export default function WalletAddFunds() {
                 placeholder="0.00"
                 className="pl-8"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e: any) => setAmount(e.target.value)}
               />
             </div>
           </div>

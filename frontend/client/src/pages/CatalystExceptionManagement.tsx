@@ -33,17 +33,17 @@ export default function CatalystExceptionManagement() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const exceptionsQuery = trpc.catalysts.getExceptions.useQuery({ type: typeFilter !== "all" ? typeFilter : undefined, status: priorityFilter !== "all" ? priorityFilter : undefined });
-  const statsQuery = trpc.catalysts.getExceptionStats.useQuery();
+  const exceptionsQuery = (trpc as any).catalysts.getExceptions.useQuery({ type: typeFilter !== "all" ? typeFilter : undefined, status: priorityFilter !== "all" ? priorityFilter : undefined });
+  const statsQuery = (trpc as any).catalysts.getExceptionStats.useQuery();
 
-  const acknowledgeMutation = trpc.catalysts.resolveException.useMutation({
+  const acknowledgeMutation = (trpc as any).catalysts.resolveException.useMutation({
     onSuccess: () => {
       toast.success("Exception acknowledged");
       exceptionsQuery.refetch();
     },
   });
 
-  const resolveMutation = trpc.catalysts.resolveException.useMutation({
+  const resolveMutation = (trpc as any).catalysts.resolveException.useMutation({
     onSuccess: () => {
       toast.success("Exception resolved");
       exceptionsQuery.refetch();
@@ -83,7 +83,7 @@ export default function CatalystExceptionManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
@@ -144,7 +144,7 @@ export default function CatalystExceptionManagement() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {exceptionTypes.map((t) => (
+                {exceptionTypes.map((t: any) => (
                   <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                 ))}
               </SelectContent>
@@ -169,7 +169,7 @@ export default function CatalystExceptionManagement() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {exceptionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
           ) : exceptions.length === 0 ? (
             <div className="text-center py-16">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-4" />

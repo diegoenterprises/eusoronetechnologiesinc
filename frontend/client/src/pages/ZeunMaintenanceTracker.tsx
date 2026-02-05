@@ -26,22 +26,22 @@ export default function ZeunMaintenanceTracker() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const summaryQuery = trpc.maintenance.getSummary.useQuery();
-  const scheduledQuery = trpc.maintenance.getScheduled.useQuery({
+  const summaryQuery = (trpc as any).maintenance.getSummary.useQuery();
+  const scheduledQuery = (trpc as any).maintenance.getScheduled.useQuery({
     status: statusFilter !== "all" ? statusFilter : undefined,
     search: searchTerm || undefined,
   });
-  const historyQuery = trpc.maintenance.getHistory.useQuery({ limit: 20 });
-  const alertsQuery = trpc.maintenance.getAlerts.useQuery();
+  const historyQuery = (trpc as any).maintenance.getHistory.useQuery({ limit: 20 });
+  const alertsQuery = (trpc as any).maintenance.getAlerts.useQuery();
 
-  const completeMutation = trpc.maintenance.complete.useMutation({
+  const completeMutation = (trpc as any).maintenance.complete.useMutation({
     onSuccess: () => { toast.success("Maintenance completed"); scheduledQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const scheduleMutation = trpc.maintenance.schedule.useMutation({
+  const scheduleMutation = (trpc as any).maintenance.schedule.useMutation({
     onSuccess: () => { toast.success("Maintenance scheduled"); scheduledQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   if (summaryQuery.error) {
@@ -148,7 +148,7 @@ export default function ZeunMaintenanceTracker() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {alertsQuery.data.map((alert) => (
+              {alertsQuery.data.map((alert: any) => (
                 <div key={alert.id} className="flex items-center justify-between p-3 rounded-lg bg-red-500/10">
                   <div className="flex items-center gap-3">
                     <AlertTriangle className="w-5 h-5 text-red-400" />
@@ -215,15 +215,15 @@ export default function ZeunMaintenanceTracker() {
               <CardHeader><CardTitle className="text-white">Upcoming Maintenance</CardTitle></CardHeader>
               <CardContent>
                 {scheduledQuery.isLoading ? (
-                  <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-                ) : scheduledQuery.data?.length === 0 ? (
+                  <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+                ) : (scheduledQuery.data as any)?.length === 0 ? (
                   <div className="text-center py-8">
                     <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
                     <p className="text-slate-400">No upcoming maintenance</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {scheduledQuery.data?.slice(0, 5).map((item) => (
+                    {(scheduledQuery.data as any)?.slice(0, 5).map((item: any) => (
                       <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                         <div className="flex items-center gap-3">
                           <Wrench className={cn("w-5 h-5", item.status === "overdue" ? "text-red-400" : "text-yellow-400")} />
@@ -249,7 +249,7 @@ export default function ZeunMaintenanceTracker() {
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search..." className="pl-9 bg-slate-700/50 border-slate-600" />
+              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search..." className="pl-9 bg-slate-700/50 border-slate-600" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
@@ -265,15 +265,15 @@ export default function ZeunMaintenanceTracker() {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-0">
               {scheduledQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : scheduledQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : (scheduledQuery.data as any)?.length === 0 ? (
                 <div className="p-12 text-center">
                   <Wrench className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                   <p className="text-slate-400">No scheduled maintenance</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700">
-                  {scheduledQuery.data?.map((item) => (
+                  {(scheduledQuery.data as any)?.map((item: any) => (
                     <div key={item.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={cn("p-2 rounded-lg", item.status === "overdue" ? "bg-red-500/20" : item.status === "in_progress" ? "bg-blue-500/20" : "bg-yellow-500/20")}>
@@ -309,12 +309,12 @@ export default function ZeunMaintenanceTracker() {
             <CardHeader><CardTitle className="text-white">Maintenance History</CardTitle></CardHeader>
             <CardContent>
               {historyQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : historyQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : (historyQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No maintenance history</p>
               ) : (
                 <div className="space-y-3">
-                  {historyQuery.data?.map((item) => (
+                  {(historyQuery.data as any)?.map((item: any) => (
                     <div key={item.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-lg bg-green-500/20"><CheckCircle className="w-5 h-5 text-green-400" /></div>

@@ -24,26 +24,26 @@ export default function AppointmentScheduler() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedRack, setSelectedRack] = useState("all");
 
-  const summaryQuery = trpc.appointments.getSummary.useQuery({ date: selectedDate });
-  const appointmentsQuery = trpc.appointments.list.useQuery({
+  const summaryQuery = (trpc as any).appointments.getSummary.useQuery({ date: selectedDate });
+  const appointmentsQuery = (trpc as any).appointments.list.useQuery({
     date: selectedDate,
     rackId: selectedRack !== "all" ? selectedRack : undefined,
   });
-  const racksQuery = trpc.terminals.getRacks.useQuery({});
+  const racksQuery = (trpc as any).terminals.getRacks.useQuery({});
 
-  const checkInMutation = trpc.appointments.checkIn.useMutation({
+  const checkInMutation = (trpc as any).appointments.checkIn.useMutation({
     onSuccess: () => { toast.success("Driver checked in"); appointmentsQuery.refetch(); },
-    onError: (error) => toast.error("Check-in failed", { description: error.message }),
+    onError: (error: any) => toast.error("Check-in failed", { description: error.message }),
   });
 
-  const startLoadingMutation = trpc.appointments.startLoading.useMutation({
+  const startLoadingMutation = (trpc as any).appointments.startLoading.useMutation({
     onSuccess: () => { toast.success("Loading started"); appointmentsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to start loading", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to start loading", { description: error.message }),
   });
 
-  const completeMutation = trpc.appointments.complete.useMutation({
+  const completeMutation = (trpc as any).appointments.complete.useMutation({
     onSuccess: () => { toast.success("Appointment completed"); appointmentsQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed to complete", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to complete", { description: error.message }),
   });
 
   if (summaryQuery.error || appointmentsQuery.error) {
@@ -112,7 +112,7 @@ export default function AppointmentScheduler() {
         <Card className="bg-slate-800/50 border-slate-700">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-3xl font-bold text-white">{summaryQuery.data?.todayTotal ?? 0}</p>
+              <p className="text-3xl font-bold text-white">{(summaryQuery.data as any)?.todayTotal ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Today's Total</p>
           </CardContent>
@@ -120,7 +120,7 @@ export default function AppointmentScheduler() {
         <Card className="bg-green-500/10 border-green-500/30">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-3xl font-bold text-green-400">{summaryQuery.data?.completed ?? 0}</p>
+              <p className="text-3xl font-bold text-green-400">{(summaryQuery.data as any)?.completed ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Completed</p>
           </CardContent>
@@ -128,7 +128,7 @@ export default function AppointmentScheduler() {
         <Card className="bg-blue-500/10 border-blue-500/30">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-3xl font-bold text-blue-400">{summaryQuery.data?.inProgress ?? 0}</p>
+              <p className="text-3xl font-bold text-blue-400">{(summaryQuery.data as any)?.inProgress ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">In Progress</p>
           </CardContent>
@@ -136,7 +136,7 @@ export default function AppointmentScheduler() {
         <Card className="bg-yellow-500/10 border-yellow-500/30">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-3xl font-bold text-yellow-400">{summaryQuery.data?.upcoming ?? 0}</p>
+              <p className="text-3xl font-bold text-yellow-400">{(summaryQuery.data as any)?.upcoming ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Upcoming</p>
           </CardContent>
@@ -144,7 +144,7 @@ export default function AppointmentScheduler() {
         <Card className="bg-red-500/10 border-red-500/30">
           <CardContent className="p-4 text-center">
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-3xl font-bold text-red-400">{summaryQuery.data?.cancelled ?? 0}</p>
+              <p className="text-3xl font-bold text-red-400">{(summaryQuery.data as any)?.cancelled ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Cancelled</p>
           </CardContent>
@@ -176,7 +176,7 @@ export default function AppointmentScheduler() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Racks</SelectItem>
-            {racksQuery.data?.map(rack => (
+            {(racksQuery.data as any)?.map((rack: any) => (
               <SelectItem key={rack.id} value={rack.id}>{rack.name} - {rack.product}</SelectItem>
             ))}
           </SelectContent>
@@ -195,15 +195,15 @@ export default function AppointmentScheduler() {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-0">
               {appointmentsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-              ) : appointmentsQuery.data?.appointments?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+              ) : (appointmentsQuery.data as any)?.appointments?.length === 0 ? (
                 <div className="p-12 text-center">
                   <Calendar className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                   <p className="text-slate-400">No appointments scheduled</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700">
-                  {appointmentsQuery.data?.appointments?.map((apt) => (
+                  {(appointmentsQuery.data as any)?.appointments?.map((apt: any) => (
                     <div key={apt.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
                       <div className="flex items-center gap-4">
                         <div className={cn(
@@ -277,10 +277,10 @@ export default function AppointmentScheduler() {
           <Card className="bg-slate-800/50 border-slate-700">
             <CardContent className="p-4">
               {appointmentsQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+                <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
               ) : (
                 <div className="space-y-2">
-                  {timeSlots.map((time) => {
+                  {timeSlots.map((time: any) => {
                     const slotAppointments = getAppointmentsForSlot(time);
                     return (
                       <div key={time} className="flex gap-4">
@@ -321,16 +321,16 @@ export default function AppointmentScheduler() {
         <TabsContent value="rack" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {racksQuery.isLoading ? (
-              [1, 2, 3, 4].map((i) => (
+              [1, 2, 3, 4].map((i: any) => (
                 <Card key={i} className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-4"><Skeleton className="h-32 w-full" /></CardContent>
                 </Card>
               ))
             ) : (
-              racksQuery.data?.map((rack) => {
-                const rackAppointments = (appointmentsQuery.data?.appointments || []).filter(apt => apt.rackId === rack.id);
-                const currentApt = rackAppointments.find(apt => apt.status === "loading");
-                const nextApt = rackAppointments.find(apt => apt.status === "checked_in" || apt.status === "scheduled");
+              (racksQuery.data as any)?.map((rack: any) => {
+                const rackAppointments = ((appointmentsQuery.data as any)?.appointments || []).filter((apt: any) => apt.rackId === rack.id);
+                const currentApt = rackAppointments.find((apt: any) => apt.status === "loading");
+                const nextApt = rackAppointments.find((apt: any) => apt.status === "checked_in" || apt.status === "scheduled");
 
                 return (
                   <Card key={rack.id} className="bg-slate-800/50 border-slate-700">

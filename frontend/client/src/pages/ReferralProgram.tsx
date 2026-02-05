@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ReferralProgram() {
-  const referralQuery = trpc.users.getReferralInfo.useQuery();
-  const referralsQuery = trpc.users.getReferrals.useQuery();
+  const referralQuery = (trpc as any).users.getReferralInfo.useQuery();
+  const referralsQuery = (trpc as any).users.getReferrals.useQuery();
 
   const referral = referralQuery.data;
 
@@ -155,8 +155,8 @@ export default function ReferralProgram() {
         </CardHeader>
         <CardContent className="p-0">
           {referralsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : referralsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (referralsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Users className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No referrals yet</p>
@@ -164,7 +164,7 @@ export default function ReferralProgram() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {referralsQuery.data?.map((ref: any) => (
+              {(referralsQuery.data as any)?.map((ref: any) => (
                 <div key={ref.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("w-10 h-10 rounded-full flex items-center justify-center font-bold", ref.status === "completed" ? "bg-green-500/20 text-green-400" : "bg-slate-700/50 text-slate-400")}>

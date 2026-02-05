@@ -23,9 +23,9 @@ export default function SAFERLookup() {
   const [searchValue, setSearchValue] = useState("");
   const [result, setResult] = useState<any>(null);
 
-  const lookupMutation = trpc.compliance.saferLookup.useMutation({
-    onSuccess: (data) => { setResult(data); toast.success("Carrier found"); },
-    onError: (error) => { setResult(null); toast.error("Not found", { description: error.message }); },
+  const lookupMutation = (trpc as any).compliance.saferLookup.useMutation({
+    onSuccess: (data: any) => { setResult(data); toast.success("Carrier found"); },
+    onError: (error: any) => { setResult(null); toast.error("Not found", { description: error.message }); },
   });
 
   const handleSearch = () => {
@@ -61,7 +61,7 @@ export default function SAFERLookup() {
             </div>
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <Input value={searchValue} onChange={(e) => setSearchValue(e.target.value)} placeholder={`Enter ${searchType.toUpperCase()} number...`} className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e) => e.key === "Enter" && handleSearch()} />
+              <Input value={searchValue} onChange={(e: any) => setSearchValue(e.target.value)} placeholder={`Enter ${searchType.toUpperCase()} number...`} className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg" onKeyDown={(e: any) => e.key === "Enter" && handleSearch()} />
             </div>
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={handleSearch} disabled={lookupMutation.isPending}>
               <Search className="w-4 h-4 mr-2" />Search

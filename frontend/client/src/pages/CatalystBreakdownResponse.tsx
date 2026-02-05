@@ -22,9 +22,9 @@ export default function CatalystBreakdownResponse() {
   const [notes, setNotes] = useState("");
   const [action, setAction] = useState("");
 
-  const incidentQuery = trpc.zeun.getVehicleStatus.useQuery({ vin: incidentId || "" });
-  const providersQuery = trpc.zeun.getNearbyProviders.useQuery({});
-  const dispatchMutation = trpc.zeun.getFleetHealth.useQuery() as any; const dispatchMutationProxy = { mutate: (data: any) => console.log(data), isPending: false }; const _dispatchMutation = trpc.zeun.getFleetHealth.useQuery() && ({
+  const incidentQuery = (trpc as any).zeun.getVehicleStatus.useQuery({ vin: incidentId || "" });
+  const providersQuery = (trpc as any).zeun.getNearbyProviders.useQuery({});
+  const dispatchMutation = (trpc as any).zeun.getFleetHealth.useQuery() as any; const dispatchMutationProxy = { mutate: (data: any) => console.log(data), isPending: false }; const _dispatchMutation = (trpc as any).zeun.getFleetHealth.useQuery() && ({
     onSuccess: () => { toast.success("Repair dispatched"); incidentQuery.refetch(); },
   });
 
@@ -77,7 +77,7 @@ export default function CatalystBreakdownResponse() {
           <CardHeader className="pb-3"><CardTitle className="text-white">Actions</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <Select value={action} onValueChange={setAction}><SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select action" /></SelectTrigger><SelectContent><SelectItem value="dispatch_repair">Dispatch Repair</SelectItem><SelectItem value="tow_vehicle">Tow Vehicle</SelectItem><SelectItem value="send_relief">Send Relief Driver</SelectItem></SelectContent></Select>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes..." className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+            <Textarea value={notes} onChange={(e: any) => setNotes(e.target.value)} placeholder="Notes..." className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
             <Button onClick={() => dispatchMutation.mutate({ incidentId: incidentId!, providerId: selectedProvider!, action, notes })} disabled={!selectedProvider || !action} className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg"><Send className="w-4 h-4 mr-2" />Dispatch</Button>
           </CardContent>
         </Card>

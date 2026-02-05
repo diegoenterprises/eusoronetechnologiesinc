@@ -22,17 +22,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function AccountSettings() {
-  const profileQuery = trpc.users.getProfile.useQuery();
-  const preferencesQuery = trpc.users.getPreferences.useQuery();
+  const profileQuery = (trpc as any).users.getProfile.useQuery();
+  const preferencesQuery = (trpc as any).users.getPreferences.useQuery();
 
-  const updateProfileMutation = trpc.users.updateProfile.useMutation({
+  const updateProfileMutation = (trpc as any).users.updateProfile.useMutation({
     onSuccess: () => { toast.success("Profile updated"); profileQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update profile", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update profile", { description: error.message }),
   });
 
-  const updatePreferencesMutation = trpc.users.updatePreferences.useMutation({
+  const updatePreferencesMutation = (trpc as any).users.updatePreferences.useMutation({
     onSuccess: () => { toast.success("Preferences updated"); preferencesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update preferences", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update preferences", { description: error.message }),
   });
 
   const profile = profileQuery.data;
@@ -113,37 +113,37 @@ export default function AccountSettings() {
           </CardHeader>
           <CardContent className="space-y-4">
             {profileQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-slate-400">First Name</Label>
-                    <Input value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                    <Input value={formData.firstName} onChange={(e: any) => setFormData({ ...formData, firstName: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-slate-400">Last Name</Label>
-                    <Input value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                    <Input value={formData.lastName} onChange={(e: any) => setFormData({ ...formData, lastName: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-400">Email</Label>
                   <div className="relative">
                     <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <Input value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                    <Input value={formData.email} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-400">Phone</Label>
                   <div className="relative">
                     <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <Input value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                    <Input value={formData.phone} onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })} className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-slate-400">Timezone</Label>
-                    <Select value={formData.timezone} onValueChange={(v) => setFormData({ ...formData, timezone: v })}>
+                    <Select value={formData.timezone} onValueChange={(v: any) => setFormData({ ...formData, timezone: v })}>
                       <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select timezone" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="America/New_York">Eastern Time</SelectItem>
@@ -155,7 +155,7 @@ export default function AccountSettings() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-slate-400">Language</Label>
-                    <Select value={formData.language} onValueChange={(v) => setFormData({ ...formData, language: v })}>
+                    <Select value={formData.language} onValueChange={(v: any) => setFormData({ ...formData, language: v })}>
                       <SelectTrigger className="bg-slate-700/30 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select language" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="en">English</SelectItem>
@@ -180,7 +180,7 @@ export default function AccountSettings() {
         </CardHeader>
         <CardContent>
           {preferencesQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">

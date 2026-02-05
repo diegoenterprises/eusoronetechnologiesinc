@@ -23,22 +23,22 @@ export default function CustomerFeedback() {
   const [searchTerm, setSearchTerm] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
 
-  const feedbackQuery = trpc.feedback.list.useQuery({ rating: ratingFilter === "all" ? undefined : parseInt(ratingFilter), limit: 50 });
-  const summaryQuery = trpc.feedback.getSummary.useQuery();
+  const feedbackQuery = (trpc as any).feedback.list.useQuery({ rating: ratingFilter === "all" ? undefined : parseInt(ratingFilter), limit: 50 });
+  const summaryQuery = (trpc as any).feedback.getSummary.useQuery();
 
-  const respondMutation = trpc.feedback.respond.useMutation({
+  const respondMutation = (trpc as any).feedback.respond.useMutation({
     onSuccess: () => { toast.success("Response sent"); feedbackQuery.refetch(); },
-    onError: (error) => toast.error("Failed to respond", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to respond", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
 
-  const filteredFeedback = feedbackQuery.data?.filter((item: any) =>
+  const filteredFeedback = (feedbackQuery.data as any)?.filter((item: any) =>
     !searchTerm || item.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) || item.comment?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }).map((_, i) => (
+    return Array.from({ length: 5 }).map((_: any, i: number) => (
       <Star key={i} className={cn("w-4 h-4", i < rating ? "text-amber-400 fill-amber-400" : "text-slate-600")} />
     ));
   };
@@ -124,7 +124,7 @@ export default function CustomerFeedback() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search feedback..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search feedback..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -145,7 +145,7 @@ export default function CustomerFeedback() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {feedbackQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
           ) : filteredFeedback?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

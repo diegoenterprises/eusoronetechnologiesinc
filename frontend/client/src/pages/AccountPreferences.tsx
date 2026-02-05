@@ -18,11 +18,11 @@ import {
 import { toast } from "sonner";
 
 export default function AccountPreferences() {
-  const prefsQuery = trpc.users.getPreferences.useQuery();
+  const prefsQuery = (trpc as any).users.getPreferences.useQuery();
 
-  const updateMutation = trpc.users.updatePreferences.useMutation({
+  const updateMutation = (trpc as any).users.updatePreferences.useMutation({
     onSuccess: () => { toast.success("Preferences saved"); prefsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const prefs = prefsQuery.data;
@@ -49,7 +49,7 @@ export default function AccountPreferences() {
         </CardHeader>
         <CardContent className="space-y-4">
           {prefsQuery.isLoading ? (
-            [1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+            [1, 2].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
           ) : (
             <>
               <div className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">
@@ -92,7 +92,7 @@ export default function AccountPreferences() {
         </CardHeader>
         <CardContent className="space-y-4">
           {prefsQuery.isLoading ? (
-            [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+            [1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
           ) : (
             <>
               <div className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">
@@ -179,7 +179,7 @@ export default function AccountPreferences() {
         </CardHeader>
         <CardContent className="space-y-4">
           {prefsQuery.isLoading ? (
-            [1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+            [1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
           ) : (
             <>
               <div className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">

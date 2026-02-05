@@ -19,7 +19,7 @@ import { Link } from 'wouter';
 export default function TheHaulAchievements() {
   const [filter, setFilter] = useState('all');
 
-  const { data: achievements, isLoading } = trpc.gamification.getAchievements.useQuery({ 
+  const { data: achievements, isLoading } = (trpc as any).gamification.getAchievements.useQuery({ 
     category: filter !== 'all' ? filter as "safety" | "performance" | "milestones" | "special" : undefined 
   });
 
@@ -33,7 +33,7 @@ export default function TheHaulAchievements() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-24" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(9)].map((_, i) => (
+          {[...Array(9)].map((_: any, i: number) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>

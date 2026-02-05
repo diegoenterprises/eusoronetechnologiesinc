@@ -24,24 +24,24 @@ import { toast } from "sonner";
 export default function Onboarding() {
   const [activeTab, setActiveTab] = useState("progress");
 
-  const progressQuery = trpc.onboarding.getProgress.useQuery();
-  const stepsQuery = trpc.onboarding.getSteps.useQuery();
-  const documentsQuery = trpc.onboarding.getRequiredDocuments.useQuery();
-  const applicantsQuery = trpc.onboarding.getApplicants.useQuery();
+  const progressQuery = (trpc as any).onboarding.getProgress.useQuery();
+  const stepsQuery = (trpc as any).onboarding.getSteps.useQuery();
+  const documentsQuery = (trpc as any).onboarding.getRequiredDocuments.useQuery();
+  const applicantsQuery = (trpc as any).onboarding.getApplicants.useQuery();
 
-  const completeStepMutation = trpc.onboarding.completeStep.useMutation({
+  const completeStepMutation = (trpc as any).onboarding.completeStep.useMutation({
     onSuccess: () => { toast.success("Step completed"); progressQuery.refetch(); stepsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const uploadDocumentMutation = trpc.onboarding.uploadDocument.useMutation({
+  const uploadDocumentMutation = (trpc as any).onboarding.uploadDocument.useMutation({
     onSuccess: () => { toast.success("Document uploaded"); documentsQuery.refetch(); progressQuery.refetch(); },
-    onError: (error) => toast.error("Upload failed", { description: error.message }),
+    onError: (error: any) => toast.error("Upload failed", { description: error.message }),
   });
 
-  const approveApplicantMutation = trpc.onboarding.approveApplicant.useMutation({
+  const approveApplicantMutation = (trpc as any).onboarding.approveApplicant.useMutation({
     onSuccess: () => { toast.success("Applicant approved"); applicantsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   if (progressQuery.error) {
@@ -134,7 +134,7 @@ export default function Onboarding() {
           <CardContent className="p-4 text-center">
             <FileText className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
             {documentsQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-yellow-400">{documentsQuery.data?.filter(d => d.status === "pending").length || 0}</p>
+              <p className="text-2xl font-bold text-yellow-400">{(documentsQuery.data as any)?.filter(d => d.status === "pending").length || 0}</p>
             )}
             <p className="text-xs text-slate-400">Docs Pending</p>
           </CardContent>
@@ -162,10 +162,10 @@ export default function Onboarding() {
             <CardHeader><CardTitle className="text-white">Onboarding Steps</CardTitle></CardHeader>
             <CardContent>
               {stepsQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+                <div className="space-y-4">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
               ) : (
                 <div className="space-y-4">
-                  {stepsQuery.data?.map((step, idx) => {
+                  {(stepsQuery.data as any)?.map((step: any, idx: number) => {
                     const StepIcon = getStepIcon(step.type);
                     const isActive = step.status === "in_progress";
                     const isCompleted = step.status === "completed";
@@ -183,7 +183,7 @@ export default function Onboarding() {
                           )}>
                             {isCompleted ? <CheckCircle className="w-5 h-5 text-green-400" /> : <StepIcon className={cn("w-5 h-5", isActive ? "text-blue-400" : "text-slate-500")} />}
                           </div>
-                          {idx < (stepsQuery.data?.length || 0) - 1 && (
+                          {idx < ((stepsQuery.data as any)?.length || 0) - 1 && (
                             <div className={cn("w-0.5 h-8 mt-2", isCompleted ? "bg-green-500" : "bg-slate-700")} />
                           )}
                         </div>
@@ -217,10 +217,10 @@ export default function Onboarding() {
             <CardHeader><CardTitle className="text-white">Required Documents</CardTitle></CardHeader>
             <CardContent>
               {documentsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+                <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
               ) : (
                 <div className="space-y-3">
-                  {documentsQuery.data?.map((doc) => (
+                  {(documentsQuery.data as any)?.map((doc: any) => (
                     <div key={doc.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-4">
                         <div className={cn(
@@ -271,15 +271,15 @@ export default function Onboarding() {
             <CardHeader><CardTitle className="text-white">Driver Applicants</CardTitle></CardHeader>
             <CardContent>
               {applicantsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-              ) : applicantsQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+              ) : (applicantsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-8">
                   <User className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                   <p className="text-slate-400">No pending applicants</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {applicantsQuery.data?.map((applicant) => (
+                  {(applicantsQuery.data as any)?.map((applicant: any) => (
                     <div key={applicant.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center">

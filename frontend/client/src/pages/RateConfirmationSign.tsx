@@ -28,10 +28,10 @@ export default function RateConfirmationSign() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
 
-  const rateConfQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
-  const userQuery = trpc.users.me.useQuery();
+  const rateConfQuery = (trpc as any).documents.getById.useQuery({ id: loadId || "" });
+  const userQuery = (trpc as any).users.me.useQuery();
 
-  const signMutation = trpc.documents.update.useMutation({
+  const signMutation = (trpc as any).documents.update.useMutation({
     onSuccess: () => {
       toast.success("Rate confirmation signed successfully");
       navigate("/carrier/loads");

@@ -21,8 +21,8 @@ export default function ShipperLaneAnalysis() {
   const [timeRange, setTimeRange] = useState("90d");
   const [search, setSearch] = useState("");
 
-  const lanesQuery = trpc.shippers.getMyLoads.useQuery({});
-  const statsQuery = trpc.shippers.getStats.useQuery();
+  const lanesQuery = (trpc as any).shippers.getMyLoads.useQuery({});
+  const statsQuery = (trpc as any).shippers.getStats.useQuery();
 
   const lanes = (lanesQuery.data as any)?.loads || lanesQuery.data || [];
   const stats = statsQuery.data as any;
@@ -57,7 +57,7 @@ export default function ShipperLaneAnalysis() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -105,7 +105,7 @@ export default function ShipperLaneAnalysis() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
         <Input
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e: any) => setSearch(e.target.value)}
           placeholder="Search lanes by origin or destination..."
           className="pl-10 bg-slate-800/50 border-slate-700/50 rounded-lg"
         />
@@ -115,7 +115,7 @@ export default function ShipperLaneAnalysis() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {lanesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : filteredLanes.length === 0 ? (
             <div className="text-center py-16">
               <MapPin className="w-12 h-12 text-slate-500 mx-auto mb-4" />

@@ -18,8 +18,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function SystemHealth() {
-  const healthQuery = trpc.admin.getSystemHealth.useQuery({}, { refetchInterval: 30000 });
-  const servicesQuery = trpc.admin.getServiceStatus.useQuery({}, { refetchInterval: 30000 });
+  const healthQuery = (trpc as any).admin.getSystemHealth.useQuery({}, { refetchInterval: 30000 });
+  const servicesQuery = (trpc as any).admin.getServiceStatus.useQuery({}, { refetchInterval: 30000 });
 
   const health = healthQuery.data;
 
@@ -90,7 +90,7 @@ export default function SystemHealth() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Server className="w-5 h-5 text-cyan-400" />Resource Usage</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {healthQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <>
                 <div className="p-3 rounded-lg bg-slate-700/30">
@@ -118,10 +118,10 @@ export default function SystemHealth() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Database className="w-5 h-5 text-purple-400" />Services</CardTitle></CardHeader>
           <CardContent className="p-0">
             {servicesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {servicesQuery.data?.map((service: any) => (
+                {(servicesQuery.data as any)?.map((service: any) => (
                   <div key={service.id} className={cn("p-4 flex items-center justify-between", service.status === "down" && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-center gap-3">
                       <div className={cn("w-2 h-2 rounded-full", service.status === "healthy" ? "bg-green-400" : service.status === "degraded" ? "bg-yellow-400" : "bg-red-400")} />

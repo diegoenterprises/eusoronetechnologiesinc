@@ -14,14 +14,14 @@ import { toast } from "sonner";
 
 export default function TerminalRackAssignment() {
   const [selectedRack, setSelectedRack] = useState<string | null>(null);
-  const racksQuery = trpc.terminals.getRacks.useQuery();
-  const queueQuery = trpc.terminals.getAppointments.useQuery({});
-  const scadaQuery = trpc.terminals.getScadaStats.useQuery(undefined, { refetchInterval: 5000 });
+  const racksQuery = (trpc as any).terminals.getRacks.useQuery();
+  const queueQuery = (trpc as any).terminals.getAppointments.useQuery({});
+  const scadaQuery = (trpc as any).terminals.getScadaStats.useQuery(undefined, { refetchInterval: 5000 });
 
-  const assignMutation = trpc.terminals.createAppointment.useMutation({
+  const assignMutation = (trpc as any).terminals.createAppointment.useMutation({
     onSuccess: () => { toast.success("Assigned"); queueQuery.refetch(); racksQuery.refetch(); },
   });
-  const startMutation = trpc.terminals.startLoading.useMutation({
+  const startMutation = (trpc as any).terminals.startLoading.useMutation({
     onSuccess: () => { toast.success("Loading started"); racksQuery.refetch(); },
   });
 
@@ -49,7 +49,7 @@ export default function TerminalRackAssignment() {
         <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white flex items-center gap-2"><Fuel className="w-5 h-5 text-orange-400" />Loading Racks</CardTitle></CardHeader>
           <CardContent>
-            {racksQuery.isLoading ? <div className="grid grid-cols-3 gap-4">{Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-40 rounded-lg" />)}</div> : (
+            {racksQuery.isLoading ? <div className="grid grid-cols-3 gap-4">{Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-40 rounded-lg" />)}</div> : (
               <div className="grid grid-cols-3 gap-4">
                 {racks.map((r: any) => (
                   <div key={r.id} onClick={() => setSelectedRack(r.id)} className={cn("p-4 rounded-lg border-2 cursor-pointer", getColor(r.status), selectedRack === r.id && "ring-2 ring-cyan-400")}>

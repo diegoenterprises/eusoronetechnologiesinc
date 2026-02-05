@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function MaintenanceSchedule() {
   const [filter, setFilter] = useState("upcoming");
 
-  const maintenanceQuery = trpc.fleet.getMaintenanceSchedule.useQuery({ filter });
-  const statsQuery = trpc.fleet.getMaintenanceStats.useQuery();
+  const maintenanceQuery = (trpc as any).fleet.getMaintenanceSchedule.useQuery({ filter });
+  const statsQuery = (trpc as any).fleet.getMaintenanceStats.useQuery();
 
-  const completeMutation = trpc.fleet.completeMaintenance.useMutation({
+  const completeMutation = (trpc as any).fleet.completeMaintenance.useMutation({
     onSuccess: () => { toast.success("Maintenance completed"); maintenanceQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -111,12 +111,12 @@ export default function MaintenanceSchedule() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Wrench className="w-5 h-5 text-cyan-400" />Maintenance Tasks</CardTitle></CardHeader>
         <CardContent className="p-0">
           {maintenanceQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : maintenanceQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (maintenanceQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Wrench className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No maintenance tasks</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {maintenanceQuery.data?.map((task: any) => (
+              {(maintenanceQuery.data as any)?.map((task: any) => (
                 <div key={task.id} className={cn("p-4 flex items-center justify-between", task.status === "overdue" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", task.status === "completed" ? "bg-green-500/20" : task.status === "overdue" ? "bg-red-500/20" : "bg-yellow-500/20")}>

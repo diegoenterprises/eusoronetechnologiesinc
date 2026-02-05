@@ -24,10 +24,10 @@ export default function AdminApiManagement() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
-  const apiKeysQuery = trpc.admin.getApiKeys.useQuery();
-  const statsQuery = trpc.admin.getAPIStats.useQuery();
+  const apiKeysQuery = (trpc as any).admin.getApiKeys.useQuery();
+  const statsQuery = (trpc as any).admin.getAPIStats.useQuery();
 
-  const createKeyMutation = trpc.admin.createApiKey.useMutation({
+  const createKeyMutation = (trpc as any).admin.createApiKey.useMutation({
     onSuccess: () => {
       toast.success("API key created");
       apiKeysQuery.refetch();
@@ -35,7 +35,7 @@ export default function AdminApiManagement() {
     },
   });
 
-  const revokeKeyMutation = trpc.admin.revokeApiKey.useMutation({
+  const revokeKeyMutation = (trpc as any).admin.revokeApiKey.useMutation({
     onSuccess: () => {
       toast.success("API key revoked");
       apiKeysQuery.refetch();
@@ -43,7 +43,7 @@ export default function AdminApiManagement() {
     },
   });
 
-  const toggleKeyMutation = trpc.admin.revokeApiKey.useMutation({
+  const toggleKeyMutation = (trpc as any).admin.revokeApiKey.useMutation({
     onSuccess: () => {
       toast.success("API key updated");
       apiKeysQuery.refetch();
@@ -88,7 +88,7 @@ export default function AdminApiManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -148,7 +148,7 @@ export default function AdminApiManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search API keys..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -171,7 +171,7 @@ export default function AdminApiManagement() {
       {/* API Keys List */}
       <div className="space-y-4">
         {apiKeysQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-xl" />)
         ) : filteredKeys.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

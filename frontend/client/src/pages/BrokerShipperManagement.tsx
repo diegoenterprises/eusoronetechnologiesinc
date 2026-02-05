@@ -21,8 +21,8 @@ export default function BrokerShipperManagement() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const shippersQuery = trpc.brokers.getShippers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
+  const shippersQuery = (trpc as any).brokers.getShippers.useQuery({ status: statusFilter });
+  const statsQuery = (trpc as any).brokers.getDashboardStats.useQuery();
 
   const shippers = shippersQuery.data || [];
   const stats = statsQuery.data;
@@ -49,7 +49,7 @@ export default function BrokerShipperManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -100,7 +100,7 @@ export default function BrokerShipperManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search shippers..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -124,7 +124,7 @@ export default function BrokerShipperManagement() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {shippersQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
           ) : filteredShippers.length === 0 ? (
             <div className="text-center py-16">
               <Building className="w-12 h-12 text-slate-500 mx-auto mb-4" />

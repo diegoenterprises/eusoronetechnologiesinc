@@ -22,8 +22,8 @@ export default function CarrierInsurance() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const policiesQuery = trpc.carriers.getInsurance.useQuery({});
-  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
+  const policiesQuery = (trpc as any).carriers.getInsurance.useQuery({});
+  const statsQuery = (trpc as any).carriers.getDashboardStats.useQuery();
 
   const policies = (policiesQuery.data as any)?.policies || [];
   const stats = statsQuery.data as any;
@@ -60,7 +60,7 @@ export default function CarrierInsurance() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -123,7 +123,7 @@ export default function CarrierInsurance() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search policies..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -148,7 +148,7 @@ export default function CarrierInsurance() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {policiesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
           ) : filteredPolicies.length === 0 ? (
             <div className="text-center py-16">
               <Shield className="w-12 h-12 text-slate-500 mx-auto mb-4" />

@@ -23,17 +23,17 @@ export default function BidDetails() {
   const params = useParams();
   const bidId = params.id as string;
 
-  const bidQuery = trpc.bids.getById.useQuery({ id: bidId });
+  const bidQuery = (trpc as any).bids.getById.useQuery({ id: bidId });
   const bid = bidQuery.data;
 
-  const acceptMutation = trpc.bids.accept.useMutation({
+  const acceptMutation = (trpc as any).bids.accept.useMutation({
     onSuccess: () => { toast.success("Bid accepted"); bidQuery.refetch(); },
-    onError: (error) => toast.error("Failed to accept bid", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to accept bid", { description: error.message }),
   });
 
-  const rejectMutation = trpc.bids.reject.useMutation({
+  const rejectMutation = (trpc as any).bids.reject.useMutation({
     onSuccess: () => { toast.success("Bid rejected"); bidQuery.refetch(); },
-    onError: (error) => toast.error("Failed to reject bid", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to reject bid", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {

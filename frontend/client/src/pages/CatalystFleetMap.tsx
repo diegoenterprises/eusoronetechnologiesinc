@@ -21,8 +21,8 @@ export default function CatalystFleetMap() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedVehicle, setSelectedVehicle] = useState<string | null>(null);
 
-  const fleetQuery = trpc.catalysts.getFleetPositions.useQuery();
-  const statsQuery = trpc.catalysts.getFleetStats.useQuery();
+  const fleetQuery = (trpc as any).catalysts.getFleetPositions.useQuery();
+  const statsQuery = (trpc as any).catalysts.getFleetStats.useQuery();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -89,7 +89,7 @@ export default function CatalystFleetMap() {
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 rounded-xl">
@@ -97,7 +97,7 @@ export default function CatalystFleetMap() {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.inTransit || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.inTransit || 0}</p>
                     <p className="text-xs text-slate-400">In Transit</p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export default function CatalystFleetMap() {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-blue-500" />
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.loading || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.loading || 0}</p>
                     <p className="text-xs text-slate-400">Loading/Unloading</p>
                   </div>
                 </div>
@@ -119,7 +119,7 @@ export default function CatalystFleetMap() {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-emerald-500" />
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.available || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.available || 0}</p>
                     <p className="text-xs text-slate-400">Available</p>
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export default function CatalystFleetMap() {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-orange-500" />
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.issues || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.issues || 0}</p>
                     <p className="text-xs text-slate-400">Issues</p>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export default function CatalystFleetMap() {
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 rounded-full bg-slate-500" />
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.offDuty || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.offDuty || 0}</p>
                     <p className="text-xs text-slate-400">Off Duty</p>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function CatalystFleetMap() {
                 <p className="text-slate-400">Map integration placeholder</p>
                 <p className="text-sm text-slate-500">Google Maps or Mapbox integration pending</p>
                 <div className="mt-4 grid grid-cols-3 gap-2">
-                  {fleetQuery.data?.slice(0, 6).map((v: any) => (
+                  {(fleetQuery.data as any)?.slice(0, 6).map((v: any) => (
                     <div 
                       key={v.id}
                       className={cn(
@@ -202,9 +202,9 @@ export default function CatalystFleetMap() {
             </CardHeader>
             <CardContent className="max-h-[420px] overflow-y-auto space-y-2">
               {fleetQuery.isLoading ? (
-                Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)
+                Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)
               ) : (
-                fleetQuery.data?.map((vehicle: any) => (
+                (fleetQuery.data as any)?.map((vehicle: any) => (
                   <div
                     key={vehicle.id}
                     className={cn(

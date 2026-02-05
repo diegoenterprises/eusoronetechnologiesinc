@@ -19,15 +19,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DriverMobileApp() {
-  const driverQuery = trpc.drivers.getCurrentDriver.useQuery();
-  const assignmentQuery = trpc.drivers.getCurrentAssignment.useQuery();
-  const hosQuery = trpc.drivers.getHOSStatus.useQuery();
+  const driverQuery = (trpc as any).drivers.getCurrentDriver.useQuery();
+  const assignmentQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
+  const hosQuery = (trpc as any).drivers.getHOSStatus.useQuery();
 
-  const updateStatusMutation = trpc.drivers.updateStatus.useMutation({
+  const updateStatusMutation = (trpc as any).drivers.updateStatus.useMutation({
     onSuccess: () => { toast.success("Status updated"); assignmentQuery.refetch(); },
     onError: (error: any) => toast.error("Failed to update status", { description: error.message }),
   });
-  const currentDriverId = driverQuery.data?.id || "";
+  const currentDriverId = (driverQuery.data as any)?.id || "";
 
   const driver = driverQuery.data;
   const assignment = assignmentQuery.data;
@@ -60,7 +60,7 @@ export default function DriverMobileApp() {
         </CardHeader>
         <CardContent>
           {hosQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-4">
               <div className="p-3 rounded-xl bg-slate-800/50">

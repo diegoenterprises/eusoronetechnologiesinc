@@ -23,10 +23,10 @@ export default function CatalystLoadMatching() {
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("all");
 
-  const matchesQuery = trpc.catalysts.getMatchedLoads.useQuery({});
-  const statsQuery = trpc.catalysts.getMatchStats.useQuery();
+  const matchesQuery = (trpc as any).catalysts.getMatchedLoads.useQuery({});
+  const statsQuery = (trpc as any).catalysts.getMatchStats.useQuery();
 
-  const assignDriverMutation = trpc.catalysts.assignDriver.useMutation({
+  const assignDriverMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       matchesQuery.refetch();
@@ -67,7 +67,7 @@ export default function CatalystLoadMatching() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -127,7 +127,7 @@ export default function CatalystLoadMatching() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search loads..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -150,7 +150,7 @@ export default function CatalystLoadMatching() {
       {/* Matches List */}
       <div className="space-y-4">
         {matchesQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)
         ) : filteredMatches.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

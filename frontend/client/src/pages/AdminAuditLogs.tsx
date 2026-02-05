@@ -23,10 +23,10 @@ export default function AdminAuditLogs() {
   const [userFilter, setUserFilter] = useState("all");
   const [dateRange, setDateRange] = useState("7d");
 
-  const logsQuery = trpc.admin.getAuditLogs.useQuery({ 
+  const logsQuery = (trpc as any).admin.getAuditLogs.useQuery({ 
     search, action: actionFilter, userId: userFilter
   });
-  const usersQuery = trpc.admin.getUsers.useQuery({});
+  const usersQuery = (trpc as any).admin.getUsers.useQuery({});
 
   const logs = logsQuery.data || [];
   const users = usersQuery.data || [];
@@ -61,7 +61,7 @@ export default function AdminAuditLogs() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search logs..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -109,7 +109,7 @@ export default function AdminAuditLogs() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {logsQuery.isLoading ? (
-            <div className="p-4 space-y-2">{Array(10).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="p-4 space-y-2">{Array(10).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : logs.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="w-12 h-12 text-slate-500 mx-auto mb-4" />

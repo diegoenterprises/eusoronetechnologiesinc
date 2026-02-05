@@ -23,8 +23,8 @@ export default function DriverManagement() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
 
-  const driversQuery = trpc.fleet.getDrivers.useQuery({ search, status });
-  const statsQuery = trpc.fleet.getDriverStats.useQuery();
+  const driversQuery = (trpc as any).fleet.getDrivers.useQuery({ search, status });
+  const statsQuery = (trpc as any).fleet.getDriverStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -88,7 +88,7 @@ export default function DriverManagement() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={status} onValueChange={setStatus}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -106,12 +106,12 @@ export default function DriverManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><User className="w-5 h-5 text-cyan-400" />Drivers</CardTitle></CardHeader>
         <CardContent className="p-0">
           {driversQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
-          ) : driversQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+          ) : (driversQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><User className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No drivers found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {driversQuery.data?.map((driver: any) => (
+              {(driversQuery.data as any)?.map((driver: any) => (
                 <div key={driver.id} className={cn("p-4", driver.status === "suspended" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-4">

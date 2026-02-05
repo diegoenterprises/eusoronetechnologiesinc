@@ -23,10 +23,10 @@ export default function ComplianceLogAudits() {
   const [statusFilter, setStatusFilter] = useState("pending");
   const [periodFilter, setPeriodFilter] = useState("7d");
 
-  const auditsQuery = trpc.compliance.getAudits.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
-  const statsQuery = trpc.compliance.getAuditStats.useQuery();
+  const auditsQuery = (trpc as any).compliance.getAudits.useQuery({ status: statusFilter === 'all' ? undefined : statusFilter });
+  const statsQuery = (trpc as any).compliance.getAuditStats.useQuery();
 
-  const approveAuditMutation = trpc.compliance.scheduleAudit.useMutation({
+  const approveAuditMutation = (trpc as any).compliance.scheduleAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit approved");
       auditsQuery.refetch();
@@ -34,7 +34,7 @@ export default function ComplianceLogAudits() {
     },
   });
 
-  const flagAuditMutation = trpc.compliance.scheduleAudit.useMutation({
+  const flagAuditMutation = (trpc as any).compliance.scheduleAudit.useMutation({
     onSuccess: () => {
       toast.success("Audit flagged for review");
       auditsQuery.refetch();
@@ -84,7 +84,7 @@ export default function ComplianceLogAudits() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -144,7 +144,7 @@ export default function ComplianceLogAudits() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search drivers or log IDs..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -169,7 +169,7 @@ export default function ComplianceLogAudits() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {auditsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}</div>
           ) : filteredAudits.length === 0 ? (
             <div className="text-center py-16">
               <FileSearch className="w-12 h-12 text-slate-500 mx-auto mb-4" />

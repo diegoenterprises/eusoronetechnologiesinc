@@ -119,17 +119,17 @@ export default function RegisterShipper() {
   const [formData, setFormData] = useState<ShipperFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<ShipperFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerShipper.useMutation({
+  const registerMutation = (trpc as any).registration.registerShipper.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted successfully!", {
         description: "Your account is pending verification. We'll email you within 24-48 hours.",
       });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", {
         description: error.message || "Please try again or contact support.",
       });
@@ -183,7 +183,7 @@ export default function RegisterShipper() {
               <Input
                 id="companyName"
                 value={formData.companyName}
-                onChange={(e) => updateFormData({ companyName: e.target.value })}
+                onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Chemical Corp"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -193,7 +193,7 @@ export default function RegisterShipper() {
               <Input
                 id="dba"
                 value={formData.dba}
-                onChange={(e) => updateFormData({ dba: e.target.value })}
+                onChange={(e: any) => updateFormData({ dba: e.target.value })}
                 placeholder="Doing Business As"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -205,7 +205,7 @@ export default function RegisterShipper() {
               <Label htmlFor="companyType" className="text-slate-300">
                 Company Type <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.companyType} onValueChange={(v) => updateFormData({ companyType: v })}>
+              <Select value={formData.companyType} onValueChange={(v: any) => updateFormData({ companyType: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -225,7 +225,7 @@ export default function RegisterShipper() {
                 id="yearEstablished"
                 type="number"
                 value={formData.yearEstablished}
-                onChange={(e) => updateFormData({ yearEstablished: e.target.value })}
+                onChange={(e: any) => updateFormData({ yearEstablished: e.target.value })}
                 placeholder="2000"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -240,7 +240,7 @@ export default function RegisterShipper() {
               <Input
                 id="einNumber"
                 value={formData.einNumber}
-                onChange={(e) => updateFormData({ einNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
                 placeholder="XX-XXXXXXX"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -250,7 +250,7 @@ export default function RegisterShipper() {
               <Input
                 id="dunsNumber"
                 value={formData.dunsNumber}
-                onChange={(e) => updateFormData({ dunsNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ dunsNumber: e.target.value })}
                 placeholder="Optional"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -281,7 +281,7 @@ export default function RegisterShipper() {
               <Input
                 id="primaryContactName"
                 value={formData.primaryContactName}
-                onChange={(e) => updateFormData({ primaryContactName: e.target.value })}
+                onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
                 placeholder="John Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -291,7 +291,7 @@ export default function RegisterShipper() {
               <Input
                 id="primaryContactTitle"
                 value={formData.primaryContactTitle}
-                onChange={(e) => updateFormData({ primaryContactTitle: e.target.value })}
+                onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
                 placeholder="Logistics Manager"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -309,7 +309,7 @@ export default function RegisterShipper() {
                   id="primaryContactEmail"
                   type="email"
                   value={formData.primaryContactEmail}
-                  onChange={(e) => updateFormData({ primaryContactEmail: e.target.value })}
+                  onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
                   placeholder="john@company.com"
                   className="bg-slate-700/50 border-slate-600 text-white pl-10"
                 />
@@ -325,7 +325,7 @@ export default function RegisterShipper() {
                   id="primaryContactPhone"
                   type="tel"
                   value={formData.primaryContactPhone}
-                  onChange={(e) => updateFormData({ primaryContactPhone: e.target.value })}
+                  onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
                   placeholder="(555) 123-4567"
                   className="bg-slate-700/50 border-slate-600 text-white pl-10"
                 />
@@ -339,7 +339,7 @@ export default function RegisterShipper() {
               id="billingEmail"
               type="email"
               value={formData.billingEmail}
-              onChange={(e) => updateFormData({ billingEmail: e.target.value })}
+              onChange={(e: any) => updateFormData({ billingEmail: e.target.value })}
               placeholder="billing@company.com (if different)"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -372,7 +372,7 @@ export default function RegisterShipper() {
             <Input
               id="streetAddress"
               value={formData.streetAddress}
-              onChange={(e) => updateFormData({ streetAddress: e.target.value })}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Industrial Blvd"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -386,7 +386,7 @@ export default function RegisterShipper() {
               <Input
                 id="city"
                 value={formData.city}
-                onChange={(e) => updateFormData({ city: e.target.value })}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -395,12 +395,12 @@ export default function RegisterShipper() {
               <Label htmlFor="state" className="text-slate-300">
                 State <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.state} onValueChange={(v) => updateFormData({ state: v })}>
+              <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((state) => (
+                  {US_STATES.map((state: any) => (
                     <SelectItem key={state} value={state}>{state}</SelectItem>
                   ))}
                 </SelectContent>
@@ -413,7 +413,7 @@ export default function RegisterShipper() {
               <Input
                 id="zipCode"
                 value={formData.zipCode}
-                onChange={(e) => updateFormData({ zipCode: e.target.value })}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -459,7 +459,7 @@ export default function RegisterShipper() {
                 <Input
                   id="phmsamRegistrationNumber"
                   value={formData.phmsamRegistrationNumber}
-                  onChange={(e) => updateFormData({ phmsamRegistrationNumber: e.target.value })}
+                  onChange={(e: any) => updateFormData({ phmsamRegistrationNumber: e.target.value })}
                   placeholder="PHMSA-XXXXXX"
                   className="bg-slate-700/50 border-slate-600 text-white pl-10"
                 />
@@ -472,7 +472,7 @@ export default function RegisterShipper() {
               <Input
                 id="epaId"
                 value={formData.epaId}
-                onChange={(e) => updateFormData({ epaId: e.target.value })}
+                onChange={(e: any) => updateFormData({ epaId: e.target.value })}
                 placeholder="TXD123456789"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -482,7 +482,7 @@ export default function RegisterShipper() {
           <div className="space-y-2">
             <Label className="text-slate-300">Hazmat Classes You Ship</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {HAZMAT_CLASSES.map((hazClass) => (
+              {HAZMAT_CLASSES.map((hazClass: any) => (
                 <div key={hazClass.value} className="flex items-center space-x-2">
                   <Checkbox
                     id={hazClass.value}
@@ -491,7 +491,7 @@ export default function RegisterShipper() {
                       if (checked) {
                         updateFormData({ hazmatTypes: [...formData.hazmatTypes, hazClass.value] });
                       } else {
-                        updateFormData({ hazmatTypes: formData.hazmatTypes.filter((t) => t !== hazClass.value) });
+                        updateFormData({ hazmatTypes: formData.hazmatTypes.filter((t: any) => t !== hazClass.value) });
                       }
                     }}
                   />
@@ -520,7 +520,7 @@ export default function RegisterShipper() {
               <Input
                 id="insuranceCarrier"
                 value={formData.insuranceCarrier}
-                onChange={(e) => updateFormData({ insuranceCarrier: e.target.value })}
+                onChange={(e: any) => updateFormData({ insuranceCarrier: e.target.value })}
                 placeholder="ABC Insurance Co"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -532,7 +532,7 @@ export default function RegisterShipper() {
               <Input
                 id="policyNumber"
                 value={formData.policyNumber}
-                onChange={(e) => updateFormData({ policyNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ policyNumber: e.target.value })}
                 placeholder="POL-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -544,7 +544,7 @@ export default function RegisterShipper() {
               <Label htmlFor="coverageAmount" className="text-slate-300">
                 Coverage Amount <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.coverageAmount} onValueChange={(v) => updateFormData({ coverageAmount: v })}>
+              <Select value={formData.coverageAmount} onValueChange={(v: any) => updateFormData({ coverageAmount: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select coverage" />
                 </SelectTrigger>
@@ -564,7 +564,7 @@ export default function RegisterShipper() {
                 id="expirationDate"
                 type="date"
                 value={formData.expirationDate}
-                onChange={(e) => updateFormData({ expirationDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -582,7 +582,7 @@ export default function RegisterShipper() {
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
                 className="hidden"
-                onChange={(e) => {
+                onChange={(e: any) => {
                   const file = e.target.files?.[0];
                   if (file) updateFormData({ insuranceCertificate: file });
                 }}

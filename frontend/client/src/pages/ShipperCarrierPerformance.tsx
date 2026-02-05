@@ -21,8 +21,8 @@ export default function ShipperCarrierPerformance() {
   const [timeRange, setTimeRange] = useState("90d");
   const [sortBy, setSortBy] = useState("rating");
 
-  const carriersQuery = trpc.shippers.getCarrierPerformance.useQuery({ period: timeRange as any });
-  const summaryQuery = trpc.shippers.getStats.useQuery();
+  const carriersQuery = (trpc as any).shippers.getCarrierPerformance.useQuery({ period: timeRange as any });
+  const summaryQuery = (trpc as any).shippers.getStats.useQuery();
 
   const carriers = carriersQuery.data || [];
   const summary = summaryQuery.data as any;
@@ -60,7 +60,7 @@ export default function ShipperCarrierPerformance() {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {summaryQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -119,7 +119,7 @@ export default function ShipperCarrierPerformance() {
           { value: "onTime", label: "On-Time %" },
           { value: "loads", label: "Load Count" },
           { value: "spend", label: "Total Spend" },
-        ].map((option) => (
+        ].map((option: any) => (
           <Button
             key={option.value}
             variant="outline"
@@ -142,7 +142,7 @@ export default function ShipperCarrierPerformance() {
         <CardContent className="p-0">
           {carriersQuery.isLoading ? (
             <div className="p-4 space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
           ) : carriers.length === 0 ? (
             <div className="text-center py-16">
@@ -175,7 +175,7 @@ export default function ShipperCarrierPerformance() {
                       {/* Rating */}
                       <div className="text-center">
                         <div className="flex items-center gap-1 mb-1">
-                          {[1, 2, 3, 4, 5].map((s) => (
+                          {[1, 2, 3, 4, 5].map((s: any) => (
                             <Star
                               key={s}
                               className={cn(
@@ -237,7 +237,7 @@ export default function ShipperCarrierPerformance() {
                     <div className="p-2 rounded bg-slate-700/30">
                       <p className="text-slate-400 text-xs">Communication</p>
                       <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
+                        {[1, 2, 3, 4, 5].map((s: any) => (
                           <Star key={s} className={cn("w-3 h-3", s <= carrier.communicationRating ? "text-yellow-400 fill-yellow-400" : "text-slate-600")} />
                         ))}
                       </div>
@@ -245,7 +245,7 @@ export default function ShipperCarrierPerformance() {
                     <div className="p-2 rounded bg-slate-700/30">
                       <p className="text-slate-400 text-xs">Professionalism</p>
                       <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
+                        {[1, 2, 3, 4, 5].map((s: any) => (
                           <Star key={s} className={cn("w-3 h-3", s <= carrier.professionalismRating ? "text-yellow-400 fill-yellow-400" : "text-slate-600")} />
                         ))}
                       </div>
@@ -253,7 +253,7 @@ export default function ShipperCarrierPerformance() {
                     <div className="p-2 rounded bg-slate-700/30">
                       <p className="text-slate-400 text-xs">Equipment</p>
                       <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((s) => (
+                        {[1, 2, 3, 4, 5].map((s: any) => (
                           <Star key={s} className={cn("w-3 h-3", s <= carrier.equipmentRating ? "text-yellow-400 fill-yellow-400" : "text-slate-600")} />
                         ))}
                       </div>

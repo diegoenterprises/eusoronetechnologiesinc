@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function EscortEarnings() {
   const [period, setPeriod] = useState("month");
 
-  const earningsQuery = trpc.escorts.getEarnings.useQuery({ period });
-  const jobsQuery = trpc.escorts.getCompletedJobs.useQuery({ period, limit: 10 });
-  const statsQuery = trpc.escorts.getEarningsStats.useQuery({ period });
+  const earningsQuery = (trpc as any).escorts.getEarnings.useQuery({ period });
+  const jobsQuery = (trpc as any).escorts.getCompletedJobs.useQuery({ period, limit: 10 });
+  const statsQuery = (trpc as any).escorts.getEarningsStats.useQuery({ period });
 
   const stats = statsQuery.data;
 
@@ -58,12 +58,12 @@ export default function EscortEarnings() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-sm">Total Earnings</p>
-                <p className="text-4xl font-bold text-white">${earningsQuery.data?.total?.toLocaleString()}</p>
+                <p className="text-4xl font-bold text-white">${(earningsQuery.data as any)?.total?.toLocaleString()}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  {earningsQuery.data?.trend === "up" ? (
-                    <Badge className="bg-green-500/20 text-green-400 border-0"><TrendingUp className="w-3 h-3 mr-1" />+{earningsQuery.data?.trendPercent}%</Badge>
+                  {(earningsQuery.data as any)?.trend === "up" ? (
+                    <Badge className="bg-green-500/20 text-green-400 border-0"><TrendingUp className="w-3 h-3 mr-1" />+{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   ) : (
-                    <Badge className="bg-red-500/20 text-red-400 border-0"><TrendingDown className="w-3 h-3 mr-1" />{earningsQuery.data?.trendPercent}%</Badge>
+                    <Badge className="bg-red-500/20 text-red-400 border-0"><TrendingDown className="w-3 h-3 mr-1" />{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   )}
                   <span className="text-xs text-slate-500">vs last {period}</span>
                 </div>
@@ -153,15 +153,15 @@ export default function EscortEarnings() {
         </CardHeader>
         <CardContent className="p-0">
           {jobsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : jobsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (jobsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Car className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No completed jobs</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {jobsQuery.data?.map((job: any) => (
+              {(jobsQuery.data as any)?.map((job: any) => (
                 <div key={job.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-green-500/20">

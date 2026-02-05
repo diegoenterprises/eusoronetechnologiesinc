@@ -20,12 +20,12 @@ import { toast } from "sonner";
 export default function ReportBuilder() {
   const [search, setSearch] = useState("");
 
-  const reportsQuery = trpc.reports.getSavedReports.useQuery({ search });
-  const statsQuery = trpc.reports.getReportStats.useQuery();
+  const reportsQuery = (trpc as any).reports.getSavedReports.useQuery({ search });
+  const statsQuery = (trpc as any).reports.getReportStats.useQuery();
 
-  const runMutation = trpc.reports.runReport.useMutation({
+  const runMutation = (trpc as any).reports.runReport.useMutation({
     onSuccess: () => toast.success("Report generation started"),
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -89,19 +89,19 @@ export default function ReportBuilder() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search reports..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search reports..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Saved Reports</CardTitle></CardHeader>
         <CardContent className="p-0">
           {reportsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : reportsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (reportsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No reports found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {reportsQuery.data?.map((report: any) => (
+              {(reportsQuery.data as any)?.map((report: any) => (
                 <div key={report.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-cyan-500/20">

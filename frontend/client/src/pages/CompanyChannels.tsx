@@ -66,39 +66,39 @@ export default function CompanyChannels() {
   const [newChannelType, setNewChannelType] = useState<"public" | "private">("public");
 
   // tRPC queries
-  const channelsQuery = trpc.channels.list.useQuery({ search: searchQuery || undefined });
-  const messagesQuery = trpc.channels.getMessages.useQuery(
+  const channelsQuery = (trpc as any).channels.list.useQuery({ search: searchQuery || undefined });
+  const messagesQuery = (trpc as any).channels.getMessages.useQuery(
     { channelId: selectedChannel, limit: 50 },
     { enabled: !!selectedChannel }
   );
-  const summaryQuery = trpc.channels.getSummary.useQuery();
+  const summaryQuery = (trpc as any).channels.getSummary.useQuery();
 
   // tRPC mutations
-  const sendMessageMutation = trpc.channels.sendMessage.useMutation({
+  const sendMessageMutation = (trpc as any).channels.sendMessage.useMutation({
     onSuccess: () => {
       setMessageInput("");
       messagesQuery.refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('[Channels] Send message error:', error.message);
     },
   });
 
-  const createChannelMutation = trpc.channels.create.useMutation({
+  const createChannelMutation = (trpc as any).channels.create.useMutation({
     onSuccess: () => {
       setShowCreateChannel(false);
       setNewChannelName("");
       setNewChannelDesc("");
       channelsQuery.refetch();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('[Channels] Create channel error:', error.message);
     },
   });
 
   const channels = channelsQuery.data || [];
   const messages = messagesQuery.data || [];
-  const activeChannel = channels.find((c) => c.id === selectedChannel);
+  const activeChannel = channels.find((c: any) => c.id === selectedChannel);
   const filteredChannels = channels;
 
   const handleSendMessage = () => {
@@ -171,7 +171,7 @@ export default function CompanyChannels() {
               type="text"
               placeholder="Search channels..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 bg-slate-700 border border-slate-600 rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
             />
           </div>
@@ -179,7 +179,7 @@ export default function CompanyChannels() {
 
         {/* Channels List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredChannels.map((channel) => (
+          {filteredChannels.map((channel: any) => (
             <button
               key={channel.id}
               onClick={() => setSelectedChannel(channel.id)}
@@ -281,12 +281,12 @@ export default function CompanyChannels() {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-slate-900">
-              {messages.map((message) => (
+              {messages.map((message: any) => (
                 <div key={message.id} className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">
                     {message.author
                       .split(" ")
-                      .map((n) => n[0])
+                      .map((n: any) => n[0])
                       .join("")}
                   </div>
 
@@ -350,8 +350,8 @@ export default function CompanyChannels() {
                   type="text"
                   placeholder="Type a message..."
                   value={messageInput}
-                  onChange={(e) => setMessageInput(e.target.value)}
-                  onKeyPress={(e) => {
+                  onChange={(e: any) => setMessageInput(e.target.value)}
+                  onKeyPress={(e: any) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSendMessage();
@@ -397,7 +397,7 @@ export default function CompanyChannels() {
                   type="text"
                   placeholder="e.g., marketing-team"
                   value={newChannelName}
-                  onChange={(e) => setNewChannelName(e.target.value)}
+                  onChange={(e: any) => setNewChannelName(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
                 />
               </div>
@@ -410,7 +410,7 @@ export default function CompanyChannels() {
                   placeholder="What is this channel about?"
                   rows={3}
                   value={newChannelDesc}
-                  onChange={(e) => setNewChannelDesc(e.target.value)}
+                  onChange={(e: any) => setNewChannelDesc(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
                 />
               </div>

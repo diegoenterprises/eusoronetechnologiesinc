@@ -26,14 +26,14 @@ export default function ChangePassword() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  const changeMutation = trpc.auth.changePassword.useMutation({
+  const changeMutation = (trpc as any).auth.changePassword.useMutation({
     onSuccess: () => {
       toast.success("Password changed successfully");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     },
-    onError: (error) => toast.error("Failed to change password", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to change password", { description: error.message }),
   });
 
   const getPasswordStrength = (password: string) => {
@@ -80,7 +80,7 @@ export default function ChangePassword() {
             <div className="space-y-2">
               <Label className="text-slate-300">Current Password</Label>
               <div className="relative">
-                <Input type={showCurrent ? "text" : "password"} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="pr-10 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input type={showCurrent ? "text" : "password"} value={currentPassword} onChange={(e: any) => setCurrentPassword(e.target.value)} placeholder="Enter current password" className="pr-10 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" onClick={() => setShowCurrent(!showCurrent)}>
                   {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -91,7 +91,7 @@ export default function ChangePassword() {
             <div className="space-y-2">
               <Label className="text-slate-300">New Password</Label>
               <div className="relative">
-                <Input type={showNew ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Enter new password" className="pr-10 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input type={showNew ? "text" : "password"} value={newPassword} onChange={(e: any) => setNewPassword(e.target.value)} placeholder="Enter new password" className="pr-10 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" onClick={() => setShowNew(!showNew)}>
                   {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -113,7 +113,7 @@ export default function ChangePassword() {
             <div className="space-y-2">
               <Label className="text-slate-300">Confirm New Password</Label>
               <div className="relative">
-                <Input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="pr-10 bg-slate-700/30 border-slate-600/50 rounded-lg" />
+                <Input type={showConfirm ? "text" : "password"} value={confirmPassword} onChange={(e: any) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" className="pr-10 bg-slate-700/30 border-slate-600/50 rounded-lg" />
                 <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" onClick={() => setShowConfirm(!showConfirm)}>
                   {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </Button>
@@ -133,7 +133,7 @@ export default function ChangePassword() {
                 Password Requirements
               </p>
               <div className="space-y-2">
-                {requirements.map((req, idx) => (
+                {requirements.map((req: any, idx: number) => (
                   <div key={idx} className={cn("flex items-center gap-2 text-sm", req.met ? "text-green-400" : "text-slate-500")}>
                     {req.met ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
                     {req.label}

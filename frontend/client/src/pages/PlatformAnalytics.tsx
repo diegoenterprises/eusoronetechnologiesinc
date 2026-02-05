@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function PlatformAnalytics() {
   const [dateRange, setDateRange] = useState("30d");
 
-  const metricsQuery = trpc.admin.getPlatformMetrics.useQuery({ dateRange });
-  const trendsQuery = trpc.admin.getPlatformTrends.useQuery({ dateRange });
-  const topQuery = trpc.admin.getTopPerformers.useQuery({ dateRange, limit: 5 });
+  const metricsQuery = (trpc as any).admin.getPlatformMetrics.useQuery({ dateRange });
+  const trendsQuery = (trpc as any).admin.getPlatformTrends.useQuery({ dateRange });
+  const topQuery = (trpc as any).admin.getTopPerformers.useQuery({ dateRange, limit: 5 });
 
   const metrics = metricsQuery.data;
 
@@ -97,7 +97,7 @@ export default function PlatformAnalytics() {
               <Skeleton className="h-64 w-full rounded-xl" />
             ) : (
               <div className="space-y-4">
-                {trendsQuery.data?.map((trend: any) => (
+                {(trendsQuery.data as any)?.map((trend: any) => (
                   <div key={trend.label} className="p-4 rounded-xl bg-slate-700/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white">{trend.label}</span>
@@ -129,10 +129,10 @@ export default function PlatformAnalytics() {
           </CardHeader>
           <CardContent className="p-0">
             {topQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {topQuery.data?.map((performer: any, idx: number) => (
+                {(topQuery.data as any)?.map((performer: any, idx: number) => (
                   <div key={performer.id} className="p-4 flex items-center gap-4">
                     <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm", idx === 0 ? "bg-yellow-500/20 text-yellow-400" : idx === 1 ? "bg-slate-400/20 text-slate-300" : idx === 2 ? "bg-orange-500/20 text-orange-400" : "bg-slate-700/50 text-slate-400")}>
                       {idx + 1}

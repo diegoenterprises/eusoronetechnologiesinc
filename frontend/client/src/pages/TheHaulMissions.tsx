@@ -19,10 +19,10 @@ import { Link } from 'wouter';
 export default function TheHaulMissions() {
   const [filter, setFilter] = useState('active');
 
-  const { data: missions, isLoading, refetch } = trpc.gamification.getMissions.useQuery({ 
+  const { data: missions, isLoading, refetch } = (trpc as any).gamification.getMissions.useQuery({ 
     type: filter === 'active' ? 'daily' : filter === 'completed' ? 'weekly' : 'monthly'
   });
-  const claimMutation = trpc.gamification.createMission.useMutation({
+  const claimMutation = (trpc as any).gamification.createMission.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -31,7 +31,7 @@ export default function TheHaulMissions() {
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid gap-4">
-          {[...Array(5)].map((_, i) => (
+          {[...Array(5)].map((_: any, i: number) => (
             <Skeleton key={i} className="h-24" />
           ))}
         </div>

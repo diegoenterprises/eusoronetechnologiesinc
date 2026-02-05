@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function BillingHistory() {
   const [yearFilter, setYearFilter] = useState("2024");
 
-  const invoicesQuery = trpc.billing.getHistory.useQuery({ year: yearFilter, limit: 50 });
-  const summaryQuery = trpc.billing.getSummary.useQuery({ year: yearFilter });
+  const invoicesQuery = (trpc as any).billing.getHistory.useQuery({ year: yearFilter, limit: 50 });
+  const summaryQuery = (trpc as any).billing.getSummary.useQuery({ year: yearFilter });
 
   const summary = summaryQuery.data;
 
@@ -130,8 +130,8 @@ export default function BillingHistory() {
         </CardHeader>
         <CardContent className="p-0">
           {invoicesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : invoicesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (invoicesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Receipt className="w-10 h-10 text-slate-500" />
@@ -140,7 +140,7 @@ export default function BillingHistory() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {invoicesQuery.data?.map((invoice: any) => (
+              {(invoicesQuery.data as any)?.map((invoice: any) => (
                 <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="p-2 rounded-lg bg-slate-700/50">

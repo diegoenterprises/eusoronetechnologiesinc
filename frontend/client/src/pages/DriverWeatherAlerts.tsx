@@ -43,11 +43,11 @@ export default function DriverWeatherAlerts() {
     isLoading,
     error,
     refetch,
-  } = trpc.drivers.getAll.useQuery({});
+  } = (trpc as any).drivers.getAll.useQuery({});
 
   const weatherData = weatherDataRaw as any;
 
-  const updateAlertSettings = trpc.drivers.updateStatus.useMutation({
+  const updateAlertSettings = (trpc as any).drivers.updateStatus.useMutation({
     onSuccess: () => {
       toast.success("Alert settings updated");
       refetch();
@@ -153,7 +153,7 @@ export default function DriverWeatherAlerts() {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(4)].map((_: any, i: number) => (
               <Skeleton key={i} className="h-24 rounded-lg" />
             ))}
           </div>
@@ -302,7 +302,7 @@ export default function DriverWeatherAlerts() {
               <CardContent>
                 {isLoading ? (
                   <div className="space-y-4">
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(5)].map((_: any, i: number) => (
                       <Skeleton key={i} className="h-24 rounded-lg" />
                     ))}
                   </div>
@@ -416,7 +416,7 @@ export default function DriverWeatherAlerts() {
               <CardContent className="space-y-4">
                 {isLoading ? (
                   <div className="space-y-3">
-                    {[...Array(4)].map((_, i) => (
+                    {[...Array(4)].map((_: any, i: number) => (
                       <Skeleton key={i} className="h-10 rounded-lg" />
                     ))}
                   </div>

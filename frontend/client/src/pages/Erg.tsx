@@ -149,7 +149,7 @@ export default function Erg() {
               <Phone className="w-5 h-5 text-red-400" />
               <span className="text-red-400 font-medium">Emergency Hotlines:</span>
             </div>
-            {EMERGENCY_CONTACTS.slice(0, 2).map((contact) => (
+            {EMERGENCY_CONTACTS.slice(0, 2).map((contact: any) => (
               <div key={contact.name} className="flex items-center gap-2">
                 <span className="text-white font-bold">{contact.name}:</span>
                 <span className="text-red-400 font-mono">{contact.phone}</span>
@@ -164,7 +164,7 @@ export default function Erg() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by class, UN number, or material name..."
           className="pl-9 bg-slate-700/50 border-slate-600 text-white"
         />
@@ -188,7 +188,7 @@ export default function Erg() {
                 </CardHeader>
                 <CardContent className="p-0">
                   <div className="divide-y divide-slate-700/50">
-                    {filteredClasses.map((hc) => (
+                    {filteredClasses.map((hc: any) => (
                       <div
                         key={hc.id}
                         onClick={() => setSelectedClass(hc)}
@@ -249,7 +249,7 @@ export default function Erg() {
                         Potential Hazards
                       </h4>
                       <div className="space-y-2">
-                        {selectedClass.hazards.map((hazard, idx) => (
+                        {selectedClass.hazards.map((hazard: any, idx: number) => (
                           <div key={idx} className="flex items-start gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
                             <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
                             <span className="text-sm text-slate-300">{hazard}</span>
@@ -265,7 +265,7 @@ export default function Erg() {
                         Emergency Response Actions
                       </h4>
                       <div className="space-y-2">
-                        {selectedClass.actions.map((action, idx) => (
+                        {selectedClass.actions.map((action: any, idx: number) => (
                           <div key={idx} className="flex items-start gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                             <Shield className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
                             <span className="text-sm text-slate-300">{action}</span>
@@ -296,7 +296,7 @@ export default function Erg() {
 
         <TabsContent value="contacts" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {EMERGENCY_CONTACTS.map((contact) => (
+            {EMERGENCY_CONTACTS.map((contact: any) => (
               <Card key={contact.name} className="bg-slate-800/50 border-slate-700">
                 <CardContent className="p-6">
                   <div className="flex items-start gap-4">

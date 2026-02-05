@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function PerformanceReports() {
   const [period, setPeriod] = useState("month");
 
-  const metricsQuery = trpc.reports.getPerformanceMetrics.useQuery({ period });
-  const trendsQuery = trpc.reports.getTrends.useQuery({ period });
-  const topPerformersQuery = trpc.reports.getTopPerformers.useQuery({ period, limit: 10 });
+  const metricsQuery = (trpc as any).reports.getPerformanceMetrics.useQuery({ period });
+  const trendsQuery = (trpc as any).reports.getTrends.useQuery({ period });
+  const topPerformersQuery = (trpc as any).reports.getTopPerformers.useQuery({ period, limit: 10 });
 
   const metrics = metricsQuery.data;
   const trends = trendsQuery.data;
@@ -150,7 +150,7 @@ export default function PerformanceReports() {
           </CardHeader>
           <CardContent className="space-y-4">
             {metricsQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <>
                 <div className="p-4 rounded-xl bg-slate-700/30">
@@ -193,14 +193,14 @@ export default function PerformanceReports() {
           </CardHeader>
           <CardContent>
             {topPerformersQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
-            ) : topPerformersQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+            ) : (topPerformersQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-slate-400">No data available</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {topPerformersQuery.data?.map((performer: any, idx: number) => (
+                {(topPerformersQuery.data as any)?.map((performer: any, idx: number) => (
                   <div key={performer.id} className="p-3 rounded-xl bg-slate-700/30 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={cn("w-8 h-8 rounded-full flex items-center justify-center font-bold", idx === 0 ? "bg-yellow-500 text-black" : idx === 1 ? "bg-slate-400 text-black" : idx === 2 ? "bg-orange-600 text-white" : "bg-slate-600 text-white")}>
@@ -230,7 +230,7 @@ export default function PerformanceReports() {
           <CardContent>
             {metricsQuery.isLoading ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+                {[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

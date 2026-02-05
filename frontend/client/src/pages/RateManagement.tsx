@@ -23,12 +23,12 @@ export default function RateManagement() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("all");
 
-  const ratesQuery = trpc.rates.getAll.useQuery({ search, type });
-  const statsQuery = trpc.rates.getStats.useQuery();
+  const ratesQuery = (trpc as any).rates.getAll.useQuery({ search, type });
+  const statsQuery = (trpc as any).rates.getStats.useQuery();
 
-  const deleteMutation = trpc.rates.delete.useMutation({
+  const deleteMutation = (trpc as any).rates.delete.useMutation({
     onSuccess: () => { toast.success("Rate deleted"); ratesQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -83,7 +83,7 @@ export default function RateManagement() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search rates..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search rates..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={type} onValueChange={setType}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -99,12 +99,12 @@ export default function RateManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-cyan-400" />Rates</CardTitle></CardHeader>
         <CardContent className="p-0">
           {ratesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : ratesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (ratesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No rates found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {ratesQuery.data?.map((rate: any) => (
+              {(ratesQuery.data as any)?.map((rate: any) => (
                 <div key={rate.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", rate.type === "contract" ? "bg-green-500/20" : "bg-yellow-500/20")}>

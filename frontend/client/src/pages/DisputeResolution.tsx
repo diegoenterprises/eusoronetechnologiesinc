@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function DisputeResolution() {
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const disputesQuery = trpc.admin.getDisputes.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
-  const summaryQuery = trpc.admin.getDisputeSummary.useQuery();
+  const disputesQuery = (trpc as any).admin.getDisputes.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const summaryQuery = (trpc as any).admin.getDisputeSummary.useQuery();
 
-  const resolveMutation = trpc.admin.resolveDispute.useMutation({
+  const resolveMutation = (trpc as any).admin.resolveDispute.useMutation({
     onSuccess: () => { toast.success("Dispute resolved"); disputesQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -147,8 +147,8 @@ export default function DisputeResolution() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {disputesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : disputesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (disputesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Scale className="w-10 h-10 text-slate-500" />
@@ -157,7 +157,7 @@ export default function DisputeResolution() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {disputesQuery.data?.map((dispute: any) => (
+              {(disputesQuery.data as any)?.map((dispute: any) => (
                 <div key={dispute.id} className={cn("p-4", dispute.status === "escalated" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

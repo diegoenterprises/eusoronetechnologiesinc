@@ -17,8 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CSAScoresDashboard() {
-  const scoresQuery = trpc.safety.getCSAScoresList.useQuery();
-  const summaryQuery = trpc.safety.getCSASummary.useQuery();
+  const scoresQuery = (trpc as any).safety.getCSAScoresList.useQuery();
+  const summaryQuery = (trpc as any).safety.getCSASummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -157,10 +157,10 @@ export default function CSAScoresDashboard() {
         </CardHeader>
         <CardContent>
           {scoresQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3, 4, 5, 6, 7].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3, 4, 5, 6, 7].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-4">
-              {scoresQuery.data?.map((score: any) => (
+              {(scoresQuery.data as any)?.map((score: any) => (
                 <div key={score.id} className={cn("p-4 rounded-xl border", score.percentile <= 50 ? "bg-green-500/10 border-green-500/30" : score.percentile <= 65 ? "bg-yellow-500/10 border-yellow-500/30" : "bg-red-500/10 border-red-500/30")}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">

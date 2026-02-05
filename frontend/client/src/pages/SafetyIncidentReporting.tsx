@@ -25,11 +25,11 @@ export default function SafetyIncidentReporting() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [showReportForm, setShowReportForm] = useState(false);
 
-  const incidentsQuery = trpc.safety.getIncidents.useQuery({ status: statusFilter, type: typeFilter });
-  const statsQuery = trpc.safety.getIncidentStats.useQuery();
-  const typesQuery = trpc.safety.getIncidents.useQuery({});
+  const incidentsQuery = (trpc as any).safety.getIncidents.useQuery({ status: statusFilter, type: typeFilter });
+  const statsQuery = (trpc as any).safety.getIncidentStats.useQuery();
+  const typesQuery = (trpc as any).safety.getIncidents.useQuery({});
 
-  const submitIncidentMutation = trpc.safety.reportIncident.useMutation({
+  const submitIncidentMutation = (trpc as any).safety.reportIncident.useMutation({
     onSuccess: () => {
       toast.success("Incident reported");
       incidentsQuery.refetch();
@@ -68,7 +68,7 @@ export default function SafetyIncidentReporting() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -130,7 +130,7 @@ export default function SafetyIncidentReporting() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={(e) => {
+            <form onSubmit={(e: any) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
               submitIncidentMutation.mutate({
@@ -225,7 +225,7 @@ export default function SafetyIncidentReporting() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search incidents..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -260,7 +260,7 @@ export default function SafetyIncidentReporting() {
       {/* Incidents List */}
       <div className="space-y-4">
         {incidentsQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-xl" />)
         ) : filteredIncidents.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

@@ -41,11 +41,11 @@ export default function CarrierCompliance() {
   const [expirationDate, setExpirationDate] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const complianceQuery = trpc.compliance.getCarrierCompliance.useQuery();
-  const documentsQuery = trpc.compliance.getCarrierDocuments.useQuery();
-  const uploadMutation = trpc.compliance.uploadDocument.useMutation();
+  const complianceQuery = (trpc as any).compliance.getCarrierCompliance.useQuery();
+  const documentsQuery = (trpc as any).compliance.getCarrierDocuments.useQuery();
+  const uploadMutation = (trpc as any).compliance.uploadDocument.useMutation();
 
-  const score = complianceQuery.data?.score ?? 85;
+  const score = (complianceQuery.data as any)?.score ?? 85;
   const docs = documentsQuery.data ?? [];
 
   const getStatusBadge = (status: string) => {

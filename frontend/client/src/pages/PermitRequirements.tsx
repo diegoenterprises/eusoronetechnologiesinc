@@ -22,11 +22,11 @@ export default function PermitRequirements() {
   const [searchTerm, setSearchTerm] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
 
-  const permitsQuery = trpc.permits.getRequirements.useQuery({ state: stateFilter === "all" ? undefined : stateFilter });
-  const statesQuery = trpc.permits.getStates.useQuery();
-  const activePermitsQuery = trpc.permits.getActive.useQuery();
+  const permitsQuery = (trpc as any).permits.getRequirements.useQuery({ state: stateFilter === "all" ? undefined : stateFilter });
+  const statesQuery = (trpc as any).permits.getStates.useQuery();
+  const activePermitsQuery = (trpc as any).permits.getActive.useQuery();
 
-  const filteredPermits = permitsQuery.data?.filter((permit: any) =>
+  const filteredPermits = (permitsQuery.data as any)?.filter((permit: any) =>
     !searchTerm || permit.name?.toLowerCase().includes(searchTerm.toLowerCase()) || permit.state?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -59,7 +59,7 @@ export default function PermitRequirements() {
               </div>
               <div>
                 {activePermitsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{activePermitsQuery.data?.total || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(activePermitsQuery.data as any)?.total || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Active Permits</p>
               </div>
@@ -75,7 +75,7 @@ export default function PermitRequirements() {
               </div>
               <div>
                 {activePermitsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{activePermitsQuery.data?.valid || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(activePermitsQuery.data as any)?.valid || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Valid</p>
               </div>
@@ -91,7 +91,7 @@ export default function PermitRequirements() {
               </div>
               <div>
                 {activePermitsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{activePermitsQuery.data?.expiringSoon || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(activePermitsQuery.data as any)?.expiringSoon || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Expiring Soon</p>
               </div>
@@ -107,7 +107,7 @@ export default function PermitRequirements() {
               </div>
               <div>
                 {activePermitsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{activePermitsQuery.data?.expired || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(activePermitsQuery.data as any)?.expired || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Expired</p>
               </div>
@@ -120,7 +120,7 @@ export default function PermitRequirements() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search permits..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search permits..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={stateFilter} onValueChange={setStateFilter}>
           <SelectTrigger className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -128,7 +128,7 @@ export default function PermitRequirements() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All States</SelectItem>
-            {statesQuery.data?.map((state: any) => (
+            {(statesQuery.data as any)?.map((state: any) => (
               <SelectItem key={state.code} value={state.code}>{state.name}</SelectItem>
             ))}
           </SelectContent>
@@ -142,7 +142,7 @@ export default function PermitRequirements() {
         </CardHeader>
         <CardContent className="p-0">
           {permitsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredPermits?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

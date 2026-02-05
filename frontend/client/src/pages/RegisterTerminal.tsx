@@ -122,15 +122,15 @@ export default function RegisterTerminal() {
   const [formData, setFormData] = useState<TerminalFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<TerminalFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerTerminalManager.useMutation({
+  const registerMutation = (trpc as any).registration.registerTerminalManager.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", { description: "Your facility registration is pending verification." });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", { description: error.message });
     },
   });
@@ -167,7 +167,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.firstName}
-                onChange={(e) => updateFormData({ firstName: e.target.value })}
+                onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -178,7 +178,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.lastName}
-                onChange={(e) => updateFormData({ lastName: e.target.value })}
+                onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -193,7 +193,7 @@ export default function RegisterTerminal() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
+                onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@terminal.com"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -205,7 +205,7 @@ export default function RegisterTerminal() {
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => updateFormData({ phone: e.target.value })}
+                onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -214,7 +214,7 @@ export default function RegisterTerminal() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Job Title</Label>
-            <Select value={formData.jobTitle} onValueChange={(v) => updateFormData({ jobTitle: v })}>
+            <Select value={formData.jobTitle} onValueChange={(v: any) => updateFormData({ jobTitle: v })}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                 <SelectValue placeholder="Select your role" />
               </SelectTrigger>
@@ -251,7 +251,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.facilityName}
-                onChange={(e) => updateFormData({ facilityName: e.target.value })}
+                onChange={(e: any) => updateFormData({ facilityName: e.target.value })}
                 placeholder="Houston Terminal #1"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -260,7 +260,7 @@ export default function RegisterTerminal() {
               <Label className="text-slate-300">
                 Facility Type <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.facilityType} onValueChange={(v) => updateFormData({ facilityType: v })}>
+              <Select value={formData.facilityType} onValueChange={(v: any) => updateFormData({ facilityType: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select facility type" />
                 </SelectTrigger>
@@ -282,7 +282,7 @@ export default function RegisterTerminal() {
             </Label>
             <Input
               value={formData.streetAddress}
-              onChange={(e) => updateFormData({ streetAddress: e.target.value })}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="1234 Industrial Blvd"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -295,7 +295,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.city}
-                onChange={(e) => updateFormData({ city: e.target.value })}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -304,12 +304,12 @@ export default function RegisterTerminal() {
               <Label className="text-slate-300">
                 State <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.state} onValueChange={(v) => updateFormData({ state: v })}>
+              <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((state) => (
+                  {US_STATES.map((state: any) => (
                     <SelectItem key={state} value={state}>{state}</SelectItem>
                   ))}
                 </SelectContent>
@@ -321,7 +321,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.zipCode}
-                onChange={(e) => updateFormData({ zipCode: e.target.value })}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -364,7 +364,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.epaId}
-                onChange={(e) => updateFormData({ epaId: e.target.value })}
+                onChange={(e: any) => updateFormData({ epaId: e.target.value })}
                 placeholder="TXD123456789"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -373,7 +373,7 @@ export default function RegisterTerminal() {
               <Label className="text-slate-300">State Permit Number</Label>
               <Input
                 value={formData.statePermitNumber}
-                onChange={(e) => updateFormData({ statePermitNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ statePermitNumber: e.target.value })}
                 placeholder="State environmental permit #"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -386,7 +386,7 @@ export default function RegisterTerminal() {
               <Input
                 type="date"
                 value={formData.spccPlanDate}
-                onChange={(e) => updateFormData({ spccPlanDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ spccPlanDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
               <p className="text-xs text-slate-500">Spill Prevention, Control, and Countermeasure plan date</p>
@@ -396,7 +396,7 @@ export default function RegisterTerminal() {
               <Input
                 type="number"
                 value={formData.storageCapacity}
-                onChange={(e) => updateFormData({ storageCapacity: e.target.value })}
+                onChange={(e: any) => updateFormData({ storageCapacity: e.target.value })}
                 placeholder="100000"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -407,7 +407,7 @@ export default function RegisterTerminal() {
             <Checkbox
               id="eiaReporting"
               checked={formData.eiaReporting}
-              onCheckedChange={(c) => updateFormData({ eiaReporting: c as boolean })}
+              onCheckedChange={(c: any) => updateFormData({ eiaReporting: c as boolean })}
             />
             <Label htmlFor="eiaReporting" className="text-sm text-slate-300 cursor-pointer">
               This facility is required to report to EIA (Energy Information Administration)
@@ -432,7 +432,7 @@ export default function RegisterTerminal() {
         <div className="space-y-6">
           <div className="space-y-2">
             <Label className="text-slate-300">Operating Hours</Label>
-            <Select value={formData.operatingHours} onValueChange={(v) => updateFormData({ operatingHours: v })}>
+            <Select value={formData.operatingHours} onValueChange={(v: any) => updateFormData({ operatingHours: v })}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                 <SelectValue placeholder="Select operating hours" />
               </SelectTrigger>
@@ -448,7 +448,7 @@ export default function RegisterTerminal() {
           <div className="space-y-2">
             <Label className="text-slate-300">Products Handled</Label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {PRODUCTS.map((product) => (
+              {PRODUCTS.map((product: any) => (
                 <div key={product} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
                   <Checkbox
                     id={product}
@@ -475,7 +475,7 @@ export default function RegisterTerminal() {
               <Input
                 type="number"
                 value={formData.loadingRacks}
-                onChange={(e) => updateFormData({ loadingRacks: e.target.value })}
+                onChange={(e: any) => updateFormData({ loadingRacks: e.target.value })}
                 placeholder="8"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -485,7 +485,7 @@ export default function RegisterTerminal() {
               <Input
                 type="number"
                 value={formData.unloadingRacks}
-                onChange={(e) => updateFormData({ unloadingRacks: e.target.value })}
+                onChange={(e: any) => updateFormData({ unloadingRacks: e.target.value })}
                 placeholder="4"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -496,7 +496,7 @@ export default function RegisterTerminal() {
             <Checkbox
               id="scada"
               checked={formData.hasScada}
-              onCheckedChange={(c) => updateFormData({ hasScada: c as boolean })}
+              onCheckedChange={(c: any) => updateFormData({ hasScada: c as boolean })}
             />
             <Label htmlFor="scada" className="text-sm text-slate-300 cursor-pointer">
               <div className="flex items-center gap-2">
@@ -522,7 +522,7 @@ export default function RegisterTerminal() {
               </Label>
               <Input
                 value={formData.emergencyContact}
-                onChange={(e) => updateFormData({ emergencyContact: e.target.value })}
+                onChange={(e: any) => updateFormData({ emergencyContact: e.target.value })}
                 placeholder="Jane Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -534,7 +534,7 @@ export default function RegisterTerminal() {
               <Input
                 type="tel"
                 value={formData.emergencyPhone}
-                onChange={(e) => updateFormData({ emergencyPhone: e.target.value })}
+                onChange={(e: any) => updateFormData({ emergencyPhone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -546,7 +546,7 @@ export default function RegisterTerminal() {
             <Input
               type="date"
               value={formData.lastInspectionDate}
-              onChange={(e) => updateFormData({ lastInspectionDate: e.target.value })}
+              onChange={(e: any) => updateFormData({ lastInspectionDate: e.target.value })}
               className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
@@ -555,7 +555,7 @@ export default function RegisterTerminal() {
             <Checkbox
               id="osha"
               checked={formData.oshaCompliant}
-              onCheckedChange={(c) => updateFormData({ oshaCompliant: c as boolean })}
+              onCheckedChange={(c: any) => updateFormData({ oshaCompliant: c as boolean })}
             />
             <Label htmlFor="osha" className="text-sm text-slate-300 cursor-pointer">
               Facility is OSHA compliant with current Process Safety Management (PSM) documentation
@@ -583,7 +583,7 @@ export default function RegisterTerminal() {
               <Checkbox
                 id="terms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a>
@@ -595,7 +595,7 @@ export default function RegisterTerminal() {
               <Checkbox
                 id="privacy"
                 checked={formData.acceptPrivacy}
-                onCheckedChange={(c) => updateFormData({ acceptPrivacy: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptPrivacy: c as boolean })}
               />
               <Label htmlFor="privacy" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>
@@ -607,7 +607,7 @@ export default function RegisterTerminal() {
               <Checkbox
                 id="compliance"
                 checked={formData.acceptCompliance}
-                onCheckedChange={(c) => updateFormData({ acceptCompliance: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptCompliance: c as boolean })}
               />
               <Label htmlFor="compliance" className="text-sm text-slate-300 cursor-pointer">
                 I certify that this facility maintains all required environmental permits and safety documentation

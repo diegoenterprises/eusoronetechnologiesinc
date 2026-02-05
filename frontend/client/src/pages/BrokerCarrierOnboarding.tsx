@@ -23,10 +23,10 @@ export default function BrokerCarrierOnboarding() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const carriersQuery = trpc.brokers.getOnboardingCarriers.useQuery({ status: statusFilter });
-  const statsQuery = trpc.brokers.getOnboardingStats.useQuery();
+  const carriersQuery = (trpc as any).brokers.getOnboardingCarriers.useQuery({ status: statusFilter });
+  const statsQuery = (trpc as any).brokers.getOnboardingStats.useQuery();
 
-  const approveCarrierMutation = trpc.brokers.approveCarrier.useMutation({
+  const approveCarrierMutation = (trpc as any).brokers.approveCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier approved");
       carriersQuery.refetch();
@@ -34,7 +34,7 @@ export default function BrokerCarrierOnboarding() {
     },
   });
 
-  const rejectCarrierMutation = trpc.brokers.rejectCarrier.useMutation({
+  const rejectCarrierMutation = (trpc as any).brokers.rejectCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier rejected");
       carriersQuery.refetch();
@@ -42,7 +42,7 @@ export default function BrokerCarrierOnboarding() {
     },
   });
 
-  const sendReminderMutation = trpc.brokers.sendOnboardingReminder.useMutation({
+  const sendReminderMutation = (trpc as any).brokers.sendOnboardingReminder.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 
@@ -69,7 +69,7 @@ export default function BrokerCarrierOnboarding() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -129,7 +129,7 @@ export default function BrokerCarrierOnboarding() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search carriers..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -155,7 +155,7 @@ export default function BrokerCarrierOnboarding() {
       {/* Carriers List */}
       <div className="space-y-4">
         {carriersQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)
         ) : filteredCarriers.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">
@@ -210,7 +210,7 @@ export default function BrokerCarrierOnboarding() {
                   </div>
                   <Progress value={carrier.progress || 0} className="h-2 bg-slate-700" />
                   <div className="flex justify-between mt-3">
-                    {["Application", "Documents", "Verification", "Review", "Complete"].map((step, idx) => {
+                    {["Application", "Documents", "Verification", "Review", "Complete"].map((step: any, idx: number) => {
                       const stepNum = idx + 1;
                       const isComplete = carrier.currentStep > stepNum;
                       const isCurrent = carrier.currentStep === stepNum;

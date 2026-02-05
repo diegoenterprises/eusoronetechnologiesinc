@@ -21,17 +21,17 @@ import { toast } from "sonner";
 export default function VerificationQueue() {
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const queueQuery = trpc.admin.getVerificationQueue.useQuery({ type: typeFilter === "all" ? undefined : typeFilter as "user" | "all" | "company" | "document", limit: 50 });
-  const summaryQuery = trpc.admin.getVerificationSummary.useQuery();
+  const queueQuery = (trpc as any).admin.getVerificationQueue.useQuery({ type: typeFilter === "all" ? undefined : typeFilter as "user" | "all" | "company" | "document", limit: 50 });
+  const summaryQuery = (trpc as any).admin.getVerificationSummary.useQuery();
 
-  const approveMutation = trpc.admin.approveVerification.useMutation({
+  const approveMutation = (trpc as any).admin.approveVerification.useMutation({
     onSuccess: () => { toast.success("Approved"); queueQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.admin.rejectVerification.useMutation({
+  const rejectMutation = (trpc as any).admin.rejectVerification.useMutation({
     onSuccess: () => { toast.success("Rejected"); queueQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -152,8 +152,8 @@ export default function VerificationQueue() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {queueQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : queueQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (queueQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <CheckCircle className="w-10 h-10 text-green-400" />
@@ -163,7 +163,7 @@ export default function VerificationQueue() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {queueQuery.data?.map((item: any) => (
+              {(queueQuery.data as any)?.map((item: any) => (
                 <div key={item.id} className={cn("p-4", item.priority === "high" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

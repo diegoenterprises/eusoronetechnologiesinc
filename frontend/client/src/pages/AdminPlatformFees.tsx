@@ -27,19 +27,19 @@ export default function AdminPlatformFees() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<any>(null);
 
-  const feeConfigsQuery = trpc.platformFees.getFeeConfigs.useQuery();
-  const volumeDiscountsQuery = trpc.platformFees.getVolumeDiscounts.useQuery();
-  const promoCodesQuery = trpc.platformFees.getPromoCodes.useQuery();
-  const revenueSummaryQuery = trpc.platformFees.getRevenueSummary.useQuery({ period: "month" });
+  const feeConfigsQuery = (trpc as any).platformFees.getFeeConfigs.useQuery();
+  const volumeDiscountsQuery = (trpc as any).platformFees.getVolumeDiscounts.useQuery();
+  const promoCodesQuery = (trpc as any).platformFees.getPromoCodes.useQuery();
+  const revenueSummaryQuery = (trpc as any).platformFees.getRevenueSummary.useQuery({ period: "month" });
 
-  const createFeeConfigMutation = trpc.platformFees.createFeeConfig.useMutation({
+  const createFeeConfigMutation = (trpc as any).platformFees.createFeeConfig.useMutation({
     onSuccess: () => {
       feeConfigsQuery.refetch();
       setShowCreateDialog(false);
     },
   });
 
-  const updateFeeConfigMutation = trpc.platformFees.updateFeeConfig.useMutation({
+  const updateFeeConfigMutation = (trpc as any).platformFees.updateFeeConfig.useMutation({
     onSuccess: () => {
       feeConfigsQuery.refetch();
       setSelectedConfig(null);
@@ -393,7 +393,7 @@ export default function AdminPlatformFees() {
             <DialogTitle className="text-slate-200">Create Fee Configuration</DialogTitle>
           </DialogHeader>
           <CreateFeeConfigForm 
-            onSubmit={(data) => createFeeConfigMutation.mutate(data)}
+            onSubmit={(data: any) => createFeeConfigMutation.mutate(data)}
             isLoading={createFeeConfigMutation.isPending}
           />
         </DialogContent>
@@ -408,7 +408,7 @@ export default function AdminPlatformFees() {
           {selectedConfig && (
             <EditFeeConfigForm
               config={selectedConfig}
-              onSubmit={(data) => updateFeeConfigMutation.mutate({ id: selectedConfig.id, ...data })}
+              onSubmit={(data: any) => updateFeeConfigMutation.mutate({ id: selectedConfig.id, ...data })}
               isLoading={updateFeeConfigMutation.isPending}
             />
           )}
@@ -432,14 +432,14 @@ function CreateFeeConfigForm({ onSubmit, isLoading }: { onSubmit: (data: any) =>
   });
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+    <form onSubmit={(e: any) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label className="text-slate-300">Fee Code</Label>
           <Input
             className="bg-slate-700 border-slate-600 text-slate-200"
             value={formData.feeCode}
-            onChange={(e) => setFormData({ ...formData, feeCode: e.target.value })}
+            onChange={(e: any) => setFormData({ ...formData, feeCode: e.target.value })}
             placeholder="LOAD_FEE_01"
             required
           />
@@ -449,7 +449,7 @@ function CreateFeeConfigForm({ onSubmit, isLoading }: { onSubmit: (data: any) =>
           <Input
             className="bg-slate-700 border-slate-600 text-slate-200"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
             placeholder="Load Completion Fee"
             required
           />
@@ -458,7 +458,7 @@ function CreateFeeConfigForm({ onSubmit, isLoading }: { onSubmit: (data: any) =>
 
       <div>
         <Label className="text-slate-300">Transaction Type</Label>
-        <Select value={formData.transactionType} onValueChange={(v) => setFormData({ ...formData, transactionType: v })}>
+        <Select value={formData.transactionType} onValueChange={(v: any) => setFormData({ ...formData, transactionType: v })}>
           <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-200">
             <SelectValue />
           </SelectTrigger>
@@ -475,7 +475,7 @@ function CreateFeeConfigForm({ onSubmit, isLoading }: { onSubmit: (data: any) =>
 
       <div>
         <Label className="text-slate-300">Fee Type</Label>
-        <Select value={formData.feeType} onValueChange={(v) => setFormData({ ...formData, feeType: v })}>
+        <Select value={formData.feeType} onValueChange={(v: any) => setFormData({ ...formData, feeType: v })}>
           <SelectTrigger className="bg-slate-700 border-slate-600 text-slate-200">
             <SelectValue />
           </SelectTrigger>
@@ -497,7 +497,7 @@ function CreateFeeConfigForm({ onSubmit, isLoading }: { onSubmit: (data: any) =>
               step="0.01"
               className="bg-slate-700 border-slate-600 text-slate-200"
               value={formData.baseRate}
-              onChange={(e) => setFormData({ ...formData, baseRate: parseFloat(e.target.value) })}
+              onChange={(e: any) => setFormData({ ...formData, baseRate: parseFloat(e.target.value) })}
             />
           </div>
         )}
@@ -509,7 +509,7 @@ function CreateFeeConfigForm({ onSubmit, isLoading }: { onSubmit: (data: any) =>
               step="0.01"
               className="bg-slate-700 border-slate-600 text-slate-200"
               value={formData.flatAmount}
-              onChange={(e) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) })}
+              onChange={(e: any) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) })}
             />
           </div>
         )}
@@ -533,13 +533,13 @@ function EditFeeConfigForm({ config, onSubmit, isLoading }: { config: any; onSub
   });
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+    <form onSubmit={(e: any) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
       <div>
         <Label className="text-slate-300">Name</Label>
         <Input
           className="bg-slate-700 border-slate-600 text-slate-200"
           value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          onChange={(e: any) => setFormData({ ...formData, name: e.target.value })}
         />
       </div>
 
@@ -551,7 +551,7 @@ function EditFeeConfigForm({ config, onSubmit, isLoading }: { config: any; onSub
             step="0.01"
             className="bg-slate-700 border-slate-600 text-slate-200"
             value={formData.baseRate}
-            onChange={(e) => setFormData({ ...formData, baseRate: parseFloat(e.target.value) })}
+            onChange={(e: any) => setFormData({ ...formData, baseRate: parseFloat(e.target.value) })}
           />
         </div>
         <div>
@@ -561,7 +561,7 @@ function EditFeeConfigForm({ config, onSubmit, isLoading }: { config: any; onSub
             step="0.01"
             className="bg-slate-700 border-slate-600 text-slate-200"
             value={formData.flatAmount}
-            onChange={(e) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) })}
+            onChange={(e: any) => setFormData({ ...formData, flatAmount: parseFloat(e.target.value) })}
           />
         </div>
       </div>
@@ -574,7 +574,7 @@ function EditFeeConfigForm({ config, onSubmit, isLoading }: { config: any; onSub
             step="0.01"
             className="bg-slate-700 border-slate-600 text-slate-200"
             value={formData.minFee}
-            onChange={(e) => setFormData({ ...formData, minFee: parseFloat(e.target.value) })}
+            onChange={(e: any) => setFormData({ ...formData, minFee: parseFloat(e.target.value) })}
           />
         </div>
         <div>
@@ -584,7 +584,7 @@ function EditFeeConfigForm({ config, onSubmit, isLoading }: { config: any; onSub
             step="0.01"
             className="bg-slate-700 border-slate-600 text-slate-200"
             value={formData.maxFee}
-            onChange={(e) => setFormData({ ...formData, maxFee: parseFloat(e.target.value) })}
+            onChange={(e: any) => setFormData({ ...formData, maxFee: parseFloat(e.target.value) })}
           />
         </div>
       </div>

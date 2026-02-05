@@ -23,11 +23,11 @@ export default function AdminAuditTrail() {
   const [moduleFilter, setModuleFilter] = useState("all");
   const [periodFilter, setPeriodFilter] = useState("7d");
 
-  const auditQuery = trpc.admin.getAuditLogs.useQuery({
+  const auditQuery = (trpc as any).admin.getAuditLogs.useQuery({
     action: actionFilter === 'all' ? undefined : actionFilter,
     limit: 100,
   });
-  const statsQuery = trpc.admin.getAuditStats.useQuery();
+  const statsQuery = (trpc as any).admin.getAuditStats.useQuery();
 
   const auditLogs = auditQuery.data || [];
   const stats = statsQuery.data;
@@ -67,7 +67,7 @@ export default function AdminAuditTrail() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -161,7 +161,7 @@ export default function AdminAuditTrail() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search logs..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -210,7 +210,7 @@ export default function AdminAuditTrail() {
       {/* Audit Logs */}
       <div className="space-y-3">
         {auditQuery.isLoading ? (
-          Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+          Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-xl" />)
         ) : filteredLogs.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

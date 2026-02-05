@@ -34,13 +34,13 @@ export default function NewsFeed() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const newsQuery = trpc.news.getArticles.useQuery({
+  const newsQuery = (trpc as any).news.getArticles.useQuery({
     category: activeTab !== "all" ? activeTab : undefined,
     search: searchTerm || undefined,
     limit: 50,
   });
-  const trendingQuery = trpc.news.getTrending.useQuery();
-  const refreshMutation = trpc.news.refreshFeeds.useMutation({
+  const trendingQuery = (trpc as any).news.getTrending.useQuery();
+  const refreshMutation = (trpc as any).news.refreshFeeds.useMutation({
     onSuccess: () => newsQuery.refetch(),
   });
 
@@ -97,12 +97,12 @@ export default function NewsFeed() {
           {/* Search */}
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search news..." className="pl-9 bg-slate-700/50 border-slate-600" />
+            <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search news..." className="pl-9 bg-slate-700/50 border-slate-600" />
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
-              {CATEGORIES.map((cat) => (
+              {CATEGORIES.map((cat: any) => (
                 <TabsTrigger key={cat.value} value={cat.value} className="data-[state=active]:bg-blue-600 text-xs">
                   <cat.icon className="w-3 h-3 mr-1" />
                   {cat.label}
@@ -112,15 +112,15 @@ export default function NewsFeed() {
 
             <TabsContent value={activeTab} className="mt-6">
               {newsQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full" />)}</div>
-              ) : newsQuery.data?.length === 0 ? (
+                <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full" />)}</div>
+              ) : (newsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <Newspaper className="w-12 h-12 text-slate-600 mx-auto mb-4" />
                   <p className="text-slate-400">No articles found</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {newsQuery.data?.map((article) => {
+                  {(newsQuery.data as any)?.map((article: any) => {
                     const CategoryIcon = getCategoryIcon(article.category);
                     return (
                       <Card key={article.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
@@ -128,7 +128,7 @@ export default function NewsFeed() {
                           <div className="flex gap-4">
                             {article.imageUrl && (
                               <div className="w-32 h-24 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
-                                <img src={article.imageUrl} alt="" className="w-full h-full object-cover" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                                <img src={article.imageUrl} alt="" className="w-full h-full object-cover" onError={(e: any) => (e.currentTarget.style.display = 'none')} />
                               </div>
                             )}
                             <div className="flex-1">
@@ -179,12 +179,12 @@ export default function NewsFeed() {
             </CardHeader>
             <CardContent>
               {trendingQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
-              ) : trendingQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+              ) : (trendingQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-4">No trending articles</p>
               ) : (
                 <div className="space-y-3">
-                  {trendingQuery.data?.map((article, idx) => (
+                  {(trendingQuery.data as any)?.map((article: any, idx: number) => (
                     <div key={article.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-slate-700/30 cursor-pointer">
                       <span className="text-2xl font-bold text-slate-600">{idx + 1}</span>
                       <div>
@@ -210,7 +210,7 @@ export default function NewsFeed() {
                   { label: "Fuel Prices", icon: DollarSign },
                   { label: "Weather Alerts", icon: AlertTriangle },
                   { label: "Load Board", icon: Truck },
-                ].map((link, idx) => (
+                ].map((link: any, idx: number) => (
                   <Button key={idx} variant="ghost" className="w-full justify-start text-slate-400 hover:text-white">
                     <link.icon className="w-4 h-4 mr-2" />{link.label}
                   </Button>

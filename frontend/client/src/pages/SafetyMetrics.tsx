@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function SafetyMetrics() {
   const [timeframe, setTimeframe] = useState("30d");
 
-  const metricsQuery = trpc.safety.getMetrics.useQuery({ timeframe });
-  const csaScoresQuery = trpc.safety.getCSAScores.useQuery();
-  const trendsQuery = trpc.safety.getTrends.useQuery({ timeframe });
+  const metricsQuery = (trpc as any).safety.getMetrics.useQuery({ timeframe });
+  const csaScoresQuery = (trpc as any).safety.getCSAScores.useQuery();
+  const trendsQuery = (trpc as any).safety.getTrends.useQuery({ timeframe });
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-400";
@@ -67,16 +67,16 @@ export default function SafetyMetrics() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {metricsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
-            <Card className={cn("bg-gradient-to-br rounded-xl", getScoreBg(metricsQuery.data?.overallScore || 0))}>
+            <Card className={cn("bg-gradient-to-br rounded-xl", getScoreBg((metricsQuery.data as any)?.overallScore || 0))}>
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Overall Safety Score</p>
-                    <p className={cn("text-3xl font-bold", getScoreColor(metricsQuery.data?.overallScore || 0))}>
-                      {metricsQuery.data?.overallScore || 0}
+                    <p className={cn("text-3xl font-bold", getScoreColor((metricsQuery.data as any)?.overallScore || 0))}>
+                      {(metricsQuery.data as any)?.overallScore || 0}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-green-500/20">
@@ -84,15 +84,15 @@ export default function SafetyMetrics() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 mt-2 text-xs">
-                  {(metricsQuery.data?.scoreTrend || 0) >= 0 ? (
+                  {((metricsQuery.data as any)?.scoreTrend || 0) >= 0 ? (
                     <>
                       <TrendingUp className="w-3 h-3 text-green-400" />
-                      <span className="text-green-400">+{metricsQuery.data?.scoreTrend}%</span>
+                      <span className="text-green-400">+{(metricsQuery.data as any)?.scoreTrend}%</span>
                     </>
                   ) : (
                     <>
                       <TrendingDown className="w-3 h-3 text-red-400" />
-                      <span className="text-red-400">{metricsQuery.data?.scoreTrend}%</span>
+                      <span className="text-red-400">{(metricsQuery.data as any)?.scoreTrend}%</span>
                     </>
                   )}
                   <span className="text-slate-500">vs last period</span>
@@ -105,14 +105,14 @@ export default function SafetyMetrics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Active Drivers</p>
-                    <p className="text-3xl font-bold text-white">{metricsQuery.data?.activeDrivers || 0}</p>
+                    <p className="text-3xl font-bold text-white">{(metricsQuery.data as any)?.activeDrivers || 0}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-blue-500/20">
                     <Users className="w-6 h-6 text-blue-400" />
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  {metricsQuery.data?.driversInCompliance || 0} in full compliance
+                  {(metricsQuery.data as any)?.driversInCompliance || 0} in full compliance
                 </p>
               </CardContent>
             </Card>
@@ -122,14 +122,14 @@ export default function SafetyMetrics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Open Incidents</p>
-                    <p className="text-3xl font-bold text-white">{metricsQuery.data?.openIncidents || 0}</p>
+                    <p className="text-3xl font-bold text-white">{(metricsQuery.data as any)?.openIncidents || 0}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-orange-500/20">
                     <AlertTriangle className="w-6 h-6 text-orange-400" />
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  {metricsQuery.data?.incidentsThisMonth || 0} this month
+                  {(metricsQuery.data as any)?.incidentsThisMonth || 0} this month
                 </p>
               </CardContent>
             </Card>
@@ -139,14 +139,14 @@ export default function SafetyMetrics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Days Without Incident</p>
-                    <p className="text-3xl font-bold text-white">{metricsQuery.data?.daysWithoutIncident || 0}</p>
+                    <p className="text-3xl font-bold text-white">{(metricsQuery.data as any)?.daysWithoutIncident || 0}</p>
                   </div>
                   <div className="p-3 rounded-lg bg-purple-500/20">
                     <Award className="w-6 h-6 text-purple-400" />
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  Record: {metricsQuery.data?.recordDays || 0} days
+                  Record: {(metricsQuery.data as any)?.recordDays || 0} days
                 </p>
               </CardContent>
             </Card>
@@ -165,7 +165,7 @@ export default function SafetyMetrics() {
           <CardContent>
             {csaScoresQuery.isLoading ? (
               <div className="space-y-4">
-                {Array(7).fill(0).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+                {Array(7).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-12 rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-4">
@@ -211,11 +211,11 @@ export default function SafetyMetrics() {
           <CardContent>
             {trendsQuery.isLoading ? (
               <div className="space-y-4">
-                {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+                {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-4">
-                {trendsQuery.data?.map((trend: any, i: number) => (
+                {(trendsQuery.data as any)?.map((trend: any, i: number) => (
                   <div key={i} className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-white">{trend.metric}</span>
@@ -252,11 +252,11 @@ export default function SafetyMetrics() {
         <CardContent>
           {metricsQuery.isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {metricsQuery.data?.goals?.map((goal: any) => (
+              {(metricsQuery.data as any)?.goals?.map((goal: any) => (
                 <div key={goal.name} className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm text-white">{goal.name}</span>

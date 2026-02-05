@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Rewards() {
-  const summaryQuery = trpc.rewards.getSummary.useQuery();
-  const rewardsQuery = trpc.rewards.getAvailable.useQuery();
-  const historyQuery = trpc.rewards.getHistory.useQuery({ limit: 10 });
+  const summaryQuery = (trpc as any).rewards.getSummary.useQuery();
+  const rewardsQuery = (trpc as any).rewards.getAvailable.useQuery();
+  const historyQuery = (trpc as any).rewards.getHistory.useQuery({ limit: 10 });
 
   const summary = summaryQuery.data;
 
@@ -142,8 +142,8 @@ export default function Rewards() {
           </CardHeader>
           <CardContent>
             {rewardsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : rewardsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (rewardsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Gift className="w-8 h-8 text-slate-500" />
@@ -152,7 +152,7 @@ export default function Rewards() {
               </div>
             ) : (
               <div className="space-y-3">
-                {rewardsQuery.data?.map((reward: any) => (
+                {(rewardsQuery.data as any)?.map((reward: any) => (
                   <div key={reward.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -185,8 +185,8 @@ export default function Rewards() {
           </CardHeader>
           <CardContent>
             {historyQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
-            ) : historyQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            ) : (historyQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Star className="w-8 h-8 text-slate-500" />
@@ -195,7 +195,7 @@ export default function Rewards() {
               </div>
             ) : (
               <div className="space-y-3">
-                {historyQuery.data?.map((activity: any) => (
+                {(historyQuery.data as any)?.map((activity: any) => (
                   <div key={activity.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-700/30">
                     <div className="flex items-center gap-3">
                       <div className={cn("w-2 h-2 rounded-full", activity.type === "earned" ? "bg-green-400" : "bg-purple-400")} />

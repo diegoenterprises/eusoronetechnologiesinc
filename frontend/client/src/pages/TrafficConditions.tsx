@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function TrafficConditions() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const incidentsQuery = trpc.traffic.getIncidents.useQuery();
-  const constructionQuery = trpc.traffic.getConstruction.useQuery();
-  const delaysQuery = trpc.traffic.getDelays.useQuery();
+  const incidentsQuery = (trpc as any).traffic.getIncidents.useQuery();
+  const constructionQuery = (trpc as any).traffic.getConstruction.useQuery();
+  const delaysQuery = (trpc as any).traffic.getDelays.useQuery();
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -33,7 +33,7 @@ export default function TrafficConditions() {
     }
   };
 
-  const filteredIncidents = incidentsQuery.data?.filter((incident: any) =>
+  const filteredIncidents = (incidentsQuery.data as any)?.filter((incident: any) =>
     !searchTerm || incident.location?.toLowerCase().includes(searchTerm.toLowerCase()) || incident.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -62,7 +62,7 @@ export default function TrafficConditions() {
               </div>
               <div>
                 {incidentsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{incidentsQuery.data?.filter((i: any) => i.severity === "major").length || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(incidentsQuery.data as any)?.filter((i: any) => i.severity === "major").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Major Incidents</p>
               </div>
@@ -78,7 +78,7 @@ export default function TrafficConditions() {
               </div>
               <div>
                 {incidentsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{incidentsQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(incidentsQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Incidents</p>
               </div>
@@ -94,7 +94,7 @@ export default function TrafficConditions() {
               </div>
               <div>
                 {constructionQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-orange-400">{constructionQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-orange-400">{(constructionQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Construction Zones</p>
               </div>
@@ -110,7 +110,7 @@ export default function TrafficConditions() {
               </div>
               <div>
                 {delaysQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{delaysQuery.data?.avgDelay || 0} min</p>
+                  <p className="text-2xl font-bold text-blue-400">{(delaysQuery.data as any)?.avgDelay || 0} min</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Delay</p>
               </div>
@@ -122,7 +122,7 @@ export default function TrafficConditions() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search by location..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search by location..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -136,7 +136,7 @@ export default function TrafficConditions() {
           </CardHeader>
           <CardContent className="p-0">
             {incidentsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredIncidents?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
@@ -176,14 +176,14 @@ export default function TrafficConditions() {
           </CardHeader>
           <CardContent className="p-0">
             {constructionQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : constructionQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (constructionQuery.data as any)?.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-slate-400">No construction zones</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50 max-h-96 overflow-y-auto">
-                {constructionQuery.data?.map((zone: any) => (
+                {(constructionQuery.data as any)?.map((zone: any) => (
                   <div key={zone.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-white font-medium">{zone.route}</p>
@@ -209,12 +209,12 @@ export default function TrafficConditions() {
         </CardHeader>
         <CardContent className="p-0">
           {delaysQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : delaysQuery.data?.routes?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (delaysQuery.data as any)?.routes?.length === 0 ? (
             <p className="text-slate-400 text-center py-8">No significant delays</p>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {delaysQuery.data?.routes?.map((route: any) => (
+              {(delaysQuery.data as any)?.routes?.map((route: any) => (
                 <div key={route.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", route.delay > 30 ? "bg-red-500/20" : route.delay > 15 ? "bg-yellow-500/20" : "bg-green-500/20")}>

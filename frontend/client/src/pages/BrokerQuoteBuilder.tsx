@@ -33,10 +33,10 @@ export default function BrokerQuoteBuilder() {
   const [shipperId, setShipperId] = useState("");
   const [validDays, setValidDays] = useState("7");
 
-  const shippersQuery = trpc.brokers.getShippers.useQuery({ search: "" });
+  const shippersQuery = (trpc as any).brokers.getShippers.useQuery({ search: "" });
   const rateQuery = { data: { lowEstimate: 0, midEstimate: 0, highEstimate: 0 }, isLoading: false }; // Placeholder
 
-  const sendQuoteMutation = trpc.brokers.vetCarrier.useMutation({
+  const sendQuoteMutation = (trpc as any).brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success("Quote sent successfully");
       navigate("/broker/quotes");
@@ -106,7 +106,7 @@ export default function BrokerQuoteBuilder() {
               <label className="text-slate-300 text-sm">Origin</label>
               <Input
                 value={origin}
-                onChange={(e) => setOrigin(e.target.value)}
+                onChange={(e: any) => setOrigin(e.target.value)}
                 placeholder="City, State"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -115,7 +115,7 @@ export default function BrokerQuoteBuilder() {
               <label className="text-slate-300 text-sm">Destination</label>
               <Input
                 value={destination}
-                onChange={(e) => setDestination(e.target.value)}
+                onChange={(e: any) => setDestination(e.target.value)}
                 placeholder="City, State"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -141,7 +141,7 @@ export default function BrokerQuoteBuilder() {
               <Input
                 type="date"
                 value={pickupDate}
-                onChange={(e) => setPickupDate(e.target.value)}
+                onChange={(e: any) => setPickupDate(e.target.value)}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -193,7 +193,7 @@ export default function BrokerQuoteBuilder() {
               <Input
                 type="number"
                 value={baseRate}
-                onChange={(e) => setBaseRate(e.target.value)}
+                onChange={(e: any) => setBaseRate(e.target.value)}
                 placeholder="0.00"
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg text-xl font-bold"
               />
@@ -208,11 +208,11 @@ export default function BrokerQuoteBuilder() {
                 <Plus className="w-4 h-4 mr-1" />Add Item
               </Button>
             </div>
-            {lineItems.map((item, idx) => (
+            {lineItems.map((item: any, idx: number) => (
               <div key={idx} className="flex items-center gap-3">
                 <Input
                   value={item.description}
-                  onChange={(e) => updateLineItem(idx, "description", e.target.value)}
+                  onChange={(e: any) => updateLineItem(idx, "description", e.target.value)}
                   placeholder="Description"
                   className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg"
                 />
@@ -221,7 +221,7 @@ export default function BrokerQuoteBuilder() {
                   <Input
                     type="number"
                     value={item.amount}
-                    onChange={(e) => updateLineItem(idx, "amount", e.target.value)}
+                    onChange={(e: any) => updateLineItem(idx, "amount", e.target.value)}
                     placeholder="0.00"
                     className="pl-8 bg-slate-700/50 border-slate-600/50 rounded-lg"
                   />
@@ -268,7 +268,7 @@ export default function BrokerQuoteBuilder() {
             <label className="text-slate-300 text-sm">Notes</label>
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e: any) => setNotes(e.target.value)}
               placeholder="Add any terms or conditions..."
               className="bg-slate-700/50 border-slate-600/50 rounded-lg"
             />

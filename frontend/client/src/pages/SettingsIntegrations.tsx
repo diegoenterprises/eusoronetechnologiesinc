@@ -49,12 +49,12 @@ export default function SettingsIntegrations() {
   const [externalId, setExternalId] = useState("");
 
   const { data: providers, isLoading: providersLoading, error: providersError } = 
-    trpc.integrations.getProviders.useQuery({ category: activeTab === "all" ? undefined : activeTab });
+    (trpc as any).integrations.getProviders.useQuery({ category: activeTab === "all" ? undefined : activeTab });
   const { data: connections, refetch: refetchConnections } = 
-    trpc.integrations.getConnections.useQuery();
-  const { data: stats } = trpc.integrations.getDashboardStats.useQuery();
+    (trpc as any).integrations.getConnections.useQuery();
+  const { data: stats } = (trpc as any).integrations.getDashboardStats.useQuery();
 
-  const connectMutation = trpc.integrations.connectWithApiKey.useMutation({
+  const connectMutation = (trpc as any).integrations.connectWithApiKey.useMutation({
     onSuccess: () => {
       refetchConnections();
       setConnectDialogOpen(false);
@@ -62,11 +62,11 @@ export default function SettingsIntegrations() {
     },
   });
 
-  const disconnectMutation = trpc.integrations.disconnect.useMutation({
+  const disconnectMutation = (trpc as any).integrations.disconnect.useMutation({
     onSuccess: () => refetchConnections(),
   });
 
-  const syncMutation = trpc.integrations.triggerSync.useMutation();
+  const syncMutation = (trpc as any).integrations.triggerSync.useMutation();
 
   const resetForm = () => {
     setApiKey("");
@@ -106,7 +106,7 @@ export default function SettingsIntegrations() {
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
@@ -338,7 +338,7 @@ export default function SettingsIntegrations() {
                   id="externalId"
                   placeholder={selectedProvider.externalIdFormat || "Enter ID"}
                   value={externalId}
-                  onChange={(e) => setExternalId(e.target.value)}
+                  onChange={(e: any) => setExternalId(e.target.value)}
                 />
               </div>
             )}
@@ -352,7 +352,7 @@ export default function SettingsIntegrations() {
                     type="password"
                     placeholder="Enter your API key"
                     value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
+                    onChange={(e: any) => setApiKey(e.target.value)}
                   />
                 </div>
                 
@@ -364,7 +364,7 @@ export default function SettingsIntegrations() {
                       type="password"
                       placeholder="Enter your API secret"
                       value={apiSecret}
-                      onChange={(e) => setApiSecret(e.target.value)}
+                      onChange={(e: any) => setApiSecret(e.target.value)}
                     />
                   </div>
                 )}

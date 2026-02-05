@@ -26,11 +26,11 @@ export default function EscortHeightPole() {
   const [currentReading, setCurrentReading] = useState("");
   const [location, setLocation] = useState("");
 
-  const jobQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
-  const obstaclesQuery = trpc.escorts.getJobs.useQuery({});
-  const readingsQuery = trpc.escorts.getJobs.useQuery({});
+  const jobQuery = (trpc as any).escorts.getJobs.useQuery({ status: undefined });
+  const obstaclesQuery = (trpc as any).escorts.getJobs.useQuery({});
+  const readingsQuery = (trpc as any).escorts.getJobs.useQuery({});
 
-  const submitReadingMutation = trpc.escorts.acceptJob.useMutation({
+  const submitReadingMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Reading recorded");
       setCurrentReading("");
@@ -113,7 +113,7 @@ export default function EscortHeightPole() {
                 type="number"
                 step="0.1"
                 value={currentReading}
-                onChange={(e) => setCurrentReading(e.target.value)}
+                onChange={(e: any) => setCurrentReading(e.target.value)}
                 placeholder="e.g., 14.5"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg"
               />
@@ -122,7 +122,7 @@ export default function EscortHeightPole() {
               <label className="text-slate-300 text-sm">Location/Obstacle</label>
               <Input
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e: any) => setLocation(e.target.value)}
                 placeholder="e.g., Bridge on I-35"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -189,7 +189,7 @@ export default function EscortHeightPole() {
         </CardHeader>
         <CardContent>
           {obstaclesQuery.isLoading ? (
-            <div className="space-y-2">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-2">{Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : obstacles.length === 0 ? (
             <div className="text-center py-8">
               <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />

@@ -23,9 +23,9 @@ export default function VehicleInspections() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const inspectionsQuery = trpc.vehicle.getInspections.useQuery({ filter, search });
-  const statsQuery = trpc.vehicle.getInspectionStats.useQuery();
-  const dueQuery = trpc.vehicle.getInspectionsDue.useQuery({ limit: 5 });
+  const inspectionsQuery = (trpc as any).vehicle.getInspections.useQuery({ filter, search });
+  const statsQuery = (trpc as any).vehicle.getInspectionStats.useQuery();
+  const dueQuery = (trpc as any).vehicle.getInspectionsDue.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -131,7 +131,7 @@ export default function VehicleInspections() {
       </div>
 
       {/* Inspections Due */}
-      {(dueQuery.data?.length ?? 0) > 0 && (
+      {((dueQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -141,7 +141,7 @@ export default function VehicleInspections() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-yellow-500/20">
-              {dueQuery.data?.map((item: any) => (
+              {(dueQuery.data as any)?.map((item: any) => (
                 <div key={item.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-yellow-500/20">
@@ -167,7 +167,7 @@ export default function VehicleInspections() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by vehicle..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by vehicle..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -192,15 +192,15 @@ export default function VehicleInspections() {
         </CardHeader>
         <CardContent className="p-0">
           {inspectionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : inspectionsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (inspectionsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No inspection records found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {inspectionsQuery.data?.map((inspection: any) => (
+              {(inspectionsQuery.data as any)?.map((inspection: any) => (
                 <div key={inspection.id} className={cn("p-4", inspection.result === "fail" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

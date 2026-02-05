@@ -23,12 +23,12 @@ export default function ClearinghouseQueries() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const queriesQuery = trpc.compliance.getClearinghouseQueries.useQuery({ filter, search });
-  const statsQuery = trpc.compliance.getClearinghouseStats.useQuery();
+  const queriesQuery = (trpc as any).compliance.getClearinghouseQueries.useQuery({ filter, search });
+  const statsQuery = (trpc as any).compliance.getClearinghouseStats.useQuery();
 
-  const runQueryMutation = trpc.compliance.runClearinghouseQuery.useMutation({
+  const runQueryMutation = (trpc as any).compliance.runClearinghouseQuery.useMutation({
     onSuccess: () => { toast.success("Query submitted to Clearinghouse"); queriesQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -129,7 +129,7 @@ export default function ClearinghouseQueries() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by driver name..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by driver name..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -157,15 +157,15 @@ export default function ClearinghouseQueries() {
         </CardHeader>
         <CardContent className="p-0">
           {queriesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : queriesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (queriesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Database className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No queries found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {queriesQuery.data?.map((query: any) => (
+              {(queriesQuery.data as any)?.map((query: any) => (
                 <div key={query.id} className={cn("p-4", query.status === "violation" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

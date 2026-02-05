@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CatalystDashboard() {
-  const statsQuery = trpc.dispatch.getDashboardStats.useQuery();
-  const driversQuery = trpc.dispatch.getDriverStatuses.useQuery({ limit: 6 });
-  const issuesQuery = trpc.dispatch.getActiveIssues.useQuery();
-  const unassignedQuery = trpc.dispatch.getUnassignedLoads.useQuery({ limit: 5 });
+  const statsQuery = (trpc as any).dispatch.getDashboardStats.useQuery();
+  const driversQuery = (trpc as any).dispatch.getDriverStatuses.useQuery({ limit: 6 });
+  const issuesQuery = (trpc as any).dispatch.getActiveIssues.useQuery();
+  const unassignedQuery = (trpc as any).dispatch.getUnassignedLoads.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -95,11 +95,11 @@ export default function CatalystDashboard() {
         </Card>
       </div>
 
-      {(issuesQuery.data?.length ?? 0) > 0 && (
+      {((issuesQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Active Issues</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {issuesQuery.data?.map((issue: any) => (
+            {(issuesQuery.data as any)?.map((issue: any) => (
               <div key={issue.id} className={cn("p-3 rounded-lg flex items-center justify-between", issue.type === "breakdown" ? "bg-red-500/10" : "bg-yellow-500/10")}>
                 <div className="flex items-center gap-3">
                   {issue.type === "breakdown" ? <Wrench className="w-5 h-5 text-red-400" /> : <AlertTriangle className="w-5 h-5 text-yellow-400" />}
@@ -120,10 +120,10 @@ export default function CatalystDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><User className="w-5 h-5 text-cyan-400" />Driver Status</CardTitle></CardHeader>
           <CardContent className="p-0">
             {driversQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {driversQuery.data?.map((driver: any) => (
+                {(driversQuery.data as any)?.map((driver: any) => (
                   <div key={driver.id} className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -150,12 +150,12 @@ export default function CatalystDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-yellow-400" />Unassigned Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
             {unassignedQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
-            ) : unassignedQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
+            ) : (unassignedQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">All loads assigned</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {unassignedQuery.data?.map((load: any) => (
+                {(unassignedQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium text-sm">#{load.loadNumber}</p>

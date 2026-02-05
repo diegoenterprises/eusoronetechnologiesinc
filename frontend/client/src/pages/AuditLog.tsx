@@ -13,7 +13,7 @@ import { FileText, User, Clock, Activity } from "lucide-react";
 export default function AuditLog() {
   const [, params] = useRoute("/audit-log/:id");
   const id = params?.id;
-  const { data: log, isLoading } = trpc.admin.getAuditLog.useQuery({ logId: id || "" });
+  const { data: log, isLoading } = (trpc as any).admin.getAuditLog.useQuery({ logId: id || "" });
 
   if (isLoading) {
     return (

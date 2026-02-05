@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 export default function OnTimePerformance() {
   const [dateRange, setDateRange] = useState("month");
 
-  const summaryQuery = trpc.analytics.getOnTimeSummary.useQuery({ dateRange });
-  const byCustomerQuery = trpc.analytics.getOnTimeByCustomer.useQuery({ dateRange, limit: 10 });
-  const byLaneQuery = trpc.analytics.getOnTimeByLane.useQuery({ dateRange, limit: 10 });
-  const trendsQuery = trpc.analytics.getOnTimeTrends.useQuery({ dateRange });
+  const summaryQuery = (trpc as any).analytics.getOnTimeSummary.useQuery({ dateRange });
+  const byCustomerQuery = (trpc as any).analytics.getOnTimeByCustomer.useQuery({ dateRange, limit: 10 });
+  const byLaneQuery = (trpc as any).analytics.getOnTimeByLane.useQuery({ dateRange, limit: 10 });
+  const trendsQuery = (trpc as any).analytics.getOnTimeTrends.useQuery({ dateRange });
 
   const summary = summaryQuery.data;
 
@@ -165,10 +165,10 @@ export default function OnTimePerformance() {
           </CardHeader>
           <CardContent className="p-0">
             {byCustomerQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {byCustomerQuery.data?.map((customer: any) => (
+                {(byCustomerQuery.data as any)?.map((customer: any) => (
                   <div key={customer.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{customer.name}</p>
@@ -192,10 +192,10 @@ export default function OnTimePerformance() {
           </CardHeader>
           <CardContent className="p-0">
             {byLaneQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {byLaneQuery.data?.map((lane: any) => (
+                {(byLaneQuery.data as any)?.map((lane: any) => (
                   <div key={lane.id} className={cn("p-4", lane.onTimeRate < 90 && "bg-red-500/5 border-l-2 border-red-500")}>
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{lane.origin} → {lane.destination}</p>
@@ -220,7 +220,7 @@ export default function OnTimePerformance() {
             <Skeleton className="h-48 w-full rounded-xl" />
           ) : (
             <div className="flex items-end gap-2 h-48">
-              {trendsQuery.data?.map((week: any, idx: number) => (
+              {(trendsQuery.data as any)?.map((week: any, idx: number) => (
                 <div key={idx} className="flex-1 flex flex-col items-center">
                   <div className={cn("w-full rounded-t transition-all", week.onTimeRate >= 95 ? "bg-gradient-to-t from-green-500 to-emerald-500" : week.onTimeRate >= 90 ? "bg-gradient-to-t from-yellow-500 to-amber-500" : "bg-gradient-to-t from-red-500 to-orange-500")} style={{ height: `${week.onTimeRate}%` }} />
                   <p className="text-xs text-slate-500 mt-2">{week.week}</p>

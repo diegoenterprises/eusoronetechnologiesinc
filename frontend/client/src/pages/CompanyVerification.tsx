@@ -24,17 +24,17 @@ export default function CompanyVerification() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const companiesQuery = trpc.admin.getPendingCompanies.useQuery({ limit: 50 });
-  const summaryQuery = trpc.admin.getCompanyVerificationSummary.useQuery();
+  const companiesQuery = (trpc as any).admin.getPendingCompanies.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).admin.getCompanyVerificationSummary.useQuery();
 
-  const verifyMutation = trpc.admin.verifyCompany.useMutation({
+  const verifyMutation = (trpc as any).admin.verifyCompany.useMutation({
     onSuccess: () => { toast.success("Company verified"); companiesQuery.refetch(); },
-    onError: (error) => toast.error("Verification failed", { description: error.message }),
+    onError: (error: any) => toast.error("Verification failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.admin.rejectCompany.useMutation({
+  const rejectMutation = (trpc as any).admin.rejectCompany.useMutation({
     onSuccess: () => { toast.success("Company rejected"); companiesQuery.refetch(); },
-    onError: (error) => toast.error("Rejection failed", { description: error.message }),
+    onError: (error: any) => toast.error("Rejection failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -58,7 +58,7 @@ export default function CompanyVerification() {
     }
   };
 
-  const filteredCompanies = companiesQuery.data?.filter((company: any) => {
+  const filteredCompanies = (companiesQuery.data as any)?.filter((company: any) => {
     return !searchTerm || 
       company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       company.mcNumber?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -148,7 +148,7 @@ export default function CompanyVerification() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by name or MC number..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -161,7 +161,7 @@ export default function CompanyVerification() {
         </CardHeader>
         <CardContent className="p-0">
           {companiesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredCompanies?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

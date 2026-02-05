@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { FileText, Calendar, ChevronRight } from "lucide-react";
 
 export default function TermsOfService() {
-  const termsQuery = trpc.legal.getTermsOfService.useQuery();
+  const termsQuery = (trpc as any).legal.getTermsOfService.useQuery();
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -29,7 +29,7 @@ export default function TermsOfService() {
       ) : (
         <div className="flex items-center gap-2 text-slate-400">
           <Calendar className="w-4 h-4" />
-          <span>Last updated: {termsQuery.data?.lastUpdated}</span>
+          <span>Last updated: {(termsQuery.data as any)?.lastUpdated}</span>
         </div>
       )}
 
@@ -38,7 +38,7 @@ export default function TermsOfService() {
         <CardContent className="p-6">
           {termsQuery.isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-6 w-48" />
                   <Skeleton className="h-4 w-full" />
@@ -49,7 +49,7 @@ export default function TermsOfService() {
             </div>
           ) : (
             <div className="space-y-8">
-              {termsQuery.data?.sections?.map((section: any, idx: number) => (
+              {(termsQuery.data as any)?.sections?.map((section: any, idx: number) => (
                 <div key={idx}>
                   <h2 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
                     <ChevronRight className="w-5 h-5 text-cyan-400" />
@@ -74,7 +74,7 @@ export default function TermsOfService() {
             <FileText className="w-5 h-5 text-cyan-400" />
             <div>
               <p className="text-white font-medium">Questions about these terms?</p>
-              <p className="text-sm text-slate-400">Contact us at {termsQuery.data?.contactEmail || "legal@eusotrip.com"}</p>
+              <p className="text-sm text-slate-400">Contact us at {(termsQuery.data as any)?.contactEmail || "legal@eusotrip.com"}</p>
             </div>
           </div>
         </CardContent>

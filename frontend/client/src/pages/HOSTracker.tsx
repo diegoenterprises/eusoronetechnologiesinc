@@ -19,16 +19,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function HOSTracker() {
-  const hosQuery = trpc.drivers.getMyHOS.useQuery();
+  const hosQuery = (trpc as any).drivers.getMyHOS.useQuery();
 
-  const startDrivingMutation = trpc.drivers.startDriving.useMutation({
+  const startDrivingMutation = (trpc as any).drivers.startDriving.useMutation({
     onSuccess: () => { toast.success("Driving started"); hosQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const stopDrivingMutation = trpc.drivers.stopDriving.useMutation({
+  const stopDrivingMutation = (trpc as any).drivers.stopDriving.useMutation({
     onSuccess: () => { toast.success("Driving stopped"); hosQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const hos = hosQuery.data;
@@ -199,7 +199,7 @@ export default function HOSTracker() {
         </CardHeader>
         <CardContent>
           {hosQuery.isLoading ? (
-            <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+            <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
           ) : hos?.todayLog?.length === 0 ? (
             <div className="text-center py-8">
               <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">

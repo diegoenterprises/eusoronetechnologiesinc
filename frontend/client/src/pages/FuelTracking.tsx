@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function FuelTracking() {
   const [period, setPeriod] = useState("month");
 
-  const transactionsQuery = trpc.fleet.getFuelTransactions.useQuery({ period });
-  const statsQuery = trpc.fleet.getFuelStats.useQuery({ period });
+  const transactionsQuery = (trpc as any).fleet.getFuelTransactions.useQuery({ period });
+  const statsQuery = (trpc as any).fleet.getFuelStats.useQuery({ period });
 
   const stats = statsQuery.data;
 
@@ -86,12 +86,12 @@ export default function FuelTracking() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Fuel className="w-5 h-5 text-cyan-400" />Fuel Transactions</CardTitle></CardHeader>
         <CardContent className="p-0">
           {transactionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : transactionsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (transactionsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Fuel className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No fuel transactions</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {transactionsQuery.data?.map((tx: any) => (
+              {(transactionsQuery.data as any)?.map((tx: any) => (
                 <div key={tx.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-cyan-500/20">

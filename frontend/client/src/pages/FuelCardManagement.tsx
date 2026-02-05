@@ -21,13 +21,13 @@ import { toast } from "sonner";
 export default function FuelCardManagement() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const cardsQuery = trpc.fuelCards.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.fuelCards.getSummary.useQuery();
-  const transactionsQuery = trpc.fuelCards.getRecentTransactions.useQuery({ limit: 10 });
+  const cardsQuery = (trpc as any).fuelCards.list.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).fuelCards.getSummary.useQuery();
+  const transactionsQuery = (trpc as any).fuelCards.getRecentTransactions.useQuery({ limit: 10 });
 
-  const toggleMutation = trpc.fuelCards.toggleStatus.useMutation({
+  const toggleMutation = (trpc as any).fuelCards.toggleStatus.useMutation({
     onSuccess: () => { toast.success("Card status updated"); cardsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update card", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update card", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -41,7 +41,7 @@ export default function FuelCardManagement() {
     }
   };
 
-  const filteredCards = cardsQuery.data?.filter((card: any) =>
+  const filteredCards = (cardsQuery.data as any)?.filter((card: any) =>
     !searchTerm || card.cardNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || card.assignedTo?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -130,7 +130,7 @@ export default function FuelCardManagement() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search cards..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search cards..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -141,7 +141,7 @@ export default function FuelCardManagement() {
           </CardHeader>
           <CardContent className="p-0">
             {cardsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredCards?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
@@ -186,12 +186,12 @@ export default function FuelCardManagement() {
           </CardHeader>
           <CardContent className="p-0">
             {transactionsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : transactionsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (transactionsQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No transactions</p>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {transactionsQuery.data?.map((tx: any) => (
+                {(transactionsQuery.data as any)?.map((tx: any) => (
                   <div key={tx.id} className="p-4">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{tx.merchantName}</p>

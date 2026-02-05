@@ -22,11 +22,11 @@ export default function ShipperSpendAnalytics() {
   const [period, setPeriod] = useState("month");
   const [view, setView] = useState("overview");
 
-  const statsQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
-  const laneQuery = trpc.analytics.getPerformanceStats.useQuery({ metric: period });
-  const carrierQuery = trpc.analytics.getPerformanceStats.useQuery({ metric: period });
-  const accessorialQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
-  const trendQuery = trpc.analytics.getRevenue.useQuery({ dateRange: period });
+  const statsQuery = (trpc as any).analytics.getRevenue.useQuery({ dateRange: period });
+  const laneQuery = (trpc as any).analytics.getPerformanceStats.useQuery({ metric: period });
+  const carrierQuery = (trpc as any).analytics.getPerformanceStats.useQuery({ metric: period });
+  const accessorialQuery = (trpc as any).analytics.getRevenue.useQuery({ dateRange: period });
+  const trendQuery = (trpc as any).analytics.getRevenue.useQuery({ dateRange: period });
 
   const stats = statsQuery.data;
 
@@ -67,7 +67,7 @@ export default function ShipperSpendAnalytics() {
       {/* Key Metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -140,7 +140,7 @@ export default function ShipperSpendAnalytics() {
         </CardHeader>
         <CardContent>
           {laneQuery.isLoading ? (
-            <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : (laneQuery.data as any)?.lanes?.length === 0 ? (
             <div className="text-center py-8"><MapPin className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400">No lane data</p></div>
           ) : (
@@ -181,7 +181,7 @@ export default function ShipperSpendAnalytics() {
           </CardHeader>
           <CardContent>
             {carrierQuery.isLoading ? (
-              <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
+              <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-12 rounded-lg" />)}</div>
             ) : (
               <div className="space-y-3">
                 {((carrierQuery.data as any)?.carriers || []).map((carrier: any, index: number) => (
@@ -216,7 +216,7 @@ export default function ShipperSpendAnalytics() {
           </CardHeader>
           <CardContent>
             {accessorialQuery.isLoading ? (
-              <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
+              <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-10 rounded-lg" />)}</div>
             ) : (
               <div className="space-y-3">
                 {((accessorialQuery.data as any)?.accessorials || []).map((item: any, index: number) => {

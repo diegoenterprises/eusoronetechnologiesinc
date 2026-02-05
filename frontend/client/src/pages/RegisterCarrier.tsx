@@ -127,7 +127,7 @@ export default function RegisterCarrier() {
   const [isLookingUp, setIsLookingUp] = useState(false);
 
   const updateFormData = (updates: Partial<CarrierFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
   const handleSAFERLookup = async () => {
@@ -159,12 +159,12 @@ export default function RegisterCarrier() {
     setIsLookingUp(false);
   };
 
-  const registerMutation = trpc.registration.registerCarrier.useMutation({
+  const registerMutation = (trpc as any).registration.registerCarrier.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", { description: "Your carrier account is pending USDOT verification." });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", { description: error.message });
     },
   });
@@ -229,7 +229,7 @@ export default function RegisterCarrier() {
                 <Input
                   id="usdotNumber"
                   value={formData.usdotNumber}
-                  onChange={(e) => updateFormData({ usdotNumber: e.target.value })}
+                  onChange={(e: any) => updateFormData({ usdotNumber: e.target.value })}
                   placeholder="1234567"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -252,7 +252,7 @@ export default function RegisterCarrier() {
               <Input
                 id="mcNumber"
                 value={formData.mcNumber}
-                onChange={(e) => updateFormData({ mcNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ mcNumber: e.target.value })}
                 placeholder="MC-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -293,7 +293,7 @@ export default function RegisterCarrier() {
             <Input
               id="einNumber"
               value={formData.einNumber}
-              onChange={(e) => updateFormData({ einNumber: e.target.value })}
+              onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
               placeholder="XX-XXXXXXX"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -347,7 +347,7 @@ export default function RegisterCarrier() {
               <Input
                 id="hazmatAuthorityNumber"
                 value={formData.hazmatAuthorityNumber}
-                onChange={(e) => updateFormData({ hazmatAuthorityNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ hazmatAuthorityNumber: e.target.value })}
                 placeholder="HM-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -357,7 +357,7 @@ export default function RegisterCarrier() {
           <div className="space-y-2">
             <Label className="text-slate-300">Equipment Types</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {EQUIPMENT_TYPES.map((equip) => (
+              {EQUIPMENT_TYPES.map((equip: any) => (
                 <div key={equip.value} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
                   <Checkbox
                     id={equip.value}
@@ -366,7 +366,7 @@ export default function RegisterCarrier() {
                       if (checked) {
                         updateFormData({ equipmentTypes: [...formData.equipmentTypes, equip.value] });
                       } else {
-                        updateFormData({ equipmentTypes: formData.equipmentTypes.filter((t) => t !== equip.value) });
+                        updateFormData({ equipmentTypes: formData.equipmentTypes.filter((t: any) => t !== equip.value) });
                       }
                     }}
                   />
@@ -397,7 +397,7 @@ export default function RegisterCarrier() {
                 <Input
                   id="primaryContactName"
                   value={formData.primaryContactName}
-                  onChange={(e) => updateFormData({ primaryContactName: e.target.value })}
+                  onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
                   placeholder="John Smith"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -407,7 +407,7 @@ export default function RegisterCarrier() {
                 <Input
                   id="primaryContactTitle"
                   value={formData.primaryContactTitle}
-                  onChange={(e) => updateFormData({ primaryContactTitle: e.target.value })}
+                  onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
                   placeholder="Owner/Operations Manager"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -420,7 +420,7 @@ export default function RegisterCarrier() {
                   id="primaryContactEmail"
                   type="email"
                   value={formData.primaryContactEmail}
-                  onChange={(e) => updateFormData({ primaryContactEmail: e.target.value })}
+                  onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
                   placeholder="john@trucking.com"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -433,7 +433,7 @@ export default function RegisterCarrier() {
                   id="primaryContactPhone"
                   type="tel"
                   value={formData.primaryContactPhone}
-                  onChange={(e) => updateFormData({ primaryContactPhone: e.target.value })}
+                  onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
                   placeholder="(555) 123-4567"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -450,7 +450,7 @@ export default function RegisterCarrier() {
                   id="dispatchEmail"
                   type="email"
                   value={formData.dispatchEmail}
-                  onChange={(e) => updateFormData({ dispatchEmail: e.target.value })}
+                  onChange={(e: any) => updateFormData({ dispatchEmail: e.target.value })}
                   placeholder="dispatch@trucking.com"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -461,7 +461,7 @@ export default function RegisterCarrier() {
                   id="dispatchPhone"
                   type="tel"
                   value={formData.dispatchPhone}
-                  onChange={(e) => updateFormData({ dispatchPhone: e.target.value })}
+                  onChange={(e: any) => updateFormData({ dispatchPhone: e.target.value })}
                   placeholder="(555) 123-4568"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -492,7 +492,7 @@ export default function RegisterCarrier() {
                 <Label className="text-slate-300">Insurance Carrier <span className="text-red-400">*</span></Label>
                 <Input
                   value={formData.liabilityCarrier}
-                  onChange={(e) => updateFormData({ liabilityCarrier: e.target.value })}
+                  onChange={(e: any) => updateFormData({ liabilityCarrier: e.target.value })}
                   placeholder="ABC Insurance"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -501,14 +501,14 @@ export default function RegisterCarrier() {
                 <Label className="text-slate-300">Policy Number <span className="text-red-400">*</span></Label>
                 <Input
                   value={formData.liabilityPolicy}
-                  onChange={(e) => updateFormData({ liabilityPolicy: e.target.value })}
+                  onChange={(e: any) => updateFormData({ liabilityPolicy: e.target.value })}
                   placeholder="POL-123456"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
-                <Select value={formData.liabilityCoverage} onValueChange={(v) => updateFormData({ liabilityCoverage: v })}>
+                <Select value={formData.liabilityCoverage} onValueChange={(v: any) => updateFormData({ liabilityCoverage: v })}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select coverage" />
                   </SelectTrigger>
@@ -524,7 +524,7 @@ export default function RegisterCarrier() {
                 <Input
                   type="date"
                   value={formData.liabilityExpiration}
-                  onChange={(e) => updateFormData({ liabilityExpiration: e.target.value })}
+                  onChange={(e: any) => updateFormData({ liabilityExpiration: e.target.value })}
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
@@ -538,7 +538,7 @@ export default function RegisterCarrier() {
                 <Label className="text-slate-300">Insurance Carrier <span className="text-red-400">*</span></Label>
                 <Input
                   value={formData.cargoCarrier}
-                  onChange={(e) => updateFormData({ cargoCarrier: e.target.value })}
+                  onChange={(e: any) => updateFormData({ cargoCarrier: e.target.value })}
                   placeholder="ABC Insurance"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
@@ -547,14 +547,14 @@ export default function RegisterCarrier() {
                 <Label className="text-slate-300">Policy Number <span className="text-red-400">*</span></Label>
                 <Input
                   value={formData.cargoPolicy}
-                  onChange={(e) => updateFormData({ cargoPolicy: e.target.value })}
+                  onChange={(e: any) => updateFormData({ cargoPolicy: e.target.value })}
                   placeholder="CARGO-123456"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
-                <Select value={formData.cargoCoverage} onValueChange={(v) => updateFormData({ cargoCoverage: v })}>
+                <Select value={formData.cargoCoverage} onValueChange={(v: any) => updateFormData({ cargoCoverage: v })}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                     <SelectValue placeholder="Select coverage" />
                   </SelectTrigger>
@@ -571,7 +571,7 @@ export default function RegisterCarrier() {
                 <Input
                   type="date"
                   value={formData.cargoExpiration}
-                  onChange={(e) => updateFormData({ cargoExpiration: e.target.value })}
+                  onChange={(e: any) => updateFormData({ cargoExpiration: e.target.value })}
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />
               </div>
@@ -600,7 +600,7 @@ export default function RegisterCarrier() {
               <Input
                 type="number"
                 value={formData.powerUnits}
-                onChange={(e) => updateFormData({ powerUnits: e.target.value })}
+                onChange={(e: any) => updateFormData({ powerUnits: e.target.value })}
                 placeholder="10"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -610,7 +610,7 @@ export default function RegisterCarrier() {
               <Input
                 type="number"
                 value={formData.drivers}
-                onChange={(e) => updateFormData({ drivers: e.target.value })}
+                onChange={(e: any) => updateFormData({ drivers: e.target.value })}
                 placeholder="15"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -620,7 +620,7 @@ export default function RegisterCarrier() {
               <Input
                 type="number"
                 value={formData.hazmatCertifiedDrivers}
-                onChange={(e) => updateFormData({ hazmatCertifiedDrivers: e.target.value })}
+                onChange={(e: any) => updateFormData({ hazmatCertifiedDrivers: e.target.value })}
                 placeholder="12"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />

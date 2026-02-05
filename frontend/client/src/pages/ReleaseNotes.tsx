@@ -20,8 +20,8 @@ export default function ReleaseNotes() {
   const [filter, setFilter] = useState("all");
   const [expandedRelease, setExpandedRelease] = useState<string | null>(null);
 
-  const releasesQuery = trpc.system.getReleaseNotes.useQuery({ filter, limit: 20 });
-  const latestQuery = trpc.system.getLatestVersion.useQuery();
+  const releasesQuery = (trpc as any).system.getReleaseNotes.useQuery({ filter, limit: 20 });
+  const latestQuery = (trpc as any).system.getLatestVersion.useQuery();
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -79,11 +79,11 @@ export default function ReleaseNotes() {
               </div>
               <div>
                 <p className="text-slate-400 text-sm">Current Version</p>
-                <p className="text-white text-2xl font-bold">{latestQuery.data?.version}</p>
+                <p className="text-white text-2xl font-bold">{(latestQuery.data as any)?.version}</p>
               </div>
               <div className="ml-auto text-right">
                 <p className="text-slate-400 text-sm">Released</p>
-                <p className="text-white">{latestQuery.data?.releasedAt}</p>
+                <p className="text-white">{(latestQuery.data as any)?.releasedAt}</p>
               </div>
             </div>
           </CardContent>
@@ -100,15 +100,15 @@ export default function ReleaseNotes() {
         </CardHeader>
         <CardContent className="p-0">
           {releasesQuery.isLoading ? (
-            <div className="p-4 space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
-          ) : releasesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : (releasesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No release notes found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {releasesQuery.data?.map((release: any) => (
+              {(releasesQuery.data as any)?.map((release: any) => (
                 <div key={release.id} className="p-4">
                   <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpandedRelease(expandedRelease === release.id ? null : release.id)}>
                     <div className="flex items-start gap-4">

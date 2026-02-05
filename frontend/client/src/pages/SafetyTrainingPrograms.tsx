@@ -22,8 +22,8 @@ export default function SafetyTrainingPrograms() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const programsQuery = trpc.safety.getTopDrivers.useQuery({ limit: 50 });
-  const statsQuery = trpc.safety.getDashboardStats.useQuery();
+  const programsQuery = (trpc as any).safety.getTopDrivers.useQuery({ limit: 50 });
+  const statsQuery = (trpc as any).safety.getDashboardStats.useQuery();
 
   const programs = programsQuery.data || [];
   const stats = statsQuery.data as any;
@@ -49,7 +49,7 @@ export default function SafetyTrainingPrograms() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -100,7 +100,7 @@ export default function SafetyTrainingPrograms() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search programs..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -125,7 +125,7 @@ export default function SafetyTrainingPrograms() {
       {/* Programs Grid */}
       {programsQuery.isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}
+          {Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)}
         </div>
       ) : filteredPrograms.length === 0 ? (
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

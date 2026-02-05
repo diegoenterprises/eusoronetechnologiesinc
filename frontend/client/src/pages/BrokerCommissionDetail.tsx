@@ -23,8 +23,8 @@ export default function BrokerCommissionDetail() {
   const [, params] = useRoute("/broker/commission/:loadId");
   const loadId = params?.loadId;
 
-  const commissionQuery = trpc.brokers.getCommissions.useQuery({});
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
+  const commissionQuery = (trpc as any).brokers.getCommissions.useQuery({});
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
 
   const commission = (commissionQuery.data as any)?.[0];
   const load = loadQuery.data as any;

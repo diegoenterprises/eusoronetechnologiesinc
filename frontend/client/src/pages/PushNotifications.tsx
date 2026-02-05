@@ -24,18 +24,18 @@ export default function PushNotifications() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
 
-  const statsQuery = trpc.push.getStats.useQuery();
-  const settingsQuery = trpc.push.getSettings.useQuery();
-  const recentQuery = trpc.push.getRecent.useQuery({ limit: 10 });
+  const statsQuery = (trpc as any).push.getStats.useQuery();
+  const settingsQuery = (trpc as any).push.getSettings.useQuery();
+  const recentQuery = (trpc as any).push.getRecent.useQuery({ limit: 10 });
 
-  const sendMutation = trpc.push.send.useMutation({
+  const sendMutation = (trpc as any).push.send.useMutation({
     onSuccess: () => { toast.success("Notification sent"); setTitle(""); setMessage(""); recentQuery.refetch(); },
-    onError: (error) => toast.error("Failed to send", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
   });
 
-  const toggleMutation = trpc.push.toggleSetting.useMutation({
+  const toggleMutation = (trpc as any).push.toggleSetting.useMutation({
     onSuccess: () => { toast.success("Setting updated"); settingsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -126,8 +126,8 @@ export default function PushNotifications() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Notification title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
-          <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Notification message..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[100px]" />
+          <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="Notification title..." className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Notification message..." className="bg-slate-800/50 border-slate-700/50 rounded-lg min-h-[100px]" />
           <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => sendMutation.mutate({ title, message })} disabled={!title || !message || sendMutation.isPending}>
             <Send className="w-4 h-4 mr-2" />Send to All Users
           </Button>
@@ -145,10 +145,10 @@ export default function PushNotifications() {
           </CardHeader>
           <CardContent className="p-0">
             {settingsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {settingsQuery.data?.map((setting: any) => (
+                {(settingsQuery.data as any)?.map((setting: any) => (
                   <div key={setting.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{setting.name}</p>
@@ -169,12 +169,12 @@ export default function PushNotifications() {
           </CardHeader>
           <CardContent className="p-0">
             {recentQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : recentQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (recentQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No recent notifications</p>
             ) : (
               <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
-                {recentQuery.data?.map((notif: any) => (
+                {(recentQuery.data as any)?.map((notif: any) => (
                   <div key={notif.id} className="p-4">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-white font-medium">{notif.title}</span>

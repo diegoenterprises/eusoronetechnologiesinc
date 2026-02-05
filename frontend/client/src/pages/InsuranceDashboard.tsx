@@ -46,21 +46,21 @@ const STATUS_VARIANTS: Record<string, string> = {
 export default function InsuranceDashboard() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: summary, isLoading: summaryLoading } = trpc.insurance.getSummary.useQuery();
-  const { data: policies, isLoading: policiesLoading, refetch: refetchPolicies } = trpc.insurance.getPolicies.useQuery({ limit: 10 });
-  const { data: claims, isLoading: claimsLoading } = trpc.insurance.getClaims.useQuery({ limit: 5 });
-  const { data: claimStats } = trpc.insurance.getClaimStats.useQuery();
-  const { data: certificates } = trpc.insurance.getCertificates.useQuery({ limit: 5 });
-  const { data: expiringPolicies } = trpc.insurance.getExpiringPolicies.useQuery();
-  const { data: alerts } = trpc.insurance.getAlerts.useQuery({ status: "active" });
-  const { data: riskScore } = trpc.insurance.getRiskScore.useQuery();
+  const { data: summary, isLoading: summaryLoading } = (trpc as any).insurance.getSummary.useQuery();
+  const { data: policies, isLoading: policiesLoading, refetch: refetchPolicies } = (trpc as any).insurance.getPolicies.useQuery({ limit: 10 });
+  const { data: claims, isLoading: claimsLoading } = (trpc as any).insurance.getClaims.useQuery({ limit: 5 });
+  const { data: claimStats } = (trpc as any).insurance.getClaimStats.useQuery();
+  const { data: certificates } = (trpc as any).insurance.getCertificates.useQuery({ limit: 5 });
+  const { data: expiringPolicies } = (trpc as any).insurance.getExpiringPolicies.useQuery();
+  const { data: alerts } = (trpc as any).insurance.getAlerts.useQuery({ status: "active" });
+  const { data: riskScore } = (trpc as any).insurance.getRiskScore.useQuery();
 
   if (summaryLoading || policiesLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>

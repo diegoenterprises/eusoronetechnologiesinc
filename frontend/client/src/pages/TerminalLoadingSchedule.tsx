@@ -21,9 +21,9 @@ export default function TerminalLoadingSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [rackFilter, setRackFilter] = useState("all");
 
-  const scheduleQuery = trpc.terminals.getAppointments.useQuery({});
-  const racksQuery = trpc.terminals.getRacks.useQuery({});
-  const statsQuery = trpc.terminals.getSummary.useQuery();
+  const scheduleQuery = (trpc as any).terminals.getAppointments.useQuery({});
+  const racksQuery = (trpc as any).terminals.getRacks.useQuery({});
+  const statsQuery = (trpc as any).terminals.getSummary.useQuery();
 
   const schedule = scheduleQuery.data || [];
   const racks = racksQuery.data || [];
@@ -85,7 +85,7 @@ export default function TerminalLoadingSchedule() {
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {statsQuery.isLoading ? (
-            Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-xl" />)
+            Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-xl" />)
           ) : (
             <>
               <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -144,7 +144,7 @@ export default function TerminalLoadingSchedule() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl overflow-hidden">
         <CardContent className="p-0">
           {scheduleQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(8).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[1000px]">
@@ -169,7 +169,7 @@ export default function TerminalLoadingSchedule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {timeSlots.slice(6, 22).map((time) => {
+                  {timeSlots.slice(6, 22).map((time: any) => {
                     const slotSchedules = schedule.filter((s: any) => s.startTime?.startsWith(time.split(":")[0]));
                     return (
                       <tr key={time} className="border-b border-slate-700/30 hover:bg-slate-700/10">

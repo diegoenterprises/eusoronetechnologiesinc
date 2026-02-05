@@ -23,9 +23,9 @@ export default function SafetyIncidentInvestigation() {
   const [showSignature, setShowSignature] = useState(false);
   const [findings, setFindings] = useState("");
 
-  const incidentQuery = trpc.safety.getIncident.useQuery({ id: incidentId || "" });
-  const userQuery = trpc.users.me.useQuery();
-  const closeMutation = trpc.safety.closeIncident.useMutation({
+  const incidentQuery = (trpc as any).safety.getIncident.useQuery({ id: incidentId || "" });
+  const userQuery = (trpc as any).users.me.useQuery();
+  const closeMutation = (trpc as any).safety.closeIncident.useMutation({
     onSuccess: () => { toast.success("Investigation closed"); navigate("/safety/incidents"); },
   });
 
@@ -83,7 +83,7 @@ export default function SafetyIncidentInvestigation() {
             <TabsContent value="findings" className="mt-6">
               <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
                 <CardContent className="p-6 space-y-4">
-                  <Textarea value={findings} onChange={(e) => setFindings(e.target.value)} placeholder="Enter investigation findings..." className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[150px]" />
+                  <Textarea value={findings} onChange={(e: any) => setFindings(e.target.value)} placeholder="Enter investigation findings..." className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[150px]" />
                 </CardContent>
               </Card>
             </TabsContent>

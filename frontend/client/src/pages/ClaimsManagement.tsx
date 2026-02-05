@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function ClaimsManagement() {
   const [filter, setFilter] = useState("all");
 
-  const claimsQuery = trpc.insurance.getClaims.useQuery({ filter });
-  const statsQuery = trpc.insurance.getClaimStats.useQuery();
+  const claimsQuery = (trpc as any).insurance.getClaims.useQuery({ filter });
+  const statsQuery = (trpc as any).insurance.getClaimStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -107,12 +107,12 @@ export default function ClaimsManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Claims</CardTitle></CardHeader>
         <CardContent className="p-0">
           {claimsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : claimsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (claimsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No claims found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {claimsQuery.data?.map((claim: any) => (
+              {(claimsQuery.data as any)?.map((claim: any) => (
                 <div key={claim.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", claim.status === "paid" ? "bg-purple-500/20" : claim.status === "approved" ? "bg-green-500/20" : claim.status === "denied" ? "bg-red-500/20" : "bg-blue-500/20")}>

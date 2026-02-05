@@ -40,11 +40,11 @@ export default function ShipperCompliance() {
   const [expirationDate, setExpirationDate] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const complianceQuery = trpc.compliance.getShipperCompliance.useQuery();
-  const documentsQuery = trpc.compliance.getShipperDocuments.useQuery();
-  const uploadMutation = trpc.compliance.uploadDocument.useMutation();
+  const complianceQuery = (trpc as any).compliance.getShipperCompliance.useQuery();
+  const documentsQuery = (trpc as any).compliance.getShipperDocuments.useQuery();
+  const uploadMutation = (trpc as any).compliance.uploadDocument.useMutation();
 
-  const score = complianceQuery.data?.score ?? 88;
+  const score = (complianceQuery.data as any)?.score ?? 88;
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, React.ReactNode> = {

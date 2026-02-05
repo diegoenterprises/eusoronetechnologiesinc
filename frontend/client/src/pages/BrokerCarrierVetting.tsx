@@ -38,17 +38,17 @@ export default function BrokerCarrierVetting() {
 
   const [mcNumber, setMcNumber] = useState("");
 
-  const carrierQuery = trpc.carriers.getById.useQuery({ id: carrierId || "" }, { enabled: !!carrierId });
-  const vettingQuery = trpc.brokers.getVettingStats.useQuery();
+  const carrierQuery = (trpc as any).carriers.getById.useQuery({ id: carrierId || "" }, { enabled: !!carrierId });
+  const vettingQuery = (trpc as any).brokers.getVettingStats.useQuery();
 
-  const lookupMutation = trpc.brokers.vetCarrier.useMutation({
+  const lookupMutation = (trpc as any).brokers.vetCarrier.useMutation({
     onSuccess: (data: any) => {
       toast.success("Carrier found");
     },
     onError: (error: any) => toast.error("Lookup failed", { description: error.message }),
   });
 
-  const verifyMutation = trpc.brokers.vetCarrier.useMutation({
+  const verifyMutation = (trpc as any).brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success("Verification complete");
       vettingQuery.refetch();
@@ -56,12 +56,12 @@ export default function BrokerCarrierVetting() {
     onError: (error: any) => toast.error("Verification failed", { description: error.message }),
   });
 
-  const approveMutation = trpc.brokers.approveCarrier.useMutation({
+  const approveMutation = (trpc as any).brokers.approveCarrier.useMutation({
     onSuccess: () => {
       toast.success("Carrier approved");
       navigate("/broker/carriers");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const carrier = carrierQuery.data;
@@ -105,7 +105,7 @@ export default function BrokerCarrierVetting() {
                 <Label className="text-slate-300">MC or DOT Number</Label>
                 <Input
                   value={mcNumber}
-                  onChange={(e) => setMcNumber(e.target.value)}
+                  onChange={(e: any) => setMcNumber(e.target.value)}
                   placeholder="Enter MC# or USDOT#"
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg mt-2"
                 />
@@ -220,7 +220,7 @@ export default function BrokerCarrierVetting() {
             </div>
 
             <div className="space-y-3">
-              {vettingChecklist.map((item) => {
+              {vettingChecklist.map((item: any) => {
                 const isChecked = (vetting as any)?.checks?.[item.key];
                 const isAuto = (vetting as any)?.autoVerified?.includes(item.key);
                 return (

@@ -28,19 +28,19 @@ export default function EscortConvoyComm() {
   const [pushToTalk, setPushToTalk] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const jobQuery = trpc.escorts.getJobs.useQuery({ status: "active" });
-  const participantsQuery = trpc.escorts.getJobDetails.useQuery({ jobId: jobId || "" });
-  const messagesQuery = trpc.escorts.getJobDetails.useQuery({ jobId: jobId || "" }, { refetchInterval: 3000 });
-  const locationQuery = trpc.escorts.getJobDetails.useQuery({ jobId: jobId || "" }, { refetchInterval: 5000 });
+  const jobQuery = (trpc as any).escorts.getJobs.useQuery({ status: "active" });
+  const participantsQuery = (trpc as any).escorts.getJobDetails.useQuery({ jobId: jobId || "" });
+  const messagesQuery = (trpc as any).escorts.getJobDetails.useQuery({ jobId: jobId || "" }, { refetchInterval: 3000 });
+  const locationQuery = (trpc as any).escorts.getJobDetails.useQuery({ jobId: jobId || "" }, { refetchInterval: 5000 });
 
-  const sendMessageMutation = trpc.escorts.acceptJob.useMutation({
+  const sendMessageMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       setMessage("");
       messagesQuery.refetch();
     },
   });
 
-  const sendAlertMutation = trpc.escorts.acceptJob.useMutation({
+  const sendAlertMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Alert sent to convoy");
       messagesQuery.refetch();
@@ -223,8 +223,8 @@ export default function EscortConvoyComm() {
               </Button>
               <Input
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onChange={(e: any) => setMessage(e.target.value)}
+                onKeyDown={(e: any) => e.key === "Enter" && handleSend()}
                 placeholder="Type a message..."
                 className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />

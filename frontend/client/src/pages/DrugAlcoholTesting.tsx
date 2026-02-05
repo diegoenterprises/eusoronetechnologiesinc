@@ -23,13 +23,13 @@ export default function DrugAlcoholTesting() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const testsQuery = trpc.compliance.getDrugAlcoholTests.useQuery({ filter, search });
-  const statsQuery = trpc.compliance.getDrugAlcoholStats.useQuery();
-  const upcomingQuery = trpc.compliance.getUpcomingTests.useQuery({ limit: 5 });
+  const testsQuery = (trpc as any).compliance.getDrugAlcoholTests.useQuery({ filter, search });
+  const statsQuery = (trpc as any).compliance.getDrugAlcoholStats.useQuery();
+  const upcomingQuery = (trpc as any).compliance.getUpcomingTests.useQuery({ limit: 5 });
 
-  const scheduleMutation = trpc.compliance.scheduleTest.useMutation({
+  const scheduleMutation = (trpc as any).compliance.scheduleTest.useMutation({
     onSuccess: () => { toast.success("Test scheduled"); testsQuery.refetch(); upcomingQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -139,7 +139,7 @@ export default function DrugAlcoholTesting() {
       </div>
 
       {/* Upcoming Tests */}
-      {(upcomingQuery.data?.length ?? 0) > 0 && (
+      {((upcomingQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-blue-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
@@ -149,7 +149,7 @@ export default function DrugAlcoholTesting() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-blue-500/20">
-              {upcomingQuery.data?.map((test: any) => (
+              {(upcomingQuery.data as any)?.map((test: any) => (
                 <div key={test.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-blue-500/20">
@@ -175,7 +175,7 @@ export default function DrugAlcoholTesting() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by driver name..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by driver name..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -201,15 +201,15 @@ export default function DrugAlcoholTesting() {
         </CardHeader>
         <CardContent className="p-0">
           {testsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : testsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (testsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <TestTube className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No test records found</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {testsQuery.data?.map((test: any) => (
+              {(testsQuery.data as any)?.map((test: any) => (
                 <div key={test.id} className={cn("p-4", test.result === "positive" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

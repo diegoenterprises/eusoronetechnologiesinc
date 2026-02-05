@@ -19,9 +19,9 @@ import { cn } from "@/lib/utils";
 export default function DriverCompensation() {
   const [period, setPeriod] = useState("week");
 
-  const earningsQuery = trpc.drivers.getEarnings.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
-  const tripsQuery = trpc.drivers.getCompletedTrips.useQuery({ period, limit: 10 });
-  const statsQuery = trpc.drivers.getEarningsStats.useQuery({ period });
+  const earningsQuery = (trpc as any).drivers.getEarnings.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
+  const tripsQuery = (trpc as any).drivers.getCompletedTrips.useQuery({ period, limit: 10 });
+  const statsQuery = (trpc as any).drivers.getEarningsStats.useQuery({ period });
 
   const stats = statsQuery.data;
 
@@ -49,12 +49,12 @@ export default function DriverCompensation() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-400 text-sm">Total Earnings</p>
-                <p className="text-4xl font-bold text-white">${earningsQuery.data?.total?.toLocaleString()}</p>
+                <p className="text-4xl font-bold text-white">${(earningsQuery.data as any)?.total?.toLocaleString()}</p>
                 <div className="flex items-center gap-2 mt-2">
-                  {earningsQuery.data?.trend === "up" ? (
-                    <Badge className="bg-green-500/20 text-green-400 border-0"><TrendingUp className="w-3 h-3 mr-1" />+{earningsQuery.data?.trendPercent}%</Badge>
+                  {(earningsQuery.data as any)?.trend === "up" ? (
+                    <Badge className="bg-green-500/20 text-green-400 border-0"><TrendingUp className="w-3 h-3 mr-1" />+{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   ) : (
-                    <Badge className="bg-red-500/20 text-red-400 border-0">{earningsQuery.data?.trendPercent}%</Badge>
+                    <Badge className="bg-red-500/20 text-red-400 border-0">{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   )}
                   <span className="text-xs text-slate-500">vs last {period}</span>
                 </div>
@@ -104,12 +104,12 @@ export default function DriverCompensation() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" />Completed Trips</CardTitle></CardHeader>
         <CardContent className="p-0">
           {tripsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : tripsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (tripsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No completed trips</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {tripsQuery.data?.map((trip: any) => (
+              {(tripsQuery.data as any)?.map((trip: any) => (
                 <div key={trip.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-green-500/20"><Truck className="w-5 h-5 text-green-400" /></div>

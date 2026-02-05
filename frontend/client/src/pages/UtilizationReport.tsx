@@ -21,10 +21,10 @@ import { cn } from "@/lib/utils";
 export default function UtilizationReport() {
   const [dateRange, setDateRange] = useState("month");
 
-  const summaryQuery = trpc.analytics.getUtilizationSummary.useQuery({ dateRange });
-  const byVehicleQuery = trpc.analytics.getUtilizationByVehicle.useQuery({ dateRange, limit: 10 });
-  const byDriverQuery = trpc.analytics.getUtilizationByDriver.useQuery({ dateRange, limit: 10 });
-  const trendsQuery = trpc.analytics.getUtilizationTrends.useQuery({ dateRange });
+  const summaryQuery = (trpc as any).analytics.getUtilizationSummary.useQuery({ dateRange });
+  const byVehicleQuery = (trpc as any).analytics.getUtilizationByVehicle.useQuery({ dateRange, limit: 10 });
+  const byDriverQuery = (trpc as any).analytics.getUtilizationByDriver.useQuery({ dateRange, limit: 10 });
+  const trendsQuery = (trpc as any).analytics.getUtilizationTrends.useQuery({ dateRange });
 
   const summary = summaryQuery.data;
 
@@ -165,10 +165,10 @@ export default function UtilizationReport() {
           </CardHeader>
           <CardContent className="p-0">
             {byVehicleQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {byVehicleQuery.data?.map((vehicle: any) => (
+                {(byVehicleQuery.data as any)?.map((vehicle: any) => (
                   <div key={vehicle.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{vehicle.unitNumber}</p>
@@ -192,10 +192,10 @@ export default function UtilizationReport() {
           </CardHeader>
           <CardContent className="p-0">
             {byDriverQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {byDriverQuery.data?.map((driver: any) => (
+                {(byDriverQuery.data as any)?.map((driver: any) => (
                   <div key={driver.id} className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">{driver.name}</p>
@@ -223,7 +223,7 @@ export default function UtilizationReport() {
             <Skeleton className="h-48 w-full rounded-xl" />
           ) : (
             <div className="flex items-end gap-2 h-48">
-              {trendsQuery.data?.map((week: any, idx: number) => (
+              {(trendsQuery.data as any)?.map((week: any, idx: number) => (
                 <div key={idx} className="flex-1 flex flex-col items-center">
                   <div className={cn("w-full rounded-t transition-all", week.utilization >= 85 ? "bg-gradient-to-t from-green-500 to-emerald-500" : week.utilization >= 70 ? "bg-gradient-to-t from-yellow-500 to-amber-500" : "bg-gradient-to-t from-red-500 to-orange-500")} style={{ height: `${week.utilization}%` }} />
                   <p className="text-xs text-slate-500 mt-2">{week.week}</p>

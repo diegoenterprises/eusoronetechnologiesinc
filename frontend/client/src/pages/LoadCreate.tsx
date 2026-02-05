@@ -70,8 +70,8 @@ export default function LoadCreatePage() {
     specialInstructions: "",
   });
 
-  const createLoadMutation = trpc.loads.create.useMutation({
-    onSuccess: (data) => {
+  const createLoadMutation = (trpc as any).loads.create.useMutation({
+    onSuccess: (data: any) => {
       toast.success("Load created successfully!");
       setLocation(`/loads/${data.loadId}`);
     },
@@ -196,7 +196,7 @@ export default function LoadCreatePage() {
               />
             </div>
 
-            {steps.map((step, index) => {
+            {steps.map((step: any, index: number) => {
               const Icon = step.icon;
               const isActive = currentStep === step.id;
               const isCompleted = index < currentStepIndex;
@@ -246,7 +246,7 @@ export default function LoadCreatePage() {
                 <label className="block text-sm font-medium mb-2 text-gray-300">Cargo Type *</label>
                 <select
                   value={formData.cargoType}
-                  onChange={(e) => setFormData({ ...formData, cargoType: e.target.value as any })}
+                  onChange={(e: any) => setFormData({ ...formData, cargoType: e.target.value as any })}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
                 >
                   <option value="general">General Freight</option>
@@ -271,7 +271,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">HazMat Class *</label>
                       <Input
                         value={formData.hazmatClass}
-                        onChange={(e) => setFormData({ ...formData, hazmatClass: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, hazmatClass: e.target.value })}
                         placeholder="e.g., Class 3"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -280,7 +280,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">UN Number *</label>
                       <Input
                         value={formData.unNumber}
-                        onChange={(e) => setFormData({ ...formData, unNumber: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, unNumber: e.target.value })}
                         placeholder="e.g., UN1203"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -296,13 +296,13 @@ export default function LoadCreatePage() {
                     <Input
                       type="number"
                       value={formData.weight}
-                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, weight: e.target.value })}
                       placeholder="Enter weight"
                       className="bg-gray-800 border-gray-700"
                     />
                     <select
                       value={formData.weightUnit}
-                      onChange={(e) => setFormData({ ...formData, weightUnit: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, weightUnit: e.target.value })}
                       className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
                     >
                       <option value="lbs">lbs</option>
@@ -317,13 +317,13 @@ export default function LoadCreatePage() {
                     <Input
                       type="number"
                       value={formData.volume}
-                      onChange={(e) => setFormData({ ...formData, volume: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, volume: e.target.value })}
                       placeholder="Enter volume"
                       className="bg-gray-800 border-gray-700"
                     />
                     <select
                       value={formData.volumeUnit}
-                      onChange={(e) => setFormData({ ...formData, volumeUnit: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, volumeUnit: e.target.value })}
                       className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white"
                     >
                       <option value="gal">gal</option>
@@ -364,7 +364,7 @@ export default function LoadCreatePage() {
                     <label className="block text-sm font-medium mb-2 text-gray-300">Street Address</label>
                     <Input
                       value={formData.pickupAddress}
-                      onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, pickupAddress: e.target.value })}
                       placeholder="123 Main St"
                       className="bg-gray-800 border-gray-700"
                     />
@@ -374,7 +374,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">City *</label>
                       <Input
                         value={formData.pickupCity}
-                        onChange={(e) => setFormData({ ...formData, pickupCity: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, pickupCity: e.target.value })}
                         placeholder="City"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -383,7 +383,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">State *</label>
                       <Input
                         value={formData.pickupState}
-                        onChange={(e) => setFormData({ ...formData, pickupState: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, pickupState: e.target.value })}
                         placeholder="State"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -392,7 +392,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">ZIP Code</label>
                       <Input
                         value={formData.pickupZip}
-                        onChange={(e) => setFormData({ ...formData, pickupZip: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, pickupZip: e.target.value })}
                         placeholder="ZIP"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -411,7 +411,7 @@ export default function LoadCreatePage() {
                     <label className="block text-sm font-medium mb-2 text-gray-300">Street Address</label>
                     <Input
                       value={formData.deliveryAddress}
-                      onChange={(e) => setFormData({ ...formData, deliveryAddress: e.target.value })}
+                      onChange={(e: any) => setFormData({ ...formData, deliveryAddress: e.target.value })}
                       placeholder="456 Oak Ave"
                       className="bg-gray-800 border-gray-700"
                     />
@@ -421,7 +421,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">City *</label>
                       <Input
                         value={formData.deliveryCity}
-                        onChange={(e) => setFormData({ ...formData, deliveryCity: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, deliveryCity: e.target.value })}
                         placeholder="City"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -430,7 +430,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">State *</label>
                       <Input
                         value={formData.deliveryState}
-                        onChange={(e) => setFormData({ ...formData, deliveryState: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, deliveryState: e.target.value })}
                         placeholder="State"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -439,7 +439,7 @@ export default function LoadCreatePage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">ZIP Code</label>
                       <Input
                         value={formData.deliveryZip}
-                        onChange={(e) => setFormData({ ...formData, deliveryZip: e.target.value })}
+                        onChange={(e: any) => setFormData({ ...formData, deliveryZip: e.target.value })}
                         placeholder="ZIP"
                         className="bg-gray-800 border-gray-700"
                       />
@@ -466,7 +466,7 @@ export default function LoadCreatePage() {
                   <Input
                     type="datetime-local"
                     value={formData.pickupDate}
-                    onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, pickupDate: e.target.value })}
                     className="bg-gray-800 border-gray-700"
                   />
                 </div>
@@ -476,7 +476,7 @@ export default function LoadCreatePage() {
                   <Input
                     type="datetime-local"
                     value={formData.deliveryDate}
-                    onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, deliveryDate: e.target.value })}
                     className="bg-gray-800 border-gray-700"
                   />
                 </div>
@@ -513,7 +513,7 @@ export default function LoadCreatePage() {
                   <Input
                     type="number"
                     value={formData.rate}
-                    onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
+                    onChange={(e: any) => setFormData({ ...formData, rate: e.target.value })}
                     placeholder="Enter your rate"
                     className="pl-12 bg-gray-800 border-gray-700 text-lg"
                   />
@@ -525,7 +525,7 @@ export default function LoadCreatePage() {
                 <label className="block text-sm font-medium mb-2 text-gray-300">Special Instructions</label>
                 <textarea
                   value={formData.specialInstructions}
-                  onChange={(e) => setFormData({ ...formData, specialInstructions: e.target.value })}
+                  onChange={(e: any) => setFormData({ ...formData, specialInstructions: e.target.value })}
                   placeholder="Any special handling requirements, access codes, contact information, equipment needs, etc."
                   rows={6}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"

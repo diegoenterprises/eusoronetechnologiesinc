@@ -24,16 +24,16 @@ export default function RoutePlanning() {
   const [destination, setDestination] = useState("");
   const [stops, setStops] = useState<string[]>([]);
 
-  const routeQuery = trpc.routing.calculateRoute.useQuery(
+  const routeQuery = (trpc as any).routing.calculateRoute.useQuery(
     { origin, destination, stops },
     { enabled: !!origin && !!destination }
   );
 
-  const savedRoutesQuery = trpc.routing.getSavedRoutes.useQuery({ limit: 10 });
+  const savedRoutesQuery = (trpc as any).routing.getSavedRoutes.useQuery({ limit: 10 });
 
-  const saveRouteMutation = trpc.routing.saveRoute.useMutation({
+  const saveRouteMutation = (trpc as any).routing.saveRoute.useMutation({
     onSuccess: () => { toast.success("Route saved"); savedRoutesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to save route", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to save route", { description: error.message }),
   });
 
   const route = routeQuery.data;
@@ -77,7 +77,7 @@ export default function RoutePlanning() {
                 <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-green-400" />
                 <Input
                   value={origin}
-                  onChange={(e) => setOrigin(e.target.value)}
+                  onChange={(e: any) => setOrigin(e.target.value)}
                   placeholder="Enter origin city, state"
                   className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
@@ -85,7 +85,7 @@ export default function RoutePlanning() {
             </div>
 
             {/* Stops */}
-            {stops.map((stop, idx) => (
+            {stops.map((stop: any, idx: number) => (
               <div key={idx} className="space-y-2">
                 <Label className="text-slate-400">Stop {idx + 1}</Label>
                 <div className="flex gap-2">
@@ -93,7 +93,7 @@ export default function RoutePlanning() {
                     <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-yellow-400" />
                     <Input
                       value={stop}
-                      onChange={(e) => updateStop(idx, e.target.value)}
+                      onChange={(e: any) => updateStop(idx, e.target.value)}
                       placeholder="Enter stop location"
                       className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                     />
@@ -115,7 +115,7 @@ export default function RoutePlanning() {
                 <MapPin className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-red-400" />
                 <Input
                   value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
+                  onChange={(e: any) => setDestination(e.target.value)}
                   placeholder="Enter destination city, state"
                   className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
@@ -243,15 +243,15 @@ export default function RoutePlanning() {
           <CardContent>
             {savedRoutesQuery.isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+                {[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
               </div>
-            ) : savedRoutesQuery.data?.length === 0 ? (
+            ) : (savedRoutesQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-slate-400">No saved routes</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {savedRoutesQuery.data?.map((savedRoute: any) => (
+                {(savedRoutesQuery.data as any)?.map((savedRoute: any) => (
                   <div key={savedRoute.id} className="p-4 rounded-xl bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer" onClick={() => { setOrigin(savedRoute.origin); setDestination(savedRoute.destination); setStops(savedRoute.stops || []); }}>
                     <div className="flex items-center gap-2 mb-2">
                       <MapPin className="w-4 h-4 text-green-400" />

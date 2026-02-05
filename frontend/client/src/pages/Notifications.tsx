@@ -21,14 +21,14 @@ import { toast } from "sonner";
 export default function Notifications() {
   const [activeTab, setActiveTab] = useState("all");
 
-  const notificationsQuery = trpc.notifications.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.notifications.getSummary.useQuery();
+  const notificationsQuery = (trpc as any).notifications.list.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).notifications.getSummary.useQuery();
 
-  const markReadMutation = trpc.notifications.markAsRead.useMutation({
+  const markReadMutation = (trpc as any).notifications.markAsRead.useMutation({
     onSuccess: () => { notificationsQuery.refetch(); summaryQuery.refetch(); },
   });
 
-  const markAllReadMutation = trpc.notifications.markAllAsRead.useMutation({
+  const markAllReadMutation = (trpc as any).notifications.markAllAsRead.useMutation({
     onSuccess: () => { toast.success("All notifications marked as read"); notificationsQuery.refetch(); summaryQuery.refetch(); },
   });
 
@@ -163,7 +163,7 @@ export default function Notifications() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {notificationsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
               ) : filteredNotifications?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

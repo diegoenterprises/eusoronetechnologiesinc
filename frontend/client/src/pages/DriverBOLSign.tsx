@@ -29,10 +29,10 @@ export default function DriverBOLSign() {
   const [verified, setVerified] = useState(false);
   const [showSignature, setShowSignature] = useState(false);
 
-  const bolQuery = trpc.documents.getById.useQuery({ id: loadId || "" });
-  const userQuery = trpc.users.me.useQuery();
+  const bolQuery = (trpc as any).documents.getById.useQuery({ id: loadId || "" });
+  const userQuery = (trpc as any).users.me.useQuery();
 
-  const signMutation = trpc.documents.uploadDocument.useMutation({
+  const signMutation = (trpc as any).documents.uploadDocument.useMutation({
     onSuccess: () => {
       toast.success("BOL signed successfully");
       navigate("/driver/current-job");

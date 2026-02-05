@@ -24,8 +24,8 @@ export default function PODManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const podsQuery = trpc.pod.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
-  const summaryQuery = trpc.pod.getSummary.useQuery();
+  const podsQuery = (trpc as any).pod.list.useQuery({ status: statusFilter === "all" ? undefined : statusFilter, limit: 50 });
+  const summaryQuery = (trpc as any).pod.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -39,7 +39,7 @@ export default function PODManagement() {
     }
   };
 
-  const filteredPODs = podsQuery.data?.filter((pod: any) =>
+  const filteredPODs = (podsQuery.data as any)?.filter((pod: any) =>
     !searchTerm || pod.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || pod.consigneeName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -129,7 +129,7 @@ export default function PODManagement() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search PODs..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search PODs..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -149,7 +149,7 @@ export default function PODManagement() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {podsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredPODs?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

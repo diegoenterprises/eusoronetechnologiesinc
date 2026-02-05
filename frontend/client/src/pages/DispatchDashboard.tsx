@@ -20,14 +20,14 @@ import { useLocation } from "wouter";
 export default function DispatchDashboard() {
   const [, setLocation] = useLocation();
 
-  const summaryQuery = trpc.dispatch.getSummary.useQuery();
-  const driversQuery = trpc.dispatch.getDrivers.useQuery();
-  const loadsQuery = trpc.dispatch.getLoads.useQuery({ status: "unassigned" });
-  const alertsQuery = trpc.dispatch.getAlerts.useQuery();
+  const summaryQuery = (trpc as any).dispatch.getSummary.useQuery();
+  const driversQuery = (trpc as any).dispatch.getDrivers.useQuery();
+  const loadsQuery = (trpc as any).dispatch.getLoads.useQuery({ status: "unassigned" });
+  const alertsQuery = (trpc as any).dispatch.getAlerts.useQuery();
 
-  const assignMutation = trpc.dispatch.assignDriver.useMutation({
+  const assignMutation = (trpc as any).dispatch.assignDriver.useMutation({
     onSuccess: () => { toast.success("Driver assigned"); loadsQuery.refetch(); driversQuery.refetch(); },
-    onError: (error) => toast.error("Assignment failed", { description: error.message }),
+    onError: (error: any) => toast.error("Assignment failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -152,8 +152,8 @@ export default function DispatchDashboard() {
           </CardHeader>
           <CardContent>
             {driversQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : driversQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (driversQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Users className="w-8 h-8 text-slate-500" />
@@ -162,7 +162,7 @@ export default function DispatchDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {driversQuery.data?.filter((d: any) => d.status === "available").slice(0, 5).map((driver: any) => (
+                {(driversQuery.data as any)?.filter((d: any) => d.status === "available").slice(0, 5).map((driver: any) => (
                   <div key={driver.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-full bg-green-500/20">
@@ -193,8 +193,8 @@ export default function DispatchDashboard() {
           </CardHeader>
           <CardContent>
             {loadsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : loadsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (loadsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-green-500/20 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <CheckCircle className="w-8 h-8 text-green-400" />
@@ -203,7 +203,7 @@ export default function DispatchDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {loadsQuery.data?.slice(0, 5).map((load: any) => (
+                {(loadsQuery.data as any)?.slice(0, 5).map((load: any) => (
                   <div key={load.id} className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-white font-medium">{load.loadNumber}</p>

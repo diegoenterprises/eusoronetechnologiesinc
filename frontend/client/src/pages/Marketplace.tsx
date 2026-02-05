@@ -81,14 +81,14 @@ export default function Marketplace() {
   const [favorites, setFavorites] = useState<string[]>([]);
 
   // tRPC queries for loads
-  const loadsQuery = trpc.bids.getMarketplaceLoads.useQuery({
+  const loadsQuery = (trpc as any).bids.getMarketplaceLoads.useQuery({
     search: searchQuery || undefined,
     type: filterType !== "all" ? filterType : undefined,
     sortBy: sortBy,
   });
 
   // tRPC mutation for placing bids
-  const placeBidMutation = trpc.bids.placeBid.useMutation({
+  const placeBidMutation = (trpc as any).bids.placeBid.useMutation({
     onSuccess: () => {
       setShowBidModal(false);
       setSelectedLoad(null);
@@ -111,7 +111,7 @@ export default function Marketplace() {
           <Skeleton className="h-10 w-40" />
         </div>
         <div className="space-y-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-48" />
           ))}
         </div>
@@ -141,7 +141,7 @@ export default function Marketplace() {
 
   const sampleBids: Bid[] = selectedLoad ? [] : [];
 
-  const filteredLoads = loads.filter((load) => {
+  const filteredLoads = loads.filter((load: any) => {
     const matchesSearch = load.origin
       .toLowerCase()
       .includes(searchQuery.toLowerCase()) ||
@@ -170,7 +170,7 @@ export default function Marketplace() {
 
   const toggleFavorite = (loadId: string) => {
     if (favorites.includes(loadId)) {
-      setFavorites(favorites.filter((id) => id !== loadId));
+      setFavorites(favorites.filter((id: any) => id !== loadId));
     } else {
       setFavorites([...favorites, loadId]);
     }
@@ -236,14 +236,14 @@ export default function Marketplace() {
               type="text"
               placeholder="Search by origin, destination, or shipper..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e: any) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
             />
           </div>
 
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value)}
+            onChange={(e: any) => setFilterType(e.target.value)}
             className="px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
           >
             <option value="all">All Types</option>
@@ -254,7 +254,7 @@ export default function Marketplace() {
 
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
+            onChange={(e: any) => setSortBy(e.target.value)}
             className="px-4 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
           >
             <option value="recent">Most Recent</option>
@@ -267,7 +267,7 @@ export default function Marketplace() {
 
       {/* Loads Grid */}
       <div className="space-y-4">
-        {sortedLoads.map((load) => (
+        {sortedLoads.map((load: any) => (
           <Card
             key={load.id}
             className="bg-gray-900 border-gray-800 p-6 hover:border-gray-700 transition-colors cursor-pointer"
@@ -340,7 +340,7 @@ export default function Marketplace() {
 
               <div className="flex flex-col items-end gap-4">
                 <Button
-                  onClick={(e) => {
+                  onClick={(e: any) => {
                     e.stopPropagation();
                     toggleFavorite(load.id);
                   }}
@@ -368,7 +368,7 @@ export default function Marketplace() {
 
             {/* Requirements */}
             <div className="flex flex-wrap gap-2">
-              {load.requirements.map((req, idx) => (
+              {load.requirements.map((req: any, idx: number) => (
                 <span
                   key={idx}
                   className="px-2 py-1 text-xs bg-gray-800 text-gray-300 rounded"
@@ -458,7 +458,7 @@ export default function Marketplace() {
               <div>
                 <p className="text-gray-400 text-sm mb-3">Requirements</p>
                 <div className="flex flex-wrap gap-2">
-                  {selectedLoad.requirements.map((req, idx) => (
+                  {selectedLoad.requirements.map((req: any, idx: number) => (
                     <span
                       key={idx}
                       className="px-3 py-1 bg-blue-900/20 border border-blue-800 text-blue-400 text-sm rounded"
@@ -475,7 +475,7 @@ export default function Marketplace() {
                   Recent Bids ({selectedLoad.bids})
                 </p>
                 <div className="space-y-3">
-                  {sampleBids.map((bid) => (
+                  {sampleBids.map((bid: any) => (
                     <div
                       key={bid.id}
                       className="p-3 bg-gray-800 rounded flex items-center justify-between"
@@ -546,7 +546,7 @@ export default function Marketplace() {
                   <input
                     type="number"
                     value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
+                    onChange={(e: any) => setBidAmount(e.target.value)}
                     placeholder="0.00"
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded text-white focus:outline-none focus:border-blue-600"
                   />

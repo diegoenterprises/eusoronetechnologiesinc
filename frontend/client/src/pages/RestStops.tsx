@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 export default function RestStops() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const stopsQuery = trpc.restStops.list.useQuery({ limit: 30 });
-  const nearbyQuery = trpc.restStops.getNearby.useQuery({ limit: 10 });
+  const stopsQuery = (trpc as any).restStops.list.useQuery({ limit: 30 });
+  const nearbyQuery = (trpc as any).restStops.getNearby.useQuery({ limit: 10 });
 
-  const filteredStops = stopsQuery.data?.filter((stop: any) =>
+  const filteredStops = (stopsQuery.data as any)?.filter((stop: any) =>
     !searchTerm || stop.name?.toLowerCase().includes(searchTerm.toLowerCase()) || stop.city?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -59,7 +59,7 @@ export default function RestStops() {
               </div>
               <div>
                 {stopsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{stopsQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(stopsQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Stops</p>
               </div>
@@ -75,7 +75,7 @@ export default function RestStops() {
               </div>
               <div>
                 {stopsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{stopsQuery.data?.filter((s: any) => s.amenities?.includes("fuel")).length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(stopsQuery.data as any)?.filter((s: any) => s.amenities?.includes("fuel")).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">With Fuel</p>
               </div>
@@ -91,7 +91,7 @@ export default function RestStops() {
               </div>
               <div>
                 {stopsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-purple-400">{stopsQuery.data?.filter((s: any) => s.amenities?.includes("shower")).length || 0}</p>
+                  <p className="text-2xl font-bold text-purple-400">{(stopsQuery.data as any)?.filter((s: any) => s.amenities?.includes("shower")).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">With Showers</p>
               </div>
@@ -107,7 +107,7 @@ export default function RestStops() {
               </div>
               <div>
                 {stopsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-amber-400">{stopsQuery.data?.filter((s: any) => s.rating >= 4).length || 0}</p>
+                  <p className="text-2xl font-bold text-amber-400">{(stopsQuery.data as any)?.filter((s: any) => s.rating >= 4).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Top Rated</p>
               </div>
@@ -119,7 +119,7 @@ export default function RestStops() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search rest stops..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search rest stops..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -133,12 +133,12 @@ export default function RestStops() {
           </CardHeader>
           <CardContent className="p-0">
             {nearbyQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : nearbyQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (nearbyQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No nearby stops</p>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {nearbyQuery.data?.map((stop: any) => (
+                {(nearbyQuery.data as any)?.map((stop: any) => (
                   <div key={stop.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{stop.name}</p>
@@ -159,7 +159,7 @@ export default function RestStops() {
           </CardHeader>
           <CardContent className="p-0">
             {stopsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
             ) : filteredStops?.length === 0 ? (
               <div className="text-center py-16">
                 <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

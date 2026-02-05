@@ -25,12 +25,12 @@ export default function QuoteRequests() {
   const [activeTab, setActiveTab] = useState("pending");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const quotesQuery = trpc.quotes.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.quotes.getSummary.useQuery();
+  const quotesQuery = (trpc as any).quotes.list.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).quotes.getSummary.useQuery();
 
-  const respondMutation = trpc.quotes.respond.useMutation({
+  const respondMutation = (trpc as any).quotes.respond.useMutation({
     onSuccess: () => { toast.success("Quote response sent"); quotesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to send response", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send response", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -46,7 +46,7 @@ export default function QuoteRequests() {
     }
   };
 
-  const filteredQuotes = quotesQuery.data?.filter((quote: any) => {
+  const filteredQuotes = (quotesQuery.data as any)?.filter((quote: any) => {
     const matchesSearch = !searchTerm || 
       quote.shipperName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       quote.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -138,7 +138,7 @@ export default function QuoteRequests() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by shipper or location..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -156,7 +156,7 @@ export default function QuoteRequests() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {quotesQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
               ) : filteredQuotes?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

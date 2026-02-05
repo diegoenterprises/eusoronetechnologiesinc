@@ -24,11 +24,11 @@ export default function SafetyTrainingRecords() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const recordsQuery = trpc.safety.getTopDrivers.useQuery({ limit: 50 });
-  const statsQuery = trpc.safety.getDashboardStats.useQuery();
-  const typesQuery = trpc.safety.getTopDrivers.useQuery({ limit: 10 });
+  const recordsQuery = (trpc as any).safety.getTopDrivers.useQuery({ limit: 50 });
+  const statsQuery = (trpc as any).safety.getDashboardStats.useQuery();
+  const typesQuery = (trpc as any).safety.getTopDrivers.useQuery({ limit: 10 });
 
-  const sendReminderMutation = trpc.safety.reportIncident.useMutation({
+  const sendReminderMutation = (trpc as any).safety.reportIncident.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 
@@ -59,7 +59,7 @@ export default function SafetyTrainingRecords() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -169,7 +169,7 @@ export default function SafetyTrainingRecords() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search drivers or courses..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -204,7 +204,7 @@ export default function SafetyTrainingRecords() {
       {/* Records List */}
       <div className="space-y-4">
         {recordsQuery.isLoading ? (
-          Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-xl" />)
+          Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-xl" />)
         ) : filteredRecords.length === 0 ? (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

@@ -145,7 +145,7 @@ export default function TestLogin() {
 
         {/* Role Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {TEST_ROLES.map((roleData) => {
+          {TEST_ROLES.map((roleData: any) => {
             const Icon = roleData.icon;
             return (
               <Card
@@ -173,7 +173,7 @@ export default function TestLogin() {
                   <div className="space-y-2">
                     <p className="text-sm font-semibold text-slate-300">Key Features:</p>
                     <ul className="space-y-1">
-                      {roleData.features.map((feature, idx) => (
+                      {roleData.features.map((feature: any, idx: number) => (
                         <li key={idx} className="text-sm text-slate-400 flex items-center gap-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
                           {feature}

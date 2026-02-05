@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 export default function ELDIntegration() {
   const [filter, setFilter] = useState("all");
 
-  const driversQuery = trpc.eld.getDriverStatus.useQuery({ filter }, { refetchInterval: 60000 });
-  const statsQuery = trpc.eld.getStats.useQuery({}, { refetchInterval: 60000 });
+  const driversQuery = (trpc as any).eld.getDriverStatus.useQuery({ filter }, { refetchInterval: 60000 });
+  const statsQuery = (trpc as any).eld.getStats.useQuery({}, { refetchInterval: 60000 });
 
   const stats = statsQuery.data;
 
@@ -106,12 +106,12 @@ export default function ELDIntegration() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Clock className="w-5 h-5 text-cyan-400" />Driver HOS Status</CardTitle></CardHeader>
         <CardContent className="p-0">
           {driversQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
-          ) : driversQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+          ) : (driversQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><User className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No drivers</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {driversQuery.data?.map((driver: any) => (
+              {(driversQuery.data as any)?.map((driver: any) => (
                 <div key={driver.id} className={cn("p-4", driver.violation && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">

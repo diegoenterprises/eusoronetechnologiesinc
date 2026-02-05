@@ -23,10 +23,10 @@ export default function EscortCertificationRenewal() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const certificationsQuery = trpc.escorts.getCertifications.useQuery();
-  const statsQuery = trpc.escorts.getCertificationStats.useQuery();
+  const certificationsQuery = (trpc as any).escorts.getCertifications.useQuery();
+  const statsQuery = (trpc as any).escorts.getCertificationStats.useQuery();
 
-  const startRenewalMutation = trpc.escorts.uploadCertification.useMutation({
+  const startRenewalMutation = (trpc as any).escorts.uploadCertification.useMutation({
     onSuccess: () => {
       toast.success("Renewal process started");
       certificationsQuery.refetch();
@@ -70,7 +70,7 @@ export default function EscortCertificationRenewal() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -130,7 +130,7 @@ export default function EscortCertificationRenewal() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search by state or cert number..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -154,7 +154,7 @@ export default function EscortCertificationRenewal() {
       {/* Certifications Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {certificationsQuery.isLoading ? (
-          Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)
+          Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)
         ) : filteredCertifications.length === 0 ? (
           <Card className="col-span-full bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="text-center py-16">

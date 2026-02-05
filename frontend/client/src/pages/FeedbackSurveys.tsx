@@ -23,13 +23,13 @@ export default function FeedbackSurveys() {
   const [selectedSurvey, setSelectedSurvey] = useState<string | null>(null);
   const [responses, setResponses] = useState<Record<string, any>>({});
 
-  const surveysQuery = trpc.support.getPendingSurveys.useQuery();
-  const completedQuery = trpc.support.getCompletedSurveys.useQuery({ limit: 10 });
-  const surveyDetailQuery = trpc.support.getSurveyDetail.useQuery({ surveyId: selectedSurvey! }, { enabled: !!selectedSurvey });
+  const surveysQuery = (trpc as any).support.getPendingSurveys.useQuery();
+  const completedQuery = (trpc as any).support.getCompletedSurveys.useQuery({ limit: 10 });
+  const surveyDetailQuery = (trpc as any).support.getSurveyDetail.useQuery({ surveyId: selectedSurvey! }, { enabled: !!selectedSurvey });
 
-  const submitMutation = trpc.support.submitSurvey.useMutation({
+  const submitMutation = (trpc as any).support.submitSurvey.useMutation({
     onSuccess: () => { toast.success("Survey submitted! Thank you for your feedback."); setSelectedSurvey(null); setResponses({}); surveysQuery.refetch(); completedQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const renderQuestion = (question: any) => {
@@ -37,7 +37,7 @@ export default function FeedbackSurveys() {
       case "rating":
         return (
           <div className="flex gap-2">
-            {[1, 2, 3, 4, 5].map((star) => (
+            {[1, 2, 3, 4, 5].map((star: any) => (
               <Button key={star} size="sm" variant="ghost" className={cn("p-2", responses[question.id] >= star ? "text-yellow-400" : "text-slate-500")} onClick={() => setResponses({ ...responses, [question.id]: star })}>
                 <Star className={cn("w-6 h-6", responses[question.id] >= star && "fill-yellow-400")} />
               </Button>
@@ -57,7 +57,7 @@ export default function FeedbackSurveys() {
         );
       case "text":
         return (
-          <Textarea value={responses[question.id] || ""} onChange={(e) => setResponses({ ...responses, [question.id]: e.target.value })} placeholder="Enter your feedback..." rows={3} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Textarea value={responses[question.id] || ""} onChange={(e: any) => setResponses({ ...responses, [question.id]: e.target.value })} placeholder="Enter your feedback..." rows={3} className="bg-slate-800/50 border-slate-700/50 rounded-lg" />
         );
       default:
         return null;
@@ -86,7 +86,7 @@ export default function FeedbackSurveys() {
               </div>
               <div>
                 {surveysQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{surveysQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(surveysQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Pending</p>
               </div>
@@ -102,7 +102,7 @@ export default function FeedbackSurveys() {
               </div>
               <div>
                 {completedQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{completedQuery.data?.total || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(completedQuery.data as any)?.total || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Completed</p>
               </div>
@@ -118,7 +118,7 @@ export default function FeedbackSurveys() {
               </div>
               <div>
                 {completedQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{completedQuery.data?.avgRating || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(completedQuery.data as any)?.avgRating || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Rating</p>
               </div>
@@ -134,18 +134,18 @@ export default function FeedbackSurveys() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <ClipboardList className="w-5 h-5 text-cyan-400" />
-                {surveyDetailQuery.data?.title}
+                {(surveyDetailQuery.data as any)?.title}
               </CardTitle>
               <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={() => setSelectedSurvey(null)}>Close</Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             {surveyDetailQuery.isLoading ? (
-              [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+              [1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
             ) : (
               <>
-                <p className="text-sm text-slate-400">{surveyDetailQuery.data?.description}</p>
-                {surveyDetailQuery.data?.questions?.map((question: any, idx: number) => (
+                <p className="text-sm text-slate-400">{(surveyDetailQuery.data as any)?.description}</p>
+                {(surveyDetailQuery.data as any)?.questions?.map((question: any, idx: number) => (
                   <div key={question.id} className="p-4 rounded-xl bg-slate-700/30">
                     <p className="text-white font-medium mb-3">{idx + 1}. {question.text}</p>
                     {renderQuestion(question)}
@@ -171,8 +171,8 @@ export default function FeedbackSurveys() {
           </CardHeader>
           <CardContent className="p-0">
             {surveysQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : surveysQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (surveysQuery.data as any)?.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
                 <p className="text-slate-400">All caught up!</p>
@@ -180,7 +180,7 @@ export default function FeedbackSurveys() {
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {surveysQuery.data?.map((survey: any) => (
+                {(surveysQuery.data as any)?.map((survey: any) => (
                   <div key={survey.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-xl bg-cyan-500/20">
@@ -214,15 +214,15 @@ export default function FeedbackSurveys() {
           </CardHeader>
           <CardContent className="p-0">
             {completedQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : completedQuery.data?.surveys?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (completedQuery.data as any)?.surveys?.length === 0 ? (
               <div className="text-center py-8">
                 <ClipboardList className="w-8 h-8 text-slate-500 mx-auto mb-2" />
                 <p className="text-slate-400">No completed surveys</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {completedQuery.data?.surveys?.map((survey: any) => (
+                {(completedQuery.data as any)?.surveys?.map((survey: any) => (
                   <div key={survey.id} className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="p-3 rounded-xl bg-green-500/20">
@@ -234,7 +234,7 @@ export default function FeedbackSurveys() {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
+                      {[1, 2, 3, 4, 5].map((star: any) => (
                         <Star key={star} className={cn("w-4 h-4", star <= survey.rating ? "text-yellow-400 fill-yellow-400" : "text-slate-600")} />
                       ))}
                     </div>

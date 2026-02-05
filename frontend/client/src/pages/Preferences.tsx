@@ -18,16 +18,16 @@ import {
 import { toast } from "sonner";
 
 export default function Preferences() {
-  const preferencesQuery = trpc.preferences.get.useQuery();
+  const preferencesQuery = (trpc as any).preferences.get.useQuery();
 
-  const updateMutation = trpc.preferences.update.useMutation({
+  const updateMutation = (trpc as any).preferences.update.useMutation({
     onSuccess: () => { toast.success("Preferences saved"); preferencesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to save", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to save", { description: error.message }),
   });
 
-  const resetMutation = trpc.preferences.reset.useMutation({
+  const resetMutation = (trpc as any).preferences.reset.useMutation({
     onSuccess: () => { toast.success("Preferences reset"); preferencesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to reset", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to reset", { description: error.message }),
   });
 
   const prefs = preferencesQuery.data;
@@ -53,7 +53,7 @@ export default function Preferences() {
       </div>
 
       {preferencesQuery.isLoading ? (
-        <div className="space-y-6">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
+        <div className="space-y-6">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
       ) : (
         <div className="space-y-6">
           {/* Appearance */}

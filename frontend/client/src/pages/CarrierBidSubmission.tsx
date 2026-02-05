@@ -30,15 +30,15 @@ export default function CarrierBidSubmission() {
   const [selectedDriver, setSelectedDriver] = useState("");
   const [notes, setNotes] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
-  const driversQuery = trpc.drivers.getAvailable.useQuery();
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
+  const driversQuery = (trpc as any).drivers.getAvailable.useQuery();
 
-  const submitBidMutation = trpc.bids.submit.useMutation({
+  const submitBidMutation = (trpc as any).bids.submit.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
       setLocation("/bids");
     },
-    onError: (error) => toast.error("Failed to submit bid", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit bid", { description: error.message }),
   });
 
   if (loadQuery.error) {
@@ -172,7 +172,7 @@ export default function CarrierBidSubmission() {
                 <Input
                   type="number"
                   value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
+                  onChange={(e: any) => setBidAmount(e.target.value)}
                   placeholder="Enter your bid"
                   className="pl-9 bg-slate-700/50 border-slate-600 text-lg"
                 />
@@ -197,10 +197,10 @@ export default function CarrierBidSubmission() {
                 <SelectContent>
                   {driversQuery.isLoading ? (
                     <SelectItem value="loading" disabled>Loading...</SelectItem>
-                  ) : driversQuery.data?.length === 0 ? (
+                  ) : (driversQuery.data as any)?.length === 0 ? (
                     <SelectItem value="none" disabled>No available drivers</SelectItem>
                   ) : (
-                    driversQuery.data?.map((driver) => (
+                    (driversQuery.data as any)?.map((driver: any) => (
                       <SelectItem key={driver.id} value={driver.id}>
                         <div className="flex items-center gap-2">
                           <span>{driver.firstName} {driver.lastName}</span>
@@ -217,7 +217,7 @@ export default function CarrierBidSubmission() {
               <Label className="text-slate-400">Notes (Optional)</Label>
               <Textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e: any) => setNotes(e.target.value)}
                 placeholder="Any additional information..."
                 className="mt-1 bg-slate-700/50 border-slate-600"
                 rows={3}

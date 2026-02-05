@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function EIAReporting() {
   const [period, setPeriod] = useState("weekly");
 
-  const reportQuery = trpc.terminals.getEIAReport.useQuery({ period });
-  const statsQuery = trpc.terminals.getEIAStats.useQuery({ period });
+  const reportQuery = (trpc as any).terminals.getEIAReport.useQuery({ period });
+  const statsQuery = (trpc as any).terminals.getEIAStats.useQuery({ period });
 
-  const submitMutation = trpc.terminals.submitEIAReport.useMutation({
+  const submitMutation = (trpc as any).terminals.submitEIAReport.useMutation({
     onSuccess: () => { toast.success("Report submitted"); reportQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -92,7 +92,7 @@ export default function EIAReporting() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Fuel className="w-5 h-5 text-cyan-400" />Product Inventory</CardTitle></CardHeader>
         <CardContent className="p-0">
           {reportQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
           ) : report?.products?.length === 0 ? (
             <div className="text-center py-16"><Fuel className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No inventory data</p></div>
           ) : (

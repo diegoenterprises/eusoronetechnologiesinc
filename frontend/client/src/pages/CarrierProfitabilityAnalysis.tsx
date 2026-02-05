@@ -32,11 +32,11 @@ export default function CarrierProfitabilityAnalysis() {
   const [mpg, setMpg] = useState(6.5);
   const [driverPay, setDriverPay] = useState(0.55);
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const fuelQuery = trpc.fuel.getSummary.useQuery();
-  const analysisQuery = trpc.carriers.getLoadHistory.useQuery({});
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const fuelQuery = (trpc as any).fuel.getSummary.useQuery();
+  const analysisQuery = (trpc as any).carriers.getLoadHistory.useQuery({});
 
-  const submitBidMutation = trpc.bids.submit.useMutation({
+  const submitBidMutation = (trpc as any).bids.submit.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
       navigate("/carrier/marketplace");
@@ -139,7 +139,7 @@ export default function CarrierProfitabilityAnalysis() {
               <Input
                 type="number"
                 value={bidAmount}
-                onChange={(e) => setBidAmount(e.target.value)}
+                onChange={(e: any) => setBidAmount(e.target.value)}
                 placeholder="Enter bid amount"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg text-xl h-14"
               />

@@ -16,27 +16,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function AdminTelemetry() {
   const [activeTab, setActiveTab] = useState("overview");
 
-  const { data: fleetLocations, isLoading: fleetLoading, refetch } = trpc.telemetry.getFleetLocations.useQuery(
+  const { data: fleetLocations, isLoading: fleetLoading, refetch } = (trpc as any).telemetry.getFleetLocations.useQuery(
     {},
     { refetchInterval: 15000 }
   );
 
-  const { data: geofences } = trpc.geofencing.getGeofences.useQuery({ activeOnly: true });
+  const { data: geofences } = (trpc as any).geofencing.getGeofences.useQuery({ activeOnly: true });
 
-  const { data: activeAlerts } = trpc.safetyAlerts.getActiveAlerts.useQuery(
+  const { data: activeAlerts } = (trpc as any).safetyAlerts.getActiveAlerts.useQuery(
     { limit: 20 },
     { refetchInterval: 10000 }
   );
 
-  const { data: alertStats } = trpc.safetyAlerts.getAlertStats.useQuery({ days: 30 });
+  const { data: alertStats } = (trpc as any).safetyAlerts.getAlertStats.useQuery({ days: 30 });
 
-  const { data: speedEvents } = trpc.safetyAlerts.getSpeedEvents.useQuery({ limit: 20 });
+  const { data: speedEvents } = (trpc as any).safetyAlerts.getSpeedEvents.useQuery({ limit: 20 });
 
   const totalDrivers = fleetLocations?.length || 0;
-  const movingDrivers = fleetLocations?.filter((l) => l.isMoving).length || 0;
+  const movingDrivers = fleetLocations?.filter((l: any) => l.isMoving).length || 0;
   const stationaryDrivers = totalDrivers - movingDrivers;
 
-  const mapMarkers = fleetLocations?.map((loc) => ({
+  const mapMarkers = fleetLocations?.map((loc: any) => ({
     lat: loc.lat,
     lng: loc.lng,
     label: loc.name,
@@ -166,7 +166,7 @@ export default function AdminTelemetry() {
                   ) : (
                     <TelemetryMap
                       markers={mapMarkers}
-                      geofences={geofences?.map((g) => ({
+                      geofences={geofences?.map((g: any) => ({
                         id: g.id,
                         name: g.name,
                         type: g.type,
@@ -214,7 +214,7 @@ export default function AdminTelemetry() {
                   <CardTitle className="text-base">Recent Alerts</CardTitle>
                 </CardHeader>
                 <CardContent className="max-h-[300px] overflow-y-auto">
-                  {activeAlerts?.slice(0, 5).map((alert) => (
+                  {activeAlerts?.slice(0, 5).map((alert: any) => (
                     <div key={alert.id} className="py-2 border-b last:border-0">
                       <div className="flex justify-between items-start">
                         <div>
@@ -245,7 +245,7 @@ export default function AdminTelemetry() {
                 <p className="text-center text-muted-foreground py-8">No active alerts</p>
               ) : (
                 <div className="space-y-2">
-                  {activeAlerts?.map((alert) => (
+                  {activeAlerts?.map((alert: any) => (
                     <div key={alert.id} className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-4">
                         <Badge variant={alert.severity === "emergency" || alert.severity === "critical" ? "destructive" : "secondary"}>
@@ -285,7 +285,7 @@ export default function AdminTelemetry() {
                 <p className="text-center text-muted-foreground py-8">No speed events recorded</p>
               ) : (
                 <div className="space-y-2">
-                  {speedEvents?.map((event) => (
+                  {speedEvents?.map((event: any) => (
                     <div key={event.id} className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-4">
                         <Badge variant={event.severity === "severe" ? "destructive" : event.severity === "moderate" ? "secondary" : "outline"}>
@@ -327,7 +327,7 @@ export default function AdminTelemetry() {
                 <p className="text-center text-muted-foreground py-8">No geofences configured</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {geofences?.map((gf) => (
+                  {geofences?.map((gf: any) => (
                     <div key={gf.id} className="p-4 rounded-lg border">
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium">{gf.name}</p>

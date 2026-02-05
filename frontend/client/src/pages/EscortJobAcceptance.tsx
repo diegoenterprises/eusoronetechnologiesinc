@@ -23,11 +23,11 @@ export default function EscortJobAcceptance() {
   const [, params] = useRoute("/escort/job-offer/:jobId");
   const jobId = params?.jobId;
 
-  const jobQuery = trpc.escorts.getAvailableJobs.useQuery({});
-  const requirementsQuery = trpc.escorts.getCertifications.useQuery();
-  const userCertsQuery = trpc.escorts.getCertifications.useQuery();
+  const jobQuery = (trpc as any).escorts.getAvailableJobs.useQuery({});
+  const requirementsQuery = (trpc as any).escorts.getCertifications.useQuery();
+  const userCertsQuery = (trpc as any).escorts.getCertifications.useQuery();
 
-  const acceptMutation = trpc.escorts.acceptJob.useMutation({
+  const acceptMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Job accepted");
       navigate("/escort/jobs");
@@ -35,7 +35,7 @@ export default function EscortJobAcceptance() {
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const declineMutation = trpc.escorts.updateJobStatus.useMutation({
+  const declineMutation = (trpc as any).escorts.updateJobStatus.useMutation({
     onSuccess: () => {
       toast.success("Job declined");
       navigate("/escort/marketplace");

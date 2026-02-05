@@ -21,8 +21,8 @@ export default function Earnings() {
   const [activeTab, setActiveTab] = useState("all");
   const [period, setPeriod] = useState("week");
 
-  const earningsQuery = trpc.earnings.getHistory.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
-  const summaryQuery = trpc.earnings.getSummary.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
+  const earningsQuery = (trpc as any).earnings.getHistory.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
+  const summaryQuery = (trpc as any).earnings.getSummary.useQuery({ period: period as "week" | "month" | "quarter" | "year" });
 
   const summary = summaryQuery.data;
 
@@ -142,7 +142,7 @@ export default function Earnings() {
 
       {/* Period Filter */}
       <div className="flex items-center gap-2">
-        {["week", "month", "year"].map((p) => (
+        {["week", "month", "year"].map((p: any) => (
           <Button key={p} variant={period === p ? "default" : "outline"} size="sm" className={period === p ? "bg-cyan-600 hover:bg-cyan-700 rounded-lg" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"} onClick={() => setPeriod(p)}>
             This {p.charAt(0).toUpperCase() + p.slice(1)}
           </Button>
@@ -156,8 +156,8 @@ export default function Earnings() {
         </CardHeader>
         <CardContent className="p-0">
           {earningsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : earningsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (earningsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <DollarSign className="w-10 h-10 text-slate-500" />
@@ -167,7 +167,7 @@ export default function Earnings() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {earningsQuery.data?.map((earning: any) => (
+              {(earningsQuery.data as any)?.map((earning: any) => (
                 <div key={earning.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

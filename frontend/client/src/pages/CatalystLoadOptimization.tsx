@@ -20,11 +20,11 @@ import { toast } from "sonner";
 export default function CatalystLoadOptimization() {
   const [optimizationGoal, setOptimizationGoal] = useState("efficiency");
 
-  const unassignedQuery = trpc.catalysts.getMatchedLoads.useQuery({ search: "" });
-  const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery({});
-  const suggestionsQuery = trpc.catalysts.getMatchedLoads.useQuery({ search: "" });
+  const unassignedQuery = (trpc as any).catalysts.getMatchedLoads.useQuery({ search: "" });
+  const driversQuery = (trpc as any).catalysts.getAvailableDrivers.useQuery({});
+  const suggestionsQuery = (trpc as any).catalysts.getMatchedLoads.useQuery({ search: "" });
 
-  const applyMutation = trpc.catalysts.assignDriver.useMutation({
+  const applyMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Optimized assignments applied");
       unassignedQuery.refetch();
@@ -124,7 +124,7 @@ export default function CatalystLoadOptimization() {
         </CardHeader>
         <CardContent>
           {suggestionsQuery.isLoading ? (
-            <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
           ) : !(suggestions as any)?.assignments?.length && !suggestions?.length ? (
             <div className="text-center py-12">
               <Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" />

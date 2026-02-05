@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function FleetMap() {
   const [filter, setFilter] = useState("all");
 
-  const vehiclesQuery = trpc.fleet.getVehicleLocations.useQuery({ filter }, { refetchInterval: 30000 });
-  const statsQuery = trpc.fleet.getFleetMapStats.useQuery();
+  const vehiclesQuery = (trpc as any).fleet.getVehicleLocations.useQuery({ filter }, { refetchInterval: 30000 });
+  const statsQuery = (trpc as any).fleet.getFleetMapStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -91,7 +91,7 @@ export default function FleetMap() {
                 <div className="text-center">
                   <Map className="w-16 h-16 text-slate-500 mx-auto mb-4" />
                   <p className="text-slate-400">Map integration placeholder</p>
-                  <p className="text-sm text-slate-500 mt-1">{vehiclesQuery.data?.length || 0} vehicles tracked</p>
+                  <p className="text-sm text-slate-500 mt-1">{(vehiclesQuery.data as any)?.length || 0} vehicles tracked</p>
                 </div>
               )}
             </CardContent>
@@ -116,12 +116,12 @@ export default function FleetMap() {
             </CardHeader>
             <CardContent className="p-0 max-h-[420px] overflow-y-auto">
               {vehiclesQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : vehiclesQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (vehiclesQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No vehicles found</p></div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {vehiclesQuery.data?.map((vehicle: any) => (
+                  {(vehiclesQuery.data as any)?.map((vehicle: any) => (
                     <div key={vehicle.id} className={cn("p-3 hover:bg-slate-700/20 cursor-pointer", vehicle.status === "offline" && "bg-red-500/5")}>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-white font-medium text-sm">{vehicle.number}</p>

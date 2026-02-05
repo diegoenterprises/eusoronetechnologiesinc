@@ -22,14 +22,14 @@ import { toast } from "sonner";
 export default function FeatureFlags() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const flagsQuery = trpc.admin.getFeatureFlags.useQuery();
+  const flagsQuery = (trpc as any).admin.getFeatureFlags.useQuery();
 
-  const toggleMutation = trpc.admin.toggleFeatureFlag.useMutation({
+  const toggleMutation = (trpc as any).admin.toggleFeatureFlag.useMutation({
     onSuccess: () => { toast.success("Flag updated"); flagsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const filteredFlags = flagsQuery.data?.filter((flag: any) =>
+  const filteredFlags = (flagsQuery.data as any)?.filter((flag: any) =>
     !searchTerm || flag.name?.toLowerCase().includes(searchTerm.toLowerCase()) || flag.key?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -67,7 +67,7 @@ export default function FeatureFlags() {
               </div>
               <div>
                 {flagsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{flagsQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(flagsQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Flags</p>
               </div>
@@ -83,7 +83,7 @@ export default function FeatureFlags() {
               </div>
               <div>
                 {flagsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{flagsQuery.data?.filter((f: any) => f.enabled).length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(flagsQuery.data as any)?.filter((f: any) => f.enabled).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Enabled</p>
               </div>
@@ -99,7 +99,7 @@ export default function FeatureFlags() {
               </div>
               <div>
                 {flagsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{flagsQuery.data?.filter((f: any) => !f.enabled).length || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(flagsQuery.data as any)?.filter((f: any) => !f.enabled).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Disabled</p>
               </div>
@@ -115,7 +115,7 @@ export default function FeatureFlags() {
               </div>
               <div>
                 {flagsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-purple-400">{flagsQuery.data?.filter((f: any) => f.rolloutPercentage < 100).length || 0}</p>
+                  <p className="text-2xl font-bold text-purple-400">{(flagsQuery.data as any)?.filter((f: any) => f.rolloutPercentage < 100).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Partial Rollout</p>
               </div>
@@ -127,14 +127,14 @@ export default function FeatureFlags() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search flags..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search flags..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Flags List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {flagsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredFlags?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

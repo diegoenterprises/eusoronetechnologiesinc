@@ -23,19 +23,19 @@ export default function AppointmentScheduling() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate, terminal: selectedTerminal });
-  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
-  const slotsQuery = trpc.terminals.getAvailableSlots.useQuery({ date: selectedDate, terminal: selectedTerminal }, { enabled: selectedTerminal !== "all" });
-  const statsQuery = trpc.terminals.getAppointmentStats.useQuery({ date: selectedDate });
+  const appointmentsQuery = (trpc as any).terminals.getAppointments.useQuery({ date: selectedDate, terminal: selectedTerminal });
+  const terminalsQuery = (trpc as any).terminals.getTerminals.useQuery();
+  const slotsQuery = (trpc as any).terminals.getAvailableSlots.useQuery({ date: selectedDate, terminal: selectedTerminal }, { enabled: selectedTerminal !== "all" });
+  const statsQuery = (trpc as any).terminals.getAppointmentStats.useQuery({ date: selectedDate });
 
-  const bookMutation = trpc.terminals.bookAppointment.useMutation({
+  const bookMutation = (trpc as any).terminals.bookAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment booked"); appointmentsQuery.refetch(); slotsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const cancelMutation = trpc.terminals.cancelAppointment.useMutation({
+  const cancelMutation = (trpc as any).terminals.cancelAppointment.useMutation({
     onSuccess: () => { toast.success("Appointment cancelled"); appointmentsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -98,24 +98,24 @@ export default function AppointmentScheduling() {
       </div>
 
       <div className="flex items-center gap-4">
-        <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input type="date" value={selectedDate} onChange={(e: any) => setSelectedDate(e.target.value)} className="w-[180px] bg-slate-800/50 border-slate-700/50 rounded-lg" />
         {terminalsQuery.isLoading ? <Skeleton className="h-10 w-[200px]" /> : (
           <Select value={selectedTerminal} onValueChange={setSelectedTerminal}>
             <SelectTrigger className="w-[200px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Terminals</SelectItem>
-              {terminalsQuery.data?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+              {(terminalsQuery.data as any)?.map((t: any) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
             </SelectContent>
           </Select>
         )}
       </div>
 
-      {selectedTerminal !== "all" && (slotsQuery.data?.length ?? 0) > 0 && (
+      {selectedTerminal !== "all" && ((slotsQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 border-cyan-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Clock className="w-5 h-5 text-cyan-400" />Available Slots</CardTitle></CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
-              {slotsQuery.data?.map((slot: any) => (
+              {(slotsQuery.data as any)?.map((slot: any) => (
                 <Button key={slot.time} size="sm" variant="outline" className={cn("rounded-lg", slot.available ? "bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30" : "bg-slate-700/50 border-slate-600/50 text-slate-500 cursor-not-allowed")} onClick={() => slot.available && bookMutation.mutate({ date: selectedDate, terminal: selectedTerminal, time: slot.time })} disabled={!slot.available}>
                   {slot.time} {slot.available ? `(${slot.rackAvailable} racks)` : "(Full)"}
                 </Button>
@@ -129,12 +129,12 @@ export default function AppointmentScheduling() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Calendar className="w-5 h-5 text-cyan-400" />Appointments</CardTitle></CardHeader>
         <CardContent className="p-0">
           {appointmentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : appointmentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (appointmentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No appointments for this date</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {appointmentsQuery.data?.map((apt: any) => (
+              {(appointmentsQuery.data as any)?.map((apt: any) => (
                 <div key={apt.id} className={cn("p-4", apt.status === "pending" && "bg-yellow-500/5 border-l-2 border-yellow-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function BenefitsManagement() {
   const [search, setSearch] = useState("");
 
-  const benefitsQuery = trpc.payroll.getBenefits.useQuery({ search });
-  const statsQuery = trpc.payroll.getBenefitStats.useQuery();
+  const benefitsQuery = (trpc as any).payroll.getBenefits.useQuery({ search });
+  const statsQuery = (trpc as any).payroll.getBenefitStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -80,19 +80,19 @@ export default function BenefitsManagement() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search employees..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Heart className="w-5 h-5 text-cyan-400" />Benefits Enrollment</CardTitle></CardHeader>
         <CardContent className="p-0">
           {benefitsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : benefitsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (benefitsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Heart className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No benefits found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {benefitsQuery.data?.map((benefit: any) => (
+              {(benefitsQuery.data as any)?.map((benefit: any) => (
                 <div key={benefit.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{benefit.employeeName?.charAt(0)}</div>

@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function CarrierDashboard() {
-  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
-  const driversQuery = trpc.carriers.getMyDrivers.useQuery({ limit: 5 });
-  const activeLoadsQuery = trpc.carriers.getActiveLoads.useQuery({ limit: 5 });
-  const alertsQuery = trpc.carriers.getAlerts.useQuery();
+  const statsQuery = (trpc as any).carriers.getDashboardStats.useQuery();
+  const driversQuery = (trpc as any).carriers.getMyDrivers.useQuery({ limit: 5 });
+  const activeLoadsQuery = (trpc as any).carriers.getActiveLoads.useQuery({ limit: 5 });
+  const alertsQuery = (trpc as any).carriers.getAlerts.useQuery();
 
   const stats = statsQuery.data;
 
@@ -91,11 +91,11 @@ export default function CarrierDashboard() {
         </Card>
       </div>
 
-      {(alertsQuery.data?.length ?? 0) > 0 && (
+      {((alertsQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-yellow-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-400" />Alerts</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {alertsQuery.data?.map((alert: any) => (
+            {(alertsQuery.data as any)?.map((alert: any) => (
               <div key={alert.id} className={cn("p-3 rounded-lg flex items-center gap-3", alert.severity === "critical" ? "bg-red-500/10" : "bg-yellow-500/10")}>
                 <AlertTriangle className={cn("w-5 h-5", alert.severity === "critical" ? "text-red-400" : "text-yellow-400")} />
                 <div className="flex-1">
@@ -113,12 +113,12 @@ export default function CarrierDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Users className="w-5 h-5 text-cyan-400" />My Drivers</CardTitle></CardHeader>
           <CardContent className="p-0">
             {driversQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : driversQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (driversQuery.data as any)?.length === 0 ? (
               <div className="p-8 text-center"><Users className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No drivers</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {driversQuery.data?.map((driver: any) => (
+                {(driversQuery.data as any)?.map((driver: any) => (
                   <div key={driver.id} className="p-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -145,12 +145,12 @@ export default function CarrierDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-green-400" />Active Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
             {activeLoadsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : activeLoadsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (activeLoadsQuery.data as any)?.length === 0 ? (
               <div className="p-8 text-center"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No active loads</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {activeLoadsQuery.data?.map((load: any) => (
+                {(activeLoadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">

@@ -37,9 +37,9 @@ export default function ShipperRateCarrier() {
   const [comment, setComment] = useState("");
   const [wouldUseAgain, setWouldUseAgain] = useState<boolean | null>(null);
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
 
-  const submitMutation = trpc.ratings.submit.useMutation({
+  const submitMutation = (trpc as any).ratings.submit.useMutation({
     onSuccess: () => {
       toast.success("Rating submitted successfully");
       navigate("/shipper/loads");
@@ -75,7 +75,7 @@ export default function ShipperRateCarrier() {
 
   const StarRating = ({ value, onChange }: { value: number; onChange: (v: number) => void }) => (
     <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((star) => (
+      {[1, 2, 3, 4, 5].map((star: any) => (
         <button
           key={star}
           onClick={() => onChange(star)}
@@ -169,7 +169,7 @@ export default function ShipperRateCarrier() {
           <CardTitle className="text-white text-lg">Rate by Category</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {ratingCategories.map((category) => (
+          {ratingCategories.map((category: any) => (
             <div
               key={category.key}
               className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30"
@@ -179,7 +179,7 @@ export default function ShipperRateCarrier() {
                 <p className="text-slate-400 text-sm">{category.description}</p>
               </div>
               <div className="flex items-center gap-1">
-                {[1, 2, 3, 4, 5].map((star) => (
+                {[1, 2, 3, 4, 5].map((star: any) => (
                   <button
                     key={star}
                     onClick={() => handleCategoryRating(category.key, star)}
@@ -246,7 +246,7 @@ export default function ShipperRateCarrier() {
         <CardContent>
           <Textarea
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={(e: any) => setComment(e.target.value)}
             placeholder="Share your experience with this carrier..."
             className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[120px]"
           />

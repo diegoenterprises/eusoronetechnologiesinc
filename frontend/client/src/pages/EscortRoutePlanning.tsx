@@ -28,11 +28,11 @@ export default function EscortRoutePlanning() {
 
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
 
-  const jobQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
-  const routesQuery = trpc.escorts.getJobs.useQuery({ status: undefined });
-  const permitsQuery = trpc.escorts.getCertifications.useQuery();
+  const jobQuery = (trpc as any).escorts.getJobs.useQuery({ status: undefined });
+  const routesQuery = (trpc as any).escorts.getJobs.useQuery({ status: undefined });
+  const permitsQuery = (trpc as any).escorts.getCertifications.useQuery();
 
-  const selectRouteMutation = trpc.escorts.acceptJob.useMutation({
+  const selectRouteMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Route selected");
       navigate(`/escort/job/${jobId}`);
@@ -129,7 +129,7 @@ export default function EscortRoutePlanning() {
             </CardHeader>
             <CardContent>
               {routesQuery.isLoading ? (
-                <div className="space-y-4">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
+                <div className="space-y-4">{Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}</div>
               ) : (
                 <div className="space-y-4">
                   {routes.map((route: any) => (
@@ -213,7 +213,7 @@ export default function EscortRoutePlanning() {
             </CardHeader>
             <CardContent>
               {permitsQuery.isLoading ? (
-                <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                <div className="space-y-3">{Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
               ) : (
                 <div className="space-y-3">
                   {permits.map((permit: any) => (

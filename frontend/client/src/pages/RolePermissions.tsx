@@ -19,13 +19,13 @@ import { toast } from "sonner";
 export default function RolePermissions() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
 
-  const rolesQuery = trpc.admin.getRoles.useQuery();
-  const permissionsQuery = trpc.admin.getPermissions.useQuery({ roleId: selectedRole }, { enabled: !!selectedRole });
-  const statsQuery = trpc.admin.getRoleStats.useQuery();
+  const rolesQuery = (trpc as any).admin.getRoles.useQuery();
+  const permissionsQuery = (trpc as any).admin.getPermissions.useQuery({ roleId: selectedRole }, { enabled: !!selectedRole });
+  const statsQuery = (trpc as any).admin.getRoleStats.useQuery();
 
-  const updateMutation = trpc.admin.updateRolePermissions.useMutation({
+  const updateMutation = (trpc as any).admin.updateRolePermissions.useMutation({
     onSuccess: () => { toast.success("Permissions updated"); permissionsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -82,10 +82,10 @@ export default function RolePermissions() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />Roles</CardTitle></CardHeader>
           <CardContent className="p-0">
             {rolesQuery.isLoading ? (
-              <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="p-4 space-y-2">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {rolesQuery.data?.map((role: any) => (
+                {(rolesQuery.data as any)?.map((role: any) => (
                   <div key={role.id} className={`p-4 cursor-pointer hover:bg-slate-700/30 transition-colors ${selectedRole === role.id ? "bg-cyan-500/10 border-l-2 border-cyan-500" : ""}`} onClick={() => setSelectedRole(role.id)}>
                     <div className="flex items-center justify-between">
                       <div>
@@ -116,10 +116,10 @@ export default function RolePermissions() {
             {!selectedRole ? (
               <div className="text-center py-16"><Shield className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">Select a role to view permissions</p></div>
             ) : permissionsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <div className="space-y-4">
-                {permissionsQuery.data?.categories?.map((category: any) => (
+                {(permissionsQuery.data as any)?.categories?.map((category: any) => (
                   <div key={category.name} className="p-4 rounded-xl bg-slate-700/30">
                     <p className="text-white font-medium mb-3">{category.name}</p>
                     <div className="grid grid-cols-2 gap-3">

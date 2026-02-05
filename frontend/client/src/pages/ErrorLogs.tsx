@@ -23,8 +23,8 @@ export default function ErrorLogs() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const logsQuery = trpc.admin.getErrorLogs.useQuery({ severity: severityFilter === "all" ? undefined : severityFilter, limit: 100 });
-  const summaryQuery = trpc.admin.getErrorSummary.useQuery();
+  const logsQuery = (trpc as any).admin.getErrorLogs.useQuery({ severity: severityFilter === "all" ? undefined : severityFilter, limit: 100 });
+  const summaryQuery = (trpc as any).admin.getErrorSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -37,7 +37,7 @@ export default function ErrorLogs() {
     }
   };
 
-  const filteredLogs = logsQuery.data?.filter((log: any) =>
+  const filteredLogs = (logsQuery.data as any)?.filter((log: any) =>
     !searchTerm || log.message?.toLowerCase().includes(searchTerm.toLowerCase()) || log.source?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -132,7 +132,7 @@ export default function ErrorLogs() {
       <div className="flex flex-wrap gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search errors..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search errors..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -151,7 +151,7 @@ export default function ErrorLogs() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {logsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredLogs?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

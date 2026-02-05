@@ -22,18 +22,18 @@ export default function ZeunFleetDashboard() {
   });
   const [statusFilter, setStatusFilter] = useState<"OPEN" | "RESOLVED" | "ALL">("ALL");
 
-  const { data: breakdowns, isLoading: breakdownsLoading, refetch } = trpc.zeunMechanics.getFleetBreakdowns.useQuery({
+  const { data: breakdowns, isLoading: breakdownsLoading, refetch } = (trpc as any).zeunMechanics.getFleetBreakdowns.useQuery({
     status: statusFilter,
     limit: 50,
   });
 
-  const { data: costAnalytics, isLoading: costLoading } = trpc.zeunMechanics.getFleetCostAnalytics.useQuery({
+  const { data: costAnalytics, isLoading: costLoading } = (trpc as any).zeunMechanics.getFleetCostAnalytics.useQuery({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
   });
 
-  const openBreakdowns = breakdowns?.filter((b) => !["RESOLVED", "CANCELLED"].includes(b.status)) || [];
-  const resolvedBreakdowns = breakdowns?.filter((b) => b.status === "RESOLVED") || [];
+  const openBreakdowns = breakdowns?.filter((b: any) => !["RESOLVED", "CANCELLED"].includes(b.status)) || [];
+  const resolvedBreakdowns = breakdowns?.filter((b: any) => b.status === "RESOLVED") || [];
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -153,7 +153,7 @@ export default function ZeunFleetDashboard() {
               <Input
                 type="date"
                 value={dateRange.startDate}
-                onChange={(e) => setDateRange({ ...dateRange, startDate: e.target.value })}
+                onChange={(e: any) => setDateRange({ ...dateRange, startDate: e.target.value })}
               />
             </div>
             <div>
@@ -161,13 +161,13 @@ export default function ZeunFleetDashboard() {
               <Input
                 type="date"
                 value={dateRange.endDate}
-                onChange={(e) => setDateRange({ ...dateRange, endDate: e.target.value })}
+                onChange={(e: any) => setDateRange({ ...dateRange, endDate: e.target.value })}
               />
             </div>
             <div>
               <label className="text-sm font-medium mb-1 block">Status</label>
               <div className="flex gap-2">
-                {(["ALL", "OPEN", "RESOLVED"] as const).map((status) => (
+                {(["ALL", "OPEN", "RESOLVED"] as const).map((status: any) => (
                   <Button
                     key={status}
                     variant={statusFilter === status ? "default" : "outline"}
@@ -236,7 +236,7 @@ export default function ZeunFleetDashboard() {
             </div>
           ) : openBreakdowns.length > 0 ? (
             <div className="space-y-3">
-              {openBreakdowns.map((breakdown) => (
+              {openBreakdowns.map((breakdown: any) => (
                 <div key={breakdown.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
@@ -290,7 +290,7 @@ export default function ZeunFleetDashboard() {
             </div>
           ) : resolvedBreakdowns.length > 0 ? (
             <div className="space-y-2">
-              {resolvedBreakdowns.slice(0, 5).map((breakdown) => (
+              {resolvedBreakdowns.slice(0, 5).map((breakdown: any) => (
                 <div key={breakdown.id} className="flex justify-between items-center p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">{breakdown.issueCategory.replace(/_/g, " ")}</p>

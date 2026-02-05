@@ -17,8 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Specializations() {
-  const specializationsQuery = trpc.catalysts.getSpecializations.useQuery();
-  const statsQuery = trpc.catalysts.getSpecializationStats.useQuery();
+  const specializationsQuery = (trpc as any).catalysts.getSpecializations.useQuery();
+  const statsQuery = (trpc as any).catalysts.getSpecializationStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -83,7 +83,7 @@ export default function Specializations() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Zap className="w-5 h-5 text-cyan-400" />Your Specializations</CardTitle></CardHeader>
         <CardContent>
           {specializationsQuery.isLoading ? (
-            <div className="grid md:grid-cols-2 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+            <div className="grid md:grid-cols-2 gap-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : !specializationsQuery.data || (Array.isArray(specializationsQuery.data) && specializationsQuery.data.length === 0) ? (
             <div className="text-center py-16"><Zap className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No specializations added yet</p></div>
           ) : (

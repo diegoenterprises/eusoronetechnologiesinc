@@ -61,20 +61,20 @@ export default function RunTickets() {
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDescription, setExpenseDescription] = useState("");
 
-  const ticketsQuery = trpc.runTickets.list.useQuery({ status: activeTab === "all" ? undefined : activeTab });
-  const statsQuery = trpc.runTickets.getStats.useQuery();
+  const ticketsQuery = (trpc as any).runTickets.list.useQuery({ status: activeTab === "all" ? undefined : activeTab });
+  const statsQuery = (trpc as any).runTickets.getStats.useQuery();
   
-  const createMutation = trpc.runTickets.create.useMutation({
+  const createMutation = (trpc as any).runTickets.create.useMutation({
     onSuccess: () => {
       toast.success("Run ticket created");
       setCreateOpen(false);
       setLoadNumber("");
       ticketsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed to create", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to create", { description: error.message }),
   });
 
-  const addExpenseMutation = trpc.runTickets.addExpense.useMutation({
+  const addExpenseMutation = (trpc as any).runTickets.addExpense.useMutation({
     onSuccess: () => {
       toast.success("Expense added");
       setExpenseOpen(false);
@@ -83,10 +83,10 @@ export default function RunTickets() {
       setExpenseDescription("");
       ticketsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed to add expense", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to add expense", { description: error.message }),
   });
 
-  const completeMutation = trpc.runTickets.complete.useMutation({
+  const completeMutation = (trpc as any).runTickets.complete.useMutation({
     onSuccess: () => {
       toast.success("Run ticket completed");
       ticketsQuery.refetch();
@@ -145,7 +145,7 @@ export default function RunTickets() {
                 <Input
                   placeholder="Enter load number"
                   value={loadNumber}
-                  onChange={(e) => setLoadNumber(e.target.value)}
+                  onChange={(e: any) => setLoadNumber(e.target.value)}
                   className="bg-slate-700 border-slate-600"
                 />
               </div>
@@ -363,7 +363,7 @@ export default function RunTickets() {
                 step="0.01"
                 placeholder="0.00"
                 value={expenseAmount}
-                onChange={(e) => setExpenseAmount(e.target.value)}
+                onChange={(e: any) => setExpenseAmount(e.target.value)}
                 className="bg-slate-700 border-slate-600"
               />
             </div>
@@ -372,7 +372,7 @@ export default function RunTickets() {
               <Textarea
                 placeholder="Enter description"
                 value={expenseDescription}
-                onChange={(e) => setExpenseDescription(e.target.value)}
+                onChange={(e: any) => setExpenseDescription(e.target.value)}
                 className="bg-slate-700 border-slate-600"
               />
             </div>

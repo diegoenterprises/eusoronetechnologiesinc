@@ -22,13 +22,13 @@ import { toast } from "sonner";
 export default function DriverTraining() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const coursesQuery = trpc.training.getCourses.useQuery();
-  const progressQuery = trpc.training.getProgress.useQuery();
-  const certificationsQuery = trpc.training.getCertifications.useQuery({ limit: 5 });
+  const coursesQuery = (trpc as any).training.getCourses.useQuery();
+  const progressQuery = (trpc as any).training.getProgress.useQuery();
+  const certificationsQuery = (trpc as any).training.getCertifications.useQuery({ limit: 5 });
 
-  const startCourseMutation = trpc.training.startCourse.useMutation({
+  const startCourseMutation = (trpc as any).training.startCourse.useMutation({
     onSuccess: () => { toast.success("Course started"); coursesQuery.refetch(); },
-    onError: (error) => toast.error("Failed to start course", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to start course", { description: error.message }),
   });
 
   const progress = progressQuery.data;
@@ -43,7 +43,7 @@ export default function DriverTraining() {
     }
   };
 
-  const filteredCourses = coursesQuery.data?.filter((course: any) =>
+  const filteredCourses = (coursesQuery.data as any)?.filter((course: any) =>
     !searchTerm || course.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -141,7 +141,7 @@ export default function DriverTraining() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search courses..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search courses..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -155,7 +155,7 @@ export default function DriverTraining() {
           </CardHeader>
           <CardContent className="p-0">
             {coursesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
             ) : filteredCourses?.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-slate-400">No courses found</p>
@@ -209,12 +209,12 @@ export default function DriverTraining() {
           </CardHeader>
           <CardContent className="p-0">
             {certificationsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : certificationsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (certificationsQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No certifications yet</p>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {certificationsQuery.data?.map((cert: any) => (
+                {(certificationsQuery.data as any)?.map((cert: any) => (
                   <div key={cert.id} className="p-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-purple-500/20">

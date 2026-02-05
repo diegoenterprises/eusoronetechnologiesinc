@@ -25,12 +25,12 @@ export default function WalletTransactions() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [dateRange, setDateRange] = useState('30');
 
-  const { data: transactions, isLoading } = trpc.wallet.getTransactions.useQuery({
+  const { data: transactions, isLoading } = (trpc as any).wallet.getTransactions.useQuery({
     type: typeFilter !== 'all' ? typeFilter as any : undefined,
     limit: 100,
   });
 
-  const exportData = trpc.wallet.getTransactions.useQuery({});
+  const exportData = (trpc as any).wallet.getTransactions.useQuery({});
 
   if (isLoading) {
     return (
@@ -38,7 +38,7 @@ export default function WalletTransactions() {
         <Skeleton className="h-8 w-64" />
         <Skeleton className="h-16" />
         <div className="space-y-2">
-          {[...Array(10)].map((_, i) => (
+          {[...Array(10)].map((_: any, i: number) => (
             <Skeleton key={i} className="h-16" />
           ))}
         </div>
@@ -103,7 +103,7 @@ export default function WalletTransactions() {
                   placeholder="Search transactions..."
                   className="pl-9"
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                 />
               </div>
             </div>

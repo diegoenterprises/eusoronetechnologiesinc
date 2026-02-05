@@ -40,25 +40,25 @@ export default function AdminUserManagement() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
 
-  const usersQuery = trpc.admin.getUsers.useQuery({
+  const usersQuery = (trpc as any).admin.getUsers.useQuery({
     search,
     role: roleFilter !== "all" ? roleFilter : undefined,
   });
 
-  const statsQuery = trpc.admin.getUserStats.useQuery();
+  const statsQuery = (trpc as any).admin.getUserStats.useQuery();
 
-  const toggleStatusMutation = trpc.admin.toggleUserStatus.useMutation({
+  const toggleStatusMutation = (trpc as any).admin.toggleUserStatus.useMutation({
     onSuccess: () => {
       toast.success("User status updated");
       usersQuery.refetch();
     },
   });
 
-  const resetPasswordMutation = trpc.admin.resetPassword.useMutation({
+  const resetPasswordMutation = (trpc as any).admin.resetPassword.useMutation({
     onSuccess: () => toast.success("Password reset email sent"),
   });
 
-  const deleteUserMutation = trpc.admin.deleteUser.useMutation({
+  const deleteUserMutation = (trpc as any).admin.deleteUser.useMutation({
     onSuccess: () => {
       toast.success("User deleted");
       usersQuery.refetch();
@@ -89,7 +89,7 @@ export default function AdminUserManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -156,7 +156,7 @@ export default function AdminUserManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search by name or email..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -195,7 +195,7 @@ export default function AdminUserManagement() {
         <CardContent className="p-0">
           {usersQuery.isLoading ? (
             <div className="p-4 space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}
             </div>
           ) : users.length === 0 ? (
             <div className="text-center py-16">

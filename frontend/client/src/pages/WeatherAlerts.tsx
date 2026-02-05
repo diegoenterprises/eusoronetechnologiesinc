@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function WeatherAlerts() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const alertsQuery = trpc.weather.getAlerts.useQuery();
-  const forecastQuery = trpc.weather.getForecast.useQuery({ days: 5 });
-  const impactedLoadsQuery = trpc.weather.getImpactedLoads.useQuery();
+  const alertsQuery = (trpc as any).weather.getAlerts.useQuery();
+  const forecastQuery = (trpc as any).weather.getForecast.useQuery({ days: 5 });
+  const impactedLoadsQuery = (trpc as any).weather.getImpactedLoads.useQuery();
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
@@ -34,7 +34,7 @@ export default function WeatherAlerts() {
     }
   };
 
-  const filteredAlerts = alertsQuery.data?.filter((alert: any) =>
+  const filteredAlerts = (alertsQuery.data as any)?.filter((alert: any) =>
     !searchTerm || alert.area?.toLowerCase().includes(searchTerm.toLowerCase()) || alert.event?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -63,7 +63,7 @@ export default function WeatherAlerts() {
               </div>
               <div>
                 {alertsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{alertsQuery.data?.filter((a: any) => a.severity === "extreme" || a.severity === "severe").length || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(alertsQuery.data as any)?.filter((a: any) => a.severity === "extreme" || a.severity === "severe").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Severe Alerts</p>
               </div>
@@ -79,7 +79,7 @@ export default function WeatherAlerts() {
               </div>
               <div>
                 {alertsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{alertsQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(alertsQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Active Alerts</p>
               </div>
@@ -95,7 +95,7 @@ export default function WeatherAlerts() {
               </div>
               <div>
                 {impactedLoadsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{impactedLoadsQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(impactedLoadsQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Impacted Loads</p>
               </div>
@@ -111,7 +111,7 @@ export default function WeatherAlerts() {
               </div>
               <div>
                 {forecastQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-cyan-400">{forecastQuery.data?.avgWindSpeed || 0} mph</p>
+                  <p className="text-2xl font-bold text-cyan-400">{(forecastQuery.data as any)?.avgWindSpeed || 0} mph</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Wind Speed</p>
               </div>
@@ -123,7 +123,7 @@ export default function WeatherAlerts() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search by area or event..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search by area or event..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -137,7 +137,7 @@ export default function WeatherAlerts() {
           </CardHeader>
           <CardContent className="p-0">
             {alertsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
             ) : filteredAlerts?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
@@ -177,14 +177,14 @@ export default function WeatherAlerts() {
           </CardHeader>
           <CardContent className="p-0">
             {impactedLoadsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : impactedLoadsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (impactedLoadsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-slate-400">No impacted loads</p>
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50 max-h-96 overflow-y-auto">
-                {impactedLoadsQuery.data?.map((load: any) => (
+                {(impactedLoadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                     <div className="flex items-center justify-between">
                       <div>
@@ -208,10 +208,10 @@ export default function WeatherAlerts() {
         </CardHeader>
         <CardContent>
           {forecastQuery.isLoading ? (
-            <div className="grid grid-cols-5 gap-4">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+            <div className="grid grid-cols-5 gap-4">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {forecastQuery.data?.days?.map((day: any) => (
+              {(forecastQuery.data as any)?.days?.map((day: any) => (
                 <div key={day.date} className="p-4 rounded-xl bg-slate-700/30 text-center">
                   <p className="text-slate-400 text-sm mb-2">{day.dayName}</p>
                   <CloudRain className="w-8 h-8 text-cyan-400 mx-auto mb-2" />

@@ -24,20 +24,20 @@ export default function SettlementDetails() {
   const params = useParams<{ settlementId: string }>();
   const [activeTab, setActiveTab] = useState("details");
 
-  const settlementQuery = trpc.earnings.getSettlementById.useQuery(
+  const settlementQuery = (trpc as any).earnings.getSettlementById.useQuery(
     { id: params.settlementId || "" },
     { enabled: !!params.settlementId }
   );
-  const historyQuery = trpc.earnings.getSettlementHistory.useQuery({ driverId: settlementQuery.data?.driverId || "" }, { enabled: !!settlementQuery.data?.driverId });
+  const historyQuery = (trpc as any).earnings.getSettlementHistory.useQuery({ driverId: (settlementQuery.data as any)?.driverId || "" }, { enabled: !!(settlementQuery.data as any)?.driverId });
 
-  const approveMutation = trpc.earnings.approveSettlement.useMutation({
+  const approveMutation = (trpc as any).earnings.approveSettlement.useMutation({
     onSuccess: () => { toast.success("Settlement approved"); settlementQuery.refetch(); },
-    onError: (error) => toast.error("Failed to approve", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to approve", { description: error.message }),
   });
 
-  const processPaymentMutation = trpc.earnings.processPayment.useMutation({
+  const processPaymentMutation = (trpc as any).earnings.processPayment.useMutation({
     onSuccess: () => { toast.success("Payment initiated"); settlementQuery.refetch(); },
-    onError: (error) => toast.error("Failed to process payment", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to process payment", { description: error.message }),
   });
 
   if (settlementQuery.error) {
@@ -196,7 +196,7 @@ export default function SettlementDetails() {
               </CardHeader>
               <CardContent>
                 {settlementQuery.isLoading ? (
-                  <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+                  <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full" />)}</div>
                 ) : (
                   <div className="space-y-3">
                     {settlement?.revenueItems?.map((item: any) => (
@@ -226,7 +226,7 @@ export default function SettlementDetails() {
               </CardHeader>
               <CardContent>
                 {settlementQuery.isLoading ? (
-                  <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+                  <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full" />)}</div>
                 ) : (
                   <div className="space-y-3">
                     {settlement?.deductionItems?.map((item: any) => (
@@ -269,7 +269,7 @@ export default function SettlementDetails() {
             <CardHeader><CardTitle className="text-white">Loads in This Period</CardTitle></CardHeader>
             <CardContent>
               {settlementQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
               ) : settlement?.loads?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No loads in this period</p>
               ) : (
@@ -303,12 +303,12 @@ export default function SettlementDetails() {
             <CardHeader><CardTitle className="text-white">Previous Settlements</CardTitle></CardHeader>
             <CardContent>
               {historyQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : historyQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : (historyQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No previous settlements</p>
               ) : (
                 <div className="space-y-3">
-                  {historyQuery.data?.map((stl: any) => (
+                  {(historyQuery.data as any)?.map((stl: any) => (
                     <div key={stl.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors cursor-pointer">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-lg bg-green-500/20">

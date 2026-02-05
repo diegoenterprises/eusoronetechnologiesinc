@@ -18,10 +18,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function SafetyManagerDashboard() {
-  const statsQuery = trpc.safety.getDashboardStats.useQuery();
-  const csaQuery = trpc.safety.getCSAOverview.useQuery();
-  const incidentsQuery = trpc.safety.getRecentIncidents.useQuery({ limit: 5 });
-  const driversQuery = trpc.safety.getTopDrivers.useQuery({ limit: 5 });
+  const statsQuery = (trpc as any).safety.getDashboardStats.useQuery();
+  const csaQuery = (trpc as any).safety.getCSAOverview.useQuery();
+  const incidentsQuery = (trpc as any).safety.getRecentIncidents.useQuery({ limit: 5 });
+  const driversQuery = (trpc as any).safety.getTopDrivers.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -111,9 +111,9 @@ export default function SafetyManagerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Shield className="w-5 h-5 text-cyan-400" />CSA BASIC Scores</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {csaQuery.isLoading ? (
-              [1, 2, 3, 4, 5, 6, 7].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)
+              [1, 2, 3, 4, 5, 6, 7].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)
             ) : (
-              csaQuery.data?.basics?.map((basic: any) => (
+              (csaQuery.data as any)?.basics?.map((basic: any) => (
                 <div key={basic.name} className="p-2 rounded-lg bg-slate-700/30">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-white text-sm">{basic.name}</span>
@@ -134,10 +134,10 @@ export default function SafetyManagerDashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" />Top Performers</CardTitle></CardHeader>
             <CardContent className="p-0">
               {driversQuery.isLoading ? (
-                <div className="p-4 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+                <div className="p-4 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {driversQuery.data?.map((driver: any, i: number) => (
+                  {(driversQuery.data as any)?.map((driver: any, i: number) => (
                     <div key={driver.id} className="p-2 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <div className={cn("w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs", i === 0 ? "bg-yellow-500 text-white" : i === 1 ? "bg-slate-400 text-white" : i === 2 ? "bg-orange-600 text-white" : "bg-slate-600 text-white")}>{i + 1}</div>
@@ -158,12 +158,12 @@ export default function SafetyManagerDashboard() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Recent Incidents</CardTitle></CardHeader>
             <CardContent className="p-0">
               {incidentsQuery.isLoading ? (
-                <div className="p-4 space-y-2">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
-              ) : incidentsQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-10 w-full rounded-lg" />)}</div>
+              ) : (incidentsQuery.data as any)?.length === 0 ? (
                 <div className="p-3 text-center text-green-400 text-sm flex items-center justify-center gap-1"><CheckCircle className="w-4 h-4" />No incidents</div>
               ) : (
                 <div className="divide-y divide-red-500/20">
-                  {incidentsQuery.data?.map((incident: any) => (
+                  {(incidentsQuery.data as any)?.map((incident: any) => (
                     <div key={incident.id} className="p-2 flex items-center justify-between">
                       <div>
                         <p className="text-white text-sm">{incident.type}</p>

@@ -36,9 +36,9 @@ export default function DriverPODCapture() {
   const [showSignature, setShowSignature] = useState(false);
   const [photos, setPhotos] = useState<string[]>([]);
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
 
-  const submitPODMutation = trpc.documents.upload.useMutation({
+  const submitPODMutation = (trpc as any).documents.upload.useMutation({
     onSuccess: () => {
       toast.success("Proof of Delivery submitted successfully");
       navigate("/driver/dashboard");
@@ -153,7 +153,7 @@ export default function DriverPODCapture() {
                     <Input
                       type="number"
                       value={deliveredQty}
-                      onChange={(e) => setDeliveredQty(e.target.value)}
+                      onChange={(e: any) => setDeliveredQty(e.target.value)}
                       placeholder="Enter delivered amount"
                       className="bg-slate-700/50 border-slate-600/50 rounded-lg"
                     />
@@ -217,7 +217,7 @@ export default function DriverPODCapture() {
                 <Label className="text-slate-300">Notes</Label>
                 <Textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onChange={(e: any) => setNotes(e.target.value)}
                   placeholder="Add any delivery notes or exception details..."
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg min-h-[100px]"
                 />
@@ -273,7 +273,7 @@ export default function DriverPODCapture() {
                 <Label className="text-slate-300">Receiver Name</Label>
                 <Input
                   value={consigneeName}
-                  onChange={(e) => setConsigneeName(e.target.value)}
+                  onChange={(e: any) => setConsigneeName(e.target.value)}
                   placeholder="Enter name of person receiving delivery"
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg"
                 />

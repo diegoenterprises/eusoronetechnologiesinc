@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function PayrollManagement() {
   const [period, setPeriod] = useState("current");
 
-  const payrollQuery = trpc.payroll.getPayroll.useQuery({ period });
-  const statsQuery = trpc.payroll.getStats.useQuery({ period });
+  const payrollQuery = (trpc as any).payroll.getPayroll.useQuery({ period });
+  const statsQuery = (trpc as any).payroll.getStats.useQuery({ period });
 
-  const processMutation = trpc.payroll.processPayroll.useMutation({
+  const processMutation = (trpc as any).payroll.processPayroll.useMutation({
     onSuccess: () => { toast.success("Payroll processed"); payrollQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -103,12 +103,12 @@ export default function PayrollManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-cyan-400" />Payroll Records</CardTitle></CardHeader>
         <CardContent className="p-0">
           {payrollQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : payrollQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (payrollQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><DollarSign className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No payroll records</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {payrollQuery.data?.map((record: any) => (
+              {(payrollQuery.data as any)?.map((record: any) => (
                 <div key={record.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{record.name?.charAt(0)}</div>

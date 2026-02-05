@@ -17,11 +17,11 @@ import {
 import { toast } from "sonner";
 
 export default function NotificationSettings() {
-  const settingsQuery = trpc.notifications.getSettings.useQuery();
+  const settingsQuery = (trpc as any).notifications.getSettings.useQuery();
 
-  const updateMutation = trpc.notifications.updateSetting.useMutation({
+  const updateMutation = (trpc as any).notifications.updateSetting.useMutation({
     onSuccess: () => { toast.success("Setting updated"); settingsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
   const settings = settingsQuery.data;
@@ -90,7 +90,7 @@ export default function NotificationSettings() {
         </CardHeader>
         <CardContent className="space-y-3">
           {settingsQuery.isLoading ? (
-            [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+            [1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
           ) : (
             <>
               <NotificationRow icon={Truck} iconColor="text-blue-400" title="New Load Matches" description="When new loads match your criteria" emailKey="loadMatchEmail" pushKey="loadMatchPush" />
@@ -111,7 +111,7 @@ export default function NotificationSettings() {
         </CardHeader>
         <CardContent className="space-y-3">
           {settingsQuery.isLoading ? (
-            [1, 2].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+            [1, 2].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
           ) : (
             <>
               <NotificationRow icon={DollarSign} iconColor="text-emerald-400" title="Payment Received" description="When payments are processed" emailKey="paymentEmail" pushKey="paymentPush" />
@@ -131,7 +131,7 @@ export default function NotificationSettings() {
         </CardHeader>
         <CardContent className="space-y-3">
           {settingsQuery.isLoading ? (
-            [1, 2].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+            [1, 2].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
           ) : (
             <>
               <NotificationRow icon={AlertTriangle} iconColor="text-red-400" title="Security Alerts" description="Important security notifications" emailKey="securityEmail" pushKey="securityPush" smsKey="securitySms" />

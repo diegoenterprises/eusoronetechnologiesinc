@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function SettlementStatements() {
   const [period, setPeriod] = useState("current");
 
-  const settlementsQuery = trpc.payroll.getSettlements.useQuery({ period });
-  const statsQuery = trpc.payroll.getSettlementStats.useQuery({ period });
+  const settlementsQuery = (trpc as any).payroll.getSettlements.useQuery({ period });
+  const statsQuery = (trpc as any).payroll.getSettlementStats.useQuery({ period });
 
   const stats = statsQuery.data;
 
@@ -91,12 +91,12 @@ export default function SettlementStatements() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-cyan-400" />Settlements</CardTitle></CardHeader>
         <CardContent className="p-0">
           {settlementsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : settlementsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (settlementsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No settlements found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {settlementsQuery.data?.map((settlement: any) => (
+              {(settlementsQuery.data as any)?.map((settlement: any) => (
                 <div key={settlement.id} className={cn("p-4 flex items-center justify-between", settlement.status === "disputed" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{settlement.driverName?.charAt(0)}</div>

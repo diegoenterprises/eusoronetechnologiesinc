@@ -22,10 +22,10 @@ export default function TankInventory() {
   const [selectedTerminal, setSelectedTerminal] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState("all");
 
-  const tanksQuery = trpc.terminals.getTankInventory.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal, product: selectedProduct === "all" ? undefined : selectedProduct }, { refetchInterval: 60000 });
-  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
-  const productsQuery = trpc.terminals.getProducts.useQuery();
-  const statsQuery = trpc.terminals.getInventoryStats.useQuery();
+  const tanksQuery = (trpc as any).terminals.getTankInventory.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal, product: selectedProduct === "all" ? undefined : selectedProduct }, { refetchInterval: 60000 });
+  const terminalsQuery = (trpc as any).terminals.getTerminals.useQuery();
+  const productsQuery = (trpc as any).terminals.getProducts.useQuery();
+  const statsQuery = (trpc as any).terminals.getInventoryStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -58,7 +58,7 @@ export default function TankInventory() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Terminals</SelectItem>
-              {terminalsQuery.data?.map((terminal: any) => (
+              {(terminalsQuery.data as any)?.map((terminal: any) => (
                 <SelectItem key={terminal.id} value={terminal.id}>{terminal.name}</SelectItem>
               ))}
             </SelectContent>
@@ -69,7 +69,7 @@ export default function TankInventory() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Products</SelectItem>
-              {productsQuery.data?.map((product: any) => (
+              {(productsQuery.data as any)?.map((product: any) => (
                 <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
               ))}
             </SelectContent>
@@ -157,15 +157,15 @@ export default function TankInventory() {
         </CardHeader>
         <CardContent>
           {tanksQuery.isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
-          ) : tanksQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
+          ) : (tanksQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Database className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No tanks found</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {tanksQuery.data?.map((tank: any) => (
+              {(tanksQuery.data as any)?.map((tank: any) => (
                 <div key={tank.id} className={cn("p-4 rounded-xl border", tank.fillPercentage < 20 ? "bg-red-500/5 border-red-500/30" : tank.fillPercentage < 40 ? "bg-yellow-500/5 border-yellow-500/30" : "bg-slate-700/30 border-slate-600/50")}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-white font-bold">{tank.name}</p>

@@ -20,15 +20,15 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function AdminSystemSettings() {
-  const settingsQuery = trpc.admin.getSystemSettings.useQuery();
+  const settingsQuery = (trpc as any).admin.getSystemSettings.useQuery();
   const [settings, setSettings] = useState<any>(null);
 
-  const saveMutation = trpc.admin.updateSystemSettings.useMutation({
+  const saveMutation = (trpc as any).admin.updateSystemSettings.useMutation({
     onSuccess: () => {
       toast.success("Settings saved");
       settingsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   React.useEffect(() => {
@@ -46,7 +46,7 @@ export default function AdminSystemSettings() {
     return (
       <div className="p-4 md:p-6 space-y-6">
         <Skeleton className="h-12 w-64" />
-        {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+        {Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
       </div>
     );
   }
@@ -84,7 +84,7 @@ export default function AdminSystemSettings() {
               <label className="text-slate-300 text-sm">Platform Name</label>
               <Input
                 value={settings.general?.platformName || ""}
-                onChange={(e) => updateSetting("general", "platformName", e.target.value)}
+                onChange={(e: any) => updateSetting("general", "platformName", e.target.value)}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -92,7 +92,7 @@ export default function AdminSystemSettings() {
               <label className="text-slate-300 text-sm">Support Email</label>
               <Input
                 value={settings.general?.supportEmail || ""}
-                onChange={(e) => updateSetting("general", "supportEmail", e.target.value)}
+                onChange={(e: any) => updateSetting("general", "supportEmail", e.target.value)}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -100,7 +100,7 @@ export default function AdminSystemSettings() {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-slate-300 text-sm">Default Timezone</label>
-              <Select value={settings.general?.timezone} onValueChange={(v) => updateSetting("general", "timezone", v)}>
+              <Select value={settings.general?.timezone} onValueChange={(v: any) => updateSetting("general", "timezone", v)}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
@@ -114,7 +114,7 @@ export default function AdminSystemSettings() {
             </div>
             <div className="space-y-2">
               <label className="text-slate-300 text-sm">Date Format</label>
-              <Select value={settings.general?.dateFormat} onValueChange={(v) => updateSetting("general", "dateFormat", v)}>
+              <Select value={settings.general?.dateFormat} onValueChange={(v: any) => updateSetting("general", "dateFormat", v)}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg">
                   <SelectValue />
                 </SelectTrigger>
@@ -133,7 +133,7 @@ export default function AdminSystemSettings() {
             </div>
             <Switch
               checked={settings.general?.maintenanceMode}
-              onCheckedChange={(v) => updateSetting("general", "maintenanceMode", v)}
+              onCheckedChange={(v: any) => updateSetting("general", "maintenanceMode", v)}
             />
           </div>
         </CardContent>
@@ -153,7 +153,7 @@ export default function AdminSystemSettings() {
             { key: "smsNotifications", label: "SMS Notifications", desc: "Send SMS alerts" },
             { key: "pushNotifications", label: "Push Notifications", desc: "Browser push alerts" },
             { key: "slackIntegration", label: "Slack Integration", desc: "Post to Slack channels" },
-          ].map((item) => (
+          ].map((item: any) => (
             <div key={item.key} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
               <div>
                 <p className="text-white font-medium">{item.label}</p>
@@ -161,7 +161,7 @@ export default function AdminSystemSettings() {
               </div>
               <Switch
                 checked={settings.notifications?.[item.key]}
-                onCheckedChange={(v) => updateSetting("notifications", item.key, v)}
+                onCheckedChange={(v: any) => updateSetting("notifications", item.key, v)}
               />
             </div>
           ))}
@@ -183,7 +183,7 @@ export default function AdminSystemSettings() {
               <Input
                 type="number"
                 value={settings.security?.sessionTimeout || 30}
-                onChange={(e) => updateSetting("security", "sessionTimeout", parseInt(e.target.value))}
+                onChange={(e: any) => updateSetting("security", "sessionTimeout", parseInt(e.target.value))}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -192,7 +192,7 @@ export default function AdminSystemSettings() {
               <Input
                 type="number"
                 value={settings.security?.maxLoginAttempts || 5}
-                onChange={(e) => updateSetting("security", "maxLoginAttempts", parseInt(e.target.value))}
+                onChange={(e: any) => updateSetting("security", "maxLoginAttempts", parseInt(e.target.value))}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -204,7 +204,7 @@ export default function AdminSystemSettings() {
             </div>
             <Switch
               checked={settings.security?.require2FA}
-              onCheckedChange={(v) => updateSetting("security", "require2FA", v)}
+              onCheckedChange={(v: any) => updateSetting("security", "require2FA", v)}
             />
           </div>
           <div className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
@@ -214,7 +214,7 @@ export default function AdminSystemSettings() {
             </div>
             <Switch
               checked={settings.security?.ipWhitelist}
-              onCheckedChange={(v) => updateSetting("security", "ipWhitelist", v)}
+              onCheckedChange={(v: any) => updateSetting("security", "ipWhitelist", v)}
             />
           </div>
         </CardContent>
@@ -235,7 +235,7 @@ export default function AdminSystemSettings() {
               <Input
                 type="number"
                 value={settings.operations?.gpsInterval || 30}
-                onChange={(e) => updateSetting("operations", "gpsInterval", parseInt(e.target.value))}
+                onChange={(e: any) => updateSetting("operations", "gpsInterval", parseInt(e.target.value))}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -245,7 +245,7 @@ export default function AdminSystemSettings() {
                 type="number"
                 step="0.01"
                 value={settings.operations?.defaultRatePerMile || 3.50}
-                onChange={(e) => updateSetting("operations", "defaultRatePerMile", parseFloat(e.target.value))}
+                onChange={(e: any) => updateSetting("operations", "defaultRatePerMile", parseFloat(e.target.value))}
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
             </div>
@@ -257,7 +257,7 @@ export default function AdminSystemSettings() {
             </div>
             <Switch
               checked={settings.operations?.autoAssign}
-              onCheckedChange={(v) => updateSetting("operations", "autoAssign", v)}
+              onCheckedChange={(v: any) => updateSetting("operations", "autoAssign", v)}
             />
           </div>
         </CardContent>

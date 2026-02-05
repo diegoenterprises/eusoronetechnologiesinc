@@ -131,15 +131,15 @@ export default function RegisterEscort() {
   const [formData, setFormData] = useState<EscortFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<EscortFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerEscort.useMutation({
+  const registerMutation = (trpc as any).registration.registerEscort.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", { description: "Your certifications are being verified." });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", { description: error.message });
     },
   });
@@ -174,7 +174,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">First Name <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.firstName}
-                onChange={(e) => updateFormData({ firstName: e.target.value })}
+                onChange={(e: any) => updateFormData({ firstName: e.target.value })}
                 placeholder="John"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -183,7 +183,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Last Name <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.lastName}
-                onChange={(e) => updateFormData({ lastName: e.target.value })}
+                onChange={(e: any) => updateFormData({ lastName: e.target.value })}
                 placeholder="Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -196,7 +196,7 @@ export default function RegisterEscort() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => updateFormData({ email: e.target.value })}
+                onChange={(e: any) => updateFormData({ email: e.target.value })}
                 placeholder="john@email.com"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -206,7 +206,7 @@ export default function RegisterEscort() {
               <Input
                 type="tel"
                 value={formData.phone}
-                onChange={(e) => updateFormData({ phone: e.target.value })}
+                onChange={(e: any) => updateFormData({ phone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -218,7 +218,7 @@ export default function RegisterEscort() {
             <Input
               type="date"
               value={formData.dateOfBirth}
-              onChange={(e) => updateFormData({ dateOfBirth: e.target.value })}
+              onChange={(e: any) => updateFormData({ dateOfBirth: e.target.value })}
               className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
@@ -243,7 +243,7 @@ export default function RegisterEscort() {
             <Label className="text-slate-300">Street Address <span className="text-red-400">*</span></Label>
             <Input
               value={formData.streetAddress}
-              onChange={(e) => updateFormData({ streetAddress: e.target.value })}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Main St"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -254,19 +254,19 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">City <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.city}
-                onChange={(e) => updateFormData({ city: e.target.value })}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">State <span className="text-red-400">*</span></Label>
-              <Select value={formData.state} onValueChange={(v) => updateFormData({ state: v })}>
+              <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((st) => (
+                  {US_STATES.map((st: any) => (
                     <SelectItem key={st} value={st}>{st}</SelectItem>
                   ))}
                 </SelectContent>
@@ -276,7 +276,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">ZIP <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.zipCode}
-                onChange={(e) => updateFormData({ zipCode: e.target.value })}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -285,7 +285,7 @@ export default function RegisterEscort() {
 
           <div className="space-y-2">
             <Label className="text-slate-300">Service Radius (miles)</Label>
-            <Select value={formData.serviceRadius} onValueChange={(v) => updateFormData({ serviceRadius: v })}>
+            <Select value={formData.serviceRadius} onValueChange={(v: any) => updateFormData({ serviceRadius: v })}>
               <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -320,19 +320,19 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">License Number <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.licenseNumber}
-                onChange={(e) => updateFormData({ licenseNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ licenseNumber: e.target.value })}
                 placeholder="12345678"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Issuing State <span className="text-red-400">*</span></Label>
-              <Select value={formData.licenseState} onValueChange={(v) => updateFormData({ licenseState: v })}>
+              <Select value={formData.licenseState} onValueChange={(v: any) => updateFormData({ licenseState: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((st) => (
+                  {US_STATES.map((st: any) => (
                     <SelectItem key={st} value={st}>{st}</SelectItem>
                   ))}
                 </SelectContent>
@@ -346,13 +346,13 @@ export default function RegisterEscort() {
               <Input
                 type="date"
                 value={formData.licenseExpiration}
-                onChange={(e) => updateFormData({ licenseExpiration: e.target.value })}
+                onChange={(e: any) => updateFormData({ licenseExpiration: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">License Class</Label>
-              <Select value={formData.licenseClass} onValueChange={(v) => updateFormData({ licenseClass: v })}>
+              <Select value={formData.licenseClass} onValueChange={(v: any) => updateFormData({ licenseClass: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select class" />
                 </SelectTrigger>
@@ -396,7 +396,7 @@ export default function RegisterEscort() {
           <div className="space-y-2">
             <Label className="text-slate-300">Certified States</Label>
             <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {US_STATES.map((state) => (
+              {US_STATES.map((state: any) => (
                 <Badge
                   key={state}
                   variant={formData.certifiedStates.includes(state) ? "default" : "outline"}
@@ -425,7 +425,7 @@ export default function RegisterEscort() {
                 Enter certification details for selected states:
               </p>
               <div className="space-y-3">
-                {formData.certifiedStates.slice(0, 5).map((state) => (
+                {formData.certifiedStates.slice(0, 5).map((state: any) => (
                   <div key={state} className="grid grid-cols-3 gap-2">
                     <div className="flex items-center">
                       <Badge>{state}</Badge>
@@ -433,7 +433,7 @@ export default function RegisterEscort() {
                     <Input
                       placeholder="Cert #"
                       value={formData.certificationNumbers[state] || ""}
-                      onChange={(e) => updateFormData({
+                      onChange={(e: any) => updateFormData({
                         certificationNumbers: { 
                           ...formData.certificationNumbers, 
                           [state]: e.target.value 
@@ -444,7 +444,7 @@ export default function RegisterEscort() {
                     <Input
                       type="date"
                       value={formData.certificationExpirations[state] || ""}
-                      onChange={(e) => updateFormData({
+                      onChange={(e: any) => updateFormData({
                         certificationExpirations: { 
                           ...formData.certificationExpirations, 
                           [state]: e.target.value 
@@ -472,7 +472,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Year <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.vehicleYear}
-                onChange={(e) => updateFormData({ vehicleYear: e.target.value })}
+                onChange={(e: any) => updateFormData({ vehicleYear: e.target.value })}
                 placeholder="2022"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -481,7 +481,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Make <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.vehicleMake}
-                onChange={(e) => updateFormData({ vehicleMake: e.target.value })}
+                onChange={(e: any) => updateFormData({ vehicleMake: e.target.value })}
                 placeholder="Ford"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -490,7 +490,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Model <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.vehicleModel}
-                onChange={(e) => updateFormData({ vehicleModel: e.target.value })}
+                onChange={(e: any) => updateFormData({ vehicleModel: e.target.value })}
                 placeholder="F-150"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -499,7 +499,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Color</Label>
               <Input
                 value={formData.vehicleColor}
-                onChange={(e) => updateFormData({ vehicleColor: e.target.value })}
+                onChange={(e: any) => updateFormData({ vehicleColor: e.target.value })}
                 placeholder="White"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -511,19 +511,19 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">License Plate <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.vehiclePlate}
-                onChange={(e) => updateFormData({ vehiclePlate: e.target.value })}
+                onChange={(e: any) => updateFormData({ vehiclePlate: e.target.value })}
                 placeholder="ABC-1234"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Plate State <span className="text-red-400">*</span></Label>
-              <Select value={formData.vehicleState} onValueChange={(v) => updateFormData({ vehicleState: v })}>
+              <Select value={formData.vehicleState} onValueChange={(v: any) => updateFormData({ vehicleState: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((st) => (
+                  {US_STATES.map((st: any) => (
                     <SelectItem key={st} value={st}>{st}</SelectItem>
                   ))}
                 </SelectContent>
@@ -534,7 +534,7 @@ export default function RegisterEscort() {
           <div className="space-y-2">
             <Label className="text-slate-300">Required Equipment</Label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {REQUIRED_EQUIPMENT.map((equip) => (
+              {REQUIRED_EQUIPMENT.map((equip: any) => (
                 <div key={equip} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
                   <Checkbox
                     id={equip}
@@ -576,7 +576,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Insurance Carrier <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.insuranceCarrier}
-                onChange={(e) => updateFormData({ insuranceCarrier: e.target.value })}
+                onChange={(e: any) => updateFormData({ insuranceCarrier: e.target.value })}
                 placeholder="ABC Insurance"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -585,7 +585,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Policy Number <span className="text-red-400">*</span></Label>
               <Input
                 value={formData.policyNumber}
-                onChange={(e) => updateFormData({ policyNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ policyNumber: e.target.value })}
                 placeholder="POL-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -595,7 +595,7 @@ export default function RegisterEscort() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
-              <Select value={formData.coverageAmount} onValueChange={(v) => updateFormData({ coverageAmount: v })}>
+              <Select value={formData.coverageAmount} onValueChange={(v: any) => updateFormData({ coverageAmount: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select coverage" />
                 </SelectTrigger>
@@ -612,7 +612,7 @@ export default function RegisterEscort() {
               <Input
                 type="date"
                 value={formData.expirationDate}
-                onChange={(e) => updateFormData({ expirationDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -637,7 +637,7 @@ export default function RegisterEscort() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">Years of Experience</Label>
-              <Select value={formData.yearsExperience} onValueChange={(v) => updateFormData({ yearsExperience: v })}>
+              <Select value={formData.yearsExperience} onValueChange={(v: any) => updateFormData({ yearsExperience: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
@@ -654,7 +654,7 @@ export default function RegisterEscort() {
               <Label className="text-slate-300">Previous Employer</Label>
               <Input
                 value={formData.previousEmployer}
-                onChange={(e) => updateFormData({ previousEmployer: e.target.value })}
+                onChange={(e: any) => updateFormData({ previousEmployer: e.target.value })}
                 placeholder="Company name (if any)"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -666,7 +666,7 @@ export default function RegisterEscort() {
               <Checkbox
                 id="terms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a> and 
@@ -679,7 +679,7 @@ export default function RegisterEscort() {
               <Checkbox
                 id="background"
                 checked={formData.acceptBackground}
-                onCheckedChange={(c) => updateFormData({ acceptBackground: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptBackground: c as boolean })}
               />
               <Label htmlFor="background" className="text-sm text-slate-300 cursor-pointer">
                 I consent to a background check and MVR review

@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 export default function CarrierScorecard() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const carriersQuery = trpc.carriers.getScorecards.useQuery({ limit: 50 });
-  const topCarriersQuery = trpc.carriers.getTopPerformers.useQuery({ limit: 5 });
+  const carriersQuery = (trpc as any).carriers.getScorecards.useQuery({ limit: 50 });
+  const topCarriersQuery = (trpc as any).carriers.getTopPerformers.useQuery({ limit: 5 });
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-400";
@@ -38,7 +38,7 @@ export default function CarrierScorecard() {
     return <Badge className="bg-red-500/20 text-red-400 border-0">Poor</Badge>;
   };
 
-  const filteredCarriers = carriersQuery.data?.filter((c: any) =>
+  const filteredCarriers = (carriersQuery.data as any)?.filter((c: any) =>
     !searchTerm || c.name?.toLowerCase().includes(searchTerm.toLowerCase()) || c.mcNumber?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -63,11 +63,11 @@ export default function CarrierScorecard() {
         <CardContent>
           {topCarriersQuery.isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
+              {[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-              {topCarriersQuery.data?.map((carrier: any, idx: number) => (
+              {(topCarriersQuery.data as any)?.map((carrier: any, idx: number) => (
                 <div key={carrier.id} className="p-4 rounded-xl bg-slate-800/50 text-center relative">
                   {idx === 0 && (
                     <div className="absolute -top-2 -right-2 p-1.5 rounded-full bg-amber-500">
@@ -89,7 +89,7 @@ export default function CarrierScorecard() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by carrier name or MC#..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -102,7 +102,7 @@ export default function CarrierScorecard() {
         </CardHeader>
         <CardContent className="p-0">
           {carriersQuery.isLoading ? (
-            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
           ) : filteredCarriers?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

@@ -7,15 +7,15 @@ import { trpc } from "@/lib/trpc";
 import { Truck, AlertTriangle, CheckCircle, Clock, FileText, Shield, Calendar } from "lucide-react";
 
 export default function FleetCompliance() {
-  const complianceQuery = trpc.compliance.getFleetCompliance.useQuery();
-  const vehiclesQuery = trpc.compliance.getVehicleComplianceList.useQuery({ limit: 20 });
+  const complianceQuery = (trpc as any).compliance.getFleetCompliance.useQuery();
+  const vehiclesQuery = (trpc as any).compliance.getVehicleComplianceList.useQuery({ limit: 20 });
 
   if (complianceQuery.isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -140,13 +140,13 @@ export default function FleetCompliance() {
         <CardContent>
           {vehiclesQuery.isLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
           ) : (
             <div className="space-y-3">
-              {(vehiclesQuery.data?.vehicles || [
+              {((vehiclesQuery.data as any)?.vehicles || [
                 { id: "1", unitNumber: "TRK-101", make: "Peterbilt", model: "579", status: "compliant", registrationExpiry: "2026-06-15", inspectionExpiry: "2026-03-20" },
                 { id: "2", unitNumber: "TRK-102", make: "Kenworth", model: "T680", status: "expiring", registrationExpiry: "2026-02-10", inspectionExpiry: "2026-02-05" },
                 { id: "3", unitNumber: "TRK-103", make: "Freightliner", model: "Cascadia", status: "compliant", registrationExpiry: "2026-08-22", inspectionExpiry: "2026-04-15" },

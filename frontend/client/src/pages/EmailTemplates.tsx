@@ -19,8 +19,8 @@ import { cn } from "@/lib/utils";
 export default function EmailTemplates() {
   const [search, setSearch] = useState("");
 
-  const templatesQuery = trpc.admin.getEmailTemplates.useQuery({ search });
-  const statsQuery = trpc.admin.getEmailTemplateStats.useQuery();
+  const templatesQuery = (trpc as any).admin.getEmailTemplates.useQuery({ search });
+  const statsQuery = (trpc as any).admin.getEmailTemplateStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -83,19 +83,19 @@ export default function EmailTemplates() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search templates..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search templates..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Mail className="w-5 h-5 text-cyan-400" />Templates</CardTitle></CardHeader>
         <CardContent className="p-0">
           {templatesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : templatesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (templatesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Mail className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No templates found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {templatesQuery.data?.map((template: any) => (
+              {(templatesQuery.data as any)?.map((template: any) => (
                 <div key={template.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-xl bg-cyan-500/20">

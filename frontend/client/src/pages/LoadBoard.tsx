@@ -23,9 +23,9 @@ export default function LoadBoard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const loadsQuery = trpc.loads.list.useQuery({ limit: 100 });
+  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100 });
 
-  const filteredLoads = loadsQuery.data?.filter((load: any) => {
+  const filteredLoads = (loadsQuery.data as any)?.filter((load: any) => {
     const matchesSearch = !searchTerm || 
       load.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -34,8 +34,8 @@ export default function LoadBoard() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalLoads = loadsQuery.data?.length || 0;
-  const postedLoads = loadsQuery.data?.filter((l: any) => l.status === "posted").length || 0;
+  const totalLoads = (loadsQuery.data as any)?.length || 0;
+  const postedLoads = (loadsQuery.data as any)?.filter((l: any) => l.status === "posted").length || 0;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -107,7 +107,7 @@ export default function LoadBoard() {
                 <Truck className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-cyan-400">{loadsQuery.data?.filter((l: any) => l.status === "in_transit").length || 0}</p>
+                <p className="text-2xl font-bold text-cyan-400">{(loadsQuery.data as any)?.filter((l: any) => l.status === "in_transit").length || 0}</p>
                 <p className="text-xs text-slate-400">In Transit</p>
               </div>
             </div>
@@ -121,7 +121,7 @@ export default function LoadBoard() {
                 <DollarSign className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-400">${(loadsQuery.data?.reduce((sum: number, l: any) => sum + (l.rate || 0), 0) || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold text-green-400">${((loadsQuery.data as any)?.reduce((sum: number, l: any) => sum + (l.rate || 0), 0) || 0).toLocaleString()}</p>
                 <p className="text-xs text-slate-400">Total Value</p>
               </div>
             </div>
@@ -135,7 +135,7 @@ export default function LoadBoard() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search loads..."
             className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
           />
@@ -159,7 +159,7 @@ export default function LoadBoard() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : filteredLoads?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

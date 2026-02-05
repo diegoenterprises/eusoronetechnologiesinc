@@ -13,11 +13,11 @@ import { Cookie, Calendar, ChevronRight, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 export default function CookiePolicy() {
-  const cookieQuery = trpc.legal.getCookiePolicy.useQuery();
+  const cookieQuery = (trpc as any).legal.getCookiePolicy.useQuery();
 
-  const updatePreferencesMutation = trpc.legal.updateCookiePreferences.useMutation({
+  const updatePreferencesMutation = (trpc as any).legal.updateCookiePreferences.useMutation({
     onSuccess: () => toast.success("Cookie preferences updated"),
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
   return (
@@ -36,7 +36,7 @@ export default function CookiePolicy() {
       ) : (
         <div className="flex items-center gap-2 text-slate-400">
           <Calendar className="w-4 h-4" />
-          <span>Last updated: {cookieQuery.data?.lastUpdated}</span>
+          <span>Last updated: {(cookieQuery.data as any)?.lastUpdated}</span>
         </div>
       )}
 
@@ -63,7 +63,7 @@ export default function CookiePolicy() {
         <CardContent className="p-6">
           {cookieQuery.isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3, 4].map((i) => (
+              {[1, 2, 3, 4].map((i: any) => (
                 <div key={i} className="space-y-2">
                   <Skeleton className="h-6 w-48" />
                   <Skeleton className="h-4 w-full" />
@@ -73,7 +73,7 @@ export default function CookiePolicy() {
             </div>
           ) : (
             <div className="space-y-8">
-              {cookieQuery.data?.sections?.map((section: any, idx: number) => (
+              {(cookieQuery.data as any)?.sections?.map((section: any, idx: number) => (
                 <div key={idx}>
                   <h2 className="text-xl font-bold text-white mb-3 flex items-center gap-2">
                     <ChevronRight className="w-5 h-5 text-cyan-400" />
@@ -98,7 +98,7 @@ export default function CookiePolicy() {
             <Cookie className="w-5 h-5 text-cyan-400" />
             <div>
               <p className="text-white font-medium">Questions about cookies?</p>
-              <p className="text-sm text-slate-400">Contact us at {cookieQuery.data?.contactEmail || "privacy@eusotrip.com"}</p>
+              <p className="text-sm text-slate-400">Contact us at {(cookieQuery.data as any)?.contactEmail || "privacy@eusotrip.com"}</p>
             </div>
           </div>
         </CardContent>

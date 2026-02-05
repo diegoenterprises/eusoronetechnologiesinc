@@ -24,8 +24,8 @@ export default function GlobalSearch() {
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const searchQuery = trpc.search.global.useQuery({ query, type: activeTab === "all" ? undefined : activeTab }, { enabled: query.length >= 2 });
-  const recentQuery = trpc.search.getRecent.useQuery({ limit: 10 });
+  const searchQuery = (trpc as any).search.global.useQuery({ query, type: activeTab === "all" ? undefined : activeTab }, { enabled: query.length >= 2 });
+  const recentQuery = (trpc as any).search.getRecent.useQuery({ limit: 10 });
 
   const getResultIcon = (type: string) => {
     switch (type) {
@@ -64,7 +64,7 @@ export default function GlobalSearch() {
         <CardContent className="p-6">
           <div className="relative">
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search loads, drivers, carriers, invoices..." className="pl-12 h-14 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" autoFocus />
+            <Input value={query} onChange={(e: any) => setQuery(e.target.value)} placeholder="Search loads, drivers, carriers, invoices..." className="pl-12 h-14 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" autoFocus />
           </div>
         </CardContent>
       </Card>
@@ -75,18 +75,18 @@ export default function GlobalSearch() {
           <CardHeader className="pb-0">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="bg-slate-700/50">
-                <TabsTrigger value="all">All ({searchQuery.data?.total || 0})</TabsTrigger>
-                <TabsTrigger value="load">Loads ({searchQuery.data?.counts?.loads || 0})</TabsTrigger>
-                <TabsTrigger value="driver">Drivers ({searchQuery.data?.counts?.drivers || 0})</TabsTrigger>
-                <TabsTrigger value="carrier">Carriers ({searchQuery.data?.counts?.carriers || 0})</TabsTrigger>
-                <TabsTrigger value="invoice">Invoices ({searchQuery.data?.counts?.invoices || 0})</TabsTrigger>
+                <TabsTrigger value="all">All ({(searchQuery.data as any)?.total || 0})</TabsTrigger>
+                <TabsTrigger value="load">Loads ({(searchQuery.data as any)?.counts?.loads || 0})</TabsTrigger>
+                <TabsTrigger value="driver">Drivers ({(searchQuery.data as any)?.counts?.drivers || 0})</TabsTrigger>
+                <TabsTrigger value="carrier">Carriers ({(searchQuery.data as any)?.counts?.carriers || 0})</TabsTrigger>
+                <TabsTrigger value="invoice">Invoices ({(searchQuery.data as any)?.counts?.invoices || 0})</TabsTrigger>
               </TabsList>
             </Tabs>
           </CardHeader>
           <CardContent className="p-0 mt-4">
             {searchQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : searchQuery.data?.results?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (searchQuery.data as any)?.results?.length === 0 ? (
               <div className="text-center py-16">
                 <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <Search className="w-10 h-10 text-slate-500" />
@@ -95,7 +95,7 @@ export default function GlobalSearch() {
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {searchQuery.data?.results?.map((result: any) => (
+                {(searchQuery.data as any)?.results?.map((result: any) => (
                   <div key={result.id} className="p-4 flex items-center gap-4 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setLocation(result.path)}>
                     <div className={cn("p-3 rounded-xl", getResultColor(result.type))}>
                       {getResultIcon(result.type)}
@@ -125,12 +125,12 @@ export default function GlobalSearch() {
           </CardHeader>
           <CardContent className="p-0">
             {recentQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
-            ) : recentQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            ) : (recentQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No recent searches</p>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {recentQuery.data?.map((item: any) => (
+                {(recentQuery.data as any)?.map((item: any) => (
                   <div key={item.id} className="p-4 flex items-center gap-3 hover:bg-slate-700/20 transition-colors cursor-pointer" onClick={() => setQuery(item.query)}>
                     <Clock className="w-4 h-4 text-slate-500" />
                     <span className="text-white flex-1">{item.query}</span>

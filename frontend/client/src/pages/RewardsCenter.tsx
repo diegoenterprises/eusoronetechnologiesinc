@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function RewardsCenter() {
-  const rewardsQuery = trpc.users.getRewardsInfo.useQuery();
-  const availableQuery = trpc.users.getAvailableRewards.useQuery();
-  const historyQuery = trpc.users.getRewardsHistory.useQuery({ limit: 10 });
+  const rewardsQuery = (trpc as any).users.getRewardsInfo.useQuery();
+  const availableQuery = (trpc as any).users.getAvailableRewards.useQuery();
+  const historyQuery = (trpc as any).users.getRewardsHistory.useQuery({ limit: 10 });
 
-  const redeemMutation = trpc.users.redeemReward.useMutation({
+  const redeemMutation = (trpc as any).users.redeemReward.useMutation({
     onSuccess: () => { toast.success("Reward redeemed!"); rewardsQuery.refetch(); availableQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const rewards = rewardsQuery.data;
@@ -153,15 +153,15 @@ export default function RewardsCenter() {
         </CardHeader>
         <CardContent>
           {availableQuery.isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-          ) : availableQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
+          ) : (availableQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <Gift className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No rewards available</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {availableQuery.data?.map((reward: any) => (
+              {(availableQuery.data as any)?.map((reward: any) => (
                 <div key={reward.id} className={cn("p-4 rounded-xl border transition-colors", reward.canRedeem ? "bg-slate-700/30 border-slate-600/50 hover:border-cyan-500/50" : "bg-slate-800/30 border-slate-700/30 opacity-60")}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className={cn("p-2 rounded-lg", reward.canRedeem ? "bg-cyan-500/20" : "bg-slate-700/50")}>
@@ -198,15 +198,15 @@ export default function RewardsCenter() {
         </CardHeader>
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
-          ) : historyQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+          ) : (historyQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="w-8 h-8 text-slate-500 mx-auto mb-2" />
               <p className="text-slate-400">No activity yet</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {historyQuery.data?.map((activity: any) => (
+              {(historyQuery.data as any)?.map((activity: any) => (
                 <div key={activity.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg", activity.type === "earned" ? "bg-green-500/20" : "bg-blue-500/20")}>

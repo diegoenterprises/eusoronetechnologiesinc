@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function Billing() {
   const [activeTab, setActiveTab] = useState("invoices");
 
-  const summaryQuery = trpc.billing.getSummary.useQuery();
-  const invoicesQuery = trpc.billing.getInvoices.useQuery({ limit: 20 });
-  const paymentsQuery = trpc.billing.getPayments.useQuery({ limit: 20 });
+  const summaryQuery = (trpc as any).billing.getSummary.useQuery();
+  const invoicesQuery = (trpc as any).billing.getInvoices.useQuery({ limit: 20 });
+  const paymentsQuery = (trpc as any).billing.getPayments.useQuery({ limit: 20 });
 
   const summary = summaryQuery.data;
 
@@ -127,8 +127,8 @@ export default function Billing() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {invoicesQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : invoicesQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (invoicesQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <FileText className="w-10 h-10 text-slate-500" />
@@ -137,7 +137,7 @@ export default function Billing() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {invoicesQuery.data?.map((invoice: any) => (
+                  {(invoicesQuery.data as any)?.map((invoice: any) => (
                     <div key={invoice.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -177,8 +177,8 @@ export default function Billing() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {paymentsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : paymentsQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (paymentsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <CreditCard className="w-10 h-10 text-slate-500" />
@@ -187,7 +187,7 @@ export default function Billing() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {paymentsQuery.data?.map((payment: any) => (
+                  {(paymentsQuery.data as any)?.map((payment: any) => (
                     <div key={payment.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">

@@ -21,17 +21,17 @@ import { toast } from "sonner";
 export default function BackupManagement() {
   const [type, setType] = useState("all");
 
-  const backupsQuery = trpc.admin.getBackups.useQuery({ type });
-  const statsQuery = trpc.admin.getBackupStats.useQuery();
+  const backupsQuery = (trpc as any).admin.getBackups.useQuery({ type });
+  const statsQuery = (trpc as any).admin.getBackupStats.useQuery();
 
-  const createMutation = trpc.admin.createBackup.useMutation({
+  const createMutation = (trpc as any).admin.createBackup.useMutation({
     onSuccess: () => { toast.success("Backup started"); backupsQuery.refetch(); statsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const restoreMutation = trpc.admin.restoreBackup.useMutation({
+  const restoreMutation = (trpc as any).admin.restoreBackup.useMutation({
     onSuccess: () => toast.success("Restore initiated"),
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -106,12 +106,12 @@ export default function BackupManagement() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Database className="w-5 h-5 text-cyan-400" />Backup History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {backupsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-          ) : backupsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+          ) : (backupsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Database className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No backups found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {backupsQuery.data?.map((backup: any) => (
+              {(backupsQuery.data as any)?.map((backup: any) => (
                 <div key={backup.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", backup.status === "completed" ? "bg-green-500/20" : backup.status === "in_progress" ? "bg-blue-500/20" : "bg-red-500/20")}>

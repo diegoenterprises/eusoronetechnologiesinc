@@ -25,14 +25,14 @@ export default function FleetOverview() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  const summaryQuery = trpc.fleet.getSummary.useQuery();
-  const vehiclesQuery = trpc.fleet.list.useQuery({
+  const summaryQuery = (trpc as any).fleet.getSummary.useQuery();
+  const vehiclesQuery = (trpc as any).fleet.list.useQuery({
     status: statusFilter !== "all" ? statusFilter as any : undefined,
     type: typeFilter !== "all" ? typeFilter as any : undefined,
     search: searchTerm || undefined,
   });
-  const maintenanceQuery = trpc.fleet.getMaintenanceSchedule.useQuery({});
-  const fuelQuery = trpc.fleet.getFuelData.useQuery({});
+  const maintenanceQuery = (trpc as any).fleet.getMaintenanceSchedule.useQuery({});
+  const fuelQuery = (trpc as any).fleet.getFuelData.useQuery({});
 
   const isLoading = summaryQuery.isLoading || vehiclesQuery.isLoading;
 
@@ -82,7 +82,7 @@ export default function FleetOverview() {
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
             ) : (
-              <p className="text-3xl font-bold text-white">{summaryQuery.data?.totalVehicles ?? 0}</p>
+              <p className="text-3xl font-bold text-white">{(summaryQuery.data as any)?.totalVehicles ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Total Vehicles</p>
           </CardContent>
@@ -92,7 +92,7 @@ export default function FleetOverview() {
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
             ) : (
-              <p className="text-3xl font-bold text-green-400">{summaryQuery.data?.active ?? 0}</p>
+              <p className="text-3xl font-bold text-green-400">{(summaryQuery.data as any)?.active ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Active</p>
           </CardContent>
@@ -102,7 +102,7 @@ export default function FleetOverview() {
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
             ) : (
-              <p className="text-3xl font-bold text-yellow-400">{summaryQuery.data?.inMaintenance ?? 0}</p>
+              <p className="text-3xl font-bold text-yellow-400">{(summaryQuery.data as any)?.inMaintenance ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">In Maintenance</p>
           </CardContent>
@@ -112,7 +112,7 @@ export default function FleetOverview() {
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
             ) : (
-              <p className="text-3xl font-bold text-red-400">{summaryQuery.data?.outOfService ?? 0}</p>
+              <p className="text-3xl font-bold text-red-400">{(summaryQuery.data as any)?.outOfService ?? 0}</p>
             )}
             <p className="text-xs text-slate-400">Out of Service</p>
           </CardContent>
@@ -122,7 +122,7 @@ export default function FleetOverview() {
             {summaryQuery.isLoading ? (
               <Skeleton className="h-8 w-16 mx-auto" />
             ) : (
-              <p className="text-3xl font-bold text-purple-400">{summaryQuery.data?.utilization ?? 0}%</p>
+              <p className="text-3xl font-bold text-purple-400">{(summaryQuery.data as any)?.utilization ?? 0}%</p>
             )}
             <p className="text-xs text-slate-400">Utilization</p>
           </CardContent>
@@ -146,7 +146,7 @@ export default function FleetOverview() {
               <Skeleton className="h-8 w-24" />
             ) : (
               <p className="text-2xl font-bold text-orange-400">
-                ${fuelQuery.data?.totalCost?.toLocaleString() ?? 0}
+                ${(fuelQuery.data as any)?.totalCost?.toLocaleString() ?? 0}
               </p>
             )}
           </div>
@@ -168,7 +168,7 @@ export default function FleetOverview() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search vehicles..."
                 className="pl-9 bg-slate-700/50 border-slate-600"
               />
@@ -199,7 +199,7 @@ export default function FleetOverview() {
 
           {vehiclesQuery.isLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map((i: any) => (
                 <Card key={i} className="bg-slate-800/50 border-slate-700">
                   <CardContent className="p-4">
                     <Skeleton className="h-16 w-full" />
@@ -207,7 +207,7 @@ export default function FleetOverview() {
                 </Card>
               ))}
             </div>
-          ) : vehiclesQuery.data?.vehicles?.length === 0 ? (
+          ) : (vehiclesQuery.data as any)?.vehicles?.length === 0 ? (
             <Card className="bg-slate-800/50 border-slate-700">
               <CardContent className="p-12 text-center">
                 <Truck className="w-12 h-12 text-slate-600 mx-auto mb-4" />
@@ -216,7 +216,7 @@ export default function FleetOverview() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {vehiclesQuery.data?.vehicles?.map((vehicle) => (
+              {(vehiclesQuery.data as any)?.vehicles?.map((vehicle: any) => (
                 <Card key={vehicle.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
@@ -309,18 +309,18 @@ export default function FleetOverview() {
             <CardContent>
               {maintenanceQuery.isLoading ? (
                 <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
+                  {[1, 2, 3].map((i: any) => (
                     <Skeleton key={i} className="h-16 w-full" />
                   ))}
                 </div>
-              ) : maintenanceQuery.data?.length === 0 ? (
+              ) : (maintenanceQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
                   <p className="text-slate-400">No scheduled maintenance</p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {maintenanceQuery.data?.map((item) => (
+                  {(maintenanceQuery.data as any)?.map((item: any) => (
                     <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -379,15 +379,15 @@ export default function FleetOverview() {
               <div className="mt-4 grid grid-cols-4 gap-4">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-sm text-slate-400">Active ({summaryQuery.data?.active ?? 0})</span>
+                  <span className="text-sm text-slate-400">Active ({(summaryQuery.data as any)?.active ?? 0})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                  <span className="text-sm text-slate-400">Maintenance ({summaryQuery.data?.inMaintenance ?? 0})</span>
+                  <span className="text-sm text-slate-400">Maintenance ({(summaryQuery.data as any)?.inMaintenance ?? 0})</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-sm text-slate-400">Out of Service ({summaryQuery.data?.outOfService ?? 0})</span>
+                  <span className="text-sm text-slate-400">Out of Service ({(summaryQuery.data as any)?.outOfService ?? 0})</span>
                 </div>
               </div>
             </CardContent>

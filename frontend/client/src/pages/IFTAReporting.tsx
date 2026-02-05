@@ -21,12 +21,12 @@ import { toast } from "sonner";
 export default function IFTAReporting() {
   const [quarter, setQuarter] = useState("Q1-2024");
 
-  const reportQuery = trpc.fleet.getIFTAReport.useQuery({ quarter });
-  const statsQuery = trpc.fleet.getIFTAStats.useQuery({ quarter });
+  const reportQuery = (trpc as any).fleet.getIFTAReport.useQuery({ quarter });
+  const statsQuery = (trpc as any).fleet.getIFTAStats.useQuery({ quarter });
 
-  const generateMutation = trpc.fleet.generateIFTAReport.useMutation({
+  const generateMutation = (trpc as any).fleet.generateIFTAReport.useMutation({
     onSuccess: () => toast.success("Report generated"),
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -94,7 +94,7 @@ export default function IFTAReporting() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-cyan-400" />Jurisdiction Breakdown</CardTitle></CardHeader>
         <CardContent className="p-0">
           {reportQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
           ) : report?.jurisdictions?.length === 0 ? (
             <div className="text-center py-16"><MapPin className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No data for this quarter</p></div>
           ) : (

@@ -23,12 +23,12 @@ export default function EscortJobMarketplace() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const jobsQuery = trpc.escorts.getAvailableJobs.useQuery({ filter, search });
-  const statsQuery = trpc.escorts.getMarketplaceStats.useQuery();
+  const jobsQuery = (trpc as any).escorts.getAvailableJobs.useQuery({ filter, search });
+  const statsQuery = (trpc as any).escorts.getMarketplaceStats.useQuery();
 
-  const applyMutation = trpc.escorts.applyForJob.useMutation({
+  const applyMutation = (trpc as any).escorts.applyForJob.useMutation({
     onSuccess: () => { toast.success("Application submitted"); jobsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const stats = statsQuery.data;
@@ -134,7 +134,7 @@ export default function EscortJobMarketplace() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by location..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search by location..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg">
@@ -159,8 +159,8 @@ export default function EscortJobMarketplace() {
         </CardHeader>
         <CardContent className="p-0">
           {jobsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
-          ) : jobsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : (jobsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Car className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No jobs available</p>
@@ -168,7 +168,7 @@ export default function EscortJobMarketplace() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {jobsQuery.data?.map((job: any) => (
+              {(jobsQuery.data as any)?.map((job: any) => (
                 <div key={job.id} className={cn("p-4", job.urgency === "urgent" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-start justify-between mb-3">
                     <div>

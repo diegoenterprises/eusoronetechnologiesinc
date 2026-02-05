@@ -44,19 +44,19 @@ export default function CompanyPage() {
 
   // Fetch company profile from database (using user's companyId)
   const companyId = user?.companyId || 1; // Default to 1 for testing
-  const { data: companyProfile, isLoading: companyLoading } = trpc.companies.getProfile.useQuery({ companyId });
-  const updateCompanyMutation = trpc.companies.updateProfile.useMutation({
+  const { data: companyProfile, isLoading: companyLoading } = (trpc as any).companies.getProfile.useQuery({ companyId });
+  const updateCompanyMutation = (trpc as any).companies.updateProfile.useMutation({
     onSuccess: () => {
       setIsEditing(false);
       toast.success("Company profile updated successfully");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error(`Failed to update company: ${error.message}`);
     },
   });
 
   // Fetch fleet vehicles from database
-  const { data: fleetData, isLoading: fleetLoading } = trpc.companies.getFleet.useQuery({ companyId });
+  const { data: fleetData, isLoading: fleetLoading } = (trpc as any).companies.getFleet.useQuery({ companyId });
 
   // Company data state
   const [companyData, setCompanyData] = useState({
@@ -321,7 +321,7 @@ export default function CompanyPage() {
 
       {/* Tab Navigation */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {tabs.map((tab) => {
+        {tabs.map((tab: any) => {
           const Icon = tab.icon;
           return (
             <button
@@ -354,7 +354,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Company Name</label>
                 <Input
                   value={companyData.name}
-                  onChange={(e) => setCompanyData({ ...companyData, name: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, name: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -364,7 +364,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Legal Name</label>
                 <Input
                   value={companyData.legalName}
-                  onChange={(e) => setCompanyData({ ...companyData, legalName: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, legalName: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -374,7 +374,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">MC Number</label>
                 <Input
                   value={companyData.mcNumber}
-                  onChange={(e) => setCompanyData({ ...companyData, mcNumber: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, mcNumber: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -384,7 +384,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">DOT Number</label>
                 <Input
                   value={companyData.dotNumber}
-                  onChange={(e) => setCompanyData({ ...companyData, dotNumber: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, dotNumber: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -394,7 +394,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">SCAC Code</label>
                 <Input
                   value={companyData.scacCode}
-                  onChange={(e) => setCompanyData({ ...companyData, scacCode: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, scacCode: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -404,7 +404,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Tax ID (EIN)</label>
                 <Input
                   value={companyData.taxId}
-                  onChange={(e) => setCompanyData({ ...companyData, taxId: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, taxId: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -414,7 +414,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">DUNS Number</label>
                 <Input
                   value={companyData.dunsNumber}
-                  onChange={(e) => setCompanyData({ ...companyData, dunsNumber: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, dunsNumber: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -424,7 +424,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Operating Authority</label>
                 <select
                   value={companyData.operatingAuthority}
-                  onChange={(e) => setCompanyData({ ...companyData, operatingAuthority: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, operatingAuthority: e.target.value })}
                   disabled={!isEditing}
                   className="w-full bg-slate-700 border-slate-600 text-white mt-2 p-2 rounded-md"
                 >
@@ -438,7 +438,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Address</label>
                 <Input
                   value={companyData.address}
-                  onChange={(e) => setCompanyData({ ...companyData, address: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, address: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -448,7 +448,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Phone</label>
                 <Input
                   value={companyData.phone}
-                  onChange={(e) => setCompanyData({ ...companyData, phone: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, phone: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -458,7 +458,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Email</label>
                 <Input
                   value={companyData.email}
-                  onChange={(e) => setCompanyData({ ...companyData, email: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, email: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -468,7 +468,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Website</label>
                 <Input
                   value={companyData.website}
-                  onChange={(e) => setCompanyData({ ...companyData, website: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, website: e.target.value })}
                   disabled={!isEditing}
                   className="bg-slate-700 border-slate-600 text-white mt-2"
                 />
@@ -478,7 +478,7 @@ export default function CompanyPage() {
                 <label className="text-gray-400 text-sm font-semibold">Company Description</label>
                 <textarea
                   value={companyData.description}
-                  onChange={(e) => setCompanyData({ ...companyData, description: e.target.value })}
+                  onChange={(e: any) => setCompanyData({ ...companyData, description: e.target.value })}
                   disabled={!isEditing}
                   rows={3}
                   className="w-full bg-slate-700 border-slate-600 text-white mt-2 p-2 rounded-md"
@@ -550,7 +550,7 @@ export default function CompanyPage() {
             </div>
 
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {documents.map((doc: any) => (
                 <div
                   key={doc.id}
                   className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600 hover:border-slate-500 transition-all"
@@ -600,7 +600,7 @@ export default function CompanyPage() {
                   <p className="text-white font-semibold">Valid Documents</p>
                 </div>
                 <p className="text-green-400 text-2xl font-bold">
-                  {documents.filter((d) => d.status === "VALID").length}
+                  {documents.filter((d: any) => d.status === "VALID").length}
                 </p>
               </div>
 
@@ -610,7 +610,7 @@ export default function CompanyPage() {
                   <p className="text-white font-semibold">Expiring Soon</p>
                 </div>
                 <p className="text-yellow-400 text-2xl font-bold">
-                  {documents.filter((d) => d.status === "EXPIRING").length}
+                  {documents.filter((d: any) => d.status === "EXPIRING").length}
                 </p>
               </div>
             </div>
@@ -634,7 +634,7 @@ export default function CompanyPage() {
             </div>
 
             <div className="space-y-3">
-              {fleet.map((vehicle) => (
+              {fleet.map((vehicle: any) => (
                 <div
                   key={vehicle.id}
                   className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600"
@@ -677,13 +677,13 @@ export default function CompanyPage() {
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <p className="text-gray-400 text-sm mb-2">Active</p>
                 <p className="text-green-400 text-3xl font-bold">
-                  {fleet.filter((v) => v.status === "ACTIVE").length}
+                  {fleet.filter((v: any) => v.status === "ACTIVE").length}
                 </p>
               </div>
               <div className="bg-slate-700/50 p-4 rounded-lg border border-slate-600">
                 <p className="text-gray-400 text-sm mb-2">In Maintenance</p>
                 <p className="text-orange-400 text-3xl font-bold">
-                  {fleet.filter((v) => v.status === "MAINTENANCE").length}
+                  {fleet.filter((v: any) => v.status === "MAINTENANCE").length}
                 </p>
               </div>
             </div>
@@ -700,7 +700,7 @@ export default function CompanyPage() {
           </h2>
 
           <div className="space-y-3">
-            {certifications.map((cert, index) => (
+            {certifications.map((cert: any, index: number) => (
               <div
                 key={index}
                 className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg border border-slate-600"

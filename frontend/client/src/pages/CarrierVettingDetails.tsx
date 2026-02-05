@@ -25,19 +25,19 @@ export default function CarrierVettingDetails() {
   const params = useParams<{ carrierId: string }>();
   const [activeTab, setActiveTab] = useState("overview");
 
-  const carrierQuery = trpc.carriers.getById.useQuery({ id: params.carrierId || "" }, { enabled: !!params.carrierId });
-  const csaQuery = trpc.carriers.getCSAScores.useQuery({ carrierId: params.carrierId || "" }, { enabled: !!params.carrierId });
-  const insuranceQuery = trpc.carriers.getInsurance.useQuery({ carrierId: params.carrierId || "" }, { enabled: !!params.carrierId });
-  const historyQuery = trpc.carriers.getLoadHistory.useQuery({ carrierId: params.carrierId || "" }, { enabled: !!params.carrierId });
+  const carrierQuery = (trpc as any).carriers.getById.useQuery({ id: params.carrierId || "" }, { enabled: !!params.carrierId });
+  const csaQuery = (trpc as any).carriers.getCSAScores.useQuery({ carrierId: params.carrierId || "" }, { enabled: !!params.carrierId });
+  const insuranceQuery = (trpc as any).carriers.getInsurance.useQuery({ carrierId: params.carrierId || "" }, { enabled: !!params.carrierId });
+  const historyQuery = (trpc as any).carriers.getLoadHistory.useQuery({ carrierId: params.carrierId || "" }, { enabled: !!params.carrierId });
 
-  const approveMutation = trpc.carriers.approve.useMutation({
+  const approveMutation = (trpc as any).carriers.approve.useMutation({
     onSuccess: () => { toast.success("Carrier approved"); carrierQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectMutation = trpc.carriers.reject.useMutation({
+  const rejectMutation = (trpc as any).carriers.reject.useMutation({
     onSuccess: () => { toast.info("Carrier rejected"); carrierQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   if (carrierQuery.error) {
@@ -169,7 +169,7 @@ export default function CarrierVettingDetails() {
               <CardHeader><CardTitle className="text-white flex items-center gap-2"><Building className="w-5 h-5 text-blue-400" />Company Information</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {carrierQuery.isLoading ? (
-                  [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-8 w-full" />)
+                  [1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-8 w-full" />)
                 ) : (
                   <>
                     <div className="flex justify-between"><span className="text-slate-400">Legal Name</span><span className="text-white">{carrier?.legalName}</span></div>
@@ -186,7 +186,7 @@ export default function CarrierVettingDetails() {
               <CardHeader><CardTitle className="text-white flex items-center gap-2"><MapPin className="w-5 h-5 text-green-400" />Contact Information</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 {carrierQuery.isLoading ? (
-                  [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-8 w-full" />)
+                  [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-8 w-full" />)
                 ) : (
                   <>
                     <div className="flex items-center gap-3"><MapPin className="w-4 h-4 text-slate-400" /><span className="text-white">{typeof carrier?.address === "object" ? `${carrier.address.street}, ${carrier.address.city}, ${carrier.address.state} ${carrier.address.zip}` : carrier?.address}</span></div>
@@ -205,10 +205,10 @@ export default function CarrierVettingDetails() {
             <CardHeader><CardTitle className="text-white flex items-center gap-2"><Shield className="w-5 h-5 text-blue-400" />CSA BASIC Scores</CardTitle></CardHeader>
             <CardContent>
               {csaQuery.isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-24 w-full" />)}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-24 w-full" />)}</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {csaQuery.data?.map((basic) => (
+                  {(csaQuery.data as any)?.map((basic: any) => (
                     <div key={basic.category} className="p-4 rounded-lg bg-slate-700/30">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-slate-400 text-sm">{basic.category}</span>
@@ -234,9 +234,9 @@ export default function CarrierVettingDetails() {
         <TabsContent value="insurance" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {insuranceQuery.isLoading ? (
-              [1, 2, 3].map((i) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>)
+              [1, 2, 3].map((i: any) => <Card key={i} className="bg-slate-800/50 border-slate-700"><CardContent className="p-4"><Skeleton className="h-40 w-full" /></CardContent></Card>)
             ) : (
-              insuranceQuery.data?.map((insurance) => (
+              (insuranceQuery.data as any)?.map((insurance: any) => (
                 <Card key={insurance.type} className="bg-slate-800/50 border-slate-700">
                   <CardHeader>
                     <CardTitle className="text-white flex items-center gap-2">
@@ -267,12 +267,12 @@ export default function CarrierVettingDetails() {
             <CardHeader><CardTitle className="text-white">Load History</CardTitle></CardHeader>
             <CardContent>
               {historyQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div>
-              ) : historyQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)}</div>
+              ) : (historyQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No load history</p>
               ) : (
                 <div className="space-y-3">
-                  {historyQuery.data?.map((load) => (
+                  {(historyQuery.data as any)?.map((load: any) => (
                     <div key={load.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                       <div className="flex items-center gap-4">
                         <div className={cn("p-2 rounded-lg", load.status === "delivered" ? "bg-green-500/20" : "bg-blue-500/20")}>

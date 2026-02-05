@@ -22,10 +22,10 @@ export default function TerminalScheduling() {
   const [activeTab, setActiveTab] = useState("schedule");
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
-  const racksQuery = trpc.terminals.getRacks.useQuery();
-  const tanksQuery = trpc.terminals.getTanks.useQuery();
-  const appointmentsQuery = trpc.terminals.getAppointments.useQuery({ date: selectedDate });
-  const summaryQuery = trpc.terminals.getSummary.useQuery();
+  const racksQuery = (trpc as any).terminals.getRacks.useQuery();
+  const tanksQuery = (trpc as any).terminals.getTanks.useQuery();
+  const appointmentsQuery = (trpc as any).terminals.getAppointments.useQuery({ date: selectedDate });
+  const summaryQuery = (trpc as any).terminals.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -158,15 +158,15 @@ export default function TerminalScheduling() {
                 <input 
                   type="date" 
                   value={selectedDate} 
-                  onChange={(e) => setSelectedDate(e.target.value)} 
+                  onChange={(e: any) => setSelectedDate(e.target.value)} 
                   className="bg-slate-700/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white text-sm" 
                 />
               </div>
             </CardHeader>
             <CardContent>
               {appointmentsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-              ) : appointmentsQuery.data?.length === 0 ? (
+                <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              ) : (appointmentsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                     <Calendar className="w-8 h-8 text-slate-500" />
@@ -175,7 +175,7 @@ export default function TerminalScheduling() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {appointmentsQuery.data?.map((appt) => (
+                  {(appointmentsQuery.data as any)?.map((appt: any) => (
                     <div key={appt.id} className="flex items-center justify-between p-4 rounded-xl bg-slate-700/30">
                       <div className="flex items-center gap-4">
                         <div className="text-center p-3 rounded-xl bg-slate-700/50 min-w-[60px]">
@@ -204,9 +204,9 @@ export default function TerminalScheduling() {
         <TabsContent value="racks" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {racksQuery.isLoading ? (
-              [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
+              [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)
             ) : (
-              racksQuery.data?.map((rack) => (
+              (racksQuery.data as any)?.map((rack: any) => (
                 <Card key={rack.id} className={cn("border rounded-xl", getRackStatusColor(rack.status))}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
@@ -243,10 +243,10 @@ export default function TerminalScheduling() {
             <CardHeader className="pb-3"><CardTitle className="text-white text-lg">Tank Inventory</CardTitle></CardHeader>
             <CardContent>
               {tanksQuery.isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {tanksQuery.data?.map((tank) => (
+                  {(tanksQuery.data as any)?.map((tank: any) => (
                     <Card key={tank.id} className="bg-slate-700/30 border-slate-600/30 rounded-xl">
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between mb-3">

@@ -30,12 +30,12 @@ export default function DriverFuelPurchase() {
   const [paymentMethod, setPaymentMethod] = useState("fuel_card");
   const [odometer, setOdometer] = useState("");
 
-  const vehicleQuery = trpc.drivers.getCurrentVehicle.useQuery();
-  const loadQuery = trpc.loads.getTrackedLoads.useQuery({ search: "" });
-  const stationsQuery = trpc.fuel.getNearbyStations.useQuery({ lat: 0, lng: 0 });
-  const historyQuery = trpc.fuel.getTransactions.useQuery({ limit: 10 });
+  const vehicleQuery = (trpc as any).drivers.getCurrentVehicle.useQuery();
+  const loadQuery = (trpc as any).loads.getTrackedLoads.useQuery({ search: "" });
+  const stationsQuery = (trpc as any).fuel.getNearbyStations.useQuery({ lat: 0, lng: 0 });
+  const historyQuery = (trpc as any).fuel.getTransactions.useQuery({ limit: 10 });
 
-  const submitMutation = trpc.fuel.reportPurchase.useMutation({
+  const submitMutation = (trpc as any).fuel.reportPurchase.useMutation({
     onSuccess: () => {
       toast.success("Fuel purchase recorded");
       navigate("/driver/dashboard");
@@ -44,7 +44,7 @@ export default function DriverFuelPurchase() {
   });
 
   const vehicle = vehicleQuery.data;
-  const load = loadQuery.data?.[0];
+  const load = (loadQuery.data as any)?.[0];
   const stations = stationsQuery.data || [];
   const history = historyQuery.data || [];
 
@@ -139,7 +139,7 @@ export default function DriverFuelPurchase() {
                 type="number"
                 step="0.01"
                 value={gallons}
-                onChange={(e) => { setGallons(e.target.value); calculateTotal(); }}
+                onChange={(e: any) => { setGallons(e.target.value); calculateTotal(); }}
                 placeholder="0.00"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -150,7 +150,7 @@ export default function DriverFuelPurchase() {
                 type="number"
                 step="0.001"
                 value={pricePerGallon}
-                onChange={(e) => { setPricePerGallon(e.target.value); calculateTotal(); }}
+                onChange={(e: any) => { setPricePerGallon(e.target.value); calculateTotal(); }}
                 placeholder="0.000"
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -162,7 +162,7 @@ export default function DriverFuelPurchase() {
                 <Input
                   type="number"
                   value={totalAmount}
-                  onChange={(e) => setTotalAmount(e.target.value)}
+                  onChange={(e: any) => setTotalAmount(e.target.value)}
                   placeholder="0.00"
                   className="pl-8 bg-slate-700/50 border-slate-600/50 rounded-lg font-bold"
                 />
@@ -178,7 +178,7 @@ export default function DriverFuelPurchase() {
                 <Input
                   type="number"
                   value={odometer}
-                  onChange={(e) => setOdometer(e.target.value)}
+                  onChange={(e: any) => setOdometer(e.target.value)}
                   placeholder={vehicle?.odometer?.toString() || "0"}
                   className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
                 />

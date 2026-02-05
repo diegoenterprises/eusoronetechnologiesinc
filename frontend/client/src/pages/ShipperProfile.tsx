@@ -18,9 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ShipperProfile() {
-  const profileQuery = trpc.shippers.getProfile.useQuery();
-  const statsQuery = trpc.shippers.getStats.useQuery();
-  const recentLoadsQuery = trpc.shippers.getRecentLoads.useQuery({ limit: 5 });
+  const profileQuery = (trpc as any).shippers.getProfile.useQuery();
+  const statsQuery = (trpc as any).shippers.getStats.useQuery();
+  const recentLoadsQuery = (trpc as any).shippers.getRecentLoads.useQuery({ limit: 5 });
 
   const profile = profileQuery.data;
   const stats = statsQuery.data;
@@ -161,7 +161,7 @@ export default function ShipperProfile() {
             </CardHeader>
             <CardContent>
               {statsQuery.isLoading ? (
-                <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-8 w-full rounded-xl" />)}</div>
+                <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-8 w-full rounded-xl" />)}</div>
               ) : (
                 <div className="space-y-3">
                   {stats?.monthlyVolume?.map((month: any) => (
@@ -185,12 +185,12 @@ export default function ShipperProfile() {
             </CardHeader>
             <CardContent className="p-0">
               {recentLoadsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : recentLoadsQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (recentLoadsQuery.data as any)?.length === 0 ? (
                 <p className="text-slate-400 text-center py-8">No recent loads</p>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {recentLoadsQuery.data?.map((load: any) => (
+                  {(recentLoadsQuery.data as any)?.map((load: any) => (
                     <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-center justify-between">
                         <div>

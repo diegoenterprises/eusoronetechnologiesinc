@@ -17,22 +17,22 @@ export default function DriverTracking() {
   const [currentPosition, setCurrentPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [watchId, setWatchId] = useState<number | null>(null);
 
-  const { data: liveLocation, isLoading: locationLoading, refetch: refetchLocation } = trpc.telemetry.getLiveLocation.useQuery(
+  const { data: liveLocation, isLoading: locationLoading, refetch: refetchLocation } = (trpc as any).telemetry.getLiveLocation.useQuery(
     { userId: 0 },
     { enabled: false }
   );
 
-  const { data: trail, isLoading: trailLoading } = trpc.telemetry.getTrail.useQuery(
+  const { data: trail, isLoading: trailLoading } = (trpc as any).telemetry.getTrail.useQuery(
     { userId: 0, hours: 8, limit: 200 },
     { enabled: false }
   );
 
-  const { data: activeAlerts } = trpc.safetyAlerts.getActiveAlerts.useQuery(
+  const { data: activeAlerts } = (trpc as any).safetyAlerts.getActiveAlerts.useQuery(
     { limit: 5 },
     { refetchInterval: 30000 }
   );
 
-  const submitLocation = trpc.telemetry.submitLocation.useMutation();
+  const submitLocation = (trpc as any).telemetry.submitLocation.useMutation();
 
   const startTracking = () => {
     if (!navigator.geolocation) {
@@ -210,7 +210,7 @@ export default function DriverTracking() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {activeAlerts.map((alert) => (
+              {activeAlerts.map((alert: any) => (
                 <div
                   key={alert.id}
                   className="flex items-center justify-between p-3 rounded-lg border bg-muted/50"
@@ -240,7 +240,7 @@ export default function DriverTracking() {
           className="rounded-full h-16 w-16 shadow-lg"
           onClick={() => {
             if (currentPosition) {
-              trpc.safetyAlerts.triggerSOS.useMutation().mutate({
+              (trpc as any).safetyAlerts.triggerSOS.useMutation().mutate({
                 latitude: currentPosition.lat,
                 longitude: currentPosition.lng,
               });

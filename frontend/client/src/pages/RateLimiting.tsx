@@ -20,12 +20,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function RateLimiting() {
-  const configQuery = trpc.admin.getRateLimitConfig.useQuery();
-  const statsQuery = trpc.admin.getRateLimitStats.useQuery();
+  const configQuery = (trpc as any).admin.getRateLimitConfig.useQuery();
+  const statsQuery = (trpc as any).admin.getRateLimitStats.useQuery();
 
-  const updateMutation = trpc.admin.updateRateLimitConfig.useMutation({
+  const updateMutation = (trpc as any).admin.updateRateLimitConfig.useMutation({
     onSuccess: () => { toast.success("Configuration updated"); configQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const config = configQuery.data;
@@ -123,7 +123,7 @@ export default function RateLimiting() {
         </CardHeader>
         <CardContent className="space-y-4">
           {configQuery.isLoading ? (
-            [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+            [1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
           ) : (
             <>
               <div className="p-4 rounded-xl bg-slate-700/30 flex items-center justify-between">
@@ -137,19 +137,19 @@ export default function RateLimiting() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <p className="text-white font-medium mb-2">Requests per Minute (Anonymous)</p>
-                  <Input type="number" value={config?.anonymousRpm || 60} onChange={(e) => updateMutation.mutate({ anonymousRpm: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={config?.anonymousRpm || 60} onChange={(e: any) => updateMutation.mutate({ anonymousRpm: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <p className="text-white font-medium mb-2">Requests per Minute (Authenticated)</p>
-                  <Input type="number" value={config?.authenticatedRpm || 300} onChange={(e) => updateMutation.mutate({ authenticatedRpm: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={config?.authenticatedRpm || 300} onChange={(e: any) => updateMutation.mutate({ authenticatedRpm: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <p className="text-white font-medium mb-2">Burst Limit</p>
-                  <Input type="number" value={config?.burstLimit || 50} onChange={(e) => updateMutation.mutate({ burstLimit: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={config?.burstLimit || 50} onChange={(e: any) => updateMutation.mutate({ burstLimit: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
                 </div>
                 <div className="p-4 rounded-xl bg-slate-700/30">
                   <p className="text-white font-medium mb-2">Block Duration (seconds)</p>
-                  <Input type="number" value={config?.blockDuration || 300} onChange={(e) => updateMutation.mutate({ blockDuration: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
+                  <Input type="number" value={config?.blockDuration || 300} onChange={(e: any) => updateMutation.mutate({ blockDuration: parseInt(e.target.value) })} className="bg-slate-800/50 border-slate-600/50 rounded-lg" />
                 </div>
               </div>
             </>
@@ -167,7 +167,7 @@ export default function RateLimiting() {
         </CardHeader>
         <CardContent className="p-0">
           {statsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
           ) : stats?.topBlockedIps?.length === 0 ? (
             <div className="text-center py-8">
               <Shield className="w-8 h-8 text-green-400 mx-auto mb-2" />

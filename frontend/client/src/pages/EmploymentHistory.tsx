@@ -20,8 +20,8 @@ import { cn } from "@/lib/utils";
 export default function EmploymentHistory() {
   const [search, setSearch] = useState("");
 
-  const historyQuery = trpc.compliance.getEmploymentHistory.useQuery({ search });
-  const statsQuery = trpc.compliance.getEmploymentHistoryStats.useQuery();
+  const historyQuery = (trpc as any).compliance.getEmploymentHistory.useQuery({ search });
+  const statsQuery = (trpc as any).compliance.getEmploymentHistoryStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -83,19 +83,19 @@ export default function EmploymentHistory() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search history..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search history..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Briefcase className="w-5 h-5 text-cyan-400" />Employment Records</CardTitle></CardHeader>
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
-          ) : historyQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+          ) : (historyQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Briefcase className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No records found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {historyQuery.data?.map((record: any) => (
+              {(historyQuery.data as any)?.map((record: any) => (
                 <div key={record.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", record.status === "verified" ? "bg-green-500/20" : record.status === "pending" ? "bg-yellow-500/20" : "bg-red-500/20")}>

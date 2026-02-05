@@ -23,9 +23,9 @@ export default function BrokerLoadProfitability() {
   const [periodFilter, setPeriodFilter] = useState("30d");
   const [marginFilter, setMarginFilter] = useState("all");
 
-  const loadsQuery = trpc.brokers.getShippers.useQuery({ search: "" });
-  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
-  const topLanesQuery = trpc.brokers.getShippers.useQuery({ search: "" });
+  const loadsQuery = (trpc as any).brokers.getShippers.useQuery({ search: "" });
+  const statsQuery = (trpc as any).brokers.getDashboardStats.useQuery();
+  const topLanesQuery = (trpc as any).brokers.getShippers.useQuery({ search: "" });
 
   const loads = loadsQuery.data || [];
   const stats = statsQuery.data as any;
@@ -76,7 +76,7 @@ export default function BrokerLoadProfitability() {
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30 rounded-xl">
@@ -150,7 +150,7 @@ export default function BrokerLoadProfitability() {
         </CardHeader>
         <CardContent>
           {topLanesQuery.isLoading ? (
-            <div className="space-y-3">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {topLanes.slice(0, 3).map((lane: any, idx: number) => (
@@ -181,7 +181,7 @@ export default function BrokerLoadProfitability() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search loads..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -206,7 +206,7 @@ export default function BrokerLoadProfitability() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : filteredLoads.length === 0 ? (
             <div className="text-center py-16">
               <BarChart3 className="w-12 h-12 text-slate-500 mx-auto mb-4" />

@@ -24,8 +24,8 @@ export default function ShipperDocumentExport() {
   const [selectedLoads, setSelectedLoads] = useState<string[]>([]);
   const [format, setFormat] = useState("pdf");
 
-  const loadsQuery = trpc.loads.getTrackedLoads.useQuery({});
-  const exportMutation = trpc.documents.upload.useMutation({
+  const loadsQuery = (trpc as any).loads.getTrackedLoads.useQuery({});
+  const exportMutation = (trpc as any).documents.upload.useMutation({
     onSuccess: (data: any) => {
       toast.success("Export ready", { description: "Download will start shortly" });
       window.open(data.downloadUrl || data.url, "_blank");
@@ -113,7 +113,7 @@ export default function ShipperDocumentExport() {
                 { value: "rate_con", label: "Rate Confirmation" },
                 { value: "invoice", label: "Invoice" },
                 { value: "inspection", label: "Inspection Reports" },
-              ].map((doc) => (
+              ].map((doc: any) => (
                 <div
                   key={doc.value}
                   onClick={() => toggleDocType(doc.value)}
@@ -153,7 +153,7 @@ export default function ShipperDocumentExport() {
         </CardHeader>
         <CardContent>
           {loadsQuery.isLoading ? (
-            <div className="space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+            <div className="space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
           ) : loads.length === 0 ? (
             <div className="text-center py-12">
               <Package className="w-10 h-10 text-slate-500 mx-auto mb-3" />

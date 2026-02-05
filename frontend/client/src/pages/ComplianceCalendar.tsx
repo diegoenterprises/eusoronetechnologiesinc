@@ -19,11 +19,11 @@ import { cn } from "@/lib/utils";
 export default function ComplianceCalendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const eventsQuery = trpc.compliance.getCalendarEvents.useQuery({
+  const eventsQuery = (trpc as any).compliance.getCalendarEvents.useQuery({
     month: currentMonth.getMonth() + 1,
     year: currentMonth.getFullYear(),
   });
-  const summaryQuery = trpc.compliance.getCalendarSummary.useQuery();
+  const summaryQuery = (trpc as any).compliance.getCalendarSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -141,8 +141,8 @@ export default function ComplianceCalendar() {
         </CardHeader>
         <CardContent>
           {eventsQuery.isLoading ? (
-            <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : eventsQuery.data?.length === 0 ? (
+            <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (eventsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
                 <Calendar className="w-8 h-8 text-slate-500" />
@@ -151,7 +151,7 @@ export default function ComplianceCalendar() {
             </div>
           ) : (
             <div className="space-y-3">
-              {eventsQuery.data?.map((event: any) => (
+              {(eventsQuery.data as any)?.map((event: any) => (
                 <div key={event.id} className={cn("p-4 rounded-xl border", event.type === "due" || event.type === "overdue" ? "bg-red-500/10 border-red-500/30" : event.type === "expiring" ? "bg-yellow-500/10 border-yellow-500/30" : "bg-slate-700/30 border-slate-600/30")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">

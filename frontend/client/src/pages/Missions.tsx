@@ -21,23 +21,23 @@ export default function Missions() {
   const [activeTab, setActiveTab] = useState("available");
   const [selectedType, setSelectedType] = useState<string>("all");
 
-  const missionsQuery = trpc.gamification.getMissions.useQuery({ type: selectedType as any });
-  const profileQuery = trpc.gamification.getProfile.useQuery({});
-  const cratesQuery = trpc.gamification.getCrates.useQuery();
-  const seasonQuery = trpc.gamification.getCurrentSeason.useQuery();
+  const missionsQuery = (trpc as any).gamification.getMissions.useQuery({ type: selectedType as any });
+  const profileQuery = (trpc as any).gamification.getProfile.useQuery({});
+  const cratesQuery = (trpc as any).gamification.getCrates.useQuery();
+  const seasonQuery = (trpc as any).gamification.getCurrentSeason.useQuery();
 
-  const startMissionMutation = trpc.gamification.startMission.useMutation({
+  const startMissionMutation = (trpc as any).gamification.startMission.useMutation({
     onSuccess: () => missionsQuery.refetch(),
   });
 
-  const claimRewardMutation = trpc.gamification.claimMissionReward.useMutation({
+  const claimRewardMutation = (trpc as any).gamification.claimMissionReward.useMutation({
     onSuccess: () => {
       missionsQuery.refetch();
       profileQuery.refetch();
     },
   });
 
-  const openCrateMutation = trpc.gamification.openCrate.useMutation({
+  const openCrateMutation = (trpc as any).gamification.openCrate.useMutation({
     onSuccess: () => {
       cratesQuery.refetch();
       profileQuery.refetch();
@@ -169,7 +169,7 @@ export default function Missions() {
 
       {/* Mission Type Filter */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {missionTypes.map((type) => {
+        {missionTypes.map((type: any) => {
           const Icon = type.icon;
           return (
             <Button

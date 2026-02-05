@@ -22,8 +22,8 @@ export default function CarrierDirectory() {
   const [search, setSearch] = useState("");
   const [equipment, setEquipment] = useState("all");
 
-  const carriersQuery = trpc.carriers.getDirectory.useQuery({ search, equipment });
-  const statsQuery = trpc.carriers.getDirectoryStats.useQuery();
+  const carriersQuery = (trpc as any).carriers.getDirectory.useQuery({ search, equipment });
+  const statsQuery = (trpc as any).carriers.getDirectoryStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -74,7 +74,7 @@ export default function CarrierDirectory() {
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search carriers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+          <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search carriers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
         </div>
         <Select value={equipment} onValueChange={setEquipment}>
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
@@ -92,12 +92,12 @@ export default function CarrierDirectory() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-cyan-400" />Carriers</CardTitle></CardHeader>
         <CardContent className="p-0">
           {carriersQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
-          ) : carriersQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+          ) : (carriersQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No carriers found</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {carriersQuery.data?.map((carrier: any) => (
+              {(carriersQuery.data as any)?.map((carrier: any) => (
                 <div key={carrier.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-xl">{carrier.name?.charAt(0)}</div>

@@ -20,13 +20,13 @@ import { cn } from "@/lib/utils";
 export default function LaneRates() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const lanesQuery = trpc.laneRates.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.laneRates.getSummary.useQuery();
-  const topLanesQuery = trpc.laneRates.getTopLanes.useQuery({ limit: 5 });
+  const lanesQuery = (trpc as any).laneRates.list.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).laneRates.getSummary.useQuery();
+  const topLanesQuery = (trpc as any).laneRates.getTopLanes.useQuery({ limit: 5 });
 
   const summary = summaryQuery.data;
 
-  const filteredLanes = lanesQuery.data?.filter((lane: any) =>
+  const filteredLanes = (lanesQuery.data as any)?.filter((lane: any) =>
     !searchTerm || lane.origin?.toLowerCase().includes(searchTerm.toLowerCase()) || lane.destination?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -117,7 +117,7 @@ export default function LaneRates() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search lanes..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search lanes..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -131,10 +131,10 @@ export default function LaneRates() {
           </CardHeader>
           <CardContent className="p-0">
             {topLanesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {topLanesQuery.data?.map((lane: any, idx: number) => (
+                {(topLanesQuery.data as any)?.map((lane: any, idx: number) => (
                   <div key={lane.id} className="p-4">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export default function LaneRates() {
           </CardHeader>
           <CardContent className="p-0">
             {lanesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : filteredLanes?.length === 0 ? (
               <div className="text-center py-12">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">

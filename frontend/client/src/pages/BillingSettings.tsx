@@ -19,10 +19,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function BillingSettings() {
-  const subscriptionQuery = trpc.billing.getSubscription.useQuery();
-  const paymentMethodsQuery = trpc.billing.getPaymentMethods.useQuery();
-  const invoicesQuery = trpc.billing.getInvoices.useQuery({ limit: 10 });
-  const usageQuery = trpc.billing.getUsage.useQuery();
+  const subscriptionQuery = (trpc as any).billing.getSubscription.useQuery();
+  const paymentMethodsQuery = (trpc as any).billing.getPaymentMethods.useQuery();
+  const invoicesQuery = (trpc as any).billing.getInvoices.useQuery({ limit: 10 });
+  const usageQuery = (trpc as any).billing.getUsage.useQuery();
 
   const subscription = subscriptionQuery.data;
   const usage = usageQuery.data;
@@ -83,7 +83,7 @@ export default function BillingSettings() {
         </CardHeader>
         <CardContent>
           {usageQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-4">
               {usage?.items?.map((item: any) => (
@@ -116,12 +116,12 @@ export default function BillingSettings() {
           </CardHeader>
           <CardContent>
             {paymentMethodsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : paymentMethodsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (paymentMethodsQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-4">No payment methods</p>
             ) : (
               <div className="space-y-3">
-                {paymentMethodsQuery.data?.map((method: any) => (
+                {(paymentMethodsQuery.data as any)?.map((method: any) => (
                   <div key={method.id} className={cn("p-4 rounded-xl flex items-center justify-between", method.isDefault ? "bg-cyan-500/10 border border-cyan-500/30" : "bg-slate-700/30")}>
                     <div className="flex items-center gap-3">
                       <CreditCard className="w-5 h-5 text-slate-400" />
@@ -148,12 +148,12 @@ export default function BillingSettings() {
           </CardHeader>
           <CardContent className="p-0">
             {invoicesQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
-            ) : invoicesQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            ) : (invoicesQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-8">No invoices</p>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {invoicesQuery.data?.map((invoice: any) => (
+                {(invoicesQuery.data as any)?.map((invoice: any) => (
                   <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                     <div>
                       <p className="text-white font-medium">{invoice.number}</p>

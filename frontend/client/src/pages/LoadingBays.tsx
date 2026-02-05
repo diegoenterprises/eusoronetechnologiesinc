@@ -22,10 +22,10 @@ import { toast } from "sonner";
 export default function LoadingBays() {
   const [selectedBay, setSelectedBay] = useState<string | null>(null);
 
-  const baysQuery = trpc.terminals.getLoadingBays.useQuery({});
-  const statsQuery = trpc.terminals.getBayStats.useQuery();
+  const baysQuery = (trpc as any).terminals.getLoadingBays.useQuery({});
+  const statsQuery = (trpc as any).terminals.getBayStats.useQuery();
 
-  const startLoadingMutation = trpc.terminals.startLoading.useMutation({
+  const startLoadingMutation = (trpc as any).terminals.startLoading.useMutation({
     onSuccess: () => {
       toast.success("Loading operation started");
       baysQuery.refetch();
@@ -33,7 +33,7 @@ export default function LoadingBays() {
     onError: (error: any) => toast.error("Failed to start", { description: error.message }),
   });
 
-  const completeLoadingMutation = trpc.terminals.completeLoading.useMutation({
+  const completeLoadingMutation = (trpc as any).terminals.completeLoading.useMutation({
     onSuccess: () => {
       toast.success("Loading operation completed");
       baysQuery.refetch();
@@ -79,7 +79,7 @@ export default function LoadingBays() {
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 rounded-xl">
@@ -89,7 +89,7 @@ export default function LoadingBays() {
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.available || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.available || 0}</p>
                     <p className="text-xs text-slate-400">Available</p>
                   </div>
                 </div>
@@ -102,7 +102,7 @@ export default function LoadingBays() {
                     <Droplets className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.loading || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.loading || 0}</p>
                     <p className="text-xs text-slate-400">Loading</p>
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export default function LoadingBays() {
                     <Truck className="w-5 h-5 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.unloading || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.unloading || 0}</p>
                     <p className="text-xs text-slate-400">Unloading</p>
                   </div>
                 </div>
@@ -128,7 +128,7 @@ export default function LoadingBays() {
                     <Gauge className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.utilization || 0}%</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.utilization || 0}%</p>
                     <p className="text-xs text-slate-400">Utilization</p>
                   </div>
                 </div>
@@ -141,7 +141,7 @@ export default function LoadingBays() {
                     <Clock className="w-5 h-5 text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.avgLoadTime || 0}m</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.avgLoadTime || 0}m</p>
                     <p className="text-xs text-slate-400">Avg Load Time</p>
                   </div>
                 </div>
@@ -163,11 +163,11 @@ export default function LoadingBays() {
             <CardContent>
               {baysQuery.isLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {Array(8).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-lg" />)}
+                  {Array(8).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-32 rounded-lg" />)}
                 </div>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {baysQuery.data?.map((bay: any) => (
+                  {(baysQuery.data as any)?.map((bay: any) => (
                     <div
                       key={bay.id}
                       onClick={() => setSelectedBay(bay.id)}
@@ -227,14 +227,14 @@ export default function LoadingBays() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {baysQuery.data?.find((b: any) => b.id === selectedBay) && (
+                  {(baysQuery.data as any)?.find((b: any) => b.id === selectedBay) && (
                     <>
                       <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
                         <h3 className="text-white font-medium mb-2">
-                          {baysQuery.data?.find((b: any) => b.id === selectedBay)?.name}
+                          {(baysQuery.data as any)?.find((b: any) => b.id === selectedBay)?.name}
                         </h3>
                         <p className="text-sm text-slate-400">
-                          Status: {baysQuery.data?.find((b: any) => b.id === selectedBay)?.status}
+                          Status: {(baysQuery.data as any)?.find((b: any) => b.id === selectedBay)?.status}
                         </p>
                       </div>
 

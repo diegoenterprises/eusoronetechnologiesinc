@@ -27,16 +27,16 @@ export default function CatalystDriverAssignment() {
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const driversQuery = trpc.catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
-  const aiQuery = trpc.catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const driversQuery = (trpc as any).catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
+  const aiQuery = (trpc as any).catalysts.getAvailableDrivers.useQuery({ loadId: loadId || "" });
 
-  const assignMutation = trpc.catalysts.assignDriver.useMutation({
+  const assignMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
       navigate("/catalyst/dispatch");
     },
-    onError: (error) => toast.error("Assignment failed", { description: error.message }),
+    onError: (error: any) => toast.error("Assignment failed", { description: error.message }),
   });
 
   const load = loadQuery.data;
@@ -154,7 +154,7 @@ export default function CatalystDriverAssignment() {
             </CardTitle>
             <Input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e: any) => setSearch(e.target.value)}
               placeholder="Search drivers..."
               className="w-64 bg-slate-700/50 border-slate-600/50 rounded-lg"
             />
@@ -162,7 +162,7 @@ export default function CatalystDriverAssignment() {
         </CardHeader>
         <CardContent>
           {driversQuery.isLoading ? (
-            <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : filteredDrivers.length === 0 ? (
             <div className="text-center py-12">
               <User className="w-10 h-10 text-slate-500 mx-auto mb-3" />
@@ -192,7 +192,7 @@ export default function CatalystDriverAssignment() {
                           <div className="flex items-center gap-2">
                             <p className="text-white font-medium">{driver.name}</p>
                             <div className="flex items-center">
-                              {[1, 2, 3, 4, 5].map((s) => (
+                              {[1, 2, 3, 4, 5].map((s: any) => (
                                 <Star
                                   key={s}
                                   className={cn("w-3 h-3", s <= driver.rating ? "text-yellow-400 fill-yellow-400" : "text-slate-600")}

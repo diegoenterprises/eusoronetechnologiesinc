@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function BrokerDashboard() {
-  const statsQuery = trpc.brokers.getDashboardStats.useQuery();
-  const shipperLoadsQuery = trpc.brokers.getShipperLoads.useQuery({ limit: 5 });
-  const inProgressQuery = trpc.brokers.getLoadsInProgress.useQuery({ limit: 5 });
-  const capacityQuery = trpc.brokers.getCarrierCapacity.useQuery({ limit: 5 });
+  const statsQuery = (trpc as any).brokers.getDashboardStats.useQuery();
+  const shipperLoadsQuery = (trpc as any).brokers.getShipperLoads.useQuery({ limit: 5 });
+  const inProgressQuery = (trpc as any).brokers.getLoadsInProgress.useQuery({ limit: 5 });
+  const capacityQuery = (trpc as any).brokers.getCarrierCapacity.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -84,12 +84,12 @@ export default function BrokerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Shipper Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
             {shipperLoadsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
-            ) : shipperLoadsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
+            ) : (shipperLoadsQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Package className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No loads available</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {shipperLoadsQuery.data?.map((load: any) => (
+                {(shipperLoadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium text-sm">#{load.loadNumber}</p>
@@ -107,12 +107,12 @@ export default function BrokerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-green-400" />Carrier Capacity</CardTitle></CardHeader>
           <CardContent className="p-0">
             {capacityQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
-            ) : capacityQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
+            ) : (capacityQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><Truck className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No capacity available</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {capacityQuery.data?.map((carrier: any) => (
+                {(capacityQuery.data as any)?.map((carrier: any) => (
                   <div key={carrier.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium text-sm">{carrier.name}</p>
@@ -130,12 +130,12 @@ export default function BrokerDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-purple-400" />In Progress</CardTitle></CardHeader>
           <CardContent className="p-0">
             {inProgressQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
-            ) : inProgressQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
+            ) : (inProgressQuery.data as any)?.length === 0 ? (
               <div className="p-6 text-center"><CheckCircle className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No loads in progress</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {inProgressQuery.data?.map((load: any) => (
+                {(inProgressQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium text-sm">#{load.loadNumber}</p>

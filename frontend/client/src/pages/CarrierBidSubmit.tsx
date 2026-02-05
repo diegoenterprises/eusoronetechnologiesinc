@@ -29,16 +29,16 @@ export default function CarrierBidSubmit() {
   const [notes, setNotes] = useState("");
   const [equipmentType, setEquipmentType] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const rateQuery = trpc.esang.chat.useMutation();
-  const profitQuery = trpc.carriers.getDashboardStats.useQuery();
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const rateQuery = (trpc as any).esang.chat.useMutation();
+  const profitQuery = (trpc as any).carriers.getDashboardStats.useQuery();
 
-  const submitBidMutation = trpc.carriers.submitBid.useMutation({
+  const submitBidMutation = (trpc as any).carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
       navigate("/carrier/bids");
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const load = loadQuery.data;
@@ -167,7 +167,7 @@ export default function CarrierBidSubmit() {
                 <Input
                   type="number"
                   value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
+                  onChange={(e: any) => setBidAmount(e.target.value)}
                   placeholder={rateData?.midEstimate?.toString() || "0"}
                   className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg text-xl font-bold"
                 />
@@ -179,7 +179,7 @@ export default function CarrierBidSubmit() {
               <label className="text-slate-300 text-sm">Notes (Optional)</label>
               <Textarea
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e: any) => setNotes(e.target.value)}
                 placeholder="Add any notes for the shipper..."
                 className="bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -207,7 +207,7 @@ export default function CarrierBidSubmit() {
               </div>
             ) : profitQuery.isLoading ? (
               <div className="space-y-3">
-                {Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-8 rounded" />)}
+                {Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-8 rounded" />)}
               </div>
             ) : (
               <div className="space-y-3">

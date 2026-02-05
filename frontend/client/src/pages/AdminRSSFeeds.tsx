@@ -42,10 +42,10 @@ export default function AdminRSSFeeds() {
   const [newFeed, setNewFeed] = useState({ name: "", url: "", category: "logistics" });
 
   const utils = trpc.useUtils();
-  const feedsQuery = trpc.news.getFeedSources.useQuery();
-  const statsQuery = trpc.news.getFeedStats.useQuery();
+  const feedsQuery = (trpc as any).news.getFeedSources.useQuery();
+  const statsQuery = (trpc as any).news.getFeedStats.useQuery();
   
-  const addFeedMutation = trpc.news.addFeedSource.useMutation({
+  const addFeedMutation = (trpc as any).news.addFeedSource.useMutation({
     onSuccess: () => {
       toast.success("RSS feed added successfully");
       utils.news.getFeedSources.invalidate();
@@ -53,38 +53,38 @@ export default function AdminRSSFeeds() {
       setIsAddDialogOpen(false);
       setNewFeed({ name: "", url: "", category: "logistics" });
     },
-    onError: (err) => toast.error("Failed to add feed", { description: err.message }),
+    onError: (err: any) => toast.error("Failed to add feed", { description: err.message }),
   });
 
-  const deleteFeedMutation = trpc.news.deleteFeedSource.useMutation({
+  const deleteFeedMutation = (trpc as any).news.deleteFeedSource.useMutation({
     onSuccess: () => {
       toast.success("RSS feed deleted");
       utils.news.getFeedSources.invalidate();
       utils.news.getFeedStats.invalidate();
     },
-    onError: (err) => toast.error("Failed to delete feed", { description: err.message }),
+    onError: (err: any) => toast.error("Failed to delete feed", { description: err.message }),
   });
 
-  const toggleFeedMutation = trpc.news.toggleFeedSource.useMutation({
+  const toggleFeedMutation = (trpc as any).news.toggleFeedSource.useMutation({
     onSuccess: () => {
       utils.news.getFeedSources.invalidate();
     },
-    onError: (err) => toast.error("Failed to toggle feed", { description: err.message }),
+    onError: (err: any) => toast.error("Failed to toggle feed", { description: err.message }),
   });
 
-  const refreshMutation = trpc.news.refreshFeeds.useMutation({
-    onSuccess: (data) => {
+  const refreshMutation = (trpc as any).news.refreshFeeds.useMutation({
+    onSuccess: (data: any) => {
       toast.success(`Refreshed ${data.count} articles from RSS feeds`);
       utils.news.getFeedStats.invalidate();
     },
-    onError: (err) => toast.error("Failed to refresh feeds", { description: err.message }),
+    onError: (err: any) => toast.error("Failed to refresh feeds", { description: err.message }),
   });
 
   const getCategoryInfo = (category: string) => {
     return CATEGORIES.find(c => c.value === category) || { label: category, icon: Rss };
   };
 
-  const filteredFeeds = feedsQuery.data?.filter(feed => {
+  const filteredFeeds = (feedsQuery.data as any)?.filter((feed: any) => {
     const matchesSearch = feed.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          feed.url.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === "all" || feed.category === filterCategory;
@@ -141,7 +141,7 @@ export default function AdminRSSFeeds() {
                   <Label className="text-slate-300">Feed Name</Label>
                   <Input
                     value={newFeed.name}
-                    onChange={(e) => setNewFeed({ ...newFeed, name: e.target.value })}
+                    onChange={(e: any) => setNewFeed({ ...newFeed, name: e.target.value })}
                     placeholder="e.g., FreightWaves"
                     className="bg-slate-700 border-slate-600"
                   />
@@ -150,19 +150,19 @@ export default function AdminRSSFeeds() {
                   <Label className="text-slate-300">RSS Feed URL</Label>
                   <Input
                     value={newFeed.url}
-                    onChange={(e) => setNewFeed({ ...newFeed, url: e.target.value })}
+                    onChange={(e: any) => setNewFeed({ ...newFeed, url: e.target.value })}
                     placeholder="https://example.com/rss"
                     className="bg-slate-700 border-slate-600"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-slate-300">Category</Label>
-                  <Select value={newFeed.category} onValueChange={(v) => setNewFeed({ ...newFeed, category: v })}>
+                  <Select value={newFeed.category} onValueChange={(v: any) => setNewFeed({ ...newFeed, category: v })}>
                     <SelectTrigger className="bg-slate-700 border-slate-600">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 border-slate-700">
-                      {CATEGORIES.map((cat) => (
+                      {CATEGORIES.map((cat: any) => (
                         <SelectItem key={cat.value} value={cat.value}>
                           <div className="flex items-center gap-2">
                             <cat.icon className="w-4 h-4" />
@@ -198,7 +198,7 @@ export default function AdminRSSFeeds() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm">Total Sources</p>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.totalSources || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.totalSources || 0}</p>
                   </div>
                   <Rss className="w-8 h-8 text-orange-400" />
                 </div>
@@ -209,7 +209,7 @@ export default function AdminRSSFeeds() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm">Active Sources</p>
-                    <p className="text-2xl font-bold text-green-400">{statsQuery.data?.enabledSources || 0}</p>
+                    <p className="text-2xl font-bold text-green-400">{(statsQuery.data as any)?.enabledSources || 0}</p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-400" />
                 </div>
@@ -220,7 +220,7 @@ export default function AdminRSSFeeds() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-slate-400 text-sm">Total Articles</p>
-                    <p className="text-2xl font-bold text-blue-400">{statsQuery.data?.totalArticles || 0}</p>
+                    <p className="text-2xl font-bold text-blue-400">{(statsQuery.data as any)?.totalArticles || 0}</p>
                   </div>
                   <BarChart3 className="w-8 h-8 text-blue-400" />
                 </div>
@@ -232,7 +232,7 @@ export default function AdminRSSFeeds() {
                   <div>
                     <p className="text-slate-400 text-sm">Last Updated</p>
                     <p className="text-sm font-medium text-white">
-                      {statsQuery.data?.lastUpdated 
+                      {(statsQuery.data as any)?.lastUpdated 
                         ? new Date(statsQuery.data.lastUpdated).toLocaleTimeString()
                         : "Never"}
                     </p>
@@ -251,7 +251,7 @@ export default function AdminRSSFeeds() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search feeds..."
             className="pl-9 bg-slate-700/50 border-slate-600"
           />
@@ -262,7 +262,7 @@ export default function AdminRSSFeeds() {
           </SelectTrigger>
           <SelectContent className="bg-slate-800 border-slate-700">
             <SelectItem value="all">All Categories</SelectItem>
-            {CATEGORIES.map((cat) => (
+            {CATEGORIES.map((cat: any) => (
               <SelectItem key={cat.value} value={cat.value}>
                 <div className="flex items-center gap-2">
                   <cat.icon className="w-4 h-4" />
@@ -299,7 +299,7 @@ export default function AdminRSSFeeds() {
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredFeeds.map((feed) => {
+              {filteredFeeds.map((feed: any) => {
                 const catInfo = getCategoryInfo(feed.category);
                 const CatIcon = catInfo.icon;
                 return (

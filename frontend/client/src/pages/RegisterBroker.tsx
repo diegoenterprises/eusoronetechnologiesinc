@@ -100,17 +100,17 @@ export default function RegisterBroker() {
   const [formData, setFormData] = useState<BrokerFormData>(initialFormData);
 
   const updateFormData = (updates: Partial<BrokerFormData>) => {
-    setFormData((prev) => ({ ...prev, ...updates }));
+    setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const registerMutation = trpc.registration.registerBroker.useMutation({
+  const registerMutation = (trpc as any).registration.registerBroker.useMutation({
     onSuccess: () => {
       toast.success("Registration submitted!", {
         description: "Your broker account is pending verification.",
       });
       setLocation("/login");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast.error("Registration failed", {
         description: error.message,
       });
@@ -154,7 +154,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.companyName}
-                onChange={(e) => updateFormData({ companyName: e.target.value })}
+                onChange={(e: any) => updateFormData({ companyName: e.target.value })}
                 placeholder="ABC Logistics LLC"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -163,7 +163,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">DBA (if different)</Label>
               <Input
                 value={formData.dba}
-                onChange={(e) => updateFormData({ dba: e.target.value })}
+                onChange={(e: any) => updateFormData({ dba: e.target.value })}
                 placeholder="Doing Business As"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -177,7 +177,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.einNumber}
-                onChange={(e) => updateFormData({ einNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
                 placeholder="XX-XXXXXXX"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -187,7 +187,7 @@ export default function RegisterBroker() {
               <Input
                 type="number"
                 value={formData.yearEstablished}
-                onChange={(e) => updateFormData({ yearEstablished: e.target.value })}
+                onChange={(e: any) => updateFormData({ yearEstablished: e.target.value })}
                 placeholder="2015"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -201,7 +201,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.mcNumber}
-                onChange={(e) => updateFormData({ mcNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ mcNumber: e.target.value })}
                 placeholder="MC-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -210,7 +210,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">USDOT Number (if applicable)</Label>
               <Input
                 value={formData.usdotNumber}
-                onChange={(e) => updateFormData({ usdotNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ usdotNumber: e.target.value })}
                 placeholder="1234567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -240,7 +240,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.primaryContactName}
-                onChange={(e) => updateFormData({ primaryContactName: e.target.value })}
+                onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
                 placeholder="John Smith"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -249,7 +249,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">Title</Label>
               <Input
                 value={formData.primaryContactTitle}
-                onChange={(e) => updateFormData({ primaryContactTitle: e.target.value })}
+                onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
                 placeholder="Operations Manager"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -264,7 +264,7 @@ export default function RegisterBroker() {
               <Input
                 type="email"
                 value={formData.primaryContactEmail}
-                onChange={(e) => updateFormData({ primaryContactEmail: e.target.value })}
+                onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
                 placeholder="john@company.com"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -276,7 +276,7 @@ export default function RegisterBroker() {
               <Input
                 type="tel"
                 value={formData.primaryContactPhone}
-                onChange={(e) => updateFormData({ primaryContactPhone: e.target.value })}
+                onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
                 placeholder="(555) 123-4567"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -305,7 +305,7 @@ export default function RegisterBroker() {
             </Label>
             <Input
               value={formData.streetAddress}
-              onChange={(e) => updateFormData({ streetAddress: e.target.value })}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
               placeholder="123 Business Blvd"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -318,7 +318,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.city}
-                onChange={(e) => updateFormData({ city: e.target.value })}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
                 placeholder="Houston"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -327,12 +327,12 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">
                 State <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.state} onValueChange={(v) => updateFormData({ state: v })}>
+              <Select value={formData.state} onValueChange={(v: any) => updateFormData({ state: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="State" />
                 </SelectTrigger>
                 <SelectContent>
-                  {US_STATES.map((state) => (
+                  {US_STATES.map((state: any) => (
                     <SelectItem key={state} value={state}>{state}</SelectItem>
                   ))}
                 </SelectContent>
@@ -344,7 +344,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.zipCode}
-                onChange={(e) => updateFormData({ zipCode: e.target.value })}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
                 placeholder="77001"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -384,7 +384,7 @@ export default function RegisterBroker() {
             <Label className="text-slate-300">Broker Authority Number</Label>
             <Input
               value={formData.brokerAuthority}
-              onChange={(e) => updateFormData({ brokerAuthority: e.target.value })}
+              onChange={(e: any) => updateFormData({ brokerAuthority: e.target.value })}
               placeholder="Same as MC number if applicable"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
@@ -397,7 +397,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.suretyBondCarrier}
-                onChange={(e) => updateFormData({ suretyBondCarrier: e.target.value })}
+                onChange={(e: any) => updateFormData({ suretyBondCarrier: e.target.value })}
                 placeholder="ABC Surety Company"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -408,7 +408,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.bondNumber}
-                onChange={(e) => updateFormData({ bondNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ bondNumber: e.target.value })}
                 placeholder="BOND-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -420,7 +420,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">
                 Bond Amount <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.suretyBondAmount} onValueChange={(v) => updateFormData({ suretyBondAmount: v })}>
+              <Select value={formData.suretyBondAmount} onValueChange={(v: any) => updateFormData({ suretyBondAmount: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue />
                 </SelectTrigger>
@@ -438,7 +438,7 @@ export default function RegisterBroker() {
               <Input
                 type="date"
                 value={formData.bondExpiration}
-                onChange={(e) => updateFormData({ bondExpiration: e.target.value })}
+                onChange={(e: any) => updateFormData({ bondExpiration: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -467,7 +467,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.insuranceCarrier}
-                onChange={(e) => updateFormData({ insuranceCarrier: e.target.value })}
+                onChange={(e: any) => updateFormData({ insuranceCarrier: e.target.value })}
                 placeholder="ABC Insurance Co"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -478,7 +478,7 @@ export default function RegisterBroker() {
               </Label>
               <Input
                 value={formData.policyNumber}
-                onChange={(e) => updateFormData({ policyNumber: e.target.value })}
+                onChange={(e: any) => updateFormData({ policyNumber: e.target.value })}
                 placeholder="POL-123456"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -490,7 +490,7 @@ export default function RegisterBroker() {
               <Label className="text-slate-300">
                 Coverage Amount <span className="text-red-400">*</span>
               </Label>
-              <Select value={formData.coverageAmount} onValueChange={(v) => updateFormData({ coverageAmount: v })}>
+              <Select value={formData.coverageAmount} onValueChange={(v: any) => updateFormData({ coverageAmount: v })}>
                 <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
                   <SelectValue placeholder="Select coverage" />
                 </SelectTrigger>
@@ -509,7 +509,7 @@ export default function RegisterBroker() {
               <Input
                 type="date"
                 value={formData.expirationDate}
-                onChange={(e) => updateFormData({ expirationDate: e.target.value })}
+                onChange={(e: any) => updateFormData({ expirationDate: e.target.value })}
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
@@ -536,7 +536,7 @@ export default function RegisterBroker() {
               <Checkbox
                 id="terms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a>
@@ -548,7 +548,7 @@ export default function RegisterBroker() {
               <Checkbox
                 id="privacy"
                 checked={formData.acceptPrivacy}
-                onCheckedChange={(c) => updateFormData({ acceptPrivacy: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptPrivacy: c as boolean })}
               />
               <Label htmlFor="privacy" className="text-sm text-slate-300 cursor-pointer">
                 I accept the <a href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>
@@ -560,7 +560,7 @@ export default function RegisterBroker() {
               <Checkbox
                 id="compliance"
                 checked={formData.acceptCompliance}
-                onCheckedChange={(c) => updateFormData({ acceptCompliance: c as boolean })}
+                onCheckedChange={(c: any) => updateFormData({ acceptCompliance: c as boolean })}
               />
               <Label htmlFor="compliance" className="text-sm text-slate-300 cursor-pointer">
                 I certify that all information is accurate and my company maintains active FMCSA broker authority

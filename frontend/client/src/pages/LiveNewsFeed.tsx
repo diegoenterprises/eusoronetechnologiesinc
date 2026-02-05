@@ -162,14 +162,14 @@ export default function LiveNewsFeed() {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <Input
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e: any) => setSearchTerm(e.target.value)}
                 placeholder="Search news..."
                 className="pl-9 bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {(["all", "oil_gas", "chemical", "trucking", "bulk_transport", "cold_chain", "hazmat"] as const).map((cat) => (
+              {(["all", "oil_gas", "chemical", "trucking", "bulk_transport", "cold_chain", "hazmat"] as const).map((cat: any) => (
                 <Button
                   key={cat}
                   size="sm"
@@ -222,7 +222,7 @@ export default function LiveNewsFeed() {
           {/* News Grid */}
           {!isLoading && filteredArticles.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredArticles.map((article) => (
+              {filteredArticles.map((article: any) => (
                 <ArticleCard key={article.id} article={article} />
               ))}
             </div>
@@ -250,7 +250,7 @@ export default function LiveNewsFeed() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
-            {ENABLED_FEEDS.slice(0, 20).map((feed) => (
+            {ENABLED_FEEDS.slice(0, 20).map((feed: any) => (
               <Badge
                 key={feed.id}
                 variant="outline"
@@ -297,7 +297,7 @@ function ArticleCard({ article }: { article: NewsArticle }) {
                 src={article.imageUrl} 
                 alt="" 
                 className="w-full h-full object-cover"
-                onError={(e) => {
+                onError={(e: any) => {
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
               />

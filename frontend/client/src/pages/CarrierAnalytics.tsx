@@ -22,8 +22,8 @@ export default function CarrierAnalyticsPage() {
   const [timeRange, setTimeRange] = useState<string>("THIS_MONTH");
 
   // tRPC queries for carrier analytics
-  const analyticsQuery = trpc.carriers.getAnalytics.useQuery({ timeRange });
-  const recentLoadsQuery = trpc.carriers.getRecentCompletedLoads.useQuery({ limit: 5 });
+  const analyticsQuery = (trpc as any).carriers.getAnalytics.useQuery({ timeRange });
+  const recentLoadsQuery = (trpc as any).carriers.getRecentCompletedLoads.useQuery({ limit: 5 });
 
   if (analyticsQuery.isLoading) {
     return (
@@ -62,7 +62,7 @@ export default function CarrierAnalyticsPage() {
             </div>
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value)}
+              onChange={(e: any) => setTimeRange(e.target.value)}
               className="px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg text-white"
             >
               <option value="THIS_WEEK">This Week</option>
@@ -222,7 +222,7 @@ export default function CarrierAnalyticsPage() {
             Recent Completed Loads
           </h3>
           <div className="space-y-3">
-            {recentLoads.map((load) => (
+            {recentLoads.map((load: any) => (
               <div key={load.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg hover:bg-gray-800/50 transition-all">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-green-600/20 flex items-center justify-center">

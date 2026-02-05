@@ -25,10 +25,10 @@ export default function IncidentReport() {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
 
-  const recentQuery = trpc.safety.getRecentIncidents.useQuery({ limit: 5 });
-  const summaryQuery = trpc.safety.getIncidentSummary.useQuery();
+  const recentQuery = (trpc as any).safety.getRecentIncidents.useQuery({ limit: 5 });
+  const summaryQuery = (trpc as any).safety.getIncidentSummary.useQuery();
 
-  const submitMutation = trpc.safety.reportIncident.useMutation({
+  const submitMutation = (trpc as any).safety.reportIncident.useMutation({
     onSuccess: () => {
       toast.success("Incident reported successfully");
       setIncidentType("");
@@ -38,7 +38,7 @@ export default function IncidentReport() {
       recentQuery.refetch();
       summaryQuery.refetch();
     },
-    onError: (error) => toast.error("Failed to submit", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to submit", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -184,12 +184,12 @@ export default function IncidentReport() {
 
               <div className="space-y-2">
                 <label className="text-slate-400 text-sm">Location</label>
-                <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Enter location" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
+                <Input value={location} onChange={(e: any) => setLocation(e.target.value)} placeholder="Enter location" className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50" />
               </div>
 
               <div className="space-y-2">
                 <label className="text-slate-400 text-sm">Description *</label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the incident in detail..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[120px]" />
+                <Textarea value={description} onChange={(e: any) => setDescription(e.target.value)} placeholder="Describe the incident in detail..." className="bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50 min-h-[120px]" />
               </div>
 
               <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-xl h-12" onClick={handleSubmit} disabled={submitMutation.isPending}>
@@ -207,8 +207,8 @@ export default function IncidentReport() {
           </CardHeader>
           <CardContent>
             {recentQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : recentQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (recentQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-green-500/20 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <CheckCircle className="w-8 h-8 text-green-400" />
@@ -217,7 +217,7 @@ export default function IncidentReport() {
               </div>
             ) : (
               <div className="space-y-3">
-                {recentQuery.data?.map((incident: any) => (
+                {(recentQuery.data as any)?.map((incident: any) => (
                   <div key={incident.id} className={cn("p-4 rounded-xl border", incident.severity === "critical" || incident.severity === "high" ? "bg-red-500/10 border-red-500/30" : "bg-slate-700/30 border-slate-600/30")}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-white font-medium">{incident.type}</p>

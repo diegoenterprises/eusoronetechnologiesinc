@@ -20,9 +20,9 @@ import { cn } from "@/lib/utils";
 export default function TrackShipments() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const shipmentsQuery = trpc.loads.getTrackedLoads.useQuery({ search: searchTerm || undefined });
+  const shipmentsQuery = (trpc as any).loads.getTrackedLoads.useQuery({ search: searchTerm || undefined });
 
-  const activeCount = shipmentsQuery.data?.filter((s: any) => s.status === "in_transit").length || 0;
+  const activeCount = (shipmentsQuery.data as any)?.filter((s: any) => s.status === "in_transit").length || 0;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -61,7 +61,7 @@ export default function TrackShipments() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by load number, origin, or destination..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -71,8 +71,8 @@ export default function TrackShipments() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {shipmentsQuery.isLoading ? (
-            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
-          ) : shipmentsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : (shipmentsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Package className="w-10 h-10 text-slate-500" />
@@ -82,7 +82,7 @@ export default function TrackShipments() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {shipmentsQuery.data?.map((shipment: any) => (
+              {(shipmentsQuery.data as any)?.map((shipment: any) => (
                 <div key={shipment.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4">

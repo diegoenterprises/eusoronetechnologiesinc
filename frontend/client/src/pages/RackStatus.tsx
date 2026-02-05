@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function RackStatus() {
   const [selectedTerminal, setSelectedTerminal] = useState("all");
 
-  const racksQuery = trpc.terminals.getRackStatus.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal }, { refetchInterval: 30000 });
-  const terminalsQuery = trpc.terminals.getTerminals.useQuery();
-  const statsQuery = trpc.terminals.getRackStats.useQuery();
+  const racksQuery = (trpc as any).terminals.getRackStatus.useQuery({ terminalId: selectedTerminal === "all" ? undefined : selectedTerminal }, { refetchInterval: 30000 });
+  const terminalsQuery = (trpc as any).terminals.getTerminals.useQuery();
+  const statsQuery = (trpc as any).terminals.getRackStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -54,7 +54,7 @@ export default function RackStatus() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Terminals</SelectItem>
-              {terminalsQuery.data?.map((terminal: any) => (
+              {(terminalsQuery.data as any)?.map((terminal: any) => (
                 <SelectItem key={terminal.id} value={terminal.id}>{terminal.name}</SelectItem>
               ))}
             </SelectContent>
@@ -142,15 +142,15 @@ export default function RackStatus() {
         </CardHeader>
         <CardContent>
           {racksQuery.isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
-          ) : racksQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">{[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => <Skeleton key={i} className="h-40 w-full rounded-xl" />)}</div>
+          ) : (racksQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Gauge className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No racks found</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {racksQuery.data?.map((rack: any) => (
+              {(racksQuery.data as any)?.map((rack: any) => (
                 <div key={rack.id} className={cn("p-4 rounded-xl border transition-colors", rack.status === "available" ? "bg-green-500/5 border-green-500/30" : rack.status === "in_use" ? "bg-blue-500/5 border-blue-500/30" : rack.status === "maintenance" ? "bg-yellow-500/5 border-yellow-500/30" : "bg-slate-700/30 border-slate-600/50")}>
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-white font-bold">{rack.name}</p>

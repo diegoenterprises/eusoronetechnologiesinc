@@ -24,15 +24,15 @@ export default function Violations() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
 
-  const violationsQuery = trpc.compliance.getViolations.useQuery({
+  const violationsQuery = (trpc as any).compliance.getViolations.useQuery({
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
     severity: severityFilter !== "all" ? severityFilter : undefined,
   });
 
-  const statsQuery = trpc.compliance.getViolationStats.useQuery();
+  const statsQuery = (trpc as any).compliance.getViolationStats.useQuery();
 
-  const resolveMutation = trpc.compliance.resolveViolation.useMutation({
+  const resolveMutation = (trpc as any).compliance.resolveViolation.useMutation({
     onSuccess: () => {
       toast.success("Violation marked as resolved");
       violationsQuery.refetch();
@@ -86,7 +86,7 @@ export default function Violations() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20 rounded-xl">
@@ -96,7 +96,7 @@ export default function Violations() {
                     <XCircle className="w-5 h-5 text-red-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.open || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.open || 0}</p>
                     <p className="text-xs text-slate-400">Open Violations</p>
                   </div>
                 </div>
@@ -109,7 +109,7 @@ export default function Violations() {
                     <AlertCircle className="w-5 h-5 text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.critical || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.critical || 0}</p>
                     <p className="text-xs text-slate-400">Critical Issues</p>
                   </div>
                 </div>
@@ -122,7 +122,7 @@ export default function Violations() {
                     <Clock className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.inProgress || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.inProgress || 0}</p>
                     <p className="text-xs text-slate-400">In Progress</p>
                   </div>
                 </div>
@@ -135,7 +135,7 @@ export default function Violations() {
                     <CheckCircle className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.resolved || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.resolved || 0}</p>
                     <p className="text-xs text-slate-400">Resolved This Month</p>
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export default function Violations() {
                 <Input
                   placeholder="Search violations..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
@@ -191,9 +191,9 @@ export default function Violations() {
         <CardContent>
           {violationsQuery.isLoading ? (
             <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-20 rounded-lg" />)}
             </div>
-          ) : violationsQuery.data?.length === 0 ? (
+          ) : (violationsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
               <p className="text-slate-400">No violations found</p>
@@ -201,7 +201,7 @@ export default function Violations() {
             </div>
           ) : (
             <div className="space-y-3">
-              {violationsQuery.data?.map((violation: any) => (
+              {(violationsQuery.data as any)?.map((violation: any) => (
                 <div
                   key={violation.id}
                   className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-slate-500/50 transition-colors"

@@ -22,9 +22,9 @@ export default function VehicleDetails() {
   const params = useParams();
   const vehicleId = params.id as string;
 
-  const vehicleQuery = trpc.fleet.getById.useQuery({ id: vehicleId });
-  const maintenanceQuery = trpc.fleet.getMaintenanceHistory.useQuery({ vehicleId, limit: 5 });
-  const inspectionsQuery = trpc.fleet.getInspections.useQuery({ vehicleId, limit: 5 });
+  const vehicleQuery = (trpc as any).fleet.getById.useQuery({ id: vehicleId });
+  const maintenanceQuery = (trpc as any).fleet.getMaintenanceHistory.useQuery({ vehicleId, limit: 5 });
+  const inspectionsQuery = (trpc as any).fleet.getInspections.useQuery({ vehicleId, limit: 5 });
 
   const vehicle = vehicleQuery.data;
 
@@ -202,8 +202,8 @@ export default function VehicleDetails() {
           </CardHeader>
           <CardContent>
             {maintenanceQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
-            ) : maintenanceQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-xl" />)}</div>
+            ) : (maintenanceQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <Wrench className="w-8 h-8 text-slate-500" />
@@ -212,7 +212,7 @@ export default function VehicleDetails() {
               </div>
             ) : (
               <div className="space-y-3">
-                {maintenanceQuery.data?.map((record: any) => (
+                {(maintenanceQuery.data as any)?.map((record: any) => (
                   <div key={record.id} className="p-3 rounded-xl bg-slate-700/30">
                     <div className="flex items-center justify-between">
                       <div>
@@ -235,8 +235,8 @@ export default function VehicleDetails() {
           </CardHeader>
           <CardContent>
             {inspectionsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : inspectionsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (inspectionsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <div className="p-4 rounded-full bg-slate-700/50 w-16 h-16 mx-auto mb-3 flex items-center justify-center">
                   <FileText className="w-8 h-8 text-slate-500" />
@@ -245,7 +245,7 @@ export default function VehicleDetails() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {inspectionsQuery.data?.map((inspection: any) => (
+                {(inspectionsQuery.data as any)?.map((inspection: any) => (
                   <div key={inspection.id} className={cn("p-4 rounded-xl border", inspection.passed ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30")}>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-white font-medium">{inspection.type}</p>

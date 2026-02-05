@@ -21,9 +21,9 @@ export default function DriverEarnings() {
   const [period, setPeriod] = useState<"week" | "month" | "quarter" | "year">("week");
   const [weekOffset, setWeekOffset] = useState(0);
 
-  const summaryQuery = trpc.earnings.getSummary.useQuery({ period });
-  const earningsQuery = trpc.earnings.getEarnings.useQuery({ period, offset: weekOffset });
-  const weeklyQuery = trpc.earnings.getWeeklySummary.useQuery({ offset: weekOffset });
+  const summaryQuery = (trpc as any).earnings.getSummary.useQuery({ period });
+  const earningsQuery = (trpc as any).earnings.getEarnings.useQuery({ period, offset: weekOffset });
+  const weeklyQuery = (trpc as any).earnings.getWeeklySummary.useQuery({ offset: weekOffset });
 
   if (summaryQuery.error) {
     return (
@@ -56,7 +56,7 @@ export default function DriverEarnings() {
           <p className="text-slate-400 text-sm">Track your compensation and payouts</p>
         </div>
         <div className="flex items-center gap-3">
-          <Select value={period} onValueChange={(v) => setPeriod(v as "week" | "month" | "quarter" | "year")}>
+          <Select value={period} onValueChange={(v: any) => setPeriod(v as "week" | "month" | "quarter" | "year")}>
             <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="week">This Week</SelectItem>
@@ -135,7 +135,7 @@ export default function DriverEarnings() {
         <CardContent className="p-6">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
             {weeklyQuery.isLoading ? (
-              [1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full" />)
+              [1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full" />)
             ) : (
               <>
                 <div>
@@ -171,15 +171,15 @@ export default function DriverEarnings() {
         </CardHeader>
         <CardContent>
           {earningsQuery.isLoading ? (
-            <div className="space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-          ) : earningsQuery.data?.length === 0 ? (
+            <div className="space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+          ) : (earningsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <DollarSign className="w-12 h-12 text-slate-600 mx-auto mb-3" />
               <p className="text-slate-400">No earnings for this period</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {earningsQuery.data?.map((earning) => (
+              {(earningsQuery.data as any)?.map((earning: any) => (
                 <div key={earning.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", earning.status === "paid" ? "bg-green-500/20" : earning.status === "approved" ? "bg-blue-500/20" : "bg-yellow-500/20")}>

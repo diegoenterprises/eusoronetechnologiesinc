@@ -21,13 +21,13 @@ import { cn } from "@/lib/utils";
 export default function FuelManagement() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const transactionsQuery = trpc.fuel.getTransactions.useQuery({ limit: 50 });
-  const summaryQuery = trpc.fuel.getSummary.useQuery();
-  const pricesQuery = trpc.fuel.getCurrentPrices.useQuery();
+  const transactionsQuery = (trpc as any).fuel.getTransactions.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).fuel.getSummary.useQuery();
+  const pricesQuery = (trpc as any).fuel.getCurrentPrices.useQuery();
 
   const summary = summaryQuery.data;
 
-  const filteredTransactions = transactionsQuery.data?.filter((tx: any) => {
+  const filteredTransactions = (transactionsQuery.data as any)?.filter((tx: any) => {
     return !searchTerm || 
       tx.driverName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       tx.truckNumber?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -120,10 +120,10 @@ export default function FuelManagement() {
           </CardHeader>
           <CardContent>
             {pricesQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="space-y-3">
-                {pricesQuery.data?.map((price: any) => (
+                {(pricesQuery.data as any)?.map((price: any) => (
                   <div key={price.region} className="p-3 rounded-xl bg-slate-700/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">{price.region}</span>
@@ -154,7 +154,7 @@ export default function FuelManagement() {
                 <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <Input
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e: any) => setSearchTerm(e.target.value)}
                   placeholder="Search..."
                   className="pl-9 bg-slate-700/30 border-slate-600/50 rounded-lg focus:border-cyan-500/50"
                 />
@@ -163,7 +163,7 @@ export default function FuelManagement() {
           </CardHeader>
           <CardContent className="p-0 max-h-[400px] overflow-y-auto">
             {transactionsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : filteredTransactions?.length === 0 ? (
               <div className="text-center py-16">
                 <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

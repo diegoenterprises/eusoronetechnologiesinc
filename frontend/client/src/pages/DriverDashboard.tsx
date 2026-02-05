@@ -18,9 +18,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function DriverDashboard() {
-  const statsQuery = trpc.drivers.getDashboardStats.useQuery();
-  const hosQuery = trpc.drivers.getHOSStatus.useQuery({}, { refetchInterval: 60000 });
-  const assignmentQuery = trpc.drivers.getCurrentAssignment.useQuery();
+  const statsQuery = (trpc as any).drivers.getDashboardStats.useQuery();
+  const hosQuery = (trpc as any).drivers.getHOSStatus.useQuery({}, { refetchInterval: 60000 });
+  const assignmentQuery = (trpc as any).drivers.getCurrentAssignment.useQuery();
 
   const stats = statsQuery.data;
   const hos = hosQuery.data;

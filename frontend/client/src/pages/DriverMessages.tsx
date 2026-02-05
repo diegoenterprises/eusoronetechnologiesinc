@@ -22,18 +22,18 @@ export default function DriverMessages() {
   const [newMessage, setNewMessage] = useState("");
   const [search, setSearch] = useState("");
 
-  const conversationsQuery = trpc.drivers.getAvailable.useQuery();
-  const messagesQuery = trpc.drivers.getAvailable.useQuery(
+  const conversationsQuery = (trpc as any).drivers.getAvailable.useQuery();
+  const messagesQuery = (trpc as any).drivers.getAvailable.useQuery(
     undefined,
     { enabled: !!selectedConversation }
   );
 
-  const sendMutation = trpc.drivers.sendMessage.useMutation({
+  const sendMutation = (trpc as any).drivers.sendMessage.useMutation({
     onSuccess: () => {
       setNewMessage("");
       messagesQuery.refetch();
     },
-    onError: (error) => toast.error("Failed to send", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
   });
 
   const conversations = conversationsQuery.data || [];
@@ -57,7 +57,7 @@ export default function DriverMessages() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search conversations..."
                 className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg text-sm"
               />
@@ -65,7 +65,7 @@ export default function DriverMessages() {
           </CardHeader>
           <CardContent className="p-0 overflow-y-auto max-h-[calc(100%-80px)]">
             {conversationsQuery.isLoading ? (
-              <div className="p-3 space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+              <div className="p-3 space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
             ) : filteredConversations.length === 0 ? (
               <div className="text-center py-12">
                 <MessageSquare className="w-8 h-8 text-slate-500 mx-auto mb-2" />
@@ -139,7 +139,7 @@ export default function DriverMessages() {
               {/* Messages List */}
               <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messagesQuery.isLoading ? (
-                  <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                  <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
                 ) : messages.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-slate-400">No messages yet</p>
@@ -185,10 +185,10 @@ export default function DriverMessages() {
                   </Button>
                   <Input
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e: any) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg"
-                    onKeyPress={(e) => {
+                    onKeyPress={(e: any) => {
                       if (e.key === "Enter" && newMessage.trim()) {
                         sendMutation.mutate({
                           driverId: selectedConversation || "",

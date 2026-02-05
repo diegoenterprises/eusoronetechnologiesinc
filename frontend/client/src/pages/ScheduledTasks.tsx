@@ -19,17 +19,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function ScheduledTasks() {
-  const tasksQuery = trpc.admin.getScheduledTasks.useQuery();
-  const historyQuery = trpc.admin.getTaskHistory.useQuery({ limit: 10 });
+  const tasksQuery = (trpc as any).admin.getScheduledTasks.useQuery();
+  const historyQuery = (trpc as any).admin.getTaskHistory.useQuery({ limit: 10 });
 
-  const toggleMutation = trpc.admin.toggleScheduledTask.useMutation({
+  const toggleMutation = (trpc as any).admin.toggleScheduledTask.useMutation({
     onSuccess: () => { toast.success("Task updated"); tasksQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const runNowMutation = trpc.admin.runTaskNow.useMutation({
+  const runNowMutation = (trpc as any).admin.runTaskNow.useMutation({
     onSuccess: () => { toast.success("Task started"); historyQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {
@@ -67,15 +67,15 @@ export default function ScheduledTasks() {
         </CardHeader>
         <CardContent className="p-0">
           {tasksQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : tasksQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (tasksQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Clock className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No scheduled tasks</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {tasksQuery.data?.map((task: any) => (
+              {(tasksQuery.data as any)?.map((task: any) => (
                 <div key={task.id} className={cn("p-4", task.status === "failed" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -119,15 +119,15 @@ export default function ScheduledTasks() {
         </CardHeader>
         <CardContent className="p-0">
           {historyQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
-          ) : historyQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+          ) : (historyQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <Zap className="w-8 h-8 text-slate-500 mx-auto mb-2" />
               <p className="text-slate-400">No execution history</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
-              {historyQuery.data?.map((execution: any) => (
+              {(historyQuery.data as any)?.map((execution: any) => (
                 <div key={execution.id} className={cn("p-4 flex items-center justify-between", execution.status === "failed" && "bg-red-500/5")}>
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg", execution.status === "success" ? "bg-green-500/20" : "bg-red-500/20")}>

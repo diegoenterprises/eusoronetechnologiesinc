@@ -24,8 +24,8 @@ export default function HazmatShipments() {
   const [activeTab, setActiveTab] = useState("active");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const shipmentsQuery = trpc.hazmat.getShipments.useQuery({ limit: 50 });
-  const summaryQuery = trpc.hazmat.getSummary.useQuery();
+  const shipmentsQuery = (trpc as any).hazmat.getShipments.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).hazmat.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -48,7 +48,7 @@ export default function HazmatShipments() {
     }
   };
 
-  const filteredShipments = shipmentsQuery.data?.filter((shipment: any) => {
+  const filteredShipments = (shipmentsQuery.data as any)?.filter((shipment: any) => {
     const matchesSearch = !searchTerm || 
       shipment.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       shipment.productName?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -143,7 +143,7 @@ export default function HazmatShipments() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search by load number or product..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -161,7 +161,7 @@ export default function HazmatShipments() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {shipmentsQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
               ) : filteredShipments?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

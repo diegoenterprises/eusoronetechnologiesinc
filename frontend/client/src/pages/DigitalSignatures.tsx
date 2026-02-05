@@ -27,14 +27,14 @@ export default function DigitalSignatures() {
   const [search, setSearch] = useState("");
   const [documentType, setDocumentType] = useState("all");
 
-  const requestsQuery = trpc.documents.getAll.useQuery({
+  const requestsQuery = (trpc as any).documents.getAll.useQuery({
     category: documentType !== "all" ? documentType : undefined,
     search,
   });
 
-  const statsQuery = trpc.documents.getStats.useQuery();
+  const statsQuery = (trpc as any).documents.getStats.useQuery();
 
-  const resendMutation = trpc.documents.upload.useMutation({
+  const resendMutation = (trpc as any).documents.upload.useMutation({
     onSuccess: () => {
       toast.success("Reminder sent successfully");
       requestsQuery.refetch();
@@ -42,7 +42,7 @@ export default function DigitalSignatures() {
     onError: (error: any) => toast.error("Failed to send reminder", { description: error.message }),
   });
 
-  const voidMutation = trpc.documents.update.useMutation({
+  const voidMutation = (trpc as any).documents.update.useMutation({
     onSuccess: () => {
       toast.success("Signature request voided");
       requestsQuery.refetch();
@@ -102,7 +102,7 @@ export default function DigitalSignatures() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -187,7 +187,7 @@ export default function DigitalSignatures() {
                 <Input
                   placeholder="Search documents..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
@@ -226,9 +226,9 @@ export default function DigitalSignatures() {
             <TabsContent value={activeTab}>
               {requestsQuery.isLoading ? (
                 <div className="space-y-3">
-                  {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
+                  {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}
                 </div>
-              ) : requestsQuery.data?.length === 0 ? (
+              ) : (requestsQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <FileSignature className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                   <p className="text-slate-400">No signature requests found</p>
@@ -236,7 +236,7 @@ export default function DigitalSignatures() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {requestsQuery.data?.map((request: any) => (
+                  {(requestsQuery.data as any)?.map((request: any) => (
                     <div
                       key={request.id}
                       className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-slate-500/50 transition-colors"

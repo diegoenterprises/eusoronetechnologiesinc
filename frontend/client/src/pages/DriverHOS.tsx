@@ -22,9 +22,9 @@ type DutyStatus = "OFF_DUTY" | "SLEEPER" | "DRIVING" | "ON_DUTY";
 export default function DriverHOS() {
   const [selectedStatus, setSelectedStatus] = useState<DutyStatus | null>(null);
 
-  const { data: hosData, isLoading, error, refetch } = trpc.hos.getCurrentStatus.useQuery({ driverId: "current" });
-  const { data: logs } = trpc.hos.getStatus.useQuery();
-  const updateStatusMutation = trpc.hos.changeStatus.useMutation({
+  const { data: hosData, isLoading, error, refetch } = (trpc as any).hos.getCurrentStatus.useQuery({ driverId: "current" });
+  const { data: logs } = (trpc as any).hos.getStatus.useQuery();
+  const updateStatusMutation = (trpc as any).hos.changeStatus.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -38,7 +38,7 @@ export default function DriverHOS() {
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-24 w-full" />
           ))}
         </div>
@@ -165,7 +165,7 @@ export default function DriverHOS() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {(["OFF_DUTY", "SLEEPER", "DRIVING", "ON_DUTY"] as DutyStatus[]).map((status) => (
+            {(["OFF_DUTY", "SLEEPER", "DRIVING", "ON_DUTY"] as DutyStatus[]).map((status: any) => (
               <Button
                 key={status}
                 variant={currentStatus === status ? "default" : "outline"}

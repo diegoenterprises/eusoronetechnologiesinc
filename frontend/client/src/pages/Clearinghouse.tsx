@@ -22,9 +22,9 @@ export default function Clearinghouse() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState("queries");
 
-  const summaryQuery = trpc.clearinghouse.getSummary.useQuery();
-  const queriesQuery = trpc.clearinghouse.getQueries.useQuery({ limit: 20 });
-  const driversQuery = trpc.clearinghouse.getDriverStatus.useQuery();
+  const summaryQuery = (trpc as any).clearinghouse.getSummary.useQuery();
+  const queriesQuery = (trpc as any).clearinghouse.getQueries.useQuery({ limit: 20 });
+  const driversQuery = (trpc as any).clearinghouse.getDriverStatus.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -137,8 +137,8 @@ export default function Clearinghouse() {
             </CardHeader>
             <CardContent className="p-0">
               {queriesQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : queriesQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (queriesQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Search className="w-10 h-10 text-slate-500" />
@@ -148,7 +148,7 @@ export default function Clearinghouse() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {queriesQuery.data?.map((query: any) => (
+                  {(queriesQuery.data as any)?.map((query: any) => (
                     <div key={query.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
@@ -183,8 +183,8 @@ export default function Clearinghouse() {
             </CardHeader>
             <CardContent className="p-0">
               {driversQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-              ) : driversQuery.data?.length === 0 ? (
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              ) : (driversQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                     <Users className="w-10 h-10 text-slate-500" />
@@ -193,7 +193,7 @@ export default function Clearinghouse() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-700/50">
-                  {driversQuery.data?.map((driver: any) => (
+                  {(driversQuery.data as any)?.map((driver: any) => (
                     <div key={driver.id} className="p-4 hover:bg-slate-700/20 transition-colors">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">

@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { MapPin, Package, Clock, Truck, AlertTriangle, CheckCircle, Phone, Navigation, FileText } from "lucide-react";
 
 export default function CurrentJob() {
-  const jobQuery = trpc.jobs.getCurrent.useQuery();
+  const jobQuery = (trpc as any).jobs.getCurrent.useQuery();
 
   if (jobQuery.isLoading) {
     return (

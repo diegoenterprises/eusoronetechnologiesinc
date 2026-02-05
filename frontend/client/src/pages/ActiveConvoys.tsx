@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 export default function ActiveConvoys() {
   const [search, setSearch] = useState("");
 
-  const convoysQuery = trpc.escorts.getActiveConvoys.useQuery({ search });
-  const statsQuery = trpc.escorts.getConvoyStats.useQuery();
+  const convoysQuery = (trpc as any).escorts.getActiveConvoys.useQuery({ search });
+  const statsQuery = (trpc as any).escorts.getConvoyStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -90,14 +90,14 @@ export default function ActiveConvoys() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search convoys..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search convoys..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Car className="w-5 h-5 text-cyan-400" />Convoys</CardTitle></CardHeader>
         <CardContent className="p-0">
           {convoysQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-lg" />)}</div>
           ) : !convoysQuery.data || (Array.isArray(convoysQuery.data) && convoysQuery.data.length === 0) ? (
             <div className="text-center py-16"><Car className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No active convoys</p></div>
           ) : (

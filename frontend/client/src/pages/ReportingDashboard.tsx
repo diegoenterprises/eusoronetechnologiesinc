@@ -21,9 +21,9 @@ import { toast } from "sonner";
 export default function ReportingDashboard() {
   const [period, setPeriod] = useState("month");
 
-  const reportsQuery = trpc.reports.list.useQuery({});
+  const reportsQuery = (trpc as any).reports.list.useQuery({});
 
-  const generateMutation = trpc.reports.generate.useMutation({
+  const generateMutation = (trpc as any).reports.generate.useMutation({
     onSuccess: () => toast.success("Report generated"),
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -96,7 +96,7 @@ export default function ReportingDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><BarChart3 className="w-5 h-5 text-cyan-400" />Revenue Trend</CardTitle></CardHeader>
           <CardContent className="h-[220px]">
             <div className="flex items-end justify-between h-full gap-2 pb-6">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => {
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day: any, i: number) => {
                 const heights = [65, 80, 45, 90, 75, 55, 85];
                 return (
                   <div key={day} className="flex flex-col items-center flex-1">
@@ -113,7 +113,7 @@ export default function ReportingDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-green-400" />Load Volume</CardTitle></CardHeader>
           <CardContent className="h-[220px]">
             <div className="flex items-end justify-between h-full gap-2 pb-6">
-              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => {
+              {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day: any, i: number) => {
                 const heights = [50, 70, 85, 60, 95, 40, 75];
                 return (
                   <div key={day} className="flex flex-col items-center flex-1">
@@ -131,10 +131,10 @@ export default function ReportingDashboard() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><FileText className="w-5 h-5 text-purple-400" />Available Reports</CardTitle></CardHeader>
         <CardContent>
           {reportsQuery.isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {reportsQuery.data?.map((report: any) => (
+              {(reportsQuery.data as any)?.map((report: any) => (
                 <div key={report.id} className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/50 hover:border-cyan-500/30 transition-colors">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-white font-bold">{report.name}</p>

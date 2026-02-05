@@ -18,17 +18,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function LoadAcceptance() {
-  const pendingQuery = trpc.drivers.getPendingLoads.useQuery();
-  const hosQuery = trpc.drivers.getHOSAvailability.useQuery();
+  const pendingQuery = (trpc as any).drivers.getPendingLoads.useQuery();
+  const hosQuery = (trpc as any).drivers.getHOSAvailability.useQuery();
 
-  const acceptMutation = trpc.drivers.acceptLoad.useMutation({
+  const acceptMutation = (trpc as any).drivers.acceptLoad.useMutation({
     onSuccess: () => { toast.success("Load accepted"); pendingQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const declineMutation = trpc.drivers.declineLoad.useMutation({
+  const declineMutation = (trpc as any).drivers.declineLoad.useMutation({
     onSuccess: () => { toast.success("Load declined"); pendingQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const hos = hosQuery.data;
@@ -69,12 +69,12 @@ export default function LoadAcceptance() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Pending Loads</CardTitle></CardHeader>
         <CardContent className="p-0">
           {pendingQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
-          ) : pendingQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}</div>
+          ) : (pendingQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No pending loads</p></div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {pendingQuery.data?.map((load: any) => (
+              {(pendingQuery.data as any)?.map((load: any) => (
                 <div key={load.id} className="p-4">
                   <div className="flex items-start justify-between mb-4">
                     <div>

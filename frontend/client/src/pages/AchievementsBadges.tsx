@@ -17,9 +17,9 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function AchievementsBadges() {
-  const achievementsQuery = trpc.users.getAchievements.useQuery();
-  const badgesQuery = trpc.users.getBadges.useQuery();
-  const statsQuery = trpc.users.getAchievementStats.useQuery();
+  const achievementsQuery = (trpc as any).users.getAchievements.useQuery();
+  const badgesQuery = (trpc as any).users.getBadges.useQuery();
+  const statsQuery = (trpc as any).users.getAchievementStats.useQuery();
 
   const stats = statsQuery.data;
 
@@ -112,15 +112,15 @@ export default function AchievementsBadges() {
         </CardHeader>
         <CardContent>
           {badgesQuery.isLoading ? (
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">{[1, 2, 3, 4, 5, 6].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : badgesQuery.data?.length === 0 ? (
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">{[1, 2, 3, 4, 5, 6].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (badgesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <Award className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No badges earned yet</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-              {badgesQuery.data?.map((badge: any) => (
+              {(badgesQuery.data as any)?.map((badge: any) => (
                 <div key={badge.id} className={cn("p-4 rounded-xl text-center transition-transform hover:scale-105", badge.earned ? "bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30" : "bg-slate-700/30 opacity-50")}>
                   <div className={cn("w-12 h-12 mx-auto rounded-full flex items-center justify-center mb-2", badge.earned ? "bg-gradient-to-br from-purple-500 to-pink-500" : "bg-slate-600")}>
                     {badge.earned ? <Award className="w-6 h-6 text-white" /> : <Lock className="w-5 h-5 text-slate-400" />}
@@ -144,15 +144,15 @@ export default function AchievementsBadges() {
         </CardHeader>
         <CardContent className="p-0">
           {achievementsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : achievementsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (achievementsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Trophy className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No achievements yet</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {achievementsQuery.data?.map((achievement: any) => (
+              {(achievementsQuery.data as any)?.map((achievement: any) => (
                 <div key={achievement.id} className={cn("p-4", achievement.completed && "bg-green-500/5 border-l-2 border-green-500")}>
                   <div className="flex items-center gap-4">
                     <div className={cn("p-3 rounded-xl", achievement.completed ? "bg-green-500/20" : "bg-slate-700/50")}>

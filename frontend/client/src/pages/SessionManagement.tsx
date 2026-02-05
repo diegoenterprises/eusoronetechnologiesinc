@@ -18,17 +18,17 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function SessionManagement() {
-  const sessionsQuery = trpc.users.getSessions.useQuery();
-  const summaryQuery = trpc.users.getSessionSummary.useQuery();
+  const sessionsQuery = (trpc as any).users.getSessions.useQuery();
+  const summaryQuery = (trpc as any).users.getSessionSummary.useQuery();
 
-  const terminateMutation = trpc.users.terminateSession.useMutation({
+  const terminateMutation = (trpc as any).users.terminateSession.useMutation({
     onSuccess: () => { toast.success("Session terminated"); sessionsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const terminateAllMutation = trpc.users.terminateAllSessions.useMutation({
+  const terminateAllMutation = (trpc as any).users.terminateAllSessions.useMutation({
     onSuccess: () => { toast.success("All other sessions terminated"); sessionsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -131,15 +131,15 @@ export default function SessionManagement() {
         </CardHeader>
         <CardContent className="p-0">
           {sessionsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : sessionsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (sessionsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Monitor className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No active sessions</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {sessionsQuery.data?.map((session: any) => (
+              {(sessionsQuery.data as any)?.map((session: any) => (
                 <div key={session.id} className={cn("p-4", session.isCurrent && "bg-green-500/5 border-l-2 border-green-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

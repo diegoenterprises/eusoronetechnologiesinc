@@ -80,10 +80,10 @@ export default function DiagnosticsPage() {
   const [selectedVehicle, setSelectedVehicle] = useState<string>("VIN123456789");
 
   // tRPC queries for diagnostics data
-  const vehicleQuery = trpc.zeunMechanics.getMaintenanceStatus.useQuery({ vehicleId: 1, currentOdometer: 100000 });
-  const codesQuery = trpc.zeunMechanics.checkRecalls.useQuery({ vehicleId: 1 });
-  const maintenanceQuery = trpc.zeunMechanics.getMaintenanceHistory.useQuery({ vehicleId: 1 });
-  const providersQuery = trpc.zeunMechanics.findProviders.useQuery({ latitude: 29.7604, longitude: -95.3698 });
+  const vehicleQuery = (trpc as any).zeunMechanics.getMaintenanceStatus.useQuery({ vehicleId: 1, currentOdometer: 100000 });
+  const codesQuery = (trpc as any).zeunMechanics.checkRecalls.useQuery({ vehicleId: 1 });
+  const maintenanceQuery = (trpc as any).zeunMechanics.getMaintenanceHistory.useQuery({ vehicleId: 1 });
+  const providersQuery = (trpc as any).zeunMechanics.findProviders.useQuery({ latitude: 29.7604, longitude: -95.3698 });
 
   if (vehicleQuery.isLoading) {
     return (
@@ -317,7 +317,7 @@ export default function DiagnosticsPage() {
 
             {diagnosticCodes.length > 0 ? (
               <div className="space-y-3">
-                {diagnosticCodes.map((code) => (
+                {diagnosticCodes.map((code: any) => (
                   <Card
                     key={code.code}
                     className="bg-gray-900 border-gray-700 p-6"
@@ -376,7 +376,7 @@ export default function DiagnosticsPage() {
             </div>
 
             <div className="space-y-3">
-              {maintenanceItems.map((item) => (
+              {maintenanceItems.map((item: any) => (
                 <Card
                   key={item.id}
                   className="bg-gray-900 border-gray-700 p-6"
@@ -435,7 +435,7 @@ export default function DiagnosticsPage() {
             </div>
 
             <div className="space-y-3">
-              {providers.map((provider) => (
+              {providers.map((provider: any) => (
                 <Card
                   key={provider.id}
                   className="bg-gray-900 border-gray-700 p-6"
@@ -470,7 +470,7 @@ export default function DiagnosticsPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {provider.services.map((service) => (
+                    {provider.services.map((service: any) => (
                       <Badge
                         key={service}
                         variant="outline"

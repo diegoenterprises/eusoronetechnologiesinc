@@ -22,14 +22,14 @@ export default function EscortCommunications() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
 
-  const conversationsQuery = trpc.escorts.getJobs.useQuery({});
-  const messagesQuery = trpc.escorts.getJobs.useQuery(
+  const conversationsQuery = (trpc as any).escorts.getJobs.useQuery({});
+  const messagesQuery = (trpc as any).escorts.getJobs.useQuery(
     {},
     { enabled: !!selectedConversation }
   );
-  const activeJobQuery = trpc.escorts.getActiveJobs.useQuery();
+  const activeJobQuery = (trpc as any).escorts.getActiveJobs.useQuery();
 
-  const sendMessageMutation = trpc.escorts.acceptJob.useMutation({
+  const sendMessageMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       setNewMessage("");
       messagesQuery.refetch();
@@ -96,7 +96,7 @@ export default function EscortCommunications() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search conversations..."
                 className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg text-sm"
               />
@@ -104,7 +104,7 @@ export default function EscortCommunications() {
           </CardHeader>
           <CardContent className="p-0 overflow-y-auto h-[500px]">
             {conversationsQuery.isLoading ? (
-              <div className="p-3 space-y-2">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+              <div className="p-3 space-y-2">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
             ) : filteredConversations.length === 0 ? (
               <div className="text-center py-10">
                 <MessageSquare className="w-10 h-10 text-slate-500 mx-auto mb-3" />
@@ -185,7 +185,7 @@ export default function EscortCommunications() {
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messagesQuery.isLoading ? (
-                  <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                  <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
                 ) : messages.length === 0 ? (
                   <div className="text-center py-10">
                     <p className="text-slate-400">No messages yet</p>
@@ -227,10 +227,10 @@ export default function EscortCommunications() {
                 <div className="flex items-center gap-3">
                   <Input
                     value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
+                    onChange={(e: any) => setNewMessage(e.target.value)}
                     placeholder="Type a message..."
                     className="flex-1 bg-slate-700/50 border-slate-600/50 rounded-lg"
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    onKeyDown={(e: any) => e.key === "Enter" && handleSendMessage()}
                   />
                   <Button
                     onClick={handleSendMessage}

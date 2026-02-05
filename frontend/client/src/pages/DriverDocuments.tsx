@@ -58,10 +58,10 @@ export default function DriverDocuments() {
   const [uploadingFile, setUploadingFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("all");
 
-  const documentsQuery = trpc.documents.getDriverDocuments.useQuery();
-  const complianceQuery = trpc.documents.getComplianceStatus.useQuery();
+  const documentsQuery = (trpc as any).documents.getDriverDocuments.useQuery();
+  const complianceQuery = (trpc as any).documents.getComplianceStatus.useQuery();
   
-  const uploadMutation = trpc.documents.uploadDocument.useMutation({
+  const uploadMutation = (trpc as any).documents.uploadDocument.useMutation({
     onSuccess: () => {
       toast.success("Document uploaded successfully");
       setUploadOpen(false);
@@ -71,10 +71,10 @@ export default function DriverDocuments() {
       documentsQuery.refetch();
       complianceQuery.refetch();
     },
-    onError: (error) => toast.error("Upload failed", { description: error.message }),
+    onError: (error: any) => toast.error("Upload failed", { description: error.message }),
   });
 
-  const verifyMutation = trpc.documents.verifyDocument.useMutation({
+  const verifyMutation = (trpc as any).documents.verifyDocument.useMutation({
     onSuccess: () => {
       toast.success("Document verified");
       documentsQuery.refetch();
@@ -102,15 +102,15 @@ export default function DriverDocuments() {
 
   const getFilteredDocuments = () => {
     if (activeTab === "all") return documents;
-    if (activeTab === "verified") return documents.filter((d) => d.status === "active");
-    if (activeTab === "pending") return documents.filter((d) => d.status === "pending");
-    if (activeTab === "expiring") return documents.filter((d) => {
+    if (activeTab === "verified") return documents.filter((d: any) => d.status === "active");
+    if (activeTab === "pending") return documents.filter((d: any) => d.status === "pending");
+    if (activeTab === "expiring") return documents.filter((d: any) => {
       if (!d.expirationDate) return false;
       const exp = new Date(d.expirationDate);
       return exp < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     });
     if (activeTab === "missing") {
-      const uploadedTypes = documents.map((d) => d.type);
+      const uploadedTypes = documents.map((d: any) => d.type);
       return DOCUMENT_TYPES.filter(dt => dt.required && !uploadedTypes.includes(dt.value));
     }
     return documents;
@@ -168,7 +168,7 @@ export default function DriverDocuments() {
                 <Input
                   type="date"
                   value={expirationDate}
-                  onChange={(e) => setExpirationDate(e.target.value)}
+                  onChange={(e: any) => setExpirationDate(e.target.value)}
                   className="bg-slate-700 border-slate-600"
                 />
               </div>
@@ -178,7 +178,7 @@ export default function DriverDocuments() {
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => setUploadingFile(e.target.files?.[0] || null)}
+                    onChange={(e: any) => setUploadingFile(e.target.files?.[0] || null)}
                     className="hidden"
                     id="doc-upload"
                   />
@@ -293,7 +293,7 @@ export default function DriverDocuments() {
             </div>
           ) : (
             <div className="grid gap-4">
-              {(getFilteredDocuments() as DocumentItem[]).map((doc) => (
+              {(getFilteredDocuments() as DocumentItem[]).map((doc: any) => (
                 <Card key={doc.id} className="bg-slate-800/50 border-slate-700/50 rounded-xl hover:border-slate-600/50 transition-colors">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">

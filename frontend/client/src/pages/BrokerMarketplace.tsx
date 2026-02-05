@@ -24,15 +24,15 @@ export default function BrokerMarketplace() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const loadsQuery = trpc.brokers.getMarketplaceLoads.useQuery({
+  const loadsQuery = (trpc as any).brokers.getMarketplaceLoads.useQuery({
     search,
     status: statusFilter !== "all" ? statusFilter : undefined,
     type: typeFilter !== "all" ? typeFilter : undefined,
   });
 
-  const statsQuery = trpc.brokers.getMarketplaceStats.useQuery();
+  const statsQuery = (trpc as any).brokers.getMarketplaceStats.useQuery();
 
-  const matchMutation = trpc.brokers.matchLoadToCarrier.useMutation({
+  const matchMutation = (trpc as any).brokers.matchLoadToCarrier.useMutation({
     onSuccess: () => {
       toast.success("Load matched successfully");
       loadsQuery.refetch();
@@ -57,7 +57,7 @@ export default function BrokerMarketplace() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20 rounded-xl">
@@ -67,7 +67,7 @@ export default function BrokerMarketplace() {
                     <Package className="w-5 h-5 text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.availableLoads || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.availableLoads || 0}</p>
                     <p className="text-xs text-slate-400">Available Loads</p>
                   </div>
                 </div>
@@ -80,7 +80,7 @@ export default function BrokerMarketplace() {
                     <Users className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.availableCarriers || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.availableCarriers || 0}</p>
                     <p className="text-xs text-slate-400">Available Carriers</p>
                   </div>
                 </div>
@@ -93,7 +93,7 @@ export default function BrokerMarketplace() {
                     <DollarSign className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">${statsQuery.data?.avgMargin || 0}</p>
+                    <p className="text-2xl font-bold text-white">${(statsQuery.data as any)?.avgMargin || 0}</p>
                     <p className="text-xs text-slate-400">Avg Margin</p>
                   </div>
                 </div>
@@ -106,7 +106,7 @@ export default function BrokerMarketplace() {
                     <TrendingUp className="w-5 h-5 text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.matchRate || 0}%</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.matchRate || 0}%</p>
                     <p className="text-xs text-slate-400">Match Rate</p>
                   </div>
                 </div>
@@ -129,7 +129,7 @@ export default function BrokerMarketplace() {
                 <Input
                   placeholder="Search loads..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(e: any) => setSearch(e.target.value)}
                   className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-lg w-64"
                 />
               </div>
@@ -162,16 +162,16 @@ export default function BrokerMarketplace() {
         <CardContent>
           {loadsQuery.isLoading ? (
             <div className="space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}
             </div>
-          ) : loadsQuery.data?.length === 0 ? (
+          ) : (loadsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Store className="w-12 h-12 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No loads in marketplace</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {loadsQuery.data?.map((load: any) => (
+              {(loadsQuery.data as any)?.map((load: any) => (
                 <div
                   key={load.id}
                   className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-purple-500/50 transition-colors"

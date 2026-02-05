@@ -74,25 +74,25 @@ export default function TerminalSCADA() {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // tRPC queries
-  const { data: overviewData, refetch: refetchOverview } = trpc.scada.getTerminalOverview.useQuery(
+  const { data: overviewData, refetch: refetchOverview } = (trpc as any).scada.getTerminalOverview.useQuery(
     { terminalId: selectedTerminal },
     { refetchInterval: autoRefresh ? 10000 : false }
   );
-  const { data: racksData, refetch: refetchRacks } = trpc.scada.getRackStatus.useQuery(
+  const { data: racksData, refetch: refetchRacks } = (trpc as any).scada.getRackStatus.useQuery(
     { terminalId: selectedTerminal },
     { refetchInterval: autoRefresh ? 5000 : false }
   );
-  const { data: tanksData } = trpc.scada.getTankLevels.useQuery(
+  const { data: tanksData } = (trpc as any).scada.getTankLevels.useQuery(
     { terminalId: selectedTerminal },
     { refetchInterval: autoRefresh ? 30000 : false }
   );
-  const { data: alarmsData, refetch: refetchAlarms } = trpc.scada.getAlarms.useQuery(
+  const { data: alarmsData, refetch: refetchAlarms } = (trpc as any).scada.getAlarms.useQuery(
     { terminalId: selectedTerminal, active: true }
   );
-  const { data: throughputData } = trpc.scada.getDailyThroughput.useQuery({ terminalId: selectedTerminal });
-  const { data: spectraMatchHistory } = trpc.spectraMatch.getHistory.useQuery({ terminalId: selectedTerminal, limit: 10 });
+  const { data: throughputData } = (trpc as any).scada.getDailyThroughput.useQuery({ terminalId: selectedTerminal });
+  const { data: spectraMatchHistory } = (trpc as any).spectraMatch.getHistory.useQuery({ terminalId: selectedTerminal, limit: 10 });
 
-  const acknowledgeMutation = trpc.scada.acknowledgeAlarm.useMutation({
+  const acknowledgeMutation = (trpc as any).scada.acknowledgeAlarm.useMutation({
     onSuccess: () => {
       toast.success("Alarm acknowledged");
       refetchAlarms();
@@ -112,7 +112,7 @@ export default function TerminalSCADA() {
   };
 
   const racks = (racksData?.racks || []) as Rack[];
-  const tanks = ((tanksData?.tanks || []) as any[]).map((t) => ({
+  const tanks = ((tanksData?.tanks || []) as any[]).map((t: any) => ({
     ...t,
     level: t.currentLevel || t.level || 0,
   })) as Tank[];
@@ -243,7 +243,7 @@ export default function TerminalSCADA() {
               <p className="text-slate-400 mb-1">/ {overview.racks.total} available</p>
             </div>
             <div className="flex gap-1 mt-2">
-              {Array.from({ length: overview.racks.total }).map((_, i) => {
+              {Array.from({ length: overview.racks.total }).map((_: any, i: number) => {
                 let status = "available";
                 if (i < overview.racks.loading) status = "loading";
                 else if (i < overview.racks.loading + overview.racks.maintenance) status = "maintenance";
@@ -317,7 +317,7 @@ export default function TerminalSCADA() {
         {/* Rack Status Tab */}
         <TabsContent value="overview" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {racks.map((rack) => (
+            {racks.map((rack: any) => (
               <Card key={rack.id} className={cn(
                 "bg-slate-800/50 border-slate-700 transition-all",
                 rack.status === "loading" && "border-blue-500/50"
@@ -401,7 +401,7 @@ export default function TerminalSCADA() {
         {/* Tank Levels Tab */}
         <TabsContent value="tanks" className="mt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {tanks.map((tank) => (
+            {tanks.map((tank: any) => (
               <Card key={tank.id} className={cn(
                 "bg-slate-800/50 border-slate-700",
                 tank.lowLevelAlert && "border-yellow-500/50"
@@ -505,7 +505,7 @@ export default function TerminalSCADA() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {alarms.map((alarm) => (
+                  {alarms.map((alarm: any) => (
                     <div key={alarm.id} className={cn(
                       "flex items-center justify-between p-4 rounded-lg border",
                       getSeverityColor(alarm.severity)

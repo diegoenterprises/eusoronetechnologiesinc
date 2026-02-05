@@ -17,16 +17,16 @@ import {
 import { Link } from "wouter";
 
 export default function CarrierFleetOverview() {
-  const { data: fleetStats, isLoading, error, refetch } = trpc.zeun.getFleetHealth.useQuery();
-  const { data: vehicles } = trpc.vehicles.list.useQuery({ limit: 10 });
-  const { data: drivers } = trpc.drivers.list.useQuery({ limit: 10 });
+  const { data: fleetStats, isLoading, error, refetch } = (trpc as any).zeun.getFleetHealth.useQuery();
+  const { data: vehicles } = (trpc as any).vehicles.list.useQuery({ limit: 10 });
+  const { data: drivers } = (trpc as any).drivers.list.useQuery({ limit: 10 });
 
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
         </div>

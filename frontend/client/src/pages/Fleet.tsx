@@ -22,7 +22,7 @@ export default function Fleet() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const fleetQuery = trpc.fleet.list.useQuery({ limit: 50 });
+  const fleetQuery = (trpc as any).fleet.list.useQuery({ limit: 50 });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -33,15 +33,15 @@ export default function Fleet() {
     }
   };
 
-  const filteredVehicles = fleetQuery.data?.vehicles?.filter((vehicle: any) => {
+  const filteredVehicles = (fleetQuery.data as any)?.vehicles?.filter((vehicle: any) => {
     return !searchTerm || 
       vehicle.unitNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       vehicle.vin?.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const totalVehicles = fleetQuery.data?.vehicles?.length || 0;
-  const activeVehicles = fleetQuery.data?.vehicles?.filter((v: any) => v.status === "active").length || 0;
-  const maintenanceVehicles = fleetQuery.data?.vehicles?.filter((v: any) => v.status === "maintenance").length || 0;
+  const totalVehicles = (fleetQuery.data as any)?.vehicles?.length || 0;
+  const activeVehicles = (fleetQuery.data as any)?.vehicles?.filter((v: any) => v.status === "active").length || 0;
+  const maintenanceVehicles = (fleetQuery.data as any)?.vehicles?.filter((v: any) => v.status === "maintenance").length || 0;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -116,7 +116,7 @@ export default function Fleet() {
               </div>
               <div>
                 {fleetQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{fleetQuery.data?.vehicles?.filter((v: any) => v.status === "inactive").length || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(fleetQuery.data as any)?.vehicles?.filter((v: any) => v.status === "inactive").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Inactive</p>
               </div>
@@ -130,7 +130,7 @@ export default function Fleet() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search vehicles..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -140,7 +140,7 @@ export default function Fleet() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {fleetQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredVehicles?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

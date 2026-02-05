@@ -56,19 +56,19 @@ export default function LoadNegotiation() {
   const [counterAmount, setCounterAmount] = useState("");
   const [messageText, setMessageText] = useState("");
 
-  const negotiationsQuery = trpc.negotiations.list.useQuery({ status: activeTab === "all" ? undefined : activeTab });
-  const statsQuery = trpc.negotiations.getStats.useQuery();
+  const negotiationsQuery = (trpc as any).negotiations.list.useQuery({ status: activeTab === "all" ? undefined : activeTab });
+  const statsQuery = (trpc as any).negotiations.getStats.useQuery();
 
-  const counterOfferMutation = trpc.negotiations.submitCounterOffer.useMutation({
+  const counterOfferMutation = (trpc as any).negotiations.submitCounterOffer.useMutation({
     onSuccess: () => {
       toast.success("Counter offer sent");
       setCounterAmount("");
       negotiationsQuery.refetch();
     },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const acceptMutation = trpc.negotiations.accept.useMutation({
+  const acceptMutation = (trpc as any).negotiations.accept.useMutation({
     onSuccess: () => {
       toast.success("Offer accepted! Rate confirmed.");
       setSelectedNegotiation(null);
@@ -77,7 +77,7 @@ export default function LoadNegotiation() {
     },
   });
 
-  const rejectMutation = trpc.negotiations.reject.useMutation({
+  const rejectMutation = (trpc as any).negotiations.reject.useMutation({
     onSuccess: () => {
       toast.success("Offer rejected");
       setSelectedNegotiation(null);
@@ -85,7 +85,7 @@ export default function LoadNegotiation() {
     },
   });
 
-  const sendMessageMutation = trpc.negotiations.sendMessage.useMutation({
+  const sendMessageMutation = (trpc as any).negotiations.sendMessage.useMutation({
     onSuccess: () => {
       setMessageText("");
       negotiationsQuery.refetch();
@@ -307,7 +307,7 @@ export default function LoadNegotiation() {
 
                 {/* Message History */}
                 <div className="max-h-48 overflow-y-auto space-y-2">
-                  {selectedNegotiation.messages?.map((msg) => (
+                  {selectedNegotiation.messages?.map((msg: any) => (
                     <div key={msg.id} className={`p-2 rounded-lg text-sm ${msg.sender === 'you' ? 'bg-cyan-500/20 ml-4' : 'bg-slate-700/50 mr-4'}`}>
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-slate-400 text-xs">{msg.sender}</span>
@@ -329,7 +329,7 @@ export default function LoadNegotiation() {
                         type="number"
                         placeholder="Counter amount"
                         value={counterAmount}
-                        onChange={(e) => setCounterAmount(e.target.value)}
+                        onChange={(e: any) => setCounterAmount(e.target.value)}
                         className="bg-slate-700 border-slate-600"
                       />
                       <Button
@@ -362,7 +362,7 @@ export default function LoadNegotiation() {
                       <Input
                         placeholder="Add a message..."
                         value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
+                        onChange={(e: any) => setMessageText(e.target.value)}
                         className="bg-slate-700 border-slate-600"
                       />
                       <Button

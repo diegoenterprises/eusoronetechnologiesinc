@@ -24,22 +24,22 @@ export default function LoadBids() {
   const loadId = params.id;
   const [bidAmount, setBidAmount] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
-  const bidsQuery = trpc.bids.getByLoad.useQuery({ loadId: loadId! }, { enabled: !!loadId });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
+  const bidsQuery = (trpc as any).bids.getByLoad.useQuery({ loadId: loadId! }, { enabled: !!loadId });
 
-  const submitBidMutation = trpc.bids.submit.useMutation({
+  const submitBidMutation = (trpc as any).bids.submit.useMutation({
     onSuccess: () => { toast.success("Bid submitted"); setBidAmount(""); bidsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const acceptBidMutation = trpc.bids.accept.useMutation({
+  const acceptBidMutation = (trpc as any).bids.accept.useMutation({
     onSuccess: () => { toast.success("Bid accepted"); bidsQuery.refetch(); loadQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const rejectBidMutation = trpc.bids.reject.useMutation({
+  const rejectBidMutation = (trpc as any).bids.reject.useMutation({
     onSuccess: () => { toast.success("Bid rejected"); bidsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   if (loadQuery.error) {
@@ -147,7 +147,7 @@ export default function LoadBids() {
                   <Input
                     type="number"
                     value={bidAmount}
-                    onChange={(e) => setBidAmount(e.target.value)}
+                    onChange={(e: any) => setBidAmount(e.target.value)}
                     placeholder="Enter amount"
                     className="pl-9 bg-slate-700/50 border-slate-600 text-lg"
                   />
@@ -173,20 +173,20 @@ export default function LoadBids() {
         <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-white">All Bids ({bidsQuery.data?.length || 0})</CardTitle>
+              <CardTitle className="text-white">All Bids ({(bidsQuery.data as any)?.length || 0})</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             {bidsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-            ) : bidsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+            ) : (bidsQuery.data as any)?.length === 0 ? (
               <div className="text-center py-8">
                 <DollarSign className="w-12 h-12 text-slate-600 mx-auto mb-3" />
                 <p className="text-slate-400">No bids yet</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {bidsQuery.data?.map((bid) => (
+                {(bidsQuery.data as any)?.map((bid: any) => (
                   <div key={bid.id} className={cn("flex items-center justify-between p-4 rounded-lg border", bid.status === "accepted" ? "bg-green-500/10 border-green-500/30" : "bg-slate-700/30 border-slate-700")}>
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center">

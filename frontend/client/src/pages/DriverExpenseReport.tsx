@@ -45,11 +45,11 @@ export default function DriverExpenseReport() {
     isLoading,
     error,
     refetch,
-  } = trpc.drivers.getAll.useQuery({});
+  } = (trpc as any).drivers.getAll.useQuery({});
 
   const expensesData = expensesDataRaw as any;
 
-  const submitExpenseMutation = trpc.fuel.reportPurchase.useMutation({
+  const submitExpenseMutation = (trpc as any).fuel.reportPurchase.useMutation({
     onSuccess: () => {
       toast.success("Expense report submitted successfully");
       refetch();
@@ -130,7 +130,7 @@ export default function DriverExpenseReport() {
       <div className="max-w-7xl mx-auto p-6 space-y-6">
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
+            {[...Array(4)].map((_: any, i: number) => (
               <Skeleton key={i} className="h-24 rounded-lg" />
             ))}
           </div>
@@ -204,7 +204,7 @@ export default function DriverExpenseReport() {
                   <Input
                     placeholder="Search expenses..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e: any) => setSearchQuery(e.target.value)}
                     className="pl-10 w-64"
                   />
                 </div>
@@ -250,7 +250,7 @@ export default function DriverExpenseReport() {
           <CardContent>
             {isLoading ? (
               <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(5)].map((_: any, i: number) => (
                   <Skeleton key={i} className="h-20 rounded-lg" />
                 ))}
               </div>

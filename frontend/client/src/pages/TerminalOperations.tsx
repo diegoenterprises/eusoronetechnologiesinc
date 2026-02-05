@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function TerminalOperations() {
   const [timeframe, setTimeframe] = useState("today");
 
-  const operationsQuery = trpc.terminals.getOperations.useQuery({ timeframe });
-  const statsQuery = trpc.terminals.getOperationStats.useQuery({ timeframe });
-  const docksQuery = trpc.terminals.getDockStatus.useQuery();
+  const operationsQuery = (trpc as any).terminals.getOperations.useQuery({ timeframe });
+  const statsQuery = (trpc as any).terminals.getOperationStats.useQuery({ timeframe });
+  const docksQuery = (trpc as any).terminals.getDockStatus.useQuery();
 
   const stats = statsQuery.data;
 
@@ -103,10 +103,10 @@ export default function TerminalOperations() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Dock Status</CardTitle></CardHeader>
           <CardContent>
             {docksQuery.isLoading ? (
-              <div className="grid grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
+              <div className="grid grid-cols-4 gap-3">{[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}</div>
             ) : (
               <div className="grid grid-cols-4 gap-3">
-                {docksQuery.data?.map((dock: any) => (
+                {(docksQuery.data as any)?.map((dock: any) => (
                   <div key={dock.id} className={cn("p-3 rounded-lg text-center border", dock.status === "active" ? "bg-green-500/10 border-green-500/30" : dock.status === "maintenance" ? "bg-red-500/10 border-red-500/30" : "bg-slate-700/30 border-slate-600/30")}>
                     <div className={cn("w-3 h-3 rounded-full mx-auto mb-2", getDockStatusColor(dock.status))} />
                     <p className="text-white font-bold text-sm">{dock.name}</p>
@@ -123,7 +123,7 @@ export default function TerminalOperations() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-green-400" />Performance</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             {statsQuery.isLoading ? (
-              <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
             ) : (
               <>
                 <div className="p-3 rounded-lg bg-slate-700/30">
@@ -164,7 +164,7 @@ export default function TerminalOperations() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Activity className="w-5 h-5 text-cyan-400" />Recent Activity</CardTitle></CardHeader>
         <CardContent className="p-0">
           {operationsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
           ) : !operationsQuery.data || (Array.isArray(operationsQuery.data) && operationsQuery.data.length === 0) ? (
             <div className="text-center py-16"><Activity className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No recent activity</p></div>
           ) : (

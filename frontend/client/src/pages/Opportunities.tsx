@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function Opportunities() {
   const [category, setCategory] = useState("all");
 
-  const opportunitiesQuery = trpc.catalysts.getOpportunities.useQuery({ category });
-  const statsQuery = trpc.catalysts.getOpportunityStats.useQuery();
+  const opportunitiesQuery = (trpc as any).catalysts.getOpportunities.useQuery({ category });
+  const statsQuery = (trpc as any).catalysts.getOpportunityStats.useQuery();
 
-  const applyMutation = trpc.catalysts.applyToOpportunity.useMutation({
+  const applyMutation = (trpc as any).catalysts.applyToOpportunity.useMutation({
     onSuccess: () => { toast.success("Application submitted"); opportunitiesQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -99,7 +99,7 @@ export default function Opportunities() {
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><TrendingUp className="w-5 h-5 text-cyan-400" />Opportunities</CardTitle></CardHeader>
         <CardContent className="p-0">
           {opportunitiesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-lg" />)}</div>
           ) : !opportunitiesQuery.data || (Array.isArray(opportunitiesQuery.data) && opportunitiesQuery.data.length === 0) ? (
             <div className="text-center py-16"><TrendingUp className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No opportunities found</p></div>
           ) : (

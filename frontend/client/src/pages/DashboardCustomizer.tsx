@@ -19,22 +19,22 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DashboardCustomizer() {
-  const widgetsQuery = trpc.dashboard.getWidgets.useQuery();
-  const layoutQuery = trpc.dashboard.getLayout.useQuery();
+  const widgetsQuery = (trpc as any).dashboard.getWidgets.useQuery();
+  const layoutQuery = (trpc as any).dashboard.getLayout.useQuery();
 
-  const saveMutation = trpc.dashboard.saveLayout.useMutation({
+  const saveMutation = (trpc as any).dashboard.saveLayout.useMutation({
     onSuccess: () => toast.success("Layout saved"),
-    onError: (error) => toast.error("Failed to save", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to save", { description: error.message }),
   });
 
-  const toggleMutation = trpc.dashboard.toggleWidget.useMutation({
+  const toggleMutation = (trpc as any).dashboard.toggleWidget.useMutation({
     onSuccess: () => { toast.success("Widget updated"); widgetsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
-  const resetMutation = trpc.dashboard.resetLayout.useMutation({
+  const resetMutation = (trpc as any).dashboard.resetLayout.useMutation({
     onSuccess: () => { toast.success("Layout reset"); widgetsQuery.refetch(); layoutQuery.refetch(); },
-    onError: (error) => toast.error("Failed to reset", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to reset", { description: error.message }),
   });
 
   return (
@@ -69,10 +69,10 @@ export default function DashboardCustomizer() {
           </CardHeader>
           <CardContent className="p-0">
             {widgetsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+              <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {widgetsQuery.data?.map((widget: any) => (
+                {(widgetsQuery.data as any)?.map((widget: any) => (
                   <div key={widget.id} className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-slate-700/50 cursor-move">
@@ -114,7 +114,7 @@ export default function DashboardCustomizer() {
                 <div className="p-3 rounded-xl bg-slate-700/30 border border-dashed border-slate-600">
                   <p className="text-xs text-slate-500 mb-2">Stats Row</p>
                   <div className="grid grid-cols-4 gap-2">
-                    {layoutQuery.data?.statsWidgets?.map((w: any, i: number) => (
+                    {(layoutQuery.data as any)?.statsWidgets?.map((w: any, i: number) => (
                       <div key={i} className={cn("h-12 rounded-lg flex items-center justify-center text-xs", w.enabled ? "bg-cyan-500/20 text-cyan-400" : "bg-slate-600/50 text-slate-500")}>{w.name}</div>
                     ))}
                   </div>
@@ -124,7 +124,7 @@ export default function DashboardCustomizer() {
                 <div className="p-3 rounded-xl bg-slate-700/30 border border-dashed border-slate-600">
                   <p className="text-xs text-slate-500 mb-2">Main Content</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {layoutQuery.data?.mainWidgets?.map((w: any, i: number) => (
+                    {(layoutQuery.data as any)?.mainWidgets?.map((w: any, i: number) => (
                       <div key={i} className={cn("h-24 rounded-lg flex items-center justify-center text-xs", w.enabled ? "bg-purple-500/20 text-purple-400" : "bg-slate-600/50 text-slate-500")}>{w.name}</div>
                     ))}
                   </div>
@@ -134,7 +134,7 @@ export default function DashboardCustomizer() {
                 <div className="p-3 rounded-xl bg-slate-700/30 border border-dashed border-slate-600">
                   <p className="text-xs text-slate-500 mb-2">Sidebar</p>
                   <div className="space-y-2">
-                    {layoutQuery.data?.sidebarWidgets?.map((w: any, i: number) => (
+                    {(layoutQuery.data as any)?.sidebarWidgets?.map((w: any, i: number) => (
                       <div key={i} className={cn("h-10 rounded-lg flex items-center justify-center text-xs", w.enabled ? "bg-green-500/20 text-green-400" : "bg-slate-600/50 text-slate-500")}>{w.name}</div>
                     ))}
                   </div>
@@ -152,10 +152,10 @@ export default function DashboardCustomizer() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => widgetsQuery.data?.forEach((w: any) => !w.enabled && toggleMutation.mutate({ widgetId: w.id, enabled: true }))}>
+            <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => (widgetsQuery.data as any)?.forEach((w: any) => !w.enabled && toggleMutation.mutate({ widgetId: w.id, enabled: true }))}>
               <Eye className="w-4 h-4 mr-2" />Show All
             </Button>
-            <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => widgetsQuery.data?.forEach((w: any) => w.enabled && toggleMutation.mutate({ widgetId: w.id, enabled: false }))}>
+            <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => (widgetsQuery.data as any)?.forEach((w: any) => w.enabled && toggleMutation.mutate({ widgetId: w.id, enabled: false }))}>
               <EyeOff className="w-4 h-4 mr-2" />Hide All
             </Button>
             <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">

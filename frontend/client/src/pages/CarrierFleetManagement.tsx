@@ -22,8 +22,8 @@ export default function CarrierFleetManagement() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const fleetQuery = trpc.carriers.getAvailableCapacity.useQuery({});
-  const statsQuery = trpc.carriers.getDashboardStats.useQuery();
+  const fleetQuery = (trpc as any).carriers.getAvailableCapacity.useQuery({});
+  const statsQuery = (trpc as any).carriers.getDashboardStats.useQuery();
 
   const fleet = fleetQuery.data || [];
   const stats = statsQuery.data as any;
@@ -60,7 +60,7 @@ export default function CarrierFleetManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {statsQuery.isLoading ? (
-          Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -120,7 +120,7 @@ export default function CarrierFleetManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search by unit # or VIN..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -157,7 +157,7 @@ export default function CarrierFleetManagement() {
         <CardContent className="p-0">
           {fleetQuery.isLoading ? (
             <div className="p-4 space-y-3">
-              {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
           ) : filteredFleet.length === 0 ? (
             <div className="text-center py-16">

@@ -19,12 +19,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function DatabaseHealth() {
-  const healthQuery = trpc.admin.getDatabaseHealth.useQuery();
-  const queriesQuery = trpc.admin.getSlowQueries.useQuery({ limit: 10 });
+  const healthQuery = (trpc as any).admin.getDatabaseHealth.useQuery();
+  const queriesQuery = (trpc as any).admin.getSlowQueries.useQuery({ limit: 10 });
 
-  const optimizeMutation = trpc.admin.optimizeDatabase.useMutation({
+  const optimizeMutation = (trpc as any).admin.optimizeDatabase.useMutation({
     onSuccess: () => { toast.success("Optimization started"); healthQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const health = healthQuery.data;
@@ -157,7 +157,7 @@ export default function DatabaseHealth() {
         </CardHeader>
         <CardContent>
           {healthQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-4">
               {health?.tables?.map((table: any) => (
@@ -184,15 +184,15 @@ export default function DatabaseHealth() {
         </CardHeader>
         <CardContent className="p-0">
           {queriesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : queriesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (queriesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <CheckCircle className="w-8 h-8 text-green-400 mx-auto mb-2" />
               <p className="text-slate-400">No slow queries detected</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
-              {queriesQuery.data?.map((query: any, idx: number) => (
+              {(queriesQuery.data as any)?.map((query: any, idx: number) => (
                 <div key={idx} className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={cn(query.duration > 5000 ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400", "border-0")}>{query.duration}ms</Badge>

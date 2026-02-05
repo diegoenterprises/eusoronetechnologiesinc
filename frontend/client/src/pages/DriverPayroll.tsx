@@ -23,12 +23,12 @@ export default function DriverPayroll() {
   const [searchTerm, setSearchTerm] = useState("");
   const [payPeriod, setPayPeriod] = useState("current");
 
-  const payrollQuery = trpc.payroll.getDriverPayroll.useQuery({ period: payPeriod, limit: 50 });
-  const summaryQuery = trpc.payroll.getSummary.useQuery({ period: payPeriod });
+  const payrollQuery = (trpc as any).payroll.getDriverPayroll.useQuery({ period: payPeriod, limit: 50 });
+  const summaryQuery = (trpc as any).payroll.getSummary.useQuery({ period: payPeriod });
 
-  const processPayrollMutation = trpc.payroll.process.useMutation({
+  const processPayrollMutation = (trpc as any).payroll.process.useMutation({
     onSuccess: () => { toast.success("Payroll processed"); payrollQuery.refetch(); },
-    onError: (error) => toast.error("Failed to process payroll", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to process payroll", { description: error.message }),
   });
 
   const summary = summaryQuery.data;
@@ -42,7 +42,7 @@ export default function DriverPayroll() {
     }
   };
 
-  const filteredPayroll = payrollQuery.data?.filter((item: any) =>
+  const filteredPayroll = (payrollQuery.data as any)?.filter((item: any) =>
     !searchTerm || item.driverName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -162,14 +162,14 @@ export default function DriverPayroll() {
       {/* Search */}
       <div className="relative max-w-md">
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-        <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search drivers..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       {/* Payroll List */}
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {payrollQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : filteredPayroll?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

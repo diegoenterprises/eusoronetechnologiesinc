@@ -28,11 +28,11 @@ export default function BrokerLoadMatching() {
   const [selectedCarriers, setSelectedCarriers] = useState<string[]>([]);
   const [customRate, setCustomRate] = useState("");
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId || "" });
-  const matchQuery = trpc.carriers.getAvailableCapacity.useQuery({ limit: 20 });
-  const rateQuery = trpc.esang.chat.useMutation();
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId || "" });
+  const matchQuery = (trpc as any).carriers.getAvailableCapacity.useQuery({ limit: 20 });
+  const rateQuery = (trpc as any).esang.chat.useMutation();
 
-  const sendOffersMutation = trpc.brokers.vetCarrier.useMutation({
+  const sendOffersMutation = (trpc as any).brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success(`Offers sent to ${selectedCarriers.length} carriers`);
       navigate("/broker/loads");
@@ -146,7 +146,7 @@ export default function BrokerLoadMatching() {
                 <Input
                   type="number"
                   value={customRate}
-                  onChange={(e) => setCustomRate(e.target.value)}
+                  onChange={(e: any) => setCustomRate(e.target.value)}
                   placeholder={rateData?.midEstimate?.toString() || "0"}
                   className="bg-slate-700/50 border-slate-600/50 rounded-lg text-xl font-bold w-40"
                 />
@@ -183,7 +183,7 @@ export default function BrokerLoadMatching() {
         </CardHeader>
         <CardContent>
           {matchQuery.isLoading ? (
-            <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : matches.length === 0 ? (
             <div className="text-center py-12">
               <Truck className="w-10 h-10 text-slate-500 mx-auto mb-3" />
@@ -217,7 +217,7 @@ export default function BrokerLoadMatching() {
                         <div className="flex items-center gap-4 mt-1 text-sm">
                           <span className="text-slate-400">MC# {carrier.mcNumber}</span>
                           <div className="flex items-center">
-                            {[1, 2, 3, 4, 5].map((s) => (
+                            {[1, 2, 3, 4, 5].map((s: any) => (
                               <Star key={s} className={cn("w-3 h-3", s <= carrier.rating ? "text-yellow-400 fill-yellow-400" : "text-slate-600")} />
                             ))}
                           </div>

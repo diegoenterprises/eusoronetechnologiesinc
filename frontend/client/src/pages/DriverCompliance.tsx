@@ -7,15 +7,15 @@ import { trpc } from "@/lib/trpc";
 import { User, AlertTriangle, CheckCircle, Clock, FileText, Shield, Calendar, Award } from "lucide-react";
 
 export default function DriverCompliance() {
-  const complianceQuery = trpc.compliance.getDriverCompliance.useQuery();
-  const driversQuery = trpc.compliance.getDriverComplianceList.useQuery({ limit: 20 });
+  const complianceQuery = (trpc as any).compliance.getDriverCompliance.useQuery();
+  const driversQuery = (trpc as any).compliance.getDriverComplianceList.useQuery({ limit: 20 });
 
   if (complianceQuery.isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map((i: any) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -130,13 +130,13 @@ export default function DriverCompliance() {
         <CardContent>
           {driversQuery.isLoading ? (
             <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <Skeleton key={i} className="h-16" />
               ))}
             </div>
           ) : (
             <div className="space-y-3">
-              {(driversQuery.data?.drivers || [
+              {((driversQuery.data as any)?.drivers || [
                 { id: "1", name: "John Smith", cdlNumber: "TX123456", status: "compliant", cdlExpiry: "2027-03-15", medicalExpiry: "2026-08-20", hazmatExpiry: "2026-12-10" },
                 { id: "2", name: "Maria Garcia", cdlNumber: "TX789012", status: "expiring", cdlExpiry: "2027-06-22", medicalExpiry: "2026-02-05", hazmatExpiry: "2027-01-15" },
                 { id: "3", name: "James Wilson", cdlNumber: "TX345678", status: "compliant", cdlExpiry: "2028-01-10", medicalExpiry: "2026-09-30", hazmatExpiry: "2027-04-20" },

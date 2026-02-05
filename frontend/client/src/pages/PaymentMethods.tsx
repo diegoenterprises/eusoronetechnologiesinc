@@ -18,16 +18,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function PaymentMethods() {
-  const methodsQuery = trpc.billing.getPaymentMethods.useQuery();
+  const methodsQuery = (trpc as any).billing.getPaymentMethods.useQuery();
 
-  const setDefaultMutation = trpc.billing.setDefaultPaymentMethod.useMutation({
+  const setDefaultMutation = (trpc as any).billing.setDefaultPaymentMethod.useMutation({
     onSuccess: () => { toast.success("Default payment method updated"); methodsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update", { description: error.message }),
   });
 
-  const deleteMutation = trpc.billing.deletePaymentMethod.useMutation({
+  const deleteMutation = (trpc as any).billing.deletePaymentMethod.useMutation({
     onSuccess: () => { toast.success("Payment method removed"); methodsQuery.refetch(); },
-    onError: (error) => toast.error("Failed to remove", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to remove", { description: error.message }),
   });
 
   const getCardIcon = (brand: string) => {
@@ -64,8 +64,8 @@ export default function PaymentMethods() {
         </CardHeader>
         <CardContent className="p-0">
           {methodsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
-          ) : methodsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : (methodsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <CreditCard className="w-10 h-10 text-slate-500" />
@@ -75,7 +75,7 @@ export default function PaymentMethods() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {methodsQuery.data?.map((method: any) => (
+              {(methodsQuery.data as any)?.map((method: any) => (
                 <div key={method.id} className={cn("p-4", method.isDefault && "bg-cyan-500/5 border-l-2 border-cyan-500")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -123,7 +123,7 @@ export default function PaymentMethods() {
         <CardContent>
           {methodsQuery.isLoading ? (
             <Skeleton className="h-20 w-full rounded-xl" />
-          ) : methodsQuery.data?.billingAddress ? (
+          ) : (methodsQuery.data as any)?.billingAddress ? (
             <div className="text-slate-400">
               <p className="text-white font-medium">{methodsQuery.data.billingAddress.name}</p>
               <p>{methodsQuery.data.billingAddress.line1}</p>

@@ -21,8 +21,8 @@ export default function ActivityTimeline() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("today");
 
-  const activityQuery = trpc.activity.getTimeline.useQuery({ type: typeFilter === "all" ? undefined : typeFilter, dateRange: dateFilter, limit: 50 });
-  const summaryQuery = trpc.activity.getSummary.useQuery({ dateRange: dateFilter });
+  const activityQuery = (trpc as any).activity.getTimeline.useQuery({ type: typeFilter === "all" ? undefined : typeFilter, dateRange: dateFilter, limit: 50 });
+  const summaryQuery = (trpc as any).activity.getSummary.useQuery({ dateRange: dateFilter });
 
   const summary = summaryQuery.data;
 
@@ -160,8 +160,8 @@ export default function ActivityTimeline() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-6">
           {activityQuery.isLoading ? (
-            <div className="space-y-6">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : activityQuery.data?.length === 0 ? (
+            <div className="space-y-6">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (activityQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                 <Activity className="w-10 h-10 text-slate-500" />
@@ -172,7 +172,7 @@ export default function ActivityTimeline() {
             <div className="relative">
               <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-slate-700" />
               <div className="space-y-6">
-                {activityQuery.data?.map((activity: any) => (
+                {(activityQuery.data as any)?.map((activity: any) => (
                   <div key={activity.id} className="relative pl-10">
                     <div className={cn("absolute left-0 w-8 h-8 rounded-full flex items-center justify-center border", getActivityColor(activity.type))}>
                       {getActivityIcon(activity.type)}

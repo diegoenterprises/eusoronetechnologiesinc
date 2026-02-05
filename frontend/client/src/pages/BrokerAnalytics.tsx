@@ -21,9 +21,9 @@ import { cn } from "@/lib/utils";
 export default function BrokerAnalytics() {
   const [timeframe, setTimeframe] = useState("30d");
 
-  const analyticsQuery = trpc.brokers.getAnalytics.useQuery({ timeframe });
-  const commissionQuery = trpc.brokers.getCommissionSummary.useQuery({ timeframe });
-  const performanceQuery = trpc.brokers.getPerformanceMetrics.useQuery({ timeframe });
+  const analyticsQuery = (trpc as any).brokers.getAnalytics.useQuery({ timeframe });
+  const commissionQuery = (trpc as any).brokers.getCommissionSummary.useQuery({ timeframe });
+  const performanceQuery = (trpc as any).brokers.getPerformanceMetrics.useQuery({ timeframe });
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -55,7 +55,7 @@ export default function BrokerAnalytics() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {analyticsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20 rounded-xl">
@@ -64,7 +64,7 @@ export default function BrokerAnalytics() {
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Total Commission</p>
                     <p className="text-3xl font-bold text-green-400">
-                      ${analyticsQuery.data?.totalCommission?.toLocaleString() || 0}
+                      ${(analyticsQuery.data as any)?.totalCommission?.toLocaleString() || 0}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-green-500/20">
@@ -72,15 +72,15 @@ export default function BrokerAnalytics() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 mt-2 text-xs">
-                  {(analyticsQuery.data?.commissionTrend || 0) >= 0 ? (
+                  {((analyticsQuery.data as any)?.commissionTrend || 0) >= 0 ? (
                     <>
                       <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-green-400">+{analyticsQuery.data?.commissionTrend}%</span>
+                      <span className="text-green-400">+{(analyticsQuery.data as any)?.commissionTrend}%</span>
                     </>
                   ) : (
                     <>
                       <ArrowDownRight className="w-3 h-3 text-red-400" />
-                      <span className="text-red-400">{analyticsQuery.data?.commissionTrend}%</span>
+                      <span className="text-red-400">{(analyticsQuery.data as any)?.commissionTrend}%</span>
                     </>
                   )}
                   <span className="text-slate-500">vs last period</span>
@@ -94,7 +94,7 @@ export default function BrokerAnalytics() {
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Loads Brokered</p>
                     <p className="text-3xl font-bold text-purple-400">
-                      {analyticsQuery.data?.loadsBrokered || 0}
+                      {(analyticsQuery.data as any)?.loadsBrokered || 0}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-purple-500/20">
@@ -102,15 +102,15 @@ export default function BrokerAnalytics() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1 mt-2 text-xs">
-                  {(analyticsQuery.data?.loadsTrend || 0) >= 0 ? (
+                  {((analyticsQuery.data as any)?.loadsTrend || 0) >= 0 ? (
                     <>
                       <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-green-400">+{analyticsQuery.data?.loadsTrend}%</span>
+                      <span className="text-green-400">+{(analyticsQuery.data as any)?.loadsTrend}%</span>
                     </>
                   ) : (
                     <>
                       <ArrowDownRight className="w-3 h-3 text-red-400" />
-                      <span className="text-red-400">{analyticsQuery.data?.loadsTrend}%</span>
+                      <span className="text-red-400">{(analyticsQuery.data as any)?.loadsTrend}%</span>
                     </>
                   )}
                   <span className="text-slate-500">vs last period</span>
@@ -124,7 +124,7 @@ export default function BrokerAnalytics() {
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Avg Margin</p>
                     <p className="text-3xl font-bold text-cyan-400">
-                      {analyticsQuery.data?.avgMarginPercent || 0}%
+                      {(analyticsQuery.data as any)?.avgMarginPercent || 0}%
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-cyan-500/20">
@@ -132,7 +132,7 @@ export default function BrokerAnalytics() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  ${analyticsQuery.data?.avgMarginDollars || 0} per load
+                  ${(analyticsQuery.data as any)?.avgMarginDollars || 0} per load
                 </p>
               </CardContent>
             </Card>
@@ -143,7 +143,7 @@ export default function BrokerAnalytics() {
                   <div>
                     <p className="text-xs text-slate-400 mb-1">Active Carriers</p>
                     <p className="text-3xl font-bold text-orange-400">
-                      {analyticsQuery.data?.activeCarriers || 0}
+                      {(analyticsQuery.data as any)?.activeCarriers || 0}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-orange-500/20">
@@ -151,7 +151,7 @@ export default function BrokerAnalytics() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  {analyticsQuery.data?.newCarriers || 0} new this period
+                  {(analyticsQuery.data as any)?.newCarriers || 0} new this period
                 </p>
               </CardContent>
             </Card>
@@ -170,11 +170,11 @@ export default function BrokerAnalytics() {
           <CardContent>
             {commissionQuery.isLoading ? (
               <div className="space-y-4">
-                {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-12 rounded-lg" />)}
+                {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-12 rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-4">
-                {commissionQuery.data?.breakdown?.map((item: any, i: number) => (
+                {(commissionQuery.data as any)?.breakdown?.map((item: any, i: number) => (
                   <div key={i} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">{item.category}</span>
@@ -202,11 +202,11 @@ export default function BrokerAnalytics() {
           <CardContent>
             {performanceQuery.isLoading ? (
               <div className="space-y-4">
-                {Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+                {Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}
               </div>
             ) : (
               <div className="space-y-4">
-                {performanceQuery.data?.metrics?.map((metric: any, i: number) => (
+                {(performanceQuery.data as any)?.metrics?.map((metric: any, i: number) => (
                   <div key={i} className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm text-white">{metric.name}</span>
@@ -243,11 +243,11 @@ export default function BrokerAnalytics() {
         <CardContent>
           {analyticsQuery.isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
+              {Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {analyticsQuery.data?.topLanes?.map((lane: any, i: number) => (
+              {(analyticsQuery.data as any)?.topLanes?.map((lane: any, i: number) => (
                 <div key={i} className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">#{i + 1}</Badge>

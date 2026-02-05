@@ -47,13 +47,13 @@ export default function ClearinghouseDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
 
   // tRPC queries
-  const { data: overviewData, refetch: refetchOverview } = trpc.clearinghouse.getOverview.useQuery();
-  const { data: queriesData } = trpc.clearinghouse.getQueryResults.useQuery({ status: "all", limit: 20 });
-  const { data: dueDriversData } = trpc.clearinghouse.getDriversDueForQuery.useQuery({ daysAhead: 90 });
-  const { data: consentData } = trpc.clearinghouse.getConsentStatus.useQuery({});
-  const { data: complianceReport } = trpc.clearinghouse.getComplianceReport.useQuery({ period: "year" });
+  const { data: overviewData, refetch: refetchOverview } = (trpc as any).clearinghouse.getOverview.useQuery();
+  const { data: queriesData } = (trpc as any).clearinghouse.getQueryResults.useQuery({ status: "all", limit: 20 });
+  const { data: dueDriversData } = (trpc as any).clearinghouse.getDriversDueForQuery.useQuery({ daysAhead: 90 });
+  const { data: consentData } = (trpc as any).clearinghouse.getConsentStatus.useQuery({});
+  const { data: complianceReport } = (trpc as any).clearinghouse.getComplianceReport.useQuery({ period: "year" });
 
-  const syncMutation = trpc.clearinghouse.syncWithFMCSA.useMutation({
+  const syncMutation = (trpc as any).clearinghouse.syncWithFMCSA.useMutation({
     onSuccess: () => {
       toast.success("Sync completed successfully");
       refetchOverview();
@@ -255,7 +255,7 @@ export default function ClearinghouseDashboard() {
                 </Button>
               </CardHeader>
               <CardContent className="space-y-3">
-                {dueDrivers.slice(0, 5).map((driver) => (
+                {dueDrivers.slice(0, 5).map((driver: any) => (
                   <div key={driver.id} className="flex items-center justify-between p-3 rounded-lg bg-slate-700/30">
                     <div>
                       <p className="text-white font-medium">{driver.name}</p>
@@ -311,7 +311,7 @@ export default function ClearinghouseDashboard() {
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <Input
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e: any) => setSearchTerm(e.target.value)}
                       placeholder="Search drivers..."
                       className="pl-9 w-64 bg-slate-700/50 border-slate-600"
                     />
@@ -325,7 +325,7 @@ export default function ClearinghouseDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {queries.map((query) => (
+                {queries.map((query: any) => (
                   <div key={query.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                     <div className="flex items-center gap-4">
                       <div className={cn(
@@ -386,7 +386,7 @@ export default function ClearinghouseDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {dueDrivers.map((driver) => (
+                {dueDrivers.map((driver: any) => (
                   <div key={driver.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center">

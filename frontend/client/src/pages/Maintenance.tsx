@@ -24,8 +24,8 @@ export default function Maintenance() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const maintenanceQuery = trpc.maintenance.list.useQuery({ limit: 50 });
-  const summaryQuery = trpc.maintenance.getSummary.useQuery();
+  const maintenanceQuery = (trpc as any).maintenance.list.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).maintenance.getSummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -39,7 +39,7 @@ export default function Maintenance() {
     }
   };
 
-  const filteredItems = maintenanceQuery.data?.filter((item: any) => {
+  const filteredItems = (maintenanceQuery.data as any)?.filter((item: any) => {
     const matchesSearch = !searchTerm || 
       item.vehicleNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.type?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -134,7 +134,7 @@ export default function Maintenance() {
         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <Input
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
           placeholder="Search maintenance records..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
@@ -152,7 +152,7 @@ export default function Maintenance() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {maintenanceQuery.isLoading ? (
-                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
               ) : filteredItems?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">

@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function OutgoingShipments() {
   const [search, setSearch] = useState("");
 
-  const shipmentsQuery = trpc.terminals.getOutgoingShipments.useQuery({ search });
-  const statsQuery = trpc.terminals.getOutgoingStats.useQuery();
+  const shipmentsQuery = (trpc as any).terminals.getOutgoingShipments.useQuery({ search });
+  const statsQuery = (trpc as any).terminals.getOutgoingStats.useQuery();
 
-  const dispatchMutation = trpc.terminals.dispatchShipment.useMutation({
+  const dispatchMutation = (trpc as any).terminals.dispatchShipment.useMutation({
     onSuccess: () => { toast.success("Shipment dispatched"); shipmentsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -87,14 +87,14 @@ export default function OutgoingShipments() {
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search shipments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+        <Input value={search} onChange={(e: any) => setSearch(e.target.value)} placeholder="Search shipments..." className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg" />
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Package className="w-5 h-5 text-cyan-400" />Outgoing</CardTitle></CardHeader>
         <CardContent className="p-0">
           {shipmentsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}</div>
           ) : !shipmentsQuery.data || (Array.isArray(shipmentsQuery.data) && shipmentsQuery.data.length === 0) ? (
             <div className="text-center py-16"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No outgoing shipments</p></div>
           ) : (

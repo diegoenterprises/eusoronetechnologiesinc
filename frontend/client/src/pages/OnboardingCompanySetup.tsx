@@ -35,11 +35,11 @@ export default function OnboardingCompanySetup() {
     description: "",
   });
 
-  const { data: existingCompany, isLoading } = trpc.companies.list.useQuery({});
-  const updateMutation = trpc.companies.getDocuments.useQuery({ category: "" }) as any;
+  const { data: existingCompany, isLoading } = (trpc as any).companies.list.useQuery({});
+  const updateMutation = (trpc as any).companies.getDocuments.useQuery({ category: "" }) as any;
 
   const handleChange = (field: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = () => {
@@ -90,12 +90,12 @@ export default function OnboardingCompanySetup() {
               <Input
                 placeholder="Enter company name"
                 value={formData.companyName}
-                onChange={(e) => handleChange("companyName", e.target.value)}
+                onChange={(e: any) => handleChange("companyName", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>Company Type *</Label>
-              <Select value={formData.companyType} onValueChange={(v) => handleChange("companyType", v)}>
+              <Select value={formData.companyType} onValueChange={(v: any) => handleChange("companyType", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
@@ -115,7 +115,7 @@ export default function OnboardingCompanySetup() {
               <Input
                 placeholder="e.g., 1234567"
                 value={formData.dotNumber}
-                onChange={(e) => handleChange("dotNumber", e.target.value)}
+                onChange={(e: any) => handleChange("dotNumber", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -123,7 +123,7 @@ export default function OnboardingCompanySetup() {
               <Input
                 placeholder="e.g., MC-123456"
                 value={formData.mcNumber}
-                onChange={(e) => handleChange("mcNumber", e.target.value)}
+                onChange={(e: any) => handleChange("mcNumber", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -131,7 +131,7 @@ export default function OnboardingCompanySetup() {
               <Input
                 placeholder="e.g., 12-3456789"
                 value={formData.einNumber}
-                onChange={(e) => handleChange("einNumber", e.target.value)}
+                onChange={(e: any) => handleChange("einNumber", e.target.value)}
               />
             </div>
           </div>
@@ -150,7 +150,7 @@ export default function OnboardingCompanySetup() {
             <Input
               placeholder="Enter street address"
               value={formData.address}
-              onChange={(e) => handleChange("address", e.target.value)}
+              onChange={(e: any) => handleChange("address", e.target.value)}
             />
           </div>
           <div className="grid md:grid-cols-3 gap-4">
@@ -159,12 +159,12 @@ export default function OnboardingCompanySetup() {
               <Input
                 placeholder="City"
                 value={formData.city}
-                onChange={(e) => handleChange("city", e.target.value)}
+                onChange={(e: any) => handleChange("city", e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label>State *</Label>
-              <Select value={formData.state} onValueChange={(v) => handleChange("state", v)}>
+              <Select value={formData.state} onValueChange={(v: any) => handleChange("state", v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select state" />
                 </SelectTrigger>
@@ -182,7 +182,7 @@ export default function OnboardingCompanySetup() {
               <Input
                 placeholder="ZIP"
                 value={formData.zipCode}
-                onChange={(e) => handleChange("zipCode", e.target.value)}
+                onChange={(e: any) => handleChange("zipCode", e.target.value)}
               />
             </div>
           </div>
@@ -203,7 +203,7 @@ export default function OnboardingCompanySetup() {
                 type="tel"
                 placeholder="(555) 555-5555"
                 value={formData.phone}
-                onChange={(e) => handleChange("phone", e.target.value)}
+                onChange={(e: any) => handleChange("phone", e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -212,7 +212,7 @@ export default function OnboardingCompanySetup() {
                 type="email"
                 placeholder="company@example.com"
                 value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
+                onChange={(e: any) => handleChange("email", e.target.value)}
               />
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function OnboardingCompanySetup() {
               type="url"
               placeholder="https://www.example.com"
               value={formData.website}
-              onChange={(e) => handleChange("website", e.target.value)}
+              onChange={(e: any) => handleChange("website", e.target.value)}
             />
           </div>
           <div className="space-y-2">
@@ -230,7 +230,7 @@ export default function OnboardingCompanySetup() {
             <Textarea
               placeholder="Brief description of your company and services..."
               value={formData.description}
-              onChange={(e) => handleChange("description", e.target.value)}
+              onChange={(e: any) => handleChange("description", e.target.value)}
               rows={4}
             />
           </div>

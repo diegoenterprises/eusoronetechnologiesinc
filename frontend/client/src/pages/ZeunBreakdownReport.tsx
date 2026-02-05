@@ -54,7 +54,7 @@ export default function ZeunBreakdownReport() {
   const [diagnosticResult, setDiagnosticResult] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
-  const reportBreakdownMutation = trpc.zeunMechanics.reportBreakdown.useMutation();
+  const reportBreakdownMutation = (trpc as any).zeunMechanics.reportBreakdown.useMutation();
 
   const handleAddSymptom = () => {
     if (currentSymptom.trim()) {
@@ -303,7 +303,7 @@ export default function ZeunBreakdownReport() {
           <input
             type="text"
             value={formData.vehicleVin}
-            onChange={(e) => setFormData({ ...formData, vehicleVin: e.target.value })}
+            onChange={(e: any) => setFormData({ ...formData, vehicleVin: e.target.value })}
             placeholder="Enter vehicle VIN"
             className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-gray-400"
           />
@@ -316,8 +316,8 @@ export default function ZeunBreakdownReport() {
             <input
               type="text"
               value={currentSymptom}
-              onChange={(e) => setCurrentSymptom(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleAddSymptom()}
+              onChange={(e: any) => setCurrentSymptom(e.target.value)}
+              onKeyPress={(e: any) => e.key === "Enter" && handleAddSymptom()}
               placeholder="e.g., Engine won't start, Clicking sound"
               className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-gray-400"
             />
@@ -328,7 +328,7 @@ export default function ZeunBreakdownReport() {
 
           {formData.symptoms.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {formData.symptoms.map((symptom, idx) => (
+              {formData.symptoms.map((symptom: any, idx: number) => (
                 <div
                   key={idx}
                   className="bg-blue-900/30 border border-blue-700 rounded px-3 py-1 flex items-center gap-2"
@@ -351,7 +351,7 @@ export default function ZeunBreakdownReport() {
           <label className="block text-sm font-semibold text-white mb-2">Issue Category</label>
           <select
             value={formData.issueCategory || ""}
-            onChange={(e) => setFormData({ ...formData, issueCategory: e.target.value })}
+            onChange={(e: any) => setFormData({ ...formData, issueCategory: e.target.value })}
             className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
           >
             <option value="ENGINE">Engine</option>
@@ -393,7 +393,7 @@ export default function ZeunBreakdownReport() {
             <input
               type="text"
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e: any) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Enter location or address"
               className="flex-1 bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white placeholder-gray-400"
             />
@@ -418,7 +418,7 @@ export default function ZeunBreakdownReport() {
             <label className="block text-sm font-semibold text-white mb-2">Load Status</label>
             <select
               value={formData.loadStatus}
-              onChange={(e) => setFormData({ ...formData, loadStatus: e.target.value as "LOADED" | "EMPTY" })}
+              onChange={(e: any) => setFormData({ ...formData, loadStatus: e.target.value as "LOADED" | "EMPTY" })}
               className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white"
             >
               <option value="LOADED" >Loaded</option>

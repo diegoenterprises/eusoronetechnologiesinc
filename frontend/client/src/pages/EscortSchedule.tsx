@@ -20,11 +20,11 @@ import { toast } from "sonner";
 export default function EscortSchedule() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const scheduleQuery = trpc.escorts.getSchedule.useQuery({ date: selectedDate });
-  const availabilityQuery = trpc.escorts.getAvailability.useQuery();
-  const upcomingQuery = trpc.escorts.getUpcomingJobs.useQuery();
+  const scheduleQuery = (trpc as any).escorts.getSchedule.useQuery({ date: selectedDate });
+  const availabilityQuery = (trpc as any).escorts.getAvailability.useQuery();
+  const upcomingQuery = (trpc as any).escorts.getUpcomingJobs.useQuery();
 
-  const updateAvailabilityMutation = trpc.escorts.updateAvailability.useMutation({
+  const updateAvailabilityMutation = (trpc as any).escorts.updateAvailability.useMutation({
     onSuccess: () => {
       toast.success("Availability updated");
       availabilityQuery.refetch();
@@ -114,9 +114,9 @@ export default function EscortSchedule() {
             <CardContent>
               {scheduleQuery.isLoading ? (
                 <div className="space-y-3">
-                  {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
+                  {Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-28 rounded-lg" />)}
                 </div>
-              ) : scheduleQuery.data?.length === 0 ? (
+              ) : (scheduleQuery.data as any)?.length === 0 ? (
                 <div className="text-center py-12">
                   <Calendar className="w-12 h-12 text-slate-500 mx-auto mb-3" />
                   <p className="text-slate-400">No jobs scheduled for this day</p>
@@ -124,7 +124,7 @@ export default function EscortSchedule() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {scheduleQuery.data?.map((job: any) => (
+                  {(scheduleQuery.data as any)?.map((job: any) => (
                     <div
                       key={job.id}
                       className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-blue-500/50 transition-colors"
@@ -193,11 +193,11 @@ export default function EscortSchedule() {
             <CardContent>
               {upcomingQuery.isLoading ? (
                 <div className="space-y-2">
-                  {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
+                  {Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {upcomingQuery.data?.map((job: any) => (
+                  {(upcomingQuery.data as any)?.map((job: any) => (
                     <div
                       key={job.id}
                       className="p-3 rounded-lg bg-slate-700/30 border border-slate-600/30 flex items-center justify-between"
@@ -232,11 +232,11 @@ export default function EscortSchedule() {
             <CardContent>
               {availabilityQuery.isLoading ? (
                 <div className="space-y-2">
-                  {Array(7).fill(0).map((_, i) => <Skeleton key={i} className="h-10 rounded-lg" />)}
+                  {Array(7).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-10 rounded-lg" />)}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {availabilityQuery.data?.map((day: any) => (
+                  {(availabilityQuery.data as any)?.map((day: any) => (
                     <div
                       key={day.dayOfWeek}
                       className={cn(

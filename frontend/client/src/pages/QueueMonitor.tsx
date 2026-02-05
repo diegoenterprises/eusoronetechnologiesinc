@@ -19,22 +19,22 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function QueueMonitor() {
-  const queuesQuery = trpc.admin.getQueues.useQuery();
-  const jobsQuery = trpc.admin.getRecentJobs.useQuery({ limit: 20 });
+  const queuesQuery = (trpc as any).admin.getQueues.useQuery();
+  const jobsQuery = (trpc as any).admin.getRecentJobs.useQuery({ limit: 20 });
 
-  const pauseMutation = trpc.admin.pauseQueue.useMutation({
+  const pauseMutation = (trpc as any).admin.pauseQueue.useMutation({
     onSuccess: () => { toast.success("Queue paused"); queuesQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const resumeMutation = trpc.admin.resumeQueue.useMutation({
+  const resumeMutation = (trpc as any).admin.resumeQueue.useMutation({
     onSuccess: () => { toast.success("Queue resumed"); queuesQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const clearMutation = trpc.admin.clearQueue.useMutation({
+  const clearMutation = (trpc as any).admin.clearQueue.useMutation({
     onSuccess: () => { toast.success("Queue cleared"); queuesQuery.refetch(); jobsQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {
@@ -65,9 +65,9 @@ export default function QueueMonitor() {
       {/* Queues */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {queuesQuery.isLoading ? (
-          [1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
+          [1, 2, 3].map((i: any) => <Skeleton key={i} className="h-48 w-full rounded-xl" />)
         ) : (
-          queuesQuery.data?.map((queue: any) => (
+          (queuesQuery.data as any)?.map((queue: any) => (
             <Card key={queue.name} className={cn("bg-slate-800/50 border-slate-700/50 rounded-xl", queue.status === "paused" && "border-yellow-500/30")}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -130,15 +130,15 @@ export default function QueueMonitor() {
         </CardHeader>
         <CardContent className="p-0">
           {jobsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : jobsQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (jobsQuery.data as any)?.length === 0 ? (
             <div className="text-center py-12">
               <Layers className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No recent jobs</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50 max-h-[400px] overflow-y-auto">
-              {jobsQuery.data?.map((job: any) => (
+              {(jobsQuery.data as any)?.map((job: any) => (
                 <div key={job.id} className={cn("p-4 flex items-center justify-between", job.status === "failed" && "bg-red-500/5 border-l-2 border-red-500")}>
                   <div className="flex items-center gap-3">
                     <div className={cn("p-2 rounded-lg", job.status === "completed" ? "bg-green-500/20" : job.status === "failed" ? "bg-red-500/20" : "bg-blue-500/20")}>

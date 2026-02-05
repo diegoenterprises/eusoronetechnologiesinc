@@ -27,14 +27,14 @@ export default function ShipperLoads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const summaryQuery = trpc.loads.getShipperSummary.useQuery();
-  const loadsQuery = trpc.loads.list.useQuery({
+  const summaryQuery = (trpc as any).loads.getShipperSummary.useQuery();
+  const loadsQuery = (trpc as any).loads.list.useQuery({
     status: statusFilter !== "all" ? statusFilter as "delivered" | "assigned" | "cancelled" | "in_transit" | "draft" | "posted" | "bidding" | "disputed" : undefined,
   });
 
-  const cancelMutation = trpc.loads.cancel.useMutation({
+  const cancelMutation = (trpc as any).loads.cancel.useMutation({
     onSuccess: () => { toast.success("Load cancelled"); loadsQuery.refetch(); summaryQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   if (summaryQuery.error) {
@@ -126,7 +126,7 @@ export default function ShipperLoads() {
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-700/50 border-slate-600" />
+          <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search loads..." className="pl-9 bg-slate-700/50 border-slate-600" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-36 bg-slate-700/50 border-slate-600"><SelectValue placeholder="Status" /></SelectTrigger>
@@ -144,8 +144,8 @@ export default function ShipperLoads() {
       <Card className="bg-slate-800/50 border-slate-700">
         <CardContent className="p-0">
           {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
-          ) : loadsQuery.data?.loads?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+          ) : (loadsQuery.data as any)?.loads?.length === 0 ? (
             <div className="p-12 text-center">
               <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
               <p className="text-slate-400">No loads found</p>
@@ -155,7 +155,7 @@ export default function ShipperLoads() {
             </div>
           ) : (
             <div className="divide-y divide-slate-700">
-              {loadsQuery.data?.loads?.map((load: any) => (
+              {(loadsQuery.data as any)?.loads?.map((load: any) => (
                 <div key={load.id} className="flex items-center justify-between p-4 hover:bg-slate-700/30 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", load.status === "in_transit" ? "bg-blue-500/20" : load.status === "delivered" ? "bg-green-500/20" : "bg-yellow-500/20")}>

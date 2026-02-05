@@ -22,16 +22,16 @@ export default function ApiKeys() {
   const [showKey, setShowKey] = useState<string | null>(null);
   const [newKeyName, setNewKeyName] = useState("");
 
-  const keysQuery = trpc.admin.getApiKeys.useQuery();
+  const keysQuery = (trpc as any).admin.getApiKeys.useQuery();
 
-  const createMutation = trpc.admin.createApiKey.useMutation({
-    onSuccess: (data) => { toast.success("API key created", { description: "Copy it now, it won't be shown again" }); keysQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+  const createMutation = (trpc as any).admin.createApiKey.useMutation({
+    onSuccess: (data: any) => { toast.success("API key created", { description: "Copy it now, it won't be shown again" }); keysQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const revokeMutation = trpc.admin.revokeApiKey.useMutation({
+  const revokeMutation = (trpc as any).admin.revokeApiKey.useMutation({
     onSuccess: () => { toast.success("API key revoked"); keysQuery.refetch(); },
-    onError: (error) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
   const copyToClipboard = (text: string) => {
@@ -70,7 +70,7 @@ export default function ApiKeys() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-3">
-            <Input value={newKeyName} onChange={(e) => setNewKeyName(e.target.value)} placeholder="Key name (e.g., Production API)" className="flex-1 bg-slate-800/50 border-slate-700/50 rounded-lg" />
+            <Input value={newKeyName} onChange={(e: any) => setNewKeyName(e.target.value)} placeholder="Key name (e.g., Production API)" className="flex-1 bg-slate-800/50 border-slate-700/50 rounded-lg" />
             <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => { createMutation.mutate({ name: newKeyName }); setNewKeyName(""); }} disabled={!newKeyName.trim()}>
               <Key className="w-4 h-4 mr-2" />Generate Key
             </Button>
@@ -88,7 +88,7 @@ export default function ApiKeys() {
               </div>
               <div>
                 {keysQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-blue-400">{keysQuery.data?.length || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400">{(keysQuery.data as any)?.length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Keys</p>
               </div>
@@ -104,7 +104,7 @@ export default function ApiKeys() {
               </div>
               <div>
                 {keysQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{keysQuery.data?.filter((k: any) => k.status === "active").length || 0}</p>
+                  <p className="text-2xl font-bold text-green-400">{(keysQuery.data as any)?.filter((k: any) => k.status === "active").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Active</p>
               </div>
@@ -120,7 +120,7 @@ export default function ApiKeys() {
               </div>
               <div>
                 {keysQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-yellow-400">{keysQuery.data?.filter((k: any) => k.expiresIn && k.expiresIn < 7).length || 0}</p>
+                  <p className="text-2xl font-bold text-yellow-400">{(keysQuery.data as any)?.filter((k: any) => k.expiresIn && k.expiresIn < 7).length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Expiring Soon</p>
               </div>
@@ -136,7 +136,7 @@ export default function ApiKeys() {
               </div>
               <div>
                 {keysQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-red-400">{keysQuery.data?.filter((k: any) => k.status === "revoked").length || 0}</p>
+                  <p className="text-2xl font-bold text-red-400">{(keysQuery.data as any)?.filter((k: any) => k.status === "revoked").length || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Revoked</p>
               </div>
@@ -155,15 +155,15 @@ export default function ApiKeys() {
         </CardHeader>
         <CardContent className="p-0">
           {keysQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : keysQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : (keysQuery.data as any)?.length === 0 ? (
             <div className="text-center py-16">
               <Key className="w-10 h-10 text-slate-500 mx-auto mb-3" />
               <p className="text-slate-400">No API keys created yet</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {keysQuery.data?.map((key: any) => (
+              {(keysQuery.data as any)?.map((key: any) => (
                 <div key={key.id} className={cn("p-4", key.status !== "active" && "opacity-60")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">

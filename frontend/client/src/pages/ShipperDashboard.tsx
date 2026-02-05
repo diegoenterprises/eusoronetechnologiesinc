@@ -17,10 +17,10 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function ShipperDashboard() {
-  const statsQuery = trpc.shippers.getDashboardStats.useQuery();
-  const activeLoadsQuery = trpc.shippers.getActiveLoads.useQuery({ limit: 5 });
-  const attentionQuery = trpc.shippers.getLoadsRequiringAttention.useQuery();
-  const recentQuery = trpc.shippers.getRecentLoads.useQuery({ limit: 5 });
+  const statsQuery = (trpc as any).shippers.getDashboardStats.useQuery();
+  const activeLoadsQuery = (trpc as any).shippers.getActiveLoads.useQuery({ limit: 5 });
+  const attentionQuery = (trpc as any).shippers.getLoadsRequiringAttention.useQuery();
+  const recentQuery = (trpc as any).shippers.getRecentLoads.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -89,11 +89,11 @@ export default function ShipperDashboard() {
         </Card>
       </div>
 
-      {(attentionQuery.data?.length ?? 0) > 0 && (
+      {((attentionQuery.data as any)?.length ?? 0) > 0 && (
         <Card className="bg-gradient-to-r from-red-500/10 to-orange-500/10 border-red-500/30 rounded-xl">
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-red-400" />Loads Requiring Attention</CardTitle></CardHeader>
           <CardContent className="space-y-2">
-            {attentionQuery.data?.map((load: any) => (
+            {(attentionQuery.data as any)?.map((load: any) => (
               <div key={load.id} className="p-3 rounded-lg bg-red-500/10 flex items-center justify-between">
                 <div>
                   <p className="text-white font-medium">#{load.loadNumber} - {load.issue}</p>
@@ -111,12 +111,12 @@ export default function ShipperDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-cyan-400" />Active Loads</CardTitle></CardHeader>
           <CardContent className="p-0">
             {activeLoadsQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : activeLoadsQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (activeLoadsQuery.data as any)?.length === 0 ? (
               <div className="p-8 text-center"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No active loads</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {activeLoadsQuery.data?.map((load: any) => (
+                {(activeLoadsQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
@@ -139,12 +139,12 @@ export default function ShipperDashboard() {
           <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><CheckCircle className="w-5 h-5 text-green-400" />Recent Deliveries</CardTitle></CardHeader>
           <CardContent className="p-0">
             {recentQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
-            ) : recentQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}</div>
+            ) : (recentQuery.data as any)?.length === 0 ? (
               <div className="p-8 text-center"><Package className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-slate-400">No recent deliveries</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {recentQuery.data?.map((load: any) => (
+                {(recentQuery.data as any)?.map((load: any) => (
                   <div key={load.id} className="p-3 flex items-center justify-between">
                     <div>
                       <p className="text-white font-medium">#{load.loadNumber}</p>

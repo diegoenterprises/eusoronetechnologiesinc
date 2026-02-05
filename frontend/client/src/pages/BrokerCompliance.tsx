@@ -39,11 +39,11 @@ export default function BrokerCompliance() {
   const [expirationDate, setExpirationDate] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  const complianceQuery = trpc.compliance.getBrokerCompliance.useQuery();
-  const documentsQuery = trpc.compliance.getBrokerDocuments.useQuery();
-  const uploadMutation = trpc.compliance.uploadDocument.useMutation();
+  const complianceQuery = (trpc as any).compliance.getBrokerCompliance.useQuery();
+  const documentsQuery = (trpc as any).compliance.getBrokerDocuments.useQuery();
+  const uploadMutation = (trpc as any).compliance.uploadDocument.useMutation();
 
-  const score = complianceQuery.data?.score ?? 92;
+  const score = (complianceQuery.data as any)?.score ?? 92;
 
   const getStatusBadge = (status: string) => {
     const badges: Record<string, React.ReactNode> = {

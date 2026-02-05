@@ -23,17 +23,17 @@ export default function InvoiceDetails() {
   const params = useParams();
   const invoiceId = params.id as string;
 
-  const invoiceQuery = trpc.payments.getInvoice.useQuery({ id: invoiceId });
+  const invoiceQuery = (trpc as any).payments.getInvoice.useQuery({ id: invoiceId });
   const invoice = invoiceQuery.data;
 
-  const sendMutation = trpc.payments.sendInvoice.useMutation({
+  const sendMutation = (trpc as any).payments.sendInvoice.useMutation({
     onSuccess: () => { toast.success("Invoice sent"); invoiceQuery.refetch(); },
-    onError: (error) => toast.error("Failed to send invoice", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to send invoice", { description: error.message }),
   });
 
-  const markPaidMutation = trpc.payments.markInvoicePaid.useMutation({
+  const markPaidMutation = (trpc as any).payments.markInvoicePaid.useMutation({
     onSuccess: () => { toast.success("Invoice marked as paid"); invoiceQuery.refetch(); },
-    onError: (error) => toast.error("Failed to update invoice", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to update invoice", { description: error.message }),
   });
 
   const getStatusBadge = (status: string) => {

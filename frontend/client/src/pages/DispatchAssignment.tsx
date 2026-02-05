@@ -24,13 +24,13 @@ export default function DispatchAssignment() {
   const loadId = params.loadId as string;
   const [selectedDriver, setSelectedDriver] = useState<string | null>(null);
 
-  const loadQuery = trpc.loads.getById.useQuery({ id: loadId });
-  const driversQuery = trpc.dispatch.getAvailableDrivers.useQuery({ loadId });
-  const recommendationsQuery = trpc.dispatch.getRecommendations.useQuery({ loadId });
+  const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId });
+  const driversQuery = (trpc as any).dispatch.getAvailableDrivers.useQuery({ loadId });
+  const recommendationsQuery = (trpc as any).dispatch.getRecommendations.useQuery({ loadId });
 
-  const assignMutation = trpc.dispatch.assignDriver.useMutation({
+  const assignMutation = (trpc as any).dispatch.assignDriver.useMutation({
     onSuccess: () => { toast.success("Driver assigned successfully"); setLocation("/dispatch"); },
-    onError: (error) => toast.error("Failed to assign driver", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to assign driver", { description: error.message }),
   });
 
   const load = loadQuery.data;
@@ -108,12 +108,12 @@ export default function DispatchAssignment() {
           </CardHeader>
           <CardContent>
             {recommendationsQuery.isLoading ? (
-              <div className="space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-            ) : recommendationsQuery.data?.length === 0 ? (
+              <div className="space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            ) : (recommendationsQuery.data as any)?.length === 0 ? (
               <p className="text-slate-400 text-center py-4">No recommendations available</p>
             ) : (
               <div className="space-y-3">
-                {recommendationsQuery.data?.map((rec: any, idx: number) => (
+                {(recommendationsQuery.data as any)?.map((rec: any, idx: number) => (
                   <div 
                     key={rec.driverId} 
                     className={cn(
@@ -146,8 +146,8 @@ export default function DispatchAssignment() {
           </CardHeader>
           <CardContent className="p-0 max-h-[500px] overflow-y-auto">
             {driversQuery.isLoading ? (
-              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-            ) : driversQuery.data?.length === 0 ? (
+              <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+            ) : (driversQuery.data as any)?.length === 0 ? (
               <div className="text-center py-16">
                 <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
                   <Users className="w-10 h-10 text-slate-500" />
@@ -156,7 +156,7 @@ export default function DispatchAssignment() {
               </div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {driversQuery.data?.map((driver: any) => (
+                {(driversQuery.data as any)?.map((driver: any) => (
                   <div 
                     key={driver.id} 
                     className={cn(

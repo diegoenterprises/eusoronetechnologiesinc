@@ -20,8 +20,8 @@ export default function Analytics() {
   const [activeTab, setActiveTab] = useState("overview");
   const [period, setPeriod] = useState("month");
 
-  const summaryQuery = trpc.analytics.getSummary.useQuery({ period });
-  const trendsQuery = trpc.analytics.getTrends.useQuery({ period });
+  const summaryQuery = (trpc as any).analytics.getSummary.useQuery({ period });
+  const trendsQuery = (trpc as any).analytics.getTrends.useQuery({ period });
 
   const summary = summaryQuery.data;
 
@@ -37,7 +37,7 @@ export default function Analytics() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
-            {["week", "month", "year"].map((p) => (
+            {["week", "month", "year"].map((p: any) => (
               <Button key={p} variant={period === p ? "default" : "outline"} size="sm" className={period === p ? "bg-cyan-600 hover:bg-cyan-700 rounded-lg" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"} onClick={() => setPeriod(p)}>
                 {p.charAt(0).toUpperCase() + p.slice(1)}
               </Button>
@@ -151,10 +151,10 @@ export default function Analytics() {
               </CardHeader>
               <CardContent>
                 {trendsQuery.isLoading ? (
-                  <div className="space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+                  <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
                 ) : (
                   <div className="space-y-4">
-                    {trendsQuery.data?.map((trend: any, idx: number) => (
+                    {(trendsQuery.data as any)?.map((trend: any, idx: number) => (
                       <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-slate-700/30">
                         <div className="flex items-center gap-3">
                           <div className="p-2 rounded-full bg-cyan-500/20">

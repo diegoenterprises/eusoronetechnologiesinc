@@ -22,8 +22,8 @@ export default function TerminalProductManagement() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
 
-  const productsQuery = trpc.terminals.getProducts.useQuery();
-  const statsQuery = trpc.terminals.getSummary.useQuery();
+  const productsQuery = (trpc as any).terminals.getProducts.useQuery();
+  const statsQuery = (trpc as any).terminals.getSummary.useQuery();
 
   const products = productsQuery.data || [];
   const stats = statsQuery.data as any;
@@ -50,7 +50,7 @@ export default function TerminalProductManagement() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -101,7 +101,7 @@ export default function TerminalProductManagement() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <Input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e: any) => setSearch(e.target.value)}
                 placeholder="Search products..."
                 className="pl-10 bg-slate-700/50 border-slate-600/50 rounded-lg"
               />
@@ -127,7 +127,7 @@ export default function TerminalProductManagement() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-0">
           {productsQuery.isLoading ? (
-            <div className="p-4 space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
+            <div className="p-4 space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-lg" />)}</div>
           ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <Droplets className="w-12 h-12 text-slate-500 mx-auto mb-4" />

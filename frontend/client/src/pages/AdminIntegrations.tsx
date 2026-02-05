@@ -19,16 +19,16 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function AdminIntegrations() {
-  const integrationsQuery = trpc.admin.getIntegrations.useQuery();
+  const integrationsQuery = (trpc as any).admin.getIntegrations.useQuery();
 
-  const toggleMutation = trpc.admin.toggleIntegration.useMutation({
+  const toggleMutation = (trpc as any).admin.toggleIntegration.useMutation({
     onSuccess: () => {
       toast.success("Integration updated");
       integrationsQuery.refetch();
     },
   });
 
-  const testIntegrationMutation = trpc.admin.toggleIntegration.useMutation({
+  const testIntegrationMutation = (trpc as any).admin.toggleIntegration.useMutation({
     onSuccess: (result: any) => {
       if (result.success) {
         toast.success("Connection successful");
@@ -130,9 +130,9 @@ export default function AdminIntegrations() {
 
       {/* Integrations by Category */}
       {integrationsQuery.isLoading ? (
-        <div className="space-y-4">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-64 rounded-xl" />)}</div>
+        <div className="space-y-4">{Array(3).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-64 rounded-xl" />)}</div>
       ) : (
-        categories.map((cat) => {
+        categories.map((cat: any) => {
           const catIntegrations = integrations.filter((i: any) => i.category === cat.key);
           if (catIntegrations.length === 0) return null;
 

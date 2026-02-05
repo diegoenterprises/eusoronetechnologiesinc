@@ -132,6 +132,9 @@ import { zeunMechanicsRouter } from "./routers/zeunMechanics";
 import { runTicketsRouter } from "./routers/runTickets";
 import { negotiationsRouter } from "./routers/negotiations";
 import { integrationsRouter } from "./routers/integrations";
+import { superAdminRouter } from "./routers/superAdmin";
+import { widgetsRouter } from "./routers/widgets";
+import { messagingRouter } from "./routers/messaging";
 
 export const appRouter = router({
   system: systemRouter,
@@ -554,6 +557,15 @@ export const appRouter = router({
 
   // Rate Negotiations
   negotiations: negotiationsRouter,
+
+  // Super Admin Operations
+  superAdmin: superAdminRouter,
+
+  // Dashboard Widgets
+  widgets: widgetsRouter,
+
+  // Messaging System
+  messaging: messagingRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -43,9 +43,9 @@ export default function ComplianceDQFile() {
 
   const [activeTab, setActiveTab] = useState("overview");
 
-  const driverQuery = trpc.drivers.getById.useQuery({ id: driverId || "" });
-  const dqQuery = trpc.compliance.getDQFiles.useQuery({ search: driverId || "" });
-  const documentsQuery = trpc.compliance.getCarrierDocuments.useQuery();
+  const driverQuery = (trpc as any).drivers.getById.useQuery({ id: driverId || "" });
+  const dqQuery = (trpc as any).compliance.getDQFiles.useQuery({ search: driverId || "" });
+  const documentsQuery = (trpc as any).compliance.getCarrierDocuments.useQuery();
 
   const driver = driverQuery.data;
   const dqFile = dqQuery.data;
@@ -150,7 +150,7 @@ export default function ComplianceDQFile() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {dqRequirements.map((req) => {
+                {dqRequirements.map((req: any) => {
                   const { status, color, bg } = getItemStatus(req.key);
                   const Icon = req.icon;
                   const item = (dqFile as any)?.items?.[req.key] || dqFile?.find?.((d: any) => d.driverId === req.key);
@@ -219,7 +219,7 @@ export default function ComplianceDQFile() {
             </CardHeader>
             <CardContent>
               {documentsQuery.isLoading ? (
-                <div className="space-y-3">{Array(5).fill(0).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
+                <div className="space-y-3">{Array(5).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-16 rounded-lg" />)}</div>
               ) : documents.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-10 h-10 text-slate-500 mx-auto mb-3" />

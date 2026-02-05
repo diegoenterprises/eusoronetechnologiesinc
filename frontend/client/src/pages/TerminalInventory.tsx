@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 export default function TerminalInventory() {
   const [productFilter, setProductFilter] = useState("all");
 
-  const tanksQuery = trpc.terminals.getTankInventory.useQuery({});
-  const statsQuery = trpc.terminals.getInventoryStats.useQuery();
+  const tanksQuery = (trpc as any).terminals.getTankInventory.useQuery({});
+  const statsQuery = (trpc as any).terminals.getInventoryStats.useQuery();
 
   const getTankFillColor = (percent: number) => {
     if (percent >= 90) return "from-red-500 to-red-600";
@@ -85,7 +85,7 @@ export default function TerminalInventory() {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {statsQuery.isLoading ? (
-          Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          Array(4).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
             <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20 rounded-xl">
@@ -95,7 +95,7 @@ export default function TerminalInventory() {
                     <Database className="w-5 h-5 text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.totalCapacity?.toLocaleString() || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.totalCapacity?.toLocaleString() || 0}</p>
                     <p className="text-xs text-slate-400">Total Capacity (bbl)</p>
                   </div>
                 </div>
@@ -108,7 +108,7 @@ export default function TerminalInventory() {
                     <Droplets className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.currentInventory?.toLocaleString() || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.currentInventory?.toLocaleString() || 0}</p>
                     <p className="text-xs text-slate-400">Current Inventory (bbl)</p>
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function TerminalInventory() {
                     <Gauge className="w-5 h-5 text-green-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.utilization || 0}%</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.utilization || 0}%</p>
                     <p className="text-xs text-slate-400">Utilization</p>
                   </div>
                 </div>
@@ -134,7 +134,7 @@ export default function TerminalInventory() {
                     <AlertTriangle className="w-5 h-5 text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{statsQuery.data?.lowLevelAlerts || 0}</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.lowLevelAlerts || 0}</p>
                     <p className="text-xs text-slate-400">Low Level Alerts</p>
                   </div>
                 </div>
@@ -154,11 +154,11 @@ export default function TerminalInventory() {
         <CardContent>
           {tanksQuery.isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array(6).fill(0).map((_, i) => <Skeleton key={i} className="h-48 rounded-lg" />)}
+              {Array(6).fill(0).map((_: any, i: number) => <Skeleton key={i} className="h-48 rounded-lg" />)}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tanksQuery.data?.map((tank: any) => (
+              {(tanksQuery.data as any)?.map((tank: any) => (
                 <div
                   key={tank.id}
                   className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30 hover:border-blue-500/50 transition-colors"

@@ -21,8 +21,8 @@ import { useLocation } from "wouter";
 export default function CompanyBilling() {
   const [, setLocation] = useLocation();
 
-  const billingQuery = trpc.companies.getBilling.useQuery();
-  const invoicesQuery = trpc.companies.getRecentInvoices.useQuery({ limit: 5 });
+  const billingQuery = (trpc as any).companies.getBilling.useQuery();
+  const invoicesQuery = (trpc as any).companies.getRecentInvoices.useQuery({ limit: 5 });
 
   const billing = billingQuery.data;
 
@@ -143,7 +143,7 @@ export default function CompanyBilling() {
         </CardHeader>
         <CardContent>
           {billingQuery.isLoading ? (
-            <div className="space-y-4">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+            <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
           ) : (
             <div className="space-y-4">
               {billing?.usage?.map((item: any) => (
@@ -167,14 +167,14 @@ export default function CompanyBilling() {
         </CardHeader>
         <CardContent className="p-0">
           {invoicesQuery.isLoading ? (
-            <div className="p-4 space-y-3">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
-          ) : invoicesQuery.data?.length === 0 ? (
+            <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
+          ) : (invoicesQuery.data as any)?.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-slate-400">No invoices yet</p>
             </div>
           ) : (
             <div className="divide-y divide-slate-700/50">
-              {invoicesQuery.data?.map((invoice: any) => (
+              {(invoicesQuery.data as any)?.map((invoice: any) => (
                 <div key={invoice.id} className="p-4 flex items-center justify-between hover:bg-slate-700/20 transition-colors">
                   <div>
                     <p className="text-white font-medium">{invoice.number}</p>

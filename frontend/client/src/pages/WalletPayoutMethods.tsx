@@ -23,8 +23,8 @@ export default function WalletPayoutMethods() {
   const [accountNumber, setAccountNumber] = useState("");
   const [accountName, setAccountName] = useState("");
 
-  const { data: payoutMethods, isLoading, error, refetch } = trpc.wallet.getPayoutMethods.useQuery();
-  const addMethodMutation = trpc.wallet.addPayoutMethod.useMutation({
+  const { data: payoutMethods, isLoading, error, refetch } = (trpc as any).wallet.getPayoutMethods.useQuery();
+  const addMethodMutation = (trpc as any).wallet.addPayoutMethod.useMutation({
     onSuccess: () => {
       refetch();
       setShowAddDialog(false);
@@ -33,10 +33,10 @@ export default function WalletPayoutMethods() {
       setAccountName("");
     },
   });
-  const removeMethodMutation = trpc.wallet.removePayoutMethod.useMutation({
+  const removeMethodMutation = (trpc as any).wallet.removePayoutMethod.useMutation({
     onSuccess: () => refetch(),
   });
-  const setDefaultMutation = trpc.wallet.setDefaultPayoutMethod.useMutation({
+  const setDefaultMutation = (trpc as any).wallet.setDefaultPayoutMethod.useMutation({
     onSuccess: () => refetch(),
   });
 
@@ -53,7 +53,7 @@ export default function WalletPayoutMethods() {
       <div className="container mx-auto p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid gap-4">
-          {[1, 2].map((i) => (
+          {[1, 2].map((i: any) => (
             <Skeleton key={i} className="h-32 w-full" />
           ))}
         </div>
@@ -105,7 +105,7 @@ export default function WalletPayoutMethods() {
                 <Input
                   placeholder="e.g., Business Checking"
                   value={accountName}
-                  onChange={(e) => setAccountName(e.target.value)}
+                  onChange={(e: any) => setAccountName(e.target.value)}
                 />
               </div>
               <div className="space-y-2">
@@ -125,7 +125,7 @@ export default function WalletPayoutMethods() {
                 <Input
                   placeholder="9 digits"
                   value={routingNumber}
-                  onChange={(e) => setRoutingNumber(e.target.value)}
+                  onChange={(e: any) => setRoutingNumber(e.target.value)}
                   maxLength={9}
                 />
               </div>
@@ -134,7 +134,7 @@ export default function WalletPayoutMethods() {
                 <Input
                   placeholder="Account number"
                   value={accountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
+                  onChange={(e: any) => setAccountNumber(e.target.value)}
                 />
               </div>
               <Button

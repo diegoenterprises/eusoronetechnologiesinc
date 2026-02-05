@@ -25,7 +25,7 @@ export default function MyLoads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [timeFilter, setTimeFilter] = useState("all");
 
-  const loadsQuery = trpc.loads.list.useQuery({ limit: 100 });
+  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100 });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -38,12 +38,12 @@ export default function MyLoads() {
     }
   };
 
-  const totalLoads = loadsQuery.data?.length || 0;
-  const activeLoads = loadsQuery.data?.filter((l: any) => l.status === "in_transit").length || 0;
-  const deliveredLoads = loadsQuery.data?.filter((l: any) => l.status === "delivered").length || 0;
-  const totalRevenue = loadsQuery.data?.reduce((sum: number, l: any) => sum + (l.rate || 0), 0) || 0;
+  const totalLoads = (loadsQuery.data as any)?.length || 0;
+  const activeLoads = (loadsQuery.data as any)?.filter((l: any) => l.status === "in_transit").length || 0;
+  const deliveredLoads = (loadsQuery.data as any)?.filter((l: any) => l.status === "delivered").length || 0;
+  const totalRevenue = (loadsQuery.data as any)?.reduce((sum: number, l: any) => sum + (l.rate || 0), 0) || 0;
 
-  const filteredLoads = loadsQuery.data?.filter((load: any) => {
+  const filteredLoads = (loadsQuery.data as any)?.filter((load: any) => {
     const matchesSearch = !searchTerm || 
       load.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -145,7 +145,7 @@ export default function MyLoads() {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e: any) => setSearchTerm(e.target.value)}
             placeholder="Search by load number, origin, destination, or cargo type..."
             className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
           />
@@ -181,7 +181,7 @@ export default function MyLoads() {
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-0">
               {loadsQuery.isLoading ? (
-                <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
+                <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
               ) : filteredLoads?.length === 0 ? (
                 <div className="text-center py-16">
                   <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
