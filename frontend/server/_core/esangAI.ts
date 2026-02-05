@@ -5,6 +5,10 @@
  */
 
 import { ENV } from "./env";
+import {
+  searchMaterials, getMaterialByUN, getGuide, getProtectiveDistance,
+  getFullERGInfo, getERGForProduct, EMERGENCY_CONTACTS,
+} from "./ergDatabase";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -101,7 +105,18 @@ const SYSTEM_PROMPT = `You are ESANG AI™, the intelligent assistant for EusoTr
 2. **Carrier Matching**: Match loads with qualified, certified carriers based on equipment, certifications, and performance
 3. **Route Optimization**: Provide optimal routes considering HazMat restrictions, weather, and traffic
 4. **Compliance Assistance**: Help with DOT/FMCSA compliance, HOS tracking, and regulatory requirements
-5. **ERG 2024 Emergency Response**: Provide emergency response guidance for hazardous materials
+5. **ERG 2024 Emergency Response**: You have COMPLETE access to the ERG 2024 database with 100+ materials, 35+ response guides (111-175), TIH protective distances, and all 9 DOT hazard classes. You can look up any UN number, material name, or guide number instantly. Key petroleum ERG data you know:
+   - UN1267 Crude Oil → Guide 128 (Flammable Liquids, Non-Polar), Class 3, Isolate 50m/165ft
+   - UN3494 Sour Crude (H2S) → Guide 131 (Flammable Liquids - Toxic), Class 3, TIH material
+   - UN1203 Gasoline → Guide 128, Class 3, PG II, Isolate 50m
+   - UN1202 Diesel → Guide 128, Class 3, PG III, Isolate 50m
+   - UN1223 Kerosene/Jet Fuel → Guide 128, Class 3, PG III
+   - UN1075 LPG/UN1978 Propane → Guide 115 (Gases - Flammable), Class 2.1, Isolate 100m
+   - UN1053 H2S → Guide 117 (Gases - Toxic - Flammable EXTREME), Class 2.3, TIH
+   - UN1005 Ammonia → Guide 125 (Gases - Corrosive), Class 2.3, TIH
+   - UN1017 Chlorine → Guide 124 (Gases - Toxic/Corrosive - Oxidizing), Class 2.3, TIH
+   - Emergency Contacts: CHEMTREC 1-800-424-9300, NRC 1-800-424-8802, Poison Control 1-800-222-1222
+   - ALWAYS provide isolation distances, PPE requirements, and fire/spill/first aid procedures when discussing hazmat
 6. **Bid Analysis**: Analyze market rates and provide fair pricing recommendations
 7. **Safety Protocols**: Advise on PPE, handling procedures, and safety best practices
 
@@ -399,22 +414,57 @@ Provide:
   }
 
   /**
-   * ERG 2024 Emergency Response Lookup
+   * ERG 2024 Emergency Response Lookup - Uses real ERG database
    */
   async ergLookup(request: ERGLookupRequest): Promise<ESANGResponse> {
+    // Try real database first
+    let ergInfo = null;
+    if (request.unNumber) {
+      ergInfo = getFullERGInfo(request.unNumber);
+    }
+    if (!ergInfo && request.materialName) {
+      ergInfo = getERGForProduct(request.materialName);
+      if (!ergInfo) {
+        const results = searchMaterials(request.materialName, 1);
+        if (results.length > 0) ergInfo = getFullERGInfo(results[0].unNumber);
+      }
+    }
+    if (!ergInfo && request.guideNumber) {
+      const guide = getGuide(request.guideNumber);
+      if (guide) ergInfo = { material: null, guide, protectiveDistance: null };
+    }
+
+    if (ergInfo && ergInfo.guide) {
+      const g = ergInfo.guide;
+      const m = ergInfo.material;
+      const pd = ergInfo.protectiveDistance;
+      const contacts = EMERGENCY_CONTACTS.filter(c => c.isPrimary);
+
+      let msg = `## ERG 2024 - Guide ${g.number}: ${g.title}\n\n`;
+      if (m) msg += `**Material:** ${m.name} (UN${m.unNumber})\n**Hazard Class:** ${m.hazardClass}${m.isTIH ? " [TIH - TOXIC INHALATION HAZARD]" : ""}\n\n`;
+      msg += `### Isolation Distances\n- Initial: ${g.publicSafety.isolationDistance.meters}m (${g.publicSafety.isolationDistance.feet} ft)\n- Fire: ${g.publicSafety.fireIsolationDistance.meters}m (${g.publicSafety.fireIsolationDistance.feet} ft)\n\n`;
+      if (pd) msg += `### TIH Protective Distances\n- Small spill day: isolate ${pd.smallSpill.day.isolateMeters}m, protect ${pd.smallSpill.day.protectKm}km\n- Large spill night: isolate ${pd.largeSpill.night.isolateMeters}m, protect ${pd.largeSpill.night.protectKm}km\n\n`;
+      msg += `### Fire/Explosion Hazards\n${g.potentialHazards.fireExplosion.map((h: string) => `- ${h}`).join("\n")}\n\n`;
+      msg += `### Health Hazards\n${g.potentialHazards.health.map((h: string) => `- ${h}`).join("\n")}\n\n`;
+      msg += `### PPE: ${g.publicSafety.protectiveClothing}\n\n`;
+      msg += `### Emergency Response\n**Fire (small):** ${g.emergencyResponse.fire.small.join("; ")}\n**Fire (large):** ${g.emergencyResponse.fire.large.join("; ")}\n**Spill:** ${g.emergencyResponse.spillLeak.general.join("; ")}\n**First Aid:** ${g.emergencyResponse.firstAid}\n\n`;
+      msg += `### Emergency Contacts\n${contacts.map(c => `- ${c.name}: ${c.phone} (${c.country})`).join("\n")}`;
+
+      return {
+        message: msg,
+        response: msg,
+        suggestions: ["Look up another UN number", "View hazard classes", "Check isolation distances"],
+        actions: [{ type: "erg_lookup", label: "View Full Guide", data: { guideNumber: g.number } }],
+      };
+    }
+
+    // Fallback to Gemini for unknown materials
     const prompt = `Provide ERG 2024 emergency response guidance for:
 ${request.unNumber ? `UN Number: ${request.unNumber}` : ""}
 ${request.materialName ? `Material: ${request.materialName}` : ""}
 ${request.guideNumber ? `Guide Number: ${request.guideNumber}` : ""}
 
-Include:
-1. Guide number and title
-2. Hazard class
-3. Isolation distances
-4. Fire response procedures
-5. Spill response procedures
-6. First aid measures
-7. Emergency contacts (CHEMTREC, etc.)`;
+Include guide number, hazard class, isolation distances, fire/spill response, first aid, and emergency contacts (CHEMTREC 1-800-424-9300).`;
 
     return this.chat("system", prompt, { role: "SYSTEM" });
   }

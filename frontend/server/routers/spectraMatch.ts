@@ -17,6 +17,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { esangAI, type SpectraMatchAIRequest } from "../_core/esangAI";
+import { getERGForProduct, getFullERGInfo, getUNForProduct, EMERGENCY_CONTACTS } from "../_core/ergDatabase";
 
 // Crude oil database with known specifications
 const CRUDE_OIL_DATABASE = [
@@ -373,6 +374,26 @@ export const spectraMatchRouter = router({
           learningInsight: aiAnalysis.learningInsight,
           poweredBy: "ESANG AI™ / Gemini",
         } : null,
+        // ERG 2024 Emergency Response Integration
+        ergInfo: (() => {
+          const productName = useAI ? aiAnalysis!.suggestedProduct : topMatch.crude.name;
+          const ergData = getERGForProduct(productName);
+          if (ergData) {
+            return {
+              unNumber: `UN${ergData.material?.unNumber}`,
+              materialName: ergData.material?.name,
+              guideNumber: ergData.guide?.number,
+              guideTitle: ergData.guide?.title,
+              hazardClass: ergData.material?.hazardClass,
+              isTIH: ergData.material?.isTIH,
+              isolationDistance: ergData.guide?.publicSafety.isolationDistance,
+              fireIsolationDistance: ergData.guide?.publicSafety.fireIsolationDistance,
+              protectiveClothing: ergData.guide?.publicSafety.protectiveClothing,
+              emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary).map(c => ({ name: c.name, phone: c.phone })),
+            };
+          }
+          return null;
+        })(),
         timestamp: new Date().toISOString(),
         esangVerified: !!aiAnalysis,
       };

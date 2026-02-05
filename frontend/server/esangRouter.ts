@@ -6,6 +6,11 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { esangAI } from "./_core/esangAI";
+import {
+  searchMaterials, getMaterialByUN, getGuide, getProtectiveDistance,
+  getFullERGInfo, getERGForProduct, getUNForProduct,
+  EMERGENCY_CONTACTS, HAZARD_CLASSES, ERG_MATERIALS, ERG_GUIDES, ERG_METADATA,
+} from "./_core/ergDatabase";
 
 export const esangRouter = router({
   /**
@@ -56,7 +61,7 @@ export const esangRouter = router({
     }),
 
   /**
-   * ERG 2024 Emergency Response Lookup
+   * ERG 2024 Emergency Response Lookup - Real Database
    */
   ergLookup: publicProcedure
     .input(
@@ -67,7 +72,28 @@ export const esangRouter = router({
       })
     )
     .mutation(async ({ input }) => {
-      return esangAI.ergLookup(input);
+      // Try UN number first
+      if (input.unNumber) {
+        const info = getFullERGInfo(input.unNumber);
+        if (info) return { found: true, ...info, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+      }
+      // Try material name
+      if (input.materialName) {
+        const info = getERGForProduct(input.materialName);
+        if (info) return { found: true, ...info, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+        // Fallback to search
+        const results = searchMaterials(input.materialName, 5);
+        if (results.length > 0) {
+          const first = getFullERGInfo(results[0].unNumber);
+          if (first) return { found: true, ...first, searchResults: results, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+        }
+      }
+      // Try guide number directly
+      if (input.guideNumber) {
+        const guide = getGuide(input.guideNumber);
+        if (guide) return { found: true, material: null, guide, protectiveDistance: null, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+      }
+      return { found: false, message: "No ERG data found. Use Guide 111 for unidentified cargo.", fallbackGuide: getGuide(111), emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
     }),
 
   /**
@@ -130,22 +156,65 @@ export const esangRouter = router({
 
   // Additional ESANG AI procedures
   analyzeBidFairness: protectedProcedure.input(z.object({ loadId: z.string(), bidAmount: z.number() })).mutation(async ({ input }) => ({ fair: true, marketRate: input.bidAmount * 1.05, recommendation: "Competitive bid" })),
-  classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => ({ unNumber: "UN1203", class: "3", hazmatClass: "3", packingGroup: "II", properName: input.productName })),
+  classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => {
+    const un = getUNForProduct(input.productName);
+    if (un) {
+      const material = getMaterialByUN(un);
+      if (material) {
+        return { unNumber: `UN${material.unNumber}`, class: material.hazardClass, hazmatClass: material.hazardClass, packingGroup: material.packingGroup || "N/A", properName: material.name, isTIH: material.isTIH, guide: material.guide };
+      }
+    }
+    return { unNumber: "UNKNOWN", class: "N/A", hazmatClass: "N/A", packingGroup: "N/A", properName: input.productName, isTIH: false, guide: 111 };
+  }),
   getChatHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "m1", role: "user", content: "Hello", response: "Hi! How can I help you?", timestamp: "2025-01-23 10:00" }]),
-  getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ input }) => ({
-    guideNumber: input.guideNumber,
-    name: "Flammable Liquids",
-    title: "Flammable Liquids",
-    hazards: ["Fire", "Explosion"],
-    actions: ["Evacuate", "No ignition sources"],
-    hazardClasses: ["Class 3 - Flammable Liquids"],
-    potentialHazards: [{ type: "fire", description: "Highly flammable" }, { type: "health", description: "May cause irritation" }, { type: "environment", description: "Harmful to aquatic life" }],
-    publicSafety: ["Call 911 immediately", "Isolate area for 100 meters", "Evacuate downwind areas"],
-    emergencyResponse: { fire: ["Use dry chemical, CO2, or foam", "Do not use water"], spill: ["Eliminate ignition sources", "Contain spill"], firstAid: ["Move to fresh air", "Seek medical attention"] },
-  })),
-  getRecentERGLookups: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ guideNumber: "128", product: "Gasoline", date: "2025-01-23" }]),
+  getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ input }) => {
+    const num = parseInt(input.guideNumber, 10);
+    const guide = getGuide(num);
+    if (guide) {
+      return {
+        guideNumber: String(guide.number),
+        name: guide.title,
+        title: guide.title,
+        color: guide.color,
+        hazards: [...guide.potentialHazards.fireExplosion.slice(0, 2), ...guide.potentialHazards.health.slice(0, 2)],
+        actions: guide.emergencyResponse.fire.small.concat(guide.emergencyResponse.spillLeak.general.slice(0, 2)),
+        potentialHazards: [
+          ...guide.potentialHazards.fireExplosion.map((h: string) => ({ type: "fire", description: h })),
+          ...guide.potentialHazards.health.map((h: string) => ({ type: "health", description: h })),
+        ],
+        publicSafety: [
+          `ISOLATE ${guide.publicSafety.isolationDistance.meters}m (${guide.publicSafety.isolationDistance.feet} ft) in all directions`,
+          guide.publicSafety.protectiveClothing,
+          guide.publicSafety.evacuationNotes,
+        ],
+        emergencyResponse: {
+          fire: guide.emergencyResponse.fire.small.concat(guide.emergencyResponse.fire.large),
+          spill: guide.emergencyResponse.spillLeak.general.concat(guide.emergencyResponse.spillLeak.small),
+          firstAid: [guide.emergencyResponse.firstAid],
+        },
+        isolationDistance: guide.publicSafety.isolationDistance,
+        fireIsolationDistance: guide.publicSafety.fireIsolationDistance,
+      };
+    }
+    return { guideNumber: input.guideNumber, name: "Unknown Guide", title: "Unknown Guide", hazards: [], actions: [], potentialHazards: [], publicSafety: [], emergencyResponse: { fire: [], spill: [], firstAid: [] } };
+  }),
+  getRecentERGLookups: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
+    { guideNumber: "128", product: "Gasoline / Motor fuel", unNumber: "UN1203", hazardClass: "3", date: new Date().toISOString().split("T")[0] },
+    { guideNumber: "128", product: "Diesel fuel", unNumber: "UN1202", hazardClass: "3", date: new Date().toISOString().split("T")[0] },
+    { guideNumber: "128", product: "Petroleum crude oil", unNumber: "UN1267", hazardClass: "3", date: new Date().toISOString().split("T")[0] },
+  ]),
   getSuggestions: protectedProcedure.input(z.object({ context: z.string().optional() }).optional()).query(async () => ["Check driver HOS", "Review load details", "Contact dispatch"]),
-  searchERG: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => [{ guideNumber: "128", product: "Gasoline", unNumber: "UN1203" }]),
+  searchERG: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => {
+    const results = searchMaterials(input.query, 20);
+    return results.map(m => ({
+      guideNumber: String(m.guide),
+      product: m.name,
+      unNumber: `UN${m.unNumber}`,
+      hazardClass: m.hazardClass,
+      isTIH: m.isTIH,
+      packingGroup: m.packingGroup,
+    }));
+  }),
 });
 
 export type ESANGRouter = typeof esangRouter;
