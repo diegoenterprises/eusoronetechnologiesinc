@@ -161,8 +161,13 @@ export default function DashboardLayout({
         } bg-gray-900 border-r border-gray-800 transition-all duration-300 flex flex-col overflow-hidden`}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-gray-800 flex items-center justify-center">
-          <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-12 h-12" />
+        <div className="p-4 border-b border-gray-800 flex items-center gap-3">
+          <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 object-contain flex-shrink-0" />
+          {sidebarOpen && (
+            <span className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+              EusoTrip
+            </span>
+          )}
         </div>
 
         {/* Menu Items */}

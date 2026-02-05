@@ -7,7 +7,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 // @ts-ignore - Schema import
-import { users, companies } from "@shared/schema";
+import { users, companies } from "../../drizzle/schema";
 import { eq, desc, sql, and, like, or } from "drizzle-orm";
 
 export const superAdminRouter = router({

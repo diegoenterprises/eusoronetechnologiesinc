@@ -177,7 +177,7 @@ export function RegistrationWizard({
             onClick={handleNext}
             disabled={isValidating || isSubmitting}
             className={cn(
-              "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700",
+              "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD]",
               isLastStep && "from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
             )}
           >

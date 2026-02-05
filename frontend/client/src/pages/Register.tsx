@@ -136,10 +136,8 @@ export default function Register() {
       <div className="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-              <Flame className="w-6 h-6 text-white" />
-            </div>
-            <span className="text-xl font-bold text-white">EusoTrip</span>
+            <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 object-contain" />
+            <span className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">EusoTrip</span>
           </div>
           <Button variant="ghost" onClick={() => setLocation("/login")} className="text-slate-300 hover:text-white">
             Already have an account? Sign In
@@ -153,7 +151,7 @@ export default function Register() {
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Join the Future of{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
               Hazmat Logistics
             </span>
           </h1>

@@ -115,8 +115,8 @@ class ErrorBoundary extends Component<Props, State> {
                 onClick={() => window.location.reload()}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-lg",
-                  "bg-blue-600 text-white",
-                  "hover:bg-blue-500 transition-colors"
+                  "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white",
+                  "hover:from-[#1260DD] hover:to-[#A801DD] transition-colors"
                 )}
               >
                 <RotateCcw size={16} />

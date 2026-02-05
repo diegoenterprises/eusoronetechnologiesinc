@@ -2000,6 +2000,8 @@ import ZeunWarrantyTracking from "./pages/ZeunWarrantyTracking";
 function Router() {
   return (
     <Switch>
+      <Route path={"/"} component={Home} />
+      <Route path={"/login"} component={Login} />
       <Route path={"/api-docs"} component={() => (<DashboardLayout><APIDocumentation /></DashboardLayout>)} />
       <Route path={"/api-keys"} component={() => (<DashboardLayout><APIKeys /></DashboardLayout>)} />
       <Route path={"/api-management"} component={() => (<DashboardLayout><APIManagement /></DashboardLayout>)} />
