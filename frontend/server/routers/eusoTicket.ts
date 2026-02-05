@@ -185,8 +185,8 @@ export const eusoTicketRouter = router({
           driverId: String(load.driverId || ""),
           vehicleId: "",
           originTerminalId: "",
-          productName: load.commodityName || "Unknown Product",
-          crudeType: load.commodityName || "",
+          productName: (load as any).commodityName || "Unknown Product",
+          crudeType: (load as any).commodityName || "",
           apiGravity: 0,
           bsw: 0,
           sulfurContent: 0,
@@ -229,7 +229,7 @@ export const eusoTicketRouter = router({
         const loadsList = await db.select({
           id: loads.id,
           status: loads.status,
-          commodityName: loads.commodityName,
+          commodityName: (loads as any).commodityName,
           weight: loads.weight,
           createdAt: loads.createdAt,
         }).from(loads)

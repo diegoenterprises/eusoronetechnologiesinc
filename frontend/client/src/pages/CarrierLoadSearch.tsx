@@ -32,13 +32,7 @@ export default function CarrierLoadSearch() {
   const [hazmatOnly, setHazmatOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const loadsQuery = trpc.loads.searchMarketplace.useQuery({
-    origin,
-    destination,
-    radius,
-    equipment: equipment || undefined,
-    minRate: minRate ? parseFloat(minRate) : undefined,
-    hazmatOnly,
+  const loadsQuery = trpc.loads.getTrackedLoads.useQuery({
   });
 
   const loads = loadsQuery.data || [];

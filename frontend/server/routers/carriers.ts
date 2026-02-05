@@ -310,8 +310,8 @@ export const carriersRouter = router({
           .from(documents)
           .where(and(
             eq(documents.companyId, companyId),
-            gte(documents.expiryDate, new Date()),
-            gte(thirtyDaysFromNow, documents.expiryDate)
+            gte(documents.expiryDate, new Date()) as any,
+            (sql`${documents.expiryDate} <= ${thirtyDaysFromNow}`) as any
           ))
           .limit(5);
 
@@ -330,7 +330,7 @@ export const carriersRouter = router({
           .from(vehicles)
           .where(and(
             eq(vehicles.companyId, companyId),
-            gte(thirtyDaysFromNow, vehicles.nextMaintenanceDate)
+            (sql`${vehicles.nextMaintenanceDate} <= ${thirtyDaysFromNow}`) as any
           ))
           .limit(5);
 

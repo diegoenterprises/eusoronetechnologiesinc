@@ -11,7 +11,7 @@ import {
   WS_EVENTS,
   WS_CHANNELS,
   WSEventType,
-  WSMessage,
+  WSMessage as SharedWSMessage,
   LoadStatusPayload,
   BidPayload,
   GPSPayload,
@@ -26,6 +26,8 @@ import {
   FinancialPayload,
   ZeunPayload,
 } from "@shared/websocket-events";
+
+type WSMessage = SharedWSMessage;
 
 // WebSocket types
 interface WSConnection {
@@ -48,7 +50,7 @@ interface WSClient {
   subscriptions: Set<string>;
 }
 
-interface WSMessage {
+interface LocalWSMessage {
   type: string;
   channel?: string;
   data?: any;
@@ -107,7 +109,7 @@ class WebSocketService {
 
       // Send welcome message
       this.sendToClient(clientId, {
-        type: "connected",
+        type: "connected" as any,
         data: { clientId },
         timestamp: new Date().toISOString(),
       });
@@ -124,24 +126,24 @@ class WebSocketService {
     if (!client) return;
 
     switch (message.type) {
-      case "auth":
-        this.handleAuth(clientId, message.data);
+      case "auth" as any:
+        this.handleAuth(clientId, message.data as any);
         break;
 
-      case "subscribe":
+      case "subscribe" as any:
         this.handleSubscribe(clientId, message.channel || "");
         break;
 
-      case "unsubscribe":
+      case "unsubscribe" as any:
         this.handleUnsubscribe(clientId, message.channel || "");
         break;
 
-      case "gps_update":
-        this.handleGPSUpdate(clientId, message.data);
+      case "gps_update" as any:
+        this.handleGPSUpdate(clientId, message.data as any);
         break;
 
-      case "ping":
-        this.sendToClient(clientId, { type: "pong", timestamp: new Date().toISOString() });
+      case "ping" as any:
+        this.sendToClient(clientId, { type: "pong" as any, data: {}, timestamp: new Date().toISOString() });
         break;
 
       default:
@@ -161,7 +163,7 @@ class WebSocketService {
     client.companyId = data.companyId;
 
     this.sendToClient(clientId, {
-      type: "auth_success",
+      type: "auth_success" as any,
       data: { userId: data.userId },
       timestamp: new Date().toISOString(),
     });
@@ -186,8 +188,9 @@ class WebSocketService {
     this.channels.get(channel)?.add(clientId);
 
     this.sendToClient(clientId, {
-      type: "subscribed",
+      type: "subscribed" as any,
       channel,
+      data: {},
       timestamp: new Date().toISOString(),
     });
   }
@@ -203,8 +206,9 @@ class WebSocketService {
     this.channels.get(channel)?.delete(clientId);
 
     this.sendToClient(clientId, {
-      type: "unsubscribed",
+      type: "unsubscribed" as any,
       channel,
+      data: {},
       timestamp: new Date().toISOString(),
     });
   }
@@ -225,13 +229,13 @@ class WebSocketService {
 
     // Broadcast to fleet tracking channels
     const updateMessage: WSMessage = {
-      type: "gps_position",
+      type: "gps_position" as any,
       channel: `fleet:${client.companyId}`,
       data: {
         ...data,
         driverId: client.userId,
-        timestamp: new Date().toISOString(),
       },
+      timestamp: new Date().toISOString(),
     };
 
     this.broadcastToChannel(`fleet:${client.companyId}`, updateMessage);
@@ -318,7 +322,7 @@ class WebSocketService {
     this.clients.forEach((client, clientId) => {
       if (client.userId === userId) {
         this.sendToClient(clientId, {
-          type: "notification",
+          type: "notification:new" as any,
           data: notification,
           timestamp: new Date().toISOString(),
         });

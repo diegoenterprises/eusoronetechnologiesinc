@@ -173,10 +173,10 @@ export const safetyRouter = router({
         monthAgo.setMonth(monthAgo.getMonth() - 1);
 
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(incidents);
-        const [open] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'open'));
+        const [open] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'reported' as any));
         const [investigating] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'investigating'));
         const [closed] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.status, 'resolved'));
-        const [thisMonth] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(gte(incidents.createdAt, monthAgo));
+        const [thisMonth] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(gte(incidents.createdAt, monthAgo) as any);
         const [critical] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.severity, 'critical'));
         const [major] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.severity, 'major'));
         const [minor] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.severity, 'minor'));

@@ -53,7 +53,7 @@ export abstract class BaseIntegrationService {
    * Initialize the service with connection credentials
    */
   async initialize(connectionId: number): Promise<boolean> {
-    const db = await getDb(); if (!db) return;
+    const db = await getDb(); if (!db) return false;
     
     const [connection] = await db
       .select()
@@ -153,7 +153,7 @@ export abstract class BaseIntegrationService {
     triggeredBy?: string,
     triggeredByUserId?: number
   ): Promise<number> {
-    const db = await getDb(); if (!db) return;
+    const db = await getDb(); if (!db) return 0;
     
     const [syncLog] = await db.insert(integrationSyncLogs).values({
       connectionId: this.connectionId!,
@@ -209,7 +209,7 @@ export abstract class BaseIntegrationService {
    * Get current error count for connection
    */
   private async getConnectionErrorCount(): Promise<number> {
-    const db = await getDb(); if (!db) return;
+    const db = await getDb(); if (!db) return 0;
     const [connection] = await db
       .select({ errorCount: integrationConnections.errorCount })
       .from(integrationConnections)

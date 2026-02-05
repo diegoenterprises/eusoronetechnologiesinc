@@ -97,7 +97,7 @@ router.get("/callback/:provider", async (req: Request, res: Response) => {
         tokenExpiresAt,
         status: "connected",
         connectedAt: new Date(),
-      });
+      } as any);
     }
 
     console.log(`[OAuth] Successfully connected ${providerSlug} for company ${companyId}`);

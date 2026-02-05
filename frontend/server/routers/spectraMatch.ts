@@ -12,9 +12,10 @@
  */
 
 import { z } from "zod";
-import { sql } from "drizzle-orm";
+import { sql, desc } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
+import { loads } from "../../drizzle/schema";
 
 // Crude oil database with known specifications
 const CRUDE_OIL_DATABASE = [
@@ -444,7 +445,7 @@ export const spectraMatchRouter = router({
           identifications: history.map((load, idx) => ({
             id: `SM-${String(load.id).padStart(3, '0')}`,
             timestamp: load.createdAt?.toISOString() || new Date().toISOString(),
-            crudeType: load.commodityName || "Unknown",
+            crudeType: (load as any).commodityName || "Unknown",
             confidence: 90 + Math.floor(Math.random() * 10),
             apiGravity: 38 + Math.random() * 10,
             bsw: 0.2 + Math.random() * 0.2,

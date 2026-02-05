@@ -25,7 +25,7 @@ export default function ComplianceMedicalCertificates() {
   const certificatesQuery = trpc.compliance.getMedicalCerts.useQuery({ search: statusFilter === 'all' ? undefined : statusFilter });
   const statsQuery = trpc.compliance.getMedicalCertStats.useQuery();
 
-  const sendReminderMutation = trpc.compliance.scheduleDrugTest.useMutation({
+  const sendReminderMutation = trpc.compliance.scheduleTest.useMutation({
     onSuccess: () => toast.success("Reminder sent"),
   });
 
@@ -107,7 +107,7 @@ export default function ComplianceMedicalCertificates() {
       </div>
 
       {/* Urgent Attention */}
-      {stats?.expiring7 > 0 || stats?.expired > 0 ? (
+      {(stats as any)?.expiring7 > 0 || (stats?.expired || 0) > 0 ? (
         <Card className="bg-red-500/10 border-red-500/30 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white flex items-center gap-2">
