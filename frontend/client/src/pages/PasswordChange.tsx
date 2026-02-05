@@ -69,7 +69,7 @@ export default function PasswordChange() {
       {/* Header with Gradient Title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Change Password
           </h1>
           <p className="text-slate-400 text-sm mt-1">Update your account password</p>

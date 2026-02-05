@@ -45,7 +45,7 @@ export default function DriverMessages() {
 
   return (
     <div className="p-4 md:p-6 h-[calc(100vh-120px)]">
-      <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent mb-6">
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-6">
         Messages
       </h1>
 

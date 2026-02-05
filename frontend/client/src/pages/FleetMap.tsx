@@ -39,7 +39,7 @@ export default function FleetMap() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Fleet Map</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Fleet Map</h1>
           <p className="text-slate-400 text-sm mt-1">Real-time vehicle tracking</p>
         </div>
         <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => vehiclesQuery.refetch()}>

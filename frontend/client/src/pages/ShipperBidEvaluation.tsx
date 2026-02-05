@@ -53,7 +53,7 @@ export default function ShipperBidEvaluation() {
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/shipper/loads")} className="text-slate-400 hover:text-white"><ChevronLeft className="w-6 h-6" /></Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">Bids for Load #{load?.loadNumber}</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Bids for Load #{load?.loadNumber}</h1>
           <p className="text-slate-400 text-sm mt-1">{load?.origin?.city} → {load?.destination?.city}</p>
         </div>
         <div className="text-right"><p className="text-slate-400 text-sm">Target Rate</p><p className="text-2xl font-bold text-white">${(load as any)?.targetRate?.toLocaleString() || load?.rate?.toLocaleString()}</p></div>

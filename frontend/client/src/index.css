@@ -139,20 +139,35 @@
    SEAL Team 6 Design System Integration
    ======================================== */
 
-/* EusoTrip Core Design Tokens */
+/* EusoTrip Official Brand Design Tokens - 2025 Brand Guidelines */
 :root {
-  --eusotrip-accent-primary-start: #0077FF; /* Deep Blue */
-  --eusotrip-accent-primary-end: #CC00FF; /* Rich Purple/Magenta */
-  --eusotrip-accent-secondary: #00FFC2; /* Teal/Cyan */
-  --eusotrip-background-primary: #161B22; /* Deep Dark Gray */
-  --eusotrip-background-secondary: #0D1117; /* Even darker for cards */
-  --eusotrip-surface-primary: #1F242C; /* Slightly lighter surface */
-  --eusotrip-border-primary: #30363D; /* Subtle borders */
-  --eusotrip-text-primary: #C9D1D9; /* Light Gray */
-  --eusotrip-text-secondary: #8B949E; /* Muted Gray */
-  --eusotrip-status-success: #50fa7b; /* Bright green */
-  --eusotrip-status-warning: #FFD700; /* Yellow */
-  --eusotrip-status-danger: #F85149; /* Red */
+  /* Official Brand Gradient: Blue to Magenta (Oil & Water Iridescent) */
+  --eusotrip-brand-blue: #1473FF; /* Pantone 2728 C - Trust, Loyalty, Wisdom */
+  --eusotrip-brand-magenta: #BE01FF; /* Pantone 2592 C - Luxury, Strength */
+  
+  /* Primary Gradient (use for headers, buttons, key UI) */
+  --eusotrip-accent-primary-start: #1473FF;
+  --eusotrip-accent-primary-end: #BE01FF;
+  
+  /* Secondary Accents (for specific functional areas) */
+  --eusotrip-accent-cyan: #06B6D4; /* Success states, load creation */
+  --eusotrip-accent-emerald: #10B981; /* Completed, positive states */
+  --eusotrip-accent-orange: #F97316; /* Warnings, urgent actions */
+  
+  /* Backgrounds */
+  --eusotrip-background-primary: #0F172A; /* Slate 900 */
+  --eusotrip-background-secondary: #1E293B; /* Slate 800 */
+  --eusotrip-surface-primary: #334155; /* Slate 700 */
+  --eusotrip-border-primary: #475569; /* Slate 600 */
+  
+  /* Text */
+  --eusotrip-text-primary: #F1F5F9; /* Slate 100 */
+  --eusotrip-text-secondary: #94A3B8; /* Slate 400 */
+  
+  /* Status Colors */
+  --eusotrip-status-success: #22C55E; /* Green 500 */
+  --eusotrip-status-warning: #F59E0B; /* Amber 500 */
+  --eusotrip-status-danger: #EF4444; /* Red 500 */
 }
 
 @layer components {
@@ -260,15 +275,28 @@
 
 /* ========================================
    GRADIENT UTILITIES FOR UI ELEMENTS
+   Official EusoTrip Brand: #1473FF → #BE01FF
    ======================================== */
 
-/* Primary Gradient - Blue to Purple */
+/* Primary Brand Gradient - Blue to Magenta */
 .gradient-primary {
-  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  background: linear-gradient(135deg, #1473FF 0%, #BE01FF 100%);
 }
 
 .gradient-primary-text {
-  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  background: linear-gradient(135deg, #1473FF 0%, #BE01FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Brand Gradient for Headers */
+.eusotrip-brand-gradient {
+  background: linear-gradient(90deg, #1473FF, #BE01FF);
+}
+
+.eusotrip-brand-gradient-text {
+  background: linear-gradient(90deg, #1473FF, #BE01FF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -276,7 +304,7 @@
 
 /* Button Gradients */
 .btn-gradient-primary {
-  background: linear-gradient(135deg, #0077FF 0%, #CC00FF 100%);
+  background: linear-gradient(135deg, #1473FF 0%, #BE01FF 100%);
   color: white;
   border: none;
   transition: all 0.3s ease;

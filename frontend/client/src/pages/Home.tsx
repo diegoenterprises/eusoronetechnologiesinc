@@ -23,7 +23,7 @@ export default function Home() {
           <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-emerald-500 flex items-center justify-center">
             <Truck className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent mb-4">EusoTrip</h1>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-4">EusoTrip</h1>
           <p className="text-slate-400 mb-8">Professional Logistics & Freight Management Platform</p>
           <a
             href="/login"

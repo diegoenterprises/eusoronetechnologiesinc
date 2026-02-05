@@ -72,7 +72,7 @@ export default function DriverBOLSign() {
           <ChevronLeft className="w-6 h-6" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Bill of Lading
           </h1>
           <p className="text-slate-400 text-sm mt-1">Load #{bol?.loadNumber} - Review and sign</p>

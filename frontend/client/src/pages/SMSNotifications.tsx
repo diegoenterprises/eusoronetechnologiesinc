@@ -43,7 +43,7 @@ export default function SMSNotifications() {
     <div className="p-4 md:p-6 space-y-6">
       {/* Header with Gradient Title */}
       <div>
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-cyan-400 to-emerald-400 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
           SMS Notifications
         </h1>
         <p className="text-slate-400 text-sm mt-1">Configure SMS alerts and notifications</p>
