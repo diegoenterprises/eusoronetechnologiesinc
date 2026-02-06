@@ -74,7 +74,7 @@ import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
-import { AmbientGlow } from "./animations";
+import { AmbientGlow, DominoPage } from "./animations";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -476,19 +476,12 @@ export default function DashboardLayout({
           </div>
         </motion.header>
 
-        {/* Main Content Area — Page Transition */}
+        {/* Main Content Area — Domino Cascade Page Transition */}
         <main className="flex-1 overflow-y-auto smooth-scroll bg-gray-950/50">
           <AnimatePresence mode="wait">
-            <motion.div
-              key={location}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="p-6"
-            >
+            <DominoPage key={location} className="p-6">
               {children}
-            </motion.div>
+            </DominoPage>
           </AnimatePresence>
         </main>
       </div>

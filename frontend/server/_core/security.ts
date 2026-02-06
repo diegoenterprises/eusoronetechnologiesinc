@@ -17,7 +17,7 @@ interface SecurityConfig {
 
 const DEFAULT_CONFIG: SecurityConfig = {
   enableHSTS: process.env.NODE_ENV === 'production',
-  enableCSP: true,
+  enableCSP: process.env.NODE_ENV === 'production',
   enableXSS: true,
   enableNoSniff: true,
   enableFrameGuard: true,

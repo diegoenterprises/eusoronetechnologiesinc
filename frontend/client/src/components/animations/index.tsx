@@ -211,6 +211,89 @@ export function StaggerItem({ children, className = "" }: Omit<AnimatedProps, "d
 }
 
 // =============================================================================
+// DOMINO CASCADE — 3D perspective flip-in with stagger
+// Automatically wraps each direct child in a domino entrance animation.
+// Wire this into DashboardLayout to bring every page alive.
+// =============================================================================
+
+export const dominoChild: Variants = {
+  hidden: {
+    opacity: 0,
+    y: 40,
+    rotateX: -25,
+    scale: 0.94,
+    filter: "blur(4px)",
+  },
+  visible: (i: number = 0) => ({
+    opacity: 1,
+    y: 0,
+    rotateX: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: {
+      delay: i * 0.07,
+      duration: 0.55,
+      ease: [0.22, 1, 0.36, 1] as [number, number, number, number],
+    },
+  }),
+  exit: {
+    opacity: 0,
+    y: -12,
+    scale: 0.98,
+    transition: { duration: 0.2 },
+  },
+};
+
+export const dominoContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.07,
+      delayChildren: 0.05,
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: { duration: 0.15 },
+  },
+};
+
+/**
+ * DominoPage — wraps page content and auto-staggers every direct child
+ * with a 3D domino-cascade entrance. Uses perspective for depth.
+ *
+ * Usage:  <DominoPage>{children}</DominoPage>
+ *
+ * Every direct child element (div, Card, section, etc.) gets its own
+ * staggered entrance — no changes needed inside page components.
+ */
+export function DominoPage({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const childArray = React.Children.toArray(children);
+  return (
+    <motion.div
+      variants={dominoContainer}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      className={className}
+      style={{ perspective: 1200 }}
+    >
+      {childArray.map((child, i) => (
+        <motion.div
+          key={i}
+          variants={dominoChild}
+          custom={i}
+          style={{ transformOrigin: "top center" }}
+        >
+          {child}
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+}
+
+// =============================================================================
 // INTERACTIVE COMPONENTS
 // =============================================================================
 

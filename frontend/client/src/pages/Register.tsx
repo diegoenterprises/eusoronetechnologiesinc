@@ -4,6 +4,7 @@
  * Based on EUSOTRIP_USER_REGISTRATION_ONBOARDING.md
  */
 
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -129,9 +130,69 @@ const REGISTRATION_ROLES = [
 
 export default function Register() {
   const [, setLocation] = useLocation();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(t);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+      {/* Domino entrance keyframes */}
+      <style>{`
+        @keyframes domino-in {
+          0% {
+            opacity: 0;
+            transform: perspective(800px) rotateX(-35deg) translateY(60px) scale(0.92);
+            filter: blur(4px);
+          }
+          50% {
+            opacity: 0.7;
+            transform: perspective(800px) rotateX(4deg) translateY(-8px) scale(1.01);
+            filter: blur(0px);
+          }
+          70% {
+            transform: perspective(800px) rotateX(-1deg) translateY(3px) scale(0.995);
+          }
+          100% {
+            opacity: 1;
+            transform: perspective(800px) rotateX(0deg) translateY(0) scale(1);
+            filter: blur(0px);
+          }
+        }
+        @keyframes hero-slide {
+          0% { opacity: 0; transform: translateY(-30px); filter: blur(6px); }
+          100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+        @keyframes notice-pop {
+          0% { opacity: 0; transform: scale(0.95) translateY(10px); }
+          60% { opacity: 1; transform: scale(1.015) translateY(-2px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes icon-pulse {
+          0% { transform: scale(0) rotate(-45deg); }
+          60% { transform: scale(1.15) rotate(5deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        .domino-card {
+          opacity: 0;
+          transform-origin: top center;
+        }
+        .domino-card.animate {
+          animation: domino-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .domino-card.animate .card-icon-wrap {
+          animation: icon-pulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          animation-delay: inherit;
+        }
+        .hero-animate {
+          animation: hero-slide 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+        .notice-animate {
+          animation: notice-pop 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+      `}</style>
       {/* Header */}
       <div className="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -148,21 +209,33 @@ export default function Register() {
       {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-12">
         {/* Hero */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
+        <div
+          className="text-center mb-12"
+          style={{ opacity: mounted ? 1 : 0 }}
+        >
+          <h1
+            className={`text-4xl md:text-5xl font-bold text-white mb-4 ${mounted ? "hero-animate" : "opacity-0"}`}
+            style={{ animationDelay: "0.1s" }}
+          >
             Join the Future of{" "}
             <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
               Freight & Energy Logistics
             </span>
           </h1>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          <p
+            className={`text-xl text-slate-400 max-w-2xl mx-auto ${mounted ? "hero-animate" : "opacity-0"}`}
+            style={{ animationDelay: "0.25s" }}
+          >
             Select your role to begin the registration process. Each role has specific regulatory requirements
             that we'll help you verify.
           </p>
         </div>
 
         {/* Compliance Notice */}
-        <div className="mb-10 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 max-w-3xl mx-auto">
+        <div
+          className={`mb-10 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 max-w-3xl mx-auto ${mounted ? "notice-animate" : "opacity-0"}`}
+          style={{ animationDelay: "0.4s" }}
+        >
           <div className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div>
@@ -177,19 +250,21 @@ export default function Register() {
 
         {/* Role Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {REGISTRATION_ROLES.map((roleData: any) => {
+          {REGISTRATION_ROLES.map((roleData: any, index: number) => {
             const Icon = roleData.icon;
+            const staggerDelay = 0.5 + index * 0.09;
             return (
               <Card
                 key={roleData.role}
-                className={`cursor-pointer group hover:scale-[1.02] transition-all duration-300 bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10 ${
+                className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10 ${
                   roleData.inviteOnly ? "opacity-70" : ""
                 }`}
+                style={{ animationDelay: `${staggerDelay}s` }}
                 onClick={() => !roleData.inviteOnly && setLocation(roleData.path)}
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-3">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${roleData.color}`}>
+                    <div className={`card-icon-wrap p-3 rounded-xl bg-gradient-to-br ${roleData.color}`}>
                       <Icon className="h-6 w-6 text-white" />
                     </div>
                     {roleData.inviteOnly && (
@@ -242,7 +317,10 @@ export default function Register() {
         </div>
 
         {/* Footer Info */}
-        <div className="mt-12 text-center text-slate-500 text-sm">
+        <div
+          className={`mt-12 text-center text-slate-500 text-sm transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          style={{ transitionDelay: "1.6s" }}
+        >
           <p>Need help choosing? Contact support@eusotrip.com</p>
           <p className="mt-2">
             By registering, you agree to our{" "}

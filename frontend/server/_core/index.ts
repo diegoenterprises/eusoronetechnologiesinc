@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import cookieParser from "cookie-parser";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
@@ -56,6 +57,9 @@ async function startServer() {
   // SECURITY LAYER 4: PCI-DSS request guard (blocks raw card data to server)
   // =========================================================================
   app.use(pciRequestGuard());
+
+  // Cookie parser — required for session cookie auth (app_session_id)
+  app.use(cookieParser());
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

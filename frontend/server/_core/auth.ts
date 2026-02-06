@@ -5,6 +5,7 @@
 
 import jwt from "jsonwebtoken";
 import type { Request } from "express";
+import { COOKIE_NAME } from "@shared/const";
 
 const JWT_SECRET = process.env.JWT_SECRET || "eusotrip-dev-secret-key-change-in-production";
 const TOKEN_EXPIRY = "7d";
@@ -51,22 +52,34 @@ export const authService = {
    * Authenticate a request using Bearer token
    */
   async authenticateRequest(req: Request): Promise<AuthUser | null> {
+    // 1. Check session cookie first (set by login mutation)
+    const cookieToken = req.cookies?.[COOKIE_NAME];
+    if (cookieToken) {
+      const payload = this.verifyToken(cookieToken);
+      if (payload) {
+        return {
+          id: payload.userId,
+          email: payload.email,
+          role: payload.role,
+        };
+      }
+    }
+
+    // 2. Fall back to Bearer token header
     const authHeader = req.headers.authorization;
-    if (!authHeader?.startsWith("Bearer ")) {
-      return null;
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.slice(7);
+      const payload = this.verifyToken(token);
+      if (payload) {
+        return {
+          id: payload.userId,
+          email: payload.email,
+          role: payload.role,
+        };
+      }
     }
 
-    const token = authHeader.slice(7);
-    const payload = this.verifyToken(token);
-    if (!payload) {
-      return null;
-    }
-
-    return {
-      id: payload.userId,
-      email: payload.email,
-      role: payload.role,
-    };
+    return null;
   },
 
   /**

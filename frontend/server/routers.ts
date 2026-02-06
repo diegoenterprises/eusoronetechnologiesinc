@@ -598,6 +598,15 @@ export const appRouter = router({
 
   // EusoLane — Lane Contracts & Commitments
   laneContracts: laneContractsRouter,
+
+  // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
+  broker: brokersRouter,
+  carrier: carriersRouter,
+  catalyst: catalystsRouter,
+  driver: driversRouter,
+  escort: escortsRouter,
+  shipper: shippersRouter,
+  terminal: terminalsRouter,
 });
 
 export type AppRouter = typeof appRouter;
