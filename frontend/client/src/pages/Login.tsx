@@ -53,7 +53,7 @@ export default function Login() {
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             EusoTrip
           </h1>
-          <p className="text-slate-400 mt-2">Hazardous Materials Transportation Platform</p>
+          <p className="text-slate-400 mt-2">Freight & Energy Logistics Platform</p>
         </div>
 
         <Card className="bg-slate-800/10 backdrop-blur-xl border-white/20">
