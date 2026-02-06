@@ -272,6 +272,22 @@ export const ZEUN_EVENTS = {
 } as const;
 
 // ============================================================================
+// EMERGENCY RESPONSE EVENTS (10 events)
+// ============================================================================
+export const EMERGENCY_EVENTS = {
+  EMERGENCY_DECLARED: 'emergency:declared',
+  EMERGENCY_UPDATED: 'emergency:updated',
+  EMERGENCY_RESOLVED: 'emergency:resolved',
+  EMERGENCY_ESCALATED: 'emergency:escalated',
+  MOBILIZATION_ORDER: 'emergency:mobilization_order',
+  MOBILIZATION_RESPONSE: 'emergency:mobilization_response',
+  CALL_TO_HAUL: 'emergency:call_to_haul',
+  I_WANT_YOU: 'emergency:i_want_you',
+  ZONE_ACTIVATED: 'emergency:zone_activated',
+  SUPPLY_IMPACT_ALERT: 'emergency:supply_impact_alert',
+} as const;
+
+// ============================================================================
 // SYSTEM EVENTS (10 events)
 // ============================================================================
 export const SYSTEM_EVENTS = {
@@ -306,6 +322,7 @@ export const WS_EVENTS = {
   ...FINANCIAL_EVENTS,
   ...TRACKING_EVENTS,
   ...ZEUN_EVENTS,
+  ...EMERGENCY_EVENTS,
   ...SYSTEM_EVENTS,
 } as const;
 
@@ -353,6 +370,12 @@ export const WS_CHANNELS = {
   ESCORT_JOBS: 'escort:jobs',
   ADMIN_ALERTS: 'admin:alerts',
   SYSTEM_ANNOUNCEMENTS: 'system:announcements',
+  
+  // Emergency Response channels
+  EMERGENCY_OPS: 'emergency:ops',
+  EMERGENCY_OPERATION: (operationId: string) => `emergency:${operationId}`,
+  EMERGENCY_ZONE: (zoneId: string) => `emergency:zone:${zoneId}`,
+  EMERGENCY_MOBILIZATION: 'emergency:mobilization',
 } as const;
 
 // ============================================================================

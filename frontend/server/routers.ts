@@ -138,6 +138,7 @@ import { messagingRouter } from "./routers/messaging";
 import { marketPricingRouter } from "./routers/marketPricing";
 import { hotZonesRouter } from "./routers/hotZones";
 import { signaturesRouter } from "./routers/signatures";
+import { emergencyResponseRouter } from "./routers/emergencyResponse";
 
 export const appRouter = router({
   system: systemRouter,
@@ -578,6 +579,9 @@ export const appRouter = router({
 
   // Gradient Ink Digital Signatures
   signatures: signaturesRouter,
+
+  // Emergency Response Command Center — Pipeline crisis mobilization
+  emergencyResponse: emergencyResponseRouter,
 });
 
 export type AppRouter = typeof appRouter;
