@@ -19,9 +19,10 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function BillingSettings() {
-  const subscriptionQuery = (trpc as any).billing.getSubscription.useQuery();
-  const paymentMethodsQuery = (trpc as any).billing.getPaymentMethods.useQuery();
-  const invoicesQuery = (trpc as any).billing.getInvoices.useQuery({ limit: 10 });
+  // Real Stripe data
+  const subscriptionQuery = (trpc as any).stripe.getSubscription.useQuery();
+  const paymentMethodsQuery = (trpc as any).stripe.listPaymentMethods.useQuery();
+  const invoicesQuery = (trpc as any).stripe.listInvoices.useQuery({ limit: 10 });
   const usageQuery = (trpc as any).billing.getUsage.useQuery();
 
   const subscription = subscriptionQuery.data;

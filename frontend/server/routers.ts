@@ -143,6 +143,7 @@ import { agreementsRouter } from "./routers/agreements";
 import { loadBiddingRouter } from "./routers/loadBidding";
 import { rateNegotiationsRouter } from "./routers/rateNegotiations";
 import { laneContractsRouter } from "./routers/laneContracts";
+import { stripeRouter } from "./routers/stripe";
 
 export const appRouter = router({
   system: systemRouter,
@@ -220,6 +221,9 @@ export const appRouter = router({
 
   // Billing & Invoicing
   billing: billingRouter,
+
+  // Stripe Payments (checkout, Connect, subscriptions, payment methods)
+  stripe: stripeRouter,
 
   // Driver/Carrier Earnings
   earnings: earningsRouter,

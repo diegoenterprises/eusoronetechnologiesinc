@@ -63,6 +63,87 @@ async function startServer() {
   // Cookie parser — required for session cookie auth (app_session_id)
   app.use(cookieParser());
 
+  // =========================================================================
+  // STRIPE WEBHOOK (must be before JSON body parser — needs raw body)
+  // =========================================================================
+  app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    try {
+      const { stripe } = await import("../stripe/service");
+      let event;
+
+      if (webhookSecret && sig) {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      } else {
+        // In test mode without webhook secret, parse directly
+        event = JSON.parse(req.body.toString());
+        console.warn("[Stripe Webhook] No webhook secret configured — accepting unverified event");
+      }
+
+      console.log(`[Stripe Webhook] ${event.type}`);
+
+      switch (event.type) {
+        case "checkout.session.completed": {
+          const session = event.data.object;
+          console.log(`[Stripe Webhook] Checkout completed: ${session.id}, payment: ${session.payment_status}`);
+          // Record payment in database
+          const { getDb } = await import("../db");
+          const db = await getDb();
+          if (db && session.metadata?.loadId) {
+            try {
+              await db.execute(
+                `INSERT INTO payments (payer_id, amount, currency, payment_type, status, stripe_payment_id, load_id, created_at)
+                 VALUES (${session.metadata.userId || 0}, '${(session.amount_total || 0) / 100}', '${session.currency || "usd"}', 
+                         '${session.metadata.paymentType || "load_payment"}', 'succeeded', '${session.payment_intent || session.id}', 
+                         ${session.metadata.loadId}, NOW())`
+              );
+            } catch (e) {
+              console.error("[Stripe Webhook] DB insert error:", e);
+            }
+          }
+          break;
+        }
+        case "invoice.paid": {
+          const invoice = event.data.object;
+          console.log(`[Stripe Webhook] Invoice paid: ${invoice.id}, amount: ${invoice.amount_paid}`);
+          break;
+        }
+        case "invoice.payment_failed": {
+          const invoice = event.data.object;
+          console.error(`[Stripe Webhook] Invoice payment failed: ${invoice.id}`);
+          break;
+        }
+        case "customer.subscription.created":
+        case "customer.subscription.updated":
+        case "customer.subscription.deleted": {
+          const subscription = event.data.object;
+          console.log(`[Stripe Webhook] Subscription ${event.type}: ${subscription.id}, status: ${subscription.status}`);
+          break;
+        }
+        case "account.updated": {
+          // Stripe Connect account updated
+          const account = event.data.object;
+          console.log(`[Stripe Webhook] Connect account updated: ${account.id}, charges_enabled: ${account.charges_enabled}`);
+          break;
+        }
+        case "transfer.created": {
+          const transfer = event.data.object;
+          console.log(`[Stripe Webhook] Transfer created: ${transfer.id}, amount: ${transfer.amount}`);
+          break;
+        }
+        default:
+          console.log(`[Stripe Webhook] Unhandled event type: ${event.type}`);
+      }
+
+      res.json({ received: true });
+    } catch (err: any) {
+      console.error(`[Stripe Webhook] Error: ${err.message}`);
+      res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+  });
+
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

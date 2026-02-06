@@ -13,19 +13,34 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Crown, CheckCircle, Zap, Users, Truck,
-  ArrowRight, Calendar
+  ArrowRight, Calendar, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { redirectToCheckout } from "@/lib/stripe";
 
 export default function SubscriptionPlan() {
-  const subscriptionQuery = (trpc as any).billing.getSubscription.useQuery();
-  const plansQuery = (trpc as any).billing.getPlans.useQuery();
+  // Real Stripe subscription data
+  const subscriptionQuery = (trpc as any).stripe.getSubscription.useQuery();
+  const plansQuery = (trpc as any).stripe.getPlans.useQuery();
   const usageQuery = (trpc as any).billing.getUsage.useQuery();
 
-  const upgradeMutation = (trpc as any).billing.upgradePlan.useMutation({
-    onSuccess: () => { toast.success("Plan upgraded"); subscriptionQuery.refetch(); },
-    onError: (error: any) => toast.error("Failed to upgrade", { description: error.message }),
+  // Stripe Checkout for subscription upgrades
+  const checkoutMutation = (trpc as any).stripe.createSubscriptionCheckout.useMutation({
+    onSuccess: (data: any) => {
+      if (data?.url) {
+        redirectToCheckout(data.url);
+      } else {
+        toast.error("Failed to create checkout session");
+      }
+    },
+    onError: (error: any) => toast.error("Failed to start checkout", { description: error.message }),
+  });
+
+  // Cancel subscription
+  const cancelMutation = (trpc as any).stripe.cancelSubscription.useMutation({
+    onSuccess: () => { toast.success("Subscription will cancel at end of billing period"); subscriptionQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed to cancel", { description: error.message }),
   });
 
   const subscription = subscriptionQuery.data;
@@ -61,7 +76,18 @@ export default function SubscriptionPlan() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-slate-400 text-sm flex items-center gap-1"><Calendar className="w-4 h-4" />Next billing: {subscription?.nextBillingDate}</p>
+                <p className="text-slate-400 text-sm flex items-center gap-1"><Calendar className="w-4 h-4" />Next billing: {subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "N/A"}</p>
+                {subscription?.active && subscription?.subscriptionId && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 text-red-400 border-red-400/30 hover:bg-red-500/10"
+                    onClick={() => cancelMutation.mutate({ subscriptionId: subscription.subscriptionId })}
+                    disabled={cancelMutation.isPending}
+                  >
+                    {subscription.cancelAtPeriodEnd ? "Cancellation Pending" : "Cancel Plan"}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -142,11 +168,16 @@ export default function SubscriptionPlan() {
                       </li>
                     ))}
                   </ul>
-                  {plan.id === subscription?.planId ? (
+                  {plan.id === subscription?.plan ? (
                     <Button disabled className="w-full rounded-lg">Current Plan</Button>
                   ) : (
-                    <Button className={cn("w-full rounded-lg", plan.price > (subscription?.price ?? 0) ? "bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700" : "bg-slate-600 hover:bg-slate-500")} onClick={() => upgradeMutation.mutate({ planId: plan.id })}>
-                      {plan.price > (subscription?.price ?? 0) ? "Upgrade" : "Downgrade"} <ArrowRight className="w-4 h-4 ml-1" />
+                    <Button
+                      className={cn("w-full rounded-lg", plan.price > (subscription?.price ?? 0) ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90" : "bg-slate-600 hover:bg-slate-500")}
+                      onClick={() => checkoutMutation.mutate({ planId: plan.id })}
+                      disabled={checkoutMutation.isPending}
+                    >
+                      {checkoutMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
+                      {plan.price > (subscription?.price ?? 0) ? "Upgrade" : "Switch"} <ArrowRight className="w-4 h-4 ml-1" />
                     </Button>
                   )}
                 </div>
