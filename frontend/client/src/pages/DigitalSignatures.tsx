@@ -89,12 +89,12 @@ export default function DigitalSignatures() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Digital Signatures
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+            Gradient Ink Signatures
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Manage electronic signature requests</p>
+          <p className="text-slate-400 text-sm mt-1">Manage electronic signature requests — powered by Gradient Ink</p>
         </div>
-        <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg">
+        <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg">
           <Plus className="w-4 h-4 mr-2" />
           New Request
         </Button>

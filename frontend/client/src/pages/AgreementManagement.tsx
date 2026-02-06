@@ -18,13 +18,15 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import GradientSignaturePad from "@/components/GradientSignaturePad";
 import {
   FileText, Search, Plus, DollarSign, Calendar, CheckCircle, Clock,
   AlertTriangle, Shield, Handshake, PenLine, Upload, Eye, ArrowRight,
   FileSignature, MapPin, TrendingUp, Users, RefreshCw, X, Filter,
-  ChevronRight, Truck, Building2, Scale
+  ChevronRight, Truck, Building2, Scale, Pen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 const AGREEMENT_TYPES = [
   { value: "carrier_shipper", label: "Carrier-Shipper", icon: Truck },
@@ -111,6 +113,7 @@ export default function AgreementManagement() {
   const [durationFilter, setDurationFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("agreements");
+  const [signingAgreement, setSigningAgreement] = useState<any>(null);
 
   const statsQuery = (trpc as any).agreements.getStats.useQuery();
   const agreementsQuery = (trpc as any).agreements.list.useQuery({
@@ -123,6 +126,29 @@ export default function AgreementManagement() {
   const expiringQuery = (trpc as any).agreements.getExpiring.useQuery({ daysAhead: 90 });
   const laneStatsQuery = (trpc as any).laneContracts.getStats.useQuery();
   const lanesQuery = (trpc as any).laneContracts.list.useQuery({ limit: 20 });
+
+  const signMutation = (trpc as any).agreements.sign.useMutation({
+    onSuccess: (data: any) => {
+      setSigningAgreement(null);
+      agreementsQuery.refetch();
+      statsQuery.refetch();
+      if (data.fullyExecuted) {
+        toast.success("Agreement fully executed! Both parties have signed.");
+      } else {
+        toast.success("Gradient Ink signature applied. Awaiting counterparty signature.");
+      }
+    },
+    onError: (err: any) => toast.error("Failed to sign agreement", { description: err.message }),
+  });
+
+  const handleGradientInkSign = (signatureData: string) => {
+    if (!signingAgreement) return;
+    signMutation.mutate({
+      agreementId: signingAgreement.id,
+      signatureData,
+      signatureRole: "party",
+    });
+  };
 
   const stats = statsQuery.data;
   const agreementsList = agreementsQuery.data?.agreements || [];
@@ -279,7 +305,18 @@ export default function AgreementManagement() {
                           </div>
                         </div>
                       </div>
-                      <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-slate-400 transition-colors shrink-0" />
+                      <div className="flex items-center gap-2 shrink-0">
+                        {agr.status === "pending_signature" && (
+                          <Button
+                            size="sm"
+                            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg text-xs h-7"
+                            onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSigningAgreement(agr); }}
+                          >
+                            <Pen className="w-3 h-3 mr-1" />Sign
+                          </Button>
+                        )}
+                        <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-slate-400 transition-colors" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -496,6 +533,38 @@ export default function AgreementManagement() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Gradient Ink Signing Dialog */}
+      <Dialog open={!!signingAgreement} onOpenChange={(open) => !open && setSigningAgreement(null)}>
+        <DialogContent className="bg-slate-900 border-slate-700 max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-white flex items-center gap-2">
+                <FileSignature className="w-5 h-5 text-purple-400" />
+                Sign Agreement
+              </DialogTitle>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 text-purple-300 border border-purple-500/30 text-xs font-medium">
+                <Pen className="w-3 h-3" />
+                Gradient Ink
+              </span>
+            </div>
+            {signingAgreement && (
+              <p className="text-sm text-slate-400 mt-1">
+                {signingAgreement.agreementNumber} — {signingAgreement.agreementType?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+              </p>
+            )}
+          </DialogHeader>
+          <div className="mt-2">
+            <GradientSignaturePad
+              documentTitle={signingAgreement?.agreementNumber || "Agreement"}
+              legalText="By signing with Gradient Ink, I acknowledge that this electronic signature is the legal equivalent of my handwritten signature. This agreement will be legally binding and enforceable under the ESIGN Act (15 U.S.C. ch. 96) and UETA upon execution by both parties."
+              onSign={handleGradientInkSign}
+              onClear={() => {}}
+              showVerification
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,7 +7,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { X, Check, RotateCcw, Download, FileSignature } from "lucide-react";
+import { X, Check, RotateCcw, Download, FileSignature, Pen, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SignatureCanvasProps {
@@ -200,10 +200,16 @@ export function SignatureCanvas({
   return (
     <Card className={cn("bg-slate-800/50 border-slate-700/50 rounded-xl", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="text-white flex items-center gap-2">
-          <FileSignature className="w-5 h-5 text-purple-400" />
-          Sign Document
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-white flex items-center gap-2">
+            <FileSignature className="w-5 h-5 text-purple-400" />
+            Sign Document
+          </CardTitle>
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 text-purple-300 border border-purple-500/30 text-xs font-medium">
+            <Pen className="w-3 h-3" />
+            Gradient Ink
+          </span>
+        </div>
         {documentName && (
           <p className="text-sm text-slate-400">
             {documentType && <span className="text-cyan-400">[{documentType}]</span>} {documentName}
@@ -221,12 +227,14 @@ export function SignatureCanvas({
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative rounded-xl overflow-hidden border-2 border-slate-600/50 transition-all hover:border-purple-500/30">
+          {/* Gradient border glow */}
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 pointer-events-none z-0" />
           <canvas
             ref={canvasRef}
             width={width}
             height={height}
-            className="w-full bg-white rounded-lg cursor-crosshair touch-none"
+            className="relative z-10 w-full bg-white rounded-lg cursor-crosshair touch-none"
             style={{ maxWidth: "100%", height: "auto", aspectRatio: `${width}/${height}` }}
             onMouseDown={startDrawing}
             onMouseMove={draw}
@@ -245,10 +253,18 @@ export function SignatureCanvas({
 
         {showLegalText && (
           <p className="text-xs text-slate-500 leading-relaxed">
-            By signing above, I agree that this electronic signature is the legal equivalent of my handwritten 
-            signature and that I have reviewed and agree to the terms of this document. This signature will be 
-            legally binding and enforceable.
+            By signing above, I agree that this Gradient Ink electronic signature is the legal equivalent of my 
+            handwritten signature and that I have reviewed and agree to the terms of this document. This signature 
+            will be legally binding and enforceable under the ESIGN Act (15 U.S.C. ch. 96) and UETA.
           </p>
+        )}
+
+        {hasSignature && (
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+            <Shield className="w-4 h-4 text-green-400 flex-shrink-0" />
+            <span className="text-xs text-green-400 font-medium">ESIGN Act Compliant</span>
+            <span className="text-xs text-slate-500">Gradient Ink digital signature</span>
+          </div>
         )}
       </CardContent>
       <CardFooter className="flex items-center justify-between gap-4 pt-4 border-t border-slate-700/50">

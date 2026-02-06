@@ -72,7 +72,7 @@ export default function RateConfirmationSign() {
           <ChevronLeft className="w-6 h-6" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Rate Confirmation
           </h1>
           <p className="text-slate-400 text-sm mt-1">Load #{(rateConf as any)?.loadNumber || rateConf?.id}</p>
@@ -91,7 +91,7 @@ export default function RateConfirmationSign() {
       ) : (
         <>
           {/* Header Info */}
-          <Card className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30 rounded-xl">
+          <Card className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-[#1473FF]/30 rounded-xl">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
