@@ -2,7 +2,9 @@ import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
-import { auditSecurity, AuditAction } from "./auditService";
+import { recordAuditEvent, auditSecurity, AuditCategory, AuditAction } from "./auditService";
+import { encrypt, decrypt, hashForIndex, maskSSN, maskCDL, maskBankAccount, maskEIN } from "./encryption";
+import { sanitizeForStorage, sanitizeLogMessage } from "./pciCompliance";
 
 // =============================================================================
 // RBAC ROLE DEFINITIONS
@@ -145,3 +147,99 @@ export const safetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER);
 export const shipperCarrierProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CARRIER);
 export const operationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CARRIER, ROLES.BROKER, ROLES.CATALYST);
 export const complianceSafetyProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER);
+
+// =============================================================================
+// SOC 2 AUTO-AUDIT MIDDLEWARE (CC6.2, CC6.3, CC7.1)
+// Records every tRPC call automatically to the audit log.
+// Mutations → DATA_WRITE, Queries → DATA_READ, Errors → API_ERROR
+// =============================================================================
+
+const autoAudit = t.middleware(async opts => {
+  const { ctx, next, type, path } = opts;
+  const startTime = Date.now();
+  const userId = ctx.user ? String((ctx.user as any).id || "unknown") : null;
+
+  try {
+    const result = await next();
+    const duration = Date.now() - startTime;
+
+    // Record successful operation (non-blocking)
+    recordAuditEvent({
+      userId,
+      action: type === "mutation" ? AuditAction.RECORD_UPDATED : AuditAction.RECORD_VIEWED,
+      category: type === "mutation" ? AuditCategory.DATA_WRITE : AuditCategory.DATA_READ,
+      entityType: path,
+      metadata: {
+        procedure: path,
+        type,
+        durationMs: duration,
+        userRole: ctx.user?.role || "anonymous",
+      },
+      severity: "LOW",
+    }, ctx.req).catch(() => {});
+
+    return result;
+  } catch (error) {
+    const duration = Date.now() - startTime;
+
+    // Record failed operation
+    recordAuditEvent({
+      userId,
+      action: AuditAction.API_ERROR,
+      category: AuditCategory.SYSTEM,
+      entityType: path,
+      metadata: {
+        procedure: path,
+        type,
+        durationMs: duration,
+        errorCode: error instanceof TRPCError ? error.code : "INTERNAL_SERVER_ERROR",
+        errorMessage: error instanceof Error ? error.message.slice(0, 200) : "Unknown error",
+        userRole: ctx.user?.role || "anonymous",
+      },
+      severity: error instanceof TRPCError && error.code === "FORBIDDEN" ? "HIGH" : "MEDIUM",
+    }, ctx.req).catch(() => {});
+
+    throw error;
+  }
+});
+
+// =============================================================================
+// AUDITED PROCEDURES — Auto-logged variants of every procedure
+// Use these in routers for SOC 2 compliant automatic audit trails.
+// =============================================================================
+
+export const auditedPublicProcedure = t.procedure.use(autoAudit);
+export const auditedProtectedProcedure = t.procedure.use(requireUser).use(autoAudit);
+export const auditedAdminProcedure = roleProcedure(ROLES.ADMIN, ROLES.SUPER_ADMIN).use(autoAudit);
+export const auditedSuperAdminProcedure = roleProcedure(ROLES.SUPER_ADMIN).use(autoAudit);
+
+// Audited role-specific procedures
+export const auditedShipperProcedure = roleProcedure(ROLES.SHIPPER).use(autoAudit);
+export const auditedCarrierProcedure = roleProcedure(ROLES.CARRIER).use(autoAudit);
+export const auditedBrokerProcedure = roleProcedure(ROLES.BROKER).use(autoAudit);
+export const auditedDriverProcedure = roleProcedure(ROLES.DRIVER).use(autoAudit);
+export const auditedCatalystProcedure = roleProcedure(ROLES.CATALYST).use(autoAudit);
+export const auditedEscortProcedure = roleProcedure(ROLES.ESCORT).use(autoAudit);
+export const auditedTerminalProcedure = roleProcedure(ROLES.TERMINAL_MANAGER).use(autoAudit);
+export const auditedComplianceProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER).use(autoAudit);
+export const auditedSafetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER).use(autoAudit);
+export const auditedOperationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CARRIER, ROLES.BROKER, ROLES.CATALYST).use(autoAudit);
+
+// =============================================================================
+// SENSITIVE DATA ENCRYPTION HELPERS
+// Re-exported from encryption.ts for convenient use in routers.
+// Routers should call these when handling SSN, CDL, bank accounts, EIN, etc.
+// =============================================================================
+
+export const sensitiveData = {
+  encrypt,
+  decrypt,
+  hashForIndex,
+  mask: { ssn: maskSSN, cdl: maskCDL, bankAccount: maskBankAccount, ein: maskEIN },
+};
+
+// PCI sanitization re-exports for routers
+export const pci = {
+  sanitizeForStorage,
+  sanitizeLogMessage,
+};

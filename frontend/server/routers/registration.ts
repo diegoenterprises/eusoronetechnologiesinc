@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, auditedPublicProcedure, auditedProtectedProcedure, sensitiveData } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, documents } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
@@ -33,7 +33,7 @@ export const registrationRouter = router({
   /**
    * Register a new Shipper
    */
-  registerShipper: publicProcedure
+  registerShipper: auditedPublicProcedure
     .input(z.object({
       companyName: z.string().min(2),
       dba: z.string().optional(),
@@ -127,7 +127,7 @@ export const registrationRouter = router({
   /**
    * Register a new Carrier
    */
-  registerCarrier: publicProcedure
+  registerCarrier: auditedPublicProcedure
     .input(z.object({
       companyName: z.string().min(2),
       dba: z.string().optional(),
@@ -222,7 +222,7 @@ export const registrationRouter = router({
   /**
    * Register a new Driver
    */
-  registerDriver: publicProcedure
+  registerDriver: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -293,7 +293,7 @@ export const registrationRouter = router({
   /**
    * Register a new Broker
    */
-  registerBroker: publicProcedure
+  registerBroker: auditedPublicProcedure
     .input(z.object({
       companyName: z.string().min(2),
       dba: z.string().optional(),
@@ -349,7 +349,7 @@ export const registrationRouter = router({
   /**
    * Register Catalyst (Dispatcher)
    */
-  registerCatalyst: publicProcedure
+  registerCatalyst: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -383,7 +383,7 @@ export const registrationRouter = router({
   /**
    * Register Escort (Pilot Vehicle)
    */
-  registerEscort: publicProcedure
+  registerEscort: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -419,7 +419,7 @@ export const registrationRouter = router({
   /**
    * Register Terminal Manager
    */
-  registerTerminalManager: publicProcedure
+  registerTerminalManager: auditedPublicProcedure
     .input(z.object({
       managerName: z.string(),
       email: z.string().email(),
@@ -467,7 +467,7 @@ export const registrationRouter = router({
   /**
    * Register Compliance Officer
    */
-  registerComplianceOfficer: publicProcedure
+  registerComplianceOfficer: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -500,7 +500,7 @@ export const registrationRouter = router({
   /**
    * Register Safety Manager
    */
-  registerSafetyManager: publicProcedure
+  registerSafetyManager: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -534,7 +534,7 @@ export const registrationRouter = router({
   /**
    * Register Admin (Invite Only)
    */
-  registerAdmin: publicProcedure
+  registerAdmin: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -569,7 +569,7 @@ export const registrationRouter = router({
   /**
    * Verify email address
    */
-  verifyEmail: publicProcedure
+  verifyEmail: auditedPublicProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ input }) => {
       // TODO: Implement token verification from database
@@ -579,7 +579,7 @@ export const registrationRouter = router({
   /**
    * Resend verification email
    */
-  resendVerification: publicProcedure
+  resendVerification: auditedPublicProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input }) => {
       // TODO: Implement resend logic
@@ -589,7 +589,7 @@ export const registrationRouter = router({
   /**
    * Check registration status
    */
-  checkStatus: protectedProcedure
+  checkStatus: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { status: "unknown" };
@@ -612,7 +612,7 @@ export const registrationRouter = router({
   /**
    * Get pending registrations (Admin)
    */
-  getPendingRegistrations: protectedProcedure
+  getPendingRegistrations: auditedProtectedProcedure
     .input(z.object({
       role: z.string().optional(),
       limit: z.number().default(20),
@@ -645,7 +645,7 @@ export const registrationRouter = router({
   /**
    * Approve registration (Admin)
    */
-  approveRegistration: protectedProcedure
+  approveRegistration: auditedProtectedProcedure
     .input(z.object({ userId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user?.role !== "ADMIN" && ctx.user?.role !== "SUPER_ADMIN") {
@@ -665,7 +665,7 @@ export const registrationRouter = router({
   /**
    * Reject registration (Admin)
    */
-  rejectRegistration: protectedProcedure
+  rejectRegistration: auditedProtectedProcedure
     .input(z.object({
       userId: z.number(),
       reason: z.string(),

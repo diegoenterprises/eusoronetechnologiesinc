@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, gte, lte, sql, or } from "drizzle-orm";
-import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { router, auditedProtectedProcedure, auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   wallets,
@@ -30,19 +30,19 @@ const transactionStatusSchema = z.enum([
 
 export const walletRouter = router({
   // Generic CRUD for screen templates
-  create: protectedProcedure
+  create: auditedProtectedProcedure
     .input(z.object({ type: z.string(), data: z.any() }).optional())
     .mutation(async ({ input }) => {
       return { success: true, id: crypto.randomUUID(), ...input?.data };
     }),
 
-  update: protectedProcedure
+  update: auditedProtectedProcedure
     .input(z.object({ id: z.string(), data: z.any() }).optional())
     .mutation(async ({ input }) => {
       return { success: true, id: input?.id };
     }),
 
-  delete: protectedProcedure
+  delete: auditedProtectedProcedure
     .input(z.object({ id: z.string() }).optional())
     .mutation(async ({ input }) => {
       return { success: true, id: input?.id };
@@ -51,7 +51,7 @@ export const walletRouter = router({
   /**
    * Get wallet balance
    */
-  getBalance: protectedProcedure
+  getBalance: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
@@ -110,7 +110,7 @@ export const walletRouter = router({
   /**
    * Get wallet summary
    */
-  getSummary: protectedProcedure
+  getSummary: auditedProtectedProcedure
     .input(z.object({
       period: z.enum(["week", "month", "quarter", "year"]).default("month"),
     }))
@@ -193,7 +193,7 @@ export const walletRouter = router({
   /**
    * Get transaction history
    */
-  getTransactions: protectedProcedure
+  getTransactions: auditedProtectedProcedure
     .input(z.object({
       type: transactionTypeSchema.optional(),
       status: transactionStatusSchema.optional(),
@@ -243,7 +243,7 @@ export const walletRouter = router({
   /**
    * Get payout methods
    */
-  getPayoutMethods: protectedProcedure
+  getPayoutMethods: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
@@ -273,7 +273,7 @@ export const walletRouter = router({
   /**
    * Add payout method
    */
-  addPayoutMethod: protectedProcedure
+  addPayoutMethod: auditedProtectedProcedure
     .input(z.object({
       type: z.enum(["bank_account", "debit_card"]),
       token: z.string(),
@@ -291,7 +291,7 @@ export const walletRouter = router({
   /**
    * Remove payout method
    */
-  removePayoutMethod: protectedProcedure
+  removePayoutMethod: auditedProtectedProcedure
     .input(z.object({
       payoutMethodId: z.string(),
     }))
@@ -306,7 +306,7 @@ export const walletRouter = router({
   /**
    * Set default payout method
    */
-  setDefaultPayoutMethod: protectedProcedure
+  setDefaultPayoutMethod: auditedProtectedProcedure
     .input(z.object({
       payoutMethodId: z.string(),
     }))
@@ -321,7 +321,7 @@ export const walletRouter = router({
   /**
    * Request payout
    */
-  requestPayout: protectedProcedure
+  requestPayout: auditedProtectedProcedure
     .input(z.object({
       amount: z.number().positive(),
       payoutMethodId: z.string(),
@@ -347,7 +347,7 @@ export const walletRouter = router({
   /**
    * Get payout schedule
    */
-  getPayoutSchedule: protectedProcedure
+  getPayoutSchedule: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       return {
         frequency: "weekly",
@@ -361,7 +361,7 @@ export const walletRouter = router({
   /**
    * Update payout schedule
    */
-  updatePayoutSchedule: protectedProcedure
+  updatePayoutSchedule: auditedProtectedProcedure
     .input(z.object({
       frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]).optional(),
       dayOfWeek: z.enum(["monday", "tuesday", "wednesday", "thursday", "friday"]).optional(),
@@ -378,7 +378,7 @@ export const walletRouter = router({
   /**
    * Get earnings breakdown
    */
-  getEarningsBreakdown: protectedProcedure
+  getEarningsBreakdown: auditedProtectedProcedure
     .input(z.object({
       period: z.enum(["week", "month", "quarter"]).default("month"),
     }))
@@ -409,7 +409,7 @@ export const walletRouter = router({
   /**
    * Get tax documents
    */
-  getTaxDocuments: protectedProcedure
+  getTaxDocuments: auditedProtectedProcedure
     .input(z.object({ year: z.number().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -436,7 +436,7 @@ export const walletRouter = router({
   /**
    * Get instant payout eligibility
    */
-  getInstantPayoutEligibility: protectedProcedure
+  getInstantPayoutEligibility: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
@@ -468,7 +468,7 @@ export const walletRouter = router({
   /**
    * P2P Transfer between users
    */
-  transfer: protectedProcedure
+  transfer: auditedProtectedProcedure
     .input(z.object({
       recipientId: z.string(),
       amount: z.number().positive(),
@@ -588,7 +588,7 @@ export const walletRouter = router({
   /**
    * Get P2P transfer history
    */
-  getTransferHistory: protectedProcedure
+  getTransferHistory: auditedProtectedProcedure
     .input(z.object({
       type: z.enum(["sent", "received", "all"]).default("all"),
       limit: z.number().default(20),
@@ -638,7 +638,7 @@ export const walletRouter = router({
   /**
    * Request cash advance
    */
-  requestCashAdvance: protectedProcedure
+  requestCashAdvance: auditedProtectedProcedure
     .input(z.object({
       amount: z.number().positive(),
       loadId: z.number().optional(),
@@ -699,7 +699,7 @@ export const walletRouter = router({
   /**
    * Get cash advance history
    */
-  getCashAdvances: protectedProcedure
+  getCashAdvances: auditedProtectedProcedure
     .input(z.object({
       status: z.enum(["pending", "approved", "disbursed", "repaid", "defaulted", "all"]).default("all"),
     }).optional())
@@ -736,7 +736,7 @@ export const walletRouter = router({
   /**
    * Request instant pay
    */
-  requestInstantPay: protectedProcedure
+  requestInstantPay: auditedProtectedProcedure
     .input(z.object({
       amount: z.number().positive(),
       payoutMethodId: z.number(),
@@ -809,7 +809,7 @@ export const walletRouter = router({
   /**
    * Get instant pay history
    */
-  getInstantPayHistory: protectedProcedure
+  getInstantPayHistory: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
@@ -835,7 +835,7 @@ export const walletRouter = router({
   /**
    * Send chat payment
    */
-  sendChatPayment: protectedProcedure
+  sendChatPayment: auditedProtectedProcedure
     .input(z.object({
       conversationId: z.number(),
       recipientUserId: z.number(),
@@ -940,7 +940,7 @@ export const walletRouter = router({
   /**
    * Respond to chat payment request
    */
-  respondToChatPayment: protectedProcedure
+  respondToChatPayment: auditedProtectedProcedure
     .input(z.object({
       chatPaymentId: z.number(),
       action: z.enum(["accept", "decline"]),
@@ -1028,7 +1028,7 @@ export const walletRouter = router({
   /**
    * Get chat payments for a conversation
    */
-  getChatPayments: protectedProcedure
+  getChatPayments: auditedProtectedProcedure
     .input(z.object({
       conversationId: z.number().optional(),
     }).optional())
@@ -1069,7 +1069,7 @@ export const walletRouter = router({
   /**
    * Admin: Approve cash advance
    */
-  approveCashAdvance: adminProcedure
+  approveCashAdvance: auditedAdminProcedure
     .input(z.object({
       advanceId: z.number(),
       action: z.enum(["approve", "reject"]),

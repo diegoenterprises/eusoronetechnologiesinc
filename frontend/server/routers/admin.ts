@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, like, or, gte } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, auditedAdminProcedure, auditedSuperAdminProcedure, sensitiveData } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, auditLogs } from "../../drizzle/schema";
 
@@ -16,19 +16,19 @@ const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "nee
 
 export const adminRouter = router({
   // Generic CRUD for screen templates
-  create: protectedProcedure
+  create: auditedAdminProcedure
     .input(z.object({ type: z.string(), data: z.any() }).optional())
     .mutation(async ({ input }) => {
       return { success: true, id: crypto.randomUUID(), ...input?.data };
     }),
 
-  update: protectedProcedure
+  update: auditedAdminProcedure
     .input(z.object({ id: z.string(), data: z.any() }).optional())
     .mutation(async ({ input }) => {
       return { success: true, id: input?.id };
     }),
 
-  delete: protectedProcedure
+  delete: auditedAdminProcedure
     .input(z.object({ id: z.string() }).optional())
     .mutation(async ({ input }) => {
       return { success: true, id: input?.id };
@@ -37,7 +37,7 @@ export const adminRouter = router({
   /**
    * Get users for UserManagement page
    */
-  getUsers: protectedProcedure
+  getUsers: auditedAdminProcedure
     .input(z.object({ search: z.string().optional(), role: z.string().optional(), limit: z.number().default(50) }))
     .query(async ({ input }) => {
       const db = await getDb();
@@ -84,7 +84,7 @@ export const adminRouter = router({
   /**
    * Get user stats for UserManagement page
    */
-  getUserStats: protectedProcedure
+  getUserStats: auditedAdminProcedure
     .query(async () => {
       const db = await getDb();
       if (!db) return { total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 };
@@ -118,7 +118,7 @@ export const adminRouter = router({
   /**
    * Toggle user status mutation
    */
-  toggleUserStatus: protectedProcedure
+  toggleUserStatus: auditedAdminProcedure
     .input(z.object({ userId: z.string().optional(), status: z.string().optional(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, userId: input.userId, newStatus: input.status };
@@ -127,7 +127,7 @@ export const adminRouter = router({
   /**
    * Get webhooks for WebhookManagement page
    */
-  getWebhooks: protectedProcedure
+  getWebhooks: auditedAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
       const webhooks = [
@@ -144,7 +144,7 @@ export const adminRouter = router({
   /**
    * Get webhook stats for WebhookManagement page
    */
-  getWebhookStats: protectedProcedure
+  getWebhookStats: auditedAdminProcedure
     .query(async () => {
       return { total: 8, active: 6, failed: 1, disabled: 1, triggeredToday: 45, deliveriesToday: 45, failing: 1 };
     }),
@@ -152,7 +152,7 @@ export const adminRouter = router({
   /**
    * Delete webhook mutation
    */
-  deleteWebhook: protectedProcedure
+  deleteWebhook: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, deletedId: input.id };
@@ -161,7 +161,7 @@ export const adminRouter = router({
   /**
    * Test webhook mutation
    */
-  testWebhook: protectedProcedure
+  testWebhook: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, webhookId: input.id, responseTime: 245, statusCode: 200 };
@@ -170,7 +170,7 @@ export const adminRouter = router({
   /**
    * Get feature flags for FeatureFlags page
    */
-  getFeatureFlags: protectedProcedure
+  getFeatureFlags: auditedAdminProcedure
     .query(async () => {
       return [
         { id: "f1", name: "new_dashboard", description: "Enable new dashboard UI", enabled: true, rollout: 100 },
@@ -182,7 +182,7 @@ export const adminRouter = router({
   /**
    * Toggle feature flag mutation
    */
-  toggleFeatureFlag: protectedProcedure
+  toggleFeatureFlag: auditedAdminProcedure
     .input(z.object({ id: z.string().optional(), enabled: z.boolean(), flagId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, flagId: input.id, enabled: input.enabled };
@@ -191,7 +191,7 @@ export const adminRouter = router({
   /**
    * Get API keys for APIManagement page
    */
-  getAPIKeys: protectedProcedure
+  getAPIKeys: auditedAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
       const keys = [
@@ -208,7 +208,7 @@ export const adminRouter = router({
   /**
    * Get API stats for APIManagement page
    */
-  getAPIStats: protectedProcedure
+  getAPIStats: auditedAdminProcedure
     .query(async () => {
       return { totalKeys: 5, activeKeys: 4, totalRequests: 45000, avgLatency: 125, requestsToday: 1250, revokedKeys: 1 };
     }),
@@ -216,7 +216,7 @@ export const adminRouter = router({
   /**
    * Revoke API key mutation
    */
-  revokeAPIKey: protectedProcedure
+  revokeAPIKey: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, revokedId: input.id };
@@ -225,7 +225,7 @@ export const adminRouter = router({
   /**
    * Get scheduled tasks for ScheduledTasks page
    */
-  getScheduledTasks: protectedProcedure
+  getScheduledTasks: auditedAdminProcedure
     .query(async () => {
       return [
         { id: "t1", name: "Daily Report Generation", schedule: "0 6 * * *", status: "active", lastRun: "2025-01-23 06:00", nextRun: "2025-01-24 06:00" },
@@ -237,7 +237,7 @@ export const adminRouter = router({
   /**
    * Get task history for ScheduledTasks page
    */
-  getTaskHistory: protectedProcedure
+  getTaskHistory: auditedAdminProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async () => {
       return [
@@ -249,7 +249,7 @@ export const adminRouter = router({
   /**
    * Toggle scheduled task mutation
    */
-  toggleScheduledTask: protectedProcedure
+  toggleScheduledTask: auditedAdminProcedure
     .input(z.object({ id: z.string().optional(), taskId: z.string().optional(), enabled: z.boolean() }))
     .mutation(async ({ input }) => {
       return { success: true, taskId: input.id || input.taskId, enabled: input.enabled };
@@ -258,12 +258,12 @@ export const adminRouter = router({
   /**
    * Run task now mutation
    */
-  runTaskNow: protectedProcedure
+  runTaskNow: auditedAdminProcedure
     .input(z.object({ id: z.string().optional(), taskId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, taskId: input.id || input.taskId, startedAt: new Date().toISOString() };
     }),
-  toggleTask: protectedProcedure
+  toggleTask: auditedAdminProcedure
     .input(z.object({ id: z.string().optional(), taskId: z.string().optional(), enabled: z.boolean() }))
     .mutation(async ({ input }) => {
       return { success: true, taskId: input.id || input.taskId, enabled: input.enabled };
@@ -272,7 +272,7 @@ export const adminRouter = router({
   /**
    * Get exports for DataExport page
    */
-  getExports: protectedProcedure
+  getExports: auditedAdminProcedure
     .input(z.object({ dataType: z.string().optional(), status: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async () => {
       return [
@@ -284,7 +284,7 @@ export const adminRouter = router({
   /**
    * Get export stats for DataExport page
    */
-  getExportStats: protectedProcedure
+  getExportStats: auditedAdminProcedure
     .query(async () => {
       return { totalExports: 25, thisMonth: 8, avgSize: "1.2 MB", storageUsed: "45 MB", total: 25, completed: 23, processing: 2, totalSize: "45 MB" };
     }),
@@ -292,17 +292,17 @@ export const adminRouter = router({
   /**
    * Create export mutation
    */
-  createExport: protectedProcedure
+  createExport: auditedAdminProcedure
     .input(z.object({ name: z.string().optional(), type: z.string().optional(), dataType: z.string().optional(), format: z.enum(["pdf", "csv", "xlsx"]).optional(), filters: z.any().optional(), templateId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, exportId: `exp_${Date.now()}`, dataType: input.dataType || input.type, startedAt: new Date().toISOString() };
     }),
-  downloadExport: protectedProcedure.input(z.object({ exportId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ url: `/exports/${input.exportId || input.id}.csv`, filename: "export.csv" })),
+  downloadExport: auditedAdminProcedure.input(z.object({ exportId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ url: `/exports/${input.exportId || input.id}.csv`, filename: "export.csv" })),
 
   /**
    * Get email templates for EmailTemplates page
    */
-  getEmailTemplates: protectedProcedure
+  getEmailTemplates: auditedAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
       const templates = [
@@ -320,7 +320,7 @@ export const adminRouter = router({
   /**
    * Get email template stats for EmailTemplates page
    */
-  getEmailTemplateStats: protectedProcedure
+  getEmailTemplateStats: auditedAdminProcedure
     .query(async () => {
       return { total: 15, active: 12, draft: 3, sentThisMonth: 2450, categories: 5 };
     }),
@@ -328,7 +328,7 @@ export const adminRouter = router({
   /**
    * Get backups for BackupManagement page
    */
-  getBackups: protectedProcedure
+  getBackups: auditedAdminProcedure
     .input(z.object({ type: z.string().optional() }))
     .query(async ({ input }) => {
       const backups = [
@@ -343,7 +343,7 @@ export const adminRouter = router({
   /**
    * Get backup stats for BackupManagement page
    */
-  getBackupStats: protectedProcedure
+  getBackupStats: auditedAdminProcedure
     .query(async () => {
       return { totalBackups: 45, totalSize: "125 GB", lastBackup: "2025-01-23 02:00", nextScheduled: "2025-01-24 02:00", total: 45, successful: 42 };
     }),
@@ -351,7 +351,7 @@ export const adminRouter = router({
   /**
    * Create backup mutation
    */
-  createBackup: protectedProcedure
+  createBackup: auditedAdminProcedure
     .input(z.object({ type: z.string().optional().default("full") }))
     .mutation(async ({ input }) => {
       return { success: true, backupId: `bkp_${Date.now()}`, type: input.type, startedAt: new Date().toISOString() };
@@ -360,7 +360,7 @@ export const adminRouter = router({
   /**
    * Restore backup mutation
    */
-  restoreBackup: protectedProcedure
+  restoreBackup: auditedAdminProcedure
     .input(z.object({ backupId: z.string().optional(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, backupId: input.backupId, restoredAt: new Date().toISOString() };
@@ -369,7 +369,7 @@ export const adminRouter = router({
   /**
    * Get database health for DatabaseHealth page
    */
-  getDatabaseHealth: protectedProcedure
+  getDatabaseHealth: auditedAdminProcedure
     .input(z.object({}).optional())
     .query(async () => {
       return {
@@ -392,7 +392,7 @@ export const adminRouter = router({
   /**
    * Get slow queries for DatabaseHealth page
    */
-  getSlowQueries: protectedProcedure
+  getSlowQueries: auditedAdminProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async () => {
       return [
@@ -404,7 +404,7 @@ export const adminRouter = router({
   /**
    * Optimize database mutation
    */
-  optimizeDatabase: protectedProcedure
+  optimizeDatabase: auditedAdminProcedure
     .input(z.object({}).optional())
     .mutation(async () => {
       return { success: true, optimizedAt: new Date().toISOString(), improvements: ["Index rebuilt", "Cache cleared"] };
@@ -413,7 +413,7 @@ export const adminRouter = router({
   /**
    * Get integrations for IntegrationSettings page
    */
-  getIntegrations: protectedProcedure
+  getIntegrations: auditedAdminProcedure
     .query(async () => {
       return [
         { id: "i1", name: "QuickBooks", type: "accounting", status: "connected", lastSync: "2025-01-23 10:00" },
@@ -426,7 +426,7 @@ export const adminRouter = router({
   /**
    * Get integration stats for IntegrationSettings page
    */
-  getIntegrationStats: protectedProcedure
+  getIntegrationStats: auditedAdminProcedure
     .query(async () => {
       return { total: 8, connected: 6, disconnected: 2, syncedToday: 45, syncsToday: 45, errors: 2 };
     }),
@@ -434,7 +434,7 @@ export const adminRouter = router({
   /**
    * Toggle integration mutation
    */
-  toggleIntegration: protectedProcedure
+  toggleIntegration: auditedAdminProcedure
     .input(z.object({ id: z.string(), enabled: z.boolean().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, integrationId: input.id, enabled: input.enabled ?? true };
@@ -443,7 +443,7 @@ export const adminRouter = router({
   /**
    * Sync integration mutation
    */
-  syncIntegration: protectedProcedure
+  syncIntegration: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, integrationId: input.id, syncedAt: new Date().toISOString() };
@@ -452,7 +452,7 @@ export const adminRouter = router({
   /**
    * Get service status for SystemHealth page
    */
-  getServiceStatus: protectedProcedure
+  getServiceStatus: auditedAdminProcedure
     .input(z.object({}).optional())
     .query(async () => {
       return [
@@ -466,7 +466,7 @@ export const adminRouter = router({
   /**
    * Get webhook logs for WebhookLogs page
    */
-  getWebhookLogs: protectedProcedure
+  getWebhookLogs: auditedAdminProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().optional().default(50) }))
     .query(async ({ input }) => {
       const logs = [
@@ -480,7 +480,7 @@ export const adminRouter = router({
   /**
    * Get webhook summary for WebhookLogs page
    */
-  getWebhookSummary: protectedProcedure
+  getWebhookSummary: auditedAdminProcedure
     .query(async () => {
       return { total: 245, successful: 238, failed: 7, avgResponseTime: 145, totalSent: 245, successRate: 97.1, avgLatency: 145 };
     }),
@@ -488,7 +488,7 @@ export const adminRouter = router({
   /**
    * Retry webhook mutation
    */
-  retryWebhook: protectedProcedure
+  retryWebhook: auditedAdminProcedure
     .input(z.object({ logId: z.string().optional(), webhookId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, logId: input.logId || input.webhookId, retriedAt: new Date().toISOString() };
@@ -497,7 +497,7 @@ export const adminRouter = router({
   /**
    * Get verification queue for VerificationQueue page
    */
-  getVerificationQueue: protectedProcedure
+  getVerificationQueue: auditedAdminProcedure
     .input(z.object({ type: z.enum(["user", "company", "document", "all"]).optional(), limit: z.number().optional(), filter: z.string().optional() }).optional())
     .query(async ({ input }) => {
       const items = [
@@ -511,7 +511,7 @@ export const adminRouter = router({
   /**
    * Get verification summary for VerificationQueue page
    */
-  getVerificationSummary: protectedProcedure
+  getVerificationSummary: auditedAdminProcedure
     .query(async () => {
       return { pending: 12, approved: 145, rejected: 8, avgProcessingTime: "2.5 hours", approvedToday: 8, rejectedToday: 2, avgWaitTime: "2.5 hours" };
     }),
@@ -519,7 +519,7 @@ export const adminRouter = router({
   /**
    * Approve verification mutation
    */
-  approveVerification: protectedProcedure
+  approveVerification: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, id: input.id, status: "approved" };
@@ -528,7 +528,7 @@ export const adminRouter = router({
   /**
    * Reject verification mutation
    */
-  rejectVerification: protectedProcedure
+  rejectVerification: auditedAdminProcedure
     .input(z.object({ id: z.string(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, id: input.id, status: "rejected" };
@@ -537,7 +537,7 @@ export const adminRouter = router({
   /**
    * Get system config for SystemConfiguration page
    */
-  getSystemConfig: protectedProcedure
+  getSystemConfig: auditedAdminProcedure
     .query(async () => {
       return {
         general: { companyName: "EusoTrip", timezone: "America/Chicago", dateFormat: "MM/DD/YYYY", currency: "USD" },
@@ -550,7 +550,7 @@ export const adminRouter = router({
   /**
    * Update system config mutation
    */
-  updateSystemConfig: protectedProcedure
+  updateSystemConfig: auditedAdminProcedure
     .input(z.object({ config: z.any() }))
     .mutation(async ({ input }) => {
       return { success: true, updatedAt: new Date().toISOString() };
@@ -559,7 +559,7 @@ export const adminRouter = router({
   /**
    * Get system settings for SystemSettings page
    */
-  getSystemSettings: protectedProcedure
+  getSystemSettings: auditedAdminProcedure
     .query(async () => {
       return {
         maintenance: { enabled: false, message: "", scheduledStart: null, scheduledEnd: null },
@@ -582,7 +582,7 @@ export const adminRouter = router({
   /**
    * Update system settings mutation
    */
-  updateSystemSettings: protectedProcedure
+  updateSystemSettings: auditedAdminProcedure
     .input(z.any())
     .mutation(async ({ input }) => {
       return { success: true, updatedAt: new Date().toISOString() };
@@ -591,7 +591,7 @@ export const adminRouter = router({
   /**
    * Get admin dashboard summary
    */
-  getDashboardSummary: protectedProcedure
+  getDashboardSummary: auditedAdminProcedure
     .query(async ({ ctx }) => {
       return {
         users: {
@@ -626,7 +626,7 @@ export const adminRouter = router({
   /**
    * List users
    */
-  listUsers: protectedProcedure
+  listUsers: auditedAdminProcedure
     .input(z.object({
       status: userStatusSchema.optional(),
       role: z.string().optional(),
@@ -702,7 +702,7 @@ export const adminRouter = router({
   /**
    * Get user by ID
    */
-  getUserById: protectedProcedure
+  getUserById: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       return {
@@ -726,7 +726,7 @@ export const adminRouter = router({
   /**
    * Update user status
    */
-  updateUserStatus: protectedProcedure
+  updateUserStatus: auditedAdminProcedure
     .input(z.object({
       userId: z.string().optional(),
       id: z.string().optional(),
@@ -746,7 +746,7 @@ export const adminRouter = router({
   /**
    * Get pending verifications
    */
-  getPendingVerifications: protectedProcedure
+  getPendingVerifications: auditedAdminProcedure
     .input(z.object({
       type: z.enum(["user", "company", "document", "all"]).optional(),
       limit: z.number().optional(),
@@ -792,7 +792,7 @@ export const adminRouter = router({
   /**
    * Process verification
    */
-  processVerification: protectedProcedure
+  processVerification: auditedAdminProcedure
     .input(z.object({
       verificationId: z.string(),
       decision: verificationStatusSchema,
@@ -812,7 +812,7 @@ export const adminRouter = router({
   /**
    * Get platform statistics
    */
-  getPlatformStats: protectedProcedure
+  getPlatformStats: auditedAdminProcedure
     .input(z.object({
       period: z.enum(["day", "week", "month", "quarter", "year"]).default("month"),
     }))
@@ -847,7 +847,7 @@ export const adminRouter = router({
   /**
    * Get system health
    */
-  getSystemHealth: protectedProcedure
+  getSystemHealth: auditedAdminProcedure
     .input(z.object({}).optional())
     .query(async () => {
       return {
@@ -872,7 +872,7 @@ export const adminRouter = router({
   /**
    * Impersonate user (for support)
    */
-  impersonateUser: protectedProcedure
+  impersonateUser: auditedAdminProcedure
     .input(z.object({
       userId: z.string(),
       reason: z.string(),
@@ -889,7 +889,7 @@ export const adminRouter = router({
   /**
    * Send platform announcement
    */
-  sendAnnouncement: protectedProcedure
+  sendAnnouncement: auditedAdminProcedure
     .input(z.object({
       title: z.string(),
       message: z.string(),
@@ -908,7 +908,7 @@ export const adminRouter = router({
   /**
    * Get recent activity
    */
-  getRecentActivity: protectedProcedure
+  getRecentActivity: auditedAdminProcedure
     .input(z.object({ limit: z.number().default(50) }))
     .query(async ({ input }) => {
       return [
@@ -923,7 +923,7 @@ export const adminRouter = router({
   /**
    * Update system configuration
    */
-  updateConfig: protectedProcedure
+  updateConfig: auditedAdminProcedure
     .input(z.object({
       key: z.string(),
       value: z.string(),
@@ -940,7 +940,7 @@ export const adminRouter = router({
   /**
    * Get verification stats for UserVerification page
    */
-  getVerificationStats: protectedProcedure
+  getVerificationStats: auditedAdminProcedure
     .query(async () => {
       return { pending: 8, approved: 245, rejected: 12, avgProcessingTime: "1.5 hours", approvedToday: 15, rejectedToday: 2, totalVerified: 257 };
     }),
@@ -948,7 +948,7 @@ export const adminRouter = router({
   /**
    * Approve user mutation for UserVerification page
    */
-  approveUser: protectedProcedure
+  approveUser: auditedAdminProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, userId: input.userId, status: "approved", approvedAt: new Date().toISOString() };
@@ -957,108 +957,108 @@ export const adminRouter = router({
   /**
    * Reject user mutation for UserVerification page
    */
-  rejectUser: protectedProcedure
+  rejectUser: auditedAdminProcedure
     .input(z.object({ userId: z.string(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, userId: input.userId, status: "rejected" };
     }),
 
   // Content moderation
-  approveContent: protectedProcedure.input(z.object({ contentId: z.string().optional(), reportId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId || input.reportId })),
-  removeContent: protectedProcedure.input(z.object({ contentId: z.string().optional(), reportId: z.string().optional(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId || input.reportId })),
-  getContentReports: protectedProcedure.input(z.object({ type: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "r1", contentId: "c1", reason: "spam", status: "pending", reportedAt: "2025-01-23" }]),
-  getModerationSummary: protectedProcedure.query(async () => ({ pending: 5, approved: 120, rejected: 8, totalReports: 133, approvedToday: 15, removedToday: 3, highSeverity: 2 })),
+  approveContent: auditedAdminProcedure.input(z.object({ contentId: z.string().optional(), reportId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId || input.reportId })),
+  removeContent: auditedAdminProcedure.input(z.object({ contentId: z.string().optional(), reportId: z.string().optional(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId || input.reportId })),
+  getContentReports: auditedAdminProcedure.input(z.object({ type: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "r1", contentId: "c1", reason: "spam", status: "pending", reportedAt: "2025-01-23" }]),
+  getModerationSummary: auditedAdminProcedure.query(async () => ({ pending: 5, approved: 120, rejected: 8, totalReports: 133, approvedToday: 15, removedToday: 3, highSeverity: 2 })),
 
   // Cache management
-  getCacheStats: protectedProcedure.query(async () => ({ hitRate: 94, totalKeys: 1250, memoryUsed: "128MB", uptime: "5d 12h", requestsPerSec: 450, memoryLimit: "512MB", memoryPercentage: 25 })),
-  getCacheKeys: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ key: "user:123", ttl: 3600, size: "2KB" }]),
-  clearCacheKey: protectedProcedure.input(z.object({ key: z.string() })).mutation(async ({ input }) => ({ success: true, key: input.key })),
-  clearAllCache: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, clearedKeys: 1250 })),
+  getCacheStats: auditedAdminProcedure.query(async () => ({ hitRate: 94, totalKeys: 1250, memoryUsed: "128MB", uptime: "5d 12h", requestsPerSec: 450, memoryLimit: "512MB", memoryPercentage: 25 })),
+  getCacheKeys: auditedAdminProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ key: "user:123", ttl: 3600, size: "2KB" }]),
+  clearCacheKey: auditedAdminProcedure.input(z.object({ key: z.string() })).mutation(async ({ input }) => ({ success: true, key: input.key })),
+  clearAllCache: auditedAdminProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, clearedKeys: 1250 })),
 
   // Queue management
-  getQueues: protectedProcedure.query(async () => [{ name: "emails", pending: 25, processing: 2, failed: 1 }, { name: "notifications", pending: 12, processing: 1, failed: 0 }]),
-  clearQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName })),
-  pauseQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: true })),
-  resumeQueue: protectedProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: false })),
-  getRecentJobs: protectedProcedure.input(z.object({ queueName: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "j1", queue: "emails", status: "completed", completedAt: "2025-01-23" }]),
+  getQueues: auditedAdminProcedure.query(async () => [{ name: "emails", pending: 25, processing: 2, failed: 1 }, { name: "notifications", pending: 12, processing: 1, failed: 0 }]),
+  clearQueue: auditedAdminProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName })),
+  pauseQueue: auditedAdminProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: true })),
+  resumeQueue: auditedAdminProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: false })),
+  getRecentJobs: auditedAdminProcedure.input(z.object({ queueName: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "j1", queue: "emails", status: "completed", completedAt: "2025-01-23" }]),
 
   // API keys management
-  getApiKeys: protectedProcedure.query(async () => [{ id: "k1", name: "Production", prefix: "pk_live_", status: "active", lastUsed: "2025-01-23" }]),
-  createApiKey: protectedProcedure.input(z.object({ name: z.string(), permissions: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, key: "pk_live_abc123", name: input.name })),
-  revokeApiKey: protectedProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ input }) => ({ success: true, keyId: input.keyId })),
+  getApiKeys: auditedAdminProcedure.query(async () => [{ id: "k1", name: "Production", prefix: "pk_live_", status: "active", lastUsed: "2025-01-23" }]),
+  createApiKey: auditedAdminProcedure.input(z.object({ name: z.string(), permissions: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, key: "pk_live_abc123", name: input.name })),
+  revokeApiKey: auditedAdminProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ input }) => ({ success: true, keyId: input.keyId })),
 
   // Audit logs
-  getAuditLogs: protectedProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
-  getAuditStats: protectedProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"], total: 15000, today: 250, criticalActions: 12 })),
+  getAuditLogs: auditedAdminProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
+  getAuditStats: auditedAdminProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"], total: 15000, today: 250, criticalActions: 12 })),
 
   // Broadcasts
-  getBroadcasts: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
-  sendBroadcast: protectedProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional(), audience: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
-  deleteBroadcast: protectedProcedure.input(z.object({ broadcastId: z.string() })).mutation(async ({ input }) => ({ success: true, broadcastId: input.broadcastId })),
-  getAudiences: protectedProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
+  getBroadcasts: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
+  sendBroadcast: auditedAdminProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional(), audience: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
+  deleteBroadcast: auditedAdminProcedure.input(z.object({ broadcastId: z.string() })).mutation(async ({ input }) => ({ success: true, broadcastId: input.broadcastId })),
+  getAudiences: auditedAdminProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
 
   // Company management
-  getCompanies: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "c1", name: "ABC Transport", type: "carrier", status: "active", verified: true }]),
-  getCompanyStats: protectedProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5, verified: 410 })),
-  getPendingCompanies: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
-  verifyCompany: protectedProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
-  rejectCompany: protectedProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
-  getCompanyVerificationSummary: protectedProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours", total: 450, verified: 400 })),
+  getCompanies: auditedAdminProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "c1", name: "ABC Transport", type: "carrier", status: "active", verified: true }]),
+  getCompanyStats: auditedAdminProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5, verified: 410 })),
+  getPendingCompanies: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
+  verifyCompany: auditedAdminProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
+  rejectCompany: auditedAdminProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
+  getCompanyVerificationSummary: auditedAdminProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours", total: 450, verified: 400 })),
 
   // Disputes
-  getDisputes: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
-  getDisputeSummary: protectedProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000, inReview: 5, resolvedThisMonth: 12 })),
-  resolveDispute: protectedProcedure.input(z.object({ disputeId: z.string(), resolution: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
+  getDisputes: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
+  getDisputeSummary: auditedAdminProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000, inReview: 5, resolvedThisMonth: 12 })),
+  resolveDispute: auditedAdminProcedure.input(z.object({ disputeId: z.string(), resolution: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
 
   // Email logs
-  getEmailLogs: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", to: "user@example.com", subject: "Welcome", status: "delivered", sentAt: "2025-01-23" }]),
-  getEmailSummary: protectedProcedure.query(async () => ({ sent: 5000, delivered: 4850, bounced: 100, opened: 3200, openRate: 66, totalSent: 5000, deliveryRate: 97, failed: 50 })),
-  resendEmail: protectedProcedure.input(z.object({ emailId: z.string() })).mutation(async ({ input }) => ({ success: true, emailId: input.emailId })),
+  getEmailLogs: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", to: "user@example.com", subject: "Welcome", status: "delivered", sentAt: "2025-01-23" }]),
+  getEmailSummary: auditedAdminProcedure.query(async () => ({ sent: 5000, delivered: 4850, bounced: 100, opened: 3200, openRate: 66, totalSent: 5000, deliveryRate: 97, failed: 50 })),
+  resendEmail: auditedAdminProcedure.input(z.object({ emailId: z.string() })).mutation(async ({ input }) => ({ success: true, emailId: input.emailId })),
 
   // Error logs
-  getErrorLogs: protectedProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "err1", message: "Connection timeout", severity: "warning", count: 5, lastOccurred: "2025-01-23" }]),
-  getErrorSummary: protectedProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203, errors: 2, warnings: 45, lastError: "2025-01-23 14:30" })),
+  getErrorLogs: auditedAdminProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "err1", message: "Connection timeout", severity: "warning", count: 5, lastOccurred: "2025-01-23" }]),
+  getErrorSummary: auditedAdminProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203, errors: 2, warnings: 45, lastError: "2025-01-23 14:30" })),
 
   // Imports
-  getImports: protectedProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
-  getImportStats: protectedProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1, recordsImported: 12500 })),
-  getImportHistory: protectedProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [
+  getImports: auditedAdminProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
+  getImportStats: auditedAdminProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1, recordsImported: 12500 })),
+  getImportHistory: auditedAdminProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [
     { id: "imp1", dataType: "drivers", fileName: "drivers_jan.csv", status: "completed", recordsImported: 45, createdAt: "2025-01-20" },
     { id: "imp2", dataType: "vehicles", fileName: "fleet_update.csv", status: "completed", recordsImported: 12, createdAt: "2025-01-18" },
   ]),
 
   // Performance
-  getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p50ResponseTime: 95, p95ResponseTime: 350, p99ResponseTime: 520, requestsPerSecond: 45, errorRate: 0.5, cpu: 42, memory: 68, disk: 55, uptime: 99.99, bandwidth: 85, bandwidthUsed: 425, bandwidthLimit: 500 })),
-  getSlowEndpoints: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/loads", avgTime: 450, calls: 1200 }]),
-  getTopPerformers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
+  getPerformanceMetrics: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p50ResponseTime: 95, p95ResponseTime: 350, p99ResponseTime: 520, requestsPerSecond: 45, errorRate: 0.5, cpu: 42, memory: 68, disk: 55, uptime: 99.99, bandwidth: 85, bandwidthUsed: 425, bandwidthLimit: 500 })),
+  getSlowEndpoints: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/loads", avgTime: 450, calls: 1200 }]),
+  getTopPerformers: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional(), timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
 
   // Platform
-  getPlatformHealth: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "healthy", overallStatus: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45, cpu: 42, memory: 68, disk: 55, network: 125, latency: 45 })),
-  getPlatformMetrics: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000, totalUsers: 5500, usersChange: 8.5, usersChangeType: "increase", loadsChange: 12.3, loadsChangeType: "increase", revenue: 2500000, revenueChange: 15.2, revenueChangeType: "increase", activeSessions: 850, sessionsChange: 5.2, sessionsChangeType: "increase" })),
-  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => [{ date: "2025-01-20", users: 1200, loads: 450, revenue: 125000 }, { date: "2025-01-21", users: 1250, loads: 470, revenue: 130000 }]),
+  getPlatformHealth: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "healthy", overallStatus: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45, cpu: 42, memory: 68, disk: 55, network: 125, latency: 45 })),
+  getPlatformMetrics: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000, totalUsers: 5500, usersChange: 8.5, usersChangeType: "increase", loadsChange: 12.3, loadsChangeType: "increase", revenue: 2500000, revenueChange: 15.2, revenueChangeType: "increase", activeSessions: 850, sessionsChange: 5.2, sessionsChangeType: "increase" })),
+  getPlatformTrends: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => [{ date: "2025-01-20", users: 1200, loads: 450, revenue: 125000 }, { date: "2025-01-21", users: 1250, loads: 470, revenue: 130000 }]),
 
   // Permissions & Roles
-  getPermissions: protectedProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [{ id: "p1", name: "loads.create", description: "Create loads" }] as any; perms.categories = [{ name: "Loads", permissions: [{ id: "p1", name: "loads.create", description: "Create loads", enabled: true }] }]; return perms; }),
-  getRoleStats: protectedProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500, totalRoles: 12, totalPermissions: 85, usersWithRoles: 3555, customRoles: 4 })),
-  getRoles: protectedProcedure.query(async () => [{ id: "r1", name: "Admin", description: "Full access", permissions: ["read", "write", "delete"], userCount: 5, categories: [{ name: "Users", permissions: ["create", "read", "update", "delete"] }] }]),
-  updateRolePermissions: protectedProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
+  getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [{ id: "p1", name: "loads.create", description: "Create loads" }] as any; perms.categories = [{ name: "Loads", permissions: [{ id: "p1", name: "loads.create", description: "Create loads", enabled: true }] }]; return perms; }),
+  getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500, totalRoles: 12, totalPermissions: 85, usersWithRoles: 3555, customRoles: 4 })),
+  getRoles: auditedAdminProcedure.query(async () => [{ id: "r1", name: "Admin", description: "Full access", permissions: ["read", "write", "delete"], userCount: 5, categories: [{ name: "Users", permissions: ["create", "read", "update", "delete"] }] }]),
+  updateRolePermissions: auditedAdminProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
 
   // Rate limiting
-  getRateLimitStats: protectedProcedure.query(async () => ({ blocked: 25, blockedRequests: 25, throttled: 150, total: 50000, totalRequests: 50000, avgLatency: 145, activeUsers: 1250, topBlockedIps: [{ ip: "192.168.1.100", count: 12 }, { ip: "10.0.0.50", count: 8 }] })),
-  getRateLimitConfig: protectedProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [], enabled: true, anonymousRpm: 30, authenticatedRpm: 100, burstLimit: 150, blockDuration: 3600 })),
-  updateRateLimitConfig: protectedProcedure.input(z.object({ limit: z.number().optional(), windowMs: z.number().optional(), enabled: z.boolean().optional(), anonymousRpm: z.number().optional(), authenticatedRpm: z.number().optional(), burstLimit: z.number().optional(), blockDuration: z.number().optional() })).mutation(async ({ input }) => ({ success: true })),
+  getRateLimitStats: auditedAdminProcedure.query(async () => ({ blocked: 25, blockedRequests: 25, throttled: 150, total: 50000, totalRequests: 50000, avgLatency: 145, activeUsers: 1250, topBlockedIps: [{ ip: "192.168.1.100", count: 12 }, { ip: "10.0.0.50", count: 8 }] })),
+  getRateLimitConfig: auditedAdminProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [], enabled: true, anonymousRpm: 30, authenticatedRpm: 100, burstLimit: 150, blockDuration: 3600 })),
+  updateRateLimitConfig: auditedAdminProcedure.input(z.object({ limit: z.number().optional(), windowMs: z.number().optional(), enabled: z.boolean().optional(), anonymousRpm: z.number().optional(), authenticatedRpm: z.number().optional(), burstLimit: z.number().optional(), blockDuration: z.number().optional() })).mutation(async ({ input }) => ({ success: true })),
 
   // Missing procedures for frontend pages
-  resetPassword: protectedProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
-  deleteUser: protectedProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
-  getSystemLogs: protectedProcedure.input(z.object({ level: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "log1", level: "info", message: "System started", timestamp: new Date().toISOString() }]),
-  getLogStats: protectedProcedure.query(async () => ({ total: 5000, error: 25, warning: 150, info: 4825, debug: 0 })),
-  getOnboardingUsers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "u1", name: "New User", email: "new@example.com", step: 3, totalSteps: 5, status: "in_progress" }]),
-  getOnboardingStats: protectedProcedure.query(async () => ({ total: 50, completed: 35, inProgress: 12, abandoned: 3, avgCompletionTime: "2.5 days" })),
-  sendOnboardingReminder: protectedProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
+  resetPassword: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
+  deleteUser: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
+  getSystemLogs: auditedAdminProcedure.input(z.object({ level: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "log1", level: "info", message: "System started", timestamp: new Date().toISOString() }]),
+  getLogStats: auditedAdminProcedure.query(async () => ({ total: 5000, error: 25, warning: 150, info: 4825, debug: 0 })),
+  getOnboardingUsers: auditedAdminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "u1", name: "New User", email: "new@example.com", step: 3, totalSteps: 5, status: "in_progress" }]),
+  getOnboardingStats: auditedAdminProcedure.query(async () => ({ total: 50, completed: 35, inProgress: 12, abandoned: 3, avgCompletionTime: "2.5 days" })),
+  sendOnboardingReminder: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
 
   // Audit log
-  getAuditLog: protectedProcedure.input(z.object({ logId: z.string() })).query(async ({ input }) => ({
+  getAuditLog: auditedAdminProcedure.input(z.object({ logId: z.string() })).query(async ({ input }) => ({
     id: input.logId,
     userId: "user_123",
     action: "load.create",
@@ -1067,7 +1067,7 @@ export const adminRouter = router({
   })),
 
   // API Documentation
-  getAPIUsageStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
+  getAPIUsageStats: auditedAdminProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
     totalRequests: 45000,
     successfulRequests: 44500,
     failedRequests: 500,
