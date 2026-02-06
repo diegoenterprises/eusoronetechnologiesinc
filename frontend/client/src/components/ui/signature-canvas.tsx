@@ -1,7 +1,8 @@
 /**
  * SIGNATURE CANVAS COMPONENT
- * DocuSign-style signature capture with gradient ink
- * Gradient flows from #1473FF (blue) to #BE01FF (magenta) — official EusoTrip brand gradient ink
+ * EusoTrip Gradient Ink signature capture
+ * Dark canvas background (#1E1E2E) with gradient ink strokes (#1473FF → #BE01FF)
+ * Matches the EusoTrip whitepaper design for e-signatures.
  */
 
 import React, { useRef, useState, useEffect, useCallback } from "react";
@@ -41,7 +42,7 @@ export function SignatureCanvas({
   documentType,
   className,
   width = 600,
-  height = 200,
+  height = 220,
   showLegalText = true,
 }: SignatureCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -50,9 +51,30 @@ export function SignatureCanvas({
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
 
-  // Gradient colors matching app theme
-  const gradientStart = "#1473FF"; // EusoTrip brand blue
-  const gradientEnd = "#BE01FF"; // EusoTrip brand magenta
+  // Dark canvas background matching whitepaper design
+  const CANVAS_BG = "#1E1E2E";
+  const gradientStart = "#1473FF";
+  const gradientEnd = "#BE01FF";
+
+  const drawBackground = useCallback((context: CanvasRenderingContext2D) => {
+    // Dark background
+    context.fillStyle = CANVAS_BG;
+    context.fillRect(0, 0, width, height);
+
+    // Subtle signature line near bottom
+    context.strokeStyle = "rgba(100, 116, 139, 0.25)";
+    context.lineWidth = 1;
+    context.setLineDash([]);
+    context.beginPath();
+    context.moveTo(32, height - 44);
+    context.lineTo(width - 32, height - 44);
+    context.stroke();
+
+    // Reset for drawing
+    context.lineWidth = 3;
+    context.lineCap = "round";
+    context.lineJoin = "round";
+  }, [width, height]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -61,31 +83,9 @@ export function SignatureCanvas({
     const context = canvas.getContext("2d");
     if (!context) return;
 
-    // Set up canvas
-    context.lineCap = "round";
-    context.lineJoin = "round";
-    context.lineWidth = 3;
-
-    // Clear with transparent background
-    context.clearRect(0, 0, width, height);
-
-    // Draw signature line
-    context.strokeStyle = "rgba(148, 163, 184, 0.3)";
-    context.lineWidth = 1;
-    context.beginPath();
-    context.moveTo(40, height - 40);
-    context.lineTo(width - 40, height - 40);
-    context.stroke();
-
-    // Draw X marker
-    context.fillStyle = "rgba(148, 163, 184, 0.5)";
-    context.font = "24px sans-serif";
-    context.fillText("✕", 20, height - 35);
-
-    // Reset line width for drawing
-    context.lineWidth = 3;
+    drawBackground(context);
     setCtx(context);
-  }, [width, height]);
+  }, [width, height, drawBackground]);
 
   const getGradientColor = useCallback((x: number): string => {
     // Calculate gradient position based on x coordinate
@@ -164,21 +164,7 @@ export function SignatureCanvas({
     if (!canvas || !ctx) return;
 
     ctx.clearRect(0, 0, width, height);
-
-    // Redraw signature line
-    ctx.strokeStyle = "rgba(148, 163, 184, 0.3)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(40, height - 40);
-    ctx.lineTo(width - 40, height - 40);
-    ctx.stroke();
-
-    // Redraw X marker
-    ctx.fillStyle = "rgba(148, 163, 184, 0.5)";
-    ctx.font = "24px sans-serif";
-    ctx.fillText("✕", 20, height - 35);
-
-    ctx.lineWidth = 3;
+    drawBackground(ctx);
     setHasSignature(false);
   };
 
@@ -227,14 +213,12 @@ export function SignatureCanvas({
           </div>
         </div>
 
-        <div className="relative rounded-xl overflow-hidden border-2 border-slate-600/50 transition-all hover:border-purple-500/30">
-          {/* Gradient border glow */}
-          <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 pointer-events-none z-0" />
+        <div className="relative rounded-2xl overflow-hidden border border-slate-700/60 transition-all hover:border-[#7B3AFF]/30">
           <canvas
             ref={canvasRef}
             width={width}
             height={height}
-            className="relative z-10 w-full bg-white rounded-lg cursor-crosshair touch-none"
+            className="relative z-10 w-full cursor-crosshair touch-none"
             style={{ maxWidth: "100%", height: "auto", aspectRatio: `${width}/${height}` }}
             onMouseDown={startDrawing}
             onMouseMove={draw}
@@ -245,8 +229,11 @@ export function SignatureCanvas({
             onTouchEnd={stopDrawing}
           />
           {!hasSignature && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <p className="text-slate-400 text-sm">Draw your signature above</p>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <div className="text-center opacity-30">
+                <Pen className="w-8 h-8 mx-auto mb-2 text-purple-400" />
+                <p className="text-slate-300 text-sm">Draw your signature with Gradient Ink</p>
+              </div>
             </div>
           )}
         </div>
@@ -291,10 +278,9 @@ export function SignatureCanvas({
           <Button
             onClick={saveSignature}
             disabled={!hasSignature}
-            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] rounded-lg"
+            className="h-11 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD]"
           >
-            <Check className="w-4 h-4 mr-2" />
-            Sign & Accept
+            Continue
           </Button>
         </div>
       </CardFooter>

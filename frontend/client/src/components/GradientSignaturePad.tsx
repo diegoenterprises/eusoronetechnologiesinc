@@ -2,6 +2,7 @@
  * GRADIENT INK SIGNATURE PAD
  * EusoTrip's signature brand feature - digital signatures
  * rendered in the official brand gradient (#1473FF → #BE01FF)
+ * on a dark canvas background matching the EusoTrip whitepaper design.
  * 
  * Canvas-based signature capture with real-time gradient ink rendering.
  * Used across BOL signing, Rate Confirmations, PODs, Contracts, etc.
@@ -14,6 +15,11 @@ import { cn } from "@/lib/utils";
 import {
   Pen, RotateCcw, Check, Download, Shield, Fingerprint,
 } from "lucide-react";
+
+// Dark canvas background matching whitepaper design
+const CANVAS_BG = "#1E1E2E";
+const SIGNATURE_LINE_COLOR = "rgba(100, 116, 139, 0.25)";
+const HINT_COLOR = "rgba(148, 163, 184, 0.3)";
 
 interface GradientSignaturePadProps {
   onSign?: (signatureData: string) => void;
@@ -32,11 +38,11 @@ export default function GradientSignaturePad({
   onSign,
   onClear,
   width = 600,
-  height = 200,
+  height = 220,
   disabled = false,
   signerName,
   documentTitle,
-  legalText = "By signing, I agree that this electronic signature is the legal equivalent of my handwritten signature.",
+  legalText = "By electronically signing this document, I acknowledge and agree that my electronic signature holds the same legal validity as a handwritten signature, to the extent permitted by applicable laws and regulations of the United States.",
   showVerification = true,
   className,
 }: GradientSignaturePadProps) {
@@ -48,13 +54,29 @@ export default function GradientSignaturePad({
   const strokeCountRef = useRef(0);
 
   // Create gradient for the ink
-  const getGradientStroke = useCallback((ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) => {
+  const getGradientStroke = useCallback((ctx: CanvasRenderingContext2D) => {
     const gradient = ctx.createLinearGradient(0, 0, width, 0);
     gradient.addColorStop(0, "#1473FF");
     gradient.addColorStop(0.5, "#7B3AFF");
     gradient.addColorStop(1, "#BE01FF");
     return gradient;
   }, [width]);
+
+  // Draw the dark background and signature line
+  const drawBackground = useCallback((ctx: CanvasRenderingContext2D) => {
+    // Dark background
+    ctx.fillStyle = CANVAS_BG;
+    ctx.fillRect(0, 0, width, height);
+
+    // Subtle signature line near bottom
+    ctx.strokeStyle = SIGNATURE_LINE_COLOR;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(32, height - 44);
+    ctx.lineTo(width - 32, height - 44);
+    ctx.stroke();
+  }, [width, height]);
 
   // Initialize canvas
   useEffect(() => {
@@ -71,26 +93,8 @@ export default function GradientSignaturePad({
     canvas.style.height = `${height}px`;
     ctx.scale(dpr, dpr);
 
-    // Draw signature line
-    ctx.strokeStyle = "rgba(100, 116, 139, 0.3)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(40, height - 40);
-    ctx.lineTo(width - 40, height - 40);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Draw "Sign here" hint
-    ctx.fillStyle = "rgba(100, 116, 139, 0.4)";
-    ctx.font = "13px Inter, sans-serif";
-    ctx.fillText("Sign here", 40, height - 20);
-
-    // Draw X marker
-    ctx.fillStyle = "rgba(100, 116, 139, 0.5)";
-    ctx.font = "bold 18px Inter, sans-serif";
-    ctx.fillText("X", 20, height - 36);
-  }, [width, height]);
+    drawBackground(ctx);
+  }, [width, height, drawBackground]);
 
   const getPosition = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current;
@@ -128,7 +132,7 @@ export default function GradientSignaturePad({
     if (!ctx || !lastPointRef.current) return;
 
     const pos = getPosition(e);
-    const gradient = getGradientStroke(ctx, lastPointRef.current.x, lastPointRef.current.y, pos.x, pos.y);
+    const gradient = getGradientStroke(ctx);
 
     ctx.strokeStyle = gradient;
     ctx.lineWidth = 2.5;
@@ -162,24 +166,7 @@ export default function GradientSignaturePad({
 
     const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-
-    // Redraw signature line
-    ctx.strokeStyle = "rgba(100, 116, 139, 0.3)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(40, height - 40);
-    ctx.lineTo(width - 40, height - 40);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = "rgba(100, 116, 139, 0.4)";
-    ctx.font = "13px Inter, sans-serif";
-    ctx.fillText("Sign here", 40, height - 20);
-
-    ctx.fillStyle = "rgba(100, 116, 139, 0.5)";
-    ctx.font = "bold 18px Inter, sans-serif";
-    ctx.fillText("X", 20, height - 36);
+    drawBackground(ctx);
 
     setHasSignature(false);
     setIsSigned(false);
@@ -201,7 +188,7 @@ export default function GradientSignaturePad({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const link = document.createElement("a");
-    link.download = `eusotrip-signature-${Date.now()}.png`;
+    link.download = `eusotrip-gradient-ink-${Date.now()}.png`;
     link.href = canvas.toDataURL("image/png");
     link.click();
   };
@@ -222,22 +209,22 @@ export default function GradientSignaturePad({
         </div>
       )}
 
-      {/* Canvas Container */}
+      {/* Canvas Container — Dark background matching whitepaper */}
       <div className={cn(
-        "relative rounded-xl overflow-hidden border-2 transition-all",
-        isSigned ? "border-green-500/50 bg-slate-900/80" : "border-slate-600/50 bg-slate-900/50",
-        isDrawing && "border-purple-500/50 shadow-lg shadow-purple-500/10",
+        "relative rounded-2xl overflow-hidden border transition-all",
+        isSigned
+          ? "border-green-500/40 shadow-lg shadow-green-500/5"
+          : "border-slate-700/60",
+        isDrawing && "border-[#7B3AFF]/40 shadow-lg shadow-purple-500/10",
         disabled && "opacity-50 pointer-events-none"
       )}>
-        {/* Gradient border glow */}
-        <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 pointer-events-none" />
-
         <canvas
           ref={canvasRef}
           className={cn(
-            "relative z-10 cursor-crosshair touch-none",
+            "relative z-10 w-full cursor-crosshair touch-none",
             isSigned && "cursor-default"
           )}
+          style={{ maxWidth: "100%", height: "auto", aspectRatio: `${width}/${height}` }}
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
@@ -260,9 +247,9 @@ export default function GradientSignaturePad({
         {/* Empty state hint */}
         {!hasSignature && !isSigned && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-            <div className="text-center opacity-40">
+            <div className="text-center opacity-30">
               <Pen className="w-8 h-8 mx-auto mb-2 text-purple-400" />
-              <p className="text-slate-400 text-sm">Draw your signature with gradient ink</p>
+              <p className="text-slate-300 text-sm">Draw your signature with Gradient Ink</p>
             </div>
           </div>
         )}
@@ -278,16 +265,15 @@ export default function GradientSignaturePad({
             <Button
               onClick={confirmSignature}
               disabled={!hasSignature || disabled}
-              className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] disabled:opacity-40"
+              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260DD] hover:to-[#A801DD] disabled:opacity-40 text-sm font-medium"
             >
-              <Fingerprint className="w-4 h-4 mr-2" />
-              Confirm Signature
+              Continue
             </Button>
             <Button
               variant="outline"
               onClick={clearSignature}
               disabled={!hasSignature || disabled}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="h-11 rounded-xl border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               <RotateCcw className="w-4 h-4" />
             </Button>
@@ -297,7 +283,7 @@ export default function GradientSignaturePad({
             <Button
               variant="outline"
               onClick={downloadSignature}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="h-11 rounded-xl border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               <Download className="w-4 h-4 mr-2" />
               Download
@@ -305,7 +291,7 @@ export default function GradientSignaturePad({
             <Button
               variant="outline"
               onClick={clearSignature}
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              className="h-11 rounded-xl border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               <RotateCcw className="w-4 h-4 mr-2" />
               Re-sign
@@ -316,7 +302,7 @@ export default function GradientSignaturePad({
 
       {/* Verification badge */}
       {showVerification && isSigned && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+        <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
           <Shield className="w-5 h-5 text-green-400 flex-shrink-0" />
           <div className="text-xs">
             <span className="text-green-400 font-medium">ESIGN Act Compliant</span>
