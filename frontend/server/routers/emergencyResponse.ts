@@ -30,7 +30,15 @@
 
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
-import { emitNotification, emitSystemAnnouncement } from "../_core/websocket";
+import {
+  emitNotification,
+  emitSystemAnnouncement,
+  emitEmergencyDeclared,
+  emitEmergencyUpdated,
+  emitMobilizationOrder,
+  emitZoneActivated,
+  emitMobilizationResponse,
+} from "../_core/websocket";
 
 // ─── Types & Constants ────────────────────────────────────────────────────────
 
@@ -349,11 +357,17 @@ export const emergencyResponseRouter = router({
 
       emergencyOperations.push(operation);
 
-      // Broadcast emergency alert to ALL users
-      emitSystemAnnouncement({
+      // Broadcast emergency alert to ALL users via typed emergency emitter
+      emitEmergencyDeclared({
+        operationId: operation.id,
+        operationCode: input.codeName,
+        type: 'EMERGENCY_DECLARED',
+        threatLevel: input.threatLevel,
         title: `EMERGENCY OPERATION: ${input.codeName}`,
         message: `Threat Level: ${input.threatLevel}. ${input.name}. ${input.affectedStates.join(", ")} affected. Drivers in the area — standby for Call to Haul missions.`,
-        priority: "critical",
+        urgency: input.threatLevel === 'CRITICAL' ? 'FLASH' : 'IMMEDIATE',
+        affectedStates: input.affectedStates,
+        timestamp: new Date().toISOString(),
       });
 
       return {
@@ -388,10 +402,16 @@ export const emergencyResponseRouter = router({
         severity: input.status === "ESCALATED" ? "CRITICAL" : input.status === "RESOLVED" ? "INFO" : "WARNING",
       });
 
-      emitSystemAnnouncement({
+      emitEmergencyUpdated({
+        operationId: op.id,
+        operationCode: op.codeName,
+        type: input.status === 'RESOLVED' ? 'EMERGENCY_RESOLVED' : 'EMERGENCY_UPDATED',
+        threatLevel: op.threatLevel,
         title: `OP ${op.codeName}: ${input.status}`,
         message: input.notes,
-        priority: input.status === "ESCALATED" ? "critical" : "warning",
+        urgency: input.status === 'ESCALATED' ? 'FLASH' : 'PRIORITY',
+        affectedStates: op.affectedStates,
+        timestamp: new Date().toISOString(),
       });
 
       return { success: true, operation: op };
@@ -486,6 +506,18 @@ export const emergencyResponseRouter = router({
         severity: input.priority === "CRITICAL" ? "CRITICAL" : "WARNING",
       });
 
+      // Emit zone activation to command center
+      emitZoneActivated({
+        operationId: op.id,
+        operationCode: op.codeName,
+        type: 'ZONE_ACTIVATED',
+        title: `Zone Activated: ${input.name}`,
+        message: `Mobilization zone "${input.name}" activated near ${input.nearestTerminal}. ${input.driversNeeded} drivers needed. Priority: ${input.priority}.`,
+        urgency: input.priority === 'CRITICAL' ? 'IMMEDIATE' : 'PRIORITY',
+        zoneId: zone.id,
+        timestamp: new Date().toISOString(),
+      });
+
       return { success: true, zone };
     }),
 
@@ -566,11 +598,23 @@ export const emergencyResponseRouter = router({
         severity: input.urgency === "FLASH" ? "CRITICAL" : "WARNING",
       });
 
-      // Broadcast to matching drivers
-      emitSystemAnnouncement({
+      // Broadcast to matching drivers via typed mobilization emitter
+      emitMobilizationOrder({
+        operationId: input.operationId,
+        operationCode: op.codeName,
+        type: input.type as any,
         title: `${input.type === "I_WANT_YOU" ? "[MOBILIZATION] YOUR COUNTRY NEEDS YOU" : "[CALL TO HAUL]"}: ${input.title}`,
         message: `${input.message} | ${input.incentives.surgePayMultiplier}x surge pay | +${input.incentives.bonusXp} XP | +${input.incentives.bonusMiles} Haul Miles${input.incentives.cashBonus ? ` | $${input.incentives.cashBonus} bonus` : ""}`,
-        priority: input.urgency === "FLASH" || input.urgency === "IMMEDIATE" ? "critical" : "warning",
+        urgency: input.urgency as any,
+        affectedStates: input.targetAudience.states,
+        mobilizationOrderId: order.id,
+        incentives: {
+          surgePayMultiplier: input.incentives.surgePayMultiplier,
+          bonusXp: input.incentives.bonusXp,
+          bonusMiles: input.incentives.bonusMiles,
+          cashBonus: input.incentives.cashBonus,
+        },
+        timestamp: new Date().toISOString(),
       });
 
       return {
@@ -614,6 +658,21 @@ export const emergencyResponseRouter = router({
       driverResponses.push(response);
       order.responseCount++;
       if (input.accept) order.acceptCount++;
+
+      // Emit typed mobilization response to command center
+      const op = emergencyOperations.find(o => o.id === order.operationId);
+      emitMobilizationResponse({
+        operationId: order.operationId,
+        operationCode: op?.codeName || order.operationId,
+        type: 'MOBILIZATION_RESPONSE',
+        title: input.accept ? "Driver Accepted Mobilization" : "Driver Declined Mobilization",
+        message: `${ctx.user?.name || "Driver"} ${input.accept ? "accepted" : "declined"} mobilization order "${order.title}"`,
+        urgency: 'ROUTINE',
+        driverId: String(ctx.user?.id || "anonymous"),
+        driverResponse: input.accept ? "ACCEPTED" : "DECLINED",
+        mobilizationOrderId: order.id,
+        timestamp: new Date().toISOString(),
+      });
 
       if (input.accept) {
         emitNotification(String(ctx.user?.id), {

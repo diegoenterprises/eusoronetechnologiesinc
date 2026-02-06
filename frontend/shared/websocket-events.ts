@@ -531,6 +531,30 @@ export interface ZeunPayload {
   timestamp: string;
 }
 
+export interface EmergencyPayload {
+  operationId: string;
+  operationCode: string;
+  type: 'EMERGENCY_DECLARED' | 'EMERGENCY_UPDATED' | 'EMERGENCY_RESOLVED' | 'EMERGENCY_ESCALATED' |
+        'MOBILIZATION_ORDER' | 'MOBILIZATION_RESPONSE' | 'CALL_TO_HAUL' | 'I_WANT_YOU' |
+        'ZONE_ACTIVATED' | 'SUPPLY_IMPACT_ALERT';
+  threatLevel?: string;
+  title: string;
+  message: string;
+  urgency: 'ROUTINE' | 'PRIORITY' | 'IMMEDIATE' | 'FLASH';
+  affectedStates?: string[];
+  mobilizationOrderId?: string;
+  zoneId?: string;
+  incentives?: {
+    surgePayMultiplier: number;
+    bonusXp: number;
+    bonusMiles: number;
+    cashBonus?: number;
+  };
+  driverId?: string;
+  driverResponse?: string;
+  timestamp: string;
+}
+
 // ============================================================================
 // WEBSOCKET MESSAGE STRUCTURE
 // ============================================================================

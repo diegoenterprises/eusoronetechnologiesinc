@@ -25,6 +25,7 @@ import {
   DispatchPayload,
   FinancialPayload,
   ZeunPayload,
+  EmergencyPayload,
 } from "@shared/websocket-events";
 
 type WSMessage = SharedWSMessage;
@@ -364,6 +365,17 @@ class WebSocketService {
       case "ESCORT":
         channels.push("escort:jobs");
         break;
+      case "ADMIN":
+      case "SUPER_ADMIN":
+        channels.push("emergency:ops");
+        channels.push("emergency:mobilization");
+        channels.push("admin:alerts");
+        break;
+    }
+
+    // All roles get emergency ops channel for FLASH alerts
+    if (!channels.includes("emergency:ops")) {
+      channels.push("emergency:ops");
     }
 
     return channels;
@@ -761,6 +773,164 @@ export function emitSystemAnnouncement(data: { title: string; message: string; p
     {
       type: WS_EVENTS.ANNOUNCEMENT_NEW,
       data,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+// ============================================================================
+// EMERGENCY RESPONSE EVENT EMITTERS
+// ============================================================================
+
+/**
+ * Emit emergency declared event — broadcasts to all connected clients
+ */
+export function emitEmergencyDeclared(payload: EmergencyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPS,
+    {
+      type: WS_EVENTS.EMERGENCY_DECLARED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  // Also broadcast as system announcement for maximum visibility
+  wsService.broadcastToChannel(
+    WS_CHANNELS.SYSTEM_ANNOUNCEMENTS,
+    {
+      type: WS_EVENTS.ANNOUNCEMENT_NEW,
+      data: { title: payload.title, message: payload.message, priority: 'critical' },
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit emergency status update (escalated, winding down, resolved)
+ */
+export function emitEmergencyUpdated(payload: EmergencyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPS,
+    {
+      type: WS_EVENTS.EMERGENCY_UPDATED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPERATION(payload.operationId),
+    {
+      type: WS_EVENTS.EMERGENCY_UPDATED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit mobilization order — Call to Haul / I Want You
+ */
+export function emitMobilizationOrder(payload: EmergencyPayload): void {
+  const eventType = payload.type === 'I_WANT_YOU' 
+    ? WS_EVENTS.I_WANT_YOU 
+    : payload.type === 'CALL_TO_HAUL'
+      ? WS_EVENTS.CALL_TO_HAUL
+      : WS_EVENTS.MOBILIZATION_ORDER;
+  
+  // Broadcast to emergency mobilization channel (all drivers)
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_MOBILIZATION,
+    {
+      type: eventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  // Broadcast to operation-specific channel
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPERATION(payload.operationId),
+    {
+      type: eventType,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  // FLASH and IMMEDIATE urgency also go to drivers:alerts
+  if (payload.urgency === 'FLASH' || payload.urgency === 'IMMEDIATE') {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.DRIVERS_ALERTS,
+      {
+        type: eventType,
+        data: payload,
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+}
+
+/**
+ * Emit mobilization zone activated
+ */
+export function emitZoneActivated(payload: EmergencyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPS,
+    {
+      type: WS_EVENTS.ZONE_ACTIVATED,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  if (payload.zoneId) {
+    wsService.broadcastToChannel(
+      WS_CHANNELS.EMERGENCY_ZONE(payload.zoneId),
+      {
+        type: WS_EVENTS.ZONE_ACTIVATED,
+        data: payload,
+        timestamp: new Date().toISOString(),
+      }
+    );
+  }
+}
+
+/**
+ * Emit driver mobilization response (accepted/declined/status update)
+ */
+export function emitMobilizationResponse(payload: EmergencyPayload): void {
+  // Notify operation command center
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPERATION(payload.operationId),
+    {
+      type: WS_EVENTS.MOBILIZATION_RESPONSE,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+  
+  // Notify admins on the ops channel
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPS,
+    {
+      type: WS_EVENTS.MOBILIZATION_RESPONSE,
+      data: payload,
+      timestamp: new Date().toISOString(),
+    }
+  );
+}
+
+/**
+ * Emit supply impact alert
+ */
+export function emitSupplyImpactAlert(payload: EmergencyPayload): void {
+  wsService.broadcastToChannel(
+    WS_CHANNELS.EMERGENCY_OPS,
+    {
+      type: WS_EVENTS.SUPPLY_IMPACT_ALERT,
+      data: payload,
       timestamp: new Date().toISOString(),
     }
   );
