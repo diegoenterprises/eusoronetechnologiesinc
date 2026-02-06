@@ -739,6 +739,13 @@ import EmploymentHistory from "./pages/EmploymentHistory";
 import EquipmentManagement from "./pages/EquipmentManagement";
 import EquipmentTracking from "./pages/EquipmentTracking";
 import Erg from "./pages/Erg";
+import EmergencyAfterAction from "./pages/EmergencyAfterAction";
+import EmergencyCommandCenter from "./pages/EmergencyCommandCenter";
+import EmergencyDriverResponse from "./pages/EmergencyDriverResponse";
+import EmergencyGovernmentLiaison from "./pages/EmergencyGovernmentLiaison";
+import EmergencyMobilization from "./pages/EmergencyMobilization";
+import EmergencyScenario from "./pages/EmergencyScenario";
+import EmergencySupplyAnalysis from "./pages/EmergencySupplyAnalysis";
 import ErrorLogs from "./pages/ErrorLogs";
 import EscortActiveJobs from "./pages/EscortActiveJobs";
 import EscortAuditPrep from "./pages/EscortAuditPrep";
@@ -2737,6 +2744,13 @@ function Router() {
       <Route path={"/equipment-management"} component={() => (<DashboardLayout><EquipmentManagement /></DashboardLayout>)} />
       <Route path={"/equipment-tracking"} component={() => (<DashboardLayout><EquipmentTracking /></DashboardLayout>)} />
       <Route path={"/erg"} component={() => (<DashboardLayout><Erg /></DashboardLayout>)} />
+      <Route path={"/emergency/command-center"} component={() => (<DashboardLayout><EmergencyCommandCenter /></DashboardLayout>)} />
+      <Route path={"/emergency/mobilization"} component={() => (<DashboardLayout><EmergencyMobilization /></DashboardLayout>)} />
+      <Route path={"/emergency/driver-response"} component={() => (<DashboardLayout><EmergencyDriverResponse /></DashboardLayout>)} />
+      <Route path={"/emergency/supply-analysis"} component={() => (<DashboardLayout><EmergencySupplyAnalysis /></DashboardLayout>)} />
+      <Route path={"/emergency/government-liaison"} component={() => (<DashboardLayout><EmergencyGovernmentLiaison /></DashboardLayout>)} />
+      <Route path={"/emergency/after-action"} component={() => (<DashboardLayout><EmergencyAfterAction /></DashboardLayout>)} />
+      <Route path={"/emergency/scenario"} component={() => (<DashboardLayout><EmergencyScenario /></DashboardLayout>)} />
       <Route path={"/error-logs"} component={() => (<DashboardLayout><ErrorLogs /></DashboardLayout>)} />
       <Route path={"/escort/active-jobs"} component={() => (<DashboardLayout><EscortActiveJobs /></DashboardLayout>)} />
       <Route path={"/escort/audit-prep"} component={() => (<DashboardLayout><EscortAuditPrep /></DashboardLayout>)} />
