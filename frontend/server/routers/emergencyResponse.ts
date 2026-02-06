@@ -568,7 +568,7 @@ export const emergencyResponseRouter = router({
 
       // Broadcast to matching drivers
       emitSystemAnnouncement({
-        title: `${input.type === "I_WANT_YOU" ? "🫵 YOUR COUNTRY NEEDS YOU" : "📢 CALL TO HAUL"}: ${input.title}`,
+        title: `${input.type === "I_WANT_YOU" ? "[MOBILIZATION] YOUR COUNTRY NEEDS YOU" : "[CALL TO HAUL]"}: ${input.title}`,
         message: `${input.message} | ${input.incentives.surgePayMultiplier}x surge pay | +${input.incentives.bonusXp} XP | +${input.incentives.bonusMiles} Haul Miles${input.incentives.cashBonus ? ` | $${input.incentives.cashBonus} bonus` : ""}`,
         priority: input.urgency === "FLASH" || input.urgency === "IMMEDIATE" ? "critical" : "warning",
       });

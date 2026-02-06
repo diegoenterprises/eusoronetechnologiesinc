@@ -115,7 +115,7 @@ export default function EmergencyCommandCenter() {
               <Shield className={`w-8 h-8 ${sit?.threatLevel === 'CRITICAL' ? 'text-red-400' : sit?.threatLevel === 'SEVERE' ? 'text-red-400' : sit?.threatLevel === 'HIGH' ? 'text-orange-400' : 'text-green-400'}`} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                 Emergency Command Center
               </h1>
               <p className="text-slate-400 text-sm mt-1">Infrastructure crisis management & driver mobilization</p>

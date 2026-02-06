@@ -48,8 +48,8 @@ export default function EmergencySupplyAnalysis() {
           <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-400 bg-clip-text text-transparent flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-green-400" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-blue-400" />
             Supply Impact Analysis
           </h1>
           <p className="text-slate-400 text-sm">Model fuel disruption scenarios and mobilization requirements</p>

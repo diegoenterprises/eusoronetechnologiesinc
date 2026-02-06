@@ -96,8 +96,8 @@ export default function EmergencyMobilization() {
           <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent flex items-center gap-2">
-            <Radio className="h-6 w-6 text-red-400" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
+            <Radio className="h-6 w-6 text-blue-400" />
             Driver Mobilization
           </h1>
           <p className="text-slate-400 text-sm">Issue Call to Haul & I Want You orders to mobilize drivers</p>
@@ -343,11 +343,11 @@ export default function EmergencyMobilization() {
                 <CardContent>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
-                      {form.type === 'I_WANT_YOU' && <span className="text-2xl">🫵</span>}
-                      {form.type === 'CALL_TO_HAUL' && <span className="text-2xl">📢</span>}
-                      {form.type === 'CONVOY_FORM' && <span className="text-2xl">🚛</span>}
-                      {form.type === 'STRATEGIC_REPOSITION' && <span className="text-2xl">📍</span>}
-                      {form.type === 'GENERAL_ALERT' && <span className="text-2xl">📻</span>}
+                      {form.type === 'I_WANT_YOU' && <Flag className="w-6 h-6 text-blue-400" />}
+                      {form.type === 'CALL_TO_HAUL' && <Megaphone className="w-6 h-6 text-red-400" />}
+                      {form.type === 'CONVOY_FORM' && <Truck className="w-6 h-6 text-purple-400" />}
+                      {form.type === 'STRATEGIC_REPOSITION' && <MapPin className="w-6 h-6 text-green-400" />}
+                      {form.type === 'GENERAL_ALERT' && <Radio className="w-6 h-6 text-yellow-400" />}
                       <Badge className={form.urgency === 'FLASH' ? 'bg-red-500/30 text-red-300 animate-pulse' : form.urgency === 'IMMEDIATE' ? 'bg-orange-500/30 text-orange-300' : 'bg-yellow-500/30 text-yellow-300'}>{form.urgency}</Badge>
                     </div>
                     <h3 className="font-bold text-lg text-slate-100">{form.title || 'Order Title'}</h3>

@@ -40,8 +40,8 @@ export default function EmergencyAfterAction() {
           <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent flex items-center gap-2">
-            <FileText className="h-6 w-6 text-yellow-400" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
+            <FileText className="h-6 w-6 text-blue-400" />
             After-Action Report
           </h1>
           <p className="text-slate-400 text-sm">Post-crisis analysis, recognition, and lessons learned</p>

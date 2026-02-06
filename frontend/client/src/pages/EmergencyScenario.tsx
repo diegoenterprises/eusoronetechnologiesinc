@@ -47,8 +47,8 @@ export default function EmergencyScenario() {
           <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-yellow-400 bg-clip-text text-transparent flex items-center gap-2">
-            <Flame className="h-6 w-6 text-red-400" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
+            <Flame className="h-6 w-6 text-blue-400" />
             Colonial Pipeline Scenario
           </h1>
           <p className="text-slate-400 text-sm">How EusoTrip would have responded — May 7-12, 2021</p>

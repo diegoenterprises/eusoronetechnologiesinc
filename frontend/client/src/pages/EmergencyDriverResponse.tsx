@@ -42,12 +42,15 @@ export default function EmergencyDriverResponse() {
     ROUTINE: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   };
 
-  const typeIcons: Record<string, string> = {
-    CALL_TO_HAUL: '📢',
-    I_WANT_YOU: '🫵',
-    STRATEGIC_REPOSITION: '📍',
-    CONVOY_FORM: '🚛',
-    GENERAL_ALERT: '📻',
+  const TypeIcon = ({ type }: { type: string }) => {
+    switch (type) {
+      case 'CALL_TO_HAUL': return <Radio className="w-8 h-8 text-red-400" />;
+      case 'I_WANT_YOU': return <Flag className="w-8 h-8 text-blue-400" />;
+      case 'STRATEGIC_REPOSITION': return <MapPin className="w-8 h-8 text-green-400" />;
+      case 'CONVOY_FORM': return <Truck className="w-8 h-8 text-purple-400" />;
+      case 'GENERAL_ALERT': return <AlertTriangle className="w-8 h-8 text-yellow-400" />;
+      default: return <Radio className="w-8 h-8 text-red-400" />;
+    }
   };
 
   if (mobilizationsQuery.isLoading) {
@@ -67,8 +70,8 @@ export default function EmergencyDriverResponse() {
           <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-red-400 to-yellow-400 bg-clip-text text-transparent flex items-center gap-2">
-            <Shield className="h-6 w-6 text-red-400" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
+            <Shield className="h-6 w-6 text-blue-400" />
             Emergency Mobilization
           </h1>
           <p className="text-slate-400 text-sm">Your country needs you. Answer the call.</p>
@@ -139,7 +142,7 @@ export default function EmergencyDriverResponse() {
                   <div className="flex-1">
                     {/* Type & Urgency Header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-3xl">{typeIcons[order.type] || '📢'}</span>
+                      <TypeIcon type={order.type} />
                       <div>
                         <div className="flex items-center gap-2">
                           <Badge className={urgencyColors[order.urgency]}>{order.urgency}</Badge>

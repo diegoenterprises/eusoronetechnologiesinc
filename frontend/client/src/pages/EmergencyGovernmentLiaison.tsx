@@ -37,8 +37,8 @@ export default function EmergencyGovernmentLiaison() {
           <Button variant="ghost" size="icon"><ArrowLeft className="h-5 w-5" /></Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent flex items-center gap-2">
-            <Globe className="h-6 w-6 text-purple-400" />
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex items-center gap-2">
+            <Globe className="h-6 w-6 text-blue-400" />
             Government Liaison Portal
           </h1>
           <p className="text-slate-400 text-sm">Federal & state emergency coordination contacts and partnership programs</p>
