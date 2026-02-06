@@ -2027,6 +2027,88 @@ function Router() {
       <Route path={"/register/safety"} component={RegisterSafety} />
       <Route path={"/terms-of-service"} component={TermsOfService} />
       <Route path={"/privacy-policy"} component={PrivacyPolicy} />
+
+      {/* SIDEBAR NAVIGATION ROUTES - Maps sidebar menu paths to pages */}
+      <Route path={"/loads"} component={() => (<DashboardLayout><ActiveLoads /></DashboardLayout>)} />
+      <Route path={"/loads/create"} component={() => (<DashboardLayout><CreateLoad /></DashboardLayout>)} />
+      <Route path={"/loads/active"} component={() => (<DashboardLayout><ActiveLoads /></DashboardLayout>)} />
+      <Route path={"/loads/transit"} component={() => (<DashboardLayout><ActiveLoads /></DashboardLayout>)} />
+      <Route path={"/tracking"} component={() => (<DashboardLayout><TrackShipments /></DashboardLayout>)} />
+      <Route path={"/live-tracking"} component={() => (<DashboardLayout><TelemetryLiveTracking /></DashboardLayout>)} />
+      <Route path={"/fleet-tracking"} component={() => (<DashboardLayout><TelemetryFleetMap /></DashboardLayout>)} />
+      <Route path={"/carriers"} component={() => (<DashboardLayout><Carriers /></DashboardLayout>)} />
+      <Route path={"/drivers"} component={() => (<DashboardLayout><DriverDirectory /></DashboardLayout>)} />
+      <Route path={"/shippers"} component={() => (<DashboardLayout><Shippers /></DashboardLayout>)} />
+      <Route path={"/payments"} component={() => (<DashboardLayout><Billing /></DashboardLayout>)} />
+      <Route path={"/earnings"} component={() => (<DashboardLayout><Earnings /></DashboardLayout>)} />
+      <Route path={"/commission"} component={() => (<DashboardLayout><Commission /></DashboardLayout>)} />
+      <Route path={"/bids"} component={() => (<DashboardLayout><BidManagement /></DashboardLayout>)} />
+      <Route path={"/profile"} component={() => (<DashboardLayout><Profile /></DashboardLayout>)} />
+      <Route path={"/settings"} component={() => (<DashboardLayout><AccountSettings /></DashboardLayout>)} />
+      <Route path={"/company"} component={() => (<DashboardLayout><Company /></DashboardLayout>)} />
+      <Route path={"/company-channels"} component={() => (<DashboardLayout><CompanyChannels /></DashboardLayout>)} />
+      <Route path={"/support"} component={() => (<DashboardLayout><Support /></DashboardLayout>)} />
+      <Route path={"/news"} component={() => (<DashboardLayout><NewsFeed /></DashboardLayout>)} />
+      <Route path={"/documents"} component={() => (<DashboardLayout><DocumentManagement /></DashboardLayout>)} />
+      <Route path={"/reports"} component={() => (<DashboardLayout><ReportsDashboard /></DashboardLayout>)} />
+      <Route path={"/fleet"} component={() => (<DashboardLayout><FleetManagement /></DashboardLayout>)} />
+      <Route path={"/fleet-compliance"} component={() => (<DashboardLayout><ComplianceDashboard /></DashboardLayout>)} />
+      <Route path={"/analytics"} component={() => (<DashboardLayout><Analytics /></DashboardLayout>)} />
+      <Route path={"/market-pricing"} component={() => (<DashboardLayout><HotZones /></DashboardLayout>)} />
+      <Route path={"/hot-zones"} component={() => (<DashboardLayout><HotZones /></DashboardLayout>)} />
+      <Route path={"/performance"} component={() => (<DashboardLayout><Analytics /></DashboardLayout>)} />
+      <Route path={"/jobs"} component={() => (<DashboardLayout><CurrentJob /></DashboardLayout>)} />
+      <Route path={"/jobs/current"} component={() => (<DashboardLayout><CurrentJob /></DashboardLayout>)} />
+      <Route path={"/navigation"} component={() => (<DashboardLayout><DriverDashboard /></DashboardLayout>)} />
+      <Route path={"/diagnostics"} component={() => (<DashboardLayout><DriverVehicle /></DashboardLayout>)} />
+      <Route path={"/missions"} component={() => (<DashboardLayout><TheHaulMissions /></DashboardLayout>)} />
+      <Route path={"/leaderboard"} component={() => (<DashboardLayout><TheHaulLeaderboard /></DashboardLayout>)} />
+      <Route path={"/rewards"} component={() => (<DashboardLayout><TheHaulRewards /></DashboardLayout>)} />
+      <Route path={"/specializations"} component={() => (<DashboardLayout><MatchedLoads /></DashboardLayout>)} />
+      <Route path={"/opportunities"} component={() => (<DashboardLayout><MatchedLoads /></DashboardLayout>)} />
+      <Route path={"/ai-assistant"} component={() => (<DashboardLayout><ESANGChat /></DashboardLayout>)} />
+      <Route path={"/convoys"} component={() => (<DashboardLayout><ActiveConvoys /></DashboardLayout>)} />
+      <Route path={"/team"} component={() => (<DashboardLayout><TeamManagement /></DashboardLayout>)} />
+      <Route path={"/incidents"} component={() => (<DashboardLayout><IncidentReporting /></DashboardLayout>)} />
+      <Route path={"/facility"} component={() => (<DashboardLayout><FacilityManagement /></DashboardLayout>)} />
+      <Route path={"/incoming"} component={() => (<DashboardLayout><TerminalOperations /></DashboardLayout>)} />
+      <Route path={"/outgoing"} component={() => (<DashboardLayout><TerminalOperations /></DashboardLayout>)} />
+      <Route path={"/staff"} component={() => (<DashboardLayout><TerminalStaff /></DashboardLayout>)} />
+      <Route path={"/operations"} component={() => (<DashboardLayout><TerminalOperations /></DashboardLayout>)} />
+      <Route path={"/compliance"} component={() => (<DashboardLayout><ComplianceDashboard /></DashboardLayout>)} />
+      <Route path={"/driver-compliance"} component={() => (<DashboardLayout><ComplianceDriverQualification /></DashboardLayout>)} />
+      <Route path={"/safety-metrics"} component={() => (<DashboardLayout><SafetyDashboard /></DashboardLayout>)} />
+      <Route path={"/driver-health"} component={() => (<DashboardLayout><DriverDashboard /></DashboardLayout>)} />
+      <Route path={"/vehicle-safety"} component={() => (<DashboardLayout><VehicleInspections /></DashboardLayout>)} />
+      <Route path={"/training"} component={() => (<DashboardLayout><TrainingManagement /></DashboardLayout>)} />
+      <Route path={"/hazmat"} component={() => (<DashboardLayout><HazmatManagement /></DashboardLayout>)} />
+      <Route path={"/audits"} component={() => (<DashboardLayout><Audits /></DashboardLayout>)} />
+      <Route path={"/zeun-fleet"} component={() => (<DashboardLayout><ZeunFleetDashboard /></DashboardLayout>)} />
+      <Route path={"/zeun-breakdown"} component={() => (<DashboardLayout><ZeunBreakdown /></DashboardLayout>)} />
+      <Route path={"/admin"} component={() => (<DashboardLayout><AdminDashboard /></DashboardLayout>)} />
+      <Route path={"/admin/users"} component={() => (<DashboardLayout><AdminUserManagement /></DashboardLayout>)} />
+      <Route path={"/admin/companies"} component={() => (<DashboardLayout><AdminCompanyDirectory /></DashboardLayout>)} />
+      <Route path={"/admin/loads"} component={() => (<DashboardLayout><AdminLoadManagement /></DashboardLayout>)} />
+      <Route path={"/admin/telemetry"} component={() => (<DashboardLayout><TelemetryDashboard /></DashboardLayout>)} />
+      <Route path={"/admin/zeun"} component={() => (<DashboardLayout><ZeunDashboard /></DashboardLayout>)} />
+      <Route path={"/admin/payments"} component={() => (<DashboardLayout><AdminPayments /></DashboardLayout>)} />
+      <Route path={"/admin/disputes"} component={() => (<DashboardLayout><AdminPaymentDisputes /></DashboardLayout>)} />
+      <Route path={"/admin/documents"} component={() => (<DashboardLayout><AdminDocumentVerification /></DashboardLayout>)} />
+      <Route path={"/admin/analytics"} component={() => (<DashboardLayout><AdminAnalyticsDashboard /></DashboardLayout>)} />
+      <Route path={"/admin/platform-fees"} component={() => (<DashboardLayout><AdminPlatformFees /></DashboardLayout>)} />
+      <Route path={"/admin/settings"} component={() => (<DashboardLayout><AdminSystemSettings /></DashboardLayout>)} />
+      <Route path={"/super-admin"} component={() => (<DashboardLayout><SuperAdminDashboard /></DashboardLayout>)} />
+      <Route path={"/super-admin/users"} component={() => (<DashboardLayout><SuperAdminUserDirectory /></DashboardLayout>)} />
+      <Route path={"/super-admin/companies"} component={() => (<DashboardLayout><AdminCompanyDirectory /></DashboardLayout>)} />
+      <Route path={"/super-admin/loads"} component={() => (<DashboardLayout><AdminLoadManagement /></DashboardLayout>)} />
+      <Route path={"/super-admin/config"} component={() => (<DashboardLayout><SystemConfiguration /></DashboardLayout>)} />
+      <Route path={"/super-admin/database"} component={() => (<DashboardLayout><AdminDatabaseMonitor /></DashboardLayout>)} />
+      <Route path={"/super-admin/security"} component={() => (<DashboardLayout><AdminSecurityAlerts /></DashboardLayout>)} />
+      <Route path={"/super-admin/logs"} component={() => (<DashboardLayout><AdminSystemLogs /></DashboardLayout>)} />
+      <Route path={"/super-admin/monitoring"} component={() => (<DashboardLayout><AdminSystemMonitor /></DashboardLayout>)} />
+      <Route path={"/super-admin/settings"} component={() => (<DashboardLayout><AdminSystemSettings /></DashboardLayout>)} />
+      {/* END SIDEBAR NAVIGATION ROUTES */}
+
       <Route path={"/api-docs"} component={() => (<DashboardLayout><APIDocumentation /></DashboardLayout>)} />
       <Route path={"/api-keys"} component={() => (<DashboardLayout><APIKeys /></DashboardLayout>)} />
       <Route path={"/api-management"} component={() => (<DashboardLayout><APIManagement /></DashboardLayout>)} />
