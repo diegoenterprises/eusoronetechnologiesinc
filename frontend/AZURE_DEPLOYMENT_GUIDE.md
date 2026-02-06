@@ -49,7 +49,7 @@ node --version  # Should be 20.x+
 
 - **Azure subscription** (Pay-As-You-Go or Enterprise Agreement)
 - **Owner** or **Contributor** role on the subscription
-- **Domain name** registered (e.g., `eusotrip.com` or `eusoronetech.com`)
+- **Domain name** registered (e.g., `eusotrip.com` or `eusotrip.com`)
 - **GitHub repository** access for CI/CD
 
 ---
@@ -178,12 +178,12 @@ az webapp deployment slot create \
 # Create DNS zone for your domain
 az network dns zone create \
   --resource-group $RESOURCE_GROUP \
-  --name eusoronetech.com
+  --name eusotrip.com
 
 # Get the Azure nameservers (you'll point your domain registrar to these)
 az network dns zone show \
   --resource-group $RESOURCE_GROUP \
-  --name eusoronetech.com \
+  --name eusotrip.com \
   --query nameServers \
   --output tsv
 ```
@@ -198,7 +198,7 @@ az network dns zone show \
 # A record for root domain → App Service IP
 az network dns record-set a create \
   --resource-group $RESOURCE_GROUP \
-  --zone-name eusoronetech.com \
+  --zone-name eusotrip.com \
   --name "@" \
   --ttl 300
 
@@ -207,35 +207,35 @@ APP_IP=$(az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --quer
 
 az network dns record-set a add-record \
   --resource-group $RESOURCE_GROUP \
-  --zone-name eusoronetech.com \
+  --zone-name eusotrip.com \
   --record-set-name "@" \
   --ipv4-address $APP_IP
 
 # CNAME for www → App Service
 az network dns record-set cname set-record \
   --resource-group $RESOURCE_GROUP \
-  --zone-name eusoronetech.com \
+  --zone-name eusotrip.com \
   --record-set-name "www" \
   --cname "${APP_NAME}.azurewebsites.net"
 
-# CNAME for app subdomain (if using app.eusoronetech.com)
+# CNAME for app subdomain (if using app.eusotrip.com)
 az network dns record-set cname set-record \
   --resource-group $RESOURCE_GROUP \
-  --zone-name eusoronetech.com \
+  --zone-name eusotrip.com \
   --record-set-name "app" \
   --cname "${APP_NAME}.azurewebsites.net"
 
 # TXT record for domain verification
 az network dns record-set txt add-record \
   --resource-group $RESOURCE_GROUP \
-  --zone-name eusoronetech.com \
+  --zone-name eusotrip.com \
   --record-set-name "asuid" \
   --value $(az webapp show --name $APP_NAME --resource-group $RESOURCE_GROUP --query "customDomainVerificationId" -o tsv)
 
 # MX records for email (if using Microsoft 365 / Google Workspace)
 # az network dns record-set mx add-record \
 #   --resource-group $RESOURCE_GROUP \
-#   --zone-name eusoronetech.com \
+#   --zone-name eusotrip.com \
 #   --record-set-name "@" \
 #   --exchange "aspmx.l.google.com" \
 #   --preference 1
@@ -248,26 +248,26 @@ az network dns record-set txt add-record \
 az webapp config hostname add \
   --webapp-name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --hostname eusoronetech.com
+  --hostname eusotrip.com
 
 az webapp config hostname add \
   --webapp-name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --hostname www.eusoronetech.com
+  --hostname www.eusotrip.com
 
 # Create FREE Azure managed TLS certificate (auto-renews, supports TLS 1.3)
 az webapp config ssl create \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --hostname eusoronetech.com
+  --hostname eusotrip.com
 
 az webapp config ssl create \
   --name $APP_NAME \
   --resource-group $RESOURCE_GROUP \
-  --hostname www.eusoronetech.com
+  --hostname www.eusotrip.com
 
 # Bind the certificates
-THUMBPRINT=$(az webapp config ssl list --resource-group $RESOURCE_GROUP --query "[?subjectName=='eusoronetech.com'].thumbprint" -o tsv)
+THUMBPRINT=$(az webapp config ssl list --resource-group $RESOURCE_GROUP --query "[?subjectName=='eusotrip.com'].thumbprint" -o tsv)
 
 az webapp config ssl bind \
   --name $APP_NAME \
@@ -276,7 +276,7 @@ az webapp config ssl bind \
   --ssl-type SNI
 ```
 
-**Result:** `https://eusoronetech.com` with TLS 1.3, HSTS preload, auto-renewing cert.
+**Result:** `https://eusotrip.com` with TLS 1.3, HSTS preload, auto-renewing cert.
 
 ---
 
@@ -786,7 +786,7 @@ All production env vars — stored in Azure Key Vault and referenced from App Se
 | `VITE_STRIPE_PUBLISHABLE_KEY` | Key Vault | Stripe publishable key (`pk_live_...`) |
 | `AZURE_STORAGE_CONNECTION_STRING` | Key Vault | Blob storage connection |
 | `APPLICATIONINSIGHTS_CONNECTION_STRING` | App Setting | Application Insights |
-| `CORS_ORIGIN` | App Setting | `https://eusoronetech.com,https://www.eusoronetech.com` |
+| `CORS_ORIGIN` | App Setting | `https://eusotrip.com,https://www.eusotrip.com` |
 | `AI_CONVERSATION_RETENTION_DAYS` | App Setting | `90` |
 | `AI_LEARNING_DATA_RETENTION_DAYS` | App Setting | `365` |
 | `AI_AUDIT_LOG_RETENTION_DAYS` | App Setting | `2555` (7 years) |

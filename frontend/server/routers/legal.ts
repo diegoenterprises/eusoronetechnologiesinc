@@ -9,7 +9,7 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 
 export const legalRouter = router({
-  getTermsOfService: publicProcedure.query(async () => ({ sections: [{ title: "Introduction", content: "Welcome to our service..." }, { title: "Terms", content: "By using our service..." }], contactEmail: "legal@eusoronetech.com",
+  getTermsOfService: publicProcedure.query(async () => ({ sections: [{ title: "Introduction", content: "Welcome to our service..." }, { title: "Terms", content: "By using our service..." }], contactEmail: "legal@eusotrip.com",
     version: "1.0",
     effectiveDate: "2024-01-01",
     content: "Terms of Service content...",
@@ -22,7 +22,7 @@ export const legalRouter = router({
     content: "Privacy Policy content...",
     lastUpdated: "2024-01-01",
     sections: [{ title: "Data Collection", content: "We collect..." }, { title: "Data Usage", content: "We use your data..." }],
-    dpoEmail: "dpo@eusoronetech.com",
+    dpoEmail: "dpo@eusotrip.com",
   })),
 
   getCookiePolicy: publicProcedure.query(async () => ({

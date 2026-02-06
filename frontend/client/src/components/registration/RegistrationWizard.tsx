@@ -3,7 +3,7 @@
  * Reusable wizard component for all role registration flows
  */
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,19 +158,39 @@ export function RegistrationWizard({
           })}
         </div>
 
-        {/* Step Content */}
-        <Card className="bg-slate-800/50 border-slate-700 mb-6">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-3">
-              {steps[currentStep].icon}
-              {steps[currentStep].title}
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              {steps[currentStep].description}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>{steps[currentStep].component}</CardContent>
-        </Card>
+        {/* Step Content with tile animation */}
+        <div
+          key={`step-${currentStep}`}
+          className="animate-tile-in"
+          style={{
+            animation: "tileIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+          }}
+        >
+          <Card className="bg-slate-800/50 border-slate-700 mb-6">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-3">
+                {steps[currentStep].icon}
+                {steps[currentStep].title}
+              </CardTitle>
+              <CardDescription className="text-slate-400">
+                {steps[currentStep].description}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>{steps[currentStep].component}</CardContent>
+          </Card>
+        </div>
+        <style>{`
+          @keyframes tileIn {
+            0% {
+              opacity: 0;
+              transform: translateY(24px) scale(0.97);
+            }
+            100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}</style>
 
         {/* Navigation Buttons */}
         <div className="flex items-center justify-between">
