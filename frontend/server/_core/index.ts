@@ -1,13 +1,15 @@
 import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
+import fs from "fs";
+import path from "path";
 import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+// vite is imported dynamically below — only needed in dev mode
 import { securityHeaders, httpsRedirect, sanitizeRequest } from "./security";
 import { validateEncryption } from "./encryption";
 import { pciRequestGuard } from "./pciCompliance";
@@ -103,9 +105,20 @@ async function startServer() {
   );
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
+    // Variable import path prevents esbuild from bundling vite.ts (and its vite/tailwind deps)
+    const vitePath = "./vite";
+    const { setupVite } = await import(/* @vite-ignore */ vitePath);
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    // Inline serveStatic to avoid importing vite.ts (which depends on the vite package)
+    const distPath = path.resolve(import.meta.dirname, "public");
+    if (!fs.existsSync(distPath)) {
+      console.error(`Could not find the build directory: ${distPath}, make sure to build the client first`);
+    }
+    app.use(express.static(distPath));
+    app.use("*", (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
