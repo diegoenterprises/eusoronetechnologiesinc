@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -47,6 +48,8 @@ import {
   Cloud,
   CloudRain,
   Sun,
+  Moon,
+  Monitor,
   Wind,
   Bell,
   Clock,
@@ -141,6 +144,7 @@ export default function DashboardLayout({
   onSectionChange,
 }: DashboardLayoutProps) {
   const { user, loading, logout } = useAuth();
+  const { theme, mode, setMode, toggleTheme } = useTheme();
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
@@ -394,6 +398,41 @@ export default function DashboardLayout({
                 className="bg-transparent text-sm outline-none flex-1 text-white placeholder-gray-500"
               />
             </motion.div>
+
+            {/* Theme Toggle */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors"
+                  title={`Theme: ${mode}`}
+                >
+                  {theme === "dark" ? (
+                    <Moon size={18} className="text-gray-400" />
+                  ) : (
+                    <Sun size={18} className="text-yellow-500" />
+                  )}
+                </motion.button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setMode("light")}>
+                  <Sun className="w-4 h-4 mr-2" />
+                  Light
+                  {mode === "light" && <span className="ml-auto text-xs text-blue-400">Active</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode("dark")}>
+                  <Moon className="w-4 h-4 mr-2" />
+                  Dark
+                  {mode === "dark" && <span className="ml-auto text-xs text-blue-400">Active</span>}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setMode("system")}>
+                  <Monitor className="w-4 h-4 mr-2" />
+                  System
+                  {mode === "system" && <span className="ml-auto text-xs text-blue-400">Active</span>}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Notification Bell */}
             <motion.button

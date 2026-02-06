@@ -5,8 +5,10 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { getLoginUrl } from "./const";
 import "./index.css";
+import "./styles/theme-light.css";
 
 const queryClient = new QueryClient();
 
@@ -66,7 +68,9 @@ const trpcClient = trpc.createClient({
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
-      <App />
+      <ThemeProvider>
+        <App />
+      </ThemeProvider>
     </QueryClientProvider>
   </trpc.Provider>
 );

@@ -1,0 +1,664 @@
+/**
+ * EUSOTRIP LIGHT MODE CSS OVERRIDE LAYER
+ * 
+ * This file intercepts the dark Tailwind utility classes used across all 2000+ pages
+ * and remaps them to light equivalents when [data-theme="light"] is on <html>.
+ * 
+ * Dark mode is the default — this file only activates for light mode.
+ * The brand gradient (#1473FF → #BE01FF) stays the same in both modes.
+ */
+
+/* ============================================================
+   GLOBAL OVERRIDES — Body, HTML, Root
+   ============================================================ */
+
+html[data-theme="light"] {
+  color-scheme: light;
+}
+
+html[data-theme="light"] body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   BACKGROUND OVERRIDES — Slate/Gray dark backgrounds → Light
+   ============================================================ */
+
+/* Page-level backgrounds */
+html[data-theme="light"] [class*="bg-gray-950"] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] [class*="bg-gray-900"] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] [class*="bg-gray-800"] {
+  background-color: #f8fafc !important;
+}
+
+html[data-theme="light"] [class*="bg-slate-950"] {
+  background-color: #f1f5f9 !important;
+}
+html[data-theme="light"] [class*="bg-slate-900"] {
+  background-color: #ffffff !important;
+}
+
+/* Card / surface backgrounds with opacity */
+html[data-theme="light"] [class*="bg-slate-800/"] {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+html[data-theme="light"] [class*="bg-slate-800"]:not([class*="bg-slate-800/"]) {
+  background-color: #ffffff !important;
+}
+
+html[data-theme="light"] [class*="bg-slate-700/"] {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+}
+html[data-theme="light"] [class*="bg-slate-700"]:not([class*="bg-slate-700/"]) {
+  background-color: #f1f5f9 !important;
+}
+
+html[data-theme="light"] [class*="bg-slate-600/"] {
+  background-color: rgba(226, 232, 240, 0.5) !important;
+}
+html[data-theme="light"] [class*="bg-slate-600"]:not([class*="bg-slate-600/"]) {
+  background-color: #e2e8f0 !important;
+}
+
+/* Gray opacity backgrounds */
+html[data-theme="light"] [class*="bg-gray-800/"] {
+  background-color: rgba(248, 250, 252, 0.8) !important;
+}
+html[data-theme="light"] [class*="bg-gray-700/"] {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}
+
+/* ============================================================
+   TEXT COLOR OVERRIDES
+   ============================================================ */
+
+/* Primary text (white → dark) */
+html[data-theme="light"] .text-white {
+  color: #0f172a !important;
+}
+
+/* Gray text hierarchy */
+html[data-theme="light"] .text-gray-200 { color: #1e293b !important; }
+html[data-theme="light"] .text-gray-300 { color: #334155 !important; }
+html[data-theme="light"] .text-gray-400 { color: #475569 !important; }
+html[data-theme="light"] .text-gray-500 { color: #64748b !important; }
+html[data-theme="light"] .text-gray-600 { color: #94a3b8 !important; }
+
+/* Slate text hierarchy */
+html[data-theme="light"] .text-slate-200 { color: #1e293b !important; }
+html[data-theme="light"] .text-slate-300 { color: #334155 !important; }
+html[data-theme="light"] .text-slate-400 { color: #475569 !important; }
+html[data-theme="light"] .text-slate-500 { color: #64748b !important; }
+html[data-theme="light"] .text-slate-600 { color: #94a3b8 !important; }
+
+/* Placeholder text */
+html[data-theme="light"] .placeholder-slate-500::placeholder { color: #94a3b8 !important; }
+html[data-theme="light"] .placeholder-gray-500::placeholder { color: #94a3b8 !important; }
+html[data-theme="light"] input::placeholder { color: #94a3b8 !important; }
+
+/* ============================================================
+   BORDER OVERRIDES
+   ============================================================ */
+
+html[data-theme="light"] [class*="border-slate-700"] {
+  border-color: #e2e8f0 !important;
+}
+html[data-theme="light"] [class*="border-slate-600"] {
+  border-color: #cbd5e1 !important;
+}
+html[data-theme="light"] [class*="border-slate-500"] {
+  border-color: #cbd5e1 !important;
+}
+
+html[data-theme="light"] [class*="border-gray-800"] {
+  border-color: #e2e8f0 !important;
+}
+html[data-theme="light"] [class*="border-gray-700"] {
+  border-color: #e2e8f0 !important;
+}
+html[data-theme="light"] [class*="border-gray-600"] {
+  border-color: #cbd5e1 !important;
+}
+
+/* ============================================================
+   ACCENT COLOR OVERRIDES — Shift 400 → 600 for contrast on light bg
+   ============================================================ */
+
+/* Blue accents */
+html[data-theme="light"] .text-blue-400 { color: #2563eb !important; }
+html[data-theme="light"] .text-blue-300 { color: #3b82f6 !important; }
+
+/* Cyan accents */
+html[data-theme="light"] .text-cyan-400 { color: #0891b2 !important; }
+html[data-theme="light"] .text-cyan-300 { color: #06b6d4 !important; }
+
+/* Green accents */
+html[data-theme="light"] .text-green-400 { color: #16a34a !important; }
+html[data-theme="light"] .text-green-300 { color: #22c55e !important; }
+
+/* Red accents */
+html[data-theme="light"] .text-red-400 { color: #dc2626 !important; }
+html[data-theme="light"] .text-red-300 { color: #ef4444 !important; }
+
+/* Yellow/Amber accents */
+html[data-theme="light"] .text-yellow-400 { color: #ca8a04 !important; }
+html[data-theme="light"] .text-yellow-300 { color: #eab308 !important; }
+
+/* Orange accents */
+html[data-theme="light"] .text-orange-400 { color: #ea580c !important; }
+html[data-theme="light"] .text-orange-300 { color: #f97316 !important; }
+
+/* Purple accents */
+html[data-theme="light"] .text-purple-400 { color: #9333ea !important; }
+html[data-theme="light"] .text-purple-300 { color: #a855f7 !important; }
+
+/* Pink accents */
+html[data-theme="light"] .text-pink-400 { color: #db2777 !important; }
+html[data-theme="light"] .text-pink-300 { color: #ec4899 !important; }
+
+/* Emerald accents */
+html[data-theme="light"] .text-emerald-400 { color: #059669 !important; }
+html[data-theme="light"] .text-emerald-300 { color: #10b981 !important; }
+
+/* ============================================================
+   ACCENT BACKGROUND OVERRIDES — Softer on light bg
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-blue-500/"] { background-color: rgba(37, 99, 235, 0.08) !important; }
+html[data-theme="light"] [class*="bg-blue-600/"] { background-color: rgba(37, 99, 235, 0.1) !important; }
+html[data-theme="light"] [class*="bg-cyan-500/"] { background-color: rgba(8, 145, 178, 0.08) !important; }
+html[data-theme="light"] [class*="bg-cyan-600/"] { background-color: rgba(8, 145, 178, 0.1) !important; }
+html[data-theme="light"] [class*="bg-green-500/"] { background-color: rgba(22, 163, 74, 0.08) !important; }
+html[data-theme="light"] [class*="bg-green-600/"] { background-color: rgba(22, 163, 74, 0.1) !important; }
+html[data-theme="light"] [class*="bg-red-500/"] { background-color: rgba(220, 38, 38, 0.08) !important; }
+html[data-theme="light"] [class*="bg-red-600/"] { background-color: rgba(220, 38, 38, 0.1) !important; }
+html[data-theme="light"] [class*="bg-yellow-500/"] { background-color: rgba(202, 138, 4, 0.08) !important; }
+html[data-theme="light"] [class*="bg-yellow-600/"] { background-color: rgba(202, 138, 4, 0.1) !important; }
+html[data-theme="light"] [class*="bg-purple-500/"] { background-color: rgba(147, 51, 234, 0.08) !important; }
+html[data-theme="light"] [class*="bg-purple-600/"] { background-color: rgba(147, 51, 234, 0.1) !important; }
+html[data-theme="light"] [class*="bg-orange-500/"] { background-color: rgba(234, 88, 12, 0.08) !important; }
+html[data-theme="light"] [class*="bg-orange-600/"] { background-color: rgba(234, 88, 12, 0.1) !important; }
+html[data-theme="light"] [class*="bg-emerald-500/"] { background-color: rgba(5, 150, 105, 0.08) !important; }
+html[data-theme="light"] [class*="bg-emerald-600/"] { background-color: rgba(5, 150, 105, 0.1) !important; }
+html[data-theme="light"] [class*="bg-pink-500/"] { background-color: rgba(219, 39, 119, 0.08) !important; }
+
+/* ============================================================
+   GRADIENT BACKGROUNDS — Brand gradient stays, dark bgs flip
+   ============================================================ */
+
+/* The brand gradient (#1473FF → #BE01FF) intentionally stays the same */
+
+/* Gradient backgrounds using brand colors with opacity — soften */
+html[data-theme="light"] [class*="from-\\[\\#1473FF\\]\\/"] {
+  --tw-gradient-from: rgba(20, 115, 255, 0.06) !important;
+}
+html[data-theme="light"] [class*="to-\\[\\#BE01FF\\]\\/"] {
+  --tw-gradient-to: rgba(190, 1, 255, 0.06) !important;
+}
+
+/* ============================================================
+   DASHBOARD LAYOUT — Sidebar, Header, Main Content
+   ============================================================ */
+
+/* Sidebar */
+html[data-theme="light"] .sidebar-item:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+html[data-theme="light"] .sidebar-item.active {
+  background: linear-gradient(90deg, rgba(20, 115, 255, 0.08), rgba(190, 1, 255, 0.05)) !important;
+}
+
+/* ============================================================
+   INPUT / FORM OVERRIDES
+   ============================================================ */
+
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] input[type="tel"],
+html[data-theme="light"] input[type="url"],
+html[data-theme="light"] input[type="search"],
+html[data-theme="light"] textarea,
+html[data-theme="light"] select {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html[data-theme="light"] input:focus,
+html[data-theme="light"] textarea:focus,
+html[data-theme="light"] select:focus {
+  border-color: #1473FF !important;
+  box-shadow: 0 0 0 3px rgba(20, 115, 255, 0.1) !important;
+}
+
+/* ============================================================
+   DIALOG / POPOVER / DROPDOWN OVERRIDES
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-slate-900"] [role="dialog"],
+html[data-theme="light"] [data-radix-popper-content-wrapper] > *,
+html[data-theme="light"] [role="menu"],
+html[data-theme="light"] [role="listbox"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   SCROLLBAR — Light mode
+   ============================================================ */
+
+html[data-theme="light"] .smooth-scroll {
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+html[data-theme="light"] .smooth-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+
+html[data-theme="light"] .smooth-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* ============================================================
+   NOTIFICATION DOT — Border adapts to light bg
+   ============================================================ */
+
+html[data-theme="light"] .notification-dot::after {
+  border-color: #ffffff !important;
+}
+
+/* ============================================================
+   HOVER STATES — Light mode hover colors
+   ============================================================ */
+
+html[data-theme="light"] [class*="hover\\:bg-slate-800"]:hover {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}
+html[data-theme="light"] [class*="hover\\:bg-gray-800"]:hover {
+  background-color: rgba(241, 245, 249, 0.6) !important;
+}
+
+html[data-theme="light"] .hover-lift:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+
+html[data-theme="light"] .hover-glow:hover {
+  box-shadow: 0 0 20px rgba(20, 115, 255, 0.12), 0 0 40px rgba(190, 1, 255, 0.05) !important;
+}
+
+/* ============================================================
+   SHADOW OVERRIDES — Softer shadows for light mode
+   ============================================================ */
+
+html[data-theme="light"] [class*="shadow-lg"] {
+  --tw-shadow: 0 4px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] [class*="shadow-purple"] {
+  --tw-shadow-color: rgba(147, 51, 234, 0.06) !important;
+}
+
+html[data-theme="light"] [class*="shadow-green"] {
+  --tw-shadow-color: rgba(22, 163, 74, 0.06) !important;
+}
+
+/* ============================================================
+   SKELETON / LOADING — Light mode shimmer
+   ============================================================ */
+
+html[data-theme="light"] .animate-shimmer {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.03) 40%,
+    rgba(0, 0, 0, 0.06) 50%,
+    rgba(0, 0, 0, 0.03) 60%,
+    transparent 100%
+  ) !important;
+  background-size: 200% 100%;
+}
+
+html[data-theme="light"] .skeleton-shimmer {
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.03) 25%,
+    rgba(0, 0, 0, 0.06) 50%,
+    rgba(0, 0, 0, 0.03) 75%
+  ) !important;
+  background-size: 400% 100%;
+}
+
+/* ============================================================
+   AMBIENT GLOW — Disable in light mode (it's for dark backgrounds)
+   ============================================================ */
+
+html[data-theme="light"] .animate-glow-pulse,
+html[data-theme="light"] .animate-brand-glow {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* ============================================================
+   FOCUS RING — Light mode adaptation
+   ============================================================ */
+
+html[data-theme="light"] *:focus-visible {
+  outline-color: rgba(20, 115, 255, 0.4) !important;
+}
+
+/* ============================================================
+   BADGE OVERRIDES — Accent border badges
+   ============================================================ */
+
+html[data-theme="light"] [class*="border-green-500/"] { border-color: rgba(22, 163, 74, 0.25) !important; }
+html[data-theme="light"] [class*="border-red-500/"] { border-color: rgba(220, 38, 38, 0.25) !important; }
+html[data-theme="light"] [class*="border-yellow-500/"] { border-color: rgba(202, 138, 4, 0.25) !important; }
+html[data-theme="light"] [class*="border-blue-500/"] { border-color: rgba(37, 99, 235, 0.25) !important; }
+html[data-theme="light"] [class*="border-purple-500/"] { border-color: rgba(147, 51, 234, 0.25) !important; }
+html[data-theme="light"] [class*="border-cyan-500/"] { border-color: rgba(8, 145, 178, 0.25) !important; }
+
+/* ============================================================
+   RADIX UI COMPONENTS — Dialogs, Selects, Dropdowns, Toasts
+   ============================================================ */
+
+html[data-theme="light"] [data-state] [class*="bg-slate"],
+html[data-theme="light"] [data-radix-collection-item] {
+  color: #0f172a;
+}
+
+/* Tabs */
+html[data-theme="light"] [role="tablist"] {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Select content */
+html[data-theme="light"] [cmdk-root],
+html[data-theme="light"] [data-radix-select-viewport] {
+  background-color: #ffffff !important;
+}
+
+/* ============================================================
+   EUSOTRIP DESIGN TOKEN OVERRIDES
+   ============================================================ */
+
+html[data-theme="light"] {
+  --eusotrip-background-primary: #f8fafc;
+  --eusotrip-background-secondary: #ffffff;
+  --eusotrip-surface-primary: #f1f5f9;
+  --eusotrip-border-primary: #e2e8f0;
+  --eusotrip-text-primary: #0f172a;
+  --eusotrip-text-secondary: #475569;
+}
+
+/* ============================================================
+   MOTION / ANIMATION COLORS — Framer Motion inline styles
+   ============================================================ */
+
+html[data-theme="light"] [style*="rgba(255,255,255,0.05)"],
+html[data-theme="light"] [style*="rgba(255, 255, 255, 0.05)"] {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+html[data-theme="light"] [style*="rgba(255,255,255,0.04)"],
+html[data-theme="light"] [style*="rgba(255, 255, 255, 0.04)"] {
+  background-color: rgba(0, 0, 0, 0.02) !important;
+}
+
+html[data-theme="light"] [style*="rgba(255,255,255,0.08)"],
+html[data-theme="light"] [style*="rgba(255, 255, 255, 0.08)"] {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ============================================================
+   DASHBOARD LAYOUT — Sidebar & Header specific overrides
+   ============================================================ */
+
+/* Main layout wrapper */
+html[data-theme="light"] .flex.h-screen.bg-gray-950 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Sidebar backdrop */
+html[data-theme="light"] [class*="bg-gray-900/80"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Header backdrop */
+html[data-theme="light"] [class*="bg-gray-900/60"] {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Ambient glow — Hide in light mode (only for dark backgrounds) */
+html[data-theme="light"] .pointer-events-none.fixed.inset-0 {
+  opacity: 0 !important;
+}
+
+/* Avatar gradient fallback — keep brand gradient */
+/* (no override needed, gradient stays) */
+
+/* Search bar inline styles — handled via attribute selectors */
+html[data-theme="light"] input.bg-transparent {
+  color: #0f172a !important;
+}
+html[data-theme="light"] input.bg-transparent::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* ============================================================
+   RECHARTS / CHART OVERRIDES — Ensure readability in light mode
+   ============================================================ */
+
+html[data-theme="light"] .recharts-cartesian-axis-tick-value {
+  fill: #475569 !important;
+}
+html[data-theme="light"] .recharts-legend-item-text {
+  color: #475569 !important;
+}
+html[data-theme="light"] .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   TABLE OVERRIDES
+   ============================================================ */
+
+html[data-theme="light"] table {
+  color: #0f172a;
+}
+html[data-theme="light"] th {
+  color: #475569 !important;
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+html[data-theme="light"] td {
+  border-color: #f1f5f9 !important;
+}
+html[data-theme="light"] tr:hover {
+  background-color: rgba(241, 245, 249, 0.5) !important;
+}
+
+/* ============================================================
+   CARD COMPONENT OVERRIDES (shadcn/ui)
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-card"] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] [class*="text-card-foreground"] {
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   POPOVER / DIALOG CONTENT
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-popover"] {
+  background-color: #ffffff !important;
+}
+html[data-theme="light"] [class*="text-popover-foreground"] {
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   BADGE — Ensure text is readable
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-red-500/20"] { background-color: rgba(220, 38, 38, 0.08) !important; }
+html[data-theme="light"] [class*="bg-green-500/20"] { background-color: rgba(22, 163, 74, 0.08) !important; }
+html[data-theme="light"] [class*="bg-blue-500/20"] { background-color: rgba(37, 99, 235, 0.08) !important; }
+html[data-theme="light"] [class*="bg-yellow-500/20"] { background-color: rgba(202, 138, 4, 0.08) !important; }
+html[data-theme="light"] [class*="bg-purple-500/20"] { background-color: rgba(147, 51, 234, 0.08) !important; }
+html[data-theme="light"] [class*="bg-cyan-500/20"] { background-color: rgba(8, 145, 178, 0.08) !important; }
+html[data-theme="light"] [class*="bg-orange-500/20"] { background-color: rgba(234, 88, 12, 0.08) !important; }
+html[data-theme="light"] [class*="bg-emerald-500/20"] { background-color: rgba(5, 150, 105, 0.08) !important; }
+
+/* ============================================================
+   DIVIDE COLORS
+   ============================================================ */
+
+html[data-theme="light"] [class*="divide-slate-700"] > * + * { border-color: #e2e8f0 !important; }
+html[data-theme="light"] [class*="divide-slate-600"] > * + * { border-color: #e2e8f0 !important; }
+html[data-theme="light"] [class*="divide-gray-800"] > * + * { border-color: #e2e8f0 !important; }
+html[data-theme="light"] [class*="divide-gray-700"] > * + * { border-color: #e2e8f0 !important; }
+
+/* ============================================================
+   RING COLORS
+   ============================================================ */
+
+html[data-theme="light"] [class*="ring-slate-700"] { --tw-ring-color: #e2e8f0 !important; }
+html[data-theme="light"] [class*="ring-slate-600"] { --tw-ring-color: #cbd5e1 !important; }
+
+/* ============================================================
+   OUTLINE / VARIANT BUTTONS
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-slate-700/50"][class*="border-slate-600"] {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] [class*="bg-slate-700/50"][class*="hover\\:bg-slate-600"]:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* ============================================================
+   GRADIENT TEXT — Keep brand gradient but ensure visibility
+   ============================================================ */
+
+/* Brand gradient text stays the same in both modes — high contrast on both */
+
+/* ============================================================
+   EUSOTRIP CUSTOM CLASSES — Override design token based classes
+   ============================================================ */
+
+html[data-theme="light"] .eusotrip-card {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] .eusotrip-button-secondary {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .eusotrip-button-secondary:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* ============================================================
+   SKELETON — Light mode skeleton
+   ============================================================ */
+
+html[data-theme="light"] [class*="bg-muted"],
+html[data-theme="light"] [data-slot="skeleton"] {
+  background-color: #e2e8f0 !important;
+}
+
+/* ============================================================
+   BACKDROP-BLUR PANELS
+   ============================================================ */
+
+html[data-theme="light"] [class*="backdrop-blur"] {
+  background-color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* ============================================================
+   SEPARATOR / DIVIDERS
+   ============================================================ */
+
+html[data-theme="light"] [data-slot="separator-root"],
+html[data-theme="light"] [role="separator"] {
+  background-color: #e2e8f0 !important;
+}
+
+/* ============================================================
+   SELECT / COMBOBOX TRIGGERS
+   ============================================================ */
+
+html[data-theme="light"] [data-slot="select-trigger"],
+html[data-theme="light"] [role="combobox"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ============================================================
+   TABS — Active state
+   ============================================================ */
+
+html[data-theme="light"] [data-state="active"][role="tab"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06) !important;
+}
+
+html[data-theme="light"] [data-state="inactive"][role="tab"] {
+  color: #64748b !important;
+}
+
+/* ============================================================
+   SCROLLAREA
+   ============================================================ */
+
+html[data-theme="light"] [data-radix-scroll-area-viewport] {
+  color: #0f172a;
+}
+
+/* ============================================================
+   SIGNATURE CANVAS — Keep dark bg (Gradient Ink whitepaper design)
+   ============================================================ */
+
+/* Signature canvas intentionally stays dark for Gradient Ink — no override */
+
+/* ============================================================
+   TRANSITION — Smooth theme switch
+   ============================================================ */
+
+html *,
+html *::before,
+html *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.15s;
+  transition-timing-function: ease;
+}
+
+/* Don't apply transition to elements with explicit animations */
+[class*="animate-"] {
+  transition-property: none !important;
+}
