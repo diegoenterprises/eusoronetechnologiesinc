@@ -2022,6 +2022,8 @@ function Router() {
       <Route path={"/register/terminal"} component={RegisterTerminal} />
       <Route path={"/register/compliance"} component={RegisterCompliance} />
       <Route path={"/register/safety"} component={RegisterSafety} />
+      <Route path={"/terms-of-service"} component={TermsOfService} />
+      <Route path={"/privacy-policy"} component={PrivacyPolicy} />
       <Route path={"/api-docs"} component={() => (<DashboardLayout><APIDocumentation /></DashboardLayout>)} />
       <Route path={"/api-keys"} component={() => (<DashboardLayout><APIKeys /></DashboardLayout>)} />
       <Route path={"/api-management"} component={() => (<DashboardLayout><APIManagement /></DashboardLayout>)} />
@@ -3236,7 +3238,7 @@ function Router() {
       <Route path={"/pre-trip-checklist"} component={() => (<DashboardLayout><PreTripChecklist /></DashboardLayout>)} />
       <Route path={"/pre-trip-inspection"} component={() => (<DashboardLayout><PreTripInspection /></DashboardLayout>)} />
       <Route path={"/preferences"} component={() => (<DashboardLayout><Preferences /></DashboardLayout>)} />
-      <Route path={"/privacy-policy"} component={() => (<DashboardLayout><PrivacyPolicy /></DashboardLayout>)} />
+      {/* /privacy-policy is standalone (outside DashboardLayout) — see top of Switch */}
       <Route path={"/procedures"} component={() => (<DashboardLayout><Procedures /></DashboardLayout>)} />
       <Route path={"/profile"} component={() => (<DashboardLayout><Profile /></DashboardLayout>)} />
       <Route path={"/push-notifications"} component={() => (<DashboardLayout><PushNotifications /></DashboardLayout>)} />
@@ -3785,7 +3787,7 @@ function Router() {
       <Route path={"/terminal/weather-prep"} component={() => (<DashboardLayout><TerminalWeatherPrep /></DashboardLayout>)} />
       <Route path={"/terminal/weigh-scales"} component={() => (<DashboardLayout><TerminalWeighScales /></DashboardLayout>)} />
       <Route path={"/terminal/yard-management"} component={() => (<DashboardLayout><TerminalYardManagement /></DashboardLayout>)} />
-      <Route path={"/terms-of-service"} component={() => (<DashboardLayout><TermsOfService /></DashboardLayout>)} />
+      {/* /terms-of-service is standalone (outside DashboardLayout) — see top of Switch */}
       {/* /test-login is standalone (outside DashboardLayout) — see top of Switch */}
       <Route path={"/the-haul/the-haul"} component={() => (<DashboardLayout><TheHaul /></DashboardLayout>)} />
       <Route path={"/the-haul/the-haul-achievement-stats"} component={() => (<DashboardLayout><TheHaulAchievementStats /></DashboardLayout>)} />
