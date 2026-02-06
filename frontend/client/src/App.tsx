@@ -18,6 +18,8 @@ import AccountPreferences from "./pages/AccountPreferences";
 import AccountSettings from "./pages/AccountSettings";
 import AchievementsBadges from "./pages/AchievementsBadges";
 import ActiveConvoys from "./pages/ActiveConvoys";
+import AgreementBuilder from "./pages/AgreementBuilder";
+import AgreementManagement from "./pages/AgreementManagement";
 import ActiveLoads from "./pages/ActiveLoads";
 import ActivityFeed from "./pages/ActivityFeed";
 import ActivityTimeline from "./pages/ActivityTimeline";
@@ -186,6 +188,7 @@ import BackgroundChecks from "./pages/BackgroundChecks";
 import BackupManagement from "./pages/BackupManagement";
 import BenefitsManagement from "./pages/BenefitsManagement";
 import BidAnalysis from "./pages/BidAnalysis";
+import BiddingDashboard from "./pages/BiddingDashboard";
 import BidDetails from "./pages/BidDetails";
 import BidHistory from "./pages/BidHistory";
 import BidManagement from "./pages/BidManagement";
@@ -1176,6 +1179,7 @@ import MessagingVoiceMessage from "./pages/MessagingVoiceMessage";
 import MileageCalculator from "./pages/MileageCalculator";
 import Missions from "./pages/Missions";
 import MyLoads from "./pages/MyLoads";
+import NegotiationCenter from "./pages/NegotiationCenter";
 import NavigationBreadcrumbTrail from "./pages/NavigationBreadcrumbTrail";
 import NavigationFuelOptimization from "./pages/NavigationFuelOptimization";
 import NavigationHOSRouting from "./pages/NavigationHOSRouting";
@@ -2642,6 +2646,11 @@ function Router() {
       <Route path={"/connected-apps"} component={() => (<DashboardLayout><ConnectedApps /></DashboardLayout>)} />
       <Route path={"/content-moderation"} component={() => (<DashboardLayout><ContentModeration /></DashboardLayout>)} />
       <Route path={"/contract-management"} component={() => (<DashboardLayout><ContractManagement /></DashboardLayout>)} />
+      <Route path={"/agreement-management"} component={() => (<DashboardLayout><AgreementManagement /></DashboardLayout>)} />
+      <Route path={"/agreement-builder"} component={() => (<DashboardLayout><AgreementBuilder /></DashboardLayout>)} />
+      <Route path={"/agreement/:id"} component={() => (<DashboardLayout><AgreementManagement /></DashboardLayout>)} />
+      <Route path={"/bidding-dashboard"} component={() => (<DashboardLayout><BiddingDashboard /></DashboardLayout>)} />
+      <Route path={"/negotiation-center"} component={() => (<DashboardLayout><NegotiationCenter /></DashboardLayout>)} />
       <Route path={"/cookie-policy"} component={() => (<DashboardLayout><CookiePolicy /></DashboardLayout>)} />
       <Route path={"/create-load"} component={() => (<DashboardLayout><CreateLoad /></DashboardLayout>)} />
       <Route path={"/current-job"} component={() => (<DashboardLayout><CurrentJob /></DashboardLayout>)} />

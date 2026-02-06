@@ -3512,3 +3512,594 @@ export type LoadInsurance = typeof loadInsurance.$inferSelect;
 export type CarrierRiskScore = typeof carrierRiskScores.$inferSelect;
 export type InsuranceAlert = typeof insuranceAlerts.$inferSelect;
 
+// ============================================================================
+// EUSOCONTRACT — AGREEMENT & CONTRACT MANAGEMENT SYSTEM
+// ============================================================================
+
+/**
+ * AGREEMENT TEMPLATES
+ * System-provided and user-uploaded contract templates.
+ * Templates contain clause libraries that auto-populate agreements.
+ */
+export const agreementTemplates = mysqlTable(
+  "agreement_templates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    agreementType: mysqlEnum("agreementType", [
+      "carrier_shipper",
+      "broker_carrier",
+      "broker_shipper",
+      "carrier_driver",
+      "escort_service",
+      "catalyst_dispatch",
+      "terminal_access",
+      "master_service",
+      "lane_commitment",
+      "fuel_surcharge",
+      "accessorial_schedule",
+      "nda",
+      "custom",
+    ]).notNull(),
+    category: mysqlEnum("category", ["system", "company", "custom", "uploaded"]).default("system").notNull(),
+    version: varchar("version", { length: 20 }).default("1.0").notNull(),
+    ownerCompanyId: int("ownerCompanyId"),
+    ownerUserId: int("ownerUserId"),
+    // Template content
+    clauses: json("clauses").$type<{
+      id: string;
+      title: string;
+      body: string;
+      isRequired: boolean;
+      isEditable: boolean;
+      order: number;
+      category: string;
+    }[]>(),
+    // Strategic inputs schema — defines what fields the user fills in to generate
+    inputSchema: json("inputSchema").$type<{
+      field: string;
+      label: string;
+      type: "text" | "number" | "date" | "select" | "currency" | "percentage" | "address" | "boolean";
+      required: boolean;
+      options?: string[];
+      defaultValue?: string;
+      section: string;
+    }[]>(),
+    // Uploaded document metadata
+    originalDocumentUrl: text("originalDocumentUrl"),
+    digitizedContent: text("digitizedContent"),
+    isDigitized: boolean("isDigitized").default(false),
+    // State
+    isActive: boolean("isActive").default(true).notNull(),
+    isDefault: boolean("isDefault").default(false),
+    usageCount: int("usageCount").default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    typeIdx: index("template_type_idx").on(table.agreementType),
+    categoryIdx: index("template_category_idx").on(table.category),
+    ownerCompanyIdx: index("template_owner_company_idx").on(table.ownerCompanyId),
+    ownerUserIdx: index("template_owner_user_idx").on(table.ownerUserId),
+  })
+);
+
+/**
+ * AGREEMENTS
+ * The core contract between two parties on the platform.
+ * Generated from templates + strategic inputs, or uploaded + digitized.
+ */
+export const agreements = mysqlTable(
+  "agreements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    agreementNumber: varchar("agreementNumber", { length: 50 }).notNull().unique(),
+    templateId: int("templateId"),
+    agreementType: mysqlEnum("agreementType", [
+      "carrier_shipper",
+      "broker_carrier",
+      "broker_shipper",
+      "carrier_driver",
+      "escort_service",
+      "catalyst_dispatch",
+      "terminal_access",
+      "master_service",
+      "lane_commitment",
+      "fuel_surcharge",
+      "accessorial_schedule",
+      "nda",
+      "custom",
+    ]).notNull(),
+    contractDuration: mysqlEnum("contractDuration", [
+      "spot",
+      "short_term",
+      "long_term",
+      "evergreen",
+    ]).default("spot").notNull(),
+    // Parties
+    partyAUserId: int("partyAUserId").notNull(),
+    partyACompanyId: int("partyACompanyId"),
+    partyARole: varchar("partyARole", { length: 50 }).notNull(),
+    partyBUserId: int("partyBUserId").notNull(),
+    partyBCompanyId: int("partyBCompanyId"),
+    partyBRole: varchar("partyBRole", { length: 50 }).notNull(),
+    // Financial terms
+    rateType: mysqlEnum("rateType", [
+      "per_mile",
+      "flat_rate",
+      "percentage",
+      "per_hour",
+      "per_ton",
+      "per_gallon",
+      "custom",
+    ]),
+    baseRate: decimal("baseRate", { precision: 12, scale: 2 }),
+    currency: varchar("currency", { length: 3 }).default("USD"),
+    fuelSurchargeType: mysqlEnum("fuelSurchargeType", ["none", "fixed", "doe_index", "percentage", "custom"]).default("none"),
+    fuelSurchargeValue: decimal("fuelSurchargeValue", { precision: 10, scale: 4 }),
+    minimumCharge: decimal("minimumCharge", { precision: 10, scale: 2 }),
+    maximumCharge: decimal("maximumCharge", { precision: 10, scale: 2 }),
+    // Payment terms
+    paymentTermDays: int("paymentTermDays").default(30),
+    paymentMethod: varchar("paymentMethod", { length: 50 }),
+    quickPayDiscount: decimal("quickPayDiscount", { precision: 5, scale: 2 }),
+    quickPayDays: int("quickPayDays"),
+    // Insurance & liability
+    minInsuranceAmount: decimal("minInsuranceAmount", { precision: 12, scale: 2 }),
+    liabilityLimit: decimal("liabilityLimit", { precision: 12, scale: 2 }),
+    cargoInsuranceRequired: decimal("cargoInsuranceRequired", { precision: 12, scale: 2 }),
+    // Operational terms
+    equipmentTypes: json("equipmentTypes").$type<string[]>(),
+    hazmatRequired: boolean("hazmatRequired").default(false),
+    twicRequired: boolean("twicRequired").default(false),
+    tankerEndorsementRequired: boolean("tankerEndorsementRequired").default(false),
+    // Lane commitments
+    lanes: json("lanes").$type<{
+      origin: { city: string; state: string; radius?: number };
+      destination: { city: string; state: string; radius?: number };
+      rate: number;
+      rateType: string;
+      volumeCommitment?: number;
+      volumePeriod?: string;
+    }[]>(),
+    volumeCommitmentTotal: int("volumeCommitmentTotal"),
+    volumeCommitmentPeriod: varchar("volumeCommitmentPeriod", { length: 20 }),
+    // Accessorial schedule
+    accessorialSchedule: json("accessorialSchedule").$type<{
+      type: string;
+      rate: number;
+      unit: string;
+      description: string;
+    }[]>(),
+    // Full generated contract content
+    generatedContent: text("generatedContent"),
+    clauses: json("clauses").$type<{
+      id: string;
+      title: string;
+      body: string;
+      isModified: boolean;
+      modifiedBy?: number;
+    }[]>(),
+    // Strategic inputs that generated this agreement
+    strategicInputs: json("strategicInputs"),
+    // Uploaded original document
+    originalDocumentUrl: text("originalDocumentUrl"),
+    // Contract lifecycle
+    status: mysqlEnum("status", [
+      "draft",
+      "pending_review",
+      "negotiating",
+      "pending_signature",
+      "active",
+      "expired",
+      "terminated",
+      "cancelled",
+      "suspended",
+      "renewed",
+    ]).default("draft").notNull(),
+    effectiveDate: timestamp("effectiveDate"),
+    expirationDate: timestamp("expirationDate"),
+    terminationDate: timestamp("terminationDate"),
+    autoRenew: boolean("autoRenew").default(false),
+    renewalTermDays: int("renewalTermDays"),
+    renewalNoticeDays: int("renewalNoticeDays").default(30),
+    terminationNoticeDays: int("terminationNoticeDays").default(30),
+    // Non-circumvention (ties to platform ToS)
+    nonCircumventionEnabled: boolean("nonCircumventionEnabled").default(true),
+    nonCircumventionMonths: int("nonCircumventionMonths").default(24),
+    // Platform fee reference (our fee comes from load transactions, not the agreement)
+    platformFeeAcknowledged: boolean("platformFeeAcknowledged").default(true),
+    // Metadata
+    notes: text("notes"),
+    tags: json("tags").$type<string[]>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+    deletedAt: timestamp("deletedAt"),
+  },
+  (table) => ({
+    agreementNumberIdx: unique("agreement_number_unique").on(table.agreementNumber),
+    typeIdx: index("agreement_type_idx").on(table.agreementType),
+    statusIdx: index("agreement_status_idx").on(table.status),
+    partyAUserIdx: index("agreement_party_a_user_idx").on(table.partyAUserId),
+    partyBUserIdx: index("agreement_party_b_user_idx").on(table.partyBUserId),
+    partyACompanyIdx: index("agreement_party_a_company_idx").on(table.partyACompanyId),
+    partyBCompanyIdx: index("agreement_party_b_company_idx").on(table.partyBCompanyId),
+    durationIdx: index("agreement_duration_idx").on(table.contractDuration),
+    effectiveDateIdx: index("agreement_effective_idx").on(table.effectiveDate),
+    expirationDateIdx: index("agreement_expiration_idx").on(table.expirationDate),
+  })
+);
+
+/**
+ * AGREEMENT SIGNATURES
+ * Digital signatures for agreement execution.
+ */
+export const agreementSignatures = mysqlTable(
+  "agreement_signatures",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    agreementId: int("agreementId").notNull(),
+    userId: int("userId").notNull(),
+    companyId: int("companyId"),
+    signatureRole: varchar("signatureRole", { length: 50 }).notNull(),
+    signatureData: text("signatureData"),
+    signatureHash: varchar("signatureHash", { length: 128 }),
+    ipAddress: varchar("ipAddress", { length: 45 }),
+    userAgent: text("userAgent"),
+    signedAt: timestamp("signedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    agreementIdx: index("sig_agreement_idx").on(table.agreementId),
+    userIdx: index("sig_user_idx").on(table.userId),
+  })
+);
+
+/**
+ * AGREEMENT AMENDMENTS
+ * Track changes/amendments to active agreements.
+ */
+export const agreementAmendments = mysqlTable(
+  "agreement_amendments",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    agreementId: int("agreementId").notNull(),
+    amendmentNumber: int("amendmentNumber").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    changes: json("changes").$type<{
+      field: string;
+      oldValue: unknown;
+      newValue: unknown;
+    }[]>(),
+    proposedBy: int("proposedBy").notNull(),
+    status: mysqlEnum("status", ["proposed", "accepted", "rejected", "withdrawn"]).default("proposed").notNull(),
+    acceptedBy: int("acceptedBy"),
+    acceptedAt: timestamp("acceptedAt"),
+    effectiveDate: timestamp("effectiveDate"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    agreementIdx: index("amendment_agreement_idx").on(table.agreementId),
+    statusIdx: index("amendment_status_idx").on(table.status),
+  })
+);
+
+// ============================================================================
+// EUSOBID — LOAD BIDDING & RATE NEGOTIATION SYSTEM
+// ============================================================================
+
+/**
+ * LOAD BIDS (enhanced — extends the existing bids table concept)
+ * Full bidding system with counter-offers, auto-accept, and multi-round.
+ */
+export const loadBids = mysqlTable(
+  "load_bids",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    // Bidder info
+    bidderUserId: int("bidderUserId").notNull(),
+    bidderCompanyId: int("bidderCompanyId"),
+    bidderRole: mysqlEnum("bidderRole", ["carrier", "broker", "driver", "escort"]).notNull(),
+    // Bid details
+    bidAmount: decimal("bidAmount", { precision: 10, scale: 2 }).notNull(),
+    rateType: mysqlEnum("rateType", ["flat", "per_mile", "per_hour", "per_ton", "percentage"]).default("flat").notNull(),
+    currency: varchar("currency", { length: 3 }).default("USD"),
+    // Counter-offer chain
+    parentBidId: int("parentBidId"),
+    bidRound: int("bidRound").default(1).notNull(),
+    // Equipment & service offer
+    equipmentType: varchar("equipmentType", { length: 50 }),
+    estimatedPickup: timestamp("estimatedPickup"),
+    estimatedDelivery: timestamp("estimatedDelivery"),
+    transitTimeDays: int("transitTimeDays"),
+    // Conditions
+    fuelSurchargeIncluded: boolean("fuelSurchargeIncluded").default(false),
+    accessorialsIncluded: json("accessorialsIncluded").$type<string[]>(),
+    conditions: text("conditions"),
+    // Auto-accept
+    isAutoAccepted: boolean("isAutoAccepted").default(false),
+    // Agreement reference (if bidding under an existing agreement)
+    agreementId: int("agreementId"),
+    // State
+    status: mysqlEnum("status", [
+      "pending",
+      "accepted",
+      "rejected",
+      "countered",
+      "withdrawn",
+      "expired",
+      "auto_accepted",
+    ]).default("pending").notNull(),
+    rejectionReason: text("rejectionReason"),
+    expiresAt: timestamp("expiresAt"),
+    respondedAt: timestamp("respondedAt"),
+    respondedBy: int("respondedBy"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("load_bid_load_idx").on(table.loadId),
+    bidderUserIdx: index("load_bid_bidder_user_idx").on(table.bidderUserId),
+    bidderCompanyIdx: index("load_bid_bidder_company_idx").on(table.bidderCompanyId),
+    statusIdx: index("load_bid_status_idx").on(table.status),
+    parentBidIdx: index("load_bid_parent_idx").on(table.parentBidId),
+    agreementIdx: index("load_bid_agreement_idx").on(table.agreementId),
+    expiresIdx: index("load_bid_expires_idx").on(table.expiresAt),
+  })
+);
+
+/**
+ * BID AUTO-ACCEPT RULES
+ * Shippers/brokers can set rules to auto-accept bids that meet criteria.
+ */
+export const bidAutoAcceptRules = mysqlTable(
+  "bid_auto_accept_rules",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    companyId: int("companyId"),
+    name: varchar("name", { length: 255 }).notNull(),
+    // Criteria
+    maxRate: decimal("maxRate", { precision: 10, scale: 2 }),
+    maxRatePerMile: decimal("maxRatePerMile", { precision: 8, scale: 2 }),
+    minCarrierRating: decimal("minCarrierRating", { precision: 3, scale: 1 }),
+    requiredInsuranceMin: decimal("requiredInsuranceMin", { precision: 12, scale: 2 }),
+    requiredEquipmentTypes: json("requiredEquipmentTypes").$type<string[]>(),
+    requiredHazmat: boolean("requiredHazmat").default(false),
+    maxTransitDays: int("maxTransitDays"),
+    preferredCarrierIds: json("preferredCarrierIds").$type<number[]>(),
+    // Lane filters
+    originStates: json("originStates").$type<string[]>(),
+    destinationStates: json("destinationStates").$type<string[]>(),
+    // State
+    isActive: boolean("isActive").default(true).notNull(),
+    totalAutoAccepted: int("totalAutoAccepted").default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("auto_accept_user_idx").on(table.userId),
+    companyIdx: index("auto_accept_company_idx").on(table.companyId),
+  })
+);
+
+// ============================================================================
+// EUSONEGOTIATE — RATE & TERMS NEGOTIATION THREADS
+// ============================================================================
+
+/**
+ * NEGOTIATIONS
+ * Thread-based negotiations between two parties.
+ * Can be for a specific load, lane, or general rate agreement.
+ */
+export const negotiations = mysqlTable(
+  "negotiations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    negotiationNumber: varchar("negotiationNumber", { length: 50 }).notNull().unique(),
+    // Context
+    negotiationType: mysqlEnum("negotiationType", [
+      "load_rate",
+      "lane_rate",
+      "contract_terms",
+      "fuel_surcharge",
+      "accessorial_rates",
+      "volume_commitment",
+      "payment_terms",
+      "general",
+    ]).notNull(),
+    loadId: int("loadId"),
+    agreementId: int("agreementId"),
+    laneContractId: int("laneContractId"),
+    // Parties
+    initiatorUserId: int("initiatorUserId").notNull(),
+    initiatorCompanyId: int("initiatorCompanyId"),
+    respondentUserId: int("respondentUserId").notNull(),
+    respondentCompanyId: int("respondentCompanyId"),
+    // Subject
+    subject: varchar("subject", { length: 255 }).notNull(),
+    description: text("description"),
+    // Current state of negotiation
+    currentOffer: json("currentOffer").$type<{
+      amount?: number;
+      rateType?: string;
+      terms?: Record<string, unknown>;
+      proposedBy: number;
+      proposedAt: string;
+    }>(),
+    totalRounds: int("totalRounds").default(0),
+    // State
+    status: mysqlEnum("status", [
+      "open",
+      "awaiting_response",
+      "counter_offered",
+      "agreed",
+      "rejected",
+      "expired",
+      "cancelled",
+    ]).default("open").notNull(),
+    outcome: mysqlEnum("outcome", ["accepted", "rejected", "expired", "cancelled"]),
+    agreedTerms: json("agreedTerms"),
+    // Deadlines
+    responseDeadline: timestamp("responseDeadline"),
+    expiresAt: timestamp("expiresAt"),
+    resolvedAt: timestamp("resolvedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    negotiationNumberIdx: unique("negotiation_number_unique").on(table.negotiationNumber),
+    typeIdx: index("negotiation_type_idx").on(table.negotiationType),
+    statusIdx: index("negotiation_status_idx").on(table.status),
+    initiatorIdx: index("negotiation_initiator_idx").on(table.initiatorUserId),
+    respondentIdx: index("negotiation_respondent_idx").on(table.respondentUserId),
+    loadIdx: index("negotiation_load_idx").on(table.loadId),
+    agreementIdx: index("negotiation_agreement_idx").on(table.agreementId),
+  })
+);
+
+/**
+ * NEGOTIATION MESSAGES
+ * Individual messages/offers within a negotiation thread.
+ */
+export const negotiationMessages = mysqlTable(
+  "negotiation_messages",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    negotiationId: int("negotiationId").notNull(),
+    senderUserId: int("senderUserId").notNull(),
+    round: int("round").notNull(),
+    // Message content
+    messageType: mysqlEnum("messageType", [
+      "initial_offer",
+      "counter_offer",
+      "message",
+      "accept",
+      "reject",
+      "withdraw",
+      "system",
+    ]).notNull(),
+    content: text("content"),
+    // Offer details (if this message contains an offer)
+    offerAmount: decimal("offerAmount", { precision: 10, scale: 2 }),
+    offerRateType: varchar("offerRateType", { length: 30 }),
+    offerTerms: json("offerTerms").$type<{
+      paymentDays?: number;
+      fuelSurcharge?: number;
+      accessorials?: { type: string; rate: number }[];
+      equipment?: string[];
+      volume?: number;
+      volumePeriod?: string;
+      effectiveDate?: string;
+      expirationDate?: string;
+      [key: string]: unknown;
+    }>(),
+    // Attachments
+    attachments: json("attachments").$type<{ name: string; url: string; type: string }[]>(),
+    // State
+    isRead: boolean("isRead").default(false),
+    readAt: timestamp("readAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    negotiationIdx: index("neg_msg_negotiation_idx").on(table.negotiationId),
+    senderIdx: index("neg_msg_sender_idx").on(table.senderUserId),
+    roundIdx: index("neg_msg_round_idx").on(table.round),
+    typeIdx: index("neg_msg_type_idx").on(table.messageType),
+  })
+);
+
+// ============================================================================
+// EUSOLANE — LANE CONTRACTS & COMMITMENTS
+// ============================================================================
+
+/**
+ * LANE CONTRACTS
+ * Contracted rates on specific origin-destination lanes.
+ * Tied to agreements, with volume commitments and rate locks.
+ */
+export const laneContracts = mysqlTable(
+  "lane_contracts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    agreementId: int("agreementId"),
+    shipperId: int("shipperId"),
+    shipperCompanyId: int("shipperCompanyId"),
+    carrierId: int("carrierId"),
+    carrierCompanyId: int("carrierCompanyId"),
+    brokerId: int("brokerId"),
+    brokerCompanyId: int("brokerCompanyId"),
+    // Lane definition
+    originCity: varchar("originCity", { length: 100 }).notNull(),
+    originState: varchar("originState", { length: 50 }).notNull(),
+    originZip: varchar("originZip", { length: 20 }),
+    originRadius: int("originRadius"),
+    destinationCity: varchar("destinationCity", { length: 100 }).notNull(),
+    destinationState: varchar("destinationState", { length: 50 }).notNull(),
+    destinationZip: varchar("destinationZip", { length: 20 }),
+    destinationRadius: int("destinationRadius"),
+    estimatedMiles: decimal("estimatedMiles", { precision: 10, scale: 2 }),
+    // Rate
+    contractedRate: decimal("contractedRate", { precision: 10, scale: 2 }).notNull(),
+    rateType: mysqlEnum("rateType", ["flat", "per_mile", "per_hour", "per_ton"]).default("flat").notNull(),
+    fuelSurchargeType: mysqlEnum("fuelSurchargeType", ["none", "fixed", "doe_index", "percentage"]).default("none"),
+    fuelSurchargeValue: decimal("fuelSurchargeValue", { precision: 10, scale: 4 }),
+    // Volume commitment
+    volumeCommitment: int("volumeCommitment"),
+    volumePeriod: mysqlEnum("volumePeriod", ["weekly", "monthly", "quarterly", "annually"]),
+    volumeFulfilled: int("volumeFulfilled").default(0),
+    // Equipment
+    equipmentType: varchar("equipmentType", { length: 50 }),
+    hazmatRequired: boolean("hazmatRequired").default(false),
+    // Contract period
+    effectiveDate: timestamp("effectiveDate").notNull(),
+    expirationDate: timestamp("expirationDate").notNull(),
+    // Performance
+    totalLoadsBooked: int("totalLoadsBooked").default(0),
+    totalRevenue: decimal("totalRevenue", { precision: 14, scale: 2 }).default("0"),
+    onTimePercentage: decimal("onTimePercentage", { precision: 5, scale: 2 }),
+    // State
+    status: mysqlEnum("status", ["active", "expired", "suspended", "terminated"]).default("active").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    agreementIdx: index("lane_agreement_idx").on(table.agreementId),
+    shipperIdx: index("lane_shipper_idx").on(table.shipperId),
+    carrierIdx: index("lane_carrier_idx").on(table.carrierId),
+    brokerIdx: index("lane_broker_idx").on(table.brokerId),
+    originIdx: index("lane_origin_idx").on(table.originState, table.originCity),
+    destIdx: index("lane_dest_idx").on(table.destinationState, table.destinationCity),
+    statusIdx: index("lane_status_idx").on(table.status),
+    effectiveIdx: index("lane_effective_idx").on(table.effectiveDate),
+    expirationIdx: index("lane_expiration_idx").on(table.expirationDate),
+  })
+);
+
+// ============================================================================
+// EUSOCONTRACT TYPES
+// ============================================================================
+
+export type AgreementTemplate = typeof agreementTemplates.$inferSelect;
+export type InsertAgreementTemplate = typeof agreementTemplates.$inferInsert;
+export type Agreement = typeof agreements.$inferSelect;
+export type InsertAgreement = typeof agreements.$inferInsert;
+export type AgreementSignature = typeof agreementSignatures.$inferSelect;
+export type InsertAgreementSignature = typeof agreementSignatures.$inferInsert;
+export type AgreementAmendment = typeof agreementAmendments.$inferSelect;
+export type InsertAgreementAmendment = typeof agreementAmendments.$inferInsert;
+export type LoadBid = typeof loadBids.$inferSelect;
+export type InsertLoadBid = typeof loadBids.$inferInsert;
+export type BidAutoAcceptRule = typeof bidAutoAcceptRules.$inferSelect;
+export type InsertBidAutoAcceptRule = typeof bidAutoAcceptRules.$inferInsert;
+export type Negotiation = typeof negotiations.$inferSelect;
+export type InsertNegotiation = typeof negotiations.$inferInsert;
+export type NegotiationMessage = typeof negotiationMessages.$inferSelect;
+export type InsertNegotiationMessage = typeof negotiationMessages.$inferInsert;
+export type LaneContract = typeof laneContracts.$inferSelect;
+export type InsertLaneContract = typeof laneContracts.$inferInsert;
+

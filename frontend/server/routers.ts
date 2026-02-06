@@ -139,6 +139,10 @@ import { marketPricingRouter } from "./routers/marketPricing";
 import { hotZonesRouter } from "./routers/hotZones";
 import { signaturesRouter } from "./routers/signatures";
 import { emergencyResponseRouter } from "./routers/emergencyResponse";
+import { agreementsRouter } from "./routers/agreements";
+import { loadBiddingRouter } from "./routers/loadBidding";
+import { rateNegotiationsRouter } from "./routers/rateNegotiations";
+import { laneContractsRouter } from "./routers/laneContracts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -582,6 +586,18 @@ export const appRouter = router({
 
   // Emergency Response Command Center — Pipeline crisis mobilization
   emergencyResponse: emergencyResponseRouter,
+
+  // EusoContract — Agreement & Contract Management System
+  agreements: agreementsRouter,
+
+  // EusoBid — Enhanced Load Bidding with counter-offers & auto-accept
+  loadBidding: loadBiddingRouter,
+
+  // EusoNegotiate — Rate & Terms Negotiation Threads
+  rateNegotiations: rateNegotiationsRouter,
+
+  // EusoLane — Lane Contracts & Commitments
+  laneContracts: laneContractsRouter,
 });
 
 export type AppRouter = typeof appRouter;
