@@ -645,7 +645,7 @@ export default function RegisterTerminal() {
       steps={steps}
       onComplete={handleComplete}
       title="Terminal Manager Registration"
-      subtitle="Register your oil/chemical terminal facility"
+      subtitle="Register your terminal or warehouse facility"
       roleIcon={<Building2 className="w-8 h-8 text-white" />}
       roleColor="from-cyan-500 to-cyan-600"
     />

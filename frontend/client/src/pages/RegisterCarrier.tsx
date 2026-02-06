@@ -705,7 +705,7 @@ export default function RegisterCarrier() {
       steps={steps}
       onComplete={handleComplete}
       title="Carrier Registration"
-      subtitle="Register your trucking company to haul hazmat loads"
+      subtitle="Register your trucking company to haul freight on EusoTrip"
       roleIcon={<Truck className="w-8 h-8 text-white" />}
       roleColor="from-green-500 to-green-600"
     />

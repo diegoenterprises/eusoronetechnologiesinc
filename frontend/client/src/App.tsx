@@ -2011,6 +2011,17 @@ function Router() {
     <Switch>
       <Route path={"/"} component={Home} />
       <Route path={"/login"} component={Login} />
+      <Route path={"/test-login"} component={TestLogin} />
+      <Route path={"/register"} component={Register} />
+      <Route path={"/register/shipper"} component={RegisterShipper} />
+      <Route path={"/register/carrier"} component={RegisterCarrier} />
+      <Route path={"/register/broker"} component={RegisterBroker} />
+      <Route path={"/register/driver"} component={RegisterDriver} />
+      <Route path={"/register/catalyst"} component={RegisterCatalyst} />
+      <Route path={"/register/escort"} component={RegisterEscort} />
+      <Route path={"/register/terminal"} component={RegisterTerminal} />
+      <Route path={"/register/compliance"} component={RegisterCompliance} />
+      <Route path={"/register/safety"} component={RegisterSafety} />
       <Route path={"/api-docs"} component={() => (<DashboardLayout><APIDocumentation /></DashboardLayout>)} />
       <Route path={"/api-keys"} component={() => (<DashboardLayout><APIKeys /></DashboardLayout>)} />
       <Route path={"/api-management"} component={() => (<DashboardLayout><APIManagement /></DashboardLayout>)} />
@@ -3130,7 +3141,6 @@ function Router() {
       <Route path={"/load/trend-analysis"} component={() => (<DashboardLayout><LoadTrendAnalysis /></DashboardLayout>)} />
       <Route path={"/load/wizard"} component={() => (<DashboardLayout><LoadWizard /></DashboardLayout>)} />
       <Route path={"/load/ing-bays"} component={() => (<DashboardLayout><LoadingBays /></DashboardLayout>)} />
-      <Route path={"/login"} component={() => (<DashboardLayout><Login /></DashboardLayout>)} />
       <Route path={"/login-history"} component={() => (<DashboardLayout><LoginHistory /></DashboardLayout>)} />
       <Route path={"/mvr-reports"} component={() => (<DashboardLayout><MVRReports /></DashboardLayout>)} />
       <Route path={"/maintenance"} component={() => (<DashboardLayout><Maintenance /></DashboardLayout>)} />
@@ -3241,16 +3251,7 @@ function Router() {
       <Route path={"/rate-limiting"} component={() => (<DashboardLayout><RateLimiting /></DashboardLayout>)} />
       <Route path={"/rate-management"} component={() => (<DashboardLayout><RateManagement /></DashboardLayout>)} />
       <Route path={"/referral-program"} component={() => (<DashboardLayout><ReferralProgram /></DashboardLayout>)} />
-      <Route path={"/register"} component={() => (<DashboardLayout><Register /></DashboardLayout>)} />
-      <Route path={"/register-broker"} component={() => (<DashboardLayout><RegisterBroker /></DashboardLayout>)} />
-      <Route path={"/register-carrier"} component={() => (<DashboardLayout><RegisterCarrier /></DashboardLayout>)} />
-      <Route path={"/register-catalyst"} component={() => (<DashboardLayout><RegisterCatalyst /></DashboardLayout>)} />
-      <Route path={"/register-compliance"} component={() => (<DashboardLayout><RegisterCompliance /></DashboardLayout>)} />
-      <Route path={"/register-driver"} component={() => (<DashboardLayout><RegisterDriver /></DashboardLayout>)} />
-      <Route path={"/register-escort"} component={() => (<DashboardLayout><RegisterEscort /></DashboardLayout>)} />
-      <Route path={"/register-safety"} component={() => (<DashboardLayout><RegisterSafety /></DashboardLayout>)} />
-      <Route path={"/register-shipper"} component={() => (<DashboardLayout><RegisterShipper /></DashboardLayout>)} />
-      <Route path={"/register-terminal"} component={() => (<DashboardLayout><RegisterTerminal /></DashboardLayout>)} />
+      {/* Registration routes are standalone (outside DashboardLayout) — see top of Switch */}
       <Route path={"/release-notes"} component={() => (<DashboardLayout><ReleaseNotes /></DashboardLayout>)} />
       <Route path={"/report-builder"} component={() => (<DashboardLayout><ReportBuilder /></DashboardLayout>)} />
       <Route path={"/reporting-dashboard"} component={() => (<DashboardLayout><ReportingDashboard /></DashboardLayout>)} />
@@ -3785,7 +3786,7 @@ function Router() {
       <Route path={"/terminal/weigh-scales"} component={() => (<DashboardLayout><TerminalWeighScales /></DashboardLayout>)} />
       <Route path={"/terminal/yard-management"} component={() => (<DashboardLayout><TerminalYardManagement /></DashboardLayout>)} />
       <Route path={"/terms-of-service"} component={() => (<DashboardLayout><TermsOfService /></DashboardLayout>)} />
-      <Route path={"/test-login"} component={() => (<DashboardLayout><TestLogin /></DashboardLayout>)} />
+      {/* /test-login is standalone (outside DashboardLayout) — see top of Switch */}
       <Route path={"/the-haul/the-haul"} component={() => (<DashboardLayout><TheHaul /></DashboardLayout>)} />
       <Route path={"/the-haul/the-haul-achievement-stats"} component={() => (<DashboardLayout><TheHaulAchievementStats /></DashboardLayout>)} />
       <Route path={"/the-haul/the-haul-achievements"} component={() => (<DashboardLayout><TheHaulAchievements /></DashboardLayout>)} />

@@ -742,7 +742,7 @@ export default function RegisterDriver() {
       steps={steps}
       onComplete={handleComplete}
       title="Driver Registration"
-      subtitle="Register as a hazmat-certified CDL driver"
+      subtitle="Register as a CDL driver on EusoTrip"
       roleIcon={<User className="w-8 h-8 text-white" />}
       roleColor="from-orange-500 to-orange-600"
     />

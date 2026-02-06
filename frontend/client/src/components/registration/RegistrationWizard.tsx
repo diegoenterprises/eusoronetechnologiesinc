@@ -4,10 +4,11 @@
  */
 
 import React, { useState } from "react";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface WizardStep {
@@ -36,6 +37,7 @@ export function RegistrationWizard({
   roleIcon,
   roleColor,
 }: RegistrationWizardProps) {
+  const [, navigate] = useLocation();
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isValidating, setIsValidating] = useState(false);
@@ -94,7 +96,16 @@ export function RegistrationWizard({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
+        {/* Back to role selection + Header */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate("/register")}
+            className="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to role selection
+          </button>
+        </div>
         <div className="text-center mb-8">
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${roleColor} flex items-center justify-center mx-auto mb-4`}>
             {roleIcon}

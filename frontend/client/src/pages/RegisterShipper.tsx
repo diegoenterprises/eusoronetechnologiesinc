@@ -691,7 +691,7 @@ export default function RegisterShipper() {
       steps={steps}
       onComplete={handleComplete}
       title="Shipper Registration"
-      subtitle="Register your company to ship hazardous materials"
+      subtitle="Register your company to ship freight on EusoTrip"
       roleIcon={<Package className="w-8 h-8 text-white" />}
       roleColor="from-blue-500 to-blue-600"
     />

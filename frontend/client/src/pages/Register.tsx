@@ -27,7 +27,7 @@ const REGISTRATION_ROLES = [
   {
     role: "SHIPPER",
     name: "Shipper",
-    description: "Chemical/oil suppliers who offer hazmat for transport",
+    description: "Companies shipping freight — oil, chemicals, dry goods, agriculture, and more",
     icon: Package,
     color: "from-blue-500 to-blue-600",
     requirements: ["PHMSA Registration", "EPA ID (if applicable)", "Insurance Certificate"],
@@ -37,7 +37,7 @@ const REGISTRATION_ROLES = [
   {
     role: "CARRIER",
     name: "Carrier",
-    description: "Trucking companies transporting hazardous materials",
+    description: "Trucking companies hauling all freight types including hazmat, tanker, flatbed, dry van",
     icon: Truck,
     color: "from-green-500 to-green-600",
     requirements: ["USDOT Number", "MC Authority", "Hazmat Authority", "Insurance ($1M+ liability)"],
@@ -47,7 +47,7 @@ const REGISTRATION_ROLES = [
   {
     role: "BROKER",
     name: "Broker",
-    description: "Freight brokers arranging hazmat transport",
+    description: "Freight brokers arranging transportation across all commodity types",
     icon: Users,
     color: "from-purple-500 to-purple-600",
     requirements: ["Broker Authority", "Surety Bond ($75K)", "Insurance"],
@@ -57,10 +57,10 @@ const REGISTRATION_ROLES = [
   {
     role: "DRIVER",
     name: "Driver",
-    description: "CDL holders with hazmat endorsement",
+    description: "CDL holders — all endorsements including hazmat, tanker, doubles/triples",
     icon: User,
     color: "from-orange-500 to-orange-600",
-    requirements: ["CDL with Hazmat (H/X)", "TWIC Card", "Medical Certificate", "TSA Background"],
+    requirements: ["CDL (Class A/B)", "Medical Certificate", "Hazmat/TWIC (if applicable)", "TSA Background (if hazmat)"],
     regulations: ["FMCSA", "TSA", "DOT"],
     path: "/register/driver",
   },
@@ -87,7 +87,7 @@ const REGISTRATION_ROLES = [
   {
     role: "TERMINAL_MANAGER",
     name: "Terminal Manager",
-    description: "Oil/chemical terminal facility managers",
+    description: "Terminal and warehouse facility managers — oil, chemical, dry bulk, intermodal",
     icon: Building2,
     color: "from-cyan-500 to-cyan-600",
     requirements: ["Facility EPA ID", "SPCC Plan", "State Permits"],
@@ -152,7 +152,7 @@ export default function Register() {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Join the Future of{" "}
             <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-              Hazmat Logistics
+              Freight & Energy Logistics
             </span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto">

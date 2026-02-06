@@ -26,14 +26,22 @@ export default function Home() {
             className="w-24 h-24 mx-auto mb-6 object-contain"
           />
           <h1 className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-4">EusoTrip</h1>
-          <p className="text-slate-400 mb-8">Hazardous Materials Transportation Platform</p>
-          <a
-            href="/login"
-            className="inline-flex items-center gap-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition"
-          >
-            <LogIn className="w-5 h-5" />
-            Sign In
-          </a>
+          <p className="text-slate-400 mb-8">Freight & Energy Logistics Platform</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a
+              href="/login"
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white px-8 py-3 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/20 transition"
+            >
+              <LogIn className="w-5 h-5" />
+              Sign In
+            </a>
+            <a
+              href="/register"
+              className="inline-flex items-center gap-2 border border-white/20 text-slate-300 hover:text-white hover:border-white/40 px-8 py-3 rounded-xl font-semibold transition"
+            >
+              Create Account
+            </a>
+          </div>
         </div>
       </div>
     );
