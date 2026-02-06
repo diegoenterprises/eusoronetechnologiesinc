@@ -84,7 +84,7 @@ export default function LoadCreationStep1() {
       </Card>
 
       <div className="flex justify-end">
-        <Button onClick={() => navigate("/shipper/load-creation/step-2")} className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg">
+        <Button onClick={() => navigate("/shipper/load-wizard")} className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg">
           Continue <ChevronRight className="w-4 h-4 ml-2" />
         </Button>
       </div>

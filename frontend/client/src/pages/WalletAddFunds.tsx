@@ -150,7 +150,7 @@ export default function WalletAddFunds() {
               {(!accounts || accounts.length === 0) && (
                 <div className="p-4 rounded-lg border border-dashed text-center">
                   <p className="text-muted-foreground">No payment methods linked</p>
-                  <Link href="/wallet/accounts/link">
+                  <Link href="/wallet/linked-accounts">
                     <Button variant="link" className="mt-2">
                       <Plus className="h-4 w-4 mr-1" />
                       Link Account

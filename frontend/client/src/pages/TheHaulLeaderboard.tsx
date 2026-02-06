@@ -53,7 +53,7 @@ export default function TheHaulLeaderboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/the-haul">
+        <Link href="/the-haul/the-haul">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>

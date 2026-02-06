@@ -37,7 +37,7 @@ export default function PreTripInspection() {
   const previousQuery = (trpc as any).inspections.getPrevious.useQuery();
 
   const submitMutation = (trpc as any).inspections.submit.useMutation({
-    onSuccess: () => { toast.success("Inspection submitted"); setLocation("/driver"); },
+    onSuccess: () => { toast.success("Inspection submitted"); setLocation("/driver/dashboard"); },
     onError: (error: any) => toast.error("Failed to submit inspection", { description: error.message }),
   });
 

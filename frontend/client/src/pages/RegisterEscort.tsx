@@ -669,8 +669,8 @@ export default function RegisterEscort() {
                 onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
-                I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a> and 
-                <a href="/privacy" className="text-blue-400 hover:underline ml-1">Privacy Policy</a>
+                I accept the <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a> and 
+                <a href="/privacy-policy" className="text-blue-400 hover:underline ml-1">Privacy Policy</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>

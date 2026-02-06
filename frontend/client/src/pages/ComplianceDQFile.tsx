@@ -85,7 +85,7 @@ export default function ComplianceDQFile() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/compliance/drivers")}
+          onClick={() => navigate("/compliance/driver-qualification")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />

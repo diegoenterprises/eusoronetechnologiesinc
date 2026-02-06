@@ -184,7 +184,7 @@ export default function CreateLoad() {
 
       {/* Submit */}
       <div className="flex justify-end gap-4">
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/loads")}>
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/load/board")}>
           Cancel
         </Button>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg px-8" onClick={handleSubmit} disabled={createMutation.isPending}>

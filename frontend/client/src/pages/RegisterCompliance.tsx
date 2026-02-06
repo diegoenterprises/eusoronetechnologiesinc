@@ -384,7 +384,7 @@ export default function RegisterCompliance() {
                 onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
               />
               <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
-                I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a>
+                I accept the <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>
@@ -396,7 +396,7 @@ export default function RegisterCompliance() {
                 onCheckedChange={(c: any) => updateFormData({ acceptPrivacy: c as boolean })}
               />
               <Label htmlFor="privacy" className="text-sm text-slate-300 cursor-pointer">
-                I accept the <a href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>
+                I accept the <a href="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>

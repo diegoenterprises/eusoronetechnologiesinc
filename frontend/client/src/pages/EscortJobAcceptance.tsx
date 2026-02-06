@@ -30,7 +30,7 @@ export default function EscortJobAcceptance() {
   const acceptMutation = (trpc as any).escorts.acceptJob.useMutation({
     onSuccess: () => {
       toast.success("Job accepted");
-      navigate("/escort/jobs");
+      navigate("/escort/active-jobs");
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -38,7 +38,7 @@ export default function EscortJobAcceptance() {
   const declineMutation = (trpc as any).escorts.updateJobStatus.useMutation({
     onSuccess: () => {
       toast.success("Job declined");
-      navigate("/escort/marketplace");
+      navigate("/escort/job-bidding");
     },
   });
 
@@ -65,7 +65,7 @@ export default function EscortJobAcceptance() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/escort/marketplace")}
+          onClick={() => navigate("/escort/job-bidding")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />

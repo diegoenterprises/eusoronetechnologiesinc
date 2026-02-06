@@ -44,7 +44,7 @@ export default function BrokerCommissionDetail() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/broker/commissions")}
+          onClick={() => navigate("/broker/commission-report")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />

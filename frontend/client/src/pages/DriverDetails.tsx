@@ -59,7 +59,7 @@ export default function DriverDetails() {
             <User className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 text-lg">Driver not found</p>
-          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/drivers")}>
+          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/driver/management")}>
             <ArrowLeft className="w-4 h-4 mr-2" />Back to Drivers
           </Button>
         </div>
@@ -72,7 +72,7 @@ export default function DriverDetails() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/drivers")}>
+          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/driver/management")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>

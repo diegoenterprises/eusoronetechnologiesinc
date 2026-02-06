@@ -36,7 +36,7 @@ export default function CarrierBidSubmit() {
   const submitBidMutation = (trpc as any).carriers.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
-      navigate("/carrier/bids");
+      navigate("/carrier/bid-history");
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -65,7 +65,7 @@ export default function CarrierBidSubmit() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/carrier/loadboard")}
+          onClick={() => navigate("/carrier/load-search")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -251,7 +251,7 @@ export default function CarrierBidSubmit() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/carrier/loadboard")}
+          onClick={() => navigate("/carrier/load-search")}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >
           Cancel

@@ -34,7 +34,7 @@ export default function RateConfirmationSign() {
   const signMutation = (trpc as any).documents.update.useMutation({
     onSuccess: () => {
       toast.success("Rate confirmation signed successfully");
-      navigate("/carrier/loads");
+      navigate("/carrier/load-history");
     },
     onError: (error: any) => toast.error("Failed to sign", { description: error.message }),
   });
@@ -66,7 +66,7 @@ export default function RateConfirmationSign() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/carrier/loads")}
+          onClick={() => navigate("/carrier/load-history")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />

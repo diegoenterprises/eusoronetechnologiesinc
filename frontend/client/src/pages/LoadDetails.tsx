@@ -64,7 +64,7 @@ export default function LoadDetails() {
             <Package className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 text-lg">Load not found</p>
-          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/loads")}>
+          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/load/board")}>
             <ArrowLeft className="w-4 h-4 mr-2" />Back to Loads
           </Button>
         </div>
@@ -77,7 +77,7 @@ export default function LoadDetails() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/loads")}>
+          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/load/board")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>

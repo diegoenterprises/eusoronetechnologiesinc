@@ -153,7 +153,7 @@ export default function InTransitPage() {
                 : "Check assigned loads to start pickups"}
             </p>
             <Button
-              onClick={() => setLocation("/loads/assigned")}
+              onClick={() => setLocation("/assigned-loads")}
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
             >
               <Package className="w-4 h-4 mr-2" />

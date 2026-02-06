@@ -85,7 +85,7 @@ export default function SecuritySettings() {
                   </div>
                   <div className="flex items-center gap-2">
                     {settings?.twoFactorEnabled ? <Badge className="bg-green-500/20 text-green-400 border-0">Enabled</Badge> : <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Disabled</Badge>}
-                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/settings/2fa")}>
+                    <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/two-factor-setup")}>
                       Configure
                     </Button>
                   </div>
@@ -99,7 +99,7 @@ export default function SecuritySettings() {
                       <p className="text-xs text-slate-500">Last changed: {settings?.passwordLastChanged}</p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/settings/password")}>
+                  <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/change-password")}>
                     Change
                   </Button>
                 </div>

@@ -69,12 +69,12 @@ export default function CarrierFleetOverview() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link href="/fleet/drivers/add">
+            <Link href="/driver/management">
               <Users className="h-4 w-4 mr-2" /> Add Driver
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/fleet/vehicles/add">
+            <Link href="/fleet-management">
               <Plus className="h-4 w-4 mr-2" /> Add Vehicle
             </Link>
           </Button>
@@ -159,7 +159,7 @@ export default function CarrierFleetOverview() {
             <CardTitle className="flex items-center justify-between">
               <span>Vehicles</span>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/fleet/vehicles">View All</Link>
+                <Link href="/fleet-management">View All</Link>
               </Button>
             </CardTitle>
           </CardHeader>
@@ -192,7 +192,7 @@ export default function CarrierFleetOverview() {
             <CardTitle className="flex items-center justify-between">
               <span>Drivers</span>
               <Button variant="ghost" size="sm" asChild>
-                <Link href="/fleet/drivers">View All</Link>
+                <Link href="/driver/management">View All</Link>
               </Button>
             </CardTitle>
           </CardHeader>

@@ -70,7 +70,7 @@ export default function ShipperLoads() {
           <h1 className="text-2xl font-bold text-white">My Loads</h1>
           <p className="text-slate-400 text-sm">Manage your shipments</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setLocation("/loads/new")}>
+        <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setLocation("/load/wizard")}>
           <Plus className="w-4 h-4 mr-2" />Create Load
         </Button>
       </div>
@@ -151,7 +151,7 @@ export default function ShipperLoads() {
             <div className="p-12 text-center">
               <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
               <p className="text-slate-400">No loads found</p>
-              <Button className="mt-4 bg-blue-600 hover:bg-blue-700" onClick={() => setLocation("/loads/new")}>
+              <Button className="mt-4 bg-blue-600 hover:bg-blue-700" onClick={() => setLocation("/load/wizard")}>
                 <Plus className="w-4 h-4 mr-2" />Create Your First Load
               </Button>
             </div>

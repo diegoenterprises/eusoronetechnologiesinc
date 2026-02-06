@@ -59,7 +59,7 @@ export default function EscortRoutePlanning() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/escort/jobs")}
+          onClick={() => navigate("/escort/active-jobs")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -279,7 +279,7 @@ export default function EscortRoutePlanning() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/escort/jobs")}
+          onClick={() => navigate("/escort/active-jobs")}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >
           Cancel

@@ -39,7 +39,7 @@ export default function CarrierProfitabilityAnalysis() {
   const submitBidMutation = (trpc as any).bids.submit.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
-      navigate("/carrier/marketplace");
+      navigate("/marketplace");
     },
     onError: (error: any) => toast.error("Failed to submit bid", { description: error.message }),
   });
@@ -75,7 +75,7 @@ export default function CarrierProfitabilityAnalysis() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/carrier/marketplace")}
+          onClick={() => navigate("/marketplace")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -295,7 +295,7 @@ export default function CarrierProfitabilityAnalysis() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/carrier/marketplace")}
+          onClick={() => navigate("/marketplace")}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >
           Cancel

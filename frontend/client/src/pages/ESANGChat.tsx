@@ -51,13 +51,13 @@ export default function ESANGChat() {
         navigate("/terminal/scada");
         break;
       case "create_load":
-        navigate("/shipper/create-load");
+        navigate("/shipper/load-wizard");
         break;
       case "erg_lookup":
         navigate("/erg");
         break;
       case "check_compliance":
-        navigate("/compliance");
+        navigate("/compliance/audit-dashboard");
         break;
       default:
         break;

@@ -246,9 +246,9 @@ export default function Register() {
           <p>Need help choosing? Contact support@eusotrip.com</p>
           <p className="mt-2">
             By registering, you agree to our{" "}
-            <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a>
+            <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a>
             {" "}and{" "}
-            <a href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>
+            <a href="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</a>
           </p>
         </div>
       </div>

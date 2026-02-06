@@ -53,7 +53,7 @@ export default function Fleet() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage your vehicles and equipment</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet/add")}>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet-management")}>
           <Plus className="w-4 h-4 mr-2" />Add Vehicle
         </Button>
       </div>
@@ -148,7 +148,7 @@ export default function Fleet() {
               </div>
               <p className="text-slate-400 text-lg">No vehicles found</p>
               <p className="text-slate-500 text-sm mt-1">Add your first vehicle to get started</p>
-              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet/add")}>
+              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/fleet-management")}>
                 <Plus className="w-4 h-4 mr-2" />Add Vehicle
               </Button>
             </div>

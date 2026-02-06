@@ -36,7 +36,7 @@ export default function CompanyBilling() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage billing and payments</p>
         </div>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/settings/billing/history")}>
+        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/billing-history")}>
           View Full History
         </Button>
       </div>

@@ -278,7 +278,7 @@ export default function DriverIssueReport() {
             <Button
               variant="destructive"
               className="w-full bg-red-600 hover:bg-red-700 rounded-lg h-14"
-              onClick={() => navigate("/driver/hazmat-emergency")}
+              onClick={() => navigate("/erg")}
             >
               <AlertOctagon className="w-5 h-5 mr-2" />
               HAZMAT EMERGENCY PROTOCOL

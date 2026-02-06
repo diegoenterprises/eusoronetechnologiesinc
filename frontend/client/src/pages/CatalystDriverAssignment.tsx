@@ -34,7 +34,7 @@ export default function CatalystDriverAssignment() {
   const assignMutation = (trpc as any).catalysts.assignDriver.useMutation({
     onSuccess: () => {
       toast.success("Driver assigned successfully");
-      navigate("/catalyst/dispatch");
+      navigate("/catalyst/dispatch-messages");
     },
     onError: (error: any) => toast.error("Assignment failed", { description: error.message }),
   });
@@ -62,7 +62,7 @@ export default function CatalystDriverAssignment() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/catalyst/dispatch")}
+          onClick={() => navigate("/catalyst/dispatch-messages")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -249,7 +249,7 @@ export default function CatalystDriverAssignment() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/catalyst/dispatch")}
+          onClick={() => navigate("/catalyst/dispatch-messages")}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >
           Cancel

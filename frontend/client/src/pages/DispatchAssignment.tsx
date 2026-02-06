@@ -29,7 +29,7 @@ export default function DispatchAssignment() {
   const recommendationsQuery = (trpc as any).dispatch.getRecommendations.useQuery({ loadId });
 
   const assignMutation = (trpc as any).dispatch.assignDriver.useMutation({
-    onSuccess: () => { toast.success("Driver assigned successfully"); setLocation("/dispatch"); },
+    onSuccess: () => { toast.success("Driver assigned successfully"); setLocation("/dispatch-board"); },
     onError: (error: any) => toast.error("Failed to assign driver", { description: error.message }),
   });
 

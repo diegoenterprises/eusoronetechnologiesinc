@@ -45,7 +45,7 @@ export default function CarrierBidSubmission() {
   const submitBidMutation = (trpc as any).bids.submit.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully");
-      setLocation("/bids");
+      setLocation("/load/bids");
     },
     onError: (error: any) => toast.error("Failed to submit bid", { description: error.message }),
   });

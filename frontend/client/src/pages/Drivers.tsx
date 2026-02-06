@@ -53,7 +53,7 @@ export default function Drivers() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Manage your driver roster and assignments</p>
         </div>
-        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/drivers/add")}>
+        <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/driver/management")}>
           <Plus className="w-4 h-4 mr-2" />Add Driver
         </Button>
       </div>
@@ -148,7 +148,7 @@ export default function Drivers() {
               </div>
               <p className="text-slate-400 text-lg">No drivers found</p>
               <p className="text-slate-500 text-sm mt-1">Add your first driver to get started</p>
-              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/drivers/add")}>
+              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/driver/management")}>
                 <Plus className="w-4 h-4 mr-2" />Add Driver
               </Button>
             </div>

@@ -39,7 +39,7 @@ export default function BrokerQuoteBuilder() {
   const sendQuoteMutation = (trpc as any).brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success("Quote sent successfully");
-      navigate("/broker/quotes");
+      navigate("/broker/quote-builder");
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -280,7 +280,7 @@ export default function BrokerQuoteBuilder() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/broker/quotes")}
+          onClick={() => navigate("/broker/quote-builder")}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >
           Cancel

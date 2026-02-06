@@ -175,11 +175,11 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/admin/users")}>
+                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/admin/user-management")}>
                     <Users className="w-6 h-6 mb-2 text-blue-400" />
                     <span className="text-slate-300">Manage Users</span>
                   </Button>
-                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/admin/verifications")}>
+                  <Button variant="outline" className="h-20 flex-col bg-slate-700/30 border-slate-600/50 hover:bg-slate-700/50 rounded-xl" onClick={() => setLocation("/admin/verification-dashboard")}>
                     <Shield className="w-6 h-6 mb-2 text-purple-400" />
                     <span className="text-slate-300">Verifications</span>
                   </Button>

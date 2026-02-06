@@ -658,7 +658,7 @@ export default function RegisterCarrier() {
                 onCheckedChange={(checked) => updateFormData({ acceptTerms: checked as boolean })}
               />
               <Label htmlFor="acceptTerms" className="text-sm text-slate-300 cursor-pointer">
-                I accept the <a href="/terms" className="text-blue-400 hover:underline">Terms of Service</a>
+                I accept the <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>
@@ -670,7 +670,7 @@ export default function RegisterCarrier() {
                 onCheckedChange={(checked) => updateFormData({ acceptPrivacy: checked as boolean })}
               />
               <Label htmlFor="acceptPrivacy" className="text-sm text-slate-300 cursor-pointer">
-                I accept the <a href="/privacy" className="text-blue-400 hover:underline">Privacy Policy</a>
+                I accept the <a href="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>

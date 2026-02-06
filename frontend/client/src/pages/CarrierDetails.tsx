@@ -57,7 +57,7 @@ export default function CarrierDetails() {
             <Building className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 text-lg">Carrier not found</p>
-          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/carriers")}>
+          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/carrier/dashboard")}>
             <ArrowLeft className="w-4 h-4 mr-2" />Back to Carriers
           </Button>
         </div>
@@ -70,7 +70,7 @@ export default function CarrierDetails() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/carriers")}>
+          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/carrier/dashboard")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>

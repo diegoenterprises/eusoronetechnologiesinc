@@ -35,7 +35,7 @@ export default function BrokerLoadMatching() {
   const sendOffersMutation = (trpc as any).brokers.vetCarrier.useMutation({
     onSuccess: () => {
       toast.success(`Offers sent to ${selectedCarriers.length} carriers`);
-      navigate("/broker/loads");
+      navigate("/broker/load-board");
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -65,7 +65,7 @@ export default function BrokerLoadMatching() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate("/broker/loads")}
+          onClick={() => navigate("/broker/load-board")}
           className="text-slate-400 hover:text-white"
         >
           <ChevronLeft className="w-6 h-6" />
@@ -268,7 +268,7 @@ export default function BrokerLoadMatching() {
       <div className="flex justify-end gap-3">
         <Button
           variant="outline"
-          onClick={() => navigate("/broker/loads")}
+          onClick={() => navigate("/broker/load-board")}
           className="bg-slate-700/50 border-slate-600/50 rounded-lg"
         >
           Cancel
