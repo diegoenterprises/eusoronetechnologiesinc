@@ -223,3 +223,60 @@
 .stagger-3 { animation-delay: 0.3s; }
 .stagger-4 { animation-delay: 0.4s; }
 .stagger-5 { animation-delay: 0.5s; }
+
+/* ============================================================= */
+/* GLOBAL TILE CASCADE — auto-animates grid/card children        */
+/* Applied to common layout patterns across all 2006 pages       */
+/* ============================================================= */
+
+@keyframes tile-cascade {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Auto-cascade for grid and flex card containers */
+.grid > [class*="rounded"],
+.grid > [class*="border"],
+.grid > [class*="Card"],
+.grid > [class*="card"],
+.grid > [class*="bg-"] {
+  animation: tile-cascade 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stagger grid children up to 12 items */
+.grid > :nth-child(1) { animation-delay: 0.04s; }
+.grid > :nth-child(2) { animation-delay: 0.08s; }
+.grid > :nth-child(3) { animation-delay: 0.12s; }
+.grid > :nth-child(4) { animation-delay: 0.16s; }
+.grid > :nth-child(5) { animation-delay: 0.20s; }
+.grid > :nth-child(6) { animation-delay: 0.24s; }
+.grid > :nth-child(7) { animation-delay: 0.28s; }
+.grid > :nth-child(8) { animation-delay: 0.32s; }
+.grid > :nth-child(9) { animation-delay: 0.36s; }
+.grid > :nth-child(10) { animation-delay: 0.40s; }
+.grid > :nth-child(11) { animation-delay: 0.44s; }
+.grid > :nth-child(12) { animation-delay: 0.48s; }
+
+/* Smooth scroll for main content */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Notification dot pulse */
+.notification-dot::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  animation: pulse-slow 2s ease-in-out infinite;
+}

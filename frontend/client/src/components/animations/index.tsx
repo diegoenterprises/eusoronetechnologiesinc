@@ -269,7 +269,43 @@ export const dominoContainer: Variants = {
  * staggered entrance — no changes needed inside page components.
  */
 export function DominoPage({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  const childArray = React.Children.toArray(children);
+  let childArray = React.Children.toArray(children);
+
+  // Unwrap single-child container divs so inner elements cascade individually.
+  // Most pages render <div className="space-y-6"><Card/><Card/>...</div>
+  // — we want each Card to get its own staggered entrance, not the wrapper.
+  if (childArray.length === 1) {
+    const only = childArray[0] as React.ReactElement;
+    if (React.isValidElement(only) && only.props && (only.props as any).children) {
+      const inner = React.Children.toArray((only.props as any).children);
+      if (inner.length > 1) {
+        // Preserve the wrapper's className for layout (space-y, grid, etc.)
+        const wrapperClass = (only.props as any).className || "";
+        return (
+          <motion.div
+            variants={dominoContainer}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className={`${className} ${wrapperClass}`}
+            style={{ perspective: 1200 }}
+          >
+            {inner.map((child, i) => (
+              <motion.div
+                key={i}
+                variants={dominoChild}
+                custom={i}
+                style={{ transformOrigin: "top center" }}
+              >
+                {child}
+              </motion.div>
+            ))}
+          </motion.div>
+        );
+      }
+    }
+  }
+
   return (
     <motion.div
       variants={dominoContainer}
