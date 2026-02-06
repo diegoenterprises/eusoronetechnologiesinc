@@ -62,11 +62,16 @@ import {
   Target,
   Navigation,
   Trophy,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
+import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
+import { AmbientGlow } from "./animations";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -138,13 +143,17 @@ export default function DashboardLayout({
   const { user, loading, logout } = useAuth();
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const prevLocation = useRef(location);
+
+  // Track route changes for page transition key
+  useEffect(() => {
+    prevLocation.current = location;
+  }, [location]);
 
   // Get menu items based on user role
   const userRole = user?.role || "default";
-  console.log("[DashboardLayout] user:", user);
-  console.log("[DashboardLayout] userRole:", userRole);
   const menuItems = getMenuForRole(userRole);
-  console.log("[DashboardLayout] menuItems count:", menuItems.length);
 
   // Determine active menu item based on current location
   const activeMenuItem = menuItems.find((item) => item.path === location);
@@ -163,70 +172,150 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="flex h-screen bg-gray-950 text-white">
+    <div className="flex h-screen bg-gray-950 text-white relative overflow-hidden">
+      {/* Ambient background glow */}
+      <AmbientGlow />
+
       {/* Sidebar */}
-      <aside
-        className={`${
-          sidebarOpen ? "w-64" : "w-20"
-        } bg-gray-900 border-r border-gray-800 transition-all duration-300 flex flex-col overflow-hidden`}
+      <motion.aside
+        initial={false}
+        animate={{ width: sidebarOpen ? 256 : 72 }}
+        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+        className="bg-gray-900/80 backdrop-blur-xl border-r border-gray-800/50 flex flex-col overflow-hidden relative z-10 flex-shrink-0"
       >
         {/* Logo */}
-        <div className="p-4 border-b border-gray-800 flex items-center gap-3">
-          <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 object-contain flex-shrink-0" />
-          {sidebarOpen && (
-            <span className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-              EusoTrip
-            </span>
-          )}
+        <div className="p-4 border-b border-gray-800/50 flex items-center gap-3">
+          <motion.img
+            src="/eusotrip-logo.png"
+            alt="EusoTrip"
+            className="w-10 h-10 object-contain flex-shrink-0"
+            whileHover={{ scale: 1.08, rotate: 3 }}
+            transition={{ duration: 0.2 }}
+          />
+          <AnimatePresence mode="wait">
+            {sidebarOpen && (
+              <motion.span
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.2 }}
+                className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent whitespace-nowrap"
+              >
+                EusoTrip
+              </motion.span>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Menu Items */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          {menuItems.map((item) => {
+        <nav className="flex-1 overflow-y-auto smooth-scroll p-3 space-y-1">
+          {menuItems.map((item, index) => {
             const isActive = activeMenuItem?.path === item.path;
             return (
-              <button
+              <motion.button
                 key={item.path}
                 onClick={() => handleNavigate(item.path)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.3 }}
+                whileHover={{ x: 4 }}
+                whileTap={{ scale: 0.97 }}
+                className={`sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${
                   isActive
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white"
-                    : "text-gray-400 hover:text-white hover:bg-gray-800"
+                    ? "active text-white"
+                    : "text-gray-400 hover:text-white"
                 }`}
               >
-                <div className="flex-shrink-0">{iconMap[item.icon] || item.icon}</div>
-                {sidebarOpen && (
-                  <>
-                    <span className="flex-1 text-left text-sm">{item.label}</span>
-                    {item.badge && (
-                      <span className="bg-red-600 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                        {item.badge}
-                      </span>
-                    )}
-                  </>
+                <motion.div
+                  className="flex-shrink-0"
+                  animate={isActive ? { scale: [1, 1.15, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  {iconMap[item.icon] || item.icon}
+                </motion.div>
+                <AnimatePresence mode="wait">
+                  {sidebarOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-center gap-2 flex-1 overflow-hidden"
+                    >
+                      <span className="flex-1 text-left text-sm whitespace-nowrap">{item.label}</span>
+                      {item.badge ? (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center"
+                        >
+                          {item.badge}
+                        </motion.span>
+                      ) : null}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Active indicator glow */}
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-active-glow"
+                    className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/10 to-purple-600/10"
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                  />
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
 
+        {/* Sidebar Toggle */}
+        <div className="p-2 border-t border-gray-800/50">
+          <motion.button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="w-full flex items-center justify-center p-2 rounded-lg text-gray-500 hover:text-white hover:bg-gray-800/50 transition-colors"
+          >
+            <motion.div
+              animate={{ rotate: sidebarOpen ? 0 : 180 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <ChevronLeft size={18} />
+            </motion.div>
+          </motion.button>
+        </div>
+
         {/* User Profile Footer */}
-        <div className="p-4 border-t border-gray-800">
+        <div className="p-3 border-t border-gray-800/50">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800 transition-colors">
-                <Avatar className="w-10 h-10">
-                  <AvatarFallback className="bg-blue-600 text-white font-bold">
-                    {user?.name?.charAt(0) || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                {sidebarOpen && (
-                  <div className="flex-1 text-left text-sm">
-                    <p className="font-semibold truncate">{user?.name || "User"}</p>
-                    <p className="text-gray-500 text-xs truncate">{user?.email || "user@example.com"}</p>
-                  </div>
-                )}
-              </button>
+              <motion.button
+                whileHover={{ backgroundColor: "rgba(255,255,255,0.05)" }}
+                className="w-full flex items-center gap-3 p-2 rounded-lg transition-colors"
+              >
+                <motion.div whileHover={{ scale: 1.08 }} transition={{ duration: 0.2 }}>
+                  <Avatar className="w-9 h-9">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
+                      {user?.name?.charAt(0) || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </motion.div>
+                <AnimatePresence mode="wait">
+                  {sidebarOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, width: 0 }}
+                      animate={{ opacity: 1, width: "auto" }}
+                      exit={{ opacity: 0, width: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex-1 text-left text-sm overflow-hidden"
+                    >
+                      <p className="font-semibold truncate text-gray-200">{user?.name || "User"}</p>
+                      <p className="text-gray-500 text-xs truncate">{user?.role || "User"}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => handleNavigate("/profile")}>
@@ -244,60 +333,91 @@ export default function DashboardLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         {/* Top Navigation */}
-        <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <motion.header
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+          className="bg-gray-900/60 backdrop-blur-xl border-b border-gray-800/50 px-6 py-3 flex items-center justify-between relative z-20"
+        >
           <div className="flex items-center gap-4">
-            <button
+            {/* Mobile menu toggle */}
+            <motion.button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="text-gray-400 hover:text-white"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800/50 md:hidden"
             >
-              {sidebarOpen ? "←" : "→"}
-            </button>
+              <Menu size={20} />
+            </motion.button>
+
+            {/* Breadcrumb / Active page */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeMenuItem?.label || "Dashboard"}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                transition={{ duration: 0.25 }}
+                className="hidden md:flex items-center gap-2"
+              >
+                <span className="text-sm font-medium text-white">
+                  {activeMenuItem?.label || "Dashboard"}
+                </span>
+              </motion.div>
+            </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Button
-              onClick={() => handleNavigate("/shipments")}
-              className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
+          <div className="flex items-center gap-3">
+            {/* Search Bar */}
+            <motion.div
+              animate={{
+                width: searchFocused ? 280 : 200,
+                backgroundColor: searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+              }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden md:flex items-center rounded-xl px-3 py-2 gap-2 border border-transparent"
+              style={{
+                borderColor: searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(255,255,255,0.06)",
+              }}
             >
-              <Plus size={18} />
-              Create Shipment
-            </Button>
-
-            <Button
-              onClick={() => handleNavigate("/jobs")}
-              variant="outline"
-              className="border-gray-700 text-white hover:bg-gray-800"
-            >
-              My Jobs
-            </Button>
-
-            <div className="hidden md:flex items-center bg-gray-800 rounded-lg px-4 py-2 gap-2">
-              <Search size={18} className="text-gray-500" />
+              <Search size={16} className={`transition-colors duration-200 ${searchFocused ? "text-blue-400" : "text-gray-500"}`} />
               <input
                 type="text"
-                placeholder="Search shipments, contacts..."
-                className="bg-transparent text-sm outline-none w-48 text-white placeholder-gray-500"
+                placeholder="Search..."
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                className="bg-transparent text-sm outline-none flex-1 text-white placeholder-gray-500"
               />
-            </div>
+            </motion.div>
 
-            <button className="relative p-2 hover:bg-gray-800 rounded-lg transition-colors">
-              <div className="absolute top-1 right-1 w-2 h-2 bg-red-600 rounded-full"></div>
-            </button>
+            {/* Notification Bell */}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors notification-dot"
+            >
+              <Bell size={18} className="text-gray-400" />
+            </motion.button>
 
+            {/* User Avatar */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+                <motion.button
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="p-1 hover:bg-gray-800/50 rounded-xl transition-colors"
+                >
                   <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-blue-600 text-white text-sm font-bold">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold">
                       {user?.name?.charAt(0) || "U"}
                     </AvatarFallback>
                   </Avatar>
-                </button>
+                </motion.button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => handleNavigate("/profile")}>
@@ -315,11 +435,22 @@ export default function DashboardLayout({
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </header>
+        </motion.header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-6 bg-gray-950">
-          {children}
+        {/* Main Content Area — Page Transition */}
+        <main className="flex-1 overflow-y-auto smooth-scroll bg-gray-950/50">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+              className="p-6"
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
     </div>

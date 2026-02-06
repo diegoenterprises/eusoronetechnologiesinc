@@ -427,3 +427,348 @@
   animation: gradient-shift 15s ease infinite;
 }
 
+/* ========================================
+   EUSOTRIP ANIMATION SYSTEM
+   Brings the entire app alive.
+   ======================================== */
+
+/* --- Page Entrance --- */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-page-enter {
+  animation: page-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- Fade In Up (staggerable) --- */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-in-up-1 { animation-delay: 0.05s; }
+.animate-fade-in-up-2 { animation-delay: 0.1s; }
+.animate-fade-in-up-3 { animation-delay: 0.15s; }
+.animate-fade-in-up-4 { animation-delay: 0.2s; }
+.animate-fade-in-up-5 { animation-delay: 0.25s; }
+.animate-fade-in-up-6 { animation-delay: 0.3s; }
+.animate-fade-in-up-7 { animation-delay: 0.35s; }
+.animate-fade-in-up-8 { animation-delay: 0.4s; }
+
+/* --- Fade In Scale --- */
+@keyframes fade-in-scale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in-scale {
+  animation: fade-in-scale 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- Slide In Left (sidebar) --- */
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- Slide In Right --- */
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- Shimmer (loading/skeleton) --- */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.04) 40%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s ease-in-out infinite;
+}
+
+/* --- Glow Pulse (status indicators, active items) --- */
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 4px rgba(20, 115, 255, 0.3); }
+  50%      { box-shadow: 0 0 16px rgba(20, 115, 255, 0.5), 0 0 32px rgba(190, 1, 255, 0.2); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+
+/* --- Brand Glow (for active/selected items) --- */
+@keyframes brand-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(20, 115, 255, 0.4); }
+  50%      { box-shadow: 0 0 20px rgba(20, 115, 255, 0.6), 0 0 40px rgba(190, 1, 255, 0.3); }
+}
+
+.animate-brand-glow {
+  animation: brand-glow 3s ease-in-out infinite;
+}
+
+/* --- Float (subtle hover for cards) --- */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* --- Breathing Dot (live indicators) --- */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.3); opacity: 0.7; }
+}
+
+.animate-breathe {
+  animation: breathe 2s ease-in-out infinite;
+}
+
+/* --- Notification Badge Bounce --- */
+@keyframes badge-bounce {
+  0%, 100% { transform: scale(1); }
+  30%      { transform: scale(1.25); }
+  60%      { transform: scale(0.9); }
+}
+
+.animate-badge-bounce {
+  animation: badge-bounce 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --- Gradient Border Animation --- */
+@keyframes border-gradient-rotate {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient-border {
+  position: relative;
+  overflow: hidden;
+}
+
+.animate-gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #1473FF, #BE01FF, #1473FF);
+  background-size: 200% 200%;
+  animation: border-gradient-rotate 3s linear infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* --- Subtle Hover Lift (cards, buttons) --- */
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* --- Hover Scale --- */
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.03);
+}
+
+/* --- Hover Glow --- */
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(20, 115, 255, 0.25), 0 0 40px rgba(190, 1, 255, 0.1);
+}
+
+/* --- Active Press --- */
+.active-press {
+  transition: transform 0.1s ease;
+}
+
+.active-press:active {
+  transform: scale(0.97);
+}
+
+/* --- Sidebar Item Hover --- */
+.sidebar-item {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+
+.sidebar-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scaleY(0);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #1473FF, #BE01FF);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sidebar-item:hover::before,
+.sidebar-item.active::before {
+  transform: translateY(-50%) scaleY(1);
+}
+
+.sidebar-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-item.active {
+  background: linear-gradient(90deg, rgba(20, 115, 255, 0.15), rgba(190, 1, 255, 0.1));
+}
+
+/* --- Notification Dot --- */
+.notification-dot {
+  position: relative;
+}
+
+.notification-dot::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #EF4444;
+  border-radius: 50%;
+  border: 2px solid #111827;
+  animation: breathe 2s ease-in-out infinite;
+}
+
+/* --- Skeleton with Shimmer --- */
+.skeleton-shimmer {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+/* --- Progress Bar Animation --- */
+@keyframes progress-flow {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.animate-progress-flow {
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(20, 115, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-flow 2s linear infinite;
+}
+
+/* --- Typing Indicator --- */
+@keyframes typing-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+  30%           { transform: translateY(-4px); opacity: 1; }
+}
+
+.typing-dot:nth-child(1) { animation: typing-dot 1.2s ease-in-out infinite 0s; }
+.typing-dot:nth-child(2) { animation: typing-dot 1.2s ease-in-out infinite 0.2s; }
+.typing-dot:nth-child(3) { animation: typing-dot 1.2s ease-in-out infinite 0.4s; }
+
+/* --- Counter Number Animation --- */
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-count-up {
+  animation: count-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* --- Smooth Scrollbar --- */
+.smooth-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+.smooth-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.smooth-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.smooth-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+
+.smooth-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* --- Global Transitions for Interactive Elements --- */
+button, a, [role="button"] {
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* --- Card hover enhancement (global) --- */
+[class*="bg-slate-800"], [class*="bg-gray-800"], [class*="bg-slate-900"] {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* --- Focus ring animation --- */
+*:focus-visible {
+  outline: 2px solid rgba(20, 115, 255, 0.5);
+  outline-offset: 2px;
+  transition: outline-offset 0.2s ease;
+}
+
+/* --- Reduce motion for accessibility --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
