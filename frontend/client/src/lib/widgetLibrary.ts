@@ -31,7 +31,7 @@ import {
 import { UserRole } from '@/hooks/useRoleAccess';
 
 // Extended role type for widgets (includes roles not in main UserRole)
-type ExtendedUserRole = UserRole | 'COMPLIANCE_OFFICER' | 'SAFETY_MANAGER';
+type ExtendedUserRole = UserRole | 'COMPLIANCE_OFFICER' | 'SAFETY_MANAGER' | 'ADMIN' | 'SUPER_ADMIN';
 
 export type WidgetCategory = 
   | 'analytics' | 'operations' | 'financial' | 'communication' 
@@ -360,7 +360,11 @@ export const ALL_WIDGETS: WidgetDefinition[] = [
 ];
 
 // Get widgets for a specific role
+// ADMIN and SUPER_ADMIN get access to ALL widgets for full platform oversight
 export function getWidgetsForRole(role: UserRole): WidgetDefinition[] {
+  if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+    return ALL_WIDGETS;
+  }
   return ALL_WIDGETS.filter(widget => widget.roles.includes(role));
 }
 

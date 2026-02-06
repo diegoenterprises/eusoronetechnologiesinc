@@ -68,6 +68,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  Lock,
+  X,
+  Percent,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
@@ -175,17 +178,33 @@ export default function DashboardLayout({
     navigate("/");
   };
 
+  // Close sidebar on mobile when navigating
+  const handleMobileNavigate = (path: string) => {
+    if (window.innerWidth < 768) setSidebarOpen(false);
+    navigate(path);
+  };
+
   return (
     <div className="flex h-screen bg-gray-950 text-white relative overflow-hidden">
       {/* Ambient background glow */}
       <AmbientGlow />
+
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-20 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Sidebar */}
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 256 : 72 }}
         transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        className="bg-gray-900/80 backdrop-blur-xl border-r border-gray-800/50 flex flex-col overflow-hidden relative z-10 flex-shrink-0"
+        className={`bg-gray-900/80 backdrop-blur-xl border-r border-gray-800/50 flex flex-col overflow-hidden relative z-30 flex-shrink-0 ${
+          sidebarOpen ? "fixed inset-y-0 left-0 md:relative" : "hidden md:flex"
+        }`}
       >
         {/* Logo */}
         <div className="p-4 border-b border-gray-800/50 flex items-center gap-3">
@@ -218,7 +237,7 @@ export default function DashboardLayout({
             return (
               <motion.button
                 key={item.path}
-                onClick={() => handleNavigate(item.path)}
+                onClick={() => handleMobileNavigate(item.path)}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.3 }}
@@ -346,7 +365,7 @@ export default function DashboardLayout({
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-gray-900/60 backdrop-blur-xl border-b border-gray-800/50 px-6 py-3 flex items-center justify-between relative z-20"
+          className="bg-gray-900/60 backdrop-blur-xl border-b border-gray-800/50 px-3 sm:px-6 py-3 flex items-center justify-between relative z-20"
         >
           <div className="flex items-center gap-4">
             {/* Mobile menu toggle */}
@@ -354,7 +373,7 @@ export default function DashboardLayout({
               onClick={() => setSidebarOpen(!sidebarOpen)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800/50 md:hidden"
+              className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800/50"
             >
               <Menu size={20} />
             </motion.button>
@@ -479,10 +498,41 @@ export default function DashboardLayout({
         {/* Main Content Area — Domino Cascade Page Transition */}
         <main className="flex-1 overflow-y-auto smooth-scroll bg-gray-950/50">
           <AnimatePresence mode="wait">
-            <DominoPage key={location} className="p-6">
+            <DominoPage key={location} className="p-3 sm:p-4 md:p-6">
               {children}
             </DominoPage>
           </AnimatePresence>
+
+          {/* Security Compliance Footer */}
+          <footer className="border-t border-gray-800/50 bg-gray-900/40 backdrop-blur-sm px-4 py-4 mt-4">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mb-3">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20">
+                  <Lock className="w-3 h-3 text-green-400" />
+                  <span className="text-[10px] sm:text-xs font-medium text-green-400">TLS 1.3</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                  <Shield className="w-3 h-3 text-blue-400" />
+                  <span className="text-[10px] sm:text-xs font-medium text-blue-400">AES-256</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-purple-500/10 border border-purple-500/20">
+                  <ShieldCheck className="w-3 h-3 text-purple-400" />
+                  <span className="text-[10px] sm:text-xs font-medium text-purple-400">RBAC</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/20">
+                  <CheckCircle className="w-3 h-3 text-cyan-400" />
+                  <span className="text-[10px] sm:text-xs font-medium text-cyan-400">SOC 2</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">
+                  <CreditCard className="w-3 h-3 text-amber-400" />
+                  <span className="text-[10px] sm:text-xs font-medium text-amber-400">PCI-DSS</span>
+                </div>
+              </div>
+              <p className="text-center text-[10px] sm:text-xs text-gray-500">
+                Eusorone Technologies Inc. All rights reserved. Secured with enterprise-grade encryption.
+              </p>
+            </div>
+          </footer>
         </main>
       </div>
     </div>

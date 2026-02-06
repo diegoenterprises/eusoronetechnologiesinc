@@ -771,3 +771,90 @@ button, a, [role="button"] {
   }
 }
 
+/* ============================================================= */
+/* COMPREHENSIVE MOBILE OPTIMIZATION                              */
+/* Forces all grids to stack on small screens, fixes overflow,    */
+/* and ensures readable text/spacing on iPhone and all devices    */
+/* ============================================================= */
+
+@media (max-width: 639px) {
+  /* Force all grids to single column on mobile */
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Fix tables to scroll horizontally */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  /* Prevent horizontal overflow */
+  .overflow-x-auto, .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fix flex wrapping on mobile */
+  .flex-nowrap {
+    flex-wrap: wrap !important;
+  }
+
+  /* Reduce large text on mobile */
+  h1, .text-4xl, .text-5xl {
+    font-size: 1.5rem !important;
+    line-height: 2rem !important;
+  }
+  h2, .text-3xl {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+  .text-2xl {
+    font-size: 1.125rem !important;
+    line-height: 1.5rem !important;
+  }
+
+  /* Fix cards that have min-width causing squeeze */
+  [class*="min-w-"] {
+    min-width: 0 !important;
+  }
+
+  /* Compact spacing on mobile */
+  .gap-6 { gap: 0.75rem !important; }
+  .gap-8 { gap: 1rem !important; }
+  .space-y-6 > * + * { margin-top: 0.75rem !important; }
+  .space-y-8 > * + * { margin-top: 1rem !important; }
+
+  /* Fix wide stat cards */
+  .grid-cols-2, .grid-cols-3, .grid-cols-4,
+  .md\\:grid-cols-2, .md\\:grid-cols-3, .md\\:grid-cols-4,
+  .lg\\:grid-cols-2, .lg\\:grid-cols-3, .lg\\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ensure charts/maps don't overflow */
+  canvas, svg, iframe {
+    max-width: 100% !important;
+  }
+
+  /* Fix dialog/modal widths */
+  [role="dialog"] {
+    max-width: 95vw !important;
+    margin: 0 auto;
+  }
+}
+
+/* Tablet breakpoint */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .lg\\:grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .lg\\:grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
