@@ -32,6 +32,21 @@ export default function EmergencyAfterAction() {
 
   const report = reportQuery.data;
 
+  if (operationsQuery.isError) {
+    return (
+      <div className="p-6">
+        <Card className="bg-red-900/20 border-red-500/30 rounded-xl">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+            <h2 className="text-lg font-bold text-red-400">Failed to Load Operations</h2>
+            <p className="text-sm text-slate-400 mt-2">{(operationsQuery.error as any)?.message || 'Could not connect to emergency response backend.'}</p>
+            <Button onClick={() => operationsQuery.refetch()} className="mt-4 bg-red-600 hover:bg-red-700">Retry</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}

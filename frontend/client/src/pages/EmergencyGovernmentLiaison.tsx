@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Link } from 'wouter';
 import {
   ArrowLeft, Globe, Building, Phone, Shield, ExternalLink,
-  CheckCircle, Siren, Users, MapPin
+  CheckCircle, Siren, Users, MapPin, AlertTriangle
 } from 'lucide-react';
 
 export default function EmergencyGovernmentLiaison() {
@@ -25,6 +25,21 @@ export default function EmergencyGovernmentLiaison() {
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid gap-4">{[...Array(6)].map((_: any, i: number) => <Skeleton key={i} className="h-24" />)}</div>
+      </div>
+    );
+  }
+
+  if (contactsQuery.isError) {
+    return (
+      <div className="p-6">
+        <Card className="bg-red-900/20 border-red-500/30 rounded-xl">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+            <h2 className="text-lg font-bold text-red-400">Failed to Load Government Contacts</h2>
+            <p className="text-sm text-slate-400 mt-2">{(contactsQuery.error as any)?.message || 'Could not connect to emergency response backend.'}</p>
+            <Button onClick={() => contactsQuery.refetch()} className="mt-4 bg-red-600 hover:bg-red-700">Retry</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

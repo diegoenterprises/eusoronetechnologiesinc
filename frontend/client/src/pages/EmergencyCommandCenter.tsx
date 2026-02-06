@@ -63,6 +63,24 @@ export default function EmergencyCommandCenter() {
     },
   });
 
+  const hasError = situationalQuery.isError || operationsQuery.isError || pipelineQuery.isError;
+  if (hasError) {
+    return (
+      <div className="p-6">
+        <Card className="bg-red-900/20 border-red-500/30 rounded-xl">
+          <CardContent className="p-8 text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-red-400" />
+            <h2 className="text-lg font-bold text-red-400">Command Center Connection Error</h2>
+            <p className="text-sm text-slate-400 mt-2">{(situationalQuery.error as any)?.message || (operationsQuery.error as any)?.message || 'Failed to connect to emergency response backend.'}</p>
+            <Button onClick={() => { situationalQuery.refetch(); operationsQuery.refetch(); pipelineQuery.refetch(); missionsQuery.refetch(); }} className="mt-4 bg-red-600 hover:bg-red-700">
+              Retry Connection
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const sit = situationalQuery.data;
   const ops = operationsQuery.data;
 
