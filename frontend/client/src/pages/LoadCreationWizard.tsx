@@ -4,7 +4,7 @@
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,65 @@ const EQUIPMENT_TYPES = [
   { id: "hopper", name: "Hopper" },
 ];
 
+const PRODUCT_DB: { keywords: string[]; unNumber: string; name: string; hazmatClass: string }[] = [
+  { keywords: ["gasoline", "petrol", "motor fuel", "unleaded", "premium", "regular", "rbob", "motor spirit"], unNumber: "UN1203", name: "Gasoline / Motor Fuel", hazmatClass: "3" },
+  { keywords: ["diesel", "ulsd", "gas oil", "heating oil", "diesel fuel", "no. 2 fuel"], unNumber: "UN1202", name: "Diesel Fuel", hazmatClass: "3" },
+  { keywords: ["crude oil", "crude petroleum", "wti", "brent", "sweet crude", "light crude", "heavy crude", "condensate", "petroleum crude"], unNumber: "UN1267", name: "Petroleum Crude Oil", hazmatClass: "3" },
+  { keywords: ["sour crude", "h2s crude"], unNumber: "UN3494", name: "Petroleum Sour Crude Oil", hazmatClass: "3" },
+  { keywords: ["kerosene", "jet fuel", "jet a", "jet a-1", "jp-8", "jp-5"], unNumber: "UN1223", name: "Kerosene / Jet Fuel", hazmatClass: "3" },
+  { keywords: ["aviation fuel", "turbine fuel"], unNumber: "UN1863", name: "Fuel, Aviation", hazmatClass: "3" },
+  { keywords: ["naphtha", "petroleum naphtha"], unNumber: "UN1256", name: "Naphtha, Petroleum", hazmatClass: "3" },
+  { keywords: ["propane", "lp-gas"], unNumber: "UN1978", name: "Propane", hazmatClass: "2.1" },
+  { keywords: ["lpg", "liquefied petroleum gas"], unNumber: "UN1075", name: "Liquefied Petroleum Gas", hazmatClass: "2.1" },
+  { keywords: ["butane", "n-butane"], unNumber: "UN1011", name: "Butane", hazmatClass: "2.1" },
+  { keywords: ["isobutane"], unNumber: "UN1969", name: "Isobutane", hazmatClass: "2.1" },
+  { keywords: ["natural gas", "cng", "methane compressed"], unNumber: "UN1971", name: "Natural Gas, Compressed", hazmatClass: "2.1" },
+  { keywords: ["lng", "liquefied natural gas", "methane refrigerated"], unNumber: "UN1972", name: "LNG / Methane, Refrigerated", hazmatClass: "2.1" },
+  { keywords: ["ethane"], unNumber: "UN1035", name: "Ethane", hazmatClass: "2.1" },
+  { keywords: ["hydrogen compressed", "hydrogen gas"], unNumber: "UN1049", name: "Hydrogen, Compressed", hazmatClass: "2.1" },
+  { keywords: ["hydrogen refrigerated", "liquid hydrogen"], unNumber: "UN1966", name: "Hydrogen, Refrigerated", hazmatClass: "2.1" },
+  { keywords: ["acetylene"], unNumber: "UN1001", name: "Acetylene, Dissolved", hazmatClass: "2.1" },
+  { keywords: ["ammonia", "anhydrous ammonia"], unNumber: "UN1005", name: "Ammonia, Anhydrous", hazmatClass: "2.3" },
+  { keywords: ["chlorine"], unNumber: "UN1017", name: "Chlorine", hazmatClass: "2.3" },
+  { keywords: ["oxygen", "oxygen compressed"], unNumber: "UN1072", name: "Oxygen, Compressed", hazmatClass: "2.2" },
+  { keywords: ["nitrogen compressed"], unNumber: "UN1066", name: "Nitrogen, Compressed", hazmatClass: "2.2" },
+  { keywords: ["nitrogen refrigerated", "liquid nitrogen"], unNumber: "UN1977", name: "Nitrogen, Refrigerated", hazmatClass: "2.2" },
+  { keywords: ["carbon dioxide", "co2"], unNumber: "UN1013", name: "Carbon Dioxide", hazmatClass: "2.2" },
+  { keywords: ["argon"], unNumber: "UN1006", name: "Argon, Compressed", hazmatClass: "2.2" },
+  { keywords: ["helium"], unNumber: "UN1046", name: "Helium, Compressed", hazmatClass: "2.2" },
+  { keywords: ["ethanol", "ethyl alcohol", "denatured alcohol"], unNumber: "UN1170", name: "Ethanol", hazmatClass: "3" },
+  { keywords: ["methanol", "methyl alcohol", "wood alcohol"], unNumber: "UN1230", name: "Methanol", hazmatClass: "3" },
+  { keywords: ["acetone"], unNumber: "UN1090", name: "Acetone", hazmatClass: "3" },
+  { keywords: ["benzene", "benzol"], unNumber: "UN1114", name: "Benzene", hazmatClass: "3" },
+  { keywords: ["toluene", "toluol", "methylbenzene"], unNumber: "UN1294", name: "Toluene", hazmatClass: "3" },
+  { keywords: ["xylene", "xylenes", "xylol"], unNumber: "UN1307", name: "Xylenes", hazmatClass: "3" },
+  { keywords: ["styrene"], unNumber: "UN2055", name: "Styrene Monomer", hazmatClass: "3" },
+  { keywords: ["cyclohexane"], unNumber: "UN1145", name: "Cyclohexane", hazmatClass: "3" },
+  { keywords: ["isopropanol", "isopropyl alcohol", "ipa", "rubbing alcohol"], unNumber: "UN1219", name: "Isopropanol", hazmatClass: "3" },
+  { keywords: ["e85", "e10", "e15", "gasohol", "ethanol gasoline"], unNumber: "UN3475", name: "Ethanol-Gasoline Mixture", hazmatClass: "3" },
+  { keywords: ["sulfuric acid", "battery acid", "sulphuric acid"], unNumber: "UN1830", name: "Sulfuric Acid", hazmatClass: "8" },
+  { keywords: ["hydrochloric acid", "muriatic acid", "hcl"], unNumber: "UN1789", name: "Hydrochloric Acid", hazmatClass: "8" },
+  { keywords: ["sodium hydroxide", "caustic soda", "lye", "naoh"], unNumber: "UN1823", name: "Sodium Hydroxide", hazmatClass: "8" },
+  { keywords: ["bleach", "sodium hypochlorite", "hypochlorite"], unNumber: "UN1791", name: "Hypochlorite Solution", hazmatClass: "8" },
+  { keywords: ["hydrogen sulfide", "h2s", "sour gas"], unNumber: "UN1053", name: "Hydrogen Sulfide", hazmatClass: "2.3" },
+  { keywords: ["hydrogen peroxide"], unNumber: "UN2014", name: "Hydrogen Peroxide", hazmatClass: "5.1" },
+  { keywords: ["asphalt", "bitumen", "hot asphalt"], unNumber: "UN3257", name: "Elevated Temperature Liquid", hazmatClass: "9" },
+  { keywords: ["paint", "lacquer", "varnish"], unNumber: "UN1263", name: "Paint / Lacquer", hazmatClass: "3" },
+  { keywords: ["turpentine"], unNumber: "UN1300", name: "Turpentine", hazmatClass: "3" },
+  { keywords: ["phosgene"], unNumber: "UN1076", name: "Phosgene", hazmatClass: "2.3" },
+  { keywords: ["hydrogen cyanide", "hcn", "prussic acid"], unNumber: "UN1051", name: "Hydrogen Cyanide", hazmatClass: "6.1" },
+  { keywords: ["carbon monoxide", "co"], unNumber: "UN1016", name: "Carbon Monoxide", hazmatClass: "2.3" },
+  { keywords: ["sulfur dioxide", "so2"], unNumber: "UN1079", name: "Sulfur Dioxide", hazmatClass: "2.3" },
+  { keywords: ["lithium ion battery", "lithium battery"], unNumber: "UN3480", name: "Lithium Ion Batteries", hazmatClass: "9" },
+  { keywords: ["fuel oil", "mineral spirits", "petroleum distillate"], unNumber: "UN1268", name: "Petroleum Distillates", hazmatClass: "3" },
+];
+
+const UN_LOOKUP: Record<string, { name: string; hazmatClass: string }> = {};
+PRODUCT_DB.forEach(p => {
+  const num = p.unNumber.replace(/^UN/, "");
+  UN_LOOKUP[num] = { name: p.name, hazmatClass: p.hazmatClass };
+});
+
 export default function LoadCreationWizard() {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
@@ -70,29 +129,43 @@ export default function LoadCreationWizard() {
     return "liquid";
   };
 
+  const lookupProductName = useCallback((name: string) => {
+    const q = name.toLowerCase().trim();
+    if (!q) return null;
+    for (const entry of PRODUCT_DB) {
+      for (const kw of entry.keywords) {
+        if (q.includes(kw) || kw.includes(q)) return entry;
+      }
+    }
+    return null;
+  }, []);
+
+  const lookupUNNumber = useCallback((un: string) => {
+    const num = un.replace(/^un/i, "").trim();
+    if (!num || num.length < 4) return null;
+    return UN_LOOKUP[num] || null;
+  }, []);
+
+  const handleUNChange = useCallback((value: string) => {
+    updateField("unNumber", value);
+    const result = lookupUNNumber(value);
+    if (result) {
+      updateField("productName", result.name);
+      updateField("hazmatClass", result.hazmatClass);
+      toast.success("ERG Auto-Detect", { description: `Identified: ${result.name} (Class ${result.hazmatClass})` });
+    }
+  }, [lookupUNNumber]);
+
   const handleSuggest = () => {
     if (formData.productName) {
-      const productLower = formData.productName.toLowerCase();
-      let suggestedClass = "3";
-      let unNumber = "UN1203";
-      
-      if (productLower.includes("gasoline") || productLower.includes("petrol")) {
-        suggestedClass = "3"; unNumber = "UN1203";
-      } else if (productLower.includes("diesel")) {
-        suggestedClass = "3"; unNumber = "UN1202";
-      } else if (productLower.includes("propane") || productLower.includes("lpg")) {
-        suggestedClass = "2.1"; unNumber = "UN1978";
-      } else if (productLower.includes("ammonia")) {
-        suggestedClass = "2.3"; unNumber = "UN1005";
-      } else if (productLower.includes("acid")) {
-        suggestedClass = "8"; unNumber = "UN1830";
-      } else if (productLower.includes("oxygen")) {
-        suggestedClass = "2.2"; unNumber = "UN1072";
+      const match = lookupProductName(formData.productName);
+      if (match) {
+        updateField("hazmatClass", match.hazmatClass);
+        updateField("unNumber", match.unNumber);
+        toast.success("ESANG AI Classification", { description: `Identified: ${match.name} -- ${match.unNumber} (Class ${match.hazmatClass})` });
+      } else {
+        toast.error("ESANG AI", { description: `Could not identify "${formData.productName}". Please select classification manually or enter UN number.` });
       }
-      
-      updateField("hazmatClass", suggestedClass);
-      updateField("unNumber", unNumber);
-      toast.success("ESANG AI Classification", { description: `Suggested: Class ${suggestedClass} (${unNumber})` });
     }
   };
 
@@ -104,7 +177,7 @@ export default function LoadCreationWizard() {
   const canProceed = () => {
     switch (step) {
       case 0: return formData.productName && formData.hazmatClass;
-      case 1: return formData.weight && formData.weight;
+      case 1: return formData.weight && formData.quantity;
       case 2: return formData.origin && formData.destination;
       case 3: return formData.equipment;
       case 4: return true;
@@ -136,7 +209,7 @@ export default function LoadCreationWizard() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-6">
           {step === 0 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Product Name</label>
                 <div className="flex gap-2">
@@ -154,8 +227,8 @@ export default function LoadCreationWizard() {
                 </Select>
               </div>
               <div>
-                <label className="text-sm text-slate-400 mb-1 block">UN Number (optional)</label>
-                <Input value={formData.unNumber || ""} onChange={(e: any) => updateField("unNumber", e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                <label className="text-sm text-slate-400 mb-1 block">UN Number (optional -- auto-detects product)</label>
+                <Input value={formData.unNumber || ""} onChange={(e: any) => handleUNChange(e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
               
               {formData.hazmatClass && (
@@ -169,7 +242,7 @@ export default function LoadCreationWizard() {
           )}
 
           {step === 1 && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Weight</label>
@@ -188,8 +261,8 @@ export default function LoadCreationWizard() {
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Quantity</label>
                   <div className="flex gap-2">
-                    <Input type="number" value={formData.weight || ""} onChange={(e: any) => updateField("quantity", e.target.value)} placeholder="8500" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={formData.weightUnit || "Gallons"} onValueChange={(v: any) => updateField("quantityUnit", v)}>
+                    <Input type="number" value={formData.quantity || ""} onChange={(e: any) => updateField("quantity", e.target.value)} placeholder="8500" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                    <Select value={formData.quantityUnit || "Gallons"} onValueChange={(v: any) => updateField("quantityUnit", v)}>
                       <SelectTrigger className="w-28 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Gallons">Gallons</SelectItem>
@@ -219,14 +292,14 @@ export default function LoadCreationWizard() {
                 </div>
               </div>
 
-              {formData.weight && Number(formData.weight) > 0 && (
-                <div className="pt-4">
+              {formData.quantity && Number(formData.quantity) > 0 && (
+                <div className="pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                   <p className="text-sm text-slate-400 mb-4 text-center">Load Visualization</p>
                   <MultiTruckVisualization
                     materialType={getMaterialType()}
-                    totalVolume={Number(formData.weight) || 0}
-                    unit={formData.weightUnit === "Gallons" ? "gal" : formData.weightUnit === "Barrels" ? "bbl" : formData.weightUnit?.toLowerCase() || "gal"}
-                    maxCapacityPerTruck={formData.weightUnit === "Barrels" ? 200 : formData.weightUnit === "Pallets" ? 24 : 8500}
+                    totalVolume={Number(formData.quantity) || 0}
+                    unit={formData.quantityUnit === "Gallons" ? "gal" : formData.quantityUnit === "Barrels" ? "bbl" : formData.quantityUnit?.toLowerCase() || "gal"}
+                    maxCapacityPerTruck={formData.quantityUnit === "Barrels" ? 200 : formData.quantityUnit === "Pallets" ? 24 : 8500}
                   />
                 </div>
               )}
@@ -234,7 +307,7 @@ export default function LoadCreationWizard() {
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin</label><Input value={formData.origin || ""} onChange={(e: any) => updateField("origin", e.target.value)} placeholder="City, State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               <div><label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-red-400" />Destination</label><Input value={formData.destination || ""} onChange={(e: any) => updateField("destination", e.target.value)} placeholder="City, State" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               <div className="grid grid-cols-2 gap-4">
@@ -245,7 +318,7 @@ export default function LoadCreationWizard() {
           )}
 
           {step === 3 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block">Equipment Type</label>
                 <Select value={formData.equipment || ""} onValueChange={(v: any) => updateField("equipment", v)}>
                   <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select equipment" /></SelectTrigger>
@@ -256,32 +329,41 @@ export default function LoadCreationWizard() {
           )}
 
           {step === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e: any) => updateField("endorsements", e.target.value)} placeholder="e.g., Hazmat, Tanker" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
             </div>
           )}
 
           {step === 5 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block">Rate ($)</label><Input type="number" value={formData.rate || ""} onChange={(e: any) => updateField("rate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               <div><label className="text-sm text-slate-400 mb-1 block">Rate Per Mile ($)</label><Input type="number" step="0.01" value={formData.ratePerMile || ""} onChange={(e: any) => updateField("ratePerMile", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
             </div>
           )}
 
           {step === 6 && (
-            <div className="space-y-4">
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <p className="text-white font-bold text-lg">Review Your Load</p>
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Product</p><p className="text-white">{formData.productName}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Hazmat Class</p><p className="text-white">{formData.hazmatClass}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Quantity</p><p className="text-white">{formData.weight} gal</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Weight</p><p className="text-white">{formData.weight} lbs</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Hazmat Class</p><p className="text-white">{HAZMAT_CLASSES.find(c => c.id === formData.hazmatClass)?.name || formData.hazmatClass}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">UN Number</p><p className="text-white">{formData.unNumber || "N/A"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Volume</p><p className="text-white">{formData.quantity} {formData.quantityUnit || "Gallons"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Weight</p><p className="text-white">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Origin</p><p className="text-white">{formData.origin}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Destination</p><p className="text-white">{formData.destination}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Equipment</p><p className="text-white">{formData.equipment}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Pickup</p><p className="text-white">{formData.pickupDate || "N/A"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Equipment</p><p className="text-white">{EQUIPMENT_TYPES.find(e => e.id === formData.equipment)?.name || formData.equipment}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Safety Score</p><p className="text-white">{formData.minSafetyScore || "Any"}</p></div>
               </div>
+              {formData.hazmatClass && (
+                <div className="mt-4">
+                  <HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} />
+                </div>
+              )}
             </div>
           )}
         </CardContent>
