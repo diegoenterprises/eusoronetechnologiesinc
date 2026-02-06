@@ -556,7 +556,7 @@ export default function PrivacyPolicy() {
         {/* Footer */}
         <div className="text-center mt-8 pb-8">
           <p className="text-xs text-slate-500">
-            Copyright {new Date().getFullYear()} {COMPANY_NAME}. All rights reserved.
+            Copyright {new Date().getFullYear()} {COMPANY_NAME} All rights reserved.
           </p>
         </div>
       </div>
