@@ -9,6 +9,8 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { FMCSALookup } from "@/components/registration/FMCSALookup";
+import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -131,9 +133,18 @@ const US_STATES = [
 export default function RegisterDriver() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState<DriverFormData>(initialFormData);
+  const [fmcsaData, setFmcsaData] = useState<FMCSAData | null>(null);
 
   const updateFormData = (updates: Partial<DriverFormData>) => {
     setFormData((prev: any) => ({ ...prev, ...updates }));
+  };
+
+  const handleCarrierVerified = (data: FMCSAData) => {
+    setFmcsaData(data);
+    if (data.verified && data.companyProfile) {
+      updateFormData({ carrierName: data.companyProfile.legalName });
+      toast.success(`Carrier verified: ${data.companyProfile.legalName}`);
+    }
   };
 
   const registerMutation = (trpc as any).registration.registerDriver.useMutation({
@@ -377,25 +388,25 @@ export default function RegisterDriver() {
           </div>
 
           {(formData.employmentType === "company" || formData.employmentType === "owner_op") && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-lg bg-slate-700/30">
-              <div className="space-y-2">
-                <Label className="text-slate-300">Carrier USDOT Number</Label>
-                <Input
-                  value={formData.carrierUsdot}
-                  onChange={(e: any) => updateFormData({ carrierUsdot: e.target.value })}
-                  placeholder="1234567"
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">Carrier Name</Label>
-                <Input
-                  value={formData.carrierName}
-                  onChange={(e: any) => updateFormData({ carrierName: e.target.value })}
-                  placeholder="ABC Trucking LLC"
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
-              </div>
+            <div className="space-y-4 p-4 rounded-lg bg-slate-700/30">
+              <FMCSALookup
+                mode="dot"
+                dotNumber={formData.carrierUsdot}
+                mcNumber=""
+                onDotChange={(v) => updateFormData({ carrierUsdot: v })}
+                onMcChange={() => {}}
+                onDataLoaded={handleCarrierVerified}
+                fmcsaData={fmcsaData}
+                compact
+              />
+              {fmcsaData?.verified && formData.carrierName && (
+                <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                  <span className="text-sm text-green-300">
+                    Registering under <strong>{formData.carrierName}</strong>
+                  </span>
+                </div>
+              )}
             </div>
           )}
         </div>

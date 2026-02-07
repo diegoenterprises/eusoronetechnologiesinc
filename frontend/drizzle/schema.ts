@@ -4105,3 +4105,75 @@ export type InsertNegotiationMessage = typeof negotiationMessages.$inferInsert;
 export type LaneContract = typeof laneContracts.$inferSelect;
 export type InsertLaneContract = typeof laneContracts.$inferInsert;
 
+// ============================================================================
+// COMPLIANCE NETWORK MEMBERSHIPS
+// Tracks company memberships on Avetta, ISNetworld, Veriforce, FMCSA, etc.
+// ============================================================================
+
+export const complianceNetworkMemberships = mysqlTable(
+  "compliance_network_memberships",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    networkName: varchar("networkName", { length: 50 }).notNull(),
+    memberId: varchar("memberId", { length: 100 }).notNull(),
+    networkDisplayName: varchar("networkDisplayName", { length: 100 }),
+    verificationStatus: mysqlEnum("verificationStatus", [
+      "PENDING", "VERIFIED", "FAILED", "EXPIRED", "MANUAL_REVIEW",
+    ]).default("PENDING").notNull(),
+    verifiedAt: timestamp("verifiedAt"),
+    verifiedBy: int("verifiedBy"),
+    verificationMethod: varchar("verificationMethod", { length: 30 }),
+    verificationData: json("verificationData"),
+    proofDocumentUrl: text("proofDocumentUrl"),
+    proofDocumentType: varchar("proofDocumentType", { length: 50 }),
+    autoPopulatedData: json("autoPopulatedData"),
+    submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+    submittedBy: int("submittedBy").notNull(),
+    expiresAt: timestamp("expiresAt"),
+    lastCheckedAt: timestamp("lastCheckedAt"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("cnm_company_idx").on(table.companyId),
+    networkIdx: index("cnm_network_idx").on(table.networkName, table.memberId),
+    statusIdx: index("cnm_status_idx").on(table.verificationStatus),
+    expiresIdx: index("cnm_expires_idx").on(table.expiresAt),
+  })
+);
+
+export type ComplianceNetworkMembership = typeof complianceNetworkMemberships.$inferSelect;
+export type InsertComplianceNetworkMembership = typeof complianceNetworkMemberships.$inferInsert;
+
+// ============================================================================
+// FMCSA CARRIER CACHE
+// Caches FMCSA QCMobile API responses to avoid excessive API calls
+// ============================================================================
+
+export const fmcsaCarrierCache = mysqlTable(
+  "fmcsa_carrier_cache",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    dotNumber: varchar("dotNumber", { length: 8 }).notNull().unique(),
+    mcNumber: varchar("mcNumber", { length: 10 }),
+    carrierData: json("carrierData").notNull(),
+    authorityData: json("authorityData"),
+    basicsData: json("basicsData"),
+    cargoData: json("cargoData"),
+    safetyData: json("safetyData"),
+    fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+    expiresAt: timestamp("expiresAt").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    dotIdx: index("fmcsa_dot_idx").on(table.dotNumber),
+    mcIdx: index("fmcsa_mc_idx").on(table.mcNumber),
+    expiresIdx: index("fmcsa_expires_idx").on(table.expiresAt),
+  })
+);
+
+export type FmcsaCarrierCache = typeof fmcsaCarrierCache.$inferSelect;
+export type InsertFmcsaCarrierCache = typeof fmcsaCarrierCache.$inferInsert;
+

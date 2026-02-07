@@ -9,6 +9,8 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { FMCSALookup } from "@/components/registration/FMCSALookup";
+import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -110,9 +112,36 @@ const US_STATES = [
 export default function RegisterBroker() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState<BrokerFormData>(initialFormData);
+  const [fmcsaData, setFmcsaData] = useState<FMCSAData | null>(null);
 
   const updateFormData = (updates: Partial<BrokerFormData>) => {
     setFormData((prev: any) => ({ ...prev, ...updates }));
+  };
+
+  const handleFMCSADataLoaded = (data: FMCSAData) => {
+    setFmcsaData(data);
+    if (!data.verified) return;
+    const cp = data.companyProfile;
+    const auth = data.authority;
+    const ins = data.insurance;
+    const updates: Partial<BrokerFormData> = {};
+    if (cp) {
+      updates.companyName = cp.legalName || formData.companyName;
+      updates.dba = cp.dba || formData.dba;
+      updates.streetAddress = cp.physicalAddress.street || formData.streetAddress;
+      updates.city = cp.physicalAddress.city || formData.city;
+      updates.state = cp.physicalAddress.state || formData.state;
+      updates.zipCode = cp.physicalAddress.zip || formData.zipCode;
+    }
+    if (auth) {
+      updates.usdotNumber = auth.dotNumber || formData.usdotNumber;
+      updates.brokerAuthority = auth.brokerAuthority === "A" ? "ACTIVE" : "INACTIVE";
+    }
+    if (ins?.bondOnFile) {
+      updates.suretyBondAmount = "75000";
+    }
+    updateFormData(updates);
+    toast.success("FMCSA data retrieved — broker fields auto-populated");
   };
 
   const registerMutation = (trpc as any).registration.registerBroker.useMutation({
@@ -209,28 +238,16 @@ export default function RegisterBroker() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                MC Number <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                value={formData.mcNumber}
-                onChange={(e: any) => updateFormData({ mcNumber: e.target.value })}
-                placeholder="MC-123456"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">USDOT Number (if applicable)</Label>
-              <Input
-                value={formData.usdotNumber}
-                onChange={(e: any) => updateFormData({ usdotNumber: e.target.value })}
-                placeholder="1234567"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </div>
+          <FMCSALookup
+            mode="both"
+            dotNumber={formData.usdotNumber}
+            mcNumber={formData.mcNumber}
+            onDotChange={(v) => updateFormData({ usdotNumber: v })}
+            onMcChange={(v) => updateFormData({ mcNumber: v })}
+            onDataLoaded={handleFMCSADataLoaded}
+            fmcsaData={fmcsaData}
+            compact
+          />
         </div>
       ),
       validate: () => {

@@ -9,6 +9,8 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { FMCSALookup } from "@/components/registration/FMCSALookup";
+import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -106,9 +108,17 @@ const RESPONSIBILITIES = [
 export default function RegisterCompliance() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState<ComplianceFormData>(initialFormData);
+  const [fmcsaData, setFmcsaData] = useState<FMCSAData | null>(null);
 
   const updateFormData = (updates: Partial<ComplianceFormData>) => {
     setFormData((prev: any) => ({ ...prev, ...updates }));
+  };
+
+  const handleCompanyVerified = (data: FMCSAData) => {
+    setFmcsaData(data);
+    if (data.verified && data.companyProfile) {
+      updateFormData({ companyName: data.companyProfile.legalName });
+    }
   };
 
   const registerMutation = (trpc as any).registration.registerComplianceOfficer.useMutation({
@@ -214,16 +224,18 @@ export default function RegisterCompliance() {
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
             </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">Company USDOT <span className="text-red-400">*</span></Label>
-              <Input
-                value={formData.companyUsdot}
-                onChange={(e: any) => updateFormData({ companyUsdot: e.target.value })}
-                placeholder="1234567"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
           </div>
+
+          <FMCSALookup
+            mode="dot"
+            dotNumber={formData.companyUsdot}
+            mcNumber=""
+            onDotChange={(v) => updateFormData({ companyUsdot: v })}
+            onMcChange={() => {}}
+            onDataLoaded={handleCompanyVerified}
+            fmcsaData={fmcsaData}
+            compact
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">

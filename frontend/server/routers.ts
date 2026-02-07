@@ -144,6 +144,8 @@ import { loadBiddingRouter } from "./routers/loadBidding";
 import { rateNegotiationsRouter } from "./routers/rateNegotiations";
 import { laneContractsRouter } from "./routers/laneContracts";
 import { stripeRouter } from "./routers/stripe";
+import { fmcsaRouter } from "./routers/fmcsa";
+import { complianceNetworksRouter } from "./routers/complianceNetworks";
 
 export const appRouter = router({
   system: systemRouter,
@@ -602,6 +604,12 @@ export const appRouter = router({
 
   // EusoLane — Lane Contracts & Commitments
   laneContracts: laneContractsRouter,
+
+  // FMCSA QCMobile API — USDOT/MC lookup, auto-populate registration
+  fmcsa: fmcsaRouter,
+
+  // Compliance Network Memberships (Avetta, ISNetworld, Veriforce, etc.)
+  complianceNetworks: complianceNetworksRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

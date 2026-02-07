@@ -9,6 +9,8 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { FMCSALookup } from "@/components/registration/FMCSALookup";
+import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -146,39 +148,55 @@ const EQUIPMENT_TYPES = [
 export default function RegisterCarrier() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState<CarrierFormData>(initialFormData);
-  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [fmcsaData, setFmcsaData] = useState<FMCSAData | null>(null);
 
   const updateFormData = (updates: Partial<CarrierFormData>) => {
     setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const handleSAFERLookup = async () => {
-    if (!formData.usdotNumber) {
-      toast.error("Please enter a USDOT number first");
-      return;
+  const handleFMCSADataLoaded = (data: FMCSAData) => {
+    setFmcsaData(data);
+    if (!data.verified) return;
+
+    // Auto-populate 30+ fields from FMCSA response
+    const cp = data.companyProfile;
+    const auth = data.authority;
+    const safety = data.safety;
+    const ins = data.insurance;
+
+    const updates: Partial<CarrierFormData> = {
+      saferVerified: true,
+      operatingStatus: auth?.operatingStatus || "",
+      entityType: auth?.carrierOperation || "CARRIER",
+    };
+
+    if (cp) {
+      updates.companyName = cp.legalName || formData.companyName;
+      updates.dba = cp.dba || formData.dba;
+      updates.physicalAddress = [cp.physicalAddress.street, cp.physicalAddress.city, cp.physicalAddress.state, cp.physicalAddress.zip].filter(Boolean).join(", ");
+      updates.streetAddress = cp.physicalAddress.street || formData.streetAddress;
+      updates.city = cp.physicalAddress.city || formData.city;
+      updates.state = cp.physicalAddress.state || formData.state;
+      updates.zipCode = cp.physicalAddress.zip || formData.zipCode;
+      updates.phoneNumber = cp.phone || formData.phoneNumber;
+      updates.powerUnits = String(cp.fleetSize || formData.powerUnits);
+      updates.drivers = String(cp.driverCount || formData.drivers);
     }
 
-    setIsLookingUp(true);
-    try {
-      // Simulate FMCSA SAFER API lookup
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      
-      // Mock data - in production this would come from FMCSA SAFER API
-      updateFormData({
-        companyName: formData.companyName || "Sample Trucking LLC",
-        operatingStatus: "AUTHORIZED",
-        entityType: "CARRIER",
-        physicalAddress: "123 Trucking Way, Houston, TX 77001",
-        mailingAddress: "PO Box 1234, Houston, TX 77002",
-        phoneNumber: "(713) 555-0100",
-        saferVerified: true,
-      });
-      
-      toast.success("SAFER data retrieved successfully");
-    } catch (error) {
-      toast.error("Failed to lookup SAFER data");
+    if (auth) {
+      updates.mcNumber = auth.docketNumbers?.[0]?.docketNumber
+        ? `MC-${auth.docketNumbers[0].docketNumber}`
+        : formData.mcNumber;
     }
-    setIsLookingUp(false);
+
+    if (data.hazmat?.authorized) {
+      updates.hasHazmatAuthority = true;
+    }
+
+    updateFormData(updates);
+    toast.success("FMCSA data retrieved — fields auto-populated", {
+      description: data.warnings?.length ? `${data.warnings.length} warning(s) found` : undefined,
+    });
   };
 
   const registerMutation = (trpc as any).registration.registerCarrier.useMutation({
@@ -230,88 +248,19 @@ export default function RegisterCarrier() {
     {
       id: "usdot",
       title: "USDOT Verification",
-      description: "Enter your USDOT number for SAFER verification",
+      description: "Enter your USDOT number for FMCSA verification",
       icon: <Shield className="w-5 h-5" />,
       component: (
         <div className="space-y-6">
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-blue-300 font-medium">FMCSA SAFER Verification</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  We'll automatically verify your carrier information from the FMCSA SAFER system.
-                  This helps ensure compliance and speeds up the registration process.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="usdotNumber" className="text-slate-300">
-                USDOT Number <span className="text-red-400">*</span>
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="usdotNumber"
-                  value={formData.usdotNumber}
-                  onChange={(e: any) => updateFormData({ usdotNumber: e.target.value })}
-                  placeholder="1234567"
-                  className="bg-slate-700/50 border-slate-600 text-white"
-                />
-                <Button
-                  type="button"
-                  onClick={handleSAFERLookup}
-                  disabled={isLookingUp}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {isLookingUp ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Search className="w-4 h-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="mcNumber" className="text-slate-300">MC Number</Label>
-              <Input
-                id="mcNumber"
-                value={formData.mcNumber}
-                onChange={(e: any) => updateFormData({ mcNumber: e.target.value })}
-                placeholder="MC-123456"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </div>
-
-          {formData.saferVerified && (
-            <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle className="w-5 h-5 text-green-400" />
-                <span className="text-green-400 font-medium">SAFER Verification Successful</span>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-400">Company Name</p>
-                  <p className="text-white">{formData.companyName}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Operating Status</p>
-                  <Badge className="bg-green-500/20 text-green-400">{formData.operatingStatus}</Badge>
-                </div>
-                <div>
-                  <p className="text-slate-400">Entity Type</p>
-                  <p className="text-white">{formData.entityType}</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Physical Address</p>
-                  <p className="text-white">{formData.physicalAddress}</p>
-                </div>
-              </div>
-            </div>
-          )}
+          <FMCSALookup
+            mode="both"
+            dotNumber={formData.usdotNumber}
+            mcNumber={formData.mcNumber}
+            onDotChange={(v) => updateFormData({ usdotNumber: v })}
+            onMcChange={(v) => updateFormData({ mcNumber: v })}
+            onDataLoaded={handleFMCSADataLoaded}
+            fmcsaData={fmcsaData}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="einNumber" className="text-slate-300">
@@ -325,11 +274,24 @@ export default function RegisterCarrier() {
               className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
+
+          {formData.saferVerified && formData.companyName && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="text-sm text-green-300">
+                <strong>{formData.companyName}</strong> — verified & auto-populated from FMCSA
+              </span>
+            </div>
+          )}
         </div>
       ),
       validate: () => {
         if (!formData.usdotNumber || !formData.einNumber) {
           toast.error("Please enter USDOT number and EIN");
+          return false;
+        }
+        if (fmcsaData?.isBlocked) {
+          toast.error("Registration blocked", { description: fmcsaData.blockReason || "Carrier not authorized to operate" });
           return false;
         }
         return true;
