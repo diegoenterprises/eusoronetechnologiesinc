@@ -75,25 +75,25 @@ export const esangRouter = router({
       // Try UN number first
       if (input.unNumber) {
         const info = getFullERGInfo(input.unNumber);
-        if (info) return { found: true, ...info, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+        if (info) return { found: true, ...info, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
       }
       // Try material name
       if (input.materialName) {
         const info = getERGForProduct(input.materialName);
-        if (info) return { found: true, ...info, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+        if (info) return { found: true, ...info, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
         // Fallback to search
         const results = searchMaterials(input.materialName, 5);
         if (results.length > 0) {
           const first = getFullERGInfo(results[0].unNumber);
-          if (first) return { found: true, ...first, searchResults: results, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+          if (first) return { found: true, ...first, searchResults: results, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
         }
       }
       // Try guide number directly
       if (input.guideNumber) {
         const guide = getGuide(input.guideNumber);
-        if (guide) return { found: true, material: null, guide, protectiveDistance: null, emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+        if (guide) return { found: true, material: null, guide, protectiveDistance: null, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
       }
-      return { found: false, message: "No ERG data found. Use Guide 111 for unidentified cargo.", fallbackGuide: getGuide(111), emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary) };
+      return { found: false, message: "No ERG data found. Use Guide 111 for unidentified cargo.", fallbackGuide: getGuide(111), emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
     }),
 
   /**

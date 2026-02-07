@@ -475,7 +475,7 @@ Provide:
       const g = ergInfo.guide;
       const m = ergInfo.material;
       const pd = ergInfo.protectiveDistance;
-      const contacts = EMERGENCY_CONTACTS.filter(c => c.isPrimary);
+      const contacts = Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary);
 
       let msg = `## ERG 2024 - Guide ${g.number}: ${g.title}\n\n`;
       if (m) msg += `**Material:** ${m.name} (UN${m.unNumber})\n**Hazard Class:** ${m.hazardClass}${m.isTIH ? " [TIH - TOXIC INHALATION HAZARD]" : ""}\n\n`;
@@ -485,7 +485,7 @@ Provide:
       msg += `### Health Hazards\n${g.potentialHazards.health.map((h: string) => `- ${h}`).join("\n")}\n\n`;
       msg += `### PPE: ${g.publicSafety.protectiveClothing}\n\n`;
       msg += `### Emergency Response\n**Fire (small):** ${g.emergencyResponse.fire.small.join("; ")}\n**Fire (large):** ${g.emergencyResponse.fire.large.join("; ")}\n**Spill:** ${g.emergencyResponse.spillLeak.general.join("; ")}\n**First Aid:** ${g.emergencyResponse.firstAid}\n\n`;
-      msg += `### Emergency Contacts\n${contacts.map(c => `- ${c.name}: ${c.phone} (${c.country})`).join("\n")}`;
+      msg += `### Emergency Contacts\n${contacts.map((c: any) => `- ${c.name}: ${c.phone} (${c.description})`).join("\n")}`;
 
       return {
         message: msg,

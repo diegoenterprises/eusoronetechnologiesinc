@@ -111,7 +111,7 @@ export default function MarketPricing() {
   });
 
   const intel = intelQuery.data;
-  const liveOverrides = intel?.liveOverrides || {};
+  const liveOverrides: Record<string, any> = (intel?.liveOverrides as Record<string, any>) || {};
 
   // Merge seed commodities with live data overrides
   const rawCommodities = data?.commodities || [];
