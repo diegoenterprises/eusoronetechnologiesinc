@@ -163,7 +163,7 @@ export const spectraMatchRouter = router({
               isolationDistance: ergData.guide?.publicSafety.isolationDistance,
               fireIsolationDistance: ergData.guide?.publicSafety.fireIsolationDistance,
               protectiveClothing: ergData.guide?.publicSafety.protectiveClothing,
-              emergencyContacts: EMERGENCY_CONTACTS.filter(c => c.isPrimary).map(c => ({ name: c.name, phone: c.phone })),
+              emergencyContacts: Object.values(EMERGENCY_CONTACTS).slice(0, 3).map(c => ({ name: c.name, phone: c.phone })),
             };
           }
           return null;

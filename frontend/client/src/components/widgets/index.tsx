@@ -8,8 +8,11 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
-// UNIVERSAL WIDGETS
+// UNIVERSAL WIDGETS — Premium Edition
 // ============================================================================
+
+// Shared premium row style
+const premiumRow = "flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] transition-all duration-200";
 
 // Tasks Widget
 export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
@@ -39,28 +42,30 @@ export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addTask()}
-            className="bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+            className="bg-white/[0.06] border-white/[0.1] text-white placeholder:text-gray-500 rounded-xl focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/20 transition-all"
           />
-          <Button size="sm" onClick={addTask} className="bg-purple-500 hover:bg-purple-600">
+          <Button size="sm" onClick={addTask} className="bg-purple-500/80 hover:bg-purple-500 rounded-xl shadow-lg shadow-purple-500/20 transition-all">
             <Plus className="w-4 h-4" />
           </Button>
         </div>
       )}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {tasks.slice(0, compact ? 3 : undefined).map(task => (
           <div
             key={task.id}
             onClick={() => toggleTask(task.id)}
-            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${
-              task.done ? 'bg-green-500/20 text-gray-400 line-through' : 'bg-white/5 hover:bg-white/10 text-white'
+            className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border ${
+              task.done
+                ? 'bg-green-500/[0.08] border-green-500/20 text-gray-500'
+                : 'bg-white/[0.04] border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] text-white'
             }`}
           >
-            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-              task.done ? 'border-green-500 bg-green-500' : 'border-gray-400'
+            <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+              task.done ? 'border-green-500 bg-green-500 shadow-sm shadow-green-500/30' : 'border-gray-500/60 hover:border-gray-400'
             }`}>
               {task.done && <Check className="w-3 h-3 text-white" />}
             </div>
-            <span className="text-sm">{task.text}</span>
+            <span className={`text-sm tracking-wide ${task.done ? 'line-through opacity-60' : 'font-medium'}`}>{task.text}</span>
           </div>
         ))}
       </div>
@@ -68,17 +73,47 @@ export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }
   );
 };
 
-// Notes Widget
+// Notes Widget — Premium notebook feel
 export const NotesWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const [note, setNote] = useState('');
+  const lineCount = 8;
+
   return (
-    <div className="h-full">
+    <div className="h-full relative">
+      {/* Notebook paper background */}
+      <div className="absolute inset-0 rounded-xl overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent" />
+        {/* Ruled lines */}
+        <div className="absolute inset-0 pt-2 px-4">
+          {Array.from({ length: lineCount }).map((_, i) => (
+            <div
+              key={i}
+              className="border-b border-white/[0.06]"
+              style={{ height: `${100 / lineCount}%` }}
+            />
+          ))}
+        </div>
+        {/* Left margin line */}
+        <div className="absolute top-0 bottom-0 left-10 w-px bg-purple-500/15" />
+      </div>
+
       <Textarea
-        placeholder="Write your notes here..."
+        placeholder="Start writing..."
         value={note}
         onChange={(e) => setNote(e.target.value)}
-        className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 min-h-[100px] resize-none"
+        className="relative z-10 bg-transparent border-0 text-white/90 placeholder:text-gray-600 min-h-[140px] h-full resize-none rounded-xl focus:ring-0 focus:border-0 shadow-none pl-14 pr-4 pt-3 leading-[calc(100%/8*1.1)]"
+        style={{
+          fontFamily: "'Georgia', 'Palatino Linotype', 'Book Antiqua', serif",
+          fontSize: '14px',
+          letterSpacing: '0.02em',
+          lineHeight: '1.85',
+        }}
       />
+
+      {/* Page corner fold */}
+      <div className="absolute bottom-0 right-0 w-6 h-6 overflow-hidden">
+        <div className="absolute bottom-0 right-0 w-8 h-8 bg-gradient-to-tl from-white/[0.08] to-transparent rotate-0 origin-bottom-right" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 100%)' }} />
+      </div>
     </div>
   );
 };
@@ -91,14 +126,20 @@ export const NotificationsWidget: React.FC<{ compact?: boolean }> = ({ compact =
     { id: 3, text: 'Document expiring soon', time: '1h ago', type: 'warning' },
   ];
 
+  const dotColor = (type: string) => type === 'success' ? 'bg-green-400 shadow-green-400/40' : type === 'warning' ? 'bg-yellow-400 shadow-yellow-400/40' : 'bg-blue-400 shadow-blue-400/40';
+  const iconColor = (type: string) => type === 'success' ? 'text-green-400' : type === 'warning' ? 'text-yellow-400' : 'text-blue-400';
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {notifications.slice(0, compact ? 2 : undefined).map(n => (
-        <div key={n.id} className="flex items-start gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all">
-          <Bell className={`w-4 h-4 mt-0.5 ${n.type === 'success' ? 'text-green-400' : n.type === 'warning' ? 'text-yellow-400' : 'text-blue-400'}`} />
-          <div className="flex-1">
-            <p className="text-sm text-white">{n.text}</p>
-            <p className="text-xs text-gray-500">{n.time}</p>
+        <div key={n.id} className={premiumRow}>
+          <div className="relative flex-shrink-0">
+            <Bell className={`w-4 h-4 ${iconColor(n.type)}`} />
+            <div className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full ${dotColor(n.type)} shadow-sm`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-white font-medium tracking-wide truncate">{n.text}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">{n.time}</p>
           </div>
         </div>
       ))}
@@ -120,10 +161,12 @@ export const QuickActionsWidget: React.FC<{ compact?: boolean; role?: string }> 
         <Button
           key={action.label}
           variant="outline"
-          className="bg-white/5 border-white/20 text-white hover:bg-white/10 justify-start gap-2"
+          className="bg-white/[0.04] border-white/[0.08] text-white hover:bg-white/[0.1] hover:border-white/[0.15] justify-start gap-3 rounded-xl h-11 transition-all duration-200 shadow-sm"
         >
-          <action.icon className="w-4 h-4" />
-          {!compact && action.label}
+          <div className="p-1.5 rounded-lg bg-purple-500/15">
+            <action.icon className="w-3.5 h-3.5 text-purple-400" />
+          </div>
+          {!compact && <span className="text-sm font-medium tracking-wide">{action.label}</span>}
         </Button>
       ))}
     </div>
@@ -139,13 +182,15 @@ export const RecentActivityWidget: React.FC<{ compact?: boolean }> = ({ compact 
   ];
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {activities.slice(0, compact ? 2 : undefined).map((a, i) => (
-        <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-          <Activity className="w-4 h-4 text-purple-400" />
-          <div className="flex-1">
-            <p className="text-sm text-white">{a.action}</p>
-            <p className="text-xs text-gray-500">{a.time}</p>
+        <div key={i} className={premiumRow}>
+          <div className="p-1.5 rounded-lg bg-purple-500/15 flex-shrink-0">
+            <Activity className="w-3.5 h-3.5 text-purple-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-white font-medium tracking-wide truncate">{a.action}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">{a.time}</p>
           </div>
         </div>
       ))}
@@ -162,13 +207,13 @@ export const PerformanceSummaryWidget: React.FC<{ compact?: boolean }> = ({ comp
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {metrics.slice(0, compact ? 2 : undefined).map((m) => (
-        <div key={m.label} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-          <span className="text-sm text-gray-300">{m.label}</span>
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold text-white">{m.value}</span>
-            <span className="text-xs text-green-400">{m.trend}</span>
+        <div key={m.label} className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+          <span className="text-sm text-gray-400 font-medium tracking-wide">{m.label}</span>
+          <div className="flex items-center gap-2.5">
+            <span className="text-lg font-bold text-white tabular-nums">{m.value}</span>
+            <span className="text-[11px] font-semibold text-green-400 bg-green-400/10 px-1.5 py-0.5 rounded-md">{m.trend}</span>
           </div>
         </div>
       ))}
@@ -180,10 +225,10 @@ export const PerformanceSummaryWidget: React.FC<{ compact?: boolean }> = ({ comp
 export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   return (
     <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
       <Input
         placeholder="Search loads, carriers, documents..."
-        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-gray-400"
+        className="pl-11 bg-white/[0.06] border-white/[0.1] text-white placeholder:text-gray-600 rounded-xl h-11 focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/20 transition-all"
       />
     </div>
   );
@@ -192,20 +237,22 @@ export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false 
 // Messages Widget
 export const MessagesWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const messages = [
-    { from: 'John D.', message: 'ETA updated to 3pm', time: '5m' },
-    { from: 'ABC Trucking', message: 'Documents received', time: '20m' },
+    { from: 'John D.', message: 'ETA updated to 3pm', time: '5m', initials: 'JD' },
+    { from: 'ABC Trucking', message: 'Documents received', time: '20m', initials: 'AT' },
   ];
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {messages.map((m, i) => (
-        <div key={i} className="flex items-start gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer">
-          <MessageSquare className="w-4 h-4 mt-0.5 text-blue-400" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-white">{m.from}</p>
-            <p className="text-xs text-gray-400">{m.message}</p>
+        <div key={i} className={`${premiumRow} cursor-pointer`}>
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500/25 to-purple-500/25 flex items-center justify-center flex-shrink-0 border border-white/[0.08]">
+            <span className="text-[10px] font-bold text-white/80">{m.initials}</span>
           </div>
-          <span className="text-xs text-gray-500">{m.time}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white tracking-wide">{m.from}</p>
+            <p className="text-[11px] text-gray-500 truncate">{m.message}</p>
+          </div>
+          <span className="text-[10px] text-gray-600 font-medium tabular-nums flex-shrink-0">{m.time}</span>
         </div>
       ))}
     </div>
@@ -215,18 +262,21 @@ export const MessagesWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
 // Calendar Widget
 export const CalendarWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const events = [
-    { title: 'Load #4521 Delivery', time: '2:00 PM' },
-    { title: 'Carrier Meeting', time: '4:30 PM' },
+    { title: 'Load #4521 Delivery', time: '2:00 PM', color: 'cyan' },
+    { title: 'Carrier Meeting', time: '4:30 PM', color: 'purple' },
   ];
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {events.map((e, i) => (
-        <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-          <CalendarIcon className="w-4 h-4 text-cyan-400" />
-          <div className="flex-1">
-            <p className="text-sm text-white">{e.title}</p>
-            <p className="text-xs text-gray-500">{e.time}</p>
+        <div key={i} className={premiumRow}>
+          <div className={`w-1 h-8 rounded-full flex-shrink-0 ${e.color === 'cyan' ? 'bg-cyan-400' : 'bg-purple-400'}`} />
+          <div className="p-1.5 rounded-lg bg-white/[0.06] flex-shrink-0">
+            <CalendarIcon className={`w-3.5 h-3.5 ${e.color === 'cyan' ? 'text-cyan-400' : 'text-purple-400'}`} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-white font-medium tracking-wide truncate">{e.title}</p>
+            <p className="text-[11px] text-gray-500 mt-0.5 tabular-nums">{e.time}</p>
           </div>
         </div>
       ))}
