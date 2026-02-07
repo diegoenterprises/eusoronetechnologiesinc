@@ -4,7 +4,7 @@
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Truck, DollarSign, CheckCircle,
-  ArrowRight, ArrowLeft, AlertTriangle, Sparkles, Info
+  ArrowRight, ArrowLeft, AlertTriangle, Sparkles, Info, Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -50,69 +50,36 @@ const EQUIPMENT_TYPES = [
   { id: "hopper", name: "Hopper" },
 ];
 
-const PRODUCT_DB: { keywords: string[]; unNumber: string; name: string; hazmatClass: string }[] = [
-  { keywords: ["gasoline", "petrol", "motor fuel", "unleaded", "premium", "regular", "rbob", "motor spirit"], unNumber: "UN1203", name: "Gasoline / Motor Fuel", hazmatClass: "3" },
-  { keywords: ["diesel", "ulsd", "gas oil", "heating oil", "diesel fuel", "no. 2 fuel"], unNumber: "UN1202", name: "Diesel Fuel", hazmatClass: "3" },
-  { keywords: ["crude oil", "crude petroleum", "wti", "brent", "sweet crude", "light crude", "heavy crude", "condensate", "petroleum crude"], unNumber: "UN1267", name: "Petroleum Crude Oil", hazmatClass: "3" },
-  { keywords: ["sour crude", "h2s crude"], unNumber: "UN3494", name: "Petroleum Sour Crude Oil", hazmatClass: "3" },
-  { keywords: ["kerosene", "jet fuel", "jet a", "jet a-1", "jp-8", "jp-5"], unNumber: "UN1223", name: "Kerosene / Jet Fuel", hazmatClass: "3" },
-  { keywords: ["aviation fuel", "turbine fuel"], unNumber: "UN1863", name: "Fuel, Aviation", hazmatClass: "3" },
-  { keywords: ["naphtha", "petroleum naphtha"], unNumber: "UN1256", name: "Naphtha, Petroleum", hazmatClass: "3" },
-  { keywords: ["propane", "lp-gas"], unNumber: "UN1978", name: "Propane", hazmatClass: "2.1" },
-  { keywords: ["lpg", "liquefied petroleum gas"], unNumber: "UN1075", name: "Liquefied Petroleum Gas", hazmatClass: "2.1" },
-  { keywords: ["butane", "n-butane"], unNumber: "UN1011", name: "Butane", hazmatClass: "2.1" },
-  { keywords: ["isobutane"], unNumber: "UN1969", name: "Isobutane", hazmatClass: "2.1" },
-  { keywords: ["natural gas", "cng", "methane compressed"], unNumber: "UN1971", name: "Natural Gas, Compressed", hazmatClass: "2.1" },
-  { keywords: ["lng", "liquefied natural gas", "methane refrigerated"], unNumber: "UN1972", name: "LNG / Methane, Refrigerated", hazmatClass: "2.1" },
-  { keywords: ["ethane"], unNumber: "UN1035", name: "Ethane", hazmatClass: "2.1" },
-  { keywords: ["hydrogen compressed", "hydrogen gas"], unNumber: "UN1049", name: "Hydrogen, Compressed", hazmatClass: "2.1" },
-  { keywords: ["hydrogen refrigerated", "liquid hydrogen"], unNumber: "UN1966", name: "Hydrogen, Refrigerated", hazmatClass: "2.1" },
-  { keywords: ["acetylene"], unNumber: "UN1001", name: "Acetylene, Dissolved", hazmatClass: "2.1" },
-  { keywords: ["ammonia", "anhydrous ammonia"], unNumber: "UN1005", name: "Ammonia, Anhydrous", hazmatClass: "2.3" },
-  { keywords: ["chlorine"], unNumber: "UN1017", name: "Chlorine", hazmatClass: "2.3" },
-  { keywords: ["oxygen", "oxygen compressed"], unNumber: "UN1072", name: "Oxygen, Compressed", hazmatClass: "2.2" },
-  { keywords: ["nitrogen compressed"], unNumber: "UN1066", name: "Nitrogen, Compressed", hazmatClass: "2.2" },
-  { keywords: ["nitrogen refrigerated", "liquid nitrogen"], unNumber: "UN1977", name: "Nitrogen, Refrigerated", hazmatClass: "2.2" },
-  { keywords: ["carbon dioxide", "co2"], unNumber: "UN1013", name: "Carbon Dioxide", hazmatClass: "2.2" },
-  { keywords: ["argon"], unNumber: "UN1006", name: "Argon, Compressed", hazmatClass: "2.2" },
-  { keywords: ["helium"], unNumber: "UN1046", name: "Helium, Compressed", hazmatClass: "2.2" },
-  { keywords: ["ethanol", "ethyl alcohol", "denatured alcohol"], unNumber: "UN1170", name: "Ethanol", hazmatClass: "3" },
-  { keywords: ["methanol", "methyl alcohol", "wood alcohol"], unNumber: "UN1230", name: "Methanol", hazmatClass: "3" },
-  { keywords: ["acetone"], unNumber: "UN1090", name: "Acetone", hazmatClass: "3" },
-  { keywords: ["benzene", "benzol"], unNumber: "UN1114", name: "Benzene", hazmatClass: "3" },
-  { keywords: ["toluene", "toluol", "methylbenzene"], unNumber: "UN1294", name: "Toluene", hazmatClass: "3" },
-  { keywords: ["xylene", "xylenes", "xylol"], unNumber: "UN1307", name: "Xylenes", hazmatClass: "3" },
-  { keywords: ["styrene"], unNumber: "UN2055", name: "Styrene Monomer", hazmatClass: "3" },
-  { keywords: ["cyclohexane"], unNumber: "UN1145", name: "Cyclohexane", hazmatClass: "3" },
-  { keywords: ["isopropanol", "isopropyl alcohol", "ipa", "rubbing alcohol"], unNumber: "UN1219", name: "Isopropanol", hazmatClass: "3" },
-  { keywords: ["e85", "e10", "e15", "gasohol", "ethanol gasoline"], unNumber: "UN3475", name: "Ethanol-Gasoline Mixture", hazmatClass: "3" },
-  { keywords: ["sulfuric acid", "battery acid", "sulphuric acid"], unNumber: "UN1830", name: "Sulfuric Acid", hazmatClass: "8" },
-  { keywords: ["hydrochloric acid", "muriatic acid", "hcl"], unNumber: "UN1789", name: "Hydrochloric Acid", hazmatClass: "8" },
-  { keywords: ["sodium hydroxide", "caustic soda", "lye", "naoh"], unNumber: "UN1823", name: "Sodium Hydroxide", hazmatClass: "8" },
-  { keywords: ["bleach", "sodium hypochlorite", "hypochlorite"], unNumber: "UN1791", name: "Hypochlorite Solution", hazmatClass: "8" },
-  { keywords: ["hydrogen sulfide", "h2s", "sour gas"], unNumber: "UN1053", name: "Hydrogen Sulfide", hazmatClass: "2.3" },
-  { keywords: ["hydrogen peroxide"], unNumber: "UN2014", name: "Hydrogen Peroxide", hazmatClass: "5.1" },
-  { keywords: ["asphalt", "bitumen", "hot asphalt"], unNumber: "UN3257", name: "Elevated Temperature Liquid", hazmatClass: "9" },
-  { keywords: ["paint", "lacquer", "varnish"], unNumber: "UN1263", name: "Paint / Lacquer", hazmatClass: "3" },
-  { keywords: ["turpentine"], unNumber: "UN1300", name: "Turpentine", hazmatClass: "3" },
-  { keywords: ["phosgene"], unNumber: "UN1076", name: "Phosgene", hazmatClass: "2.3" },
-  { keywords: ["hydrogen cyanide", "hcn", "prussic acid"], unNumber: "UN1051", name: "Hydrogen Cyanide", hazmatClass: "6.1" },
-  { keywords: ["carbon monoxide", "co"], unNumber: "UN1016", name: "Carbon Monoxide", hazmatClass: "2.3" },
-  { keywords: ["sulfur dioxide", "so2"], unNumber: "UN1079", name: "Sulfur Dioxide", hazmatClass: "2.3" },
-  { keywords: ["lithium ion battery", "lithium battery"], unNumber: "UN3480", name: "Lithium Ion Batteries", hazmatClass: "9" },
-  { keywords: ["fuel oil", "mineral spirits", "petroleum distillate"], unNumber: "UN1268", name: "Petroleum Distillates", hazmatClass: "3" },
-];
-
-const UN_LOOKUP: Record<string, { name: string; hazmatClass: string }> = {};
-PRODUCT_DB.forEach(p => {
-  const num = p.unNumber.replace(/^UN/, "");
-  UN_LOOKUP[num] = { name: p.name, hazmatClass: p.hazmatClass };
-});
-
 export default function LoadCreationWizard() {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [unSearchQuery, setUNSearchQuery] = useState("");
+  const [showUNSuggestions, setShowUNSuggestions] = useState(false);
+  const suggestRef = useRef<HTMLDivElement>(null);
+  const unSuggestRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<any>(null);
+  const unDebounceRef = useRef<any>(null);
+
+  const ergSearch = (trpc as any).erg.search.useQuery(
+    { query: searchQuery, limit: 10 },
+    { enabled: searchQuery.length >= 2, staleTime: 30000 }
+  );
+  const ergUNSearch = (trpc as any).erg.search.useQuery(
+    { query: unSearchQuery, limit: 10 },
+    { enabled: unSearchQuery.length >= 2, staleTime: 30000 }
+  );
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) setShowSuggestions(false);
+      if (unSuggestRef.current && !unSuggestRef.current.contains(e.target as Node)) setShowUNSuggestions(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const createLoadMutation = (trpc as any).loads.create.useMutation({
     onSuccess: () => { toast.success("Load created successfully"); setStep(0); setFormData({}); },
@@ -129,42 +96,52 @@ export default function LoadCreationWizard() {
     return "liquid";
   };
 
-  const lookupProductName = useCallback((name: string) => {
-    const q = name.toLowerCase().trim();
-    if (!q) return null;
-    for (const entry of PRODUCT_DB) {
-      for (const kw of entry.keywords) {
-        if (q.includes(kw) || kw.includes(q)) return entry;
-      }
-    }
-    return null;
+  const selectMaterial = useCallback((material: any) => {
+    updateField("productName", material.name);
+    updateField("hazmatClass", material.hazardClass);
+    updateField("unNumber", `UN${material.unNumber}`);
+    setShowSuggestions(false);
+    setShowUNSuggestions(false);
+    toast.success("ERG Auto-Detect", {
+      description: `Identified: ${material.name} -- UN${material.unNumber} (Class ${material.hazardClass}) Guide ${material.guide}`,
+    });
   }, []);
 
-  const lookupUNNumber = useCallback((un: string) => {
-    const num = un.replace(/^un/i, "").trim();
-    if (!num || num.length < 4) return null;
-    return UN_LOOKUP[num] || null;
+  const handleProductNameChange = useCallback((value: string) => {
+    updateField("productName", value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      if (value.trim().length >= 2) {
+        setSearchQuery(value.trim());
+        setShowSuggestions(true);
+      } else {
+        setShowSuggestions(false);
+      }
+    }, 200);
   }, []);
 
   const handleUNChange = useCallback((value: string) => {
     updateField("unNumber", value);
-    const result = lookupUNNumber(value);
-    if (result) {
-      updateField("productName", result.name);
-      updateField("hazmatClass", result.hazmatClass);
-      toast.success("ERG Auto-Detect", { description: `Identified: ${result.name} (Class ${result.hazmatClass})` });
-    }
-  }, [lookupUNNumber]);
+    if (unDebounceRef.current) clearTimeout(unDebounceRef.current);
+    unDebounceRef.current = setTimeout(() => {
+      const cleaned = value.replace(/^un/i, "").trim();
+      if (cleaned.length >= 2) {
+        setUNSearchQuery(cleaned);
+        setShowUNSuggestions(true);
+      } else {
+        setShowUNSuggestions(false);
+      }
+    }, 200);
+  }, []);
 
   const handleSuggest = () => {
     if (formData.productName) {
-      const match = lookupProductName(formData.productName);
-      if (match) {
-        updateField("hazmatClass", match.hazmatClass);
-        updateField("unNumber", match.unNumber);
-        toast.success("ESANG AI Classification", { description: `Identified: ${match.name} -- ${match.unNumber} (Class ${match.hazmatClass})` });
+      setSearchQuery(formData.productName.trim());
+      setShowSuggestions(true);
+      if (ergSearch.data?.results?.length > 0) {
+        selectMaterial(ergSearch.data.results[0]);
       } else {
-        toast.error("ESANG AI", { description: `Could not identify "${formData.productName}". Please select classification manually or enter UN number.` });
+        toast.info("ESANG AI", { description: "Searching ERG database..." });
       }
     }
   };
@@ -210,14 +187,55 @@ export default function LoadCreationWizard() {
         <CardContent className="p-6">
           {step === 0 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
+              <div ref={suggestRef} className="relative">
                 <label className="text-sm text-slate-400 mb-1 block">Product Name</label>
                 <div className="flex gap-2">
-                  <Input value={formData.productName || ""} onChange={(e: any) => updateField("productName", e.target.value)} placeholder="e.g., Gasoline, Diesel Fuel" className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <Input
+                      value={formData.productName || ""}
+                      onChange={(e: any) => handleProductNameChange(e.target.value)}
+                      onFocus={() => { if (searchQuery.length >= 2) setShowSuggestions(true); }}
+                      placeholder="Type any product: gasoline, lime, cement, resins..."
+                      className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10"
+                    />
+                  </div>
                   <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest}>
                     <Sparkles className="w-4 h-4 mr-2" />ESANG AI
                   </Button>
                 </div>
+                {showSuggestions && ergSearch.data?.results?.length > 0 && (
+                  <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                    <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">
+                      ERG 2020 -- {ergSearch.data.count} results from 1,980 materials
+                    </div>
+                    {ergSearch.data.results.map((m: any, i: number) => (
+                      <button
+                        key={`${m.unNumber}-${i}`}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                        onClick={() => selectMaterial(m)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{m.name}</p>
+                          {m.alternateNames?.length > 0 && (
+                            <p className="text-slate-500 text-[10px] truncate">Also: {m.alternateNames.slice(0, 2).join(", ")}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                          <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                          <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">Guide {m.guide}</Badge>
+                          {m.isTIH && <Badge variant="outline" className="text-[10px] border-red-500/30 text-red-400">TIH</Badge>}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {showSuggestions && searchQuery.length >= 2 && ergSearch.isLoading && (
+                  <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3">
+                    <div className="flex items-center gap-2 text-slate-400 text-sm"><Sparkles className="w-4 h-4 animate-spin" />Searching ERG 2020 database...</div>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Hazmat Classification</label>
@@ -226,9 +244,41 @@ export default function LoadCreationWizard() {
                   <SelectContent>{HAZMAT_CLASSES.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-sm text-slate-400 mb-1 block">UN Number (optional -- auto-detects product)</label>
-                <Input value={formData.unNumber || ""} onChange={(e: any) => handleUNChange(e.target.value)} placeholder="e.g., UN1203" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+              <div ref={unSuggestRef} className="relative">
+                <label className="text-sm text-slate-400 mb-1 block">UN Number (auto-detects product as you type)</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Input
+                    value={formData.unNumber || ""}
+                    onChange={(e: any) => handleUNChange(e.target.value)}
+                    onFocus={() => { if (unSearchQuery.length >= 2) setShowUNSuggestions(true); }}
+                    placeholder="e.g., 1203, UN1223"
+                    className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10"
+                  />
+                </div>
+                {showUNSuggestions && ergUNSearch.data?.results?.length > 0 && (
+                  <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-64 overflow-y-auto">
+                    <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">
+                      ERG 2020 -- UN Number Matches
+                    </div>
+                    {ergUNSearch.data.results.map((m: any, i: number) => (
+                      <button
+                        key={`un-${m.unNumber}-${i}`}
+                        className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                        onClick={() => selectMaterial(m)}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{m.name}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                          <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                          <Badge variant="outline" className="text-[10px] border-slate-500/30 text-slate-400">Guide {m.guide}</Badge>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
               
               {formData.hazmatClass && (
