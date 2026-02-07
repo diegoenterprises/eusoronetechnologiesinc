@@ -701,10 +701,12 @@ export default function LoadCreationWizard() {
                 const nx = 100 + 65 * Math.cos(needleRad);
                 const ny = 100 + 65 * Math.sin(needleRad);
 
+                const pastelRatingColor = ratio < 0.80 ? "#f87171" : ratio < 0.95 ? "#fbbf24" : ratio <= 1.10 ? "#6ee7b7" : ratio <= 1.25 ? "#fbbf24" : "#f87171";
+
                 return (
-                  <div className="p-5 rounded-xl bg-gradient-to-br from-slate-800/80 via-purple-900/20 to-slate-800/80 border border-purple-500/20">
+                  <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-purple-500/20 shadow-sm dark:shadow-none">
                     <div className="flex items-center gap-2 mb-4">
-                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                       <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
                     </div>
 
@@ -712,55 +714,55 @@ export default function LoadCreationWizard() {
                       <svg viewBox="0 10 200 110" className="w-48 h-28">
                         <defs>
                           <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#ef4444" />
-                            <stop offset="25%" stopColor="#f59e0b" />
-                            <stop offset="50%" stopColor="#10b981" />
-                            <stop offset="75%" stopColor="#f59e0b" />
-                            <stop offset="100%" stopColor="#ef4444" />
+                            <stop offset="0%" stopColor="#fca5a5" />
+                            <stop offset="25%" stopColor="#fde68a" />
+                            <stop offset="50%" stopColor="#6ee7b7" />
+                            <stop offset="75%" stopColor="#fde68a" />
+                            <stop offset="100%" stopColor="#fca5a5" />
                           </linearGradient>
                         </defs>
-                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(100,116,139,0.2)" strokeWidth="14" strokeLinecap="round" />
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" className="stroke-slate-200 dark:stroke-slate-700/40" strokeWidth="14" strokeLinecap="round" />
                         <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="14" strokeLinecap="round" />
-                        <line x1="100" y1="100" x2={nx} y2={ny} stroke="white" strokeWidth="3" strokeLinecap="round" />
-                        <circle cx="100" cy="100" r="6" fill={ratingColor} stroke="white" strokeWidth="2" />
-                        <text x="100" y="90" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold">
+                        <line x1="100" y1="100" x2={nx} y2={ny} className="stroke-slate-800 dark:stroke-white" strokeWidth="3" strokeLinecap="round" />
+                        <circle cx="100" cy="100" r="6" fill={pastelRatingColor} className="stroke-slate-800 dark:stroke-white" strokeWidth="2" />
+                        <text x="100" y="90" textAnchor="middle" className="fill-slate-900 dark:fill-white" fontSize="20" fontWeight="bold">
                           ${userRPM.toFixed(2)}
                         </text>
-                        <text x="100" y="105" textAnchor="middle" fill="#94a3b8" fontSize="9">/mile</text>
+                        <text x="100" y="105" textAnchor="middle" className="fill-slate-500 dark:fill-slate-400" fontSize="9">/mile</text>
                       </svg>
 
                       <div className="flex items-center gap-1 mt-1">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ratingColor }} />
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pastelRatingColor }} />
                         <span className="text-sm font-bold" style={{ color: ratingColor }}>{ratingLabel}</span>
                       </div>
                     </div>
 
                     <div className="flex justify-between mt-4 px-2">
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio < 0.80 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500")}>
+                        ratio < 0.80 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Too Low
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500")}>
+                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Good Offer
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio > 1.25 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500")}>
+                        ratio > 1.25 ? "border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/15 text-red-500 dark:text-red-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Too High
                       </button>
                     </div>
 
-                    <div className="mt-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                    <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/30">
                       <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-3 h-3 text-purple-400" />
-                        <span className="text-[11px] font-bold text-purple-300">ESANG Recommendation</span>
+                        <Sparkles className="w-3 h-3 text-purple-500 dark:text-purple-400" />
+                        <span className="text-[11px] font-bold text-purple-600 dark:text-purple-300">ESANG Recommendation</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
-                        <div><p className="text-[10px] text-slate-500">Market Low</p><p className="text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
-                        <div><p className="text-[10px] text-slate-500">Market Avg</p><p className="text-emerald-400 text-xs font-bold">${marketRPM}/mi</p></div>
-                        <div><p className="text-[10px] text-slate-500">Market High</p><p className="text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Low</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">${marketRPM}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market High</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
                       </div>
-                      <p className="text-[10px] text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-600 dark:text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
                     </div>
                   </div>
                 );
