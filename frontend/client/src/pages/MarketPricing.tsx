@@ -244,16 +244,55 @@ export default function MarketPricing() {
         })}
       </div>
 
-      {/* Main Grid: Columns by Category (Bloomberg-style) */}
+      {/* Main Grid: Columns by Category (Bloomberg-style, auto-scrolling) */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-96 bg-slate-700 rounded-xl" />)}
         </div>
       ) : activeCategory === "ALL" ? (
-        /* Category Columns View */
+        /* Category Columns View — continuous vertical scroll */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
           {Object.entries(grouped).map(([cat, items]) => {
             const Icon = CATEGORY_ICONS[cat] || BarChart3;
+            const scrollDuration = Math.max(12, items.length * 6);
+            const renderCard = (c: any, keyPrefix = "") => {
+              const isUp = c.changePercent > 0;
+              const isSelected = selectedCommodity === c.symbol;
+              return (
+                <div
+                  key={`${keyPrefix}${c.symbol}`}
+                  onClick={() => setSelectedCommodity(isSelected ? null : c.symbol)}
+                  className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-white/5 border-b border-slate-800/50
+                    ${isSelected ? "bg-white/10 ring-1 ring-inset ring-cyan-500/30" : ""}`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-white block truncate">{c.name}</span>
+                      <span className="text-[10px] text-slate-500">{c.symbol}</span>
+                    </div>
+                    <MiniSparkline data={c.sparkline} positive={isUp} />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-white">{formatPrice(c.price)}</span>
+                    <span className={`text-xs font-bold ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+                      {isUp ? "+" : ""}{c.changePercent.toFixed(2)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1.5">
+                    <DirectionBadge dir={c.intraday} />
+                    <DirectionBadge dir={c.daily} />
+                    <DirectionBadge dir={c.weekly} />
+                    <DirectionBadge dir={c.monthly} />
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[9px] text-slate-600">Intraday</span>
+                    <span className="text-[9px] text-slate-600">Daily</span>
+                    <span className="text-[9px] text-slate-600">Weekly</span>
+                    <span className="text-[9px] text-slate-600">Monthly</span>
+                  </div>
+                </div>
+              );
+            };
             return (
               <div key={cat} className="space-y-0">
                 {/* Category Header */}
@@ -262,46 +301,15 @@ export default function MarketPricing() {
                   <span className="text-xs font-bold text-white tracking-wide uppercase">{cat}</span>
                   <span className="text-[10px] text-white/60 ml-auto">{items.length}</span>
                 </div>
-                {/* Commodity Rows */}
-                <div className="border border-slate-700/50 border-t-0 rounded-b-xl overflow-hidden divide-y divide-slate-800/50">
-                  {items.map((c: any) => {
-                    const isUp = c.changePercent > 0;
-                    const isSelected = selectedCommodity === c.symbol;
-                    return (
-                      <div
-                        key={c.symbol}
-                        onClick={() => setSelectedCommodity(isSelected ? null : c.symbol)}
-                        className={`px-3 py-2.5 cursor-pointer transition-all hover:bg-white/5
-                          ${isSelected ? "bg-white/10 ring-1 ring-inset ring-cyan-500/30" : ""}`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="min-w-0">
-                            <span className="text-xs font-bold text-white block truncate">{c.name}</span>
-                            <span className="text-[10px] text-slate-500">{c.symbol}</span>
-                          </div>
-                          <MiniSparkline data={c.sparkline} positive={isUp} />
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold text-white">{formatPrice(c.price)}</span>
-                          <span className={`text-xs font-bold ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-                            {isUp ? "+" : ""}{c.changePercent.toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 mt-1.5">
-                          <DirectionBadge dir={c.intraday} />
-                          <DirectionBadge dir={c.daily} />
-                          <DirectionBadge dir={c.weekly} />
-                          <DirectionBadge dir={c.monthly} />
-                        </div>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-[9px] text-slate-600">Intraday</span>
-                          <span className="text-[9px] text-slate-600">Daily</span>
-                          <span className="text-[9px] text-slate-600">Weekly</span>
-                          <span className="text-[9px] text-slate-600">Monthly</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* Auto-scrolling commodity rows */}
+                <div className="border border-slate-700/50 border-t-0 rounded-b-xl overflow-hidden h-[420px] relative group">
+                  <div
+                    className="animate-market-scroll group-hover:[animation-play-state:paused]"
+                    style={{ animationDuration: `${scrollDuration}s` }}
+                  >
+                    {items.map((c: any) => renderCard(c))}
+                    {items.map((c: any) => renderCard(c, "dup-"))}
+                  </div>
                 </div>
               </div>
             );

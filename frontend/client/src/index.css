@@ -724,6 +724,16 @@
   animation: count-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* --- Market Pricing Column Scroll (continuous vertical ticker) --- */
+@keyframes market-scroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
+
+.animate-market-scroll {
+  animation: market-scroll 30s linear infinite;
+}
+
 /* --- Smooth Scrollbar --- */
 .smooth-scroll {
   scrollbar-width: thin;
