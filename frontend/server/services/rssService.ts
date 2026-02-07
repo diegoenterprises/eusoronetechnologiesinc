@@ -141,7 +141,7 @@ function parseRSSContent(xml: string, source: RSSFeedSource): RSSArticle[] {
 async function fetchRSSFeed(source: RSSFeedSource): Promise<RSSArticle[]> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000); // 10s timeout
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout for speed
     
     const response = await fetch(source.url, {
       signal: controller.signal,
@@ -172,8 +172,8 @@ export async function fetchAllFeeds(): Promise<RSSArticle[]> {
   const enabledFeeds = rssFeedSources.filter(f => f.enabled);
   const allArticles: RSSArticle[] = [];
   
-  // Fetch feeds in parallel with concurrency limit
-  const batchSize = 5;
+  // Fetch feeds in parallel with higher concurrency for speed
+  const batchSize = 10;
   for (let i = 0; i < enabledFeeds.length; i += batchSize) {
     const batch = enabledFeeds.slice(i, i + batchSize);
     const results = await Promise.all(batch.map(fetchRSSFeed));
@@ -199,10 +199,14 @@ export async function getArticles(options?: {
   limit?: number;
   offset?: number;
 }): Promise<{ articles: RSSArticle[]; total: number; lastUpdated: string | null }> {
-  // Refresh cache if older than 5 minutes or empty
+  // Return cached data immediately if available; refresh in background if stale
   const cacheAge = lastFetchTime ? (Date.now() - lastFetchTime.getTime()) / 1000 / 60 : Infinity;
-  if (cacheAge > 5 || cachedArticles.length === 0) {
+  if (cachedArticles.length === 0) {
+    // First load — must fetch
     await fetchAllFeeds();
+  } else if (cacheAge > 30) {
+    // Stale — refresh in background, serve cached immediately
+    fetchAllFeeds().catch(() => {});
   }
   
   let filtered = [...cachedArticles];
@@ -236,8 +240,10 @@ export async function getArticles(options?: {
  */
 export async function getTrendingArticles(limit = 10): Promise<RSSArticle[]> {
   const cacheAge = lastFetchTime ? (Date.now() - lastFetchTime.getTime()) / 1000 / 60 : Infinity;
-  if (cacheAge > 5 || cachedArticles.length === 0) {
+  if (cachedArticles.length === 0) {
     await fetchAllFeeds();
+  } else if (cacheAge > 30) {
+    fetchAllFeeds().catch(() => {});
   }
   
   // Get top articles from different sources for variety

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,6 +6,23 @@ import {
   Plus, Check, X, Calendar as CalendarIcon, FileText, Bell, 
   MessageSquare, Search, Activity, TrendingUp, CheckCircle
 } from 'lucide-react';
+
+// Persistent state helper — saves to localStorage keyed per user
+function usePersistentState<T>(key: string, defaultValue: T): [T, (v: T | ((prev: T) => T)) => void] {
+  const storageKey = `eusotrip_widget_${key}`;
+  const [state, setState] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      return stored ? JSON.parse(stored) : defaultValue;
+    } catch { return defaultValue; }
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch {}
+  }, [state, storageKey]);
+
+  return [state, setState];
+}
 
 // ============================================================================
 // UNIVERSAL WIDGETS — Premium Edition
@@ -16,7 +33,7 @@ const premiumRow = "flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] backd
 
 // Tasks Widget
 export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const [tasks, setTasks] = useState([
+  const [tasks, setTasks] = usePersistentState('tasks', [
     { id: 1, text: 'Review shipment quotes', done: false },
     { id: 2, text: 'Update carrier contracts', done: true },
     { id: 3, text: 'Schedule team meeting', done: false },
@@ -75,7 +92,7 @@ export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }
 
 // Notes Widget — Premium notebook feel
 export const NotesWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const [note, setNote] = useState('');
+  const [note, setNote] = usePersistentState('notes', '');
   const lineCount = 8;
 
   return (

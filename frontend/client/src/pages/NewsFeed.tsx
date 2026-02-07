@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
@@ -34,12 +33,22 @@ export default function NewsFeed() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
 
-  const newsQuery = (trpc as any).news.getArticles.useQuery({
-    category: activeTab !== "all" ? activeTab : undefined,
-    search: searchTerm || undefined,
-    limit: 50,
+  const newsQuery = (trpc as any).news.getArticles.useQuery(
+    {
+      category: activeTab !== "all" ? activeTab : undefined,
+      search: searchTerm || undefined,
+      limit: 50,
+    },
+    {
+      staleTime: 5 * 60 * 1000, // 5 min stale time for speed
+      refetchOnWindowFocus: false,
+      keepPreviousData: true,
+    }
+  );
+  const trendingQuery = (trpc as any).news.getTrending.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
-  const trendingQuery = (trpc as any).news.getTrending.useQuery();
   const refreshMutation = (trpc as any).news.refreshFeeds.useMutation({
     onSuccess: () => newsQuery.refetch(),
   });
@@ -100,72 +109,88 @@ export default function NewsFeed() {
             <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search news..." className="pl-9 bg-slate-700/50 border-slate-600" />
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="bg-slate-800 border border-slate-700 flex-wrap h-auto gap-1 p-1">
-              {CATEGORIES.map((cat: any) => (
-                <TabsTrigger key={cat.value} value={cat.value} className="data-[state=active]:bg-blue-600 text-xs">
-                  <cat.icon className="w-3 h-3 mr-1" />
-                  {cat.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+          {/* Category Filter Buttons */}
+          <div className="flex flex-wrap gap-1.5 p-1 bg-slate-800 border border-slate-700 rounded-lg">
+            {CATEGORIES.map((cat: any) => (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => setActiveTab(cat.value)}
+                className={cn(
+                  "flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                  activeTab === cat.value
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-400 hover:text-white hover:bg-slate-700"
+                )}
+              >
+                <cat.icon className="w-3 h-3" />
+                {cat.label}
+              </button>
+            ))}
+          </div>
 
-            <TabsContent value={activeTab} className="mt-6">
-              {newsQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full" />)}</div>
-              ) : (newsQuery.data as any)?.length === 0 ? (
-                <div className="text-center py-12">
-                  <Newspaper className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                  <p className="text-slate-400">No articles found</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(newsQuery.data as any)?.map((article: any) => {
-                    const CategoryIcon = getCategoryIcon(article.category);
-                    return (
-                      <Card key={article.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
-                        <CardContent className="p-4">
-                          <div className="flex gap-4">
-                            {article.imageUrl && (
-                              <div className="w-32 h-24 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
-                                <img src={article.imageUrl} alt="" className="w-full h-full object-cover" onError={(e: any) => (e.currentTarget.style.display = 'none')} />
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <Badge className={getCategoryColor(article.category)}>
-                                  <CategoryIcon className="w-3 h-3 mr-1" />{article.category.replace('_', ' ')}
-                                </Badge>
-                                <span className="text-xs text-slate-500 flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />{formatDate(article.publishedAt)}
-                                </span>
-                              </div>
-                              <a href={article.link} target="_blank" rel="noopener noreferrer" className="block group">
-                                <h3 className="text-white font-medium mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">{article.title}</h3>
-                              </a>
-                              <p className="text-sm text-slate-400 line-clamp-2">{article.summary}</p>
-                              <div className="flex items-center justify-between mt-3">
-                                <span className="text-xs text-slate-500">{article.source}</span>
-                                <div className="flex items-center gap-2">
-                                  <Button variant="ghost" size="sm" asChild>
-                                    <a href={article.link} target="_blank" rel="noopener noreferrer">
-                                      <ExternalLink className="w-4 h-4" />
-                                    </a>
-                                  </Button>
-                                  <Button variant="ghost" size="sm"><Bookmark className="w-4 h-4" /></Button>
-                                  <Button variant="ghost" size="sm"><Share2 className="w-4 h-4" /></Button>
-                                </div>
+          {/* Articles */}
+          <div className="mt-6">
+            {newsQuery.isLoading && !newsQuery.data ? (
+              <div className="space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full" />)}</div>
+            ) : (newsQuery.data as any)?.length === 0 ? (
+              <div className="text-center py-12">
+                <Newspaper className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                <p className="text-slate-400">No articles found for this category</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {newsQuery.isFetching && newsQuery.data && (
+                  <div className="text-center py-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-blue-400 inline mr-2" />
+                    <span className="text-xs text-slate-500">Updating...</span>
+                  </div>
+                )}
+                {(newsQuery.data as any)?.map((article: any) => {
+                  const CategoryIcon = getCategoryIcon(article.category);
+                  return (
+                    <Card key={article.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex gap-4">
+                          {article.imageUrl && (
+                            <div className="w-32 h-24 rounded-lg bg-slate-700 flex-shrink-0 overflow-hidden">
+                              <img src={article.imageUrl} alt="" className="w-full h-full object-cover" onError={(e: any) => (e.currentTarget.style.display = 'none')} />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <Badge className={getCategoryColor(article.category)}>
+                                <CategoryIcon className="w-3 h-3 mr-1" />{article.category.replace('_', ' ')}
+                              </Badge>
+                              <span className="text-xs text-slate-500 flex items-center gap-1">
+                                <Clock className="w-3 h-3" />{formatDate(article.publishedAt)}
+                              </span>
+                            </div>
+                            <a href={article.link} target="_blank" rel="noopener noreferrer" className="block group">
+                              <h3 className="text-white font-medium mb-2 line-clamp-2 group-hover:text-blue-400 transition-colors">{article.title}</h3>
+                            </a>
+                            <p className="text-sm text-slate-400 line-clamp-2">{article.summary}</p>
+                            <div className="flex items-center justify-between mt-3">
+                              <span className="text-xs text-slate-500">{article.source}</span>
+                              <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="sm" asChild>
+                                  <a href={article.link} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                </Button>
+                                <Button variant="ghost" size="sm"><Bookmark className="w-4 h-4" /></Button>
+                                <Button variant="ghost" size="sm"><Share2 className="w-4 h-4" /></Button>
                               </div>
                             </div>
                           </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sidebar */}

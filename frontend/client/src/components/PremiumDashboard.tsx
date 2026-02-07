@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Edit3, RotateCcw, X, Plus, Settings, LayoutGrid, Store } from "lucide-react";
@@ -109,9 +109,11 @@ const WidgetCard: React.FC<{
   const [showSettings, setShowSettings] = useState(false);
   return (
     <div className={`h-full w-full relative overflow-hidden rounded-2xl group/widget ${className}`}>
+      {/* Gradient outline to indicate draggability */}
+      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-[#1473FF]/40 via-[#BE01FF]/30 to-[#1473FF]/40 opacity-60 group-hover/widget:opacity-100 transition-opacity duration-300" />
+      <div className="absolute inset-0 rounded-2xl bg-slate-900/95" />
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl" />
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-cyan-500/10" />
-      <div className="absolute inset-0 rounded-2xl border border-white/20 shadow-2xl shadow-purple-500/20" />
       
       {isEditMode && onRemove && (
         <button
@@ -477,8 +479,21 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
   const role = propRole || (user?.role as UserRole) || 'SHIPPER';
   
   const [isEditMode, setIsEditMode] = useState(false);
-  const [layout, setLayout] = useState<WidgetLayout[]>(() => getDefaultLayout(role));
   const [showAddWidget, setShowAddWidget] = useState(false);
+
+  // Persist layout to localStorage
+  const layoutKey = `eusotrip_dashboard_layout_${role}`;
+  const [layout, setLayout] = useState<WidgetLayout[]>(() => {
+    try {
+      const stored = localStorage.getItem(layoutKey);
+      if (stored) return JSON.parse(stored);
+    } catch {}
+    return getDefaultLayout(role);
+  });
+
+  useEffect(() => {
+    try { localStorage.setItem(layoutKey, JSON.stringify(layout)); } catch {}
+  }, [layout, layoutKey]);
   
   const availableWidgets = getWidgetsForRole(role);
   const activeWidgetIds = layout.map(l => l.i);
