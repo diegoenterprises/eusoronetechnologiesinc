@@ -163,35 +163,35 @@ function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }
           )}
         </motion.button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto">
-        <div className="px-3 py-2 border-b border-gray-700/50 flex items-center justify-between">
-          <span className="text-sm font-bold text-white">Notifications</span>
+      <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto rounded-2xl border-0 bg-white dark:bg-slate-900 ring-1 ring-slate-200 dark:ring-purple-500/20 shadow-xl p-1.5">
+        <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-900 dark:text-white">Notifications</span>
           {unread > 0 && (
-            <button onClick={() => markAllReadMutation.mutate({})} className="text-[10px] text-blue-400 hover:text-blue-300">
+            <button onClick={() => markAllReadMutation.mutate({})} className="text-[10px] font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent hover:opacity-80">
               Mark all read
             </button>
           )}
         </div>
         {items.length === 0 ? (
-          <div className="px-3 py-6 text-center text-sm text-gray-500">No notifications yet</div>
+          <div className="px-3 py-6 text-center text-sm text-slate-400 dark:text-slate-500">No notifications yet</div>
         ) : (
           items.map((n: any) => (
             <DropdownMenuItem
               key={n.id}
-              className={`flex-col items-start gap-0.5 px-3 py-2.5 cursor-pointer ${!n.isRead ? "bg-blue-500/5" : ""}`}
+              className={`flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl cursor-pointer transition-all ${!n.isRead ? "bg-gradient-to-r from-purple-500/5 to-blue-500/5 dark:from-purple-500/10 dark:to-blue-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/50"}`}
               onClick={() => { if (!n.isRead) markReadMutation.mutate({ id: n.id }); }}
             >
               <div className="flex items-center gap-2 w-full">
-                {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
-                <span className="text-sm text-white font-medium truncate flex-1">{n.title}</span>
-                <span className="text-[10px] text-gray-500 flex-shrink-0">{n.timeAgo || ""}</span>
+                {!n.isRead && <span className="w-2 h-2 rounded-full bg-gradient-to-r from-[#BE01FF] to-[#1473FF] flex-shrink-0" />}
+                <span className="text-sm text-slate-900 dark:text-white font-medium truncate flex-1">{n.title}</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 flex-shrink-0">{n.timeAgo || ""}</span>
               </div>
-              <p className="text-xs text-gray-400 truncate w-full">{n.message}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate w-full">{n.message}</p>
             </DropdownMenuItem>
           ))
         )}
-        <div className="px-3 py-2 border-t border-gray-700/50">
-          <button onClick={() => { setOpen(false); onNavigate("/notifications"); }} className="text-xs text-blue-400 hover:text-blue-300 w-full text-center">
+        <div className="px-3 py-2 border-t border-slate-100 dark:border-slate-800">
+          <button onClick={() => { setOpen(false); onNavigate("/notifications"); }} className="text-xs font-semibold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent hover:opacity-80 w-full text-center">
             View all notifications
           </button>
         </div>

@@ -78,6 +78,7 @@ export const usersRouter = router({
         location: "",
         role: user?.role || ctx.user?.role || "shipper",
         verified: user?.isVerified || false,
+        profilePicture: user?.profilePicture || null,
         createdAt: createdAt.toISOString(),
         loadsCreated: 0,
         loadsCompleted: 0,
@@ -398,22 +399,57 @@ export const usersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      // Build name from firstName + lastName if provided
-      const fullName = input.firstName || input.lastName
-        ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
-        : input.name;
+      try {
+        // Build name from firstName + lastName if provided
+        const fullName = input.firstName || input.lastName
+          ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
+          : input.name;
 
-      const updateData: Record<string, any> = { updatedAt: new Date() };
-      if (fullName) updateData.name = fullName;
-      if (input.email) updateData.email = input.email;
-      if (input.phone !== undefined) updateData.phone = input.phone;
+        const updateData: Record<string, any> = { updatedAt: new Date() };
+        if (fullName) updateData.name = fullName;
+        if (input.email) updateData.email = input.email;
+        if (input.phone !== undefined) updateData.phone = input.phone;
 
-      await db
-        .update(users)
-        .set(updateData)
-        .where(eq(users.openId, String(ctx.user.id)));
+        await db
+          .update(users)
+          .set(updateData)
+          .where(eq(users.openId, String(ctx.user.id)));
 
-      return { success: true };
+        return { success: true };
+      } catch (error: any) {
+        console.error("[users.updateProfile] Error:", error);
+        // If phone column doesn't exist yet, retry without it
+        if (error.message?.includes("phone")) {
+          const fullName = input.firstName || input.lastName
+            ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
+            : input.name;
+          const fallbackData: Record<string, any> = { updatedAt: new Date() };
+          if (fullName) fallbackData.name = fullName;
+          if (input.email) fallbackData.email = input.email;
+          await db.update(users).set(fallbackData).where(eq(users.openId, String(ctx.user.id)));
+          return { success: true };
+        }
+        throw new Error("Failed to update profile");
+      }
+    }),
+
+  // Upload profile picture (base64)
+  uploadProfilePicture: protectedProcedure
+    .input(z.object({ imageData: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        await db
+          .update(users)
+          .set({ profilePicture: input.imageData, updatedAt: new Date() })
+          .where(eq(users.openId, String(ctx.user.id)));
+        return { success: true };
+      } catch (error: any) {
+        console.error("[users.uploadProfilePicture] Error:", error);
+        throw new Error("Failed to upload profile picture");
+      }
     }),
 
   // Update notification preferences

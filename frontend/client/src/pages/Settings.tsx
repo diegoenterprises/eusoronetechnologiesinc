@@ -129,12 +129,22 @@ export default function Settings() {
     fileInputRef.current?.click();
   };
 
+  const uploadPictureMutation = (trpc as any).users.uploadProfilePicture.useMutation({
+    onSuccess: () => { toast.success("Profile picture saved"); profileQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed to upload picture", { description: error.message }),
+  });
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
     if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
-    toast.success("Profile picture uploaded (storage integration pending)");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      uploadPictureMutation.mutate({ imageData: base64 });
+    };
+    reader.readAsDataURL(file);
   };
 
   // Compute initials from the live form state
@@ -179,9 +189,13 @@ export default function Settings() {
                 ) : (
                   <>
                     <div className="relative w-32 h-32 mx-auto mb-4">
-                      <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center">
-                        <span className="text-4xl font-bold text-white">{initials}</span>
-                      </div>
+                      {profile?.profilePicture ? (
+                        <img src={profile.profilePicture} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-purple-500/30" />
+                      ) : (
+                        <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center">
+                          <span className="text-4xl font-bold text-white">{initials}</span>
+                        </div>
+                      )}
                       <button onClick={handleAvatarClick} className="absolute bottom-0 right-0 p-2 rounded-full bg-slate-700 hover:bg-slate-600 border-2 border-slate-800 transition-colors">
                         <Camera className="w-4 h-4 text-white" />
                       </button>
