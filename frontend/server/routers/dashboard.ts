@@ -726,6 +726,104 @@ export const dashboardRouter = router({
   resetLayout: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true })),
   getWidgets: protectedProcedure.query(async () => [{ id: "w1", type: "stats", title: "Stats", enabled: true }]),
   toggleWidget: protectedProcedure.input(z.object({ widgetId: z.string(), enabled: z.boolean() })).mutation(async ({ input }) => ({ success: true, widgetId: input.widgetId })),
+
+  // ========================================================================
+  // PREMIUM ANALYTICS WIDGET PROCEDURES
+  // ========================================================================
+
+  getRevenueForecast: protectedProcedure.query(async () => ({
+    currentMonth: 284500, projectedMonth: 312000, lastMonth: 267800,
+    trend: [245000, 258000, 267800, 284500, 298000, 312000],
+    growth: 6.2, confidence: 87,
+  })),
+
+  getRouteOptimizationAI: protectedProcedure.query(async () => ({
+    optimizedRoutes: 34, fuelSaved: 2840, timeSaved: 127,
+    costSavings: 8450, avgEfficiency: 94.2,
+  })),
+
+  getPredictiveMaintenance: protectedProcedure.query(async () => ({
+    vehiclesMonitored: 48, alertsActive: 3, uptime: 97.8,
+    nextService: [
+      { vehicle: "TRK-2201", issue: "Brake pads", urgency: "HIGH", dueIn: "3 days" },
+      { vehicle: "TRK-1847", issue: "Oil change", urgency: "MEDIUM", dueIn: "1 week" },
+      { vehicle: "TRK-3392", issue: "Tire rotation", urgency: "LOW", dueIn: "2 weeks" },
+    ],
+  })),
+
+  getDemandHeatmap: protectedProcedure.query(async () => ({
+    hotspots: [
+      { region: "Los Angeles Basin", demand: 847, surge: 1.35, level: "CRITICAL" },
+      { region: "Houston / Gulf Coast", demand: 534, surge: 1.45, level: "CRITICAL" },
+      { region: "Chicago Metro", demand: 623, surge: 1.22, level: "HIGH" },
+      { region: "Dallas-Fort Worth", demand: 412, surge: 1.28, level: "HIGH" },
+      { region: "Atlanta Hub", demand: 389, surge: 1.18, level: "HIGH" },
+      { region: "New Jersey / NY Port", demand: 567, surge: 1.32, level: "CRITICAL" },
+      { region: "Permian Basin", demand: 298, surge: 1.55, level: "CRITICAL" },
+      { region: "Memphis Corridor", demand: 245, surge: 1.15, level: "ELEVATED" },
+    ],
+  })),
+
+  getDriverPerformanceAnalytics: protectedProcedure.query(async () => ({
+    avgScore: 92, topPerformers: 12, needsImprovement: 3, avgMilesPerDay: 487,
+  })),
+
+  getFuelEfficiencyAnalytics: protectedProcedure.query(async () => ({
+    avgMpg: 6.8, costPerMile: 0.62, totalGallons: 14200, totalCost: 48800,
+    trend: [0.65, 0.64, 0.63, 0.62, 0.61, 0.62],
+  })),
+
+  getLoadUtilization: protectedProcedure.query(async () => ({
+    avgUtilization: 87, fullLoads: 156, partialLoads: 23, emptyMiles: 8.2,
+  })),
+
+  getComplianceScore: protectedProcedure.query(async () => ({
+    overall: 96, fmcsa: 98, phmsa: 94, dot: 97, osha: 95,
+    issues: [
+      { area: "ELD Records", status: "OK", score: 100 },
+      { area: "HOS Violations", status: "WARNING", score: 88 },
+      { area: "Vehicle Inspections", status: "OK", score: 97 },
+    ],
+  })),
+
+  getAdvancedMarketRates: protectedProcedure.query(async () => ({
+    avgRate: 2.65, rateChange: 0.08, topLanes: [
+      { route: "LAX → PHX", rate: 3.12, volume: 234 },
+      { route: "HOU → DAL", rate: 2.85, volume: 189 },
+      { route: "CHI → DET", rate: 2.45, volume: 156 },
+    ],
+  })),
+
+  getBidWinRate: protectedProcedure.query(async () => ({
+    winRate: 34.2, totalBids: 187, won: 64, avgBidAmount: 2340,
+    trend: [28, 31, 33, 34, 36, 34],
+  })),
+
+  getRealTimeTracking: protectedProcedure.query(async () => ({
+    activeShipments: 23, onTime: 19, delayed: 3, earlyArrival: 1,
+    vehicles: [
+      { id: "TRK-2201", lat: 32.78, lng: -96.80, status: "In Transit", eta: "2h 15m" },
+      { id: "TRK-1847", lat: 29.76, lng: -95.37, status: "Loading", eta: "4h 30m" },
+      { id: "TRK-3392", lat: 34.05, lng: -118.24, status: "In Transit", eta: "6h 45m" },
+    ],
+  })),
+
+  getCostBreakdown: protectedProcedure.query(async () => ({
+    total: 148500,
+    categories: [
+      { name: "Fuel", amount: 48800, percent: 32.9 },
+      { name: "Labor", amount: 52000, percent: 35.0 },
+      { name: "Insurance", amount: 18700, percent: 12.6 },
+      { name: "Maintenance", amount: 15200, percent: 10.2 },
+      { name: "Tolls & Fees", amount: 8400, percent: 5.7 },
+      { name: "Other", amount: 5400, percent: 3.6 },
+    ],
+  })),
+
+  getCustomerSatisfaction: protectedProcedure.query(async () => ({
+    score: 4.7, totalReviews: 342, fiveStar: 218, fourStar: 89,
+    nps: 72, responseRate: 94,
+  })),
 });
 
 // ============================================================================

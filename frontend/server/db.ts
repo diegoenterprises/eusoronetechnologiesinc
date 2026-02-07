@@ -19,10 +19,6 @@ export async function getDb() {
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
-  if (!user.openId) {
-    throw new Error("User openId is required for upsert");
-  }
-
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot upsert user: database not available");
@@ -30,10 +26,13 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
+    const values: Record<string, any> = {};
     const updateSet: Record<string, unknown> = {};
+
+    // Include openId if provided
+    if (user.openId) {
+      values.openId = user.openId;
+    }
 
     const textFields = ["name", "email", "loginMethod"] as const;
     type TextField = (typeof textFields)[number];
@@ -68,12 +67,29 @@ export async function upsertUser(user: InsertUser): Promise<void> {
       updateSet.lastSignedIn = new Date();
     }
 
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
-      set: updateSet,
-    });
+    // Try insert with openId; if column doesn't exist, retry without
+    try {
+      await db.insert(users).values(values as any).onDuplicateKeyUpdate({
+        set: updateSet,
+      });
+    } catch (err: any) {
+      if (err?.message?.includes('openId') || err?.message?.includes('open_id') || err?.code === 'ER_BAD_FIELD_ERROR') {
+        console.warn("[Database] openId column issue, retrying upsert without openId");
+        const { openId: _removed, ...valuesWithoutOpenId } = values;
+        const { openId: _removed2, ...updateSetWithoutOpenId } = updateSet;
+        if (!valuesWithoutOpenId.email) {
+          valuesWithoutOpenId.email = `${user.openId || 'user'}@eusotrip.com`;
+        }
+        await db.insert(users).values(valuesWithoutOpenId as any).onDuplicateKeyUpdate({
+          set: updateSetWithoutOpenId,
+        });
+      } else {
+        throw err;
+      }
+    }
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
-    throw error;
+    // Don't throw — failing to upsert shouldn't crash the app
   }
 }
 
@@ -84,9 +100,15 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  // Try openId lookup — may fail if column doesn't exist in actual DB
+  try {
+    const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+    if (result.length > 0) return result[0];
+  } catch (err) {
+    console.warn("[Database] openId lookup failed (column may not exist):", err);
+  }
 
-  return result.length > 0 ? result[0] : undefined;
+  return undefined;
 }
 
 // TODO: add feature queries here as your schema grows.

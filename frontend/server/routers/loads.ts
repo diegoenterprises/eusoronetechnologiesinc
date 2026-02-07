@@ -21,45 +21,51 @@ import { emailService } from "../_core/email";
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const openId = String(ctxUser?.id || "");
   const email = ctxUser?.email || "";
+  const name = ctxUser?.name || "User";
+  const role = (ctxUser?.role || "SHIPPER") as any;
 
-  // Try openId first (wrapped in try-catch in case column doesn't exist)
-  try {
-    const [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
-    if (row) return row.id;
-  } catch (err) {
-    console.warn("[resolveUserId] openId lookup failed, falling back to email:", err);
-  }
-
-  // Fallback: try email
+  // 1. Try email lookup (most reliable — email column always exists)
   if (email) {
     try {
       const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-      if (row) {
-        try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
-        return row.id;
-      }
+      if (row) return row.id;
     } catch (err) {
       console.warn("[resolveUserId] email lookup failed:", err);
     }
   }
 
-  // Auto-create user so load can still be saved
+  // 2. User doesn't exist — create them
   try {
-    await db.insert(users).values({
-      openId,
-      email: email || `${openId}@eusotrip.com`,
-      name: ctxUser?.name || "User",
-      role: (ctxUser?.role || "SHIPPER") as any,
+    const insertData: Record<string, any> = {
+      email: email || `user-${Date.now()}@eusotrip.com`,
+      name,
+      role,
       isActive: true,
       isVerified: false,
-    });
-    const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
-    return newRow?.id || 0;
+    };
+    // Try with openId first; if column missing, retry without
+    try {
+      insertData.openId = String(ctxUser?.id || `auto-${Date.now()}`);
+      const result = await db.insert(users).values(insertData as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      if (insertedId) return insertedId;
+    } catch (insertErr: any) {
+      console.warn("[resolveUserId] insert with openId failed, retrying without:", insertErr?.message);
+      delete insertData.openId;
+      const result = await db.insert(users).values(insertData as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      if (insertedId) return insertedId;
+    }
+    // Re-query by email
+    if (email) {
+      const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      return newRow?.id || 0;
+    }
+    return 0;
   } catch (err: any) {
-    // If duplicate key, find user by email
-    if (email && (err?.code === 'ER_DUP_ENTRY' || err?.message?.includes('Duplicate'))) {
+    console.error("[resolveUserId] Insert failed:", err);
+    if (email) {
       try {
         const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
         if (row) return row.id;
