@@ -23,8 +23,26 @@ import {
 import { toast } from "sonner";
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState("profile");
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("tab") || "profile";
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle Stripe setup callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const setup = params.get("setup");
+    if (setup === "success") {
+      toast.success("Payment method added successfully");
+      setActiveTab("billing");
+      window.history.replaceState({}, "", "/settings?tab=billing");
+    } else if (setup === "cancelled") {
+      toast.info("Payment method setup was cancelled");
+      setActiveTab("billing");
+      window.history.replaceState({}, "", "/settings?tab=billing");
+    }
+  }, []);
 
   // --- Profile form state ---
   const [profileForm, setProfileForm] = useState({
@@ -87,23 +105,16 @@ export default function Settings() {
     onError: (error: any) => toast.error("Failed to upload picture", { description: error.message }),
   });
 
-  const createSetupIntentMutation = (trpc as any).stripe.createSetupIntent.useMutation({
-    onSuccess: async (data: any) => {
-      const stripeJs = await getStripe();
-      if (!stripeJs) { toast.error("Stripe not configured"); setAddingCard(false); return; }
-      const { error } = await stripeJs.confirmCardSetup(data.clientSecret, {
-        payment_method: { card: { token: "tok_visa" } as any },
-      });
-      if (error) {
-        // Redirect to Stripe hosted setup page instead
-        window.location.href = `https://checkout.stripe.com/setup/${data.setupIntentId}`;
+  const createSetupCheckoutMutation = (trpc as any).stripe.createSetupCheckout.useMutation({
+    onSuccess: (data: any) => {
+      if (data.url) {
+        window.location.href = data.url;
       } else {
-        toast.success("Payment method added");
-        paymentMethodsQuery.refetch();
+        toast.error("Could not open Stripe checkout");
+        setAddingCard(false);
       }
-      setAddingCard(false);
     },
-    onError: (error: any) => { toast.error("Failed to create setup", { description: error.message }); setAddingCard(false); },
+    onError: (error: any) => { toast.error("Failed to connect to Stripe", { description: error.message }); setAddingCard(false); },
   });
 
   const removePaymentMethodMutation = (trpc as any).stripe.removePaymentMethod.useMutation({
@@ -191,7 +202,7 @@ export default function Settings() {
 
   const handleAddPaymentMethod = () => {
     setAddingCard(true);
-    createSetupIntentMutation.mutate();
+    createSetupCheckoutMutation.mutate();
   };
 
   const handleRemovePaymentMethod = (id: string) => {

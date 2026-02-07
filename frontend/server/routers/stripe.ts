@@ -18,54 +18,76 @@ import { users, companies, wallets, walletTransactions, payments } from "../../d
 import { stripe } from "../stripe/service";
 import { SUBSCRIPTION_PRODUCTS, PLATFORM_FEE_PERCENTAGE, MINIMUM_PLATFORM_FEE, calculatePlatformFee } from "../stripe/products";
 
-// Helper: resolve openId to numeric DB user id
-async function resolveUserId(openId: string | number): Promise<number> {
+// Helper: resolve openId or email to numeric DB user id + full row
+async function resolveUser(openIdOrEmail: string | number, email?: string): Promise<{ id: number; row: any } | null> {
   const db = await getDb();
-  if (!db) return 0;
-  const strId = String(openId);
-  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.openId, strId)).limit(1);
-  return user?.id || 0;
+  if (!db) return null;
+  const strId = String(openIdOrEmail);
+
+  // Try openId first
+  let [user] = await db.select().from(users).where(eq(users.openId, strId)).limit(1);
+  if (user) return { id: user.id, row: user };
+
+  // Fallback: try by email
+  if (email) {
+    [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (user) return { id: user.id, row: user };
+  }
+
+  return null;
 }
 
 // Helper: get or create Stripe customer for a user
 async function getOrCreateStripeCustomer(userOpenId: string | number, email: string, name?: string): Promise<string> {
-  const db = await getDb();
-  if (!db) throw new Error("Database not available");
+  const resolved = await resolveUser(userOpenId, email);
 
-  const numericId = await resolveUserId(userOpenId);
-  if (!numericId) throw new Error("User not found");
-
-  const [user] = await db.select().from(users).where(eq(users.id, numericId)).limit(1);
-  
-  // Check if user already has a Stripe customer ID stored
-  const stripeCustomerId = (user as any)?.stripeCustomerId;
-  if (stripeCustomerId) {
-    try {
-      await stripe.customers.retrieve(stripeCustomerId);
-      return stripeCustomerId;
-    } catch {
-      // Customer was deleted from Stripe, create a new one
+  // Check if user already has a Stripe customer ID stored in DB
+  if (resolved) {
+    const stripeCustomerId = (resolved.row as any)?.stripeCustomerId;
+    if (stripeCustomerId) {
+      try {
+        await stripe.customers.retrieve(stripeCustomerId);
+        return stripeCustomerId;
+      } catch {
+        // Customer was deleted from Stripe, create a new one
+      }
     }
   }
+
+  // Try to find existing Stripe customer by email
+  try {
+    const existing = await stripe.customers.list({ email, limit: 1 });
+    if (existing.data.length > 0) {
+      const cust = existing.data[0];
+      // Store back to DB if we resolved the user
+      if (resolved) {
+        const db = await getDb();
+        if (db) {
+          try { await db.execute(`UPDATE users SET stripe_customer_id = '${cust.id}' WHERE id = ${resolved.id}`); } catch {}
+        }
+      }
+      return cust.id;
+    }
+  } catch {}
 
   // Create new Stripe customer
   const customer = await stripe.customers.create({
     email,
     name: name || email,
     metadata: {
-      userId: String(numericId),
+      userId: resolved ? String(resolved.id) : String(userOpenId),
       platform: "eusotrip",
     },
   });
 
   // Store the customer ID on the user record
-  try {
-    await db.execute(
-      `UPDATE users SET stripe_customer_id = '${customer.id}' WHERE id = ${numericId}`
-    );
-  } catch {
-    // Column may not exist yet - non-critical
-    console.warn("[Stripe] Could not store customer ID on user record");
+  if (resolved) {
+    const db = await getDb();
+    if (db) {
+      try { await db.execute(`UPDATE users SET stripe_customer_id = '${customer.id}' WHERE id = ${resolved.id}`); } catch {
+        console.warn("[Stripe] Could not store customer ID on user record");
+      }
+    }
   }
 
   return customer.id;
@@ -100,9 +122,9 @@ export const stripeRouter = router({
   // ═══════════════════════════════════════════════════════════════
 
   /**
-   * Create a SetupIntent for adding a payment method
+   * Create a Stripe Checkout session in setup mode to add a payment method
    */
-  createSetupIntent: protectedProcedure
+  createSetupCheckout: protectedProcedure
     .mutation(async ({ ctx }) => {
       const customerId = await getOrCreateStripeCustomer(
         ctx.user.id,
@@ -110,17 +132,22 @@ export const stripeRouter = router({
         ctx.user.name || undefined
       );
 
-      const setupIntent = await stripe.setupIntents.create({
+      const appUrl = process.env.APP_URL || "https://eusotrip.com";
+      const session = await stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ["card"],
+        mode: "setup",
+        success_url: `${appUrl}/settings?tab=billing&setup=success`,
+        cancel_url: `${appUrl}/settings?tab=billing&setup=cancelled`,
         metadata: {
           userId: String(ctx.user.id),
+          type: "add_payment_method",
         },
       });
 
       return {
-        clientSecret: setupIntent.client_secret,
-        setupIntentId: setupIntent.id,
+        url: session.url,
+        sessionId: session.id,
       };
     }),
 
