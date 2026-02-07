@@ -162,7 +162,7 @@ export default function Wallet() {
       </div>
 
       {/* Balance Hero Card */}
-      <Card className={`rounded-2xl overflow-hidden border-0 ${isLight ? 'shadow-xl shadow-blue-500/10' : ''}`}>
+      <div className={`rounded-3xl overflow-hidden border-0 ${isLight ? 'shadow-xl shadow-blue-500/10' : ''}`}>
         <div className="bg-gradient-to-br from-[#1473FF] via-[#6C47FF] to-[#BE01FF] p-6 md:p-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -177,28 +177,28 @@ export default function Wallet() {
           </div>
           <div className="mb-6">
             <p className="text-white/70 text-sm mb-1">Available Balance</p>
-            {balanceQuery.isLoading ? <Skeleton className="h-12 w-48 bg-white/20" /> : (
+            {balanceQuery.isLoading ? <Skeleton className="h-12 w-48 bg-white/20 rounded-2xl" /> : (
               <p className="text-4xl md:text-5xl font-bold text-white tracking-tight">
                 {showBalance ? `$${(balance?.available || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '••••••'}
               </p>
             )}
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-3">
               <p className="text-white/60 text-xs">Pending</p>
               <p className="text-white font-bold text-lg">{showBalance ? `$${(balance?.pending || 0).toLocaleString()}` : '••••'}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-3">
               <p className="text-white/60 text-xs">In Escrow</p>
               <p className="text-white font-bold text-lg">{showBalance ? `$${(balance?.escrow || 0).toLocaleString()}` : '••••'}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur rounded-xl p-3">
+            <div className="bg-white/10 backdrop-blur rounded-2xl p-3">
               <p className="text-white/60 text-xs">This Month</p>
               <p className="text-white font-bold text-lg">{showBalance ? `$${(balance?.monthVolume || 0).toLocaleString()}` : '••••'}</p>
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">

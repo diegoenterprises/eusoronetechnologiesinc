@@ -384,19 +384,25 @@ export const loadsRouter = router({
         conditions.push(`\`status\` = '${input.status}'`);
       }
       if (input.date) {
-        conditions.push(`(DATE(\`pickupDate\`) = '${input.date}' OR DATE(\`createdAt\`) = '${input.date}')`);
+        // Loads appear ONLY on their pickupDate. If pickupDate is NULL, fall back to createdAt.
+        conditions.push(`DATE(COALESCE(\`pickupDate\`, \`createdAt\`)) = '${input.date}'`);
       }
+
+      const whereClause = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
+      console.log(`[loads.list] WHERE ${whereClause} | date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
 
       let query = db
         .select()
         .from(loads)
-        .where(conditions.length > 0 ? sql.raw(conditions.join(' AND ')) : sql`1=1`)
+        .where(sql.raw(whereClause))
         .$dynamic();
 
       const results = await query
         .orderBy(desc(loads.createdAt))
         .limit(input.limit)
         .offset(input.offset);
+
+      console.log(`[loads.list] Returned ${results.length} rows`);
 
       // Transform DB rows to match what the frontend expects
       return results.map((row: any) => {
