@@ -92,10 +92,14 @@ export default function LoadCreationWizard() {
   const unSuggestRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<any>(null);
   const unDebounceRef = useRef<any>(null);
+  const [rateMode, setRateMode] = useState<"total" | "perMile">("total");
   const originRef = useRef<HTMLInputElement>(null);
   const destRef = useRef<HTMLInputElement>(null);
   const originACRef = useRef<any>(null);
   const destACRef = useRef<any>(null);
+  const routeMapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const routeRendererRef = useRef<any>(null);
 
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
@@ -169,6 +173,113 @@ export default function LoadCreationWizard() {
       });
     }
   }, [mapsLoaded, rs]);
+
+  // Render route map when both origin and destination are set
+  useEffect(() => {
+    if (!mapsLoaded || rs !== 4 || !routeMapRef.current) return;
+    const g = (window as any).google?.maps;
+    if (!g) return;
+    const hasCoords = formData.originLat && formData.originLng && formData.destLat && formData.destLng;
+    if (!hasCoords) {
+      // Show a default US map if no route yet
+      if (!mapInstanceRef.current && routeMapRef.current) {
+        mapInstanceRef.current = new g.Map(routeMapRef.current, {
+          center: { lat: 39.8283, lng: -98.5795 },
+          zoom: 4,
+          mapTypeId: "roadmap",
+          disableDefaultUI: true,
+          zoomControl: true,
+          styles: [
+            { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
+            { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
+            { elementType: "labels.text.fill", stylers: [{ color: "#8892b0" }] },
+            { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d2d44" }] },
+            { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1a2b" }] },
+          ],
+        });
+      }
+      return;
+    }
+
+    const origin = { lat: formData.originLat, lng: formData.originLng };
+    const dest = { lat: formData.destLat, lng: formData.destLng };
+
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new g.Map(routeMapRef.current, {
+        center: { lat: (origin.lat + dest.lat) / 2, lng: (origin.lng + dest.lng) / 2 },
+        zoom: 5,
+        mapTypeId: "roadmap",
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
+          { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
+          { elementType: "labels.text.fill", stylers: [{ color: "#8892b0" }] },
+          { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d2d44" }] },
+          { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1a2b" }] },
+        ],
+      });
+    }
+
+    // Use Directions API for actual road route
+    const directionsService = new g.DirectionsService();
+    if (routeRendererRef.current) routeRendererRef.current.setMap(null);
+
+    directionsService.route(
+      { origin, destination: dest, travelMode: g.TravelMode.DRIVING },
+      (result: any, status: string) => {
+        if (status === "OK" && result) {
+          // Draw the route with purple-to-blue gradient using polyline segments
+          const path = result.routes[0]?.overview_path || [];
+          if (path.length > 1) {
+            // Clear old renderers
+            if (routeRendererRef.current) {
+              if (Array.isArray(routeRendererRef.current)) routeRendererRef.current.forEach((p: any) => p.setMap(null));
+              else routeRendererRef.current.setMap(null);
+            }
+
+            const segments: any[] = [];
+            const totalPts = path.length;
+            for (let i = 0; i < totalPts - 1; i++) {
+              const t = i / (totalPts - 1);
+              // Gradient from #BE01FF (purple) to #1473FF (blue)
+              const r = Math.round(190 + (20 - 190) * t);
+              const gr = Math.round(1 + (115 - 1) * t);
+              const b = Math.round(255 + (255 - 255) * t);
+              const color = `rgb(${r},${gr},${b})`;
+              const seg = new g.Polyline({
+                path: [path[i], path[i + 1]],
+                strokeColor: color,
+                strokeWeight: 5,
+                strokeOpacity: 0.9,
+                map: mapInstanceRef.current,
+              });
+              segments.push(seg);
+            }
+            routeRendererRef.current = segments;
+
+            // Add origin marker (green)
+            new g.Marker({ position: origin, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+            // Add destination marker (red)
+            new g.Marker({ position: dest, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#ef4444", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+
+            // Fit bounds
+            const bounds = new g.LatLngBounds();
+            bounds.extend(origin);
+            bounds.extend(dest);
+            mapInstanceRef.current.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
+
+            // Update distance from directions result (more accurate than haversine)
+            const routeDistance = result.routes[0]?.legs?.[0]?.distance;
+            if (routeDistance) {
+              const miles = Math.round(routeDistance.value * 0.000621371);
+              setFormData((prev: any) => ({ ...prev, distance: miles }));
+            }
+          }
+        }
+      }
+    );
+  }, [mapsLoaded, rs, formData.originLat, formData.originLng, formData.destLat, formData.destLng]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -274,7 +385,7 @@ export default function LoadCreationWizard() {
       case 3: return formData.weight && formData.quantity;
       case 4: return formData.origin && formData.destination;
       case 5: return true;
-      case 6: return formData.rate;
+      case 6: return formData.rate || formData.ratePerMile;
       default: return true;
     }
   };
@@ -576,11 +687,21 @@ export default function LoadCreationWizard() {
                 <Input ref={destRef} value={formData.destination || ""} onChange={(e: any) => updateField("destination", e.target.value)}
                   placeholder={mapsLoaded ? "Start typing an address..." : "City, State or full address"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               </div>
+              {/* Route Map Preview */}
+              {mapsLoaded && (
+                <div className="rounded-xl overflow-hidden border border-slate-700/50">
+                  <div ref={routeMapRef} className="w-full h-[280px] bg-slate-900" />
+                </div>
+              )}
               {formData.distance && (
-                <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border border-cyan-500/20">
+                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
                   <div className="flex items-center justify-between">
-                    <div><p className="text-slate-400 text-xs">Estimated Distance</p><p className="text-white text-2xl font-bold">{formData.distance} miles</p></div>
-                    <Truck className="w-8 h-8 text-cyan-400" />
+                    <div><p className="text-slate-400 text-xs">Route Distance</p><p className="text-white text-2xl font-bold">{formData.distance} miles</p></div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                      <div className="w-16 h-1 rounded bg-gradient-to-r from-[#BE01FF] to-[#1473FF]" />
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                    </div>
                   </div>
                 </div>
               )}
@@ -588,7 +709,7 @@ export default function LoadCreationWizard() {
                 <div><label className="text-sm text-slate-400 mb-1 block">Pickup Date</label><Input type="date" value={formData.pickupDate || ""} onChange={(e: any) => updateField("pickupDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
                 <div><label className="text-sm text-slate-400 mb-1 block">Delivery Date</label><Input type="date" value={formData.deliveryDate || ""} onChange={(e: any) => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               </div>
-              {!mapsLoaded && <div className="p-2 rounded-lg bg-slate-700/20 border border-slate-700/30"><p className="text-slate-500 text-[10px] flex items-center gap-1"><Info className="w-3 h-3" />Google Maps autocomplete available when VITE_GOOGLE_MAPS_KEY is configured.</p></div>}
+              {!mapsLoaded && <div className="p-2 rounded-lg bg-slate-700/20 border border-slate-700/30"><p className="text-slate-500 text-[10px] flex items-center gap-1"><Info className="w-3 h-3" />Google Maps autocomplete &amp; route preview available when VITE_GOOGLE_MAPS_KEY is configured.</p></div>}
             </div>
           )}
 
@@ -606,22 +727,54 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 6: Pricing */}
+          {/* STEP 6: Pricing — Total Rate or Rate Per Mile */}
           {rs === 6 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div>
-                <label className="text-sm text-slate-400 mb-1 block">Rate ($)</label>
-                <Input type="number" value={formData.rate || ""} onChange={(e: any) => {
-                  updateField("rate", e.target.value);
-                  if (formData.distance && Number(e.target.value) > 0) updateField("ratePerMile", (Number(e.target.value) / formData.distance).toFixed(2));
-                }} className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+              {/* Rate Mode Toggle */}
+              <div className="flex items-center gap-2 p-1 bg-slate-700/30 rounded-lg w-fit">
+                <button onClick={() => setRateMode("total")}
+                  className={cn("px-4 py-2 rounded-md text-sm font-semibold transition-all", rateMode === "total" ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : "text-slate-400 hover:text-white")}>
+                  Total Rate ($)
+                </button>
+                <button onClick={() => setRateMode("perMile")}
+                  className={cn("px-4 py-2 rounded-md text-sm font-semibold transition-all", rateMode === "perMile" ? "bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white shadow" : "text-slate-400 hover:text-white")}>
+                  Rate Per Mile ($/mi)
+                </button>
               </div>
-              {formData.distance && formData.rate && (
+
+              {rateMode === "total" ? (
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Total Rate ($)</label>
+                  <Input type="number" value={formData.rate || ""} onChange={(e: any) => {
+                    const val = e.target.value;
+                    updateField("rate", val);
+                    if (formData.distance && Number(val) > 0) updateField("ratePerMile", (Number(val) / formData.distance).toFixed(2));
+                  }} placeholder="e.g., 2500" className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg" />
+                  {formData.distance && formData.rate && (
+                    <p className="text-sm text-slate-500 mt-2">= <span className="text-emerald-400 font-bold">${(Number(formData.rate) / formData.distance).toFixed(2)}/mi</span> over {formData.distance} miles</p>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Rate Per Mile ($/mi)</label>
+                  <Input type="number" step="0.01" value={formData.ratePerMile || ""} onChange={(e: any) => {
+                    const val = e.target.value;
+                    updateField("ratePerMile", val);
+                    if (formData.distance && Number(val) > 0) updateField("rate", String(Math.round(Number(val) * formData.distance)));
+                  }} placeholder="e.g., 3.25" className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg" />
+                  {formData.distance && formData.ratePerMile && (
+                    <p className="text-sm text-slate-500 mt-2">= <span className="text-emerald-400 font-bold">${Math.round(Number(formData.ratePerMile) * formData.distance).toLocaleString()} total</span> for {formData.distance} miles</p>
+                  )}
+                  {!formData.distance && <p className="text-sm text-amber-400/70 mt-2">Set origin &amp; destination first for auto-calculation of total rate.</p>}
+                </div>
+              )}
+
+              {formData.distance && (formData.rate || formData.ratePerMile) && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20">
                   <div className="grid grid-cols-3 gap-4 text-center">
-                    <div><p className="text-slate-400 text-xs">Total Rate</p><p className="text-white text-xl font-bold">${Number(formData.rate).toLocaleString()}</p></div>
+                    <div><p className="text-slate-400 text-xs">Total Rate</p><p className="text-white text-xl font-bold">${Number(formData.rate || 0).toLocaleString()}</p></div>
                     <div><p className="text-slate-400 text-xs">Distance</p><p className="text-white text-xl font-bold">{formData.distance} mi</p></div>
-                    <div><p className="text-slate-400 text-xs">Rate/Mile</p><p className="text-emerald-400 text-xl font-bold">${(Number(formData.rate) / formData.distance).toFixed(2)}</p></div>
+                    <div><p className="text-slate-400 text-xs">Rate/Mile</p><p className="text-emerald-400 text-xl font-bold">${formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2)}</p></div>
                   </div>
                 </div>
               )}

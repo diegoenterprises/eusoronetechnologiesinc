@@ -66,7 +66,7 @@ export default function MyLoads() {
           <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
             <Filter className="w-4 h-4 mr-2" />Export
           </Button>
-          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/load/wizard")}>
+          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/loads/create")}>
             <Plus className="w-4 h-4 mr-2" />Create New Load
           </Button>
         </div>
@@ -189,7 +189,7 @@ export default function MyLoads() {
                   </div>
                   <p className="text-slate-400 text-lg">No loads found</p>
                   <p className="text-slate-500 text-sm mt-1">Create your first load to get started</p>
-                  <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/load/wizard")}>
+                  <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/loads/create")}>
                     <Plus className="w-4 h-4 mr-2" />Create New Load
                   </Button>
                 </div>

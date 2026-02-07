@@ -282,9 +282,22 @@ export const loadsRouter = router({
         .limit(input.limit)
         .offset(input.offset);
 
-      const result = results as any;
-      result.loads = results;
-      return result;
+      // Transform DB rows to match what the frontend expects
+      return results.map((row: any) => {
+        const pickup = row.pickupLocation as any || {};
+        const delivery = row.deliveryLocation as any || {};
+        return {
+          ...row,
+          id: String(row.id),
+          origin: { city: pickup.city || "", state: pickup.state || "", address: pickup.address || "" },
+          destination: { city: delivery.city || "", state: delivery.state || "", address: delivery.address || "" },
+          rate: row.rate ? parseFloat(String(row.rate)) : 0,
+          weight: row.weight ? parseFloat(String(row.weight)) : 0,
+          distance: row.distance ? parseFloat(String(row.distance)) : 0,
+          createdAt: row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "",
+          pickupDate: row.pickupDate ? new Date(row.pickupDate).toLocaleDateString() : "",
+        };
+      });
     }),
 
   /**
