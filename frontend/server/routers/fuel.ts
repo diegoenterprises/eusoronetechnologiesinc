@@ -255,7 +255,7 @@ export const fuelRouter = router({
   /**
    * Get fuel prices
    */
-  getPrices: publicProcedure
+  getPrices: protectedProcedure
     .input(z.object({
       location: z.object({
         lat: z.number(),

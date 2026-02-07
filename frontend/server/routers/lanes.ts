@@ -13,7 +13,7 @@ export const lanesRouter = router({
   /**
    * Search available lanes
    */
-  search: publicProcedure
+  search: protectedProcedure
     .input(z.object({
       origin: z.object({
         city: z.string().optional(),

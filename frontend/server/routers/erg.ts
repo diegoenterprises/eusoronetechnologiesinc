@@ -6,7 +6,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc";
 import {
   searchMaterials,
   getMaterialByUN,
@@ -45,7 +45,7 @@ export const ergRouter = router({
    * Real-time search: searches by name, UN number, or alternate names
    * Used by LoadCreationWizard for auto-suggest as user types
    */
-  search: publicProcedure
+  search: protectedProcedure
     .input(z.object({ query: z.string(), limit: z.number().optional() }))
     .query(async ({ input }) => {
       const q = input.query.trim();
@@ -69,7 +69,7 @@ export const ergRouter = router({
   /**
    * Search ERG by UN number -- full info with guide + protective distances
    */
-  searchByUN: publicProcedure
+  searchByUN: protectedProcedure
     .input(z.object({ unNumber: z.string() }))
     .query(async ({ input }) => {
       const info = getFullERGInfo(input.unNumber);
@@ -99,7 +99,7 @@ export const ergRouter = router({
   /**
    * Search ERG by product name
    */
-  searchByName: publicProcedure
+  searchByName: protectedProcedure
     .input(z.object({ productName: z.string() }))
     .query(async ({ input }) => {
       const results = searchMaterials(input.productName, 20);
@@ -120,7 +120,7 @@ export const ergRouter = router({
   /**
    * Get ERG guide page
    */
-  getGuidePage: publicProcedure
+  getGuidePage: protectedProcedure
     .input(z.object({ guideNumber: z.number() }))
     .query(async ({ input }) => {
       const guide = getGuide(input.guideNumber);
@@ -131,7 +131,7 @@ export const ergRouter = router({
   /**
    * Get hazard class info
    */
-  getHazardClass: publicProcedure
+  getHazardClass: protectedProcedure
     .input(z.object({ classNumber: z.string() }))
     .query(async ({ input }) => {
       const result = HAZARD_CLASS_INFO[input.classNumber];
@@ -142,7 +142,7 @@ export const ergRouter = router({
   /**
    * Get emergency contacts
    */
-  getEmergencyContacts: publicProcedure
+  getEmergencyContacts: protectedProcedure
     .query(async () => ({
       chemtrec: { name: "CHEMTREC", phone: "1-800-424-9300", description: "24-hour emergency response assistance", international: "+1-703-527-3887" },
       national: { name: "National Response Center", phone: "1-800-424-8802", description: "Report oil and chemical spills" },
@@ -153,7 +153,7 @@ export const ergRouter = router({
   /**
    * Get ERG database metadata
    */
-  getMetadata: publicProcedure
+  getMetadata: protectedProcedure
     .query(async () => ERG_METADATA),
 
   /**

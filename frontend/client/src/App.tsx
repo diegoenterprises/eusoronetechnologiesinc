@@ -44,7 +44,7 @@ import DriversPage from "./pages/Drivers";
 import EarningsPage from "./pages/Earnings";
 import ErgPage from "./pages/Erg";
 import Login from "./pages/Login";
-import TestLogin from "./pages/TestLogin";
+// TestLogin removed from production - SOC II: no dev backdoors in prod
 import Register from "./pages/Register";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -166,7 +166,6 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/home"} component={Home} />
       <Route path={"/login"} component={Login} />
-      <Route path={"/test-login"} component={TestLogin} />
       <Route path={"/register"} component={Register} />
       <Route path={"/register/shipper"} component={RegisterShipper} />
       <Route path={"/register/carrier"} component={RegisterCarrier} />
@@ -222,7 +221,7 @@ function Router() {
       <Route path={"/bids/submit/:loadId"} component={() => (<DashboardLayout><CarrierBidSubmission /></DashboardLayout>)} />
       <Route path={"/bids/:bidId"} component={() => (<DashboardLayout><BidDetails /></DashboardLayout>)} />
       <Route path={"/loads/transit"} component={() => (<DashboardLayout><InTransitPage /></DashboardLayout>)} />
-      <Route path={"/loads/:loadId/bids"} component={LoadBids} />
+      <Route path={"/loads/:loadId/bids"} component={() => (<DashboardLayout><LoadBids /></DashboardLayout>)} />
       <Route path={"/load/:loadId"} component={() => (<DashboardLayout><LoadDetails /></DashboardLayout>)} />
       <Route path={"/fleet"} component={() => (<DashboardLayout><FleetManagement /></DashboardLayout>)} />
       <Route path={"/drivers"} component={() => (<DashboardLayout><DriversPage /></DashboardLayout>)} />

@@ -169,13 +169,19 @@ export default function DashboardLayout({
     return <DashboardLayoutSkeleton />;
   }
 
+  // FORT KNOX AUTH GUARD: Redirect unauthenticated users to login
+  if (!user) {
+    window.location.href = "/login";
+    return <DashboardLayoutSkeleton />;
+  }
+
   const handleNavigate = (path: string) => {
     navigate(path);
   };
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate("/login");
   };
 
   // Close sidebar on mobile when navigating
