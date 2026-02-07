@@ -7,6 +7,8 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
+import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Package, Building2, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, User, Mail, Phone,
-  MapPin, Globe, Hash
+  MapPin, Globe, Hash, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -58,7 +60,14 @@ interface ShipperFormData {
   expirationDate: string;
   insuranceCertificate: File | null;
   
-  // Step 6: Terms
+  // Step 6: Account Security
+  password: string;
+  confirmPassword: string;
+  
+  // Step 7: Compliance Integrations
+  complianceIds: ComplianceIds;
+  
+  // Step 8: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptCompliance: boolean;
@@ -90,6 +99,9 @@ const initialFormData: ShipperFormData = {
   coverageAmount: "",
   expirationDate: "",
   insuranceCertificate: null,
+  password: "",
+  confirmPassword: "",
+  complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptPrivacy: false,
   acceptCompliance: false,
@@ -141,6 +153,11 @@ export default function RegisterShipper() {
       .map(t => t.replace("class", ""))
       .filter(c => ["2","3","4","5","6","7","8","9"].includes(c)) as ("2"|"3"|"4"|"5"|"6"|"7"|"8"|"9")[];
     
+    // Filter out empty compliance IDs
+    const complianceIds = Object.fromEntries(
+      Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+    );
+
     await registerMutation.mutateAsync({
       companyName: formData.companyName,
       dba: formData.dba || undefined,
@@ -151,7 +168,7 @@ export default function RegisterShipper() {
       contactTitle: formData.primaryContactTitle || undefined,
       contactEmail: formData.primaryContactEmail,
       contactPhone: formData.primaryContactPhone,
-      password: formData.primaryContactEmail,
+      password: formData.password,
       emergencyContactName: formData.primaryContactName,
       emergencyContactPhone: formData.primaryContactPhone,
       streetAddress: formData.streetAddress,
@@ -164,6 +181,7 @@ export default function RegisterShipper() {
       generalLiabilityPolicy: formData.policyNumber,
       generalLiabilityCoverage: formData.coverageAmount,
       generalLiabilityExpiration: formData.expirationDate,
+      complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
     });
   };
 
@@ -604,6 +622,40 @@ export default function RegisterShipper() {
         }
         return true;
       },
+    },
+    {
+      id: "security",
+      title: "Account Security",
+      description: "Create your login credentials",
+      icon: <Lock className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <PasswordFields
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onPasswordChange={(v) => updateFormData({ password: v })}
+            onConfirmChange={(v) => updateFormData({ confirmPassword: v })}
+          />
+        </div>
+      ),
+      validate: () => {
+        const err = validatePassword(formData.password, formData.confirmPassword);
+        if (err) { toast.error(err); return false; }
+        return true;
+      },
+    },
+    {
+      id: "compliance",
+      title: "Compliance Integrations",
+      description: "Link existing compliance network memberships for faster verification",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      component: (
+        <ComplianceIntegrations
+          role="SHIPPER"
+          complianceIds={formData.complianceIds}
+          onChange={(ids) => updateFormData({ complianceIds: ids })}
+        />
+      ),
     },
     {
       id: "terms",

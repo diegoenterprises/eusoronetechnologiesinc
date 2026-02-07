@@ -7,13 +7,15 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
+import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Users, Building2, FileText, Shield, CreditCard, 
-  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin
+  Upload, CheckCircle, AlertCircle, User, Mail, Phone, MapPin, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -52,7 +54,14 @@ interface BrokerFormData {
   coverageAmount: string;
   expirationDate: string;
   
-  // Step 6: Terms
+  // Step 6: Account Security
+  password: string;
+  confirmPassword: string;
+  
+  // Step 7: Compliance Integrations
+  complianceIds: ComplianceIds;
+  
+  // Step 8: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptCompliance: boolean;
@@ -82,6 +91,9 @@ const initialFormData: BrokerFormData = {
   policyNumber: "",
   coverageAmount: "",
   expirationDate: "",
+  password: "",
+  confirmPassword: "",
+  complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptPrivacy: false,
   acceptCompliance: false,
@@ -127,7 +139,7 @@ export default function RegisterBroker() {
       contactName: formData.primaryContactName,
       contactEmail: formData.primaryContactEmail,
       contactPhone: formData.primaryContactPhone,
-      password: formData.primaryContactEmail,
+      password: formData.password,
       streetAddress: formData.streetAddress,
       city: formData.city,
       state: formData.state,
@@ -136,6 +148,9 @@ export default function RegisterBroker() {
       suretyBondCarrier: formData.suretyBondCarrier,
       suretyBondNumber: formData.bondNumber,
       brokersHazmat: false,
+      complianceIds: Object.fromEntries(
+        Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+      ) || undefined,
     });
   };
 
@@ -523,6 +538,40 @@ export default function RegisterBroker() {
         }
         return true;
       },
+    },
+    {
+      id: "security",
+      title: "Account Security",
+      description: "Create your login credentials",
+      icon: <Lock className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <PasswordFields
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onPasswordChange={(v) => updateFormData({ password: v })}
+            onConfirmChange={(v) => updateFormData({ confirmPassword: v })}
+          />
+        </div>
+      ),
+      validate: () => {
+        const err = validatePassword(formData.password, formData.confirmPassword);
+        if (err) { toast.error(err); return false; }
+        return true;
+      },
+    },
+    {
+      id: "compliance",
+      title: "Compliance Integrations",
+      description: "Link existing compliance network memberships for faster verification",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      component: (
+        <ComplianceIntegrations
+          role="BROKER"
+          complianceIds={formData.complianceIds}
+          onChange={(ids) => updateFormData({ complianceIds: ids })}
+        />
+      ),
     },
     {
       id: "terms",

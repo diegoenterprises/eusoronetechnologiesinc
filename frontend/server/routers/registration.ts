@@ -29,6 +29,44 @@ const insuranceSchema = z.object({
   expiration: z.string(),
 });
 
+// Compliance integration IDs — optional fast-track fields
+const complianceIdsSchema = z.object({
+  avettaId: z.string().optional(),
+  isnetworldId: z.string().optional(),
+  veriforceId: z.string().optional(),
+  disaId: z.string().optional(),
+  complyWorksId: z.string().optional(),
+  compassId: z.string().optional(),
+  browzId: z.string().optional(),
+  fmcsaUsdot: z.string().optional(),
+  fmcsaMcNumber: z.string().optional(),
+  phmsaRegNumber: z.string().optional(),
+  tsaTwicNumber: z.string().optional(),
+  epaId: z.string().optional(),
+  oshaId: z.string().optional(),
+  dotHazmatPermit: z.string().optional(),
+  clearinghouseId: z.string().optional(),
+  saferWebId: z.string().optional(),
+}).optional();
+
+// Helper to store compliance IDs as JSON metadata on the user record
+async function storeComplianceIds(db: any, userId: number, complianceIds: any) {
+  if (!complianceIds) return;
+  const filled = Object.fromEntries(Object.entries(complianceIds).filter(([_, v]) => v && String(v).trim()));
+  if (Object.keys(filled).length === 0) return;
+  try {
+    await db.update(users).set({ metadata: JSON.stringify(filled) }).where(eq(users.id, userId));
+  } catch (e) {
+    // metadata column may not exist yet — non-critical, try raw SQL fallback
+    try {
+      await db.execute(sql`ALTER TABLE users ADD COLUMN metadata TEXT`);
+      await db.update(users).set({ metadata: JSON.stringify(filled) }).where(eq(users.id, userId));
+    } catch {
+      console.warn("[Registration] Could not store compliance IDs:", e);
+    }
+  }
+}
+
 export const registrationRouter = router({
   /**
    * Register a new Shipper
@@ -64,22 +102,18 @@ export const registrationRouter = router({
       pollutionLiabilityCoverage: z.string().optional(),
       pollutionLiabilityExpiration: z.string().optional(),
       hasSecurityPlan: z.boolean().default(false),
+      complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      // Check if email already exists
       const existing = await db.select().from(users).where(eq(users.email, input.contactEmail)).limit(1);
-      if (existing.length > 0) {
-        throw new Error("Email already registered");
-      }
+      if (existing.length > 0) throw new Error("Email already registered");
 
-      // Hash password
       const passwordHash = await bcrypt.hash(input.password, 12);
 
-      // Create company
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
         legalName: input.dba || input.companyName,
@@ -94,16 +128,14 @@ export const registrationRouter = router({
       }).$returningId();
 
       const companyId = companyResult[0]?.id;
-
-      // Create user
       const openId = uuidv4();
-      const verificationToken = uuidv4();
 
       const userResult = await db.insert(users).values({
         openId,
         name: input.contactName,
         email: input.contactEmail,
         phone: input.contactPhone,
+        passwordHash,
         role: "SHIPPER",
         companyId: Number(companyId),
         isVerified: false,
@@ -111,9 +143,7 @@ export const registrationRouter = router({
       }).$returningId();
 
       const userId = userResult[0]?.id;
-
-      // TODO: Send verification email
-      // await sendVerificationEmail(input.contactEmail, verificationToken);
+      await storeComplianceIds(db, Number(userId), input.complianceIds);
 
       return {
         success: true,
@@ -165,22 +195,19 @@ export const registrationRouter = router({
       clearinghouseRegistered: z.boolean().default(false),
       processAgentName: z.string().optional(),
       processAgentStates: z.array(z.string()).optional(),
+      complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      // Check email
       const existing = await db.select().from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
 
-      // Verify USDOT with FMCSA SAFER (external API call)
       const saferVerification = await verifyUSDOT(input.usdotNumber);
-
       const passwordHash = await bcrypt.hash(input.password, 12);
 
-      // Create company
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
         legalName: input.dba || input.companyName,
@@ -203,11 +230,14 @@ export const registrationRouter = router({
         name: input.contactName,
         email: input.contactEmail,
         phone: input.contactPhone,
+        passwordHash,
         role: "CARRIER",
         companyId: Number(companyResult[0]?.id),
         isVerified: false,
         isActive: true,
       }).$returningId();
+
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
 
       return {
         success: true,
@@ -258,6 +288,7 @@ export const registrationRouter = router({
       backgroundCheckConsent: z.boolean(),
       drugTestConsent: z.boolean(),
       companyId: z.number().optional(),
+      complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
     }))
     .mutation(async ({ input }) => {
@@ -275,11 +306,14 @@ export const registrationRouter = router({
         name: `${input.firstName} ${input.lastName}`,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: "DRIVER",
         companyId: input.companyId || null,
         isVerified: false,
         isActive: true,
       }).$returningId();
+
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
 
       return {
         success: true,
@@ -312,12 +346,14 @@ export const registrationRouter = router({
       suretyBondCarrier: z.string(),
       suretyBondNumber: z.string(),
       brokersHazmat: z.boolean().default(false),
+      complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const existing = await db.select().from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
         legalName: input.dba || input.companyName,
@@ -338,11 +374,13 @@ export const registrationRouter = router({
         name: input.contactName,
         email: input.contactEmail,
         phone: input.contactPhone,
+        passwordHash,
         role: "BROKER",
         companyId: Number(companyResult[0]?.id),
         isVerified: false,
         isActive: true,
       }).$returningId();
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
       return { success: true, userId: userResult[0]?.id, companyId: companyResult[0]?.id, verificationRequired: true };
     }),
 
@@ -360,23 +398,27 @@ export const registrationRouter = router({
       jobTitle: z.string(),
       hazmatTrainingCompleted: z.boolean().default(false),
       companyId: z.number().optional(),
+      complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
         openId,
         name: `${input.firstName} ${input.lastName}`,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: "CATALYST",
         companyId: input.companyId || null,
         isVerified: false,
         isActive: true,
       }).$returningId();
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 
@@ -397,22 +439,26 @@ export const registrationRouter = router({
       state: z.string(),
       zipCode: z.string(),
       experienceYears: z.number().default(0),
+      complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
         openId,
         name: `${input.firstName} ${input.lastName}`,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: "ESCORT",
         isVerified: false,
         isActive: true,
       }).$returningId();
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 
@@ -433,12 +479,14 @@ export const registrationRouter = router({
       zipCode: z.string(),
       epaIdNumber: z.string().optional(),
       hasSpccPlan: z.boolean().default(false),
+      complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const companyResult = await db.insert(companies).values({
         name: input.facilityName,
         legalName: input.ownerCompany,
@@ -456,11 +504,13 @@ export const registrationRouter = router({
         name: input.managerName,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: "TERMINAL_MANAGER",
         companyId: Number(companyResult[0]?.id),
         isVerified: false,
         isActive: true,
       }).$returningId();
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
       return { success: true, userId: userResult[0]?.id, companyId: companyResult[0]?.id, verificationRequired: true };
     }),
 
@@ -477,23 +527,27 @@ export const registrationRouter = router({
       employerCompanyName: z.string(),
       yearsExperience: z.number(),
       companyId: z.number().optional(),
+      complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
         openId,
         name: `${input.firstName} ${input.lastName}`,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: "COMPLIANCE_OFFICER",
         companyId: input.companyId || null,
         isVerified: false,
         isActive: true,
       }).$returningId();
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 
@@ -511,23 +565,27 @@ export const registrationRouter = router({
       employerUsdotNumber: z.string(),
       yearsAsSafetyManager: z.number(),
       companyId: z.number().optional(),
+      complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
         openId,
         name: `${input.firstName} ${input.lastName}`,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: "SAFETY_MANAGER",
         companyId: input.companyId || null,
         isVerified: false,
         isActive: true,
       }).$returningId();
+      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 

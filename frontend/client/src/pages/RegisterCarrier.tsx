@@ -7,6 +7,8 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
+import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Truck, Building2, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, User, Mail, Phone,
-  MapPin, Hash, Search, Loader2
+  MapPin, Hash, Search, Loader2, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -66,7 +68,20 @@ interface CarrierFormData {
   drivers: string;
   hazmatCertifiedDrivers: string;
   
-  // Step 7: Terms
+  // Step 7: Address
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  
+  // Step 8: Account Security
+  password: string;
+  confirmPassword: string;
+  
+  // Step 9: Compliance Integrations
+  complianceIds: ComplianceIds;
+  
+  // Step 10: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptSafetyPolicy: boolean;
@@ -105,6 +120,13 @@ const initialFormData: CarrierFormData = {
   powerUnits: "",
   drivers: "",
   hazmatCertifiedDrivers: "",
+  streetAddress: "",
+  city: "",
+  state: "",
+  zipCode: "",
+  password: "",
+  confirmPassword: "",
+  complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptPrivacy: false,
   acceptSafetyPolicy: false,
@@ -170,6 +192,10 @@ export default function RegisterCarrier() {
   });
 
   const handleComplete = async () => {
+    const complianceIds = Object.fromEntries(
+      Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+    );
+
     await registerMutation.mutateAsync({
       companyName: formData.companyName,
       dba: formData.dba || undefined,
@@ -179,11 +205,11 @@ export default function RegisterCarrier() {
       contactName: formData.primaryContactName,
       contactEmail: formData.primaryContactEmail,
       contactPhone: formData.primaryContactPhone,
-      password: formData.primaryContactEmail,
-      streetAddress: formData.physicalAddress,
-      city: "",
-      state: "",
-      zipCode: "",
+      password: formData.password,
+      streetAddress: formData.streetAddress || formData.physicalAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
       fleetSize: {
         powerUnits: Number(formData.powerUnits) || 0,
         trailers: 0,
@@ -196,6 +222,7 @@ export default function RegisterCarrier() {
       liabilityPolicy: formData.liabilityPolicy,
       liabilityCoverage: formData.liabilityCoverage,
       liabilityExpiration: formData.liabilityExpiration,
+      complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
     });
   };
 
@@ -642,6 +669,95 @@ export default function RegisterCarrier() {
         }
         return true;
       },
+    },
+    {
+      id: "address",
+      title: "Business Address",
+      description: "Company headquarters address",
+      icon: <MapPin className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label className="text-slate-300">Street Address <span className="text-red-400">*</span></Label>
+            <Input
+              value={formData.streetAddress}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
+              placeholder="123 Trucking Way"
+              className="bg-slate-700/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-2 col-span-2">
+              <Label className="text-slate-300">City <span className="text-red-400">*</span></Label>
+              <Input
+                value={formData.city}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
+                placeholder="Houston"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">State <span className="text-red-400">*</span></Label>
+              <Input
+                value={formData.state}
+                onChange={(e: any) => updateFormData({ state: e.target.value })}
+                placeholder="TX"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">ZIP Code <span className="text-red-400">*</span></Label>
+              <Input
+                value={formData.zipCode}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
+                placeholder="77001"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+          </div>
+        </div>
+      ),
+      validate: () => {
+        if (!formData.streetAddress || !formData.city || !formData.state || !formData.zipCode) {
+          toast.error("Please fill in all address fields");
+          return false;
+        }
+        return true;
+      },
+    },
+    {
+      id: "security",
+      title: "Account Security",
+      description: "Create your login credentials",
+      icon: <Lock className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <PasswordFields
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onPasswordChange={(v) => updateFormData({ password: v })}
+            onConfirmChange={(v) => updateFormData({ confirmPassword: v })}
+          />
+        </div>
+      ),
+      validate: () => {
+        const err = validatePassword(formData.password, formData.confirmPassword);
+        if (err) { toast.error(err); return false; }
+        return true;
+      },
+    },
+    {
+      id: "compliance",
+      title: "Compliance Integrations",
+      description: "Link existing compliance network memberships for faster verification",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      component: (
+        <ComplianceIntegrations
+          role="CARRIER"
+          complianceIds={formData.complianceIds}
+          onChange={(ids) => updateFormData({ complianceIds: ids })}
+        />
+      ),
     },
     {
       id: "terms",

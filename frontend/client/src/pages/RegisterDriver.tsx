@@ -7,6 +7,8 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
+import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -15,7 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, FileText, Shield, CreditCard, 
   Upload, CheckCircle, AlertCircle, Mail, Phone,
-  MapPin, Calendar, Truck, Award
+  MapPin, Calendar, Truck, Award, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -60,7 +62,14 @@ interface DriverFormData {
   securityTrainingDate: string;
   additionalCerts: string[];
   
-  // Step 7: Terms
+  // Step 7: Account Security
+  password: string;
+  confirmPassword: string;
+  
+  // Step 8: Compliance Integrations
+  complianceIds: ComplianceIds;
+  
+  // Step 9: Terms
   acceptTerms: boolean;
   acceptBackgroundCheck: boolean;
   acceptDrugTest: boolean;
@@ -94,6 +103,9 @@ const initialFormData: DriverFormData = {
   hazmatTrainingProvider: "",
   securityTrainingDate: "",
   additionalCerts: [],
+  password: "",
+  confirmPassword: "",
+  complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptBackgroundCheck: false,
   acceptDrugTest: false,
@@ -140,7 +152,7 @@ export default function RegisterDriver() {
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
-      password: formData.email,
+      password: formData.password,
       dateOfBirth: formData.dateOfBirth,
       ssn: formData.ssn || undefined,
       streetAddress: formData.streetAddress,
@@ -161,6 +173,9 @@ export default function RegisterDriver() {
       pspConsent: formData.acceptTerms,
       backgroundCheckConsent: formData.acceptBackgroundCheck,
       drugTestConsent: formData.acceptDrugTest,
+      complianceIds: Object.fromEntries(
+        Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+      ) || undefined,
     });
   };
 
@@ -663,6 +678,40 @@ export default function RegisterDriver() {
         }
         return true;
       },
+    },
+    {
+      id: "security",
+      title: "Account Security",
+      description: "Create your login credentials",
+      icon: <Lock className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <PasswordFields
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onPasswordChange={(v) => updateFormData({ password: v })}
+            onConfirmChange={(v) => updateFormData({ confirmPassword: v })}
+          />
+        </div>
+      ),
+      validate: () => {
+        const err = validatePassword(formData.password, formData.confirmPassword);
+        if (err) { toast.error(err); return false; }
+        return true;
+      },
+    },
+    {
+      id: "compliance",
+      title: "Compliance Integrations",
+      description: "Link existing compliance IDs for faster verification",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      component: (
+        <ComplianceIntegrations
+          role="DRIVER"
+          complianceIds={formData.complianceIds}
+          onChange={(ids) => updateFormData({ complianceIds: ids })}
+        />
+      ),
     },
     {
       id: "terms",

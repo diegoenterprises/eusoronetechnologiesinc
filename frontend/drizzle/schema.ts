@@ -37,6 +37,7 @@ export const users = mysqlTable(
     name: text("name"),
     email: varchar("email", { length: 320 }),
     phone: varchar("phone", { length: 20 }),
+    passwordHash: varchar("passwordHash", { length: 255 }),
     loginMethod: varchar("loginMethod", { length: 64 }),
     role: mysqlEnum("role", [
       "SHIPPER",
@@ -59,6 +60,7 @@ export const users = mysqlTable(
     isVerified: boolean("isVerified").default(false).notNull(),
     stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
     stripeConnectId: varchar("stripeConnectId", { length: 255 }),
+    metadata: text("metadata"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

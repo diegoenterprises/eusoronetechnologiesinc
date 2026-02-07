@@ -7,6 +7,8 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
+import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   Car, User, FileText, Shield, MapPin, 
-  Upload, CheckCircle, AlertCircle, Mail, Phone, Award
+  Upload, CheckCircle, AlertCircle, Mail, Phone, Award, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -61,10 +63,19 @@ interface EscortFormData {
   coverageAmount: string;
   expirationDate: string;
   
-  // Step 7: Experience & Terms
+  // Step 7: Experience
   yearsExperience: string;
   previousEmployer: string;
   certifications: string[];
+  
+  // Step 8: Account Security
+  password: string;
+  confirmPassword: string;
+  
+  // Step 9: Compliance Integrations
+  complianceIds: ComplianceIds;
+  
+  // Step 10: Terms
   acceptTerms: boolean;
   acceptBackground: boolean;
 }
@@ -102,6 +113,9 @@ const initialFormData: EscortFormData = {
   yearsExperience: "",
   previousEmployer: "",
   certifications: [],
+  password: "",
+  confirmPassword: "",
+  complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptBackground: false,
 };
@@ -150,7 +164,7 @@ export default function RegisterEscort() {
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
-      password: formData.email,
+      password: formData.password,
       driversLicenseNumber: formData.licenseNumber,
       driversLicenseState: formData.licenseState,
       streetAddress: formData.streetAddress,
@@ -158,6 +172,9 @@ export default function RegisterEscort() {
       state: formData.state,
       zipCode: formData.zipCode,
       experienceYears: Number(formData.yearsExperience) || 0,
+      complianceIds: Object.fromEntries(
+        Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+      ) || undefined,
     });
   };
 
@@ -626,6 +643,40 @@ export default function RegisterEscort() {
         }
         return true;
       },
+    },
+    {
+      id: "security",
+      title: "Account Security",
+      description: "Create your login credentials",
+      icon: <Lock className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <PasswordFields
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onPasswordChange={(v) => updateFormData({ password: v })}
+            onConfirmChange={(v) => updateFormData({ confirmPassword: v })}
+          />
+        </div>
+      ),
+      validate: () => {
+        const err = validatePassword(formData.password, formData.confirmPassword);
+        if (err) { toast.error(err); return false; }
+        return true;
+      },
+    },
+    {
+      id: "compliance",
+      title: "Compliance Integrations",
+      description: "Link existing compliance IDs for faster verification",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      component: (
+        <ComplianceIntegrations
+          role="ESCORT"
+          complianceIds={formData.complianceIds}
+          onChange={(ids) => updateFormData({ complianceIds: ids })}
+        />
+      ),
     },
     {
       id: "terms",

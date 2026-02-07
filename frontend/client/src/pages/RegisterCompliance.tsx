@@ -7,6 +7,8 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
+import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { 
   FileCheck, User, Building2, Award, FileText,
-  CheckCircle, AlertCircle, Mail, Phone
+  CheckCircle, AlertCircle, Mail, Phone, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -42,7 +44,14 @@ interface ComplianceFormData {
   // Step 4: Areas of Responsibility
   responsibilities: string[];
   
-  // Step 5: Terms
+  // Step 5: Account Security
+  password: string;
+  confirmPassword: string;
+  
+  // Step 6: Compliance Integrations
+  complianceIds: ComplianceIds;
+  
+  // Step 7: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
   acceptConfidentiality: boolean;
@@ -63,6 +72,9 @@ const initialFormData: ComplianceFormData = {
   hazmatTrainingDate: "",
   clearinghouseAccess: false,
   responsibilities: [],
+  password: "",
+  confirmPassword: "",
+  complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptPrivacy: false,
   acceptConfidentiality: false,
@@ -115,9 +127,12 @@ export default function RegisterCompliance() {
       lastName: formData.lastName,
       email: formData.email,
       phone: formData.phone,
-      password: formData.email,
+      password: formData.password,
       employerCompanyName: formData.companyName,
       yearsExperience: 1,
+      complianceIds: Object.fromEntries(
+        Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+      ) || undefined,
     });
   };
 
@@ -367,6 +382,40 @@ export default function RegisterCompliance() {
             </div>
           )}
         </div>
+      ),
+    },
+    {
+      id: "security",
+      title: "Account Security",
+      description: "Create your login credentials",
+      icon: <Lock className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <PasswordFields
+            password={formData.password}
+            confirmPassword={formData.confirmPassword}
+            onPasswordChange={(v) => updateFormData({ password: v })}
+            onConfirmChange={(v) => updateFormData({ confirmPassword: v })}
+          />
+        </div>
+      ),
+      validate: () => {
+        const err = validatePassword(formData.password, formData.confirmPassword);
+        if (err) { toast.error(err); return false; }
+        return true;
+      },
+    },
+    {
+      id: "compliance",
+      title: "Compliance Integrations",
+      description: "Link existing compliance IDs for faster verification",
+      icon: <ShieldCheck className="w-5 h-5" />,
+      component: (
+        <ComplianceIntegrations
+          role="COMPLIANCE_OFFICER"
+          complianceIds={formData.complianceIds}
+          onChange={(ids) => updateFormData({ complianceIds: ids })}
+        />
       ),
     },
     {
