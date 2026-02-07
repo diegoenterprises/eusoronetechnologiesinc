@@ -91,15 +91,23 @@ export const notificationsRouter = router({
         // Note: category, actionUrl, actionLabel stored in 'data' JSON field
         const formattedNotifications = notificationList.map(n => {
           const data = (n.data as any) || {};
+          const created = n.createdAt ? new Date(n.createdAt) : new Date();
+          const diffMs = Date.now() - created.getTime();
+          const diffMin = Math.floor(diffMs / 60000);
+          const diffHr = Math.floor(diffMin / 60);
+          const diffDay = Math.floor(diffHr / 24);
+          const timeAgo = diffMin < 1 ? "just now" : diffMin < 60 ? `${diffMin}m ago` : diffHr < 24 ? `${diffHr}h ago` : `${diffDay}d ago`;
           return {
             id: String(n.id),
             type: n.type || 'system',
             category: data.category || 'system',
             title: n.title,
             message: n.message || '',
-            timestamp: n.createdAt?.toISOString() || new Date().toISOString(),
-            createdAt: n.createdAt?.toISOString() || new Date().toISOString(),
+            timestamp: created.toISOString(),
+            createdAt: created.toISOString(),
+            timeAgo,
             read: n.isRead,
+            isRead: n.isRead,
             archived: false,
             actionUrl: data.actionUrl || undefined,
             actionLabel: data.actionLabel || undefined,

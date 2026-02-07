@@ -78,6 +78,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { AmbientGlow, DominoPage } from "./animations";
+import { trpc } from "@/lib/trpc";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -134,6 +135,70 @@ const iconMap: Record<string, React.ReactNode> = {
   Navigation: <Navigation size={20} />,
   Trophy: <Trophy size={20} />,
 };
+
+// --- Notification Bell Component ---
+function NotificationBell({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const summaryQuery = (trpc as any).notifications.getSummary.useQuery(undefined, { refetchInterval: 30000 });
+  const listQuery = (trpc as any).notifications.list.useQuery({ limit: 5 }, { enabled: open });
+  const markReadMutation = (trpc as any).notifications.markAsRead.useMutation({ onSuccess: () => { summaryQuery.refetch(); listQuery.refetch(); } });
+  const markAllReadMutation = (trpc as any).notifications.markAllAsRead.useMutation({ onSuccess: () => { summaryQuery.refetch(); listQuery.refetch(); } });
+
+  const unread = summaryQuery.data?.unread || 0;
+  const items = listQuery.data?.notifications || [];
+
+  return (
+    <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenuTrigger asChild>
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors"
+        >
+          <Bell size={18} className="text-gray-400" />
+          {unread > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold px-1 animate-pulse">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+        </motion.button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-80 max-h-[400px] overflow-y-auto">
+        <div className="px-3 py-2 border-b border-gray-700/50 flex items-center justify-between">
+          <span className="text-sm font-bold text-white">Notifications</span>
+          {unread > 0 && (
+            <button onClick={() => markAllReadMutation.mutate({})} className="text-[10px] text-blue-400 hover:text-blue-300">
+              Mark all read
+            </button>
+          )}
+        </div>
+        {items.length === 0 ? (
+          <div className="px-3 py-6 text-center text-sm text-gray-500">No notifications yet</div>
+        ) : (
+          items.map((n: any) => (
+            <DropdownMenuItem
+              key={n.id}
+              className={`flex-col items-start gap-0.5 px-3 py-2.5 cursor-pointer ${!n.isRead ? "bg-blue-500/5" : ""}`}
+              onClick={() => { if (!n.isRead) markReadMutation.mutate({ id: n.id }); }}
+            >
+              <div className="flex items-center gap-2 w-full">
+                {!n.isRead && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
+                <span className="text-sm text-white font-medium truncate flex-1">{n.title}</span>
+                <span className="text-[10px] text-gray-500 flex-shrink-0">{n.timeAgo || ""}</span>
+              </div>
+              <p className="text-xs text-gray-400 truncate w-full">{n.message}</p>
+            </DropdownMenuItem>
+          ))
+        )}
+        <div className="px-3 py-2 border-t border-gray-700/50">
+          <button onClick={() => { setOpen(false); onNavigate("/notifications"); }} className="text-xs text-blue-400 hover:text-blue-300 w-full text-center">
+            View all notifications
+          </button>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -459,14 +524,8 @@ export default function DashboardLayout({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Notification Bell */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors notification-dot"
-            >
-              <Bell size={18} className="text-gray-400" />
-            </motion.button>
+            {/* Notification Bell with Dropdown */}
+            <NotificationBell onNavigate={handleNavigate} />
 
             {/* User Avatar */}
             <DropdownMenu>
@@ -478,7 +537,7 @@ export default function DashboardLayout({
                 >
                   <Avatar className="w-8 h-8">
                     <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold">
-                      {user?.name?.charAt(0) || "U"}
+                      {(user?.name?.split(" ").map((w: string) => w.charAt(0)).join("").slice(0, 2)) || "U"}
                     </AvatarFallback>
                   </Avatar>
                 </motion.button>

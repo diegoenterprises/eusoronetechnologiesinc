@@ -384,22 +384,33 @@ export const usersRouter = router({
   updateProfile: protectedProcedure
     .input(
       z.object({
+        firstName: z.string().optional(),
+        lastName: z.string().optional(),
         name: z.string().optional(),
-        email: z.string().email().optional(),
+        email: z.string().optional(),
         phone: z.string().optional(),
+        company: z.string().optional(),
+        timezone: z.string().optional(),
+        language: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      // Build name from firstName + lastName if provided
+      const fullName = input.firstName || input.lastName
+        ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
+        : input.name;
+
+      const updateData: Record<string, any> = { updatedAt: new Date() };
+      if (fullName) updateData.name = fullName;
+      if (input.email) updateData.email = input.email;
+      if (input.phone !== undefined) updateData.phone = input.phone;
+
       await db
         .update(users)
-        .set({
-          name: input.name,
-          email: input.email,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(users.id, ctx.user.id));
 
       return { success: true };
