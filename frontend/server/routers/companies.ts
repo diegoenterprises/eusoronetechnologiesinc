@@ -1,8 +1,50 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { companies, vehicles } from "../../drizzle/schema";
+import { companies, vehicles, users } from "../../drizzle/schema";
+
+// Ensure the current user has a company — creates one if needed, returns companyId
+async function ensureCompanyForUser(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const openId = String(ctxUser?.id || "");
+  const email = ctxUser?.email || "";
+
+  // Find user by openId or email
+  let [user] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.openId, openId)).limit(1);
+  if (!user && email) {
+    [user] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.email, email)).limit(1);
+  }
+
+  // If user has a company, return it
+  if (user?.companyId) {
+    const [exists] = await db.select({ id: companies.id }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+    if (exists) return exists.id;
+  }
+
+  // Create a company for the user
+  try {
+    const result = await db.insert(companies).values({
+      name: ctxUser?.name ? `${ctxUser.name}'s Company` : "My Company",
+      email: email || "",
+      phone: "",
+      isActive: true,
+      complianceStatus: "pending",
+    });
+    const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+    const companyId = insertedId || 0;
+
+    // Link user to this company
+    if (user && companyId) {
+      await db.update(users).set({ companyId }).where(eq(users.id, user.id));
+    }
+    return companyId;
+  } catch (err) {
+    console.error("[ensureCompanyForUser] Failed:", err);
+    return 0;
+  }
+}
 
 export const companiesRouter = router({
   // Get company documents for CompanyDocuments page
@@ -36,83 +78,87 @@ export const companiesRouter = router({
       return { success: true, deletedId: input.id };
     }),
 
-  // Get company profile
+  // Get company profile — auto-creates company for user if needed
   getProfile: protectedProcedure
     .input(z.object({ companyId: z.number().optional() }).optional())
     .query(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) {
         return {
-          id: 1,
-          name: "ABC Transport LLC",
-          legalName: "ABC Transport LLC",
-          dotNumber: "1234567",
-          mcNumber: "MC-123456",
-          type: "carrier",
-          verified: true,
-          logo: "/logos/abc-transport.png",
-          website: "https://abctransport.com",
-          description: "Full-service transportation company specializing in petroleum products",
-          address: "123 Main St",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-          phone: "(713) 555-0100",
-          email: "info@abctransport.com",
+          id: 1, name: "", dotNumber: "", mcNumber: "", type: "carrier", verified: false,
+          logo: null, website: "", description: "", address: "", city: "", state: "", zip: "",
+          phone: "", email: ctx.user?.email || "",
         };
       }
 
-      const companyId = input?.companyId || ctx.user.companyId || 1;
-      const result = await db
-        .select()
-        .from(companies)
-        .where(eq(companies.id, companyId))
-        .limit(1);
+      // Resolve companyId — explicit param > user's company > auto-create
+      let companyId = input?.companyId || 0;
+      if (!companyId) {
+        companyId = await ensureCompanyForUser(ctx.user);
+      }
+      if (!companyId) return null;
 
-      const company = result[0];
+      const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
       if (!company) return null;
+
       return {
         ...company,
         type: "carrier",
-        verified: true,
-        logo: "/logos/default.png",
+        verified: !!company.dotNumber,
+        logo: company.logo || null,
         website: company.website || "",
-        description: "Transportation company",
+        description: (company as any).description || "",
       };
     }),
 
-  // Update company profile
+  // Update company profile — persists to database
   updateProfile: protectedProcedure
     .input(
       z.object({
-        companyId: z.number(),
+        companyId: z.number().optional(),
+        id: z.number().optional(),
         name: z.string().optional(),
+        legalName: z.string().optional(),
         mcNumber: z.string().optional(),
         dotNumber: z.string().optional(),
-        scacCode: z.string().optional(),
-        taxId: z.string().optional(),
+        ein: z.string().optional(),
         address: z.string().optional(),
         city: z.string().optional(),
         state: z.string().optional(),
         zipCode: z.string().optional(),
         phone: z.string().optional(),
-        email: z.string().email().optional(),
+        email: z.string().optional(),
         website: z.string().optional(),
+        description: z.string().optional(),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const { companyId, ...updateData } = input;
+      // Accept either companyId or id
+      let targetId = input.companyId || input.id || 0;
+      if (!targetId) {
+        targetId = await ensureCompanyForUser(ctx.user);
+      }
+      if (!targetId) throw new Error("Could not resolve company");
 
-      await db
-        .update(companies)
-        .set({
-          ...updateData,
-          updatedAt: new Date(),
-        })
-        .where(eq(companies.id, companyId));
+      const { companyId: _cid, id: _id, description, ...rest } = input;
+      const updateData: Record<string, any> = { ...rest, updatedAt: new Date() };
+
+      // Store description via raw SQL since column may not exist in schema yet
+      if (description !== undefined) {
+        try {
+          await db.execute(sql`UPDATE companies SET description = ${description} WHERE id = ${targetId}`);
+        } catch {
+          // Column may not exist — non-critical
+        }
+      }
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(k => { if (updateData[k] === undefined) delete updateData[k]; });
+
+      await db.update(companies).set(updateData).where(eq(companies.id, targetId));
 
       return { success: true };
     }),
