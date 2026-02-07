@@ -1,148 +1,260 @@
 /**
  * FIND LOADS PAGE
- * 100% Dynamic - No mock data
- * UI Style: Gradient headers, stat cards with icons, rounded cards
+ * Carrier-facing marketplace to discover available loads:
+ * - Equipment type filter pills
+ * - Load cards with route visualization, tags, Place Bid
+ * Theme-aware | Brand gradient | Oil & gas industry focused
  */
 
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useMemo } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { trpc } from "@/lib/trpc";
-import {
-  Search, MapPin, Package, DollarSign, Truck, Filter,
-  ArrowRight, Eye, Clock
-} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/trpc";
+import { useTheme } from "@/contexts/ThemeContext";
+import {
+  Search, MapPin, Package, Truck, Eye,
+  Navigation, Building2, Droplets, FlaskConical,
+  AlertTriangle, Gavel, SlidersHorizontal
+} from "lucide-react";
 import { useLocation } from "wouter";
 
+type EquipFilter = "all" | "tanker" | "flatbed" | "dry_van" | "reefer";
+
 export default function FindLoads() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
-  const [equipmentFilter, setEquipmentFilter] = useState("all");
+  const [equipFilter, setEquipFilter] = useState<EquipFilter>("all");
 
   const loadsQuery = (trpc as any).loads.list.useQuery({ status: "posted", limit: 50 });
 
-  const filteredLoads = (loadsQuery.data as any)?.filter((load: any) => {
-    const matchesSearch = !searchTerm || 
-      load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesEquipment = equipmentFilter === "all" || load.equipmentType === equipmentFilter;
-    return matchesSearch && matchesEquipment;
-  });
+  const allLoads = (loadsQuery.data as any[]) || [];
 
-  const totalLoads = (loadsQuery.data as any)?.length || 0;
+  const filteredLoads = useMemo(() => {
+    return allLoads.filter((load: any) => {
+      const matchesSearch = !searchTerm ||
+        load.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        load.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        load.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesEquip = equipFilter === "all" || load.equipmentType === equipFilter;
+      return matchesSearch && matchesEquip;
+    });
+  }, [allLoads, searchTerm, equipFilter]);
+
+  const getCargoIcon = (cargoType: string) => {
+    if (cargoType === "petroleum" || cargoType === "liquid") return <Droplets className="w-4 h-4" />;
+    if (cargoType === "chemicals" || cargoType === "hazmat") return <FlaskConical className="w-4 h-4" />;
+    if (cargoType === "gas") return <AlertTriangle className="w-4 h-4" />;
+    return <Package className="w-4 h-4" />;
+  };
+
+  const equipTabs: { id: EquipFilter; label: string }[] = [
+    { id: "all", label: `All (${allLoads.length})` },
+    { id: "tanker", label: "Tanker" },
+    { id: "flatbed", label: "Flatbed" },
+    { id: "dry_van", label: "Dry Van" },
+    { id: "reefer", label: "Reefer" },
+  ];
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
-      {/* Header with Gradient Title */}
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
+
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Find Loads
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Browse available loads matching your equipment</p>
+          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>
+            Browse available loads matching your equipment
+          </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/30">
-          <Package className="w-4 h-4 text-blue-400" />
-          <span className="text-blue-400 text-sm font-medium">Available</span>
-          <span className="text-blue-400 font-bold">{totalLoads}</span>
+        <div className={cn(
+          "flex items-center gap-2 px-4 py-2 rounded-xl border",
+          isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/30"
+        )}>
+          <Package className="w-4 h-4 text-blue-500" />
+          <span className="text-blue-500 text-sm font-bold">{allLoads.length} Available</span>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <Input
-            value={searchTerm}
-            onChange={(e: any) => setSearchTerm(e.target.value)}
-            placeholder="Search by origin or destination..."
-            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
-          />
-        </div>
-        <Select value={equipmentFilter} onValueChange={setEquipmentFilter}>
-          <SelectTrigger className="w-40 bg-slate-800/50 border-slate-700/50 rounded-lg">
-            <SelectValue placeholder="Equipment" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Equipment</SelectItem>
-            <SelectItem value="dry_van">Dry Van</SelectItem>
-            <SelectItem value="flatbed">Flatbed</SelectItem>
-            <SelectItem value="reefer">Reefer</SelectItem>
-            <SelectItem value="tanker">Tanker</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
-          <Filter className="w-4 h-4 mr-2" />More Filters
-        </Button>
+      {/* ── Search ── */}
+      <div className={cn(
+        "relative rounded-xl border",
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
+      )}>
+        <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={searchTerm}
+          onChange={(e: any) => setSearchTerm(e.target.value)}
+          placeholder="Search by origin, destination, or load #..."
+          className={cn(
+            "pl-10 pr-4 py-3 border-0 rounded-xl text-base focus-visible:ring-0",
+            isLight ? "bg-transparent" : "bg-transparent text-white placeholder:text-slate-400"
+          )}
+        />
       </div>
 
-      {/* Loads List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-        <CardContent className="p-0">
-          {loadsQuery.isLoading ? (
-            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
-          ) : filteredLoads?.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                <Package className="w-10 h-10 text-slate-500" />
-              </div>
-              <p className="text-slate-400 text-lg">No loads available</p>
-              <p className="text-slate-500 text-sm mt-1">Check back later for new opportunities</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-700/50">
-              {filteredLoads?.map((load: any) => (
-                <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-blue-500/20">
-                        <Package className="w-6 h-6 text-blue-400" />
+      {/* ── Equipment Filter Tabs ── */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <SlidersHorizontal className="w-4 h-4 text-slate-400 mr-1 flex-shrink-0" />
+        {equipTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setEquipFilter(tab.id)}
+            className={cn(
+              "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all",
+              equipFilter === tab.id
+                ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
+                : isLight
+                  ? "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Load Cards ── */}
+      {loadsQuery.isLoading ? (
+        <div className="space-y-4">{[1, 2, 3].map((i: number) => <Skeleton key={i} className="h-52 w-full rounded-2xl" />)}</div>
+      ) : filteredLoads.length === 0 ? (
+        <div className={cn(
+          "text-center py-16 rounded-2xl border",
+          isLight ? "bg-white border-slate-200" : "bg-slate-800/60 border-slate-700/50"
+        )}>
+          <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}>
+            <Package className="w-10 h-10 text-slate-400" />
+          </div>
+          <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No loads available</p>
+          <p className="text-sm text-slate-400 mt-1">Check back later for new opportunities</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredLoads.map((load: any) => {
+            const originCity = load.origin?.city || "Origin";
+            const originState = load.origin?.state || "";
+            const destCity = load.destination?.city || "Destination";
+            const destState = load.destination?.state || "";
+            const hazmat = load.hazmatClass || (["hazmat", "chemicals", "petroleum"].includes(load.cargoType) ? "Hazardous" : null);
+            const ratePerMile = load.distance > 0 && load.rate > 0 ? (load.rate / load.distance).toFixed(2) : null;
+
+            return (
+              <Card key={load.id} className={cn(
+                "rounded-2xl border overflow-hidden transition-shadow hover:shadow-lg",
+                isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
+              )}>
+                <CardContent className="p-0">
+                  {/* Card Header */}
+                  <div className={cn("flex items-center justify-between px-5 pt-4 pb-3", isLight ? "border-b border-slate-100" : "border-b border-slate-700/30")}>
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center",
+                        load.cargoType === "petroleum" ? "bg-orange-500/15" :
+                        load.cargoType === "chemicals" ? "bg-purple-500/15" : "bg-blue-500/15"
+                      )}>
+                        {getCargoIcon(load.cargoType)}
                       </div>
                       <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="text-white font-bold">{load.loadNumber || `#${load.id?.slice(0, 6)}`}</p>
-                          <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Posted</Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-green-400" />
-                            {load.origin?.city || "N/A"}, {load.origin?.state || ""}
-                          </span>
-                          <ArrowRight className="w-4 h-4 text-slate-600" />
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-red-400" />
-                            {load.destination?.city || "N/A"}, {load.destination?.state || ""}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-slate-500">
-                          <span className="flex items-center gap-1"><Truck className="w-3 h-3" />{load.equipmentType || "Flatbed"}</span>
-                          <span>{load.weight?.toLocaleString() || 0} lbs</span>
-                          <span>{load.distance || 0} miles</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{load.pickupDate}</span>
-                        </div>
+                        <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>
+                          {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo"}
+                        </p>
+                        <p className="text-xs text-slate-400">{load.pickupDate || load.createdAt || "Pickup TBD"}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-emerald-400 font-bold text-xl">${(load.rate || 0).toLocaleString()}</p>
-                        <p className="text-xs text-slate-500">${((load.rate || 0) / Math.max(load.distance || 1, 1)).toFixed(2)}/mi</p>
-                      </div>
-                      <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation(`/loads/${load.id}`)}>
-                        <Eye className="w-4 h-4 mr-1" />View
-                      </Button>
+                    <div className="text-right">
+                      <p className={cn("text-sm font-mono font-bold", isLight ? "text-slate-600" : "text-slate-300")}>
+                        #{load.loadNumber || `LOAD-${String(load.id).slice(0, 6)}`}
+                      </p>
+                      <Badge className="bg-yellow-500/20 text-yellow-500 border-0 text-[10px] font-bold">Posted</Badge>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+                  {/* Equipment + Tags */}
+                  <div className="px-5 pt-3 pb-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Truck className="w-4 h-4 text-slate-400" />
+                      <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>
+                        {load.equipmentType === "tanker" ? "Tanker Truck" : load.equipmentType === "flatbed" ? "Flatbed" : load.equipmentType === "reefer" ? "Reefer" : "Semi Truck"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {load.distance > 0 && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
+                            {load.distance} miles
+                          </span>
+                        )}
+                        {load.weight > 0 && (
+                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
+                            {Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}
+                          </span>
+                        )}
+                        {hazmat && (
+                          <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-red-500/15 text-red-500 border border-red-500/30">
+                            Hazardous
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-green-500">${(load.rate || 0).toLocaleString()}</p>
+                        {ratePerMile && <p className="text-[11px] text-slate-400">${ratePerMile}/mi</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Route Visualization */}
+                  <div className={cn("px-5 py-4 mx-5 mb-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-900/40")}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-green-500" />
+                        </div>
+                        <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
+                      </div>
+                      <div className="flex-1 mx-4 flex items-center">
+                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
+                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-slate-400" />
+                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
+                        <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center">
+                          <Building2 className="w-4 h-4 text-red-500" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="px-5 pb-4 flex justify-center gap-3">
+                    <Button
+                      className="flex-1 max-w-[200px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl font-bold text-sm h-10"
+                      onClick={() => setLocation(`/loads/${load.id}`)}
+                    >
+                      <Gavel className="w-4 h-4 mr-2" /> Place Bid
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className={cn("flex-1 max-w-[200px] rounded-xl font-bold text-sm h-10", isLight ? "border-slate-200" : "border-slate-600")}
+                      onClick={() => setLocation(`/loads/${load.id}`)}
+                    >
+                      <Eye className="w-4 h-4 mr-2" /> Details
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
