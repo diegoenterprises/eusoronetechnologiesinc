@@ -17,10 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { trpc } from "@/lib/trpc";
 import {
-  Flame, MapPin, TrendingUp, TrendingDown, Truck, DollarSign,
-  AlertTriangle, Clock, RefreshCw, ChevronRight, Layers,
-  Droplets, Gauge, BarChart3, Eye, X, Zap, Target, Navigation,
-  Filter, Maximize2, Minimize2
+  Flame, TrendingUp, Truck, AlertTriangle, RefreshCw, Layers,
+  Droplets, X, Zap, Navigation, Filter
 } from "lucide-react";
 
 const EQUIPMENT_TYPES = [
@@ -39,23 +37,6 @@ const DEMAND_LEVELS = [
   { value: "CRITICAL", label: "Critical" },
 ];
 
-const US_BOUNDS = { minLat: 24, maxLat: 50, minLng: -125, maxLng: -66 };
-
-function latLngToXY(lat: number, lng: number, width: number, height: number) {
-  const x = ((lng - US_BOUNDS.minLng) / (US_BOUNDS.maxLng - US_BOUNDS.minLng)) * width;
-  const y = ((US_BOUNDS.maxLat - lat) / (US_BOUNDS.maxLat - US_BOUNDS.minLat)) * height;
-  return { x, y };
-}
-
-function getDemandColor(level: string): string {
-  switch (level) {
-    case "CRITICAL": return "#EF4444";
-    case "HIGH": return "#F97316";
-    case "ELEVATED": return "#EAB308";
-    default: return "#6B7280";
-  }
-}
-
 function getDemandBg(level: string): string {
   switch (level) {
     case "CRITICAL": return "bg-red-500/20 border-red-500/40 text-red-400";
@@ -65,7 +46,26 @@ function getDemandBg(level: string): string {
   }
 }
 
-interface HeatMapCanvasProps {
+// Dark-themed map style for Google Maps
+const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#374151" }] },
+  { featureType: "administrative.land_parcel", elementType: "labels.text.fill", stylers: [{ color: "#4b5563" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
+  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
+  { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#1e3a2f" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d3748" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#1a202c" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#374151" }] },
+  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2937" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f172a" }] },
+  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#334155" }] },
+];
+
+interface GoogleHeatMapProps {
   zones: any[];
   coldZones: any[];
   selectedZone: string | null;
@@ -75,167 +75,220 @@ interface HeatMapCanvasProps {
   intensity: number;
 }
 
-function HeatMapCanvas({ zones, coldZones, selectedZone, onZoneClick, radius, opacity, intensity }: HeatMapCanvasProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 1000, height: 600 });
+function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, opacity, intensity }: GoogleHeatMapProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([]);
+  const infoWindowRef = useRef<google.maps.InfoWindow | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
+  // Initialize Google Map
   useEffect(() => {
-    if (!containerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      setDimensions({ width: Math.max(width, 400), height: Math.max(height, 300) });
-    });
-    obs.observe(containerRef.current);
-    return () => obs.disconnect();
+    if (!mapRef.current || googleMapRef.current) return;
+
+    const waitForGoogle = () => {
+      if (typeof google === "undefined" || !google.maps) {
+        setTimeout(waitForGoogle, 200);
+        return;
+      }
+      const map = new google.maps.Map(mapRef.current!, {
+        center: { lat: 39.0, lng: -98.0 },
+        zoom: 4,
+        styles: DARK_MAP_STYLE,
+        disableDefaultUI: false,
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: true,
+        backgroundColor: "#0f172a",
+      });
+      googleMapRef.current = map;
+      infoWindowRef.current = new google.maps.InfoWindow();
+      setMapReady(true);
+    };
+    waitForGoogle();
+
+    return () => {
+      if (heatmapRef.current) heatmapRef.current.setMap(null);
+      markersRef.current.forEach(m => (m as any).setMap?.(null));
+    };
   }, []);
 
+  // Build heatmap data and markers when zones change
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || zones.length === 0) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!mapReady || !googleMapRef.current) return;
+    const map = googleMapRef.current;
 
-    const { width, height } = dimensions;
-    canvas.width = width;
-    canvas.height = height;
-    ctx.clearRect(0, 0, width, height);
+    // Clear old markers
+    markersRef.current.forEach(m => (m as any).setMap?.(null));
+    markersRef.current = [];
 
-    // Draw US outline (simplified polygon)
-    ctx.strokeStyle = "rgba(100, 116, 139, 0.3)";
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    const outline = [
-      [-124.7, 48.4], [-123.0, 48.4], [-123.0, 46.2], [-124.2, 43.0], [-124.4, 40.0],
-      [-120.0, 34.5], [-117.1, 32.5], [-114.6, 32.7], [-111.0, 31.3], [-108.2, 31.8],
-      [-106.6, 31.8], [-103.0, 29.0], [-99.0, 26.0], [-97.1, 25.9], [-97.1, 27.8],
-      [-94.0, 29.5], [-89.6, 29.0], [-89.0, 30.2], [-85.0, 30.0], [-82.0, 25.0],
-      [-80.0, 25.0], [-80.5, 31.0], [-81.0, 32.0], [-78.5, 33.8], [-75.5, 35.2],
-      [-75.0, 38.0], [-74.0, 39.7], [-73.7, 40.7], [-71.8, 41.3], [-70.0, 41.7],
-      [-67.0, 44.8], [-67.0, 47.3], [-69.0, 47.4], [-75.0, 45.0], [-79.0, 43.2],
-      [-82.5, 41.7], [-83.5, 46.1], [-84.8, 46.8], [-88.0, 48.0], [-89.5, 48.0],
-      [-95.2, 49.0], [-123.3, 49.0], [-124.7, 48.4],
-    ];
-    outline.forEach(([lng, lat], i) => {
-      const { x, y } = latLngToXY(lat, lng, width, height);
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-    ctx.stroke();
-    ctx.fillStyle = "rgba(30, 41, 59, 0.4)";
-    ctx.fill();
-
-    // Draw heat spots for hot zones
+    // Build weighted heatmap data points
+    // Each zone generates multiple points weighted by demand
+    const heatData: google.maps.visualization.WeightedLocation[] = [];
     zones.forEach((zone) => {
-      const { x, y } = latLngToXY(zone.center.lat, zone.center.lng, width, height);
-      const baseRadius = (radius / 100) * (zone.radius * 1.8);
-      const intensityFactor = (intensity / 100) * zone.surgeMultiplier;
-
-      // Outer glow
-      const outerGrad = ctx.createRadialGradient(x, y, 0, x, y, baseRadius * 2);
-      if (zone.demandLevel === "CRITICAL") {
-        outerGrad.addColorStop(0, `rgba(239, 68, 68, ${0.6 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(0.3, `rgba(249, 115, 22, ${0.35 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(0.6, `rgba(234, 179, 8, ${0.15 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-      } else if (zone.demandLevel === "HIGH") {
-        outerGrad.addColorStop(0, `rgba(249, 115, 22, ${0.5 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(0.4, `rgba(234, 179, 8, ${0.25 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-      } else {
-        outerGrad.addColorStop(0, `rgba(234, 179, 8, ${0.35 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(0.5, `rgba(163, 230, 53, ${0.15 * (opacity / 100) * intensityFactor})`);
-        outerGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+      const weight = zone.loadToTruckRatio * zone.surgeMultiplier * (intensity / 100);
+      const spreadCount = Math.ceil(zone.loadCount / 30);
+      // Center point (highest weight)
+      heatData.push({
+        location: new google.maps.LatLng(zone.center.lat, zone.center.lng),
+        weight: weight * 5,
+      });
+      // Spread points around the zone for realistic heat coverage
+      for (let i = 0; i < spreadCount; i++) {
+        const angle = (Math.PI * 2 * i) / spreadCount;
+        const dist = (zone.radius / 69) * (0.3 + Math.random() * 0.7); // Convert miles to approx degrees
+        heatData.push({
+          location: new google.maps.LatLng(
+            zone.center.lat + Math.cos(angle) * dist,
+            zone.center.lng + Math.sin(angle) * dist * 1.3
+          ),
+          weight: weight * (1.5 + Math.random()),
+        });
       }
-      ctx.fillStyle = outerGrad;
-      ctx.beginPath();
-      ctx.arc(x, y, baseRadius * 2, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Inner core
-      const innerGrad = ctx.createRadialGradient(x, y, 0, x, y, baseRadius * 0.8);
-      innerGrad.addColorStop(0, `rgba(255, 255, 255, ${0.25 * (opacity / 100)})`);
-      innerGrad.addColorStop(0.5, `rgba(239, 68, 68, ${0.3 * (opacity / 100)})`);
-      innerGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = innerGrad;
-      ctx.beginPath();
-      ctx.arc(x, y, baseRadius * 0.8, 0, Math.PI * 2);
-      ctx.fill();
     });
 
-    // Draw cold zones (blue)
+    // Update or create heatmap layer
+    if (heatmapRef.current) {
+      heatmapRef.current.setData(heatData);
+    } else {
+      heatmapRef.current = new google.maps.visualization.HeatmapLayer({
+        data: heatData,
+        map,
+        gradient: [
+          "rgba(0, 0, 0, 0)",
+          "rgba(0, 80, 200, 0.4)",
+          "rgba(0, 200, 100, 0.5)",
+          "rgba(234, 179, 8, 0.6)",
+          "rgba(249, 115, 22, 0.7)",
+          "rgba(239, 68, 68, 0.85)",
+          "rgba(220, 38, 38, 0.95)",
+          "rgba(185, 28, 28, 1)",
+        ],
+      });
+    }
+
+    // Add zone markers
+    zones.forEach((zone) => {
+      const isSelected = selectedZone === zone.id;
+      const color = zone.demandLevel === "CRITICAL" ? "#EF4444" : zone.demandLevel === "HIGH" ? "#F97316" : "#EAB308";
+
+      const markerEl = document.createElement("div");
+      markerEl.innerHTML = `
+        <div style="
+          width: ${isSelected ? 36 : 28}px; height: ${isSelected ? 36 : 28}px;
+          background: ${color}; border-radius: 50%;
+          border: 2.5px solid rgba(255,255,255,0.7);
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 0 12px ${color}80, 0 2px 8px rgba(0,0,0,0.5);
+          cursor: pointer; transition: transform 0.2s;
+          ${isSelected ? 'transform: scale(1.3); box-shadow: 0 0 20px ' + color + ', 0 0 40px ' + color + '60;' : ''}
+        ">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+          </svg>
+        </div>
+        ${zone.demandLevel === "CRITICAL" ? '<div style="position:absolute;inset:0;border-radius:50%;background:' + color + ';opacity:0.3;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;width:28px;height:28px;"></div>' : ''}
+      `;
+
+      // Use the older Marker API which is more universally supported
+      const marker = new google.maps.Marker({
+        position: { lat: zone.center.lat, lng: zone.center.lng },
+        map,
+        icon: {
+          url: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="14" fill="${color}" stroke="white" stroke-width="2.5"/><path d="M12.5 18.5A2.5 2.5 0 0 0 15 16c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="none" stroke="white" stroke-width="1.5" transform="translate(-2,-2) scale(0.8)"/></svg>`)}`,
+          scaledSize: new google.maps.Size(isSelected ? 40 : 30, isSelected ? 40 : 30),
+          anchor: new google.maps.Point(isSelected ? 20 : 15, isSelected ? 20 : 15),
+        },
+        title: zone.name,
+        zIndex: zone.demandLevel === "CRITICAL" ? 10 : 5,
+      });
+
+      marker.addListener("click", () => {
+        onZoneClick(zone.id);
+        if (infoWindowRef.current) {
+          infoWindowRef.current.setContent(`
+            <div style="background:#1e293b;color:white;padding:12px;border-radius:10px;min-width:200px;font-family:Gilroy,sans-serif;">
+              <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${zone.name}</div>
+              <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+                <span style="background:${color}30;color:${color};padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;border:1px solid ${color}50;">${zone.demandLevel}</span>
+                <span style="color:#34d399;font-weight:700;font-size:13px;">${zone.surgeMultiplier}x surge</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
+                <div><div style="color:#94a3b8;font-size:9px;">LOADS</div><div style="font-weight:700;color:#60a5fa;">${zone.loadCount}</div></div>
+                <div><div style="color:#94a3b8;font-size:9px;">RATE/MI</div><div style="font-weight:700;">$${zone.avgRate}</div></div>
+                <div><div style="color:#94a3b8;font-size:9px;">TRUCKS</div><div style="font-weight:700;color:#c084fc;">${zone.truckCount}</div></div>
+              </div>
+              <div style="margin-top:8px;font-size:10px;color:#64748b;">${zone.reasons?.[0] || ''}</div>
+            </div>
+          `);
+          infoWindowRef.current.open(map, marker);
+        }
+      });
+
+      markersRef.current.push(marker as any);
+    });
+
+    // Cold zone markers (blue, smaller)
     coldZones.forEach((zone) => {
-      const { x, y } = latLngToXY(zone.center.lat, zone.center.lng, width, height);
-      const grad = ctx.createRadialGradient(x, y, 0, x, y, 30);
-      grad.addColorStop(0, `rgba(59, 130, 246, ${0.3 * (opacity / 100)})`);
-      grad.addColorStop(1, "rgba(0, 0, 0, 0)");
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(x, y, 30, 0, Math.PI * 2);
-      ctx.fill();
+      const marker = new google.maps.Marker({
+        position: { lat: zone.center.lat, lng: zone.center.lng },
+        map,
+        icon: {
+          url: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><circle cx="10" cy="10" r="8" fill="#3B82F680" stroke="#60A5FA" stroke-width="1.5"/><path d="M10 6v8M6 10h8" stroke="#93C5FD" stroke-width="1.5" stroke-linecap="round"/></svg>`)}`,
+          scaledSize: new google.maps.Size(20, 20),
+          anchor: new google.maps.Point(10, 10),
+        },
+        title: `${zone.name} (Cold Zone)`,
+        zIndex: 1,
+      });
+
+      marker.addListener("click", () => {
+        if (infoWindowRef.current) {
+          infoWindowRef.current.setContent(`
+            <div style="background:#1e293b;color:white;padding:10px;border-radius:8px;font-family:Gilroy,sans-serif;">
+              <div style="font-weight:700;font-size:13px;color:#93C5FD;">${zone.name}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:4px;">${zone.surgeMultiplier}x · ${zone.reason}</div>
+              <div style="font-size:10px;color:#3B82F6;margin-top:4px;">❄️ Low demand zone</div>
+            </div>
+          `);
+          infoWindowRef.current.open(map, marker);
+        }
+      });
+
+      markersRef.current.push(marker as any);
     });
-  }, [zones, coldZones, dimensions, radius, opacity, intensity]);
+  }, [zones, coldZones, selectedZone, mapReady, intensity]);
+
+  // Update heatmap properties when controls change
+  useEffect(() => {
+    if (!heatmapRef.current) return;
+    heatmapRef.current.set("radius", Math.round((radius / 100) * 80 + 20));
+    heatmapRef.current.set("opacity", opacity / 100);
+  }, [radius, opacity]);
+
+  // Pan to selected zone
+  useEffect(() => {
+    if (!googleMapRef.current || !selectedZone) return;
+    const zone = zones.find((z) => z.id === selectedZone);
+    if (zone) {
+      googleMapRef.current.panTo({ lat: zone.center.lat, lng: zone.center.lng });
+      googleMapRef.current.setZoom(7);
+    }
+  }, [selectedZone, zones]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full min-h-[400px]">
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-      {/* Interactive zone markers */}
-      {zones.map((zone) => {
-        const xPct = ((zone.center.lng - US_BOUNDS.minLng) / (US_BOUNDS.maxLng - US_BOUNDS.minLng)) * 100;
-        const yPct = ((US_BOUNDS.maxLat - zone.center.lat) / (US_BOUNDS.maxLat - US_BOUNDS.minLat)) * 100;
-        const isSelected = selectedZone === zone.id;
-        return (
-          <div
-            key={zone.id}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-10 group"
-            style={{ left: `${xPct}%`, top: `${yPct}%` }}
-            onClick={() => onZoneClick(zone.id)}
-          >
-            {zone.demandLevel === "CRITICAL" && (
-              <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" style={{ width: 28, height: 28, margin: -2 }} />
-            )}
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 transition-all duration-200 
-              ${isSelected ? "scale-150 ring-2 ring-white" : "group-hover:scale-125"}
-              ${zone.demandLevel === "CRITICAL" ? "bg-red-500 border-red-300" :
-                zone.demandLevel === "HIGH" ? "bg-orange-500 border-orange-300" :
-                "bg-yellow-500 border-yellow-300"}`}
-            >
-              <Flame className="w-3 h-3 text-white" />
-            </div>
-            {/* Tooltip */}
-            <div className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-slate-900/95 border border-slate-600 
-              rounded-lg p-2.5 whitespace-nowrap text-xs text-white shadow-xl z-30
-              ${isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-opacity pointer-events-none`}>
-              <p className="font-bold text-sm">{zone.name}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge className={`text-[10px] px-1.5 py-0 ${getDemandBg(zone.demandLevel)}`}>{zone.demandLevel}</Badge>
-                <span className="text-emerald-400 font-bold">{zone.surgeMultiplier}x</span>
-              </div>
-              <p className="text-gray-400 mt-1">{zone.loadCount} loads · ${zone.avgRate}/mi</p>
-            </div>
+    <div className="relative w-full h-full min-h-[400px]">
+      <div ref={mapRef} className="absolute inset-0 w-full h-full rounded-b-2xl" />
+      {!mapReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80 z-10">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm text-slate-400">Loading Google Maps...</span>
           </div>
-        );
-      })}
-      {/* Cold zone markers */}
-      {coldZones.map((zone) => {
-        const xPct = ((zone.center.lng - US_BOUNDS.minLng) / (US_BOUNDS.maxLng - US_BOUNDS.minLng)) * 100;
-        const yPct = ((US_BOUNDS.maxLat - zone.center.lat) / (US_BOUNDS.maxLat - US_BOUNDS.minLat)) * 100;
-        return (
-          <div
-            key={zone.id}
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10 group"
-            style={{ left: `${xPct}%`, top: `${yPct}%` }}
-          >
-            <div className="w-4 h-4 rounded-full bg-blue-500/60 border border-blue-400/50 flex items-center justify-center">
-              <TrendingDown className="w-2.5 h-2.5 text-blue-200" />
-            </div>
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 bg-slate-900/95 border border-slate-600 rounded-lg p-2 whitespace-nowrap text-xs text-white shadow-xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30">
-              <p className="font-semibold text-blue-300">{zone.name}</p>
-              <p className="text-gray-400">{zone.surgeMultiplier}x · {zone.reason}</p>
-            </div>
-          </div>
-        );
-      })}
+        </div>
+      )}
     </div>
   );
 }
@@ -403,8 +456,8 @@ export default function HotZones() {
                   <Skeleton className="w-full h-full bg-slate-700" />
                 </div>
               ) : (
-                <div className="h-[500px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-                  <HeatMapCanvas
+                <div className="h-[500px]">
+                  <GoogleHeatMap
                     zones={zones}
                     coldZones={coldZones}
                     selectedZone={selectedZone}
