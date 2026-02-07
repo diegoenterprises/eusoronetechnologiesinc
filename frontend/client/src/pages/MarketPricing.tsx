@@ -103,11 +103,46 @@ export default function MarketPricing() {
     { refetchInterval: 60000 }
   );
 
-  const commodities = data?.commodities || [];
+  // Live government data feed (FRED, EIA, BLS)
+  const intelQuery = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const intel = intelQuery.data;
+  const liveOverrides = intel?.liveOverrides || {};
+
+  // Merge seed commodities with live data overrides
+  const rawCommodities = data?.commodities || [];
+  const commodities = useMemo(() => {
+    return rawCommodities.map((c: any) => {
+      const override = liveOverrides[c.symbol as string];
+      if (override) {
+        const newPrice = override.price ?? c.price;
+        const newChange = override.change ?? c.change;
+        const newChangePct = override.changePercent ?? c.changePercent;
+        return {
+          ...c,
+          price: newPrice,
+          change: newChange,
+          changePercent: newChangePct,
+          intraday: newChangePct > 0 ? "BULL" : newChangePct < 0 ? "BEAR" : "FLAT",
+          daily: newChangePct > 0 ? "UP" : newChangePct < 0 ? "DOWN" : "FLAT",
+        };
+      }
+      return c;
+    });
+  }, [rawCommodities, liveOverrides]);
+
   const categories = data?.categories || [];
-  const breadth = data?.marketBreadth;
-  const gainers = data?.topGainers || [];
-  const losers = data?.topLosers || [];
+  const breadth = useMemo(() => ({
+    advancing: commodities.filter((c: any) => c.changePercent > 0).length,
+    declining: commodities.filter((c: any) => c.changePercent < 0).length,
+    unchanged: commodities.filter((c: any) => c.changePercent === 0).length,
+  }), [commodities]);
+  const gainers = useMemo(() => [...commodities].sort((a: any, b: any) => b.changePercent - a.changePercent).slice(0, 5), [commodities]);
+  const losers = useMemo(() => [...commodities].sort((a: any, b: any) => a.changePercent - b.changePercent).slice(0, 5), [commodities]);
 
   // Group commodities by category for the column layout
   const grouped = useMemo(() => {
@@ -142,12 +177,26 @@ export default function MarketPricing() {
               className="pl-8 h-8 w-48 text-xs bg-slate-800 border-slate-700 text-white placeholder-slate-500"
             />
           </div>
-          <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isRefetching}
+          <Button variant="outline" size="sm" onClick={() => { refetch(); intelQuery.refetch(); }} disabled={isRefetching}
             className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 h-8">
             <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isRefetching ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
+      </div>
+
+      {/* Data Source Indicator */}
+      <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${intel?.isLive ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
+        <div className={`w-2 h-2 rounded-full ${intel?.isLive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+        <span className={`text-[10px] font-bold ${intel?.isLive ? "text-emerald-400" : "text-amber-400"}`}>
+          {intel?.isLive ? "LIVE" : "SEED"}
+        </span>
+        <span className="text-[10px] text-slate-500 truncate">{intel?.source || "Loading..."}</span>
+        {intel?.isLive && intel.dieselByRegion?.length > 0 && (
+          <span className="text-[10px] text-slate-500 ml-auto flex-shrink-0">
+            Diesel: {intel.dieselByRegion.map((r: any) => `${r.regionName} $${r.price}`).join(" · ")}
+          </span>
+        )}
       </div>
 
       {/* Market Breadth Bar */}

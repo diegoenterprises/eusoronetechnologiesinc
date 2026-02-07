@@ -162,6 +162,65 @@ const COMMODITIES: CommodityData[] = [
 ];
 
 export const marketPricingRouter = router({
+  // === LIVE GOVERNMENT DATA FEEDS ===
+  // Pulls real data from FRED, EIA, BLS — falls back to seed when API keys not configured
+
+  getMarketIntelligence: protectedProcedure
+    .input(z.object({
+      region: z.string().default("national"),
+    }).optional())
+    .query(async () => {
+      try {
+        const { fetchMarketSnapshot } = await import("../services/marketDataService");
+        const snapshot = await fetchMarketSnapshot();
+
+        // If we got live data, overlay it onto the seed commodity list
+        if (snapshot.isLiveData) {
+          // Update seed commodities with real values where available
+          const updates: Record<string, Partial<CommodityData>> = {};
+
+          if (snapshot.crudeOilWTI) {
+            updates["CL"] = { price: snapshot.crudeOilWTI.price, changePercent: snapshot.crudeOilWTI.change, change: +(snapshot.crudeOilWTI.price * snapshot.crudeOilWTI.change / 100).toFixed(2) };
+          }
+          if (snapshot.naturalGas) {
+            updates["NG"] = { price: snapshot.naturalGas.price, changePercent: snapshot.naturalGas.change, change: +(snapshot.naturalGas.price * snapshot.naturalGas.change / 100).toFixed(4) };
+          }
+          if (snapshot.dieselNational) {
+            updates["ULSD"] = { price: snapshot.dieselNational.price, changePercent: snapshot.dieselNational.change, change: +(snapshot.dieselNational.price * snapshot.dieselNational.change / 100).toFixed(4) };
+            updates["DOE"] = { price: snapshot.dieselNational.price, changePercent: snapshot.dieselNational.change, change: +(snapshot.dieselNational.price * snapshot.dieselNational.change / 100).toFixed(4) };
+          }
+
+          return {
+            snapshot,
+            liveOverrides: updates,
+            ppiTrends: snapshot.truckingPPI?.history || [],
+            dieselByRegion: snapshot.dieselByRegion,
+            source: snapshot.source,
+            isLive: true,
+          };
+        }
+
+        return {
+          snapshot: null,
+          liveOverrides: {},
+          ppiTrends: [],
+          dieselByRegion: [],
+          source: "EusoTrip Seed Data — Configure FRED_API_KEY, EIA_API_KEY for live government data",
+          isLive: false,
+        };
+      } catch (err) {
+        console.error("Market intelligence fetch error:", err);
+        return {
+          snapshot: null,
+          liveOverrides: {},
+          ppiTrends: [],
+          dieselByRegion: [],
+          source: "EusoTrip Seed Data (API error)",
+          isLive: false,
+        };
+      }
+    }),
+
   // Get all commodity market data
   getCommodities: protectedProcedure
     .input(z.object({
