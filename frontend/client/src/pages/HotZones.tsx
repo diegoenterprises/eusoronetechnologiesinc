@@ -9,6 +9,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,23 +47,31 @@ function getDemandBg(level: string): string {
   }
 }
 
-// Dark-themed map style for Google Maps
 const DARK_MAP_STYLE: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
   { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
   { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#374151" }] },
-  { featureType: "administrative.land_parcel", elementType: "labels.text.fill", stylers: [{ color: "#4b5563" }] },
   { featureType: "poi", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
-  { featureType: "poi", elementType: "labels.text.fill", stylers: [{ color: "#6b7280" }] },
   { featureType: "poi.park", elementType: "geometry.fill", stylers: [{ color: "#1e3a2f" }] },
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d3748" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#1a202c" }] },
   { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#374151" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#1f2937" }] },
   { featureType: "transit", elementType: "geometry", stylers: [{ color: "#1e293b" }] },
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#0f172a" }] },
-  { featureType: "water", elementType: "labels.text.fill", stylers: [{ color: "#334155" }] },
+];
+
+const LIGHT_MAP_STYLE: google.maps.MapTypeStyle[] = [
+  { elementType: "geometry", stylers: [{ color: "#f5f5f5" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#ffffff" }] },
+  { elementType: "labels.text.fill", stylers: [{ color: "#616161" }] },
+  { featureType: "administrative", elementType: "geometry.stroke", stylers: [{ color: "#c9c9c9" }] },
+  { featureType: "poi", elementType: "geometry", stylers: [{ color: "#eeeeee" }] },
+  { featureType: "poi.park", elementType: "geometry", stylers: [{ color: "#d4edda" }] },
+  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
+  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e0e0e0" }] },
+  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#e8d8f0" }] },
+  { featureType: "transit", elementType: "geometry", stylers: [{ color: "#e5e5e5" }] },
+  { featureType: "water", elementType: "geometry", stylers: [{ color: "#c9d6f0" }] },
 ];
 
 interface GoogleHeatMapProps {
@@ -76,6 +85,7 @@ interface GoogleHeatMapProps {
 }
 
 function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, opacity, intensity }: GoogleHeatMapProps) {
+  const { theme } = useTheme();
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
   const heatmapRef = useRef<google.maps.visualization.HeatmapLayer | null>(null);
@@ -92,16 +102,17 @@ function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, op
         setTimeout(waitForGoogle, 200);
         return;
       }
+      const isDark = document.documentElement.classList.contains("dark");
       const map = new google.maps.Map(mapRef.current!, {
         center: { lat: 39.0, lng: -98.0 },
         zoom: 4,
-        styles: DARK_MAP_STYLE,
+        styles: isDark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
         disableDefaultUI: false,
         zoomControl: true,
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: true,
-        backgroundColor: "#0f172a",
+        backgroundColor: isDark ? "#0f172a" : "#f5f5f5",
       });
       googleMapRef.current = map;
       infoWindowRef.current = new google.maps.InfoWindow();
@@ -114,6 +125,15 @@ function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, op
       markersRef.current.forEach(m => (m as any).setMap?.(null));
     };
   }, []);
+
+  // Update map styles when theme changes
+  useEffect(() => {
+    if (!googleMapRef.current) return;
+    googleMapRef.current.setOptions({
+      styles: theme === "dark" ? DARK_MAP_STYLE : LIGHT_MAP_STYLE,
+      backgroundColor: theme === "dark" ? "#0f172a" : "#f5f5f5",
+    });
+  }, [theme]);
 
   // Build heatmap data and markers when zones change
   useEffect(() => {
