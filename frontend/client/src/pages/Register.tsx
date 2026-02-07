@@ -33,7 +33,8 @@ const REGISTRATION_ROLES = [
     name: "Shipper",
     description: "Companies shipping freight — oil, chemicals, dry goods, agriculture, and more",
     icon: Package,
-    color: "from-blue-500 to-blue-600",
+    gradient: "from-[#1473FF] to-[#3B8BFF]",
+    iconGradient: "from-[#1473FF] to-[#3B8BFF]",
     requirements: ["PHMSA Registration", "EPA ID (if applicable)", "Insurance Certificate"],
     regulations: ["PHMSA", "EPA RCRA", "DOT 49 CFR"],
     path: "/register/shipper",
@@ -43,7 +44,8 @@ const REGISTRATION_ROLES = [
     name: "Carrier",
     description: "Trucking companies hauling all freight types including hazmat, tanker, flatbed, dry van",
     icon: Truck,
-    color: "from-green-500 to-green-600",
+    gradient: "from-[#10B981] to-[#34D399]",
+    iconGradient: "from-[#10B981] to-[#34D399]",
     requirements: ["USDOT Number", "MC Authority", "Hazmat Authority", "Insurance ($1M+ liability)"],
     regulations: ["FMCSA", "PHMSA", "DOT 49 CFR"],
     path: "/register/carrier",
@@ -53,7 +55,8 @@ const REGISTRATION_ROLES = [
     name: "Broker",
     description: "Freight brokers arranging transportation across all commodity types",
     icon: Users,
-    color: "from-purple-500 to-purple-600",
+    gradient: "from-[#A855F7] to-[#C084FC]",
+    iconGradient: "from-[#A855F7] to-[#C084FC]",
     requirements: ["Broker Authority", "Surety Bond ($75K)", "Insurance"],
     regulations: ["FMCSA", "PHMSA"],
     path: "/register/broker",
@@ -63,7 +66,8 @@ const REGISTRATION_ROLES = [
     name: "Driver",
     description: "CDL holders — all endorsements including hazmat, tanker, doubles/triples",
     icon: User,
-    color: "from-orange-500 to-orange-600",
+    gradient: "from-[#F97316] to-[#FB923C]",
+    iconGradient: "from-[#F97316] to-[#FB923C]",
     requirements: ["CDL (Class A/B)", "Medical Certificate", "Hazmat/TWIC (if applicable)", "TSA Background (if hazmat)"],
     regulations: ["FMCSA", "TSA", "DOT"],
     path: "/register/driver",
@@ -73,7 +77,8 @@ const REGISTRATION_ROLES = [
     name: "Catalyst (Dispatcher)",
     description: "Dispatchers and coordinators managing loads",
     icon: Flame,
-    color: "from-red-500 to-red-600",
+    gradient: "from-[#EF4444] to-[#F87171]",
+    iconGradient: "from-[#EF4444] to-[#F87171]",
     requirements: ["Associated with Carrier", "Hazmat Training (if applicable)"],
     regulations: ["FMCSA"],
     path: "/register/catalyst",
@@ -83,7 +88,8 @@ const REGISTRATION_ROLES = [
     name: "Escort (Pilot Vehicle)",
     description: "Pilot/escort vehicle operators for oversized loads",
     icon: Shield,
-    color: "from-yellow-500 to-yellow-600",
+    gradient: "from-[#EAB308] to-[#FACC15]",
+    iconGradient: "from-[#EAB308] to-[#FACC15]",
     requirements: ["State Certifications", "Vehicle Insurance", "Equipment Requirements"],
     regulations: ["State DOT", "FHWA"],
     path: "/register/escort",
@@ -93,7 +99,8 @@ const REGISTRATION_ROLES = [
     name: "Terminal Manager",
     description: "Terminal and warehouse facility managers — oil, chemical, dry bulk, intermodal",
     icon: Building2,
-    color: "from-cyan-500 to-cyan-600",
+    gradient: "from-[#06B6D4] to-[#22D3EE]",
+    iconGradient: "from-[#06B6D4] to-[#22D3EE]",
     requirements: ["Facility EPA ID", "SPCC Plan", "State Permits"],
     regulations: ["EPA", "OSHA", "EIA", "State DEQ"],
     path: "/register/terminal",
@@ -103,7 +110,8 @@ const REGISTRATION_ROLES = [
     name: "Compliance Officer",
     description: "Regulatory compliance specialists",
     icon: FileCheck,
-    color: "from-indigo-500 to-indigo-600",
+    gradient: "from-[#6366F1] to-[#818CF8]",
+    iconGradient: "from-[#6366F1] to-[#818CF8]",
     requirements: ["Associated with Company", "Compliance Training"],
     regulations: ["Internal Role"],
     path: "/register/compliance",
@@ -113,7 +121,8 @@ const REGISTRATION_ROLES = [
     name: "Safety Manager",
     description: "Safety program managers",
     icon: AlertTriangle,
-    color: "from-pink-500 to-pink-600",
+    gradient: "from-[#EC4899] to-[#F472B6]",
+    iconGradient: "from-[#EC4899] to-[#F472B6]",
     requirements: ["Associated with Company", "Safety Certifications"],
     regulations: ["FMCSA", "OSHA"],
     path: "/register/safety",
@@ -123,7 +132,8 @@ const REGISTRATION_ROLES = [
     name: "Administrator",
     description: "Platform administrators (by invitation only)",
     icon: Crown,
-    color: "from-slate-600 to-slate-700",
+    gradient: "from-[#475569] to-[#64748B]",
+    iconGradient: "from-[#475569] to-[#64748B]",
     requirements: ["Invitation Code Required"],
     regulations: ["Internal Role"],
     path: "/register/admin",
@@ -278,8 +288,27 @@ export default function Register() {
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-3">
-                    <div className={`card-icon-wrap p-3 rounded-xl bg-gradient-to-br ${roleData.color}`}>
-                      <Icon className="h-6 w-6 text-white" />
+                    {/* Theme-aware icon: dark = gradient bg + white icon, light = white circle + gradient icon */}
+                    <div className={`card-icon-wrap w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                      isLight
+                        ? 'bg-white shadow-md shadow-slate-200 border border-slate-100'
+                        : `bg-gradient-to-br ${roleData.gradient}`
+                    }`}>
+                      {isLight ? (
+                        <svg width="0" height="0" className="absolute">
+                          <defs>
+                            <linearGradient id={`grad-${roleData.role}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                              <stop offset="0%" stopColor={roleData.gradient.match(/from-\[([^\]]+)\]/)?.[1] || '#1473FF'} />
+                              <stop offset="100%" stopColor={roleData.gradient.match(/to-\[([^\]]+)\]/)?.[1] || '#BE01FF'} />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                      ) : null}
+                      <Icon
+                        className="h-6 w-6"
+                        style={isLight ? { stroke: `url(#grad-${roleData.role})` } : undefined}
+                        {...(isLight ? {} : { color: 'white' })}
+                      />
                     </div>
                     {roleData.inviteOnly && (
                       <Badge variant="outline" className="text-xs bg-slate-700/50 text-slate-400">

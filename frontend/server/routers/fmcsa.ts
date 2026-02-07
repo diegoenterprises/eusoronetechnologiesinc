@@ -11,7 +11,7 @@ import { z } from "zod";
 import { router, publicProcedure } from "../_core/trpc";
 
 const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services";
-const FMCSA_KEY = process.env.FMCSA_WEBKEY || "";
+const FMCSA_KEY = process.env.FMCSA_WEBKEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
 
 // In-memory cache to avoid hammering FMCSA API (24h TTL)
 const carrierCache = new Map<string, { data: any; expires: number }>();
