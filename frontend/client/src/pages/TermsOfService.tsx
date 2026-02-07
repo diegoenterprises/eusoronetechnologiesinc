@@ -7,6 +7,7 @@
 import React, { useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   FileText,
   Calendar,
@@ -30,6 +31,8 @@ import {
   Flame,
   Building2,
   CircleAlert,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 const EFFECTIVE_DATE = "February 5, 2025";
@@ -339,6 +342,8 @@ const TERMS_SECTIONS: Section[] = [
 export default function TermsOfService() {
   const [, navigate] = useLocation();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(["acceptance"]));
+  const { theme, toggleTheme } = useTheme();
+  const isLight = theme === 'light';
 
   const toggleSection = (id: string) => {
     setExpandedSections((prev) => {
@@ -361,24 +366,33 @@ export default function TermsOfService() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className={`min-h-screen transition-colors duration-300 ${isLight ? 'bg-gradient-to-br from-slate-50 via-white to-slate-100' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
       {/* Top Navigation */}
-      <div className="sticky top-0 z-10 bg-slate-900/90 backdrop-blur-lg border-b border-slate-700/50">
+      <div className={`sticky top-0 z-10 backdrop-blur-lg border-b ${isLight ? 'bg-white/90 border-slate-200' : 'bg-slate-900/90 border-slate-700/50'}`}>
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition-colors"
+            className={`flex items-center gap-1 text-sm transition-colors ${isLight ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}
           >
             <ChevronLeft className="w-4 h-4" />
             Back to {PLATFORM_NAME}
           </button>
-          <div className="flex items-center gap-2">
-            <img
-              src="/eusotrip-logo.png"
-              alt="EusoTrip Logo"
-              className="w-6 h-6 object-contain"
-            />
-            <span className="text-sm font-semibold text-white">{PLATFORM_NAME}</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <img
+                src="/eusotrip-logo.png"
+                alt="EusoTrip Logo"
+                className="w-6 h-6 object-contain"
+              />
+              <span className={`text-sm font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>{PLATFORM_NAME}</span>
+            </div>
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+              title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+            >
+              {isLight ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </div>
@@ -392,10 +406,10 @@ export default function TermsOfService() {
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2">
             Terms of Service
           </h1>
-          <p className="text-slate-400">
+          <p className={isLight ? 'text-slate-500' : 'text-slate-400'}>
             {COMPANY_NAME} - {PLATFORM_NAME} Freight & Energy Logistics Platform
           </p>
-          <div className="flex items-center justify-center gap-4 mt-3 text-sm text-slate-500">
+          <div className={`flex items-center justify-center gap-4 mt-3 text-sm ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
               Effective: {EFFECTIVE_DATE}
@@ -408,13 +422,13 @@ export default function TermsOfService() {
         </div>
 
         {/* Binding Notice */}
-        <Card className="bg-amber-500/10 border-amber-500/30 rounded-xl mb-6">
+        <Card className={`rounded-xl mb-6 ${isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-500/10 border-amber-500/30'}`}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+              <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isLight ? 'text-amber-600' : 'text-amber-400'}`} />
               <div>
-                <p className="text-amber-300 font-semibold text-sm">LEGALLY BINDING AGREEMENT</p>
-                <p className="text-amber-200/80 text-sm mt-1">
+                <p className={`font-semibold text-sm ${isLight ? 'text-amber-700' : 'text-amber-300'}`}>LEGALLY BINDING AGREEMENT</p>
+                <p className={`text-sm mt-1 ${isLight ? 'text-amber-600/80' : 'text-amber-200/80'}`}>
                   These Terms of Service constitute a legally binding contract between you and {COMPANY_NAME}. By using {PLATFORM_NAME}, you agree to be bound by these Terms, including the mandatory arbitration clause, class action waiver, and anti-circumvention provisions. If you do not agree, do not use the Platform.
                 </p>
               </div>
@@ -442,16 +456,16 @@ export default function TermsOfService() {
                 key={section.id}
                 className={`rounded-xl transition-colors ${
                   section.highlight
-                    ? "bg-slate-800/70 border-amber-500/30"
-                    : "bg-slate-800/50 border-slate-700/50"
+                    ? (isLight ? 'bg-white border-amber-300 shadow-sm' : 'bg-slate-800/70 border-amber-500/30')
+                    : (isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50')
                 }`}
               >
                 <button
                   onClick={() => toggleSection(section.id)}
-                  className="w-full px-6 py-4 flex items-center gap-3 text-left hover:bg-slate-700/30 transition-colors rounded-xl"
+                  className={`w-full px-6 py-4 flex items-center gap-3 text-left transition-colors rounded-xl ${isLight ? 'hover:bg-slate-50' : 'hover:bg-slate-700/30'}`}
                 >
                   {section.icon}
-                  <span className="flex-1 font-semibold text-white text-sm md:text-base">
+                  <span className={`flex-1 font-semibold text-sm md:text-base ${isLight ? 'text-slate-900' : 'text-white'}`}>
                     {section.title}
                   </span>
                   {section.highlight && (
@@ -467,7 +481,7 @@ export default function TermsOfService() {
                 </button>
                 {isExpanded && (
                   <CardContent className="px-6 pb-6 pt-0">
-                    <div className="text-slate-300 text-sm leading-relaxed border-t border-slate-700/50 pt-4">
+                    <div className={`text-sm leading-relaxed border-t pt-4 ${isLight ? 'text-slate-600 border-slate-200' : 'text-slate-300 border-slate-700/50'}`}>
                       {section.content}
                     </div>
                   </CardContent>
@@ -478,25 +492,25 @@ export default function TermsOfService() {
         </div>
 
         {/* Contact */}
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl mt-8">
+        <Card className={`rounded-xl mt-8 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700/50'}`}>
           <CardContent className="p-6">
             <div className="flex items-start gap-4">
               <Mail className="w-5 h-5 text-cyan-400 mt-0.5" />
               <div>
-                <p className="text-white font-semibold">Questions About These Terms?</p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className={`font-semibold ${isLight ? 'text-slate-900' : 'text-white'}`}>Questions About These Terms?</p>
+                <p className={`text-sm mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                   Contact our Legal Department at{" "}
                   <a href={`mailto:${CONTACT_EMAIL}`} className="text-blue-400 hover:underline">
                     {CONTACT_EMAIL}
                   </a>
                 </p>
-                <p className="text-sm text-slate-400 mt-1">
+                <p className={`text-sm mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                   Data Protection Officer:{" "}
                   <a href={`mailto:${DPO_EMAIL}`} className="text-blue-400 hover:underline">
                     {DPO_EMAIL}
                   </a>
                 </p>
-                <p className="text-xs text-slate-500 mt-3">
+                <p className={`text-xs mt-3 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
                   {COMPANY_NAME} | {PLATFORM_NAME} Freight & Energy Logistics Platform
                 </p>
               </div>
