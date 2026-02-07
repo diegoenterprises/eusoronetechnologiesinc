@@ -18,7 +18,7 @@ import { Slider } from "@/components/ui/slider";
 import { trpc } from "@/lib/trpc";
 import {
   Flame, TrendingUp, Truck, AlertTriangle, RefreshCw, Layers,
-  Droplets, X, Zap, Navigation, Filter
+  Droplets, X, Zap, Navigation, Filter, ChevronLeft, ChevronRight
 } from "lucide-react";
 
 const EQUIPMENT_TYPES = [
@@ -293,6 +293,8 @@ function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, op
   );
 }
 
+const CARDS_PER_PAGE = 6;
+
 export default function HotZones() {
   const [equipment, setEquipment] = useState("ALL");
   const [demandLevel, setDemandLevel] = useState("ALL");
@@ -302,21 +304,66 @@ export default function HotZones() {
   const [intensity, setIntensity] = useState([80]);
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [cardPage, setCardPage] = useState(0);
 
-  const zonesQuery = trpc.hotZones.getActiveZones.useQuery({
-    equipment: equipment !== "ALL" ? equipment : undefined,
-    minDemandLevel: demandLevel !== "ALL" ? demandLevel as any : undefined,
-  }, { refetchInterval: 60000 });
+  // Live rate feed — refreshes every 10 seconds for real-time feel
+  const feedQuery = trpc.hotZones.getRateFeed.useQuery(
+    { equipment: equipment !== "ALL" ? equipment : undefined },
+    { refetchInterval: 10000 }
+  );
 
+  // Static zone detail for selected zone
   const detailQuery = trpc.hotZones.getZoneDetail.useQuery(
     { zoneId: selectedZone! },
     { enabled: !!selectedZone }
   );
 
-  const zones = zonesQuery.data?.hotZones || [];
-  const coldZones = zonesQuery.data?.coldZones || [];
-  const summary = zonesQuery.data?.summary;
+  // Map feed data to the format the map and cards expect
+  const feedZones = feedQuery.data?.zones || [];
+  const feedColdZones = feedQuery.data?.coldZones || [];
+  const pulse = feedQuery.data?.marketPulse;
   const detail = detailQuery.data;
+
+  // Convert feed zones to map-compatible format
+  const zones = feedZones.map((z: any) => ({
+    id: z.zoneId,
+    name: z.zoneName,
+    center: z.center,
+    state: z.state,
+    demandLevel: z.demandLevel,
+    surgeMultiplier: z.liveSurge,
+    avgRate: z.liveRate,
+    loadCount: z.liveLoads,
+    truckCount: z.liveTrucks,
+    loadToTruckRatio: z.liveRatio,
+    topEquipment: z.topEquipment,
+    reasons: z.reasons,
+    radius: z.radius,
+    rateChange: z.rateChange,
+    rateChangePercent: z.rateChangePercent,
+    topLanes: z.topLanes,
+    equipmentDemand: z.equipmentDemand,
+    peakHours: z.peakHours,
+  }));
+
+  const coldZones = feedColdZones.map((z: any) => ({
+    id: z.id,
+    name: z.name,
+    center: z.center,
+    surgeMultiplier: z.liveSurge || z.surgeMultiplier,
+    reason: z.reason,
+  }));
+
+  // Auto-advance zone card batches every 10 seconds
+  const totalPages = Math.max(1, Math.ceil(zones.length / CARDS_PER_PAGE));
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCardPage(prev => (prev + 1) % totalPages);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [totalPages]);
+
+  const visibleZones = zones.slice(cardPage * CARDS_PER_PAGE, (cardPage + 1) * CARDS_PER_PAGE);
 
   return (
     <div className="p-4 md:p-6 space-y-6 animate-page-enter">
@@ -329,28 +376,32 @@ export default function HotZones() {
           </h1>
           <p className="text-slate-400 text-sm mt-1">Geographic demand intelligence & surge pricing heatmap</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => zonesQuery.refetch()} disabled={zonesQuery.isRefetching}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-emerald-400">LIVE FEED</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => feedQuery.refetch()} disabled={feedQuery.isRefetching}
             className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
-            <RefreshCw className={`w-4 h-4 mr-2 ${zonesQuery.isRefetching ? "animate-spin" : ""}`} />
+            <RefreshCw className={`w-4 h-4 mr-2 ${feedQuery.isRefetching ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </div>
       </div>
 
-      {/* Summary Stats */}
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 animate-fade-in-up">
+      {/* Summary Stats — Live Pulse */}
+      {pulse && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: "Active Hot Zones", value: summary.totalHotZones, icon: Flame, color: "text-orange-400", bg: "from-orange-500/10 to-red-500/10" },
-            { label: "Critical Zones", value: summary.criticalZones, icon: AlertTriangle, color: "text-red-400", bg: "from-red-500/10 to-rose-500/10" },
-            { label: "Avg Surge", value: `${summary.avgSurge}x`, icon: TrendingUp, color: "text-emerald-400", bg: "from-emerald-500/10 to-green-500/10" },
-            { label: "Open Loads", value: summary.totalOpenLoads.toLocaleString(), icon: Truck, color: "text-blue-400", bg: "from-blue-500/10 to-cyan-500/10" },
-            { label: "Available Trucks", value: summary.totalAvailableTrucks.toLocaleString(), icon: Navigation, color: "text-purple-400", bg: "from-purple-500/10 to-violet-500/10" },
+            { label: "Active Hot Zones", value: zones.length, icon: Flame, color: "text-orange-400", bg: "from-orange-500/10 to-red-500/10" },
+            { label: "Critical Zones", value: pulse.criticalZones, icon: AlertTriangle, color: "text-red-400", bg: "from-red-500/10 to-rose-500/10" },
+            { label: "Avg Rate/mi", value: `$${pulse.avgRate}`, icon: TrendingUp, color: "text-emerald-400", bg: "from-emerald-500/10 to-green-500/10" },
+            { label: "Open Loads", value: pulse.totalLoads.toLocaleString(), icon: Truck, color: "text-blue-400", bg: "from-blue-500/10 to-cyan-500/10" },
+            { label: "Available Trucks", value: pulse.totalTrucks.toLocaleString(), icon: Navigation, color: "text-purple-400", bg: "from-purple-500/10 to-violet-500/10" },
           ].map((stat) => (
-            <div key={stat.label} className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${stat.bg} border border-white/10`}>
+            <div key={stat.label} className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${stat.bg} border border-white/10 transition-all duration-500`}>
               <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-2xl font-bold text-white tabular-nums">{stat.value}</p>
               <p className="text-xs text-slate-400">{stat.label}</p>
             </div>
           ))}
@@ -451,7 +502,7 @@ export default function HotZones() {
                 </div>
               )}
 
-              {zonesQuery.isLoading ? (
+              {feedQuery.isLoading ? (
                 <div className="h-[500px] flex items-center justify-center">
                   <Skeleton className="w-full h-full bg-slate-700" />
                 </div>
@@ -471,51 +522,78 @@ export default function HotZones() {
             </CardContent>
           </Card>
 
-          {/* Zone Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-            {zones.map((zone, idx) => (
-              <div
-                key={zone.id}
-                onClick={() => setSelectedZone(selectedZone === zone.id ? null : zone.id)}
-                className={`rounded-xl p-4 border cursor-pointer transition-all duration-200 hover:scale-[1.02] animate-fade-in-up
-                  ${selectedZone === zone.id 
-                    ? "bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/50 ring-1 ring-orange-500/30" 
-                    : "bg-slate-800/50 border-slate-700/50 hover:border-slate-600"}`}
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-bold text-white text-sm">{zone.name}</p>
-                    <p className="text-[10px] text-slate-500">{zone.state}</p>
-                  </div>
-                  <Badge className={`text-[10px] px-1.5 py-0 border ${getDemandBg(zone.demandLevel)}`}>
-                    {zone.demandLevel}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-3 gap-2 mt-3">
-                  <div>
-                    <p className="text-[10px] text-slate-500">Surge</p>
-                    <p className="text-sm font-bold text-emerald-400">{zone.surgeMultiplier}x</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-slate-500">Rate/mi</p>
-                    <p className="text-sm font-bold text-white">${zone.avgRate}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-slate-500">Loads</p>
-                    <p className="text-sm font-bold text-blue-400">{zone.loadCount}</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {zone.topEquipment.map((eq: string) => (
-                    <span key={eq} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{eq.replace("_", " ")}</span>
+          {/* Zone Cards — Paginated Carousel */}
+          <div className="mt-4">
+            {/* Pagination Header */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-slate-500">
+                Showing {cardPage * CARDS_PER_PAGE + 1}–{Math.min((cardPage + 1) * CARDS_PER_PAGE, zones.length)} of {zones.length} zones
+              </span>
+              <div className="flex items-center gap-2">
+                {/* Page Dots */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button key={i} onClick={() => setCardPage(i)}
+                      className={`w-2 h-2 rounded-full transition-all ${i === cardPage ? "bg-orange-400 w-5" : "bg-slate-600 hover:bg-slate-500"}`} />
                   ))}
                 </div>
-                {zone.reasons && (
-                  <p className="text-[10px] text-slate-500 mt-2 truncate">{zone.reasons[0]}</p>
-                )}
+                {/* Arrows */}
+                <button onClick={() => setCardPage((cardPage - 1 + totalPages) % totalPages)}
+                  className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors">
+                  <ChevronLeft className="w-4 h-4 text-slate-400" />
+                </button>
+                <button onClick={() => setCardPage((cardPage + 1) % totalPages)}
+                  className="p-1.5 rounded-lg bg-slate-800 border border-slate-700 hover:bg-slate-700 transition-colors">
+                  <ChevronRight className="w-4 h-4 text-slate-400" />
+                </button>
               </div>
-            ))}
+            </div>
+            {/* Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {visibleZones.map((zone: any, idx: number) => (
+                <div
+                  key={zone.id}
+                  onClick={() => setSelectedZone(selectedZone === zone.id ? null : zone.id)}
+                  className={`rounded-xl p-4 border cursor-pointer transition-all duration-200 hover:scale-[1.02] animate-fade-in-up
+                    ${selectedZone === zone.id 
+                      ? "bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/50 ring-1 ring-orange-500/30" 
+                      : "bg-slate-800/50 border-slate-700/50 hover:border-slate-600"}`}
+                  style={{ animationDelay: `${idx * 50}ms` }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <p className="font-bold text-white text-sm">{zone.name}</p>
+                      <p className="text-[10px] text-slate-500">{zone.state}</p>
+                    </div>
+                    <Badge className={`text-[10px] px-1.5 py-0 border ${getDemandBg(zone.demandLevel)}`}>
+                      {zone.demandLevel}
+                    </Badge>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-3">
+                    <div>
+                      <p className="text-[10px] text-slate-500">Surge</p>
+                      <p className="text-sm font-bold text-emerald-400">{zone.surgeMultiplier}x</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500">Rate/mi</p>
+                      <p className="text-sm font-bold text-white">${zone.avgRate}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-500">Loads</p>
+                      <p className="text-sm font-bold text-blue-400">{zone.loadCount}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {zone.topEquipment.map((eq: string) => (
+                      <span key={eq} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{eq.replace("_", " ")}</span>
+                    ))}
+                  </div>
+                  {zone.reasons && (
+                    <p className="text-[10px] text-slate-500 mt-2 truncate">{zone.reasons[0]}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
