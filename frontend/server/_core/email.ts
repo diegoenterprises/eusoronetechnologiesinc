@@ -1,16 +1,14 @@
 /**
  * EMAIL SERVICE
+ * Azure Communication Services Email integration
  * Handles email verification, notifications, and transactional emails
  */
 
 import { v4 as uuidv4 } from "uuid";
 
-const SMTP_HOST = process.env.SMTP_HOST || "";
-const SMTP_PORT = process.env.SMTP_PORT || "587";
-const SMTP_USER = process.env.SMTP_USER || "";
-const SMTP_PASS = process.env.SMTP_PASS || "";
-const FROM_EMAIL = process.env.FROM_EMAIL || "noreply@eusotrip.com";
-const APP_URL = process.env.APP_URL || "http://localhost:3007";
+const ACS_CONNECTION_STRING = process.env.AZURE_EMAIL_CONNECTION_STRING || "";
+const FROM_EMAIL = process.env.FROM_EMAIL || "DoNotReply@eusotrip.com";
+const APP_URL = process.env.APP_URL || "https://eusotrip.com";
 
 interface EmailOptions {
   to: string;
@@ -27,20 +25,39 @@ interface VerificationToken {
 }
 
 class EmailService {
+  private client: any = null;
   private configured: boolean;
+  private initPromise: Promise<void> | null = null;
 
   constructor() {
-    this.configured = !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
-    if (!this.configured) {
-      console.warn("[Email] SMTP not configured - emails will be logged only");
+    this.configured = !!ACS_CONNECTION_STRING;
+    if (this.configured) {
+      // Lazy init — don't block server startup
+      this.initPromise = this.initClient();
+    } else {
+      console.warn("[Email] AZURE_EMAIL_CONNECTION_STRING not set - emails will be logged only");
+    }
+  }
+
+  private async initClient() {
+    try {
+      const { EmailClient } = await import("@azure/communication-email");
+      this.client = new EmailClient(ACS_CONNECTION_STRING);
+      console.log("[Email] Azure Communication Services Email configured");
+    } catch (err) {
+      console.warn("[Email] @azure/communication-email not available — emails will be logged only");
+      this.configured = false;
     }
   }
 
   /**
-   * Send email (logs if SMTP not configured)
+   * Send email via Azure Communication Services
    */
   async send(options: EmailOptions): Promise<boolean> {
-    if (!this.configured) {
+    // Wait for lazy init if in progress
+    if (this.initPromise) await this.initPromise;
+
+    if (!this.configured || !this.client) {
       console.log("[Email] Would send email:", {
         to: options.to,
         subject: options.subject,
@@ -48,11 +65,23 @@ class EmailService {
       return true;
     }
 
-    // In production, use nodemailer or similar
-    // This is a placeholder for actual email sending
     try {
-      console.log("[Email] Sending to:", options.to);
-      return true;
+      const message = {
+        senderAddress: FROM_EMAIL,
+        content: {
+          subject: options.subject,
+          html: options.html,
+          plainText: options.text || "",
+        },
+        recipients: {
+          to: [{ address: options.to }],
+        },
+      };
+
+      const poller = await this.client.beginSend(message);
+      const result = await poller.pollUntilDone();
+      console.log("[Email] Sent to:", options.to, "Status:", result.status);
+      return result.status === "Succeeded";
     } catch (error) {
       console.error("[Email] Failed to send:", error);
       return false;

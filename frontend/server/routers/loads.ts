@@ -16,13 +16,42 @@ import {
   emitNotification,
 } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
+import { emailService } from "../_core/email";
 
-async function resolveUserId(openId: string | number): Promise<number> {
+async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const strId = String(openId);
-  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.openId, strId)).limit(1);
-  return user?.id || 0;
+  const openId = String(ctxUser?.id || "");
+  const email = ctxUser?.email || "";
+
+  // Try openId first
+  let [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
+  if (row) return row.id;
+
+  // Fallback: try email
+  if (email) {
+    [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (row) {
+      try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
+      return row.id;
+    }
+  }
+
+  // Auto-create user so load can still be saved
+  try {
+    await db.insert(users).values({
+      openId,
+      email: email || `${openId}@eusotrip.com`,
+      name: ctxUser?.name || "User",
+      role: (ctxUser?.role || "SHIPPER") as any,
+      isActive: true,
+      isVerified: false,
+    });
+    const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
+    return newRow?.id || 0;
+  } catch {
+    return 0;
+  }
 }
 
 export const loadsRouter = router({
@@ -93,7 +122,7 @@ export const loadsRouter = router({
 
       if (db) {
         try {
-          const dbUserId = await resolveUserId(ctx.user?.id || "");
+          const dbUserId = await resolveUserId(ctx.user);
           const result = await db.insert(loads).values({
             shipperId: dbUserId,
             loadNumber,
@@ -120,6 +149,34 @@ export const loadsRouter = router({
             timestamp: new Date().toISOString(),
             updatedBy: String(ctx.user?.id || 0),
           });
+
+          // Send confirmation email to shipper (non-blocking)
+          const userEmail = ctx.user?.email;
+          if (userEmail) {
+            emailService.send({
+              to: userEmail,
+              subject: `Load ${loadNumber} Posted to Marketplace`,
+              html: `
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+                  <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0">
+                    <h1 style="margin:0">Load Posted</h1>
+                  </div>
+                  <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
+                    <p>Your load <strong>${loadNumber}</strong> has been posted to the EusoTrip marketplace.</p>
+                    <p>Carriers can now view and bid on your load.</p>
+                    ${input?.productName ? `<p><strong>Product:</strong> ${input.productName}</p>` : ""}
+                    ${input?.origin ? `<p><strong>Origin:</strong> ${input.origin}</p>` : ""}
+                    ${input?.destination ? `<p><strong>Destination:</strong> ${input.destination}</p>` : ""}
+                    <p style="text-align:center;margin-top:20px">
+                      <a href="https://eusotrip.com/loads/${insertedId}" style="display:inline-block;background:#667eea;color:white;padding:12px 30px;text-decoration:none;border-radius:6px">View Load</a>
+                    </p>
+                  </div>
+                  <p style="text-align:center;margin-top:20px;color:#666;font-size:12px">EusoTrip - Hazmat Logistics Platform</p>
+                </div>
+              `,
+              text: `Your load ${loadNumber} has been posted to the EusoTrip marketplace.`,
+            }).catch(err => console.warn("[loads.create] Email failed:", err));
+          }
 
           return { success: true, id: String(insertedId), loadNumber };
         } catch (err) {
@@ -151,7 +208,7 @@ export const loadsRouter = router({
       if (!db) return [];
 
       try {
-        const userId = await resolveUserId(ctx.user?.id || "");
+        const userId = await resolveUserId(ctx.user);
         const loadList = await db
           .select()
           .from(loads)
@@ -198,7 +255,7 @@ export const loadsRouter = router({
       }
 
       try {
-        const userId = await resolveUserId(ctx.user?.id || "");
+        const userId = await resolveUserId(ctx.user);
 
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
         const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'in_transit')));
@@ -277,7 +334,7 @@ export const loadsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const dbUserId = await resolveUserId(ctx.user?.id || "");
+      const dbUserId = await resolveUserId(ctx.user);
 
       let query = db
         .select()
@@ -434,11 +491,13 @@ export const loadsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const dbUserId = await resolveUserId(ctx.user);
+
       // Generate unique load number
       const loadNumber = `LOAD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
       const result = await db.insert(loads).values({
-        shipperId: ctx.user.id,
+        shipperId: dbUserId,
         loadNumber,
         status: "draft",
         cargoType: input.cargoType,
@@ -659,6 +718,38 @@ export const bidsRouter = router({
           actionUrl: `/loads/${input.loadId}/bids`,
           timestamp: new Date().toISOString(),
         });
+
+        // Email shipper about new bid (non-blocking)
+        try {
+          const [shipper] = await db.select({ email: users.email, name: users.name }).from(users).where(eq(users.id, load.shipperId)).limit(1);
+          if (shipper?.email) {
+            emailService.send({
+              to: shipper.email,
+              subject: `New Bid on Load ${load.loadNumber}: $${input.amount.toLocaleString()}`,
+              html: `
+                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+                  <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0">
+                    <h1 style="margin:0">New Bid Received</h1>
+                  </div>
+                  <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
+                    <p>Hello ${shipper.name || "Shipper"},</p>
+                    <p>A carrier has submitted a bid on your load:</p>
+                    <table style="width:100%;border-collapse:collapse;margin:15px 0">
+                      <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Load</td><td style="padding:8px;border-bottom:1px solid #ddd;font-weight:bold">${load.loadNumber}</td></tr>
+                      <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Bid Amount</td><td style="padding:8px;border-bottom:1px solid #ddd;font-weight:bold;color:#10b981">$${input.amount.toLocaleString()}</td></tr>
+                      <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Carrier</td><td style="padding:8px;border-bottom:1px solid #ddd">${ctx.user.name || "Carrier"}</td></tr>
+                    </table>
+                    <p style="text-align:center;margin-top:20px">
+                      <a href="https://eusotrip.com/loads/${input.loadId}/bids" style="display:inline-block;background:#3b82f6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px">Review Bids</a>
+                    </p>
+                  </div>
+                  <p style="text-align:center;margin-top:20px;color:#666;font-size:12px">EusoTrip - Hazmat Logistics Platform</p>
+                </div>
+              `,
+              text: `New bid of $${input.amount.toLocaleString()} received on load ${load.loadNumber}`,
+            }).catch(err => console.warn("[loads.submitBid] Email failed:", err));
+          }
+        } catch {}
       }
 
       return { success: true, bidId };

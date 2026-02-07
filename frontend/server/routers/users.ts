@@ -4,6 +4,48 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 
+// Ensure the current user exists in DB — creates if not found by openId or email
+async function ensureUserExists(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const openId = String(ctxUser?.id || "");
+  const email = ctxUser?.email || "";
+
+  // Try openId first
+  let [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
+  if (row) return row.id;
+
+  // Try email
+  if (email) {
+    [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (row) {
+      // Update the openId so future lookups work
+      try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
+      return row.id;
+    }
+  }
+
+  // User doesn't exist at all — create them
+  try {
+    const result = await db.insert(users).values({
+      openId,
+      email: email || `${openId}@eusotrip.com`,
+      name: ctxUser?.name || "User",
+      role: (ctxUser?.role || "SHIPPER") as any,
+      isActive: true,
+      isVerified: false,
+    });
+    const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+    if (insertedId) return insertedId;
+    // Re-query to get the id
+    const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
+    return newRow?.id || 0;
+  } catch (err) {
+    console.error("[ensureUserExists] Insert failed:", err);
+    return 0;
+  }
+}
+
 export const usersRouter = router({
   // List users (admin)
   list: protectedProcedure
@@ -63,8 +105,10 @@ export const usersRouter = router({
     }
 
     try {
+      // Ensure user exists in DB (creates if missing)
+      await ensureUserExists(ctx.user);
       const [user] = await db.select().from(users).where(eq(users.openId, userOpenId)).limit(1);
-      const nameParts = (user?.name || "").split(" ");
+      const nameParts = (user?.name || ctx.user?.name || "").split(" ");
       const createdAt = user?.createdAt || new Date();
       const daysActive = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -399,8 +443,10 @@ export const usersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const userId = await ensureUserExists(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
       try {
-        // Build name from firstName + lastName if provided
         const fullName = input.firstName || input.lastName
           ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
           : input.name;
@@ -410,15 +456,10 @@ export const usersRouter = router({
         if (input.email) updateData.email = input.email;
         if (input.phone !== undefined) updateData.phone = input.phone;
 
-        await db
-          .update(users)
-          .set(updateData)
-          .where(eq(users.openId, String(ctx.user.id)));
-
+        await db.update(users).set(updateData).where(eq(users.id, userId));
         return { success: true };
       } catch (error: any) {
         console.error("[users.updateProfile] Error:", error);
-        // If phone column doesn't exist yet, retry without it
         if (error.message?.includes("phone")) {
           const fullName = input.firstName || input.lastName
             ? `${input.firstName || ""} ${input.lastName || ""}`.trim()
@@ -426,7 +467,7 @@ export const usersRouter = router({
           const fallbackData: Record<string, any> = { updatedAt: new Date() };
           if (fullName) fallbackData.name = fullName;
           if (input.email) fallbackData.email = input.email;
-          await db.update(users).set(fallbackData).where(eq(users.openId, String(ctx.user.id)));
+          await db.update(users).set(fallbackData).where(eq(users.id, userId));
           return { success: true };
         }
         throw new Error("Failed to update profile");
@@ -440,11 +481,11 @@ export const usersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const userId = await ensureUserExists(ctx.user);
+      if (!userId) throw new Error("Could not resolve user");
+
       try {
-        await db
-          .update(users)
-          .set({ profilePicture: input.imageData, updatedAt: new Date() })
-          .where(eq(users.openId, String(ctx.user.id)));
+        await db.update(users).set({ profilePicture: input.imageData, updatedAt: new Date() }).where(eq(users.id, userId));
         return { success: true };
       } catch (error: any) {
         console.error("[users.uploadProfilePicture] Error:", error);

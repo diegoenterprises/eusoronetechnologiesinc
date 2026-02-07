@@ -11,4 +11,6 @@ export const ENV = {
   stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? "",
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "AIzaSyB9lEkrb1kg_zbu9W_ZTcYCjS_v3lNdQEM",
+  azureEmailConnectionString: process.env.AZURE_EMAIL_CONNECTION_STRING ?? "",
+  fromEmail: process.env.FROM_EMAIL ?? "DoNotReply@eusotrip.com",
 };
