@@ -20,7 +20,7 @@ import { WS_EVENTS } from "@shared/websocket-events";
 export const loadsRouter = router({
   // Load creation from wizard - stores ERG/SPECTRA-MATCH data so all users see it
   create: protectedProcedure
-    .input(z.object({ type: z.string().optional(), data: z.any().optional(),
+    .input(z.object({
       productName: z.string().optional(),
       hazmatClass: z.string().optional(),
       unNumber: z.string().optional(),
@@ -41,7 +41,15 @@ export const loadsRouter = router({
       ratePerMile: z.string().optional(),
       minSafetyScore: z.string().optional(),
       endorsements: z.string().optional(),
-    }).optional())
+      apiGravity: z.string().optional(),
+      bsw: z.string().optional(),
+      sulfurContent: z.string().optional(),
+      flashPoint: z.string().optional(),
+      viscosity: z.string().optional(),
+      pourPoint: z.string().optional(),
+      reidVaporPressure: z.string().optional(),
+      appearance: z.string().optional(),
+    }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const loadNumber = `LOAD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -65,6 +73,14 @@ export const loadsRouter = router({
         input?.isWR ? `[WARNING] Water-Reactive Material` : null,
         input?.endorsements ? `Required Endorsements: ${input.endorsements}` : null,
         input?.minSafetyScore ? `Min Safety Score: ${input.minSafetyScore}` : null,
+        input?.apiGravity ? `SPECTRA-MATCH API Gravity: ${input.apiGravity}` : null,
+        input?.bsw ? `SPECTRA-MATCH BS&W: ${input.bsw}%` : null,
+        input?.sulfurContent ? `SPECTRA-MATCH Sulfur: ${input.sulfurContent}%` : null,
+        input?.flashPoint ? `SPECTRA-MATCH Flash Point: ${input.flashPoint}` : null,
+        input?.viscosity ? `SPECTRA-MATCH Viscosity: ${input.viscosity} cSt` : null,
+        input?.pourPoint ? `SPECTRA-MATCH Pour Point: ${input.pourPoint}` : null,
+        input?.reidVaporPressure ? `SPECTRA-MATCH RVP: ${input.reidVaporPressure} psi` : null,
+        input?.appearance ? `SPECTRA-MATCH Appearance: ${input.appearance}` : null,
       ].filter(Boolean).join("\n");
 
       if (db) {

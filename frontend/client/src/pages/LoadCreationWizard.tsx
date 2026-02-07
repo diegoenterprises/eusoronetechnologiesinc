@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 
-const STEPS = ["Trailer Type", "Product Classification", "Quantity & Weight", "Origin & Destination", "Carrier Requirements", "Pricing", "Review"];
+const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Carrier Requirements", "Pricing", "Review"];
 
 const TRAILER_TYPES = [
   { id: "liquid_tank", name: "Liquid Tank Trailer", desc: "MC-306/DOT-406 for petroleum, chemicals, liquid bulk", icon: "droplets", animType: "liquid" as const, hazmat: true, equipment: "tank", maxGal: 9500 },
@@ -101,6 +101,14 @@ export default function LoadCreationWizard() {
   const isHazmat = selectedTrailer?.hazmat ?? false;
   const isLiquidOrGas = selectedTrailer?.animType === "liquid" || selectedTrailer?.animType === "gas";
 
+  // Skip SPECTRA-MATCH step (index 2) for non-hazmat loads
+  const STEPS = isHazmat ? ALL_STEPS : ALL_STEPS.filter((_, i) => i !== 2);
+  const realStep = (logicalStep: number) => {
+    if (isHazmat) return logicalStep;
+    return logicalStep >= 2 ? logicalStep + 1 : logicalStep;
+  };
+  const rs = realStep(step);
+
   const ergSearch = (trpc as any).erg.search.useQuery(
     { query: searchQuery, limit: 10 },
     { enabled: searchQuery.length >= 2, staleTime: 30000 }
@@ -124,7 +132,7 @@ export default function LoadCreationWizard() {
 
   // Attach Places Autocomplete when maps loaded and on step 3
   useEffect(() => {
-    if (!mapsLoaded || step !== 3) return;
+    if (!mapsLoaded || rs !== 4) return;
     const g = (window as any).google?.maps?.places;
     if (!g) return;
     const opts = { types: ["geocode", "establishment"], componentRestrictions: { country: "us" }, fields: ["formatted_address", "geometry"] };
@@ -160,7 +168,7 @@ export default function LoadCreationWizard() {
         }
       });
     }
-  }, [mapsLoaded, step]);
+  }, [mapsLoaded, rs]);
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -247,17 +255,26 @@ export default function LoadCreationWizard() {
       ratePerMile: formData.ratePerMile,
       minSafetyScore: formData.minSafetyScore,
       endorsements: formData.endorsements,
+      apiGravity: formData.apiGravity,
+      bsw: formData.bsw,
+      sulfurContent: formData.sulfurContent,
+      flashPoint: formData.flashPoint,
+      viscosity: formData.viscosity,
+      pourPoint: formData.pourPoint,
+      reidVaporPressure: formData.reidVaporPressure,
+      appearance: formData.appearance,
     });
   };
 
   const canProceed = () => {
-    switch (step) {
+    switch (rs) {
       case 0: return !!formData.trailerType;
       case 1: return formData.productName && (isHazmat ? formData.hazmatClass : true);
-      case 2: return formData.weight && formData.quantity;
-      case 3: return formData.origin && formData.destination;
-      case 4: return true;
-      case 5: return formData.rate;
+      case 2: return true; // SPECTRA-MATCH params are optional
+      case 3: return formData.weight && formData.quantity;
+      case 4: return formData.origin && formData.destination;
+      case 5: return true;
+      case 6: return formData.rate;
       default: return true;
     }
   };
@@ -285,7 +302,7 @@ export default function LoadCreationWizard() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardContent className="p-6">
           {/* STEP 0: Trailer Type Selection */}
-          {step === 0 && (
+          {rs === 0 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <p className="text-white font-bold text-lg">Select Your Trailer Type</p>
               <p className="text-slate-400 text-sm">This determines product options, hazmat classification, and load visualization.</p>
@@ -315,7 +332,7 @@ export default function LoadCreationWizard() {
           )}
 
           {/* STEP 1: Product Classification (driven by trailer type) */}
-          {step === 1 && (
+          {rs === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               {isHazmat ? (<>
                 <div ref={suggestRef} className="relative">
@@ -415,8 +432,76 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 2: Quantity & Weight */}
-          {step === 2 && (
+          {/* STEP 2: SPECTRA-MATCH Verification (hazmat only) */}
+          {rs === 2 && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5 text-cyan-400" />
+                <p className="text-white font-bold text-lg">SPECTRA-MATCH Parameters</p>
+                <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">Product Verification</Badge>
+              </div>
+              <p className="text-slate-400 text-sm">Enter physical properties so SPECTRA-MATCH can verify product identity. All fields are optional but improve verification accuracy.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">API Gravity (degrees)</label>
+                  <Input type="number" step="0.1" value={formData.apiGravity || ""} onChange={(e: any) => updateField("apiGravity", e.target.value)} placeholder="e.g., 35.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">BS&W (Basic Sediment & Water %)</label>
+                  <Input type="number" step="0.01" value={formData.bsw || ""} onChange={(e: any) => updateField("bsw", e.target.value)} placeholder="e.g., 0.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Sulfur Content (%)</label>
+                  <Input type="number" step="0.01" value={formData.sulfurContent || ""} onChange={(e: any) => updateField("sulfurContent", e.target.value)} placeholder="e.g., 1.2" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Flash Point (F)</label>
+                  <Input type="number" value={formData.flashPoint || ""} onChange={(e: any) => updateField("flashPoint", e.target.value)} placeholder="e.g., -45" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Viscosity (cSt @ 40C)</label>
+                  <Input type="number" step="0.1" value={formData.viscosity || ""} onChange={(e: any) => updateField("viscosity", e.target.value)} placeholder="e.g., 5.8" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Pour Point (F)</label>
+                  <Input type="number" value={formData.pourPoint || ""} onChange={(e: any) => updateField("pourPoint", e.target.value)} placeholder="e.g., -20" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Reid Vapor Pressure (psi)</label>
+                  <Input type="number" step="0.1" value={formData.reidVaporPressure || ""} onChange={(e: any) => updateField("reidVaporPressure", e.target.value)} placeholder="e.g., 8.5" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Color / Appearance</label>
+                  <Select value={formData.appearance || ""} onValueChange={(v: any) => updateField("appearance", v)}>
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Clear">Clear / Colorless</SelectItem>
+                      <SelectItem value="Light">Light / Straw</SelectItem>
+                      <SelectItem value="Amber">Amber</SelectItem>
+                      <SelectItem value="Dark">Dark Brown</SelectItem>
+                      <SelectItem value="Black">Black</SelectItem>
+                      <SelectItem value="Green">Green / Olive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {formData.spectraVerified && formData.productName && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
+                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-emerald-400 text-sm font-bold">ERG Match: {formData.productName}</p>
+                    <p className="text-slate-400 text-[10px]">{formData.unNumber} -- Class {formData.hazmatClass} -- Guide {formData.ergGuide}</p>
+                  </div>
+                </div>
+              )}
+              <div className="p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
+                <div className="flex items-center gap-2"><Info className="w-4 h-4 text-slate-500" /><span className="text-slate-500 text-xs">These parameters feed into the SPECTRA-MATCH multi-parameter identification system to cross-verify the declared product against physical properties.</span></div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: Quantity & Weight */}
+          {rs === 3 && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -478,8 +563,8 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 3: Origin & Destination with Google Maps */}
-          {step === 3 && (
+          {/* STEP 4: Origin & Destination with Google Maps */}
+          {rs === 4 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block flex items-center gap-2"><MapPin className="w-4 h-4 text-green-400" />Origin / Pickup</label>
@@ -507,8 +592,8 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 4: Carrier Requirements */}
-          {step === 4 && (
+          {/* STEP 5: Carrier Requirements */}
+          {rs === 5 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
               <div><label className="text-sm text-slate-400 mb-1 block">Required Endorsements</label><Input value={formData.endorsements || ""} onChange={(e: any) => updateField("endorsements", e.target.value)} placeholder={isHazmat ? "Hazmat, Tanker" : "e.g., Tanker, Doubles/Triples"} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
@@ -521,8 +606,8 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 5: Pricing */}
-          {step === 5 && (
+          {/* STEP 6: Pricing */}
+          {rs === 6 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div>
                 <label className="text-sm text-slate-400 mb-1 block">Rate ($)</label>
@@ -543,8 +628,8 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 6: Review */}
-          {step === 6 && (
+          {/* STEP 7: Review */}
+          {rs === 7 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <p className="text-white font-bold text-lg">Review Your Load</p>
               {formData.spectraVerified && (
@@ -584,6 +669,24 @@ export default function LoadCreationWizard() {
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
               </div>
+              {(formData.apiGravity || formData.bsw || formData.sulfurContent || formData.flashPoint) && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <span className="text-purple-400 font-bold text-sm">SPECTRA-MATCH Parameters</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {formData.apiGravity && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">API Gravity</p><p className="text-white text-sm">{formData.apiGravity}</p></div>}
+                    {formData.bsw && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">BS&W</p><p className="text-white text-sm">{formData.bsw}%</p></div>}
+                    {formData.sulfurContent && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Sulfur</p><p className="text-white text-sm">{formData.sulfurContent}%</p></div>}
+                    {formData.flashPoint && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Flash Point</p><p className="text-white text-sm">{formData.flashPoint}F</p></div>}
+                    {formData.viscosity && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Viscosity</p><p className="text-white text-sm">{formData.viscosity} cSt</p></div>}
+                    {formData.pourPoint && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Pour Point</p><p className="text-white text-sm">{formData.pourPoint}F</p></div>}
+                    {formData.reidVaporPressure && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">RVP</p><p className="text-white text-sm">{formData.reidVaporPressure} psi</p></div>}
+                    {formData.appearance && <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500 uppercase">Appearance</p><p className="text-white text-sm">{formData.appearance}</p></div>}
+                  </div>
+                </div>
+              )}
               {formData.hazmatClass && <div className="mt-4"><HazmatDecalPreview hazmatClass={formData.hazmatClass} unNumber={formData.unNumber} productName={formData.productName} /></div>}
             </div>
           )}
