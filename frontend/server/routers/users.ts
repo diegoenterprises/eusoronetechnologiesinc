@@ -37,11 +37,11 @@ export const usersRouter = router({
   // Get current user profile
   getProfile: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    const userId = ctx.user?.id || 0;
+    const userOpenId = String(ctx.user?.id || "");
 
     if (!db) {
       return {
-        id: userId,
+        id: userOpenId,
         firstName: ctx.user?.name?.split(" ")[0] || "User",
         lastName: ctx.user?.name?.split(" ")[1] || "",
         email: ctx.user?.email || "",
@@ -63,13 +63,13 @@ export const usersRouter = router({
     }
 
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const [user] = await db.select().from(users).where(eq(users.openId, userOpenId)).limit(1);
       const nameParts = (user?.name || "").split(" ");
       const createdAt = user?.createdAt || new Date();
       const daysActive = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
 
       return {
-        id: user?.id || userId,
+        id: user?.id || userOpenId,
         firstName: nameParts[0] || "User",
         lastName: nameParts.slice(1).join(" ") || "",
         email: user?.email || ctx.user?.email || "",
@@ -91,7 +91,7 @@ export const usersRouter = router({
     } catch (error) {
       console.error('[Users] getProfile error:', error);
       return {
-        id: userId,
+        id: userOpenId,
         firstName: ctx.user?.name?.split(" ")[0] || "User",
         lastName: ctx.user?.name?.split(" ")[1] || "",
         email: ctx.user?.email || "",
@@ -411,7 +411,7 @@ export const usersRouter = router({
       await db
         .update(users)
         .set(updateData)
-        .where(eq(users.id, ctx.user.id));
+        .where(eq(users.openId, String(ctx.user.id)));
 
       return { success: true };
     }),
