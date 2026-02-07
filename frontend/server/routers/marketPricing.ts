@@ -83,7 +83,117 @@ const SEASONAL_FACTORS: Record<string, number> = {
   SEP: 1.03, OCT: 1.06, NOV: 1.10, DEC: 1.12,
 };
 
+// ===== COMMODITY MARKET DATA =====
+// Real commodities transported via freight & energy logistics
+// Prices seed from market data — will refine with live API integration over time
+
+interface CommodityData {
+  symbol: string;
+  name: string;
+  category: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  previousClose: number;
+  open: number;
+  high: number;
+  low: number;
+  volume: string;
+  unit: string;
+  intraday: "BULL" | "BEAR" | "FLAT";
+  daily: "UP" | "DOWN" | "FLAT";
+  weekly: "UP" | "DOWN" | "FLAT";
+  monthly: "UP" | "DOWN" | "FLAT";
+  sparkline: number[]; // 20-point mini chart
+}
+
+function generateSparkline(base: number, trend: "up" | "down" | "flat"): number[] {
+  const points: number[] = [];
+  let val = base * (0.97 + Math.random() * 0.03);
+  for (let i = 0; i < 20; i++) {
+    const drift = trend === "up" ? 0.002 : trend === "down" ? -0.002 : 0;
+    val += val * (drift + (Math.random() - 0.5) * 0.015);
+    points.push(+val.toFixed(2));
+  }
+  return points;
+}
+
+const COMMODITIES: CommodityData[] = [
+  // === ENERGY ===
+  { symbol: "CL", name: "WTI Crude Oil", category: "Energy", price: 78.42, change: 1.23, changePercent: 1.59, previousClose: 77.19, open: 77.35, high: 78.90, low: 76.80, volume: "412K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(78, "up") },
+  { symbol: "BZ", name: "Brent Crude", category: "Energy", price: 82.15, change: 0.97, changePercent: 1.19, previousClose: 81.18, open: 81.40, high: 82.50, low: 80.95, volume: "285K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(82, "up") },
+  { symbol: "NG", name: "Natural Gas", category: "Energy", price: 2.847, change: -0.065, changePercent: -2.23, previousClose: 2.912, open: 2.900, high: 2.935, low: 2.810, volume: "198K", unit: "$/MMBtu", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "UP", sparkline: generateSparkline(2.85, "down") },
+  { symbol: "RB", name: "RBOB Gasoline", category: "Energy", price: 2.4850, change: 0.0340, changePercent: 1.39, previousClose: 2.4510, open: 2.4600, high: 2.5010, low: 2.4400, volume: "87K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2.48, "up") },
+  { symbol: "HO", name: "Heating Oil", category: "Energy", price: 2.6120, change: 0.0280, changePercent: 1.08, previousClose: 2.5840, open: 2.5900, high: 2.6250, low: 2.5780, volume: "62K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(2.61, "up") },
+  { symbol: "ULSD", name: "Ultra-Low Sulfur Diesel", category: "Energy", price: 2.7350, change: -0.0150, changePercent: -0.55, previousClose: 2.7500, open: 2.7480, high: 2.7600, low: 2.7200, volume: "54K", unit: "$/gal", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(2.73, "flat") },
+  { symbol: "ETH", name: "Ethanol", category: "Energy", price: 1.7200, change: 0.0100, changePercent: 0.58, previousClose: 1.7100, open: 1.7150, high: 1.7280, low: 1.7050, volume: "18K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(1.72, "up") },
+  { symbol: "PROP", name: "Propane", category: "Energy", price: 0.8450, change: -0.0120, changePercent: -1.40, previousClose: 0.8570, open: 0.8540, high: 0.8580, low: 0.8400, volume: "22K", unit: "$/gal", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.84, "down") },
+
+  // === METALS ===
+  { symbol: "GC", name: "Gold", category: "Metals", price: 2342.50, change: 12.80, changePercent: 0.55, previousClose: 2329.70, open: 2331.00, high: 2348.00, low: 2325.50, volume: "145K", unit: "$/oz", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2342, "up") },
+  { symbol: "SI", name: "Silver", category: "Metals", price: 27.45, change: -0.32, changePercent: -1.15, previousClose: 27.77, open: 27.70, high: 27.85, low: 27.20, volume: "78K", unit: "$/oz", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(27.4, "down") },
+  { symbol: "HG", name: "Copper", category: "Metals", price: 4.2850, change: 0.0650, changePercent: 1.54, previousClose: 4.2200, open: 4.2300, high: 4.3000, low: 4.2100, volume: "92K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(4.28, "up") },
+  { symbol: "ALI", name: "Aluminum", category: "Metals", price: 2485.00, change: -18.50, changePercent: -0.74, previousClose: 2503.50, open: 2500.00, high: 2510.00, low: 2478.00, volume: "55K", unit: "$/ton", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "FLAT", sparkline: generateSparkline(2485, "down") },
+  { symbol: "STEEL", name: "Steel HRC", category: "Metals", price: 825.00, change: 5.00, changePercent: 0.61, previousClose: 820.00, open: 822.00, high: 830.00, low: 818.00, volume: "8K", unit: "$/ton", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "DOWN", sparkline: generateSparkline(825, "up") },
+  { symbol: "NI", name: "Nickel LME", category: "Metals", price: 16850.00, change: -120.00, changePercent: -0.71, previousClose: 16970.00, open: 16920.00, high: 16980.00, low: 16780.00, volume: "12K", unit: "$/ton", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(16850, "down") },
+
+  // === AGRICULTURE ===
+  { symbol: "ZC", name: "Corn", category: "Agriculture", price: 4.5250, change: 0.0375, changePercent: 0.84, previousClose: 4.4875, open: 4.4900, high: 4.5400, low: 4.4800, volume: "210K", unit: "$/bu", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "DOWN", sparkline: generateSparkline(4.52, "flat") },
+  { symbol: "ZS", name: "Soybeans", category: "Agriculture", price: 11.8750, change: -0.1250, changePercent: -1.04, previousClose: 12.0000, open: 11.9800, high: 12.0200, low: 11.8500, volume: "165K", unit: "$/bu", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(11.87, "down") },
+  { symbol: "ZW", name: "Wheat", category: "Agriculture", price: 5.7500, change: 0.0625, changePercent: 1.10, previousClose: 5.6875, open: 5.7000, high: 5.7800, low: 5.6750, volume: "112K", unit: "$/bu", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(5.75, "up") },
+  { symbol: "CT", name: "Cotton", category: "Agriculture", price: 0.8235, change: -0.0085, changePercent: -1.02, previousClose: 0.8320, open: 0.8300, high: 0.8340, low: 0.8200, volume: "42K", unit: "$/lb", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.82, "down") },
+  { symbol: "SB", name: "Sugar #11", category: "Agriculture", price: 0.2185, change: 0.0025, changePercent: 1.16, previousClose: 0.2160, open: 0.2165, high: 0.2200, low: 0.2150, volume: "88K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(0.218, "up") },
+  { symbol: "KC", name: "Coffee", category: "Agriculture", price: 1.8950, change: 0.0320, changePercent: 1.72, previousClose: 1.8630, open: 1.8700, high: 1.9050, low: 1.8600, volume: "56K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(1.89, "up") },
+  { symbol: "LE", name: "Live Cattle", category: "Agriculture", price: 1.8725, change: 0.0050, changePercent: 0.27, previousClose: 1.8675, open: 1.8690, high: 1.8780, low: 1.8650, volume: "35K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(1.87, "flat") },
+  { symbol: "LB", name: "Lumber", category: "Agriculture", price: 548.00, change: -8.50, changePercent: -1.53, previousClose: 556.50, open: 554.00, high: 558.00, low: 545.00, volume: "6K", unit: "$/MBF", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "UP", sparkline: generateSparkline(548, "down") },
+
+  // === FREIGHT INDICES ===
+  { symbol: "DVAN", name: "Dry Van National", category: "Freight", price: 2.35, change: 0.07, changePercent: 3.07, previousClose: 2.28, open: 2.29, high: 2.38, low: 2.27, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2.35, "up") },
+  { symbol: "REEF", name: "Reefer National", category: "Freight", price: 3.12, change: 0.07, changePercent: 2.30, previousClose: 3.05, open: 3.06, high: 3.15, low: 3.04, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.12, "up") },
+  { symbol: "FLAT", name: "Flatbed National", category: "Freight", price: 2.85, change: 0.07, changePercent: 2.52, previousClose: 2.78, open: 2.79, high: 2.88, low: 2.77, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(2.85, "up") },
+  { symbol: "TANK", name: "Tanker National", category: "Freight", price: 3.45, change: 0.07, changePercent: 2.07, previousClose: 3.38, open: 3.39, high: 3.48, low: 3.37, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(3.45, "up") },
+  { symbol: "HAZM", name: "Hazmat National", category: "Freight", price: 4.15, change: 0.10, changePercent: 2.47, previousClose: 4.05, open: 4.06, high: 4.18, low: 4.04, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(4.15, "up") },
+  { symbol: "OVER", name: "Oversize National", category: "Freight", price: 6.50, change: 0.15, changePercent: 2.36, previousClose: 6.35, open: 6.36, high: 6.55, low: 6.33, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(6.50, "up") },
+
+  // === FUEL INDEX ===
+  { symbol: "DOE", name: "DOE Diesel Avg", category: "Fuel", price: 3.89, change: 0.07, changePercent: 1.83, previousClose: 3.82, open: 3.83, high: 3.91, low: 3.81, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.89, "up") },
+  { symbol: "DEF", name: "DEF Fluid", category: "Fuel", price: 2.95, change: 0.03, changePercent: 1.03, previousClose: 2.92, open: 2.93, high: 2.97, low: 2.91, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(2.95, "flat") },
+  { symbol: "FSC", name: "Fuel Surcharge/Mi", category: "Fuel", price: 0.58, change: 0.01, changePercent: 1.75, previousClose: 0.57, open: 0.57, high: 0.59, low: 0.57, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(0.58, "up") },
+];
+
 export const marketPricingRouter = router({
+  // Get all commodity market data
+  getCommodities: protectedProcedure
+    .input(z.object({
+      category: z.string().optional(),
+      search: z.string().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      let data = [...COMMODITIES];
+      if (input?.category && input.category !== "ALL") {
+        data = data.filter(c => c.category === input.category);
+      }
+      if (input?.search) {
+        const q = input.search.toLowerCase();
+        data = data.filter(c => c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q));
+      }
+      const categories = Array.from(new Set(COMMODITIES.map(c => c.category)));
+      const gainers = [...COMMODITIES].sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
+      const losers = [...COMMODITIES].sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
+      return {
+        commodities: data,
+        categories,
+        topGainers: gainers,
+        topLosers: losers,
+        marketBreadth: {
+          advancing: COMMODITIES.filter(c => c.changePercent > 0).length,
+          declining: COMMODITIES.filter(c => c.changePercent < 0).length,
+          unchanged: COMMODITIES.filter(c => c.changePercent === 0).length,
+        },
+        lastUpdated: new Date().toISOString(),
+      };
+    }),
+
   // Get market indices (Platts/Argus-style benchmark rates)
   getIndices: protectedProcedure
     .input(z.object({
