@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
+import RouteMap from "@/components/RouteMap";
 
 const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Carrier Requirements", "Pricing", "Review"];
 
@@ -97,9 +98,7 @@ export default function LoadCreationWizard() {
   const destRef = useRef<HTMLInputElement>(null);
   const originACRef = useRef<any>(null);
   const destACRef = useRef<any>(null);
-  const routeMapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const routeRendererRef = useRef<any>(null);
+  // Map rendering handled by RouteMap component
 
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
@@ -173,112 +172,7 @@ export default function LoadCreationWizard() {
     }
   }, [mapsLoaded, rs]);
 
-  // Render route map when both origin and destination are set
-  useEffect(() => {
-    if (!mapsLoaded || rs !== 4 || !routeMapRef.current) return;
-    const g = (window as any).google?.maps;
-    if (!g) return;
-    const hasCoords = formData.originLat && formData.originLng && formData.destLat && formData.destLng;
-    if (!hasCoords) {
-      // Show a default US map if no route yet
-      if (!mapInstanceRef.current && routeMapRef.current) {
-        mapInstanceRef.current = new g.Map(routeMapRef.current, {
-          center: { lat: 39.8283, lng: -98.5795 },
-          zoom: 4,
-          mapTypeId: "roadmap",
-          disableDefaultUI: true,
-          zoomControl: true,
-          styles: [
-            { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
-            { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
-            { elementType: "labels.text.fill", stylers: [{ color: "#8892b0" }] },
-            { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d2d44" }] },
-            { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1a2b" }] },
-          ],
-        });
-      }
-      return;
-    }
-
-    const origin = { lat: formData.originLat, lng: formData.originLng };
-    const dest = { lat: formData.destLat, lng: formData.destLng };
-
-    if (!mapInstanceRef.current) {
-      mapInstanceRef.current = new g.Map(routeMapRef.current, {
-        center: { lat: (origin.lat + dest.lat) / 2, lng: (origin.lng + dest.lng) / 2 },
-        zoom: 5,
-        mapTypeId: "roadmap",
-        disableDefaultUI: true,
-        zoomControl: true,
-        styles: [
-          { elementType: "geometry", stylers: [{ color: "#1a1a2e" }] },
-          { elementType: "labels.text.stroke", stylers: [{ color: "#1a1a2e" }] },
-          { elementType: "labels.text.fill", stylers: [{ color: "#8892b0" }] },
-          { featureType: "road", elementType: "geometry", stylers: [{ color: "#2d2d44" }] },
-          { featureType: "water", elementType: "geometry", stylers: [{ color: "#0e1a2b" }] },
-        ],
-      });
-    }
-
-    // Use Directions API for actual road route
-    const directionsService = new g.DirectionsService();
-    if (routeRendererRef.current) routeRendererRef.current.setMap(null);
-
-    directionsService.route(
-      { origin, destination: dest, travelMode: g.TravelMode.DRIVING },
-      (result: any, status: string) => {
-        if (status === "OK" && result) {
-          // Draw the route with purple-to-blue gradient using polyline segments
-          const path = result.routes[0]?.overview_path || [];
-          if (path.length > 1) {
-            // Clear old renderers
-            if (routeRendererRef.current) {
-              if (Array.isArray(routeRendererRef.current)) routeRendererRef.current.forEach((p: any) => p.setMap(null));
-              else routeRendererRef.current.setMap(null);
-            }
-
-            const segments: any[] = [];
-            const totalPts = path.length;
-            for (let i = 0; i < totalPts - 1; i++) {
-              const t = i / (totalPts - 1);
-              // Gradient from #BE01FF (purple) to #1473FF (blue)
-              const r = Math.round(190 + (20 - 190) * t);
-              const gr = Math.round(1 + (115 - 1) * t);
-              const b = Math.round(255 + (255 - 255) * t);
-              const color = `rgb(${r},${gr},${b})`;
-              const seg = new g.Polyline({
-                path: [path[i], path[i + 1]],
-                strokeColor: color,
-                strokeWeight: 5,
-                strokeOpacity: 0.9,
-                map: mapInstanceRef.current,
-              });
-              segments.push(seg);
-            }
-            routeRendererRef.current = segments;
-
-            // Add origin marker (blue — end of gradient #1473FF)
-            new g.Marker({ position: origin, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#1473FF", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-            // Add destination marker (purple — start of gradient #BE01FF)
-            new g.Marker({ position: dest, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#BE01FF", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-
-            // Fit bounds
-            const bounds = new g.LatLngBounds();
-            bounds.extend(origin);
-            bounds.extend(dest);
-            mapInstanceRef.current.fitBounds(bounds, { top: 40, bottom: 40, left: 40, right: 40 });
-
-            // Update distance from directions result (more accurate than haversine)
-            const routeDistance = result.routes[0]?.legs?.[0]?.distance;
-            if (routeDistance) {
-              const miles = Math.round(routeDistance.value * 0.000621371);
-              setFormData((prev: any) => ({ ...prev, distance: miles }));
-            }
-          }
-        }
-      }
-    );
-  }, [mapsLoaded, rs, formData.originLat, formData.originLng, formData.destLat, formData.destLng]);
+  // Route map rendering is now handled by the reusable RouteMap component
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -688,9 +582,16 @@ export default function LoadCreationWizard() {
               </div>
               {/* Route Map Preview */}
               {mapsLoaded && (
-                <div className="rounded-xl overflow-hidden border border-slate-700/50">
-                  <div ref={routeMapRef} className="w-full h-[280px] bg-slate-900" />
-                </div>
+                <RouteMap
+                  originLat={formData.originLat}
+                  originLng={formData.originLng}
+                  destLat={formData.destLat}
+                  destLng={formData.destLng}
+                  originLabel={formData.origin}
+                  destLabel={formData.destination}
+                  height="280px"
+                  onDistanceCalculated={(miles) => setFormData((prev: any) => ({ ...prev, distance: miles }))}
+                />
               )}
               {formData.distance && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-blue-500/10 border border-purple-500/20">
@@ -821,6 +722,18 @@ export default function LoadCreationWizard() {
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
               </div>
+              {/* Route Map */}
+              {formData.originLat && formData.destLat && (
+                <RouteMap
+                  originLat={formData.originLat}
+                  originLng={formData.originLng}
+                  destLat={formData.destLat}
+                  destLng={formData.destLng}
+                  originLabel={formData.origin}
+                  destLabel={formData.destination}
+                  height="280px"
+                />
+              )}
               {(formData.apiGravity || formData.bsw || formData.sulfurContent || formData.flashPoint) && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
                   <div className="flex items-center gap-2 mb-3">
