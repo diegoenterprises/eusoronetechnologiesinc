@@ -58,7 +58,10 @@ export default function MyLoads() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekBase, setWeekBase] = useState(new Date());
 
-  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100 });
+  // Format selected date as YYYY-MM-DD for DB query
+  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  // Pass date to backend so the calendar is wired to the DB
+  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, date: dateStr });
 
   const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
 

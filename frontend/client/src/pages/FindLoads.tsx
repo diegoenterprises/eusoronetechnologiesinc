@@ -31,7 +31,7 @@ export default function FindLoads() {
   const [searchTerm, setSearchTerm] = useState("");
   const [equipFilter, setEquipFilter] = useState<EquipFilter>("all");
 
-  const loadsQuery = (trpc as any).loads.list.useQuery({ status: "posted", limit: 50 });
+  const loadsQuery = (trpc as any).loads.list.useQuery({ status: "posted", limit: 50, marketplace: true });
 
   const allLoads = (loadsQuery.data as any[]) || [];
 

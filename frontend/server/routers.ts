@@ -85,6 +85,7 @@ import { maintenanceRouter } from "./routers/maintenance";
 import { announcementsRouter } from "./routers/announcements";
 import { bolRouter } from "./routers/bol";
 import { newsRouter } from "./routers/news";
+import { preWarmCache as preWarmRSSCache } from "./services/rssService";
 import { marketRouter } from "./routers/market";
 import { vehicleRouter } from "./routers/vehicle";
 import { routingRouter } from "./routers/routing";
@@ -146,6 +147,9 @@ import { laneContractsRouter } from "./routers/laneContracts";
 import { stripeRouter } from "./routers/stripe";
 import { fmcsaRouter } from "./routers/fmcsa";
 import { complianceNetworksRouter } from "./routers/complianceNetworks";
+
+// Pre-warm RSS cache on server startup so news page loads instantly
+preWarmRSSCache();
 
 export const appRouter = router({
   system: systemRouter,

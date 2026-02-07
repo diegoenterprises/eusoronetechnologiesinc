@@ -237,34 +237,26 @@ export const usersRouter = router({
     };
   }),
 
-  // Get user achievements
+  // Get user achievements (DB-driven when implemented)
   getAchievements: protectedProcedure.query(async () => {
-    return [
-      { id: "ach_001", name: "First Load", description: "Complete your first load", earned: true, earnedAt: "2024-01-15" },
-      { id: "ach_002", name: "100 Loads", description: "Complete 100 loads", earned: true, earnedAt: "2024-08-22" },
-      { id: "ach_003", name: "Perfect Rating", description: "Maintain 5.0 rating for 30 days", earned: false, progress: 75 },
-    ];
+    return [];
   }),
 
-  // Get user badges
+  // Get user badges (DB-driven when implemented)
   getBadges: protectedProcedure.query(async () => {
-    return [
-      { id: "badge_001", name: "Verified Shipper", icon: "shield", color: "blue" },
-      { id: "badge_002", name: "Top Rated", icon: "star", color: "gold" },
-      { id: "badge_003", name: "HazMat Certified", icon: "alert-triangle", color: "orange" },
-    ];
+    return [];
   }),
 
   // Get achievement stats
   getAchievementStats: protectedProcedure.query(async () => {
     return {
-      totalAchievements: 25,
-      earned: 12,
-      inProgress: 5,
-      points: 1250,
-      totalBadges: 25,
-      totalPoints: 1250,
-      completionRate: 48,
+      totalAchievements: 0,
+      earned: 0,
+      inProgress: 0,
+      points: 0,
+      totalBadges: 0,
+      totalPoints: 0,
+      completionRate: 0,
     };
   }),
 
@@ -272,37 +264,27 @@ export const usersRouter = router({
   getLeaderboard: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
-      return [
-        { rank: 1, name: "Mike Johnson", points: 2450, loads: 45, rating: 4.9, change: 0, score: 2450 },
-        { rank: 2, name: "Sarah Williams", points: 2280, loads: 42, rating: 4.8, change: 1, score: 2280 },
-        { rank: 3, name: "Tom Brown", points: 2150, loads: 38, rating: 4.7, change: -1, score: 2150 },
-        { rank: 4, name: "Lisa Chen", points: 1980, loads: 35, rating: 4.9, change: 2, score: 1980 },
-        { rank: 5, name: "James Wilson", points: 1850, loads: 32, rating: 4.6, change: 0, score: 1850 },
-      ];
+      return [];
     }),
 
   // Get my rank for Leaderboard page
   getMyRank: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
     .query(async () => {
-      return { rank: 8, points: 1650, percentile: 85, score: 92, trend: "up", trendValue: 2 };
+      return { rank: 0, points: 0, percentile: 0, score: 0, trend: "flat", trendValue: 0 };
     }),
 
   // Get activity feed for ActivityFeed page
   getActivityFeed: protectedProcedure
     .input(z.object({ filter: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
-      return [
-        { id: "act_001", type: "load", title: "Load Delivered", description: "LOAD-45920 delivered to Dallas, TX", time: "2h ago" },
-        { id: "act_002", type: "bid", title: "Bid Accepted", description: "Your bid on LOAD-45925 was accepted", time: "4h ago" },
-        { id: "act_003", type: "document", title: "Document Uploaded", description: "Insurance certificate uploaded", time: "1d ago" },
-      ];
+      return [];
     }),
 
   // Get activity stats for ActivityFeed page
   getActivityStats: protectedProcedure
     .query(async () => {
-      return { totalActivities: 156, todayActivities: 12, weekActivities: 45, totalToday: 12, loadsToday: 5, bidsToday: 3, thisWeek: 45 };
+      return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0 };
     }),
 
   // Get account info
@@ -310,7 +292,7 @@ export const usersRouter = router({
     return {
       id: ctx.user?.id,
       email: ctx.user?.email,
-      createdAt: "2024-01-10",
+      createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
       status: "active", pendingDeletion: false, deletionDate: null,
     };
@@ -330,11 +312,7 @@ export const usersRouter = router({
 
   // Get connected apps
   getConnectedApps: protectedProcedure.query(async () => {
-    return [
-      { id: "app_001", name: "QuickBooks", connected: true, lastSync: "2025-01-24" },
-      { id: "app_002", name: "Stripe", connected: true, lastSync: "2025-01-24" },
-      { id: "app_003", name: "Google Maps", connected: false },
-    ];
+    return [];
   }),
 
   // Disconnect app
@@ -352,18 +330,19 @@ export const usersRouter = router({
     }),
 
   // Get referral info
-  getReferralInfo: protectedProcedure.query(async () => {
+  getReferralInfo: protectedProcedure.query(async ({ ctx }) => {
+    const code = (ctx.user?.email || 'USER').split('@')[0].toUpperCase().slice(0, 8);
     return {
-      referralCode: "JOHN2024",
-      referralUrl: "https://eusotrip.com/ref/JOHN2024",
-      referralLink: "https://eusotrip.com/ref/JOHN2024",
-      totalReferrals: 5,
-      pendingRewards: 250,
-      earnedRewards: 500,
+      referralCode: code,
+      referralUrl: `https://eusotrip.com/ref/${code}`,
+      referralLink: `https://eusotrip.com/ref/${code}`,
+      totalReferrals: 0,
+      pendingRewards: 0,
+      earnedRewards: 0,
       rewardAmount: 50,
-      completedReferrals: 10,
-      totalEarnings: 500,
-      conversionRate: 35,
+      completedReferrals: 0,
+      totalEarnings: 0,
+      conversionRate: 0,
     };
   }),
 
@@ -371,16 +350,14 @@ export const usersRouter = router({
   getSessions: protectedProcedure
     .query(async () => {
       return [
-        { id: "s1", device: "Chrome on Windows", ip: "192.168.1.1", location: "Houston, TX", lastActive: "2025-01-23 10:30", current: true },
-        { id: "s2", device: "Safari on iPhone", ip: "192.168.1.50", location: "Houston, TX", lastActive: "2025-01-22 18:45", current: false },
-        { id: "s3", device: "Firefox on Mac", ip: "10.0.0.15", location: "Dallas, TX", lastActive: "2025-01-20 14:20", current: false },
+        { id: "current", device: "Current Session", ip: "", location: "", lastActive: new Date().toISOString(), current: true },
       ];
     }),
 
   // Get session summary for SessionManagement page
   getSessionSummary: protectedProcedure
     .query(async () => {
-      return { activeSessions: 3, devicesUsed: 3, lastLogin: "2025-01-23 10:30", totalSessions: 15, uniqueLocations: 2, mobileDevices: 1, lastActivity: "2025-01-23 10:30" };
+      return { activeSessions: 1, devicesUsed: 1, lastLogin: new Date().toISOString(), totalSessions: 1, uniqueLocations: 1, mobileDevices: 0, lastActivity: new Date().toISOString() };
     }),
 
   // Terminate session mutation
@@ -400,61 +377,45 @@ export const usersRouter = router({
   // Get login history for LoginHistory page
   getLoginHistory: protectedProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().optional().default(50) }))
-    .query(async ({ input }) => {
-      const history = [
-        { id: "l1", timestamp: "2025-01-23 10:30", ip: "192.168.1.1", location: "Houston, TX", device: "Chrome/Windows", status: "success" },
-        { id: "l2", timestamp: "2025-01-22 18:45", ip: "192.168.1.50", location: "Houston, TX", device: "Safari/iPhone", status: "success" },
-        { id: "l3", timestamp: "2025-01-21 09:15", ip: "10.0.0.100", location: "Unknown", device: "Firefox/Linux", status: "failed" },
-      ];
-      if (input.status) return history.filter(h => h.status === input.status);
-      return history;
+    .query(async () => {
+      return [];
     }),
 
   // Get login summary for LoginHistory page
   getLoginSummary: protectedProcedure
     .query(async () => {
-      return { totalLogins: 45, successfulLogins: 42, failedAttempts: 3, failedLogins: 3, lastLogin: "2025-01-23 10:30" };
+      return { totalLogins: 0, successfulLogins: 0, failedAttempts: 0, failedLogins: 0, lastLogin: new Date().toISOString() };
     }),
 
   // Get referrals list
   getReferrals: protectedProcedure.query(async () => {
-    return [
-      { id: "ref_001", name: "Jane Smith", status: "active", reward: 100, joinedAt: "2024-12-15" },
-      { id: "ref_002", name: "Bob Wilson", status: "pending", reward: 50, joinedAt: "2025-01-10" },
-    ];
+    return [];
   }),
 
   // Get leaderboard (detailed version)
   getLeaderboardDetailed: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
-      return [
-        { rank: 1, userId: "usr_001", name: "Mike Trucking", score: 15420, avatar: null },
-        { rank: 2, userId: "usr_002", name: "Fast Freight", score: 14850, avatar: null },
-        { rank: 3, userId: "usr_003", name: "ABC Logistics", score: 13200, avatar: null },
-      ];
+      return [];
     }),
 
   // Get my rank (detailed version)
   getMyRankDetailed: protectedProcedure
     .input(z.object({ timeRange: z.string().optional(), category: z.string().optional() }))
     .query(async () => {
-      return { rank: 12, score: 8450, percentile: 88 };
+      return { rank: 0, score: 0, percentile: 0 };
     }),
 
   // Get activity feed (detailed version)
   getActivityFeedDetailed: protectedProcedure
     .input(z.object({ limit: z.number().optional() }))
     .query(async () => {
-      return [
-        { id: "act_001", type: "load_created", message: "You created load #45921", timestamp: new Date().toISOString() },
-        { id: "act_002", type: "bid_received", message: "New bid on load #45920", timestamp: new Date(Date.now() - 3600000).toISOString() },
-      ];
+      return [];
     }),
 
   // Get activity stats (detailed version)
   getActivityStatsDetailed: protectedProcedure.query(async () => {
-    return { today: 12, thisWeek: 45, thisMonth: 156 };
+    return { today: 0, thisWeek: 0, thisMonth: 0 };
   }),
 
   // Update user profile
@@ -602,12 +563,12 @@ export const usersRouter = router({
   getPasswordSecurity: protectedProcedure.query(async () => ({ lastChanged: "2025-01-01", strength: "strong", requiresChange: false, expiresIn: 60 })),
 
   // User management stats
-  getStats: protectedProcedure.query(async () => ({ total: 150, active: 125, pending: 15, suspended: 10, admins: 5, newThisMonth: 12 })),
+  getStats: protectedProcedure.query(async () => ({ total: 0, active: 0, pending: 0, suspended: 0, admins: 0, newThisMonth: 0 })),
   updateStatus: protectedProcedure.input(z.object({ userId: z.string().optional(), id: z.string().optional(), status: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId || input.id })),
 
   // Rewards
-  getRewardsInfo: protectedProcedure.query(async () => ({ points: 2500, tier: "gold", nextTier: "platinum", pointsToNext: 500, pointsToNextTier: 500, lifetimeEarnings: 12500, totalEarned: 15000, redeemed: 2500, rank: 125, nextTierPoints: 3000, tierProgress: 83, pointsEarnedThisMonth: 850, rewardsRedeemed: 5, streakDays: 12, lifetimePoints: 15000 })),
-  getRewardsHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "r1", type: "earned", points: 100, description: "Load completed", date: "2025-01-22" }]),
-  getAvailableRewards: protectedProcedure.query(async () => [{ id: "rew1", name: "Free Fuel Card", points: 1000, available: true }]),
+  getRewardsInfo: protectedProcedure.query(async () => ({ points: 0, tier: "bronze", nextTier: "silver", pointsToNext: 100, pointsToNextTier: 100, lifetimeEarnings: 0, totalEarned: 0, redeemed: 0, rank: 0, nextTierPoints: 100, tierProgress: 0, pointsEarnedThisMonth: 0, rewardsRedeemed: 0, streakDays: 0, lifetimePoints: 0 })),
+  getRewardsHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getAvailableRewards: protectedProcedure.query(async () => []),
   redeemReward: protectedProcedure.input(z.object({ rewardId: z.string() })).mutation(async ({ input }) => ({ success: true, rewardId: input.rewardId })),
 });

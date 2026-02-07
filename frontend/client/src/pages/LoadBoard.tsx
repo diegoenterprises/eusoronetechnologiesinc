@@ -32,7 +32,7 @@ export default function LoadBoard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<BoardFilter>("all");
 
-  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100 });
+  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, marketplace: true });
 
   const allLoads = (loadsQuery.data as any[]) || [];
   const totalLoads = allLoads.length;

@@ -136,8 +136,8 @@ export const authService = {
     }
 
     // 2. Fall back to test users
-    const user = testUsers[email];
-    if (!user) {
+    const testUser = testUsers[email];
+    if (!testUser) {
       return null;
     }
 
@@ -145,8 +145,56 @@ export const authService = {
     const MASTER_PASSWORD = "Vision2026!";
     
     if (password === MASTER_PASSWORD) {
-      const token = this.createSessionToken(user);
-      return { user, token };
+      // Resolve test user to a real DB record so ctx.user.id is a real integer
+      let resolvedUser: AuthUser = { ...testUser };
+      try {
+        const db = await getDb();
+        if (db) {
+          // Find or create the user in DB by email
+          let [dbRow] = await db.select({
+            id: users.id, name: users.name, email: users.email,
+            role: users.role, companyId: users.companyId,
+          }).from(users).where(eq(users.email, testUser.email)).limit(1);
+
+          if (!dbRow) {
+            // Create the user in DB
+            const insertData: Record<string, any> = {
+              email: testUser.email,
+              name: testUser.name || "User",
+              role: testUser.role,
+              isActive: true,
+              isVerified: true,
+            };
+            try {
+              insertData.openId = testUser.id;
+              await db.insert(users).values(insertData as any);
+            } catch {
+              delete insertData.openId;
+              await db.insert(users).values(insertData as any);
+            }
+            const [newRow] = await db.select({
+              id: users.id, name: users.name, email: users.email,
+              role: users.role, companyId: users.companyId,
+            }).from(users).where(eq(users.email, testUser.email)).limit(1);
+            dbRow = newRow;
+          }
+
+          if (dbRow) {
+            resolvedUser = {
+              id: String(dbRow.id),
+              email: dbRow.email || testUser.email,
+              role: dbRow.role || testUser.role,
+              name: dbRow.name || testUser.name,
+              companyId: dbRow.companyId ? String(dbRow.companyId) : undefined,
+            };
+          }
+        }
+      } catch (err) {
+        console.warn("[auth] Could not resolve test user to DB record:", err);
+      }
+
+      const token = this.createSessionToken(resolvedUser);
+      return { user: resolvedUser, token };
     }
 
     return null;

@@ -141,82 +141,97 @@ export const loadsRouter = router({
         input?.appearance ? `SPECTRA-MATCH Appearance: ${input.appearance}` : null,
       ].filter(Boolean).join("\n");
 
-      if (db) {
-        try {
-          const dbUserId = await resolveUserId(ctx.user);
-          const result = await db.insert(loads).values({
-            shipperId: dbUserId,
-            loadNumber,
-            status: "posted",
-            cargoType,
-            hazmatClass: input?.hazmatClass || null,
-            unNumber: input?.unNumber || null,
-            weight: input?.weight || null,
-            weightUnit: input?.weightUnit || "lbs",
-            volume: input?.quantity || null,
-            volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
-            pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
-            deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
-            rate: input?.rate || null,
-            specialInstructions: ergNotes || null,
-          });
-          const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      if (!db) throw new Error("Database not available — cannot create load");
 
-          emitLoadStatusChange({
-            loadId: String(insertedId),
-            loadNumber,
-            previousStatus: "",
-            newStatus: "posted",
-            timestamp: new Date().toISOString(),
-            updatedBy: String(ctx.user?.id || 0),
-          });
+      const dbUserId = await resolveUserId(ctx.user);
+      if (!dbUserId) throw new Error("Could not resolve user account");
 
-          // Send confirmation email to shipper (non-blocking)
-          const userEmail = ctx.user?.email;
-          if (userEmail) {
-            emailService.send({
-              to: userEmail,
-              subject: `Load ${loadNumber} Posted to Marketplace`,
-              html: `
-                <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
-                  <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0">
-                    <h1 style="margin:0">Load Posted</h1>
-                  </div>
-                  <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
-                    <p>Your load <strong>${loadNumber}</strong> has been posted to the EusoTrip marketplace.</p>
-                    <p>Carriers can now view and bid on your load.</p>
-                    ${input?.productName ? `<p><strong>Product:</strong> ${input.productName}</p>` : ""}
-                    ${input?.origin ? `<p><strong>Origin:</strong> ${input.origin}</p>` : ""}
-                    ${input?.destination ? `<p><strong>Destination:</strong> ${input.destination}</p>` : ""}
-                    <p style="text-align:center;margin-top:20px">
-                      <a href="https://eusotrip.com/loads/${insertedId}" style="display:inline-block;background:#667eea;color:white;padding:12px 30px;text-decoration:none;border-radius:6px">View Load</a>
-                    </p>
-                  </div>
-                  <p style="text-align:center;margin-top:20px;color:#666;font-size:12px">EusoTrip - Hazmat Logistics Platform</p>
-                </div>
-              `,
-              text: `Your load ${loadNumber} has been posted to the EusoTrip marketplace.`,
-            }).catch(err => console.warn("[loads.create] Email failed:", err));
-          }
+      const result = await db.insert(loads).values({
+        shipperId: dbUserId,
+        loadNumber,
+        status: "posted",
+        cargoType,
+        hazmatClass: input?.hazmatClass || null,
+        unNumber: input?.unNumber || null,
+        weight: input?.weight || null,
+        weightUnit: input?.weightUnit || "lbs",
+        volume: input?.quantity || null,
+        volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
+        pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+        deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+        pickupDate: input?.pickupDate ? new Date(input.pickupDate) : undefined,
+        deliveryDate: input?.deliveryDate ? new Date(input.deliveryDate) : undefined,
+        rate: input?.rate || null,
+        specialInstructions: ergNotes || null,
+      });
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
 
-          return { success: true, id: String(insertedId), loadNumber };
-        } catch (err) {
-          console.error("[loads.create] DB insert failed:", err);
-        }
+      emitLoadStatusChange({
+        loadId: String(insertedId),
+        loadNumber,
+        previousStatus: "",
+        newStatus: "posted",
+        timestamp: new Date().toISOString(),
+        updatedBy: String(ctx.user?.id || 0),
+      });
+
+      // Send confirmation email to shipper (non-blocking)
+      const userEmail = ctx.user?.email;
+      if (userEmail) {
+        emailService.send({
+          to: userEmail,
+          subject: `Load ${loadNumber} Posted to Marketplace`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px">
+              <div style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:30px;text-align:center;border-radius:8px 8px 0 0">
+                <h1 style="margin:0">Load Posted</h1>
+              </div>
+              <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
+                <p>Your load <strong>${loadNumber}</strong> has been posted to the EusoTrip marketplace.</p>
+                <p>Carriers can now view and bid on your load.</p>
+                ${input?.productName ? `<p><strong>Product:</strong> ${input.productName}</p>` : ""}
+                ${input?.origin ? `<p><strong>Origin:</strong> ${input.origin}</p>` : ""}
+                ${input?.destination ? `<p><strong>Destination:</strong> ${input.destination}</p>` : ""}
+                <p style="text-align:center;margin-top:20px">
+                  <a href="https://eusotrip.com/loads/${insertedId}" style="display:inline-block;background:#667eea;color:white;padding:12px 30px;text-decoration:none;border-radius:6px">View Load</a>
+                </p>
+              </div>
+              <p style="text-align:center;margin-top:20px;color:#666;font-size:12px">EusoTrip - Hazmat Logistics Platform</p>
+            </div>
+          `,
+          text: `Your load ${loadNumber} has been posted to the EusoTrip marketplace.`,
+        }).catch(err => console.warn("[loads.create] Email failed:", err));
       }
-      return { success: true, id: crypto.randomUUID(), loadNumber };
+
+      return { success: true, id: String(insertedId), loadNumber };
     }),
 
   update: protectedProcedure
     .input(z.object({ id: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db || !input?.id) throw new Error("Database not available");
+      const loadId = parseInt(input.id, 10);
+      const userId = await resolveUserId(ctx.user);
+      if (input.data && typeof input.data === 'object') {
+        const updateSet: Record<string, any> = { updatedAt: new Date() };
+        if (input.data.status) updateSet.status = input.data.status;
+        if (input.data.rate) updateSet.rate = String(input.data.rate);
+        if (input.data.specialInstructions) updateSet.specialInstructions = input.data.specialInstructions;
+        await db.update(loads).set(updateSet).where(and(eq(loads.id, loadId), eq(loads.shipperId, userId)));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
     .input(z.object({ id: z.string() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db || !input?.id) throw new Error("Database not available");
+      const loadId = parseInt(input.id, 10);
+      const userId = await resolveUserId(ctx.user);
+      await db.delete(loads).where(and(eq(loads.id, loadId), eq(loads.shipperId, userId)));
+      return { success: true, id: input.id };
     }),
 
   /**
@@ -347,6 +362,8 @@ export const loadsRouter = router({
     .input(
       z.object({
         status: z.enum(["draft", "posted", "bidding", "assigned", "in_transit", "delivered", "cancelled", "disputed"]).optional(),
+        date: z.string().optional(),
+        marketplace: z.boolean().optional(),
         limit: z.number().min(1).max(100).default(20),
         offset: z.number().min(0).default(0),
       })
@@ -355,15 +372,25 @@ export const loadsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const dbUserId = await resolveUserId(ctx.user);
+      const conditions: string[] = [];
+
+      // If marketplace mode, show ALL loads (for Load Board / Find Loads)
+      // Otherwise filter by the current user's shipperId (for My Loads)
+      if (!input.marketplace) {
+        const dbUserId = await resolveUserId(ctx.user);
+        conditions.push(`\`shipperId\` = ${dbUserId}`);
+      }
+      if (input.status) {
+        conditions.push(`\`status\` = '${input.status}'`);
+      }
+      if (input.date) {
+        conditions.push(`(DATE(\`pickupDate\`) = '${input.date}' OR DATE(\`createdAt\`) = '${input.date}')`);
+      }
 
       let query = db
         .select()
         .from(loads)
-        .where(input.status
-          ? sql`${loads.shipperId} = ${dbUserId} AND ${loads.status} = ${input.status}`
-          : sql`${loads.shipperId} = ${dbUserId}`
-        )
+        .where(conditions.length > 0 ? sql.raw(conditions.join(' AND ')) : sql`1=1`)
         .$dynamic();
 
       const results = await query
@@ -396,47 +423,7 @@ export const loadsRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       const db = await getDb();
-      if (!db) {
-        // Return mock data when database is not available
-        return {
-          id: String(input.id),
-          loadNumber: "LOAD-45920",
-          status: "in_transit",
-          cargoType: "petroleum",
-          hazmatClass: "3",
-          unNumber: "UN1203",
-          product: "Gasoline",
-          commodity: "Gasoline",
-          weight: 42000,
-          weightUnit: "lbs",
-          volume: 8500,
-          volumeUnit: "gal",
-          origin: { address: "1234 Refinery Rd", city: "Houston", state: "TX", zip: "77001" },
-          destination: { address: "5678 Industrial Blvd", city: "Dallas", state: "TX", zip: "75201" },
-          pickupLocation: { city: "Houston", state: "TX" },
-          deliveryLocation: { city: "Dallas", state: "TX" },
-          pickupDate: "2025-01-24T08:00:00Z",
-          deliveryDate: "2025-01-24T16:00:00Z",
-          biddingEnds: "2025-01-24T06:00:00Z",
-          suggestedRateMin: 2200,
-          suggestedRateMax: 2700,
-          rate: 2450,
-          distance: 240,
-          shipper: { id: "s1", name: "Shell Oil Company" },
-          carrier: { id: "c1", name: "ABC Transport LLC" },
-          driver: { id: "d1", name: "Mike Johnson", phone: "(713) 555-0101", truckNumber: "TRK-101" },
-          currentLocation: { lat: 31.5493, lng: -97.1467, city: "Waco", state: "TX" },
-          eta: "2:30 PM",
-          createdAt: "2025-01-23T10:00:00Z",
-          equipmentType: "tanker",
-          notes: "Temperature-controlled cargo",
-          timeline: [
-            { status: "created", timestamp: "2025-01-23T10:00:00Z", note: "Load created" },
-            { status: "assigned", timestamp: "2025-01-23T12:00:00Z", note: "Assigned to driver" },
-            { status: "in_transit", timestamp: "2025-01-24T08:00:00Z", note: "Pickup completed" },
-          ],
-        };
-      }
+      if (!db) throw new Error("Database not available");
 
       const loadId = typeof input.id === "string" ? parseInt(input.id, 10) : input.id;
       const result = await db

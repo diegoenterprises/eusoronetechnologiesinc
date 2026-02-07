@@ -141,7 +141,7 @@ function parseRSSContent(xml: string, source: RSSFeedSource): RSSArticle[] {
 async function fetchRSSFeed(source: RSSFeedSource): Promise<RSSArticle[]> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout for speed
+    const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout for speed
     
     const response = await fetch(source.url, {
       signal: controller.signal,
@@ -172,8 +172,8 @@ export async function fetchAllFeeds(): Promise<RSSArticle[]> {
   const enabledFeeds = rssFeedSources.filter(f => f.enabled);
   const allArticles: RSSArticle[] = [];
   
-  // Fetch feeds in parallel with higher concurrency for speed
-  const batchSize = 10;
+  // Fetch feeds in parallel with high concurrency for speed
+  const batchSize = 15;
   for (let i = 0; i < enabledFeeds.length; i += batchSize) {
     const batch = enabledFeeds.slice(i, i + batchSize);
     const results = await Promise.all(batch.map(fetchRSSFeed));
@@ -204,7 +204,7 @@ export async function getArticles(options?: {
   if (cachedArticles.length === 0) {
     // First load — must fetch
     await fetchAllFeeds();
-  } else if (cacheAge > 30) {
+  } else if (cacheAge > 15) {
     // Stale — refresh in background, serve cached immediately
     fetchAllFeeds().catch(() => {});
   }
@@ -301,4 +301,12 @@ export async function refreshCache(): Promise<{ count: number; lastUpdated: stri
     count: articles.length,
     lastUpdated: lastFetchTime?.toISOString() || new Date().toISOString(),
   };
+}
+
+// Pre-warm: call on server startup so first user request is instant
+export function preWarmCache(): void {
+  console.log('[RSS] Pre-warming news cache...');
+  fetchAllFeeds()
+    .then(articles => console.log(`[RSS] Cache warmed with ${articles.length} articles`))
+    .catch(err => console.warn('[RSS] Pre-warm failed:', err));
 }
