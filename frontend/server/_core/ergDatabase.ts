@@ -4384,6 +4384,40 @@ export function getERGForProduct(productName: string) {
   return getFullERGInfo(un);
 }
 
+export const EMERGENCY_CONTACTS = {
+  CHEMTREC: { name: "CHEMTREC", phone: "1-800-424-9300", description: "Chemical Transportation Emergency Center (24/7)" },
+  NRC: { name: "National Response Center", phone: "1-800-424-8802", description: "Report oil/chemical spills (24/7)" },
+  POISON_CONTROL: { name: "Poison Control", phone: "1-800-222-1222", description: "Poison emergency information (24/7)" },
+  MILITARY: { name: "Military Shipments", phone: "1-703-697-0218", description: "Explosives/munitions incidents (call collect)" },
+  INFOTRAC: { name: "INFOTRAC", phone: "1-800-535-5053", description: "Chemical emergency response (24/7)" },
+  CANUTEC: { name: "CANUTEC (Canada)", phone: "1-613-996-6666", description: "Canadian Transport Emergency Centre" },
+  SETIQ: { name: "SETIQ (Mexico)", phone: "01-800-00-214-00", description: "Mexican Chemical Emergency System" },
+};
+
+export const HAZARD_CLASSES: Record<string, string> = {
+  "1": "Explosives",
+  "1.1": "Mass Explosion Hazard",
+  "1.2": "Projection Hazard",
+  "1.3": "Fire Hazard",
+  "1.4": "Minor Blast Hazard",
+  "1.5": "Very Insensitive Explosives",
+  "1.6": "Extremely Insensitive Explosives",
+  "2.1": "Flammable Gas",
+  "2.2": "Non-Flammable Gas",
+  "2.3": "Toxic Gas",
+  "3": "Flammable Liquid",
+  "4.1": "Flammable Solid",
+  "4.2": "Spontaneously Combustible",
+  "4.3": "Dangerous When Wet",
+  "5.1": "Oxidizer",
+  "5.2": "Organic Peroxide",
+  "6.1": "Toxic",
+  "6.2": "Infectious Substance",
+  "7": "Radioactive",
+  "8": "Corrosive",
+  "9": "Miscellaneous Dangerous Goods",
+};
+
 export const ERG_METADATA = {
   version: "2020",
   title: "Emergency Response Guidebook 2020",
