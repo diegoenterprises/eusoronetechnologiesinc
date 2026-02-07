@@ -17,6 +17,14 @@ import {
 } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 
+async function resolveUserId(openId: string | number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const strId = String(openId);
+  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.openId, strId)).limit(1);
+  return user?.id || 0;
+}
+
 export const loadsRouter = router({
   // Load creation from wizard - stores ERG/SPECTRA-MATCH data so all users see it
   create: protectedProcedure
@@ -85,8 +93,9 @@ export const loadsRouter = router({
 
       if (db) {
         try {
+          const dbUserId = await resolveUserId(ctx.user?.id || "");
           const result = await db.insert(loads).values({
-            shipperId: ctx.user?.id || 0,
+            shipperId: dbUserId,
             loadNumber,
             status: "posted",
             cargoType,
@@ -142,7 +151,7 @@ export const loadsRouter = router({
       if (!db) return [];
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveUserId(ctx.user?.id || "");
         const loadList = await db
           .select()
           .from(loads)
@@ -189,7 +198,7 @@ export const loadsRouter = router({
       }
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveUserId(ctx.user?.id || "");
 
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
         const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'in_transit')));
@@ -268,14 +277,16 @@ export const loadsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const dbUserId = await resolveUserId(ctx.user?.id || "");
+
       let query = db
         .select()
         .from(loads)
+        .where(input.status
+          ? sql`${loads.shipperId} = ${dbUserId} AND ${loads.status} = ${input.status}`
+          : sql`${loads.shipperId} = ${dbUserId}`
+        )
         .$dynamic();
-
-      if (input.status) {
-        query = query.where(sql`${loads.status} = ${input.status}`);
-      }
 
       const results = await query
         .orderBy(desc(loads.createdAt))
