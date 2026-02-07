@@ -734,7 +734,7 @@ export default function LoadCreationWizard() {
                           ${userRPM.toFixed(2)}
                         </text>
                       </svg>
-                      <span className="text-xs font-semibold -mt-3 bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">/mile</span>
+                      <span className="text-xs font-semibold mt-0 bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">/mile</span>
 
                       <div className="flex items-center gap-1.5 mt-2">
                         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: pastelRatingColor }} />
