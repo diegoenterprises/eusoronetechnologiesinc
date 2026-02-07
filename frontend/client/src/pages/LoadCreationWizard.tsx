@@ -258,10 +258,10 @@ export default function LoadCreationWizard() {
             }
             routeRendererRef.current = segments;
 
-            // Add origin marker (green)
-            new g.Marker({ position: origin, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#22c55e", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-            // Add destination marker (red)
-            new g.Marker({ position: dest, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#ef4444", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+            // Add origin marker (blue — end of gradient #1473FF)
+            new g.Marker({ position: origin, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#1473FF", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+            // Add destination marker (purple — start of gradient #BE01FF)
+            new g.Marker({ position: dest, map: mapInstanceRef.current, icon: { path: g.SymbolPath.CIRCLE, scale: 10, fillColor: "#BE01FF", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
 
             // Fit bounds
             const bounds = new g.LatLngBounds();
