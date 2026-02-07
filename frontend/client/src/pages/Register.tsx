@@ -22,7 +22,10 @@ import {
   Crown,
   ArrowRight,
   CheckCircle,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const REGISTRATION_ROLES = [
   {
@@ -131,6 +134,8 @@ const REGISTRATION_ROLES = [
 export default function Register() {
   const [, setLocation] = useLocation();
   const [mounted, setMounted] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isLight = theme === 'light';
 
   useEffect(() => {
     const t = requestAnimationFrame(() => setMounted(true));
@@ -138,7 +143,7 @@ export default function Register() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
+    <div className={`min-h-screen overflow-hidden transition-colors duration-300 ${isLight ? 'bg-gradient-to-br from-slate-50 via-white to-slate-100' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
       {/* Domino entrance keyframes */}
       <style>{`
         @keyframes domino-in {
@@ -194,15 +199,24 @@ export default function Register() {
         }
       `}</style>
       {/* Header */}
-      <div className="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-xl">
+      <div className={`border-b backdrop-blur-xl ${isLight ? 'border-slate-200 bg-white/70' : 'border-slate-700/50 bg-slate-900/50'}`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/eusotrip-logo.png" alt="EusoTrip" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">EusoTrip</span>
           </div>
-          <Button variant="ghost" onClick={() => setLocation("/login")} className="text-slate-300 hover:text-white">
-            Already have an account? Sign In
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" onClick={() => setLocation("/login")} className={isLight ? 'text-slate-600 hover:text-slate-900' : 'text-slate-300 hover:text-white'}>
+              Already have an account? Sign In
+            </Button>
+            <button
+              onClick={toggleTheme}
+              className={`p-2.5 rounded-full border transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+              title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+            >
+              {isLight ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -214,7 +228,7 @@ export default function Register() {
           style={{ opacity: mounted ? 1 : 0 }}
         >
           <h1
-            className={`text-4xl md:text-5xl font-bold text-white mb-4 ${mounted ? "hero-animate" : "opacity-0"}`}
+            className={`text-4xl md:text-5xl font-bold mb-4 ${isLight ? 'text-slate-900' : 'text-white'} ${mounted ? "hero-animate" : "opacity-0"}`}
             style={{ animationDelay: "0.1s" }}
           >
             Join the Future of{" "}
@@ -223,7 +237,7 @@ export default function Register() {
             </span>
           </h1>
           <p
-            className={`text-xl text-slate-400 max-w-2xl mx-auto ${mounted ? "hero-animate" : "opacity-0"}`}
+            className={`text-xl max-w-2xl mx-auto ${isLight ? 'text-slate-500' : 'text-slate-400'} ${mounted ? "hero-animate" : "opacity-0"}`}
             style={{ animationDelay: "0.25s" }}
           >
             Select your role to begin the registration process. Each role has specific regulatory requirements
@@ -233,14 +247,14 @@ export default function Register() {
 
         {/* Compliance Notice */}
         <div
-          className={`mb-10 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 max-w-3xl mx-auto ${mounted ? "notice-animate" : "opacity-0"}`}
+          className={`mb-10 p-4 rounded-xl border max-w-3xl mx-auto ${isLight ? 'bg-blue-50 border-blue-200' : 'bg-blue-500/10 border-blue-500/20'} ${mounted ? "notice-animate" : "opacity-0"}`}
           style={{ animationDelay: "0.4s" }}
         >
           <div className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="text-sm text-blue-300 font-medium">Regulatory Compliance Verified</p>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className={`text-sm font-medium ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>Regulatory Compliance Verified</p>
+              <p className={`text-xs mt-1 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 EusoTrip automatically verifies FMCSA, PHMSA, TSA, and state requirements during registration.
                 All data is encrypted and stored securely per DOT 49 CFR standards.
               </p>
@@ -256,7 +270,7 @@ export default function Register() {
             return (
               <Card
                 key={roleData.role}
-                className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10 ${
+                className={`domino-card ${mounted ? "animate" : ""} cursor-pointer group hover:scale-[1.02] transition-all duration-300 ${isLight ? 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-xl hover:shadow-blue-500/5' : 'bg-slate-800/50 border-slate-700 hover:border-slate-500 hover:shadow-xl hover:shadow-blue-500/10'} ${
                   roleData.inviteOnly ? "opacity-70" : ""
                 }`}
                 style={{ animationDelay: `${staggerDelay}s` }}
@@ -273,26 +287,26 @@ export default function Register() {
                       </Badge>
                     )}
                   </div>
-                  <CardTitle className="text-white flex items-center gap-2">
+                  <CardTitle className={`flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                     {roleData.name}
                     <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
                   </CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardDescription className={isLight ? 'text-slate-500' : 'text-slate-400'}>
                     {roleData.description}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {/* Requirements */}
                   <div>
-                    <p className="text-xs font-semibold text-slate-300 mb-2">Requirements:</p>
+                    <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Requirements:</p>
                     <div className="flex flex-wrap gap-1">
                       {roleData.requirements.slice(0, 3).map((req: any, idx: number) => (
-                        <Badge key={idx} variant="secondary" className="text-xs bg-slate-700/50 text-slate-300">
+                        <Badge key={idx} variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-600' : 'bg-slate-700/50 text-slate-300'}`}>
                           {req}
                         </Badge>
                       ))}
                       {roleData.requirements.length > 3 && (
-                        <Badge variant="secondary" className="text-xs bg-slate-700/50 text-slate-400">
+                        <Badge variant="secondary" className={`text-xs ${isLight ? 'bg-slate-100 text-slate-400' : 'bg-slate-700/50 text-slate-400'}`}>
                           +{roleData.requirements.length - 3} more
                         </Badge>
                       )}
@@ -301,10 +315,10 @@ export default function Register() {
 
                   {/* Regulations */}
                   <div>
-                    <p className="text-xs font-semibold text-slate-300 mb-2">Regulatory Bodies:</p>
+                    <p className={`text-xs font-semibold mb-2 ${isLight ? 'text-slate-600' : 'text-slate-300'}`}>Regulatory Bodies:</p>
                     <div className="flex flex-wrap gap-1">
                       {roleData.regulations.map((reg: any, idx: number) => (
-                        <Badge key={idx} variant="outline" className="text-xs text-blue-400 border-blue-500/30">
+                        <Badge key={idx} variant="outline" className={`text-xs ${isLight ? 'text-blue-600 border-blue-300' : 'text-blue-400 border-blue-500/30'}`}>
                           {reg}
                         </Badge>
                       ))}
@@ -318,7 +332,7 @@ export default function Register() {
 
         {/* Footer Info */}
         <div
-          className={`mt-12 text-center text-slate-500 text-sm transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+          className={`mt-12 text-center text-sm transition-all duration-700 ${isLight ? 'text-slate-400' : 'text-slate-500'} ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
           style={{ transitionDelay: "1.6s" }}
         >
           <p>Need help choosing? Contact support@eusotrip.com</p>

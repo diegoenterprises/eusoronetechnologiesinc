@@ -8,8 +8,9 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, Check, Loader2, ChevronLeft } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, ChevronLeft, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export interface WizardStep {
   id: string;
@@ -42,6 +43,8 @@ export function RegistrationWizard({
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [isValidating, setIsValidating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { theme, toggleTheme } = useTheme();
+  const isLight = theme === 'light';
 
   const progress = ((currentStep + 1) / steps.length) * 100;
   const isLastStep = currentStep === steps.length - 1;
@@ -94,13 +97,22 @@ export function RegistrationWizard({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-8 px-4">
+    <div className={`min-h-screen py-8 px-4 transition-colors duration-300 ${isLight ? 'bg-gradient-to-br from-slate-50 via-white to-slate-100' : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'}`}>
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className={`fixed top-6 right-6 z-50 p-2.5 rounded-full border backdrop-blur-sm transition-all duration-300 hover:scale-110 ${isLight ? 'bg-white/80 border-slate-200 text-slate-700 hover:bg-slate-100 shadow-sm' : 'bg-slate-800/80 border-slate-600 text-slate-300 hover:bg-slate-700'}`}
+        title={`Switch to ${isLight ? 'dark' : 'light'} mode`}
+      >
+        {isLight ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+      </button>
+
       <div className="max-w-4xl mx-auto">
         {/* Back to role selection + Header */}
         <div className="mb-4">
           <button
             onClick={() => navigate("/register")}
-            className="flex items-center gap-1 text-sm text-slate-400 hover:text-white transition-colors"
+            className={`flex items-center gap-1 text-sm transition-colors ${isLight ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'}`}
           >
             <ChevronLeft className="w-4 h-4" />
             Back to role selection
@@ -110,19 +122,19 @@ export function RegistrationWizard({
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${roleColor} flex items-center justify-center mx-auto mb-4`}>
             {roleIcon}
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">{title}</h1>
-          <p className="text-slate-400">{subtitle}</p>
+          <h1 className={`text-3xl font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>{title}</h1>
+          <p className={isLight ? 'text-slate-500' : 'text-slate-400'}>{subtitle}</p>
         </div>
 
         {/* Progress */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-slate-400">
+            <span className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
               Step {currentStep + 1} of {steps.length}
             </span>
-            <span className="text-sm text-slate-400">{Math.round(progress)}% Complete</span>
+            <span className={`text-sm ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>{Math.round(progress)}% Complete</span>
           </div>
-          <Progress value={progress} className="h-2 bg-slate-700" />
+          <Progress value={progress} className={`h-2 ${isLight ? 'bg-slate-200' : 'bg-slate-700'}`} />
         </div>
 
         {/* Step Indicators */}
@@ -139,9 +151,9 @@ export function RegistrationWizard({
                 disabled={!isClickable}
                 className={cn(
                   "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all",
-                  isCurrent && "bg-blue-500/20 text-blue-400 border border-blue-500/30",
-                  isComplete && !isCurrent && "bg-green-500/20 text-green-400 border border-green-500/30",
-                  !isCurrent && !isComplete && "bg-slate-800/50 text-slate-500 border border-slate-700",
+                  isCurrent && (isLight ? "bg-blue-50 text-blue-600 border border-blue-300" : "bg-blue-500/20 text-blue-400 border border-blue-500/30"),
+                  isComplete && !isCurrent && (isLight ? "bg-green-50 text-green-600 border border-green-300" : "bg-green-500/20 text-green-400 border border-green-500/30"),
+                  !isCurrent && !isComplete && (isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-slate-800/50 text-slate-500 border border-slate-700"),
                   isClickable && "cursor-pointer hover:opacity-80"
                 )}
               >
@@ -166,13 +178,13 @@ export function RegistrationWizard({
             animation: "tileIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
           }}
         >
-          <Card className="bg-slate-800/50 border-slate-700 mb-6">
+          <Card className={`mb-6 ${isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-slate-800/50 border-slate-700'}`}>
             <CardHeader>
-              <CardTitle className="text-white flex items-center gap-3">
+              <CardTitle className={`flex items-center gap-3 ${isLight ? 'text-slate-900' : 'text-white'}`}>
                 {steps[currentStep].icon}
                 {steps[currentStep].title}
               </CardTitle>
-              <CardDescription className="text-slate-400">
+              <CardDescription className={isLight ? 'text-slate-500' : 'text-slate-400'}>
                 {steps[currentStep].description}
               </CardDescription>
             </CardHeader>
@@ -198,7 +210,7 @@ export function RegistrationWizard({
             variant="outline"
             onClick={handleBack}
             disabled={isFirstStep || isValidating || isSubmitting}
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className={isLight ? 'border-slate-300 text-slate-600 hover:bg-slate-100' : 'border-slate-600 text-slate-300 hover:bg-slate-700'}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
