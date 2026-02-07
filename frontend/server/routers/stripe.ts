@@ -18,12 +18,24 @@ import { users, companies, wallets, walletTransactions, payments } from "../../d
 import { stripe } from "../stripe/service";
 import { SUBSCRIPTION_PRODUCTS, PLATFORM_FEE_PERCENTAGE, MINIMUM_PLATFORM_FEE, calculatePlatformFee } from "../stripe/products";
 
+// Helper: resolve openId to numeric DB user id
+async function resolveUserId(openId: string | number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const strId = String(openId);
+  const [user] = await db.select({ id: users.id }).from(users).where(eq(users.openId, strId)).limit(1);
+  return user?.id || 0;
+}
+
 // Helper: get or create Stripe customer for a user
-async function getOrCreateStripeCustomer(userId: number, email: string, name?: string): Promise<string> {
+async function getOrCreateStripeCustomer(userOpenId: string | number, email: string, name?: string): Promise<string> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  const numericId = await resolveUserId(userOpenId);
+  if (!numericId) throw new Error("User not found");
+
+  const [user] = await db.select().from(users).where(eq(users.id, numericId)).limit(1);
   
   // Check if user already has a Stripe customer ID stored
   const stripeCustomerId = (user as any)?.stripeCustomerId;
@@ -41,7 +53,7 @@ async function getOrCreateStripeCustomer(userId: number, email: string, name?: s
     email,
     name: name || email,
     metadata: {
-      userId: String(userId),
+      userId: String(numericId),
       platform: "eusotrip",
     },
   });
@@ -49,7 +61,7 @@ async function getOrCreateStripeCustomer(userId: number, email: string, name?: s
   // Store the customer ID on the user record
   try {
     await db.execute(
-      `UPDATE users SET stripe_customer_id = '${customer.id}' WHERE id = ${userId}`
+      `UPDATE users SET stripe_customer_id = '${customer.id}' WHERE id = ${numericId}`
     );
   } catch {
     // Column may not exist yet - non-critical
