@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
 import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
+import DatePicker from "@/components/DatePicker";
 
 const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Carrier Requirements", "Pricing", "Review"];
 
@@ -606,8 +607,8 @@ export default function LoadCreationWizard() {
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-sm text-slate-400 mb-1 block">Pickup Date</label><Input type="date" value={formData.pickupDate || ""} onChange={(e: any) => updateField("pickupDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
-                <div><label className="text-sm text-slate-400 mb-1 block">Delivery Date</label><Input type="date" value={formData.deliveryDate || ""} onChange={(e: any) => updateField("deliveryDate", e.target.value)} className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 dark:text-slate-400 mb-1 block">Pickup Date</label><DatePicker value={formData.pickupDate || ""} onChange={(val) => updateField("pickupDate", val)} placeholder="Select pickup date" /></div>
+                <div><label className="text-sm text-slate-400 dark:text-slate-400 mb-1 block">Delivery Date</label><DatePicker value={formData.deliveryDate || ""} onChange={(val) => updateField("deliveryDate", val)} placeholder="Select delivery date" /></div>
               </div>
               {!mapsLoaded && <div className="p-2 rounded-lg bg-slate-700/20 border border-slate-700/30"><p className="text-slate-500 text-[10px] flex items-center gap-1"><Info className="w-3 h-3" />Google Maps autocomplete &amp; route preview available when VITE_GOOGLE_MAPS_KEY is configured.</p></div>}
             </div>
