@@ -288,18 +288,18 @@ export default function Register() {
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between mb-3">
-                    {/* Theme-aware icon: dark = gradient bg + white icon, light = white circle + gradient icon */}
+                    {/* Theme-aware icon: dark = brand gradient bg + white icon, light = white circle + brand gradient icon */}
                     <div className={`card-icon-wrap w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${
                       isLight
                         ? 'bg-white shadow-md shadow-slate-200 border border-slate-100'
-                        : `bg-gradient-to-br ${roleData.gradient}`
+                        : 'bg-gradient-to-br from-[#1473FF] to-[#BE01FF]'
                     }`}>
                       {isLight ? (
                         <svg width="0" height="0" className="absolute">
                           <defs>
                             <linearGradient id={`grad-${roleData.role}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                              <stop offset="0%" stopColor={roleData.gradient.match(/from-\[([^\]]+)\]/)?.[1] || '#1473FF'} />
-                              <stop offset="100%" stopColor={roleData.gradient.match(/to-\[([^\]]+)\]/)?.[1] || '#BE01FF'} />
+                              <stop offset="0%" stopColor="#1473FF" />
+                              <stop offset="100%" stopColor="#BE01FF" />
                             </linearGradient>
                           </defs>
                         </svg>

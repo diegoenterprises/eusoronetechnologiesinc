@@ -96,10 +96,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     { 
       icon: "Wallet", 
-      label: "Wallet", 
+      label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Account balance and history"
+      description: "Digital wallet, payments & cards"
     },
     { 
       icon: "Building2", 

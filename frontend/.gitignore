@@ -126,3 +126,4 @@ scripts/add-confirmation-dialogs.cjs
 .netlify/
 .vercel/
 .serverless/
+deploy.zip

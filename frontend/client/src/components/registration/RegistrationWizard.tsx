@@ -119,8 +119,27 @@ export function RegistrationWizard({
           </button>
         </div>
         <div className="text-center mb-8">
-          <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${roleColor} flex items-center justify-center mx-auto mb-4`}>
-            {roleIcon}
+          <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 transition-all duration-300 ${
+            isLight
+              ? 'bg-white shadow-lg shadow-slate-200 border border-slate-100'
+              : 'bg-gradient-to-br from-[#1473FF] to-[#BE01FF]'
+          }`}>
+            {isLight ? (
+              <>
+                <svg width="0" height="0" className="absolute">
+                  <defs>
+                    <linearGradient id="wizard-icon-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#1473FF" />
+                      <stop offset="100%" stopColor="#BE01FF" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                {React.cloneElement(roleIcon as React.ReactElement<any>, {
+                  className: 'w-8 h-8',
+                  style: { stroke: 'url(#wizard-icon-grad)' },
+                })}
+              </>
+            ) : roleIcon}
           </div>
           <h1 className={`text-3xl font-bold mb-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>{title}</h1>
           <p className={isLight ? 'text-slate-500' : 'text-slate-400'}>{subtitle}</p>

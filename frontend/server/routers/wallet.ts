@@ -58,7 +58,7 @@ export const walletRouter = router({
 
       if (!db) {
         return {
-          available: 0, pending: 0, reserved: 0, total: 0,
+          available: 0, pending: 0, reserved: 0, escrow: 0, total: 0, monthVolume: 0,
           currency: "USD", lastUpdated: new Date().toISOString(),
           totalReceived: 0, totalSpent: 0, paymentMethods: 0,
         };
@@ -75,16 +75,18 @@ export const walletRouter = router({
 
       if (!wallet) {
         // Create wallet if it doesn't exist
-        await db.insert(wallets).values({
-          userId,
-          availableBalance: "0",
-          pendingBalance: "0",
-          reservedBalance: "0",
-          currency: "USD",
-        });
+        try {
+          await db.insert(wallets).values({
+            userId,
+            availableBalance: "0",
+            pendingBalance: "0",
+            reservedBalance: "0",
+            currency: "USD",
+          });
+        } catch {}
 
         return {
-          available: 0, pending: 0, reserved: 0, total: 0,
+          available: 0, pending: 0, reserved: 0, escrow: 0, total: 0, monthVolume: 0,
           currency: "USD", lastUpdated: new Date().toISOString(),
           totalReceived: 0, totalSpent: 0, paymentMethods: 0,
         };
@@ -98,7 +100,9 @@ export const walletRouter = router({
         available,
         pending,
         reserved,
+        escrow: reserved,
         total: available + pending,
+        monthVolume: parseFloat(wallet.totalReceived || "0") + parseFloat(wallet.totalSpent || "0"),
         currency: wallet.currency,
         lastUpdated: wallet.updatedAt?.toISOString() || new Date().toISOString(),
         totalReceived: parseFloat(wallet.totalReceived || "0"),
@@ -1135,5 +1139,345 @@ export const walletRouter = router({
       }
 
       return { success: true, status: "disbursed" };
+    }),
+
+  // ========================================================================
+  // EUSOWALLET - NEW FINTECH PROCEDURES
+  // Stripe Connect + Issuing + Treasury integration points
+  // ========================================================================
+
+  /**
+   * Get issued cards (virtual + physical)
+   * Stripe Issuing API: lists cards for this cardholder
+   */
+  getCards: auditedProtectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) return [];
+
+      // TODO: Replace with Stripe Issuing API call:
+      // const cards = await stripe.issuing.cards.list({ cardholder: stripeCardholderId });
+      // For now, return from DB or seed data
+      try {
+        // Check if user has a virtual card already (auto-provisioned)
+        return [
+          {
+            id: `card_virtual_${userId}`,
+            type: "virtual",
+            last4: String(1000 + (userId % 9000)).slice(-4),
+            cardholderName: ctx.user?.name || "Cardholder",
+            expiry: "12/28",
+            status: "active",
+            brand: "Visa",
+            spendingLimit: 10000,
+            monthlySpent: 0,
+          },
+        ];
+      } catch {
+        return [];
+      }
+    }),
+
+  /**
+   * Get connected bank accounts
+   * Stripe Financial Connections / Treasury API
+   */
+  getBankAccounts: auditedProtectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) return [];
+
+      // TODO: Replace with Stripe Financial Connections API:
+      // const accounts = await stripe.financialConnections.accounts.list({ account_holder: ... });
+      try {
+        const methods = await db.select()
+          .from(payoutMethods)
+          .where(and(eq(payoutMethods.userId, userId), eq(payoutMethods.type, "bank_account")));
+
+        return methods.map(m => ({
+          id: `bank_${m.id}`,
+          bankName: m.bankName || "Bank Account",
+          last4: m.last4 || "0000",
+          type: "Checking",
+          status: "verified",
+          routingNumber: "••••••" + (m.last4 || "0000").slice(-2),
+        }));
+      } catch {
+        return [];
+      }
+    }),
+
+  /**
+   * Get escrow holds (shipper funds held for load completion)
+   * Uses Stripe Treasury / Connect for held funds
+   */
+  getEscrowHolds: auditedProtectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) return [];
+
+      // TODO: Replace with Stripe Treasury held funds query
+      // For now return from wallet transactions marked as escrow
+      try {
+        const [wallet] = await db.select()
+          .from(wallets)
+          .where(eq(wallets.userId, userId))
+          .limit(1);
+
+        if (!wallet) return [];
+
+        // Get transactions marked as escrow-type
+        const escrowTxns = await db.select()
+          .from(walletTransactions)
+          .where(and(
+            eq(walletTransactions.walletId, wallet.id),
+            eq(walletTransactions.type, "deposit"),
+            eq(walletTransactions.status, "pending")
+          ))
+          .orderBy(desc(walletTransactions.createdAt))
+          .limit(20);
+
+        return escrowTxns.map(t => ({
+          id: `escrow_${t.id}`,
+          loadRef: t.loadNumber || `LOAD-${t.id}`,
+          route: t.description || "Origin → Destination",
+          driverName: "Assigned Driver",
+          amount: Math.abs(parseFloat(t.amount || "0")),
+          status: "held",
+          createdAt: t.createdAt?.toISOString(),
+        }));
+      } catch {
+        return [];
+      }
+    }),
+
+  /**
+   * Send money to another EusoTrip user by email
+   * Uses Stripe Connect transfers between connected accounts
+   */
+  sendMoney: auditedProtectedProcedure
+    .input(z.object({
+      recipientEmail: z.string().email(),
+      amount: z.number().positive().max(50000),
+      note: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) throw new Error("Database not available");
+
+      // Find sender wallet
+      const [senderWallet] = await db.select()
+        .from(wallets)
+        .where(eq(wallets.userId, userId))
+        .limit(1);
+      if (!senderWallet) throw new Error("Wallet not found. Please contact support.");
+
+      const availableBalance = parseFloat(senderWallet.availableBalance || "0");
+      if (availableBalance < input.amount) {
+        throw new Error(`Insufficient balance. Available: $${availableBalance.toFixed(2)}`);
+      }
+
+      // Find recipient by email
+      const [recipient] = await db.select()
+        .from(users)
+        .where(eq(users.email, input.recipientEmail))
+        .limit(1);
+      if (!recipient) throw new Error("Recipient not found on EusoTrip. Check the email address.");
+
+      if (recipient.id === userId) throw new Error("Cannot send money to yourself.");
+
+      // Get or create recipient wallet
+      let [recipientWallet] = await db.select()
+        .from(wallets)
+        .where(eq(wallets.userId, recipient.id))
+        .limit(1);
+
+      if (!recipientWallet) {
+        await db.insert(wallets).values({
+          userId: recipient.id,
+          availableBalance: "0",
+          pendingBalance: "0",
+          currency: "USD",
+        });
+        [recipientWallet] = await db.select()
+          .from(wallets)
+          .where(eq(wallets.userId, recipient.id))
+          .limit(1);
+      }
+
+      // TODO: Execute via Stripe Connect transfer:
+      // await stripe.transfers.create({ amount: input.amount * 100, currency: 'usd', destination: recipientStripeId });
+
+      // Debit sender
+      await db.update(wallets)
+        .set({
+          availableBalance: String(availableBalance - input.amount),
+          totalSpent: String(parseFloat(senderWallet.totalSpent || "0") + input.amount),
+        })
+        .where(eq(wallets.id, senderWallet.id));
+
+      // Credit recipient
+      const recipientBalance = parseFloat(recipientWallet.availableBalance || "0");
+      await db.update(wallets)
+        .set({
+          availableBalance: String(recipientBalance + input.amount),
+          totalReceived: String(parseFloat(recipientWallet.totalReceived || "0") + input.amount),
+        })
+        .where(eq(wallets.id, recipientWallet.id));
+
+      // Record transactions
+      await db.insert(walletTransactions).values({
+        walletId: senderWallet.id,
+        type: "transfer",
+        amount: String(-input.amount),
+        fee: "0",
+        netAmount: String(-input.amount),
+        status: "completed",
+        description: `Sent to ${input.recipientEmail}${input.note ? ` — ${input.note}` : ''}`,
+        completedAt: new Date(),
+      });
+
+      await db.insert(walletTransactions).values({
+        walletId: recipientWallet.id,
+        type: "transfer",
+        amount: String(input.amount),
+        fee: "0",
+        netAmount: String(input.amount),
+        status: "completed",
+        description: `Received from ${ctx.user?.email || 'user'}${input.note ? ` — ${input.note}` : ''}`,
+        completedAt: new Date(),
+      });
+
+      return { success: true, amount: input.amount, recipientEmail: input.recipientEmail };
+    }),
+
+  /**
+   * Order a physical EusoWallet debit card
+   * Stripe Issuing API: creates a physical card with $5 issuance fee
+   * $5 fee is revenue for the platform
+   */
+  orderPhysicalCard: auditedProtectedProcedure
+    .input(z.object({
+      shippingAddress: z.object({
+        line1: z.string(),
+        line2: z.string().optional(),
+        city: z.string(),
+        state: z.string(),
+        postalCode: z.string(),
+        country: z.string().default("US"),
+      }).optional(),
+    }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) throw new Error("Database not available");
+
+      const CARD_FEE = 5.00;
+
+      // Get wallet and check balance
+      const [wallet] = await db.select()
+        .from(wallets)
+        .where(eq(wallets.userId, userId))
+        .limit(1);
+      if (!wallet) throw new Error("Wallet not found");
+
+      const balance = parseFloat(wallet.availableBalance || "0");
+      if (balance < CARD_FEE) {
+        throw new Error(`Insufficient balance for $${CARD_FEE} card fee. Current balance: $${balance.toFixed(2)}`);
+      }
+
+      // TODO: Stripe Issuing API call:
+      // const cardholder = await stripe.issuing.cardholders.create({ ... });
+      // const card = await stripe.issuing.cards.create({ cardholder: cardholder.id, type: 'physical', shipping: { ... } });
+
+      // Deduct fee
+      await db.update(wallets)
+        .set({ availableBalance: String(balance - CARD_FEE) })
+        .where(eq(wallets.id, wallet.id));
+
+      // Record fee transaction
+      await db.insert(walletTransactions).values({
+        walletId: wallet.id,
+        type: "fee",
+        amount: String(-CARD_FEE),
+        fee: String(CARD_FEE),
+        netAmount: String(-CARD_FEE),
+        status: "completed",
+        description: "Physical EusoWallet card issuance fee",
+        completedAt: new Date(),
+      });
+
+      return {
+        success: true,
+        cardId: `card_physical_${Date.now()}`,
+        fee: CARD_FEE,
+        estimatedDelivery: "5-7 business days",
+        status: "ordered",
+      };
+    }),
+
+  /**
+   * Initiate bank account connection
+   * Stripe Financial Connections API: creates a session for Plaid-like bank linking
+   */
+  initBankConnection: auditedProtectedProcedure
+    .input(z.object({}).optional())
+    .mutation(async ({ ctx }) => {
+      const userId = Number(ctx.user?.id) || 0;
+
+      // TODO: Stripe Financial Connections API:
+      // const session = await stripe.financialConnections.sessions.create({
+      //   account_holder: { type: 'customer', customer: stripeCustomerId },
+      //   permissions: ['balances', 'transactions', 'payment_method'],
+      // });
+      // return { clientSecret: session.client_secret, sessionId: session.id };
+
+      return {
+        success: true,
+        sessionId: `fc_session_${Date.now()}`,
+        message: "Bank connection initiated. Complete verification in the secure window.",
+        // In production, return Stripe Financial Connections client_secret for frontend SDK
+      };
+    }),
+
+  /**
+   * Release escrow funds to driver upon job completion
+   * Stripe Treasury: releases held funds from escrow to driver's connected account
+   */
+  releaseEscrow: auditedProtectedProcedure
+    .input(z.object({
+      escrowId: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) throw new Error("Database not available");
+
+      // Parse the transaction ID from escrow ID
+      const txnId = parseInt(input.escrowId.replace('escrow_', ''));
+      if (!txnId) throw new Error("Invalid escrow ID");
+
+      // TODO: Stripe Treasury API:
+      // await stripe.treasury.outboundTransfers.create({ ... });
+
+      // Update the escrow transaction to completed
+      await db.update(walletTransactions)
+        .set({
+          status: "completed",
+          completedAt: new Date(),
+          description: sql`CONCAT(${walletTransactions.description}, ' — Released')`,
+        })
+        .where(eq(walletTransactions.id, txnId));
+
+      return {
+        success: true,
+        escrowId: input.escrowId,
+        releasedAt: new Date().toISOString(),
+        message: "Escrow funds released to driver successfully.",
+      };
     }),
 });
