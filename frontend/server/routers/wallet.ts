@@ -1281,8 +1281,8 @@ export const walletRouter = router({
         throw new Error(`Insufficient balance. Available: $${availableBalance.toFixed(2)}`);
       }
 
-      // Find recipient by email
-      const [recipient] = await db.select()
+      // Find recipient by email (safe select — openId may not exist)
+      const [recipient] = await db.select({ id: users.id, email: users.email, name: users.name })
         .from(users)
         .where(eq(users.email, input.recipientEmail))
         .limit(1);

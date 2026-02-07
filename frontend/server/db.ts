@@ -100,12 +100,30 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
+  // Safe column selection (openId column may not exist in actual DB)
+  const safeSelect = {
+    id: users.id, name: users.name, email: users.email,
+    phone: users.phone, role: users.role, companyId: users.companyId,
+    isActive: users.isActive, isVerified: users.isVerified,
+    stripeCustomerId: users.stripeCustomerId, stripeConnectId: users.stripeConnectId,
+    profilePicture: users.profilePicture,
+    createdAt: users.createdAt, updatedAt: users.updatedAt,
+  };
+
   // Try openId lookup — may fail if column doesn't exist in actual DB
   try {
-    const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+    const result = await db.select(safeSelect).from(users).where(eq(users.openId, openId)).limit(1);
     if (result.length > 0) return result[0];
   } catch (err) {
     console.warn("[Database] openId lookup failed (column may not exist):", err);
+  }
+
+  // Fallback: try email if openId looks like an email
+  if (openId.includes("@")) {
+    try {
+      const result = await db.select(safeSelect).from(users).where(eq(users.email, openId)).limit(1);
+      if (result.length > 0) return result[0];
+    } catch {}
   }
 
   return undefined;

@@ -96,7 +96,7 @@ export const gamificationRouter = router({
           .limit(1);
       }
 
-      const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+      const [user] = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).where(eq(users.id, userId)).limit(1);
 
       // Count total users for percentile calculation
       const allProfiles = await db.select().from(gamificationProfiles);

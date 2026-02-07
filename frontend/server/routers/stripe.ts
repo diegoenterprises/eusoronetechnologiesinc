@@ -18,20 +18,33 @@ import { users, companies, wallets, walletTransactions, payments } from "../../d
 import { stripe } from "../stripe/service";
 import { SUBSCRIPTION_PRODUCTS, PLATFORM_FEE_PERCENTAGE, MINIMUM_PLATFORM_FEE, calculatePlatformFee } from "../stripe/products";
 
-// Helper: resolve openId or email to numeric DB user id + full row
+// Helper: resolve user by email (primary) — select only safe columns (openId may not exist in DB)
 async function resolveUser(openIdOrEmail: string | number, email?: string): Promise<{ id: number; row: any } | null> {
   const db = await getDb();
   if (!db) return null;
-  const strId = String(openIdOrEmail);
 
-  // Try openId first
-  let [user] = await db.select().from(users).where(eq(users.openId, strId)).limit(1);
-  if (user) return { id: user.id, row: user };
+  const safeSelect = {
+    id: users.id, name: users.name, email: users.email,
+    role: users.role, companyId: users.companyId,
+    stripeCustomerId: users.stripeCustomerId, stripeConnectId: users.stripeConnectId,
+    isActive: users.isActive, isVerified: users.isVerified, createdAt: users.createdAt,
+  };
 
-  // Fallback: try by email
+  // Try email first (most reliable — column always exists)
   if (email) {
-    [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    try {
+      let [user] = await db.select(safeSelect).from(users).where(eq(users.email, email)).limit(1);
+      if (user) return { id: user.id, row: user };
+    } catch {}
+  }
+
+  // Fallback: try openId (may not exist in DB)
+  try {
+    const strId = String(openIdOrEmail);
+    let [user] = await db.select(safeSelect).from(users).where(eq(users.openId, strId)).limit(1);
     if (user) return { id: user.id, row: user };
+  } catch {
+    // openId column doesn't exist — that's fine
   }
 
   return null;
@@ -515,7 +528,7 @@ export const stripeRouter = router({
       if (!db) return { hasAccount: false, status: "none" };
 
       try {
-        const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+        const [user] = await db.select({ id: users.id, email: users.email, name: users.name, role: users.role, stripeCustomerId: users.stripeCustomerId, stripeConnectId: users.stripeConnectId, companyId: users.companyId }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
         const connectId = (user as any)?.stripeConnectId;
         
         if (!connectId) {

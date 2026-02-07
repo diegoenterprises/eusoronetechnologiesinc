@@ -128,7 +128,7 @@ export class RewardsEngine {
     const db = await getDb();
     if (!db) return [];
 
-    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    const [user] = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
     const userRole = user?.role || "DRIVER";
 
     const now = new Date();

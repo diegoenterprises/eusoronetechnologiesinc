@@ -824,6 +824,166 @@ export const dashboardRouter = router({
     score: 4.7, totalReviews: 342, fiveStar: 218, fourStar: 89,
     nps: 72, responseRate: 94,
   })),
+
+  // ========================================================================
+  // CATALYST & ESCORT WIDGET PROCEDURES
+  // ========================================================================
+
+  getEscortEarnings: protectedProcedure.query(async () => ({
+    today: 450, thisWeek: 2850, thisMonth: 11200, pending: 1200,
+    completedJobs: 8, avgPerJob: 350,
+  })),
+
+  getRouteNavigation: protectedProcedure.query(async () => ({
+    activeRoute: { from: "Houston, TX", to: "Dallas, TX", distance: 239, eta: "3h 45m", progress: 42 },
+    nextWaypoint: { name: "Waco Rest Area", distance: 45, eta: "35 min" },
+    restrictions: [
+      { type: "LOW_CLEARANCE", location: "I-35 Bridge MP 245", clearance: "14'2\"" },
+      { type: "WEIGHT_LIMIT", location: "FM 2063", limit: "40,000 lbs" },
+    ],
+  })),
+
+  getLoadDimensions: protectedProcedure.query(async () => ({
+    length: 85, width: 14, height: 16, weight: 120000,
+    permits: ["oversize", "overweight"],
+    classification: "SUPERLOAD",
+    axleConfig: "13-axle",
+  })),
+
+  getClearanceAlerts: protectedProcedure.query(async () => ({
+    alerts: [
+      { id: "ca1", type: "BRIDGE", location: "I-10 @ San Jacinto River", clearance: "16'4\"", loadHeight: "16'0\"", margin: "4\"", severity: "WARNING" },
+      { id: "ca2", type: "OVERPASS", location: "US-290 @ Hempstead", clearance: "18'0\"", loadHeight: "16'0\"", margin: "24\"", severity: "OK" },
+      { id: "ca3", type: "UTILITY", location: "FM 1960 Power Lines", clearance: "17'2\"", loadHeight: "16'0\"", margin: "14\"", severity: "CAUTION" },
+    ],
+    totalAhead: 12, criticalCount: 1,
+  })),
+
+  getEscortChecklist: protectedProcedure.query(async () => ({
+    items: [
+      { id: "ec1", task: "Verify pilot car equipment", completed: true },
+      { id: "ec2", task: "Check radio communication", completed: true },
+      { id: "ec3", task: "Review route permits", completed: true },
+      { id: "ec4", task: "Confirm flag/sign placement", completed: false },
+      { id: "ec5", task: "Pre-trip vehicle inspection", completed: true },
+      { id: "ec6", task: "Contact law enforcement escorts", completed: false },
+    ],
+    completedCount: 4, totalCount: 6,
+  })),
+
+  getDriverCommunication: protectedProcedure.query(async () => ({
+    channel: "Channel 19",
+    lastMessage: { from: "Driver", text: "Clear ahead, proceeding through intersection", time: "2 min ago" },
+    signalStrength: 92,
+    recentMessages: [
+      { from: "Escort Lead", text: "Approaching low clearance bridge in 2 miles", time: "5 min ago" },
+      { from: "Driver", text: "Copy, reducing speed", time: "4 min ago" },
+      { from: "Rear Escort", text: "All clear behind, traffic holding", time: "3 min ago" },
+    ],
+  })),
+
+  getEmergencyContacts: protectedProcedure.query(async () => ({
+    contacts: [
+      { name: "TxDOT Operations", phone: "(512) 463-8588", type: "state_dot" },
+      { name: "Harris County Sheriff", phone: "(713) 221-6000", type: "law_enforcement" },
+      { name: "Dispatch Center", phone: "(800) 555-0199", type: "dispatch" },
+      { name: "Permit Office", phone: "(800) 299-1700", type: "permits" },
+    ],
+  })),
+
+  getTripLog: protectedProcedure.query(async () => ({
+    entries: [
+      { time: "06:00 AM", event: "Departed origin", location: "Houston, TX" },
+      { time: "07:15 AM", event: "Cleared interchange", location: "I-10/I-45" },
+      { time: "08:30 AM", event: "Rest stop", location: "Huntsville, TX", duration: "15 min" },
+      { time: "09:45 AM", event: "Low clearance passage", location: "Madisonville, TX" },
+    ],
+    totalDriveTime: "3h 45m", totalDistance: 142, avgSpeed: 38,
+  })),
+
+  getPermitVerification: protectedProcedure.query(async () => ({
+    permits: [
+      { id: "p1", type: "Oversize/Overweight", state: "TX", number: "TX-OS-2026-45892", status: "VALID", expires: "2026-03-15" },
+      { id: "p2", type: "Superload", state: "TX", number: "TX-SL-2026-12034", status: "VALID", expires: "2026-02-28" },
+      { id: "p3", type: "Oversize", state: "OK", number: "OK-OS-2026-7821", status: "PENDING", expires: "N/A" },
+    ],
+    allValid: false, pendingCount: 1,
+  })),
+
+  getEscortPay: protectedProcedure.query(async () => ({
+    currentJob: { rate: 45, unit: "per hour", estimatedTotal: 540, hoursWorked: 8.5 },
+    weeklyTotal: 2850, monthlyTotal: 11200,
+    recentPayments: [
+      { id: "ep1", date: "2026-02-05", amount: 630, job: "Houston → Dallas", status: "paid" },
+      { id: "ep2", date: "2026-02-03", amount: 480, job: "San Antonio → Austin", status: "paid" },
+    ],
+  })),
+
+  getOversizedLoads: protectedProcedure.query(async () => ({
+    active: [
+      { id: "ol1", loadNumber: "LOAD-99201", dimensions: "85' × 14' × 16'", weight: "120,000 lbs", route: "Houston → Dallas", status: "in_transit" },
+      { id: "ol2", loadNumber: "LOAD-99205", dimensions: "65' × 12' × 14'", weight: "95,000 lbs", route: "Beaumont → San Antonio", status: "scheduled" },
+    ],
+    totalActive: 2, requiresEscort: 2,
+  })),
+
+  getSafetyProtocols: protectedProcedure.query(async () => ({
+    protocols: [
+      { id: "sp1", name: "Intersection Clearing", status: "active", lastReviewed: "2026-02-01" },
+      { id: "sp2", name: "Bridge Approach", status: "active", lastReviewed: "2026-02-01" },
+      { id: "sp3", name: "Emergency Stop", status: "active", lastReviewed: "2026-01-28" },
+      { id: "sp4", name: "Night Operations", status: "active", lastReviewed: "2026-01-25" },
+    ],
+    complianceScore: 96,
+  })),
+
+  getRouteRestrictions: protectedProcedure.query(async () => ({
+    restrictions: [
+      { id: "rr1", type: "TIME", description: "No travel 7-9 AM / 4-6 PM on I-45", applies: "Weekdays" },
+      { id: "rr2", type: "ROAD", description: "No travel on FM roads after dark", applies: "All days" },
+      { id: "rr3", type: "WEATHER", description: "No travel in winds > 35 mph", applies: "Current: 12 mph ✓" },
+    ],
+    currentlyRestricted: false,
+  })),
+
+  getCommunicationHub: protectedProcedure.query(async () => ({
+    channels: [
+      { name: "Dispatch", status: "connected", lastActivity: "1 min ago" },
+      { name: "Driver", status: "connected", lastActivity: "2 min ago" },
+      { name: "Rear Escort", status: "connected", lastActivity: "3 min ago" },
+      { name: "Law Enforcement", status: "standby", lastActivity: "15 min ago" },
+    ],
+    unreadMessages: 2,
+  })),
+
+  getCoordinationMap: protectedProcedure.query(async () => ({
+    vehicles: [
+      { id: "v1", type: "lead_escort", lat: 30.85, lng: -96.12, heading: 0, speed: 35 },
+      { id: "v2", type: "load", lat: 30.84, lng: -96.12, heading: 0, speed: 35 },
+      { id: "v3", type: "rear_escort", lat: 30.83, lng: -96.12, heading: 0, speed: 35 },
+    ],
+    formationStatus: "TIGHT", spacing: "500 ft",
+  })),
+
+  getIncidentReports: protectedProcedure.query(async () => ({
+    recent: [
+      { id: "ir1", date: "2026-02-04", type: "Near Miss", location: "I-35 @ Exit 292", severity: "LOW", resolved: true },
+      { id: "ir2", date: "2026-01-28", type: "Traffic Delay", location: "US-290 Construction", severity: "MEDIUM", resolved: true },
+    ],
+    totalThisMonth: 2, totalThisYear: 8,
+  })),
+
+  getEquipmentChecklist: protectedProcedure.query(async () => ({
+    items: [
+      { id: "eq1", name: "Oversize Load Signs", status: "OK", lastChecked: "Today" },
+      { id: "eq2", name: "Amber Rotating Lights", status: "OK", lastChecked: "Today" },
+      { id: "eq3", name: "Flags (Red/Orange)", status: "OK", lastChecked: "Today" },
+      { id: "eq4", name: "Two-Way Radio", status: "OK", lastChecked: "Today" },
+      { id: "eq5", name: "Height Pole", status: "NEEDS_CHECK", lastChecked: "Yesterday" },
+      { id: "eq6", name: "Fire Extinguisher", status: "OK", lastChecked: "Today" },
+    ],
+    allGood: false, issueCount: 1,
+  })),
 });
 
 // ============================================================================

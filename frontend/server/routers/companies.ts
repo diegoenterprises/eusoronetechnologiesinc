@@ -8,13 +8,22 @@ import { companies, vehicles, users } from "../../drizzle/schema";
 async function ensureCompanyForUser(ctxUser: any): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const openId = String(ctxUser?.id || "");
   const email = ctxUser?.email || "";
 
-  // Find user by openId or email
-  let [user] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.openId, openId)).limit(1);
-  if (!user && email) {
-    [user] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.email, email)).limit(1);
+  // Find user by email first (most reliable — openId column may not exist)
+  let user: any = null;
+  if (email) {
+    try {
+      [user] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.email, email)).limit(1);
+    } catch {}
+  }
+  if (!user) {
+    try {
+      const openId = String(ctxUser?.id || "");
+      [user] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.openId, openId)).limit(1);
+    } catch {
+      // openId column doesn't exist — that's fine
+    }
   }
 
   // If user has a company, return it

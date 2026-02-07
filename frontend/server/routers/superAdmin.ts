@@ -55,7 +55,7 @@ export const superAdminRouter = router({
       const db = await getDb();
       if (!db) return [];
       
-      let query = db.select().from(users).orderBy(desc(users.createdAt)).limit(input?.limit || 50);
+      let query = db.select({ id: users.id, name: users.name, email: users.email, role: users.role, isActive: users.isActive, isVerified: users.isVerified, companyId: users.companyId, createdAt: users.createdAt, updatedAt: users.updatedAt }).from(users).orderBy(desc(users.createdAt)).limit(input?.limit || 50);
       return await query;
     }),
 

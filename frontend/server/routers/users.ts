@@ -72,7 +72,10 @@ export const usersRouter = router({
     .query(async ({ input }) => {
       const db = await getDb();
       if (!db) return [];
-      const allUsers = await db.select().from(users).limit(input.limit || 50);
+      const allUsers = await db.select({
+        id: users.id, name: users.name, email: users.email,
+        role: users.role, isActive: users.isActive, createdAt: users.createdAt,
+      }).from(users).limit(input.limit || 50);
       return allUsers.map(u => ({
         id: u.id,
         name: u.name || u.email || 'Unknown',
@@ -126,7 +129,17 @@ export const usersRouter = router({
     try {
       // Ensure user exists in DB (creates if missing)
       await ensureUserExists(ctx.user);
-      const [user] = await db.select().from(users).where(eq(users.openId, userOpenId)).limit(1);
+      // Query by email — select only safe columns (openId may not exist in DB)
+      const userEmail = ctx.user?.email || "";
+      let user: any = null;
+      if (userEmail) {
+        const [found] = await db.select({
+          id: users.id, name: users.name, email: users.email,
+          phone: users.phone, role: users.role, isVerified: users.isVerified,
+          profilePicture: users.profilePicture, createdAt: users.createdAt,
+        }).from(users).where(eq(users.email, userEmail)).limit(1);
+        user = found;
+      }
       const nameParts = (user?.name || ctx.user?.name || "").split(" ");
       const createdAt = user?.createdAt || new Date();
       const daysActive = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));

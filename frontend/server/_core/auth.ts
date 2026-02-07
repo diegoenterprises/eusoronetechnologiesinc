@@ -111,7 +111,11 @@ export const authService = {
     try {
       const db = await getDb();
       if (db) {
-        const [dbUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        const [dbUser] = await db.select({
+          id: users.id, name: users.name, email: users.email,
+          passwordHash: users.passwordHash, role: users.role,
+          companyId: users.companyId, isActive: users.isActive,
+        }).from(users).where(eq(users.email, email)).limit(1);
         if (dbUser && dbUser.passwordHash) {
           const valid = await bcrypt.compare(password, dbUser.passwordHash);
           if (valid) {

@@ -109,7 +109,7 @@ export const registrationRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const existing = await db.select().from(users).where(eq(users.email, input.contactEmail)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
 
       const passwordHash = await bcrypt.hash(input.password, 12);
@@ -202,7 +202,7 @@ export const registrationRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const existing = await db.select().from(users).where(eq(users.email, input.contactEmail)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
 
       const saferVerification = await verifyUSDOT(input.usdotNumber);
@@ -295,7 +295,7 @@ export const registrationRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
 
       const passwordHash = await bcrypt.hash(input.password, 12);
@@ -351,7 +351,7 @@ export const registrationRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const existing = await db.select().from(users).where(eq(users.email, input.contactEmail)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.contactEmail)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const passwordHash = await bcrypt.hash(input.password, 12);
       const companyResult = await db.insert(companies).values({
@@ -403,7 +403,7 @@ export const registrationRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
@@ -444,7 +444,7 @@ export const registrationRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
@@ -484,7 +484,7 @@ export const registrationRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const passwordHash = await bcrypt.hash(input.password, 12);
       const companyResult = await db.insert(companies).values({
@@ -532,7 +532,7 @@ export const registrationRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
@@ -570,7 +570,7 @@ export const registrationRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
@@ -608,7 +608,7 @@ export const registrationRouter = router({
       if (!["EUSOTRIP-ADMIN-2026", "EUSORONE-INVITE"].includes(input.invitationCode)) {
         throw new Error("Invalid invitation code");
       }
-      const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
       const openId = uuidv4();
       const role = input.adminLevel === "super_admin" ? "SUPER_ADMIN" : "ADMIN";
@@ -655,7 +655,7 @@ export const registrationRouter = router({
       const userId = ctx.user?.id;
       if (!userId) return { status: "not_logged_in" };
 
-      const [user] = await db.select().from(users).where(eq(users.id, Number(userId))).limit(1);
+      const [user] = await db.select({ id: users.id, email: users.email, role: users.role, isVerified: users.isVerified }).from(users).where(eq(users.id, Number(userId))).limit(1);
       if (!user) return { status: "not_found" };
 
       return {
