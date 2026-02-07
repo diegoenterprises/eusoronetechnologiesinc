@@ -100,10 +100,15 @@ export default function LoadCreationWizard() {
     updateField("productName", material.name);
     updateField("hazmatClass", material.hazardClass);
     updateField("unNumber", `UN${material.unNumber}`);
+    updateField("ergGuide", material.guide);
+    updateField("isTIH", !!material.isTIH);
+    updateField("isWR", !!material.isWR);
+    updateField("placardName", material.placardName || "");
+    updateField("spectraVerified", true);
     setShowSuggestions(false);
     setShowUNSuggestions(false);
-    toast.success("ERG Auto-Detect", {
-      description: `Identified: ${material.name} -- UN${material.unNumber} (Class ${material.hazardClass}) Guide ${material.guide}`,
+    toast.success("SPECTRA-MATCH Verified", {
+      description: `${material.name} -- UN${material.unNumber} (Class ${material.hazardClass}) Guide ${material.guide}`,
     });
   }, []);
 
@@ -148,7 +153,28 @@ export default function LoadCreationWizard() {
 
   const handleSubmit = () => {
     setIsSubmitting(true);
-    createLoadMutation.mutate(formData);
+    createLoadMutation.mutate({
+      productName: formData.productName,
+      hazmatClass: formData.hazmatClass,
+      unNumber: formData.unNumber,
+      ergGuide: formData.ergGuide ? Number(formData.ergGuide) : undefined,
+      isTIH: formData.isTIH || false,
+      isWR: formData.isWR || false,
+      placardName: formData.placardName,
+      weight: formData.weight,
+      weightUnit: formData.weightUnit,
+      quantity: formData.quantity,
+      quantityUnit: formData.quantityUnit,
+      origin: formData.origin,
+      destination: formData.destination,
+      pickupDate: formData.pickupDate,
+      deliveryDate: formData.deliveryDate,
+      equipment: formData.equipment,
+      rate: formData.rate,
+      ratePerMile: formData.ratePerMile,
+      minSafetyScore: formData.minSafetyScore,
+      endorsements: formData.endorsements,
+    });
   };
 
   const canProceed = () => {
@@ -395,10 +421,57 @@ export default function LoadCreationWizard() {
           {step === 6 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <p className="text-white font-bold text-lg">Review Your Load</p>
+
+              {formData.spectraVerified && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border border-cyan-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle className="w-5 h-5 text-emerald-400" />
+                    <span className="text-emerald-400 font-bold text-sm">SPECTRA-MATCH Verified</span>
+                    <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">ERG 2020</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="p-2 rounded-lg bg-slate-800/50">
+                      <p className="text-[10px] text-slate-500 uppercase">Product</p>
+                      <p className="text-white text-sm font-medium truncate">{formData.productName}</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-800/50">
+                      <p className="text-[10px] text-slate-500 uppercase">UN Number</p>
+                      <p className="text-cyan-400 text-sm font-bold">{formData.unNumber}</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-800/50">
+                      <p className="text-[10px] text-slate-500 uppercase">Hazmat Class</p>
+                      <p className="text-purple-400 text-sm font-medium">{formData.hazmatClass} - {formData.placardName}</p>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-800/50">
+                      <p className="text-[10px] text-slate-500 uppercase">ERG Guide</p>
+                      <p className="text-white text-sm font-medium">Guide {formData.ergGuide}</p>
+                    </div>
+                  </div>
+                  {(formData.isTIH || formData.isWR) && (
+                    <div className="flex gap-2 mt-2">
+                      {formData.isTIH && (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded bg-red-500/20 border border-red-500/30">
+                          <AlertTriangle className="w-3 h-3 text-red-400" />
+                          <span className="text-red-400 text-[10px] font-bold">TOXIC INHALATION HAZARD</span>
+                        </div>
+                      )}
+                      {formData.isWR && (
+                        <div className="flex items-center gap-1 px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30">
+                          <AlertTriangle className="w-3 h-3 text-blue-400" />
+                          <span className="text-blue-400 text-[10px] font-bold">WATER-REACTIVE</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-500 mt-2">This data will be visible to all users: carriers, drivers, brokers, and compliance officers.</p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Product</p><p className="text-white">{formData.productName}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Hazmat Class</p><p className="text-white">{HAZMAT_CLASSES.find(c => c.id === formData.hazmatClass)?.name || formData.hazmatClass}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">UN Number</p><p className="text-white">{formData.unNumber || "N/A"}</p></div>
+                {formData.ergGuide && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">ERG Guide</p><p className="text-white">Guide {formData.ergGuide}</p></div>}
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Volume</p><p className="text-white">{formData.quantity} {formData.quantityUnit || "Gallons"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Weight</p><p className="text-white">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Origin</p><p className="text-white">{formData.origin}</p></div>
@@ -407,7 +480,6 @@ export default function LoadCreationWizard() {
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Equipment</p><p className="text-white">{EQUIPMENT_TYPES.find(e => e.id === formData.equipment)?.name || formData.equipment}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Safety Score</p><p className="text-white">{formData.minSafetyScore || "Any"}</p></div>
               </div>
               {formData.hazmatClass && (
                 <div className="mt-4">

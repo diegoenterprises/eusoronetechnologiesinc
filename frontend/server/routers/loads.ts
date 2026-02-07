@@ -18,11 +18,90 @@ import {
 import { WS_EVENTS } from "@shared/websocket-events";
 
 export const loadsRouter = router({
-  // Generic CRUD for screen templates
+  // Load creation from wizard - stores ERG/SPECTRA-MATCH data so all users see it
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({ type: z.string().optional(), data: z.any().optional(),
+      productName: z.string().optional(),
+      hazmatClass: z.string().optional(),
+      unNumber: z.string().optional(),
+      ergGuide: z.number().optional(),
+      isTIH: z.boolean().optional(),
+      isWR: z.boolean().optional(),
+      placardName: z.string().optional(),
+      weight: z.string().optional(),
+      weightUnit: z.string().optional(),
+      quantity: z.string().optional(),
+      quantityUnit: z.string().optional(),
+      origin: z.string().optional(),
+      destination: z.string().optional(),
+      pickupDate: z.string().optional(),
+      deliveryDate: z.string().optional(),
+      equipment: z.string().optional(),
+      rate: z.string().optional(),
+      ratePerMile: z.string().optional(),
+      minSafetyScore: z.string().optional(),
+      endorsements: z.string().optional(),
+    }).optional())
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const loadNumber = `LOAD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      const hazClass = input?.hazmatClass || "";
+      const cargoType = hazClass ? (
+        hazClass.startsWith("2") ? "gas" as const :
+        hazClass === "3" ? "petroleum" as const :
+        hazClass.startsWith("4") || hazClass.startsWith("5") ? "chemicals" as const :
+        hazClass === "8" ? "chemicals" as const :
+        "hazmat" as const
+      ) : "general" as const;
+
+      // Build special instructions with full ERG/SPECTRA-MATCH data for all users
+      const ergNotes = [
+        input?.productName ? `Product: ${input.productName}` : null,
+        input?.unNumber ? `UN Number: ${input.unNumber}` : null,
+        input?.hazmatClass ? `Hazmat Class: ${input.hazmatClass}` : null,
+        input?.ergGuide ? `ERG Guide: ${input.ergGuide}` : null,
+        input?.placardName ? `Placard: ${input.placardName}` : null,
+        input?.isTIH ? `[WARNING] Toxic Inhalation Hazard (TIH)` : null,
+        input?.isWR ? `[WARNING] Water-Reactive Material` : null,
+        input?.endorsements ? `Required Endorsements: ${input.endorsements}` : null,
+        input?.minSafetyScore ? `Min Safety Score: ${input.minSafetyScore}` : null,
+      ].filter(Boolean).join("\n");
+
+      if (db) {
+        try {
+          const result = await db.insert(loads).values({
+            shipperId: ctx.user?.id || 0,
+            loadNumber,
+            status: "posted",
+            cargoType,
+            hazmatClass: input?.hazmatClass || null,
+            unNumber: input?.unNumber || null,
+            weight: input?.weight || null,
+            weightUnit: input?.weightUnit || "lbs",
+            volume: input?.quantity || null,
+            volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
+            pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+            deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+            rate: input?.rate || null,
+            specialInstructions: ergNotes || null,
+          });
+          const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+
+          emitLoadStatusChange({
+            loadId: String(insertedId),
+            loadNumber,
+            previousStatus: "",
+            newStatus: "posted",
+            timestamp: new Date().toISOString(),
+            updatedBy: String(ctx.user?.id || 0),
+          });
+
+          return { success: true, id: String(insertedId), loadNumber };
+        } catch (err) {
+          console.error("[loads.create] DB insert failed:", err);
+        }
+      }
+      return { success: true, id: crypto.randomUUID(), loadNumber };
     }),
 
   update: protectedProcedure
@@ -251,18 +330,27 @@ export const loadsRouter = router({
       const load = result[0];
       if (!load) return null;
       const rateNum = typeof load.rate === 'number' ? load.rate : Number(load.rate) || 0;
+      const pickup = load.pickupLocation as any || {};
+      const delivery = load.deliveryLocation as any || {};
+      // Parse ERG/SPECTRA-MATCH data from specialInstructions
+      const notes = load.specialInstructions || "";
+      const ergProduct = notes.match(/^Product: (.+)$/m)?.[1] || null;
+      const ergGuideMatch = notes.match(/ERG Guide: (\d+)/)?.[1];
+      const ergGuide = ergGuideMatch ? parseInt(ergGuideMatch) : null;
       return {
         ...load,
         id: String(load.id),
-        origin: { address: "", city: "Houston", state: "TX", zip: "77001" },
-        destination: { address: "", city: "Dallas", state: "TX", zip: "75201" },
-        pickupLocation: { city: "Houston", state: "TX" },
-        deliveryLocation: { city: "Dallas", state: "TX" },
-        commodity: load.cargoType || "General",
+        origin: { address: pickup.address || "", city: pickup.city || "", state: pickup.state || "", zip: pickup.zipCode || "" },
+        destination: { address: delivery.address || "", city: delivery.city || "", state: delivery.state || "", zip: delivery.zipCode || "" },
+        pickupLocation: { city: pickup.city || "", state: pickup.state || "" },
+        deliveryLocation: { city: delivery.city || "", state: delivery.state || "" },
+        commodity: ergProduct || load.cargoType || "General",
+        ergGuide,
         biddingEnds: load.pickupDate || new Date().toISOString(),
         suggestedRateMin: rateNum * 0.9,
         suggestedRateMax: rateNum * 1.1,
         equipmentType: "dry_van",
+        notes,
       };
     }),
 

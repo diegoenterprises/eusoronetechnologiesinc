@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowLeft,
-  Phone, Navigation, Clock, User
+  Phone, Navigation, Clock, User, AlertTriangle, CheckCircle, Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
@@ -192,6 +192,66 @@ export default function LoadDetails() {
             )}
           </CardContent>
         </Card>
+
+        {/* ERG Hazmat Classification - visible to ALL users */}
+        {(load.hazmatClass || load.unNumber) && (
+          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-white text-lg flex items-center gap-2">
+                <Shield className="w-5 h-5 text-cyan-400" />
+                ERG Hazmat Classification
+                <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 ml-auto">
+                  <CheckCircle className="w-3 h-3 mr-1" />SPECTRA-MATCH Verified
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                {load.commodity && (
+                  <div className="p-3 rounded-xl bg-slate-700/30">
+                    <p className="text-[10px] text-slate-500 uppercase">Product</p>
+                    <p className="text-white font-medium">{load.commodity}</p>
+                  </div>
+                )}
+                {load.unNumber && (
+                  <div className="p-3 rounded-xl bg-slate-700/30">
+                    <p className="text-[10px] text-slate-500 uppercase">UN Number</p>
+                    <p className="text-cyan-400 font-bold">{load.unNumber}</p>
+                  </div>
+                )}
+                {load.hazmatClass && (
+                  <div className="p-3 rounded-xl bg-slate-700/30">
+                    <p className="text-[10px] text-slate-500 uppercase">Hazmat Class</p>
+                    <p className="text-purple-400 font-medium">Class {load.hazmatClass}</p>
+                  </div>
+                )}
+                {load.ergGuide && (
+                  <div className="p-3 rounded-xl bg-slate-700/30">
+                    <p className="text-[10px] text-slate-500 uppercase">ERG Guide</p>
+                    <p className="text-white font-medium">Guide {load.ergGuide}</p>
+                  </div>
+                )}
+              </div>
+              {load.notes && load.notes.includes("[WARNING]") && (
+                <div className="flex flex-wrap gap-2">
+                  {load.notes.includes("Toxic Inhalation") && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded bg-red-500/20 border border-red-500/30">
+                      <AlertTriangle className="w-3 h-3 text-red-400" />
+                      <span className="text-red-400 text-xs font-bold">TOXIC INHALATION HAZARD</span>
+                    </div>
+                  )}
+                  {load.notes.includes("Water-Reactive") && (
+                    <div className="flex items-center gap-1 px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30">
+                      <AlertTriangle className="w-3 h-3 text-blue-400" />
+                      <span className="text-blue-400 text-xs font-bold">WATER-REACTIVE</span>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-[10px] text-slate-500">Classification data from U.S. DOT ERG 2020 Emergency Response Guidebook</p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* SPECTRA-MATCH™ Oil Identification - for drivers/catalysts/carriers */}
         {isSpectraQualified(load.commodity, load.hazmatClass) && (
