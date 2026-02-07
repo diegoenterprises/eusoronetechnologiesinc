@@ -858,6 +858,149 @@ button, a, [role="button"] {
   }
 }
 
+/* ================================================================
+   GLOBAL DROPDOWN & AUTOCOMPLETE STYLING
+   Rounded corners, gradient accents, light/dark mode adaptive
+   Applies to: Google Maps autocomplete, select menus, popovers
+   ================================================================ */
+
+/* Google Maps Places Autocomplete */
+.pac-container {
+  border: none !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+  margin-top: 6px !important;
+  font-family: 'Gilroy', system-ui, sans-serif !important;
+  z-index: 9999 !important;
+  padding: 6px !important;
+  background: #ffffff !important;
+}
+.dark .pac-container {
+  background: #0f172a !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(190,1,255,0.12) !important;
+}
+.pac-item {
+  border: none !important;
+  border-radius: 10px !important;
+  padding: 10px 14px !important;
+  margin: 2px 0 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  font-size: 13px !important;
+  color: #334155 !important;
+  line-height: 1.4 !important;
+}
+.dark .pac-item {
+  color: #cbd5e1 !important;
+}
+.pac-item:hover,
+.pac-item.pac-item-selected {
+  background: linear-gradient(135deg, rgba(190,1,255,0.06), rgba(20,115,255,0.06)) !important;
+}
+.dark .pac-item:hover,
+.dark .pac-item.pac-item-selected {
+  background: linear-gradient(135deg, rgba(190,1,255,0.12), rgba(20,115,255,0.12)) !important;
+}
+.pac-item-query {
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  color: #1e293b !important;
+}
+.dark .pac-item-query {
+  color: #f1f5f9 !important;
+}
+.pac-matched {
+  color: #BE01FF !important;
+  font-weight: 700 !important;
+}
+.pac-icon {
+  display: none !important;
+}
+.pac-item::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #BE01FF, #1473FF);
+  margin-right: 10px;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+.pac-logo::after {
+  display: none !important;
+}
+.hdpi.pac-logo::after {
+  display: none !important;
+}
+
+/* Radix / shadcn Select Dropdown */
+[data-radix-popper-content-wrapper] [role="listbox"],
+[data-slot="select-content"],
+[data-slot="popover-content"],
+[data-slot="dropdown-menu-content"] {
+  border-radius: 16px !important;
+  border: none !important;
+  overflow: hidden !important;
+  padding: 6px !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12) !important;
+}
+.dark [data-radix-popper-content-wrapper] [role="listbox"],
+.dark [data-slot="select-content"],
+.dark [data-slot="popover-content"],
+.dark [data-slot="dropdown-menu-content"] {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(190,1,255,0.12) !important;
+}
+
+/* Select / Dropdown menu items */
+[data-slot="select-item"],
+[data-slot="dropdown-menu-item"] {
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  margin: 1px 0 !important;
+  font-size: 13px !important;
+  transition: all 0.15s ease !important;
+  cursor: pointer !important;
+}
+[data-slot="select-item"][data-highlighted],
+[data-slot="select-item"]:hover,
+[data-slot="dropdown-menu-item"][data-highlighted],
+[data-slot="dropdown-menu-item"]:hover {
+  background: linear-gradient(135deg, rgba(190,1,255,0.06), rgba(20,115,255,0.06)) !important;
+}
+.dark [data-slot="select-item"][data-highlighted],
+.dark [data-slot="select-item"]:hover,
+.dark [data-slot="dropdown-menu-item"][data-highlighted],
+.dark [data-slot="dropdown-menu-item"]:hover {
+  background: linear-gradient(135deg, rgba(190,1,255,0.12), rgba(20,115,255,0.12)) !important;
+}
+
+/* Calendar popover specific */
+[data-slot="popover-content"]:has([data-slot="calendar"]) {
+  border-radius: 20px !important;
+  padding: 4px !important;
+}
+
+/* Combobox / Command menu dropdowns */
+[cmdk-list] {
+  padding: 6px !important;
+}
+[cmdk-item] {
+  border-radius: 10px !important;
+  padding: 8px 12px !important;
+  margin: 1px 0 !important;
+  transition: all 0.15s ease !important;
+}
+[cmdk-item][data-selected="true"],
+[cmdk-item]:hover {
+  background: linear-gradient(135deg, rgba(190,1,255,0.06), rgba(20,115,255,0.06)) !important;
+}
+.dark [cmdk-item][data-selected="true"],
+.dark [cmdk-item]:hover {
+  background: linear-gradient(135deg, rgba(190,1,255,0.12), rgba(20,115,255,0.12)) !important;
+}
+
 /* Tablet breakpoint */
 @media (min-width: 640px) and (max-width: 1023px) {
   .grid {
