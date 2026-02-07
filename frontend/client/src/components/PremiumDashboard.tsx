@@ -122,8 +122,25 @@ const WidgetCard: React.FC<{
       
       <div className="relative h-full p-4 overflow-auto">
         {title && (
-          <h3 className="text-lg font-semibold mb-3 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            {title}
+          <h3 className="text-lg font-semibold mb-3 relative">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0"
+              style={{
+                WebkitTextStroke: '1.5px transparent',
+                background: 'linear-gradient(to right, #D1D5DB, #FFFFFF)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              {title}
+            </span>
+            <span
+              className="relative bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
+            >
+              {title}
+            </span>
           </h3>
         )}
         {children}
@@ -445,8 +462,25 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent">
-            Welcome back, {user?.name || 'User'}
+          <h1 className="text-3xl font-bold relative">
+            <span
+              aria-hidden="true"
+              className="absolute inset-0"
+              style={{
+                WebkitTextStroke: '2px transparent',
+                background: 'linear-gradient(to right, #A5F3FC, #E9D5FF, #FFFFFF)',
+                WebkitBackgroundClip: 'text',
+                backgroundClip: 'text',
+                color: 'transparent',
+              }}
+            >
+              Welcome back, {user?.name || 'User'}
+            </span>
+            <span
+              className="relative bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent"
+            >
+              Welcome back, {user?.name || 'User'}
+            </span>
           </h1>
           <p className="text-gray-400 mt-1 flex items-center gap-2">
             <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-sm">
