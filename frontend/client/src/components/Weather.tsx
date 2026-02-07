@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { 
   Cloud, CloudRain, CloudSnow, Sun, CloudDrizzle, 
-  Wind, Droplets, Eye, Gauge, Loader2 
+  Wind, Droplets, Eye, Gauge, Loader2, Settings, MapPin, X 
 } from "lucide-react";
 
 interface WeatherData {
@@ -39,13 +39,20 @@ interface WeatherProps {
   expanded?: boolean; // Show 5-day forecast when expanded
 }
 
-export default function Weather({ location, compact = false, expanded = false }: WeatherProps) {
+export default function Weather({ location: locationProp, compact = false, expanded = false }: WeatherProps) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastDay[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [containerRef, setContainerRef] = useState<HTMLDivElement | null>(null);
   const [isExpanded, setIsExpanded] = useState(expanded);
+  const [showSettings, setShowSettings] = useState(false);
+  const [customLocation, setCustomLocation] = useState<string>(() => {
+    try { return localStorage.getItem('eusotrip_weather_location') || ''; } catch { return ''; }
+  });
+  const [locationInput, setLocationInput] = useState(customLocation);
+
+  const activeLocation = customLocation || locationProp;
 
   // Detect if widget is expanded based on container size
   useEffect(() => {
@@ -61,7 +68,20 @@ export default function Weather({ location, compact = false, expanded = false }:
 
   useEffect(() => {
     fetchWeather();
-  }, [location]);
+  }, [activeLocation]);
+
+  const saveLocation = () => {
+    try { localStorage.setItem('eusotrip_weather_location', locationInput); } catch {}
+    setCustomLocation(locationInput);
+    setShowSettings(false);
+  };
+
+  const clearLocation = () => {
+    try { localStorage.removeItem('eusotrip_weather_location'); } catch {}
+    setCustomLocation('');
+    setLocationInput('');
+    setShowSettings(false);
+  };
 
   const fetchWeather = async () => {
     try {
@@ -75,11 +95,11 @@ export default function Weather({ location, compact = false, expanded = false }:
       let lon: number = -82.4572;
       let cityName: string = "Tampa, US";
       
-      if (location) {
-        // Use provided location - geocode it
+      if (activeLocation) {
+        // Use provided/saved location - geocode it
         try {
           const geoResponse = await fetch(
-            `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(location)}&limit=1&appid=${WEATHER_API_KEY}`
+            `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(activeLocation)}&limit=1&appid=${WEATHER_API_KEY}`
           );
           const geoData = await geoResponse.json();
           if (geoData.length > 0) {
@@ -88,22 +108,38 @@ export default function Weather({ location, compact = false, expanded = false }:
             cityName = `${geoData[0].name}, ${geoData[0].country}`;
           }
         } catch (e) {
-          console.log("Geocoding failed, using default location");
+          console.log("Geocoding failed, using device location");
         }
       } else {
-        // Get user's location via IP geolocation
+        // 1) Try browser geolocation (most accurate - uses device GPS/WiFi)
+        let gotBrowserLocation = false;
         try {
-          const ipGeoResponse = await fetch(
-            `https://api.ipgeolocation.io/ipgeo?apiKey=${GEO_API_KEY}`
-          );
-          if (ipGeoResponse.ok) {
-            const ipGeoData = await ipGeoResponse.json();
-            lat = parseFloat(ipGeoData.latitude);
-            lon = parseFloat(ipGeoData.longitude);
-            cityName = `${ipGeoData.city}, ${ipGeoData.country_code2}`;
-          }
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000, maximumAge: 300000 });
+          });
+          lat = pos.coords.latitude;
+          lon = pos.coords.longitude;
+          cityName = ""; // Will be filled from weather API response
+          gotBrowserLocation = true;
         } catch (e) {
-          console.log("IP geolocation failed, using default location");
+          console.log("Browser geolocation unavailable, trying IP geolocation");
+        }
+
+        // 2) Fallback to IP geolocation
+        if (!gotBrowserLocation) {
+          try {
+            const ipGeoResponse = await fetch(
+              `https://api.ipgeolocation.io/ipgeo?apiKey=${GEO_API_KEY}`
+            );
+            if (ipGeoResponse.ok) {
+              const ipGeoData = await ipGeoResponse.json();
+              lat = parseFloat(ipGeoData.latitude);
+              lon = parseFloat(ipGeoData.longitude);
+              cityName = `${ipGeoData.city}, ${ipGeoData.country_code2}`;
+            }
+          } catch (e) {
+            console.log("IP geolocation failed, using default location");
+          }
         }
       }
       
@@ -253,13 +289,53 @@ export default function Weather({ location, compact = false, expanded = false }:
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
-                Weather
-              </h3>
-              <p className="text-sm text-gray-400">{weather.location}</p>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-500 bg-clip-text text-transparent">
+                  Weather
+                </h3>
+                <button onClick={() => setShowSettings(!showSettings)} className="p-1 rounded-full hover:bg-white/10 transition-colors">
+                  <Settings className="w-4 h-4 text-gray-500 hover:text-gray-300" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-400 flex items-center gap-1">
+                <MapPin className="w-3 h-3" />
+                {weather.location}
+                {customLocation && <span className="text-[10px] text-cyan-400 ml-1">(custom)</span>}
+              </p>
             </div>
             {getWeatherIcon(weather.condition, weather.icon)}
           </div>
+
+          {/* Location Settings Panel */}
+          {showSettings && (
+            <div className="p-3 rounded-xl bg-slate-800/80 border border-slate-700 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold text-gray-300">Set Location</p>
+                <button onClick={() => setShowSettings(false)} className="p-0.5 rounded hover:bg-white/10">
+                  <X className="w-3 h-3 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && saveLocation()}
+                  placeholder="City name (e.g. Houston, TX)"
+                  className="flex-1 px-3 py-1.5 text-sm rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-gray-500 focus:border-cyan-500 focus:outline-none"
+                />
+                <button onClick={saveLocation} className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/30 transition-colors">
+                  Save
+                </button>
+              </div>
+              {customLocation && (
+                <button onClick={clearLocation} className="text-[10px] text-gray-500 hover:text-gray-300 transition-colors">
+                  Reset to device location
+                </button>
+              )}
+              <p className="text-[10px] text-gray-600">Leave blank to auto-detect from your device</p>
+            </div>
+          )}
 
           {/* Temperature */}
           <div className="flex items-baseline gap-2">

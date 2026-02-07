@@ -155,6 +155,7 @@ import AdminTelemetry from "./pages/AdminTelemetry";
 import ZeunBreakdown from "./pages/ZeunBreakdown";
 import ZeunFleetDashboard from "./pages/ZeunFleetDashboard";
 import ZeunAdminDashboard from "./pages/ZeunAdminDashboard";
+import HotZones from "./pages/HotZones";
 
 function Router() {
   // CLEAN ROUTING - NO DUPLICATES
@@ -201,6 +202,8 @@ function Router() {
       <Route path={"/zeun-breakdown"} component={() => (<DashboardLayout><ZeunBreakdown /></DashboardLayout>)} />
       <Route path={"/zeun-fleet"} component={() => (<DashboardLayout><ZeunFleetDashboard /></DashboardLayout>)} />
       <Route path={"/admin/zeun"} component={() => (<DashboardLayout><ZeunAdminDashboard /></DashboardLayout>)} />
+      <Route path={"/hot-zones"} component={() => (<DashboardLayout><HotZones /></DashboardLayout>)} />
+      <Route path={"/market-pricing"} component={() => (<DashboardLayout><HotZones /></DashboardLayout>)} />
 
       {/* ============================================ */}
       {/* SHIPPER ROUTES */}
