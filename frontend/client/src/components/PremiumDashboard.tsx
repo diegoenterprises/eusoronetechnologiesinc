@@ -104,9 +104,11 @@ const WidgetCard: React.FC<{
   onRemove?: () => void; 
   isEditMode?: boolean;
   className?: string;
-}> = ({ children, title, onRemove, isEditMode, className = "" }) => {
+  widgetId?: string;
+}> = ({ children, title, onRemove, isEditMode, className = "", widgetId }) => {
+  const [showSettings, setShowSettings] = useState(false);
   return (
-    <div className={`h-full w-full relative overflow-hidden rounded-2xl ${className}`}>
+    <div className={`h-full w-full relative overflow-hidden rounded-2xl group/widget ${className}`}>
       <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl" />
       <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-cyan-500/10" />
       <div className="absolute inset-0 rounded-2xl border border-white/20 shadow-2xl shadow-purple-500/20" />
@@ -117,6 +119,16 @@ const WidgetCard: React.FC<{
           className="absolute top-3 right-3 z-50 bg-red-500/90 hover:bg-red-600 text-white rounded-full p-1.5 transition-all shadow-lg hover:scale-110"
         >
           <X className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* Settings Gear — visible on hover, top-right */}
+      {!isEditMode && (
+        <button
+          onClick={() => setShowSettings(!showSettings)}
+          className="absolute top-3 right-3 z-40 p-1.5 rounded-full bg-white/5 hover:bg-white/15 opacity-0 group-hover/widget:opacity-100 transition-all duration-200"
+        >
+          <Settings className="w-3.5 h-3.5 text-gray-400 hover:text-white transition-colors" />
         </button>
       )}
       
@@ -143,6 +155,61 @@ const WidgetCard: React.FC<{
             </span>
           </h3>
         )}
+
+        {/* Settings Panel Overlay */}
+        {showSettings && (
+          <div className="absolute inset-0 z-30 bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 overflow-auto animate-fade-in">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                <Settings className="w-4 h-4 text-purple-400" />
+                {title ? `${title} Settings` : 'Widget Settings'}
+              </h4>
+              <button onClick={() => setShowSettings(false)} className="p-1 rounded-full hover:bg-white/10 transition-colors">
+                <X className="w-4 h-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs font-semibold text-gray-300 mb-1">Refresh Interval</p>
+                <select className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:border-purple-500 focus:outline-none">
+                  <option value="30">Every 30 seconds</option>
+                  <option value="60" selected>Every 1 minute</option>
+                  <option value="300">Every 5 minutes</option>
+                  <option value="0">Manual only</option>
+                </select>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs font-semibold text-gray-300 mb-1">Display Mode</p>
+                <div className="flex gap-2">
+                  <button className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-500/20 text-purple-400 border border-purple-500/30">Compact</button>
+                  <button className="flex-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10">Expanded</button>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs font-semibold text-gray-300 mb-1">Notifications</p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" defaultChecked className="w-4 h-4 rounded bg-slate-700 border-slate-600 text-purple-500 focus:ring-purple-500" />
+                  <span className="text-xs text-gray-400">Alert on significant changes</span>
+                </label>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-xs font-semibold text-gray-300 mb-1">Data Source</p>
+                <p className="text-[10px] text-gray-500">Connected to live platform data</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] text-emerald-400 font-semibold">Active</span>
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="w-full mt-4 px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-500 hover:to-blue-500 transition-all"
+            >
+              Done
+            </button>
+          </div>
+        )}
+
         {children}
       </div>
     </div>
