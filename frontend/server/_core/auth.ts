@@ -4,8 +4,12 @@
  */
 
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import type { Request } from "express";
 import { COOKIE_NAME } from "@shared/const";
+import { getDb } from "../db";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "eusotrip-dev-secret-key-change-in-production";
 const TOKEN_EXPIRY = "7d";
@@ -103,6 +107,31 @@ export const authService = {
       "superadmin@eusotrip.com": { id: "superadmin-1", email: "superadmin@eusotrip.com", role: "SUPER_ADMIN", name: "Super Admin" },
     };
 
+    // 1. Check database users first (registered users with bcrypt passwords)
+    try {
+      const db = await getDb();
+      if (db) {
+        const [dbUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+        if (dbUser && dbUser.passwordHash) {
+          const valid = await bcrypt.compare(password, dbUser.passwordHash);
+          if (valid) {
+            const authUser: AuthUser = {
+              id: String(dbUser.id),
+              email: dbUser.email || email,
+              role: dbUser.role || "SHIPPER",
+              name: dbUser.name || "User",
+              companyId: dbUser.companyId ? String(dbUser.companyId) : undefined,
+            };
+            const token = this.createSessionToken(authUser);
+            return { user: authUser, token };
+          }
+        }
+      }
+    } catch (err) {
+      console.warn("[auth] DB login check failed, falling back to test users:", err);
+    }
+
+    // 2. Fall back to test users
     const user = testUsers[email];
     if (!user) {
       return null;

@@ -11,17 +11,25 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
   const openId = String(ctxUser?.id || "");
   const email = ctxUser?.email || "";
 
-  // Try openId first
-  let [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
-  if (row) return row.id;
+  // Try openId first (wrapped in try-catch in case column doesn't exist in DB)
+  try {
+    const [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
+    if (row) return row.id;
+  } catch (err) {
+    console.warn("[ensureUserExists] openId lookup failed, falling back to email:", err);
+  }
 
   // Try email
   if (email) {
-    [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-    if (row) {
-      // Update the openId so future lookups work
-      try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
-      return row.id;
+    try {
+      const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (row) {
+        // Update the openId so future lookups work
+        try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
+        return row.id;
+      }
+    } catch (err) {
+      console.warn("[ensureUserExists] email lookup failed:", err);
     }
   }
 
@@ -40,8 +48,15 @@ async function ensureUserExists(ctxUser: any): Promise<number> {
     // Re-query to get the id
     const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
     return newRow?.id || 0;
-  } catch (err) {
+  } catch (err: any) {
     console.error("[ensureUserExists] Insert failed:", err);
+    // If duplicate key error, try to find user again by email
+    if (email && (err?.code === 'ER_DUP_ENTRY' || err?.message?.includes('Duplicate'))) {
+      try {
+        const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        if (row) return row.id;
+      } catch {}
+    }
     return 0;
   }
 }

@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
@@ -166,89 +166,103 @@ export default function MyLoads() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-slate-800/50 border border-slate-700/50 rounded-lg p-1">
-          <TabsTrigger value="all" className="data-[state=active]:bg-slate-700 rounded-md">ALL ({totalLoads})</TabsTrigger>
-          <TabsTrigger value="draft" className="data-[state=active]:bg-slate-700 rounded-md">DRAFT</TabsTrigger>
-          <TabsTrigger value="posted" className="data-[state=active]:bg-slate-700 rounded-md">POSTED</TabsTrigger>
-          <TabsTrigger value="bidding" className="data-[state=active]:bg-slate-700 rounded-md">BIDDING</TabsTrigger>
-          <TabsTrigger value="assigned" className="data-[state=active]:bg-slate-700 rounded-md">ASSIGNED</TabsTrigger>
-          <TabsTrigger value="in_transit" className="data-[state=active]:bg-slate-700 rounded-md">IN TRANSIT</TabsTrigger>
-          <TabsTrigger value="delivered" className="data-[state=active]:bg-slate-700 rounded-md">DELIVERED</TabsTrigger>
-        </TabsList>
+      {/* Status Filter Tabs */}
+      <div className="flex flex-wrap gap-1.5 p-1 bg-slate-800/50 border border-slate-700/50 rounded-lg">
+        {[
+          { value: "all", label: `ALL (${totalLoads})` },
+          { value: "draft", label: "DRAFT" },
+          { value: "posted", label: "POSTED" },
+          { value: "bidding", label: "BIDDING" },
+          { value: "assigned", label: "ASSIGNED" },
+          { value: "in_transit", label: "IN TRANSIT" },
+          { value: "delivered", label: "DELIVERED" },
+        ].map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => setActiveTab(tab.value)}
+            className={cn(
+              "px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              activeTab === tab.value
+                ? "bg-slate-700 text-white shadow-sm"
+                : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <TabsContent value={activeTab} className="mt-6">
-          <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-            <CardContent className="p-0">
-              {loadsQuery.isLoading ? (
-                <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
-              ) : filteredLoads?.length === 0 ? (
-                <div className="text-center py-16">
-                  <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
-                    <Package className="w-10 h-10 text-slate-500" />
-                  </div>
-                  <p className="text-slate-400 text-lg">No loads found</p>
-                  <p className="text-slate-500 text-sm mt-1">Create your first load to get started</p>
-                  <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/loads/create")}>
-                    <Plus className="w-4 h-4 mr-2" />Create New Load
-                  </Button>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-700/50">
-                  {filteredLoads?.map((load: any) => (
-                    <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <div className="p-3 rounded-xl bg-blue-500/20">
-                            <Package className="w-6 h-6 text-blue-400" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-3 mb-2">
-                              {getStatusBadge(load.status)}
-                              <span className="text-white font-bold">{load.loadNumber || `#LOAD-${load.id?.slice(0, 6)}`}</span>
-                              <span className="text-slate-500 text-sm">{load.createdAt}</span>
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-green-400" />
-                                {load.origin?.city || "N/A"}, {load.origin?.state || ""}
-                              </span>
-                              <span className="text-slate-600">→</span>
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-red-400" />
-                                {load.destination?.city || "N/A"}, {load.destination?.state || ""}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs text-slate-500">
-                              <span>{load.equipmentType || "General"}</span>
-                              <span>{load.weight?.toLocaleString() || 0} lbs</span>
-                              <span>{load.distance || 0} miles</span>
-                              <span>{load.pickupDate}</span>
-                            </div>
-                          </div>
+      {/* Load List */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardContent className="p-0">
+          {loadsQuery.isLoading ? (
+            <div className="p-4 space-y-4">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-28 w-full rounded-xl" />)}</div>
+          ) : filteredLoads?.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="p-4 rounded-full bg-slate-700/50 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+                <Package className="w-10 h-10 text-slate-500" />
+              </div>
+              <p className="text-slate-400 text-lg">No loads found</p>
+              <p className="text-slate-500 text-sm mt-1">Create your first load to get started</p>
+              <Button className="mt-4 bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/loads/create")}>
+                <Plus className="w-4 h-4 mr-2" />Create New Load
+              </Button>
+            </div>
+          ) : (
+            <div className="divide-y divide-slate-700/50">
+              {filteredLoads?.map((load: any) => (
+                <div key={load.id} className="p-4 hover:bg-slate-700/20 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-xl bg-blue-500/20">
+                        <Package className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          {getStatusBadge(load.status)}
+                          <span className="text-white font-bold">{load.loadNumber || `#LOAD-${load.id?.slice(0, 6)}`}</span>
+                          <span className="text-slate-500 text-sm">{load.createdAt}</span>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <div className="text-right">
-                            <p className="text-emerald-400 font-bold text-xl">${(load.rate || 0).toLocaleString()}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation(`/loads/${load.id}`)}>
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </div>
+                        <div className="flex items-center gap-4 text-sm text-slate-400 mb-2">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-green-400" />
+                            {load.origin?.city || "N/A"}, {load.origin?.state || ""}
+                          </span>
+                          <span className="text-slate-600">→</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-red-400" />
+                            {load.destination?.city || "N/A"}, {load.destination?.state || ""}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-slate-500">
+                          <span>{load.equipmentType || "General"}</span>
+                          <span>{load.weight?.toLocaleString() || 0} lbs</span>
+                          <span>{load.distance || 0} miles</span>
+                          <span>{load.pickupDate}</span>
                         </div>
                       </div>
                     </div>
-                  ))}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-emerald-400 font-bold text-xl">${(load.rate || 0).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation(`/loads/${load.id}`)}>
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white">
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

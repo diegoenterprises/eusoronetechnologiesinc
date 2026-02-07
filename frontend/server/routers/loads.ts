@@ -24,16 +24,24 @@ async function resolveUserId(ctxUser: any): Promise<number> {
   const openId = String(ctxUser?.id || "");
   const email = ctxUser?.email || "";
 
-  // Try openId first
-  let [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
-  if (row) return row.id;
+  // Try openId first (wrapped in try-catch in case column doesn't exist)
+  try {
+    const [row] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
+    if (row) return row.id;
+  } catch (err) {
+    console.warn("[resolveUserId] openId lookup failed, falling back to email:", err);
+  }
 
   // Fallback: try email
   if (email) {
-    [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
-    if (row) {
-      try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
-      return row.id;
+    try {
+      const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (row) {
+        try { await db.update(users).set({ openId }).where(eq(users.id, row.id)); } catch {}
+        return row.id;
+      }
+    } catch (err) {
+      console.warn("[resolveUserId] email lookup failed:", err);
     }
   }
 
@@ -49,7 +57,14 @@ async function resolveUserId(ctxUser: any): Promise<number> {
     });
     const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.openId, openId)).limit(1);
     return newRow?.id || 0;
-  } catch {
+  } catch (err: any) {
+    // If duplicate key, find user by email
+    if (email && (err?.code === 'ER_DUP_ENTRY' || err?.message?.includes('Duplicate'))) {
+      try {
+        const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        if (row) return row.id;
+      } catch {}
+    }
     return 0;
   }
 }
