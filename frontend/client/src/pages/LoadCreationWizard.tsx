@@ -598,9 +598,9 @@ export default function LoadCreationWizard() {
                   <div className="flex items-center justify-between">
                     <div><p className="text-slate-400 text-xs">Route Distance</p><p className="text-white text-2xl font-bold">{formData.distance} miles</p></div>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                      <div className="w-16 h-1 rounded bg-gradient-to-r from-[#BE01FF] to-[#1473FF]" />
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#1473FF" }} />
+                      <div className="w-16 h-1 rounded bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#BE01FF" }} />
                     </div>
                   </div>
                 </div>
@@ -678,6 +678,93 @@ export default function LoadCreationWizard() {
                   </div>
                 </div>
               )}
+
+              {/* ESANG AI Rate Intelligence */}
+              {formData.distance && (formData.rate || formData.ratePerMile) && (() => {
+                const baseRate = selectedTrailer?.hazmat ? 4.20 : selectedTrailer?.equipment === "reefer" ? 3.10 : selectedTrailer?.equipment === "flatbed" ? 2.90 : 2.50;
+                const distFactor = formData.distance < 200 ? 1.25 : formData.distance < 500 ? 1.0 : 0.85;
+                const marketRPM = Math.round(baseRate * distFactor * 100) / 100;
+                const marketLow = Math.round(marketRPM * 0.75 * 100) / 100;
+                const marketHigh = Math.round(marketRPM * 1.30 * 100) / 100;
+                const userRPM = Number(formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2));
+                const marketTotal = Math.round(marketRPM * formData.distance);
+
+                const ratio = userRPM / marketRPM;
+                const clampedRatio = Math.max(0.5, Math.min(1.5, ratio));
+                const gaugePercent = ((clampedRatio - 0.5) / 1.0) * 100;
+
+                const ratingLabel = ratio < 0.80 ? "Too Low" : ratio < 0.95 ? "Below Market" : ratio <= 1.10 ? "Good Offer" : ratio <= 1.25 ? "Above Market" : "Too High";
+                const ratingColor = ratio < 0.80 ? "#ef4444" : ratio < 0.95 ? "#f59e0b" : ratio <= 1.10 ? "#10b981" : ratio <= 1.25 ? "#f59e0b" : "#ef4444";
+
+                const angle = -90 + (gaugePercent / 100) * 180;
+                const needleRad = (angle * Math.PI) / 180;
+                const nx = 100 + 65 * Math.cos(needleRad);
+                const ny = 100 + 65 * Math.sin(needleRad);
+
+                return (
+                  <div className="p-5 rounded-xl bg-gradient-to-br from-slate-800/80 via-purple-900/20 to-slate-800/80 border border-purple-500/20">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
+                    </div>
+
+                    <div className="flex flex-col items-center">
+                      <svg viewBox="0 10 200 110" className="w-48 h-28">
+                        <defs>
+                          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#ef4444" />
+                            <stop offset="25%" stopColor="#f59e0b" />
+                            <stop offset="50%" stopColor="#10b981" />
+                            <stop offset="75%" stopColor="#f59e0b" />
+                            <stop offset="100%" stopColor="#ef4444" />
+                          </linearGradient>
+                        </defs>
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(100,116,139,0.2)" strokeWidth="14" strokeLinecap="round" />
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="14" strokeLinecap="round" />
+                        <line x1="100" y1="100" x2={nx} y2={ny} stroke="white" strokeWidth="3" strokeLinecap="round" />
+                        <circle cx="100" cy="100" r="6" fill={ratingColor} stroke="white" strokeWidth="2" />
+                        <text x="100" y="90" textAnchor="middle" fill="white" fontSize="20" fontWeight="bold">
+                          ${userRPM.toFixed(2)}
+                        </text>
+                        <text x="100" y="105" textAnchor="middle" fill="#94a3b8" fontSize="9">/mile</text>
+                      </svg>
+
+                      <div className="flex items-center gap-1 mt-1">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ratingColor }} />
+                        <span className="text-sm font-bold" style={{ color: ratingColor }}>{ratingLabel}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between mt-4 px-2">
+                      <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                        ratio < 0.80 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500")}>
+                        Too Low
+                      </button>
+                      <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-500/50 bg-emerald-500/15 text-emerald-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500")}>
+                        Good Offer
+                      </button>
+                      <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
+                        ratio > 1.25 ? "border-red-500/50 bg-red-500/15 text-red-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500")}>
+                        Too High
+                      </button>
+                    </div>
+
+                    <div className="mt-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="w-3 h-3 text-purple-400" />
+                        <span className="text-[11px] font-bold text-purple-300">ESANG Recommendation</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div><p className="text-[10px] text-slate-500">Market Low</p><p className="text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-500">Market Avg</p><p className="text-emerald-400 text-xs font-bold">${marketRPM}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-500">Market High</p><p className="text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
+                      </div>
+                      <p className="text-[10px] text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
