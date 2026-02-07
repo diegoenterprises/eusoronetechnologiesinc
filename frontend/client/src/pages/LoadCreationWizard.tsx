@@ -712,7 +712,7 @@ export default function LoadCreationWizard() {
                     </div>
 
                     <div className="flex flex-col items-center">
-                      <svg viewBox="0 10 200 110" className="w-48 h-28">
+                      <svg viewBox="0 0 200 115" className="w-52 h-32">
                         <defs>
                           <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#fca5a5" />
@@ -721,19 +721,23 @@ export default function LoadCreationWizard() {
                             <stop offset="75%" stopColor="#fde68a" />
                             <stop offset="100%" stopColor="#fca5a5" />
                           </linearGradient>
+                          <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#BE01FF" />
+                            <stop offset="100%" stopColor="#1473FF" />
+                          </linearGradient>
                         </defs>
-                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" className="stroke-slate-200 dark:stroke-slate-700/40" strokeWidth="14" strokeLinecap="round" />
-                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="14" strokeLinecap="round" />
-                        <line x1="100" y1="100" x2={nx} y2={ny} className="stroke-slate-800 dark:stroke-white" strokeWidth="3" strokeLinecap="round" />
-                        <circle cx="100" cy="100" r="6" fill={pastelRatingColor} className="stroke-slate-800 dark:stroke-white" strokeWidth="2" />
-                        <text x="100" y="90" textAnchor="middle" className="fill-slate-900 dark:fill-white" fontSize="20" fontWeight="bold">
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" className="stroke-slate-100 dark:stroke-slate-800" strokeWidth="12" strokeLinecap="round" />
+                        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" strokeWidth="12" strokeLinecap="round" />
+                        <line x1="100" y1="100" x2={nx} y2={ny} className="stroke-slate-700 dark:stroke-white" strokeWidth="2.5" strokeLinecap="round" />
+                        <circle cx="100" cy="100" r="5" fill={pastelRatingColor} className="stroke-slate-700 dark:stroke-white" strokeWidth="1.5" />
+                        <text x="100" y="88" textAnchor="middle" className="fill-slate-900 dark:fill-white" fontSize="22" fontWeight="700" fontFamily="system-ui, sans-serif">
                           ${userRPM.toFixed(2)}
                         </text>
-                        <text x="100" y="105" textAnchor="middle" className="fill-slate-500 dark:fill-slate-400" fontSize="9">/mile</text>
                       </svg>
+                      <span className="text-xs font-semibold -mt-3 bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">/mile</span>
 
-                      <div className="flex items-center gap-1 mt-1">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: pastelRatingColor }} />
+                      <div className="flex items-center gap-1.5 mt-2">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: pastelRatingColor }} />
                         <span className="text-sm font-bold" style={{ color: ratingColor }}>{ratingLabel}</span>
                       </div>
                     </div>
