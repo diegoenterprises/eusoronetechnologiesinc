@@ -122,16 +122,15 @@ export default function LoadCreationWizard() {
     { enabled: unSearchQuery.length >= 2, staleTime: 30000 }
   );
 
-  // Load Google Maps Places API
+  // Detect Google Maps API loaded from index.html
   useEffect(() => {
-    const key = (import.meta as any).env?.VITE_GOOGLE_MAPS_KEY;
-    if ((window as any).google?.maps?.places) { setMapsLoaded(true); return; }
-    if (!key) return;
-    const s = document.createElement("script");
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`;
-    s.async = true;
-    s.onload = () => setMapsLoaded(true);
-    document.head.appendChild(s);
+    const check = () => !!(window as any).google?.maps?.places;
+    if (check()) { setMapsLoaded(true); return; }
+    // Poll for the async script from index.html to finish loading
+    const interval = setInterval(() => {
+      if (check()) { setMapsLoaded(true); clearInterval(interval); }
+    }, 200);
+    return () => clearInterval(interval);
   }, []);
 
   // Attach Places Autocomplete when maps loaded and on step 3
