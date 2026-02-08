@@ -242,6 +242,8 @@ export const loads = mysqlTable(
     distanceUnit: varchar("distanceUnit", { length: 10 }).default("miles"),
     rate: decimal("rate", { precision: 10, scale: 2 }),
     currency: varchar("currency", { length: 3 }).default("USD"),
+    equipmentType: varchar("equipmentType", { length: 50 }),
+    compartments: int("compartments").default(1),
     specialInstructions: text("specialInstructions"),
     documents: json("documents").$type<string[]>(),
     currentLocation: json("currentLocation").$type<{ lat: number; lng: number }>(),

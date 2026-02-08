@@ -295,10 +295,17 @@ export default function MyLoads() {
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-slate-400" />
                         <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>
-                          {load.equipmentType === "tanker" ? "Tanker Truck" : load.equipmentType === "flatbed" ? "Flatbed" : "Semi Truck"}
+                          {load.equipmentType === "tank" || load.equipmentType === "liquid_tank" ? "Liquid Tank Trailer"
+                            : load.equipmentType === "tanker" || load.equipmentType === "gas_tank" ? "Gas Tank Trailer"
+                            : load.equipmentType === "flatbed" ? "Flatbed"
+                            : load.equipmentType === "reefer" ? "Refrigerated (Reefer)"
+                            : load.equipmentType === "dry-van" || load.equipmentType === "dry_van" ? "Dry Van"
+                            : load.equipmentType === "hopper" ? "Dry Bulk / Hopper"
+                            : load.equipmentType === "cryogenic" ? "Cryogenic Tank"
+                            : "Semi Truck"}
                         </span>
                         <span className="text-slate-400 text-xs">|</span>
-                        <span className="text-xs text-slate-400">{load.volumeUnit === "bbl" ? "Multi compartment" : "Single compartment"}</span>
+                        <span className="text-xs text-slate-400">{(load.compartments || 1) > 1 ? `${load.compartments} compartments` : "Single compartment"}</span>
                       </div>
                       <Badge className={cn("border-0 text-xs font-bold px-3 py-1 rounded-md", statusCfg.bg, statusCfg.text)}>
                         {statusCfg.label}

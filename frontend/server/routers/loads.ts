@@ -95,6 +95,7 @@ export const loadsRouter = router({
       pickupDate: z.string().optional(),
       deliveryDate: z.string().optional(),
       equipment: z.string().optional(),
+      compartments: z.number().optional(),
       rate: z.string().optional(),
       ratePerMile: z.string().optional(),
       minSafetyScore: z.string().optional(),
@@ -162,6 +163,8 @@ export const loadsRouter = router({
         pickupDate: input?.pickupDate ? new Date(input.pickupDate) : undefined,
         deliveryDate: input?.deliveryDate ? new Date(input.deliveryDate) : undefined,
         rate: input?.rate || null,
+        equipmentType: input?.equipment || null,
+        compartments: input?.compartments || 1,
         specialInstructions: ergNotes || null,
       });
       const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
@@ -372,32 +375,29 @@ export const loadsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const conditions: string[] = [];
+      // Build proper Drizzle conditions (not raw SQL strings)
+      const filters: any[] = [];
 
       // If marketplace mode, show ALL loads (for Load Board / Find Loads)
       // Otherwise filter by the current user's shipperId (for My Loads)
       if (!input.marketplace) {
         const dbUserId = await resolveUserId(ctx.user);
-        conditions.push(`\`shipperId\` = ${dbUserId}`);
+        filters.push(eq(loads.shipperId, dbUserId));
       }
       if (input.status) {
-        conditions.push(`\`status\` = '${input.status}'`);
+        filters.push(eq(loads.status, input.status as any));
       }
       if (input.date) {
         // Loads appear ONLY on their pickupDate. If pickupDate is NULL, fall back to createdAt.
-        conditions.push(`DATE(COALESCE(\`pickupDate\`, \`createdAt\`)) = '${input.date}'`);
+        filters.push(sql`DATE(COALESCE(${loads.pickupDate}, ${loads.createdAt})) = ${input.date}`);
       }
 
-      const whereClause = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
-      console.log(`[loads.list] WHERE ${whereClause} | date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
+      console.log(`[loads.list] filters=${filters.length} date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
 
-      let query = db
+      const results = await db
         .select()
         .from(loads)
-        .where(sql.raw(whereClause))
-        .$dynamic();
-
-      const results = await query
+        .where(filters.length > 0 ? and(...filters) : undefined)
         .orderBy(desc(loads.createdAt))
         .limit(input.limit)
         .offset(input.offset);

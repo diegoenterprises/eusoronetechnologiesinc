@@ -256,6 +256,7 @@ export default function LoadCreationWizard() {
       pickupDate: formData.pickupDate,
       deliveryDate: formData.deliveryDate,
       equipment: selectedTrailer?.equipment || formData.equipment,
+      compartments: formData.compartments || 1,
       rate: formData.rate,
       ratePerMile: formData.ratePerMile,
       minSafetyScore: formData.minSafetyScore,
@@ -536,6 +537,30 @@ export default function LoadCreationWizard() {
                   </div>
                 </div>
               </div>
+              {/* Compartment selector for tanker trailers */}
+              {isLiquidOrGas && (
+                <div>
+                  <label className="text-sm text-slate-400 mb-1 block">Number of Compartments</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button
+                        key={n}
+                        onClick={() => updateField("compartments", n)}
+                        className={cn(
+                          "flex-1 py-3 rounded-xl text-sm font-bold transition-all border",
+                          (formData.compartments || 1) === n
+                            ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent shadow-lg"
+                            : "bg-slate-700/50 border-slate-600/50 text-slate-400 hover:bg-slate-700"
+                        )}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1">{(formData.compartments || 1) > 1 ? `Multi-compartment: ${formData.compartments} separate cargo sections` : "Single compartment tanker"}</p>
+                </div>
+              )}
+
               <div className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/30">
                 <div className="flex items-center gap-2 mb-2"><Info className="w-4 h-4 text-cyan-400" /><span className="text-sm text-slate-400">Quick Reference -- {selectedTrailer?.name}</span></div>
                 <div className="grid grid-cols-2 gap-4 text-xs text-slate-500">
