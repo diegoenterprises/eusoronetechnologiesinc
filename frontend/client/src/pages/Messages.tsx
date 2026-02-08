@@ -15,7 +15,7 @@ import { trpc } from "@/lib/trpc";
 import {
   MessageSquare, Search, Send, Users, Plus, X, Phone,
   Check, CheckCheck, Loader2, AlertTriangle, ArrowLeft,
-  User, Trash2, Archive, MoreVertical, Truck, Shield
+  User, Trash2, Archive, MoreVertical, Truck, Shield, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -28,6 +28,10 @@ export default function Messages() {
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentNote, setPaymentNote] = useState("");
+  const [paymentType, setPaymentType] = useState<"send" | "request">("send");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -89,6 +93,21 @@ export default function Messages() {
       conversationsQuery.refetch();
       toast.success("Conversation archived");
     },
+  });
+
+  const sendPaymentMutation = (trpc as any).messages.sendPayment.useMutation({
+    onSuccess: (data: any) => {
+      setShowPaymentModal(false);
+      setPaymentAmount("");
+      setPaymentNote("");
+      messagesQuery.refetch();
+      conversationsQuery.refetch();
+      toast.success(
+        data.type === "payment_sent" ? `$${data.amount.toFixed(2)} sent` : `$${data.amount.toFixed(2)} requested`,
+        { description: data.type === "payment_sent" ? "Payment sent via Stripe" : "Payment request sent" }
+      );
+    },
+    onError: (err: any) => toast.error("Payment failed", { description: err.message }),
   });
 
   // ── Effects ──
@@ -357,6 +376,9 @@ export default function Messages() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => setShowPaymentModal(true)} className="text-slate-400 hover:text-emerald-400 rounded-xl" title="Send / Request Money">
+                      <DollarSign className="w-4 h-4" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={handlePhoneCall} className="text-slate-400 hover:text-emerald-400 rounded-xl">
                       <Phone className="w-4 h-4" />
                     </Button>
@@ -398,14 +420,62 @@ export default function Messages() {
                           {showName && !message.isOwn && (
                             <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
                           )}
-                          <div className={cn(
-                            "rounded-2xl px-4 py-2.5",
-                            message.isOwn
-                              ? "bg-gradient-to-r from-[#1473FF] to-[#1473FF]/90 text-white rounded-br-md"
-                              : "bg-slate-700/60 text-slate-100 rounded-bl-md"
-                          )}>
-                            <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
-                          </div>
+
+                          {/* Payment message card */}
+                          {(message.type === "payment_sent" || message.type === "payment_request") ? (
+                            <div className={cn(
+                              "rounded-2xl p-4 border",
+                              message.type === "payment_sent"
+                                ? "bg-gradient-to-br from-emerald-500/15 to-emerald-600/10 border-emerald-500/30"
+                                : "bg-gradient-to-br from-amber-500/15 to-orange-500/10 border-amber-500/30"
+                            )}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className={cn(
+                                  "w-8 h-8 rounded-full flex items-center justify-center",
+                                  message.type === "payment_sent" ? "bg-emerald-500/20" : "bg-amber-500/20"
+                                )}>
+                                  {message.type === "payment_sent"
+                                    ? <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                                    : <ArrowDownLeft className="w-4 h-4 text-amber-400" />}
+                                </div>
+                                <div>
+                                  <p className={cn("text-xs font-semibold", message.type === "payment_sent" ? "text-emerald-400" : "text-amber-400")}>
+                                    {message.type === "payment_sent" ? "Payment Sent" : "Payment Request"}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500">via Stripe</p>
+                                </div>
+                              </div>
+                              <p className="text-white text-xl font-bold">
+                                ${(message.metadata?.amount || 0).toFixed(2)}
+                                <span className="text-xs text-slate-400 font-normal ml-1">{message.metadata?.currency || "USD"}</span>
+                              </p>
+                              {message.metadata?.note && (
+                                <p className="text-slate-400 text-xs mt-1.5 italic">"{message.metadata.note}"</p>
+                              )}
+                              <div className="flex items-center gap-1.5 mt-2">
+                                <div className={cn(
+                                  "w-1.5 h-1.5 rounded-full",
+                                  message.metadata?.status === "completed" ? "bg-emerald-400" : "bg-amber-400"
+                                )} />
+                                <span className={cn(
+                                  "text-[10px] font-medium",
+                                  message.metadata?.status === "completed" ? "text-emerald-400" : "text-amber-400"
+                                )}>
+                                  {message.metadata?.status === "completed" ? "Completed" : "Pending"}
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={cn(
+                              "rounded-2xl px-4 py-2.5",
+                              message.isOwn
+                                ? "bg-gradient-to-r from-[#1473FF] to-[#1473FF]/90 text-white rounded-br-md"
+                                : "bg-slate-700/60 text-slate-100 rounded-bl-md"
+                            )}>
+                              <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                            </div>
+                          )}
+
                           <div className={cn("flex items-center gap-1 mt-0.5 px-1", message.isOwn ? "justify-end" : "justify-start")}>
                             <span className="text-[10px] text-slate-600">{formatTime(message.timestamp)}</span>
                             {message.isOwn && (
@@ -425,6 +495,15 @@ export default function Messages() {
               {/* Message Input */}
               <div className="p-4 border-t border-slate-700/50">
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowPaymentModal(true)}
+                    className="rounded-xl h-10 w-10 p-0 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 flex-shrink-0"
+                    title="Send or Request Money"
+                  >
+                    <DollarSign className="w-5 h-5" />
+                  </Button>
                   <Input
                     ref={inputRef}
                     value={newMessage}
@@ -456,6 +535,106 @@ export default function Messages() {
           )}
         </Card>
       </div>
+
+      {/* ═══ Payment Modal (Apple Pay / Cash App style) ═══ */}
+      {showPaymentModal && selectedConversation && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowPaymentModal(false)}>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                  <DollarSign className="w-4 h-4 text-white" />
+                </div>
+                <h2 className="text-lg font-bold text-white">Send / Request</h2>
+              </div>
+              <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowPaymentModal(false)}>
+                <X className="w-4 h-4 text-slate-400" />
+              </Button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* Type toggle */}
+              <div className="flex gap-2 p-1 bg-slate-700/30 rounded-xl">
+                <button
+                  onClick={() => setPaymentType("send")}
+                  className={cn("flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2",
+                    paymentType === "send" ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow" : "text-slate-400"
+                  )}
+                >
+                  <ArrowUpRight className="w-4 h-4" /> Send
+                </button>
+                <button
+                  onClick={() => setPaymentType("request")}
+                  className={cn("flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2",
+                    paymentType === "request" ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow" : "text-slate-400"
+                  )}
+                >
+                  <ArrowDownLeft className="w-4 h-4" /> Request
+                </button>
+              </div>
+
+              {/* Amount */}
+              <div className="text-center py-4">
+                <div className="flex items-center justify-center gap-1">
+                  <span className="text-3xl font-bold text-slate-500">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="text-4xl font-bold text-white bg-transparent border-none outline-none text-center w-40 placeholder:text-slate-600"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-slate-500 text-xs mt-1">USD</p>
+              </div>
+
+              {/* Note */}
+              <Input
+                value={paymentNote}
+                onChange={(e: any) => setPaymentNote(e.target.value)}
+                placeholder="Add a note (optional)"
+                className="bg-slate-700/50 border-slate-600/50 rounded-xl text-sm"
+              />
+
+              {/* Stripe badge */}
+              <div className="flex items-center justify-center gap-2 text-slate-500 text-[10px]">
+                <CreditCard className="w-3 h-3" />
+                <span>Powered by Stripe · Secure payments</span>
+              </div>
+
+              {/* Submit */}
+              <Button
+                onClick={() => {
+                  if (!paymentAmount || Number(paymentAmount) <= 0) { toast.error("Enter an amount"); return; }
+                  sendPaymentMutation.mutate({
+                    conversationId: selectedConversation,
+                    amount: Number(paymentAmount),
+                    note: paymentNote || undefined,
+                    type: paymentType,
+                  });
+                }}
+                disabled={!paymentAmount || Number(paymentAmount) <= 0 || sendPaymentMutation.isPending}
+                className={cn(
+                  "w-full rounded-xl h-12 text-white font-semibold text-base",
+                  paymentType === "send"
+                    ? "bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700"
+                    : "bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                )}
+              >
+                {sendPaymentMutation.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : paymentType === "send" ? (
+                  <><ArrowUpRight className="w-5 h-5 mr-2" /> Send ${paymentAmount || "0.00"}</>
+                ) : (
+                  <><ArrowDownLeft className="w-5 h-5 mr-2" /> Request ${paymentAmount || "0.00"}</>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ═══ New Conversation Modal ═══ */}
       {showNewConversation && (

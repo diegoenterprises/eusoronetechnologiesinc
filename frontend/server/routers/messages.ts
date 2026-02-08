@@ -741,4 +741,85 @@ export const messagesRouter = router({
       if (!db) return { conversations: [], total: 0, unreadTotal: 0 };
       return { conversations: [], total: 0, unreadTotal: 0 };
     }),
+
+  /**
+   * Send a payment message (like Apple Pay / Cash App)
+   * Creates a message with type payment_sent or payment_request
+   * Metadata stores amount, currency, note, and status
+   */
+  sendPayment: protectedProcedure
+    .input(z.object({
+      conversationId: z.string(),
+      amount: z.number().min(0.01),
+      currency: z.string().default("USD"),
+      note: z.string().optional(),
+      type: z.enum(["send", "request"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      try {
+        const userId = await resolveUserId(ctx.user);
+        const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
+        if (!convId) throw new Error("Invalid conversation ID");
+
+        const [sender] = await db.select({ name: users.name, email: users.email })
+          .from(users).where(eq(users.id, userId)).limit(1);
+
+        const messageType = input.type === "send" ? "payment_sent" : "payment_request";
+        const content = input.type === "send"
+          ? `💰 Sent $${input.amount.toFixed(2)} ${input.currency}${input.note ? ` — ${input.note}` : ""}`
+          : `🔔 Requested $${input.amount.toFixed(2)} ${input.currency}${input.note ? ` — ${input.note}` : ""}`;
+
+        const metadata = {
+          amount: input.amount,
+          currency: input.currency,
+          note: input.note || "",
+          status: input.type === "send" ? "completed" : "pending",
+          senderName: sender?.name || "User",
+          timestamp: new Date().toISOString(),
+        };
+
+        const [result] = await db.insert(messages).values({
+          conversationId: convId,
+          senderId: userId,
+          messageType: messageType as any,
+          content,
+          metadata,
+        });
+
+        const msgId = (result as any).insertId;
+
+        // Update conversation timestamp
+        await db.execute(sql`UPDATE conversations SET last_message_at = NOW(), updated_at = NOW() WHERE id = ${convId}`);
+
+        // Increment unread for other participants
+        await db.execute(sql`UPDATE conversation_participants SET unread_count = unread_count + 1 WHERE conversation_id = ${convId} AND user_id != ${userId} AND left_at IS NULL`);
+
+        // Emit real-time event
+        try {
+          emitMessage({
+            conversationId: String(convId),
+            messageId: String(msgId),
+            senderId: String(userId),
+            senderName: sender?.name || "User",
+            content,
+            messageType,
+            timestamp: new Date().toISOString(),
+          } as any);
+        } catch {}
+
+        return {
+          id: String(msgId),
+          type: messageType,
+          amount: input.amount,
+          currency: input.currency,
+          status: metadata.status,
+        };
+      } catch (error) {
+        console.error("[Messages] sendPayment error:", error);
+        throw new Error("Failed to send payment");
+      }
+    }),
 });
