@@ -314,7 +314,7 @@ export default function MyLoads() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xl font-bold text-green-500">${(load.rate || 0).toLocaleString()}</p>
+                      <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
                     </div>
 
                     {/* Assignment Info */}
@@ -331,19 +331,33 @@ export default function MyLoads() {
                     <div className="flex items-center justify-between">
                       {/* Origin */}
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-green-500" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF] to-[#4A90FF] flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-white" />
                         </div>
                         <div>
                           <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
                         </div>
                       </div>
 
-                      {/* Dashed Route Line */}
+                      {/* Dashed Route Line — gradient blue→purple */}
                       <div className="flex-1 mx-4 flex items-center">
-                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
-                        <Navigation className={cn("w-4 h-4 mx-1 rotate-90", isActive ? "text-green-500" : "text-slate-400")} />
-                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
+                        <div
+                          className="flex-1 h-[2px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(to right, #1473FF, #BE01FF)',
+                            WebkitMaskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                            maskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                          }}
+                        />
+                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-[#8B5CF6]" />
+                        <div
+                          className="flex-1 h-[2px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(to right, #6C47FF, #BE01FF)',
+                            WebkitMaskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                            maskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                          }}
+                        />
                       </div>
 
                       {/* Destination */}
@@ -351,8 +365,8 @@ export default function MyLoads() {
                         <div>
                           <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
                         </div>
-                        <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center">
-                          <Building2 className="w-4 h-4 text-red-500" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#BE01FF] flex items-center justify-center">
+                          <Building2 className="w-4 h-4 text-white" />
                         </div>
                       </div>
                     </div>
