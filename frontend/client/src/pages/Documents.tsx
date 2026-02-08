@@ -25,16 +25,16 @@ import { cn } from "@/lib/utils";
 // CATEGORY DEFINITIONS — single source of truth for the whole platform
 // ---------------------------------------------------------------------------
 const DOC_CATEGORIES = [
-  { id: "all",         label: "All Documents",     icon: Folder,         color: "blue" },
-  { id: "insurance",   label: "Insurance",         icon: Shield,         color: "emerald" },
-  { id: "permits",     label: "Permits & Authority",icon: ClipboardList, color: "purple" },
-  { id: "compliance",  label: "Compliance",         icon: CheckCircle,   color: "cyan" },
-  { id: "freight",     label: "Freight Documents",  icon: Truck,         color: "orange" },
-  { id: "financial",   label: "Financial",          icon: CreditCard,    color: "green" },
-  { id: "contracts",   label: "Contracts",          icon: FileSignature, color: "pink" },
-  { id: "company",     label: "Company",            icon: Building2,     color: "indigo" },
-  { id: "vehicle",     label: "Vehicle",            icon: Truck,         color: "amber" },
-  { id: "other",       label: "Other",              icon: FileText,      color: "slate" },
+  { id: "all",         label: "All Documents",       icon: Folder,         color: "blue" },
+  { id: "compliance",  label: "Compliance & Certs",  icon: CheckCircle,   color: "cyan" },
+  { id: "insurance",   label: "Insurance",           icon: Shield,         color: "emerald" },
+  { id: "permits",     label: "Permits & Authority", icon: ClipboardList, color: "purple" },
+  { id: "operations",  label: "Operations",          icon: Truck,         color: "orange" },
+  { id: "financial",   label: "Financial",           icon: CreditCard,    color: "green" },
+  { id: "contracts",   label: "Contracts",           icon: FileSignature, color: "pink" },
+  { id: "company",     label: "Company",             icon: Building2,     color: "indigo" },
+  { id: "vehicle",     label: "Vehicle & Equipment", icon: Truck,         color: "amber" },
+  { id: "other",       label: "Other",               icon: FileText,      color: "slate" },
 ] as const;
 
 type CategoryId = typeof DOC_CATEGORIES[number]["id"];
@@ -42,7 +42,7 @@ type CategoryId = typeof DOC_CATEGORIES[number]["id"];
 // Maps filename patterns to category for auto-detection
 const AUTO_DETECT_RULES: { pattern: RegExp; category: CategoryId }[] = [
   { pattern: /insur|liabil|cargo\s*ins|workers?\s*comp|bipd|certificate\s*of\s*ins/i, category: "insurance" },
-  { pattern: /bol|bill\s*of\s*lading|pod|proof\s*of\s*delivery|rate\s*con|delivery\s*receipt|run\s*ticket|waybill/i, category: "freight" },
+  { pattern: /bol|bill\s*of\s*lading|pod|proof\s*of\s*delivery|rate\s*con|delivery\s*receipt|run\s*ticket|waybill|manifest|weight\s*ticket|dispatch/i, category: "operations" },
   { pattern: /permit|authority|mc\s*auth|dot\s*auth|oversize|hazmat\s*perm|operating\s*auth/i, category: "permits" },
   { pattern: /cdl|medical\s*card|drug\s*test|training|dot\s*physical|ifta|safety\s*cert|hazmat\s*end/i, category: "compliance" },
   { pattern: /invoice|receipt|payment|factoring|settlement|remittance/i, category: "financial" },
@@ -434,15 +434,23 @@ export default function Documents() {
             Document Center
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Intelligent document management for your entire operation
+            Securely store, digitize, and manage all your operational and compliance documents
           </p>
         </div>
-        <Button
-          onClick={() => setShowUpload(true)}
-          className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg shadow-lg shadow-cyan-900/20"
-        >
-          <Plus className="w-4 h-4 mr-2" />Upload Documents
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => setShowUpload(true)}
+            className="bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 rounded-lg shadow-lg shadow-purple-900/20"
+          >
+            <Eye className="w-4 h-4 mr-2" />Digitize
+          </Button>
+          <Button
+            onClick={() => setShowUpload(true)}
+            className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg shadow-lg shadow-cyan-900/20"
+          >
+            <Upload className="w-4 h-4 mr-2" />Upload
+          </Button>
+        </div>
       </div>
 
       {/* Stat cards */}
@@ -572,7 +580,7 @@ export default function Documents() {
             </div>
             <p className="text-slate-300 text-lg font-medium">No documents yet</p>
             <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
-              Upload your first document to get started. We auto-detect the category from the filename.
+              Upload your first document to get started. We'll auto-detect the category and classify it with AI.
             </p>
             <Button
               onClick={() => setShowUpload(true)}

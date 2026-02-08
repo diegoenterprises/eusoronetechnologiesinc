@@ -11,7 +11,7 @@ import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
 import { digitizeDocument } from "../services/documentOCR";
 
-const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "freight", "financial", "company", "vehicle", "other"]);
+const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "freight", "operations", "financial", "company", "vehicle", "other"]);
 const documentStatusSchema = z.enum(["active", "expired", "expiring_soon", "pending_review"]);
 
 export const documentsRouter = router({
