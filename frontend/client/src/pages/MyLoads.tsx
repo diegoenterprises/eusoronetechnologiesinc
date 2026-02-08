@@ -250,7 +250,8 @@ export default function MyLoads() {
             const destCity = load.destination?.city || "Destination";
             const destState = load.destination?.state || "";
             const hazmatClass = load.hazmatClass || (load.cargoType === "hazmat" || load.cargoType === "chemicals" || load.cargoType === "petroleum" ? "Hazardous" : null);
-            const companyName = load.specialInstructions?.split("\n")?.find((l: string) => l.startsWith("Product:"))?.replace("Product: ", "") || (load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo");
+            const productName = load.specialInstructions?.split("\n")?.find((l: string) => l.startsWith("Product:"))?.replace("Product: ", "") || (load.cargoType === "petroleum" ? "Petroleum crude oil" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo");
+            const companyName = load.companyName || load.shipperName || productName;
 
             return (
               <Card key={load.id} className={cn(
@@ -261,11 +262,20 @@ export default function MyLoads() {
                   {/* ── Card Header: Company + Load # ── */}
                   <div className={cn("flex items-center justify-between px-5 pt-4 pb-3", isLight ? "border-b border-slate-100" : "border-b border-slate-700/30")}>
                     <div className="flex items-center gap-3">
+                      {(load.companyLogo || load.shipperProfilePicture) ? (
+                        <img
+                          src={load.companyLogo || load.shipperProfilePicture}
+                          alt={load.companyName || load.shipperName || "Company"}
+                          className="w-10 h-10 rounded-xl object-cover"
+                          onError={(e: any) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                        />
+                      ) : null}
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center",
                         load.cargoType === "petroleum" ? "bg-orange-500/15" :
                         load.cargoType === "chemicals" ? "bg-purple-500/15" :
-                        load.cargoType === "gas" ? "bg-red-500/15" : "bg-blue-500/15"
+                        load.cargoType === "gas" ? "bg-red-500/15" : "bg-blue-500/15",
+                        (load.companyLogo || load.shipperProfilePicture) ? "hidden" : ""
                       )}>
                         {getCargoIcon(load.cargoType)}
                       </div>

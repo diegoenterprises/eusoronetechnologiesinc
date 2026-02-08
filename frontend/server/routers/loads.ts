@@ -404,10 +404,42 @@ export const loadsRouter = router({
 
       console.log(`[loads.list] Returned ${results.length} rows`);
 
+      // Batch-fetch shipper profiles (profile picture) and company logos
+      const shipperIds = Array.from(new Set(results.map((r: any) => r.shipperId).filter(Boolean)));
+      const shipperMap = new Map<number, { name: string | null; profilePicture: string | null; companyId: number | null }>();
+      const companyMap = new Map<number, { name: string; logo: string | null }>();
+
+      if (shipperIds.length > 0) {
+        try {
+          const shipperRows = await db
+            .select({ id: users.id, name: users.name, profilePicture: users.profilePicture, companyId: users.companyId })
+            .from(users)
+            .where(sql`${users.id} IN (${sql.raw(shipperIds.join(','))})`);
+          for (const s of shipperRows) {
+            shipperMap.set(s.id, { name: s.name, profilePicture: s.profilePicture, companyId: s.companyId });
+          }
+          // Fetch company logos for shippers that have a companyId
+          const companyIds = Array.from(new Set(shipperRows.filter(s => s.companyId).map(s => s.companyId!)));
+          if (companyIds.length > 0) {
+            const companyRows = await db
+              .select({ id: companies.id, name: companies.name, logo: companies.logo })
+              .from(companies)
+              .where(sql`${companies.id} IN (${sql.raw(companyIds.join(','))})`);
+            for (const c of companyRows) {
+              companyMap.set(c.id, { name: c.name, logo: c.logo });
+            }
+          }
+        } catch (err) {
+          console.warn("[loads.list] Failed to fetch shipper/company profiles:", err);
+        }
+      }
+
       // Transform DB rows to match what the frontend expects
       return results.map((row: any) => {
         const pickup = row.pickupLocation as any || {};
         const delivery = row.deliveryLocation as any || {};
+        const shipper = shipperMap.get(row.shipperId);
+        const company = shipper?.companyId ? companyMap.get(shipper.companyId) : null;
         return {
           ...row,
           id: String(row.id),
@@ -418,6 +450,10 @@ export const loadsRouter = router({
           distance: row.distance ? parseFloat(String(row.distance)) : 0,
           createdAt: row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "",
           pickupDate: row.pickupDate ? new Date(row.pickupDate).toLocaleDateString() : "",
+          shipperName: shipper?.name || null,
+          shipperProfilePicture: shipper?.profilePicture || null,
+          companyName: company?.name || null,
+          companyLogo: company?.logo || null,
         };
       });
     }),
