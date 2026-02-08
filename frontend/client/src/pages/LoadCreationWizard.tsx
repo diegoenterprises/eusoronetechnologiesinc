@@ -95,6 +95,11 @@ export default function LoadCreationWizard() {
   const debounceRef = useRef<any>(null);
   const unDebounceRef = useRef<any>(null);
   const [rateMode, setRateMode] = useState<"total" | "perMile">("total");
+  const [compSearchQuery, setCompSearchQuery] = useState("");
+  const [activeCompIdx, setActiveCompIdx] = useState<number | null>(null);
+  const [showCompSuggestions, setShowCompSuggestions] = useState(false);
+  const compDebounceRef = useRef<any>(null);
+  const compSuggestRef = useRef<HTMLDivElement>(null);
   const originRef = useRef<HTMLInputElement>(null);
   const destRef = useRef<HTMLInputElement>(null);
   const originACRef = useRef<any>(null);
@@ -152,6 +157,10 @@ export default function LoadCreationWizard() {
   const ergUNSearch = (trpc as any).erg.search.useQuery(
     { query: unSearchQuery, limit: 10 },
     { enabled: unSearchQuery.length >= 2, staleTime: 30000 }
+  );
+  const ergCompSearch = (trpc as any).erg.search.useQuery(
+    { query: compSearchQuery, limit: 10 },
+    { enabled: compSearchQuery.length >= 2, staleTime: 30000 }
   );
 
   // Detect Google Maps API loaded from index.html
@@ -211,6 +220,7 @@ export default function LoadCreationWizard() {
     const handleClick = (e: MouseEvent) => {
       if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) setShowSuggestions(false);
       if (unSuggestRef.current && !unSuggestRef.current.contains(e.target as Node)) setShowUNSuggestions(false);
+      if (compSuggestRef.current && !compSuggestRef.current.contains(e.target as Node)) setShowCompSuggestions(false);
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -289,6 +299,7 @@ export default function LoadCreationWizard() {
       deliveryDate: formData.deliveryDate,
       equipment: selectedTrailer?.equipment || formData.equipment,
       compartments: formData.compartments || 1,
+      compartmentProducts: formData.compartmentProducts || undefined,
       rate: formData.rate,
       ratePerMile: formData.ratePerMile,
       minSafetyScore: formData.minSafetyScore,
@@ -601,27 +612,67 @@ export default function LoadCreationWizard() {
                 </div>
               )}
 
-              {/* Per-compartment product selection for multi-comp tankers */}
+              {/* Per-compartment product selection for multi-comp tankers — with ERG auto-populate */}
               {isTanker && (formData.compartments || 1) > 1 && (
-                <div className="space-y-3">
+                <div className="space-y-3" ref={compSuggestRef}>
                   <label className="text-sm text-slate-400 block">Compartment Products & Volumes</label>
-                  <p className="text-[10px] text-slate-500">Assign a product and volume to each compartment. Different products can go in different compartments.</p>
+                  <p className="text-[10px] text-slate-500">Assign a product and volume to each compartment. Type to search the ERG 2020 database — same auto-populate as the hazmat product field.</p>
                   <div className="grid gap-2">
                     {Array.from({ length: formData.compartments || 1 }).map((_, i) => {
                       const cp = formData.compartmentProducts?.[i] || { product: "", volume: "" };
                       return (
-                        <div key={i} className="flex items-center gap-2 p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
+                        <div key={i} className="relative flex items-center gap-2 p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
                           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
-                          <Input
-                            value={cp.product}
-                            onChange={(e: any) => {
-                              const arr = [...(formData.compartmentProducts || [])];
-                              arr[i] = { ...arr[i], product: e.target.value };
-                              updateField("compartmentProducts", arr);
-                            }}
-                            placeholder={`Product for compartment ${i + 1}`}
-                            className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm flex-1"
-                          />
+                          <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
+                            <Input
+                              value={cp.product}
+                              onChange={(e: any) => {
+                                const val = e.target.value;
+                                const arr = [...(formData.compartmentProducts || [])];
+                                arr[i] = { ...arr[i], product: val };
+                                updateField("compartmentProducts", arr);
+                                setActiveCompIdx(i);
+                                if (compDebounceRef.current) clearTimeout(compDebounceRef.current);
+                                compDebounceRef.current = setTimeout(() => {
+                                  if (val.trim().length >= 2) { setCompSearchQuery(val.trim()); setShowCompSuggestions(true); }
+                                  else setShowCompSuggestions(false);
+                                }, 200);
+                              }}
+                              onFocus={() => { setActiveCompIdx(i); if (compSearchQuery.length >= 2) setShowCompSuggestions(true); }}
+                              placeholder={`Search product for comp ${i + 1}...`}
+                              className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm pl-9"
+                            />
+                            {/* ERG Suggestions Dropdown for this compartment */}
+                            {showCompSuggestions && activeCompIdx === i && ergCompSearch.data?.results?.length > 0 && (
+                              <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                                <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
+                                {ergCompSearch.data.results.map((m: any, mi: number) => (
+                                  <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
+                                    onClick={() => {
+                                      const arr = [...(formData.compartmentProducts || [])];
+                                      arr[i] = { ...arr[i], product: m.name, unNumber: `UN${m.unNumber}`, hazardClass: m.hazardClass, guide: m.guide };
+                                      updateField("compartmentProducts", arr);
+                                      setShowCompSuggestions(false);
+                                      toast.success(`Comp ${i + 1}: ${m.name}`, { description: `UN${m.unNumber} — Class ${m.hazardClass} — Guide ${m.guide}` });
+                                    }}>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-white text-xs font-medium truncate">{m.name}</p>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                      <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-400">UN{m.unNumber}</Badge>
+                                      <Badge variant="outline" className="text-[9px] border-purple-500/30 text-purple-400">Class {m.hazardClass}</Badge>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            {showCompSuggestions && activeCompIdx === i && compSearchQuery.length >= 2 && ergCompSearch.isLoading && (
+                              <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-2">
+                                <div className="flex items-center gap-2 text-slate-400 text-xs"><Sparkles className="w-3 h-3 animate-spin" />Searching ERG 2020...</div>
+                              </div>
+                            )}
+                          </div>
                           <Input
                             type="number"
                             value={cp.volume}
@@ -932,6 +983,7 @@ export default function LoadCreationWizard() {
                 {formData.ergGuide && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">ERG Guide</p><p className="text-white">Guide {formData.ergGuide}</p></div>}
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Volume</p><p className="text-white">{formData.quantity} {formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets")}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Weight</p><p className="text-white">{formData.weight} {formData.weightUnit || "lbs"}</p></div>
+                {isTanker && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Compartments</p><p className="text-white">{formData.compartments || 1}</p></div>}
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Origin</p><p className="text-white">{formData.origin}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Destination</p><p className="text-white">{formData.destination}</p></div>
                 {formData.distance && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Distance</p><p className="text-white">{formData.distance} miles</p></div>}
@@ -939,6 +991,40 @@ export default function LoadCreationWizard() {
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
               </div>
+              {/* ── Compartment Breakdown (multi-comp tankers) ── */}
+              {(formData.compartments || 1) > 1 && formData.compartmentProducts?.length > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Droplets className="w-4 h-4 text-blue-400" />
+                    <span className="text-blue-400 font-bold text-sm">Compartment Breakdown — {formData.compartments} Compartments</span>
+                  </div>
+                  <div className="grid gap-2">
+                    {(formData.compartmentProducts as any[]).map((cp: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{cp.product || "Not specified"}</p>
+                          {cp.unNumber && <p className="text-slate-400 text-[10px]">{cp.unNumber} — Class {cp.hazardClass} — Guide {cp.guide}</p>}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-cyan-400 text-sm font-bold">{cp.volume || "—"}</p>
+                          <p className="text-slate-500 text-[10px]">{currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Total volume across compartments */}
+                    {(() => {
+                      const totalVol = (formData.compartmentProducts as any[]).reduce((s: number, cp: any) => s + (Number(cp.volume) || 0), 0);
+                      return totalVol > 0 ? (
+                        <div className="flex items-center justify-between pt-2 mt-1 border-t border-slate-700/30">
+                          <span className="text-slate-400 text-xs font-medium">Total Volume</span>
+                          <span className="text-white text-sm font-bold">{totalVol.toLocaleString()} {currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</span>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+              )}
               {/* Route Map */}
               {formData.originLat && formData.destLat && (
                 <RouteMap

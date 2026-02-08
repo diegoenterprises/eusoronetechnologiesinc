@@ -282,7 +282,7 @@ export default function MyLoads() {
                       </div>
                       <div>
                         <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>{companyName}</p>
-                        <p className="text-xs text-slate-400">{load.createdAt || "Recent"}</p>
+                        <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : load.deliveryDate ? new Date(load.deliveryDate).toLocaleDateString() : load.createdAt ? new Date(load.createdAt).toLocaleDateString() : "Recent"}</p>
                       </div>
                     </div>
                     <p className={cn("text-sm font-mono font-bold", isLight ? "text-slate-600" : "text-slate-300")}>

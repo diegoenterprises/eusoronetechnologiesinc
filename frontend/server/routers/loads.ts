@@ -96,6 +96,13 @@ export const loadsRouter = router({
       deliveryDate: z.string().optional(),
       equipment: z.string().optional(),
       compartments: z.number().optional(),
+      compartmentProducts: z.array(z.object({
+        product: z.string().optional(),
+        volume: z.string().optional(),
+        unNumber: z.string().optional(),
+        hazardClass: z.string().optional(),
+        guide: z.string().optional(),
+      })).optional(),
       rate: z.string().optional(),
       ratePerMile: z.string().optional(),
       minSafetyScore: z.string().optional(),
@@ -140,6 +147,12 @@ export const loadsRouter = router({
         input?.pourPoint ? `SPECTRA-MATCH Pour Point: ${input.pourPoint}` : null,
         input?.reidVaporPressure ? `SPECTRA-MATCH RVP: ${input.reidVaporPressure} psi` : null,
         input?.appearance ? `SPECTRA-MATCH Appearance: ${input.appearance}` : null,
+        ...(input?.compartmentProducts && input.compartmentProducts.length > 0
+          ? [`Compartments: ${input.compartmentProducts.length}`,
+             ...input.compartmentProducts.map((cp, i) =>
+               `Comp ${i + 1}: ${cp.product || 'N/A'} | Vol: ${cp.volume || 'N/A'}${cp.unNumber ? ` | ${cp.unNumber}` : ''}${cp.hazardClass ? ` | Class ${cp.hazardClass}` : ''}`
+             )]
+          : []),
       ].filter(Boolean).join("\n");
 
       if (!db) throw new Error("Database not available — cannot create load");
@@ -388,8 +401,16 @@ export const loadsRouter = router({
         filters.push(eq(loads.status, input.status as any));
       }
       if (input.date) {
-        // Loads appear ONLY on their pickupDate. If pickupDate is NULL, fall back to createdAt.
-        filters.push(sql`DATE(COALESCE(${loads.pickupDate}, ${loads.createdAt})) = ${input.date}`);
+        // Show loads whose pickupDate OR deliveryDate matches the selected date.
+        // If neither is set, show the load on the date it was created (but convert to user's local context).
+        // Use a range comparison to avoid UTC/local timezone mismatch.
+        const dateStart = `${input.date} 00:00:00`;
+        const dateEnd = `${input.date} 23:59:59`;
+        filters.push(sql`(
+          (${loads.pickupDate} IS NOT NULL AND DATE(${loads.pickupDate}) = ${input.date})
+          OR (${loads.pickupDate} IS NULL AND ${loads.deliveryDate} IS NOT NULL AND DATE(${loads.deliveryDate}) = ${input.date})
+          OR (${loads.pickupDate} IS NULL AND ${loads.deliveryDate} IS NULL AND ${loads.createdAt} >= ${dateStart} AND ${loads.createdAt} <= ${dateEnd})
+        )`);
       }
 
       console.log(`[loads.list] filters=${filters.length} date=${input.date || 'none'} marketplace=${!!input.marketplace}`);
