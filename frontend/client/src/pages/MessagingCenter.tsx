@@ -11,10 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  MessageSquare, Send, Search, Phone, MoreVertical, Plus,
-  User, Users, Paperclip, Image, Smile, Check, CheckCheck,
-  AlertTriangle, Loader2, Archive, Trash2, Pin, BellOff, ArrowLeft,
-  Shield, Truck, MapPin
+  MessageSquare, Send, Search, Phone, MoreVertical, Plus, X,
+  User, Users, Paperclip, Check, CheckCheck,
+  AlertTriangle, Loader2, Archive, Trash2, Pin, ArrowLeft,
+  Shield, Truck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -24,30 +24,28 @@ export default function MessagingCenter() {
   const [messageText, setMessageText] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
+  const [showNewConversation, setShowNewConversation] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState("");
+  const [showContextMenu, setShowContextMenu] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // ── Queries ──
+  // ── Queries (all DB-backed) ──
   const conversationsQuery = (trpc as any).messages.getConversations.useQuery(
     { search: searchTerm || undefined },
-    { refetchInterval: 8000 }
+    { refetchInterval: 6000 }
   );
   const messagesQuery = (trpc as any).messages.getMessages.useQuery(
     { conversationId: selectedConversation || "" },
     { enabled: !!selectedConversation, refetchInterval: 3000 }
   );
+  const usersQuery = (trpc as any).messages.searchUsers.useQuery(
+    { query: userSearchTerm || undefined, limit: 15 },
+    { enabled: showNewConversation }
+  );
 
-  // ── Mutations ──
+  // ── Mutations (all write to MySQL) ──
   const sendMutation = (trpc as any).messages.send.useMutation({
-    onSuccess: () => {
-      setMessageText("");
-      messagesQuery.refetch();
-      conversationsQuery.refetch();
-      setTimeout(() => inputRef.current?.focus(), 50);
-    },
-    onError: (error: any) => toast.error("Failed to send", { description: error.message }),
-  });
-  const sendMessageMutation = (trpc as any).messages.sendMessage.useMutation({
     onSuccess: () => {
       setMessageText("");
       messagesQuery.refetch();
@@ -58,6 +56,23 @@ export default function MessagingCenter() {
   });
   const markAsReadMutation = (trpc as any).messages.markAsRead.useMutation({
     onSuccess: () => conversationsQuery.refetch(),
+  });
+  const createConversationMutation = (trpc as any).messages.createConversation.useMutation({
+    onSuccess: (data: any) => {
+      setShowNewConversation(false);
+      setUserSearchTerm("");
+      setSelectedConversation(data.id);
+      setShowMobileChat(true);
+      conversationsQuery.refetch();
+      toast.success(data.existing ? "Opened existing conversation" : "Conversation created");
+    },
+    onError: (err: any) => toast.error("Failed to create conversation", { description: err.message }),
+  });
+  const deleteConversationMutation = (trpc as any).messages.deleteConversation.useMutation({
+    onSuccess: () => { setSelectedConversation(null); setShowContextMenu(null); conversationsQuery.refetch(); toast.success("Conversation deleted"); },
+  });
+  const archiveConversationMutation = (trpc as any).messages.archiveConversation.useMutation({
+    onSuccess: () => { setShowContextMenu(null); conversationsQuery.refetch(); toast.success("Conversation archived"); },
   });
 
   // ── Effects ──
@@ -86,13 +101,14 @@ export default function MessagingCenter() {
     sendMutation.mutate({ conversationId: selectedConversation, content: messageText });
   }, [messageText, selectedConversation]);
 
+  const handleStartConversation = useCallback((userId: number) => {
+    createConversationMutation.mutate({ participantIds: [userId], type: "direct" });
+  }, []);
+
   const handlePhoneCall = useCallback(() => {
     if (!selectedConv) return;
-    // Use mobile network — open tel: link (no Twilio needed)
-    // The phone number comes from the other participant's user record
-    toast.info("Opening dialer...", { description: "Calling via your mobile network" });
-    // In production, fetch phone from getUserPhone endpoint
-    window.open(`tel:`, "_self");
+    toast.info("Opening dialer", { description: "Calling via your mobile network" });
+    window.open("tel:", "_self");
   }, [selectedConv]);
 
   const formatTime = (timestamp: string) => {
@@ -146,7 +162,7 @@ export default function MessagingCenter() {
             <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
               Messages
             </h1>
-            <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white rounded-xl h-9 px-3">
+            <Button size="sm" onClick={() => setShowNewConversation(true)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 text-white rounded-xl h-9 px-3">
               <Plus className="w-4 h-4 mr-1" /> New
             </Button>
           </div>
@@ -384,6 +400,76 @@ export default function MessagingCenter() {
           </>
         )}
       </div>
+
+      {/* ═══════════ New Conversation Modal ═══════════ */}
+      {showNewConversation && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowNewConversation(false)}>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+              <h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">New Conversation</h2>
+              <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowNewConversation(false)}>
+                <X className="w-4 h-4 text-slate-400" />
+              </Button>
+            </div>
+            <div className="p-5">
+              <div className="relative mb-4">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Input
+                  value={userSearchTerm}
+                  onChange={(e: any) => setUserSearchTerm(e.target.value)}
+                  placeholder="Search by name or email..."
+                  className="pl-9 bg-slate-700/50 border-slate-600/50 rounded-xl text-sm focus:border-purple-500/50"
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-[300px] overflow-y-auto space-y-1">
+                {usersQuery.isLoading ? (
+                  <div className="space-y-2">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
+                ) : (usersQuery.data as any)?.length === 0 ? (
+                  <div className="text-center py-8">
+                    <User className="w-8 h-8 text-slate-600 mx-auto mb-2" />
+                    <p className="text-slate-500 text-sm">{userSearchTerm ? "No users found" : "Search for a user to message"}</p>
+                  </div>
+                ) : (
+                  (usersQuery.data as any)?.map((user: any) => (
+                    <button
+                      key={user.id}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-700/50 transition-all text-left"
+                      onClick={() => handleStartConversation(user.id)}
+                      disabled={createConversationMutation.isPending}
+                    >
+                      {user.avatar ? (
+                        <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700 to-slate-600 flex items-center justify-center">
+                          <span className="text-sm font-bold text-slate-400">{(user.name || "?")[0]?.toUpperCase()}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-semibold truncate">{user.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          {user.email && <p className="text-slate-500 text-xs truncate">{user.email}</p>}
+                          {user.role && (
+                            <Badge variant="outline" className={cn("text-[9px] h-4 px-1.5 border", getRoleBadgeColor(user.role))}>
+                              {user.role}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Send className="w-4 h-4 text-slate-500" />
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+            {createConversationMutation.isPending && (
+              <div className="px-5 pb-4 flex items-center gap-2 text-purple-400 text-sm">
+                <Loader2 className="w-4 h-4 animate-spin" /> Creating conversation...
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

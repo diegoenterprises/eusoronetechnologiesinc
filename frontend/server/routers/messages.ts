@@ -18,7 +18,7 @@ import { eq, and, desc, sql, or, like, isNull } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { messages, users, conversations, conversationParticipants } from "../../drizzle/schema";
-import { emitNotification } from "../_core/websocket";
+import { emitMessage } from "../_core/websocket";
 
 // Resolve ctx.user to a numeric DB user ID (same pattern as loads.ts)
 async function resolveUserId(ctxUser: any): Promise<number> {
@@ -297,23 +297,15 @@ export const messagesRouter = router({
 
       // Emit real-time WebSocket event to all participants
       try {
-        emitNotification({
-          id: String(msgId),
-          type: "message",
-          title: sender?.name || "New Message",
-          message: input.content.substring(0, 100),
-          priority: "medium",
-          data: {
-            messageId: String(msgId),
-            conversationId: String(convId),
-            senderId: String(userId),
-            senderName: sender?.name || "User",
-            content: input.content,
-            messageType: input.type,
-          },
-          actionUrl: `/messages?conv=${convId}`,
+        emitMessage({
+          conversationId: String(convId),
+          messageId: String(msgId),
+          senderId: String(userId),
+          senderName: sender?.name || "User",
+          content: input.content,
+          messageType: input.type,
           timestamp: new Date().toISOString(),
-        });
+        } as any);
       } catch {}
 
       return {
@@ -647,6 +639,95 @@ export const messagesRouter = router({
     }),
 
   /**
+   * Search users to start a new conversation with
+   */
+  searchUsers: protectedProcedure
+    .input(z.object({ query: z.string().optional(), limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      try {
+        const userId = await resolveUserId(ctx.user);
+        const filters: any[] = [eq(users.isActive, true)];
+        if (userId) filters.push(sql`${users.id} != ${userId}`);
+        if (input.query && input.query.trim()) {
+          filters.push(sql`(${users.name} LIKE ${`%${input.query}%`} OR ${users.email} LIKE ${`%${input.query}%`})`);
+        }
+
+        const results = await db.select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          profilePicture: users.profilePicture,
+          phone: users.phone,
+        }).from(users)
+          .where(and(...filters))
+          .limit(input.limit);
+
+        return results.map(u => ({
+          id: u.id,
+          name: u.name || u.email || "User",
+          email: u.email,
+          role: u.role,
+          avatar: u.profilePicture,
+          phone: u.phone,
+        }));
+      } catch (error) {
+        console.error("[Messages] searchUsers error:", error);
+        return [];
+      }
+    }),
+
+  /**
+   * Get conversation details by ID
+   */
+  getConversation: protectedProcedure
+    .input(z.object({ conversationId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+
+      try {
+        const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
+        if (!convId) return null;
+
+        const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId)).limit(1);
+        if (!conv) return null;
+
+        // Get participants
+        const parts = await db.select({
+          userId: conversationParticipants.userId,
+        }).from(conversationParticipants)
+          .where(and(eq(conversationParticipants.conversationId, convId), isNull(conversationParticipants.leftAt)));
+
+        const partUsers = parts.length > 0
+          ? await db.select({ id: users.id, name: users.name, role: users.role, profilePicture: users.profilePicture, phone: users.phone })
+              .from(users)
+              .where(sql`${users.id} IN (${sql.raw(parts.map(p => p.userId).join(","))})`)
+          : [];
+
+        return {
+          id: String(conv.id),
+          name: conv.name,
+          type: conv.type,
+          loadId: conv.loadId,
+          participants: partUsers.map(u => ({
+            id: u.id,
+            name: u.name || "User",
+            role: u.role,
+            avatar: u.profilePicture,
+            phone: u.phone,
+          })),
+        };
+      } catch (error) {
+        console.error("[Messages] getConversation error:", error);
+        return null;
+      }
+    }),
+
+  /**
    * Alias for listConversations — used by some pages
    */
   listConversations: protectedProcedure
@@ -656,7 +737,6 @@ export const messagesRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx }) => {
-      // Delegates to getConversations
       const db = await getDb();
       if (!db) return { conversations: [], total: 0, unreadTotal: 0 };
       return { conversations: [], total: 0, unreadTotal: 0 };
