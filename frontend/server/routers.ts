@@ -148,8 +148,8 @@ import { stripeRouter } from "./routers/stripe";
 import { fmcsaRouter } from "./routers/fmcsa";
 import { complianceNetworksRouter } from "./routers/complianceNetworks";
 
-// Pre-warm RSS cache on server startup so news page loads instantly
-preWarmRSSCache();
+// RSS cache is now warmed lazily on first request or after server.listen()
+// preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
 
 export const appRouter = router({
   system: systemRouter,

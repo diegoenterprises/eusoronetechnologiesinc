@@ -203,13 +203,16 @@ async function startServer() {
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  // In production (Azure), bind directly to PORT — skip availability check for fast startup
+  const port = process.env.NODE_ENV === "production"
+    ? preferredPort
+    : await findAvailablePort(preferredPort);
 
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
+  server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}/`);
     console.log(`[SECURITY] TLS 1.3 enforcement: ${process.env.NODE_ENV === "production" ? "ACTIVE" : "DEV_MODE (handled by Azure in prod)"}`);
     console.log(`[SECURITY] AES-256-GCM encryption: ${encryptionOk ? "ACTIVE" : "FAILED"}`);
@@ -217,6 +220,14 @@ async function startServer() {
     console.log(`[SECURITY] SOC 2 audit logging: ACTIVE`);
     console.log(`[SECURITY] PCI-DSS card data guard: ACTIVE`);
     console.log(`[SECURITY] Security headers (HSTS, CSP, XSS, Frame): ACTIVE`);
+
+    // Defer RSS pre-warm until after server is listening (so health probe succeeds)
+    setTimeout(async () => {
+      try {
+        const { preWarmCache } = await import("../services/rssService");
+        preWarmCache();
+      } catch {}
+    }, 5000);
   });
 }
 
