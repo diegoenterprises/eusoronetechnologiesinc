@@ -105,11 +105,21 @@ export default function MessagingCenter() {
     createConversationMutation.mutate({ participantIds: [userId], type: "direct" });
   }, []);
 
+  const phoneQuery = (trpc as any).messages.getConversation.useQuery(
+    { conversationId: selectedConversation || "" },
+    { enabled: !!selectedConversation }
+  );
+
   const handlePhoneCall = useCallback(() => {
-    if (!selectedConv) return;
-    toast.info("Opening dialer", { description: "Calling via your mobile network" });
-    window.open("tel:", "_self");
-  }, [selectedConv]);
+    const participants = phoneQuery.data?.participants || [];
+    const other = participants.find((p: any) => p.phone);
+    if (other?.phone) {
+      toast.info(`Calling ${other.name}`, { description: "Via your mobile network" });
+      window.open(`tel:${other.phone}`, "_self");
+    } else {
+      toast.error("No phone number", { description: "This user hasn't added a phone number" });
+    }
+  }, [phoneQuery.data]);
 
   const formatTime = (timestamp: string) => {
     if (!timestamp) return "";

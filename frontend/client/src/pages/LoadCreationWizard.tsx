@@ -104,6 +104,38 @@ export default function LoadCreationWizard() {
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
   const isLiquidOrGas = selectedTrailer?.animType === "liquid" || selectedTrailer?.animType === "gas";
+  const isTanker = ["liquid_tank", "gas_tank", "cryogenic"].includes(formData.trailerType || "");
+
+  // Correct quantity units per trailer type — NO gallons for pallets
+  const getQuantityUnits = (trailerId: string) => {
+    switch (trailerId) {
+      case "liquid_tank": return ["Gallons", "Barrels", "Liters"];
+      case "gas_tank": return ["Gallons", "Cubic Feet", "PSI Units"];
+      case "cryogenic": return ["Gallons", "Liters", "Cubic Meters"];
+      case "dry_van": return ["Pallets", "Units", "Cases", "Boxes"];
+      case "reefer": return ["Pallets", "Units", "Cases", "Boxes"];
+      case "flatbed": return ["Pieces", "Bundles", "Linear Feet", "Tons"];
+      case "bulk_hopper": return ["Cubic Yards", "Cubic Feet", "Tons"];
+      case "hazmat_van": return ["Drums", "Pallets", "Units", "Cases"];
+      default: return ["Units", "Pallets", "Cases"];
+    }
+  };
+  const getDefaultUnit = (trailerId: string) => getQuantityUnits(trailerId)[0];
+  const getPlaceholder = (trailerId: string) => {
+    switch (trailerId) {
+      case "liquid_tank": return "8500";
+      case "gas_tank": return "11000";
+      case "cryogenic": return "10000";
+      case "dry_van": return "24";
+      case "reefer": return "22";
+      case "flatbed": return "6";
+      case "bulk_hopper": return "30";
+      case "hazmat_van": return "48";
+      default: return "24";
+    }
+  };
+  const quantityUnits = getQuantityUnits(formData.trailerType || "");
+  const currentUnit = formData.quantityUnit || getDefaultUnit(formData.trailerType || "");
 
   // Skip SPECTRA-MATCH step (index 2) for non-hazmat loads
   const STEPS = isHazmat ? ALL_STEPS : ALL_STEPS.filter((_, i) => i !== 2);
@@ -314,7 +346,7 @@ export default function LoadCreationWizard() {
               <p className="text-slate-400 text-sm">This determines product options, hazmat classification, and load visualization.</p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {TRAILER_TYPES.map((t) => (
-                  <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); }}
+                  <button key={t.id} onClick={() => { updateField("trailerType", t.id); updateField("equipment", t.equipment); updateField("quantityUnit", getDefaultUnit(t.id)); updateField("compartments", 1); updateField("compartmentProducts", undefined); }}
                     className={cn("p-4 rounded-xl border text-left transition-all duration-200 hover:scale-[1.02]",
                       formData.trailerType === t.id ? "bg-gradient-to-br from-cyan-500/20 to-emerald-500/20 border-cyan-500/50 ring-2 ring-cyan-500/30" : "bg-slate-700/30 border-slate-600/30 hover:border-slate-500/50"
                     )}>
@@ -524,28 +556,36 @@ export default function LoadCreationWizard() {
                   <label className="text-sm text-slate-400 mb-1 block">Quantity</label>
                   <div className="flex gap-2">
                     <Input type="number" value={formData.quantity || ""} onChange={(e: any) => updateField("quantity", e.target.value)}
-                      placeholder={isLiquidOrGas ? "8500" : "24"} className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
-                    <Select value={formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets")} onValueChange={(v: any) => updateField("quantityUnit", v)}>
-                      <SelectTrigger className="w-28 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
+                      placeholder={getPlaceholder(formData.trailerType || "")} className="bg-slate-700/50 border-slate-600/50 rounded-lg flex-1" />
+                    <Select value={currentUnit} onValueChange={(v: any) => updateField("quantityUnit", v)}>
+                      <SelectTrigger className="w-32 bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {isLiquidOrGas
-                          ? <><SelectItem value="Gallons">Gallons</SelectItem><SelectItem value="Barrels">Barrels</SelectItem><SelectItem value="Liters">Liters</SelectItem></>
-                          : <><SelectItem value="Pallets">Pallets</SelectItem><SelectItem value="Units">Units</SelectItem><SelectItem value="Cases">Cases</SelectItem><SelectItem value="Tons">Tons</SelectItem></>
-                        }
+                        {quantityUnits.map((u: string) => <SelectItem key={u} value={u}>{u}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
-              {/* Compartment selector for tanker trailers */}
-              {isLiquidOrGas && (
+
+              {/* Compartment selector — ONLY for tanker types */}
+              {isTanker && (
                 <div>
                   <label className="text-sm text-slate-400 mb-1 block">Number of Compartments</label>
                   <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map(n => (
                       <button
                         key={n}
-                        onClick={() => updateField("compartments", n)}
+                        onClick={() => {
+                          updateField("compartments", n);
+                          if (n > 1 && !formData.compartmentProducts) {
+                            updateField("compartmentProducts", Array.from({ length: n }, () => ({ product: formData.productName || "", volume: "" })));
+                          } else if (n > 1) {
+                            const existing = formData.compartmentProducts || [];
+                            updateField("compartmentProducts", Array.from({ length: n }, (_, i) => existing[i] || { product: "", volume: "" }));
+                          } else {
+                            updateField("compartmentProducts", undefined);
+                          }
+                        }}
                         className={cn(
                           "flex-1 py-3 rounded-xl text-sm font-bold transition-all border",
                           (formData.compartments || 1) === n
@@ -561,18 +601,70 @@ export default function LoadCreationWizard() {
                 </div>
               )}
 
+              {/* Per-compartment product selection for multi-comp tankers */}
+              {isTanker && (formData.compartments || 1) > 1 && (
+                <div className="space-y-3">
+                  <label className="text-sm text-slate-400 block">Compartment Products & Volumes</label>
+                  <p className="text-[10px] text-slate-500">Assign a product and volume to each compartment. Different products can go in different compartments.</p>
+                  <div className="grid gap-2">
+                    {Array.from({ length: formData.compartments || 1 }).map((_, i) => {
+                      const cp = formData.compartmentProducts?.[i] || { product: "", volume: "" };
+                      return (
+                        <div key={i} className="flex items-center gap-2 p-3 rounded-xl bg-slate-700/20 border border-slate-700/30">
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{i + 1}</div>
+                          <Input
+                            value={cp.product}
+                            onChange={(e: any) => {
+                              const arr = [...(formData.compartmentProducts || [])];
+                              arr[i] = { ...arr[i], product: e.target.value };
+                              updateField("compartmentProducts", arr);
+                            }}
+                            placeholder={`Product for compartment ${i + 1}`}
+                            className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm flex-1"
+                          />
+                          <Input
+                            type="number"
+                            value={cp.volume}
+                            onChange={(e: any) => {
+                              const arr = [...(formData.compartmentProducts || [])];
+                              arr[i] = { ...arr[i], volume: e.target.value };
+                              updateField("compartmentProducts", arr);
+                            }}
+                            placeholder="Volume"
+                            className="bg-slate-700/50 border-slate-600/50 rounded-lg text-sm w-28"
+                          />
+                          <span className="text-xs text-slate-500 w-10">{currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit.toLowerCase().slice(0, 3)}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               <div className="p-4 rounded-xl bg-slate-700/30 border border-slate-600/30">
                 <div className="flex items-center gap-2 mb-2"><Info className="w-4 h-4 text-cyan-400" /><span className="text-sm text-slate-400">Quick Reference -- {selectedTrailer?.name}</span></div>
                 <div className="grid grid-cols-2 gap-4 text-xs text-slate-500">
-                  {isLiquidOrGas ? (<>
+                  {selectedTrailer?.id === "liquid_tank" ? (<>
                     <div><p>Standard Tank: 7,000-9,500 gal</p><p>MC-306/DOT-406: 9,000-9,500 gal</p></div>
                     <div><p>Max Legal Weight: 80,000 lbs</p><p>Typical Fuel Load: 8,000-8,500 gal</p></div>
+                  </>) : selectedTrailer?.id === "gas_tank" ? (<>
+                    <div><p>MC-331 Capacity: 9,000-11,600 gal</p><p>Working Pressure: 100-300 PSI</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs</p><p>Typical LPG Load: 9,000-10,000 gal</p></div>
+                  </>) : selectedTrailer?.id === "cryogenic" ? (<>
+                    <div><p>MC-338 Capacity: 8,000-12,000 gal</p><p>Operating Temp: -260°F to -320°F</p></div>
+                    <div><p>Max Legal Weight: 80,000 lbs</p><p>Vacuum insulated double-wall</p></div>
                   </>) : selectedTrailer?.id === "reefer" ? (<>
                     <div><p>Standard Reefer: 40-53 ft</p><p>Floor Space: ~2,500 sq ft</p></div>
                     <div><p>Max Legal Weight: 44,000 lbs</p><p>Typical: 20-24 pallets</p></div>
                   </>) : selectedTrailer?.id === "flatbed" ? (<>
                     <div><p>Standard: 48-53 ft</p><p>Max Width: 8.5 ft (102 in)</p></div>
                     <div><p>Max Legal Weight: 48,000 lbs</p><p>Max Height: 8.5 ft from deck</p></div>
+                  </>) : selectedTrailer?.id === "bulk_hopper" ? (<>
+                    <div><p>Pneumatic Trailer: 1,000-1,700 cu ft</p><p>Bottom/side discharge</p></div>
+                    <div><p>Max Legal Weight: 44,000 lbs</p><p>Typical: 25-30 tons dry bulk</p></div>
+                  </>) : selectedTrailer?.id === "hazmat_van" ? (<>
+                    <div><p>Standard Hazmat Van: 53 ft</p><p>Interior: 2,390 cu ft</p></div>
+                    <div><p>Max Legal Weight: 44,000 lbs</p><p>Requires placarding per DOT</p></div>
                   </>) : (<>
                     <div><p>Standard Dry Van: 53 ft</p><p>Interior: 2,390 cu ft</p></div>
                     <div><p>Max Legal Weight: 44,000-45,000 lbs</p><p>Typical: 22-26 pallets</p></div>
@@ -585,8 +677,14 @@ export default function LoadCreationWizard() {
                   <MultiTruckVisualization
                     materialType={getMaterialType()}
                     totalVolume={Number(formData.quantity) || 0}
-                    unit={formData.quantityUnit === "Gallons" ? "gal" : formData.quantityUnit === "Barrels" ? "bbl" : formData.quantityUnit?.toLowerCase() || "gal"}
-                    maxCapacityPerTruck={formData.quantityUnit === "Barrels" ? 200 : formData.quantityUnit === "Pallets" ? 24 : formData.quantityUnit === "Units" ? 100 : formData.quantityUnit === "Tons" ? 25 : selectedTrailer?.maxGal || 8500}
+                    unit={currentUnit === "Gallons" ? "gal" : currentUnit === "Barrels" ? "bbl" : currentUnit === "Cubic Feet" ? "cf" : currentUnit === "Cubic Yards" ? "cy" : currentUnit.toLowerCase().slice(0, 3)}
+                    maxCapacityPerTruck={
+                      currentUnit === "Barrels" ? 200 : currentUnit === "Pallets" ? 24 : currentUnit === "Units" ? 100 :
+                      currentUnit === "Tons" ? 25 : currentUnit === "Pieces" ? 20 : currentUnit === "Drums" ? 80 :
+                      currentUnit === "Cubic Yards" ? 35 : currentUnit === "Cubic Feet" ? 1700 : currentUnit === "Bundles" ? 12 :
+                      currentUnit === "Linear Feet" ? 53 : currentUnit === "Boxes" ? 1000 : currentUnit === "Cases" ? 500 :
+                      selectedTrailer?.maxGal || 8500
+                    }
                   />
                 </div>
               )}
