@@ -57,17 +57,33 @@ export const PredictiveMaintenanceWidget: React.FC = () => {
 };
 
 export const DemandHeatmapWidget: React.FC = () => {
-  const { data, isLoading } = (trpc as any).dashboard.getDemandHeatmap.useQuery(undefined, { refetchInterval: 300000 });
+  const { data, isLoading } = (trpc as any).dashboard.getDemandHeatmap.useQuery(undefined, { refetchInterval: 60000 });
   const hotspots = Array.isArray(data) ? data : data?.hotspots || [];
+  const maxDemand = Math.max(...hotspots.map((h: any) => h.demand || 0), 1);
+  const levelColor = (l: string) => l === "CRITICAL" ? "text-red-400" : l === "HIGH" ? "text-orange-400" : "text-yellow-400";
+  const barColor = (l: string) => l === "CRITICAL" ? "bg-red-500" : l === "HIGH" ? "bg-orange-500" : "bg-yellow-500";
   return (
-    <ResponsiveWidget>{(exp) => isLoading ? <WidgetLoader color="text-red-400" /> : (
-      <WidgetList items={hotspots.slice(0, exp ? 5 : 3)} renderItem={(h: any, i: number) => (
-        <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
-          <MapPin className={`w-3 h-3 flex-shrink-0 ${i < 2 ? "text-red-400" : "text-orange-400"}`} />
-          <span className="text-xs text-white flex-1 truncate">{h.region || `Region ${i+1}`}</span>
-          <span className="text-[10px] text-orange-400">{h.demand || 0} loads</span>
-        </div>
-      )} empty="No demand data" />
+    <ResponsiveWidget>{(exp) => isLoading ? <WidgetLoader color="text-red-400" /> : hotspots.length === 0 ? (
+      <div className="text-center py-6 text-gray-400 text-xs">No demand data</div>
+    ) : (
+      <div className="space-y-2">
+        {hotspots.slice(0, exp ? 8 : 4).map((h: any, i: number) => (
+          <div key={i} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+            <div className="flex items-center gap-2 mb-1">
+              <MapPin className={`w-3 h-3 flex-shrink-0 ${levelColor(h.level)}`} />
+              <span className="text-xs text-white flex-1 truncate font-medium">{h.region || `Region ${i+1}`}</span>
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${h.level === "CRITICAL" ? "bg-red-500/20 text-red-400" : h.level === "HIGH" ? "bg-orange-500/20 text-orange-400" : "bg-yellow-500/20 text-yellow-400"}`}>{h.level}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${barColor(h.level)} transition-all`} style={{ width: `${Math.round(((h.demand || 0) / maxDemand) * 100)}%` }} />
+              </div>
+              <span className="text-[10px] text-orange-400 font-semibold w-16 text-right">{h.demand} loads</span>
+              {h.surge && <span className="text-[9px] text-purple-400 font-bold">{h.surge}x</span>}
+            </div>
+          </div>
+        ))}
+      </div>
     )}</ResponsiveWidget>
   );
 };

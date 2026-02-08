@@ -298,10 +298,24 @@ export default function Payments() {
                           Pay
                         </Button>
                       )}
-                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0">
+                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" title="Download Invoice"
+                        onClick={() => {
+                          if (inv.pdfUrl) { window.open(inv.pdfUrl, "_blank"); }
+                          else { 
+                            const blob = new Blob([`Invoice: ${inv.invoiceNumber}\nAmount: $${Number(inv.amount).toLocaleString()}\nStatus: ${inv.status}\nDue: ${inv.dueDate}\nCustomer: ${inv.customerName || "—"}\nLoad: ${inv.loadRef || "—"}`], { type: "text/plain" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a"); a.href = url; a.download = `invoice-${inv.invoiceNumber || inv.id}.txt`; a.click(); URL.revokeObjectURL(url);
+                          }
+                        }}
+                      >
                         <Download className="w-4 h-4" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0">
+                      <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" title="View Invoice"
+                        onClick={() => {
+                          if (inv.hostedUrl) { window.open(inv.hostedUrl, "_blank"); }
+                          else { window.open(`/payments?invoice=${inv.id}`, "_self"); }
+                        }}
+                      >
                         <Eye className="w-4 h-4" />
                       </Button>
                     </div>

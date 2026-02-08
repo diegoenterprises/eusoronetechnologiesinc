@@ -10,7 +10,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
 
-const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "other"]);
+const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "other"]);
 const documentStatusSchema = z.enum(["active", "expired", "expiring_soon", "pending_review"]);
 
 export const documentsRouter = router({

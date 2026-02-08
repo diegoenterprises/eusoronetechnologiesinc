@@ -218,6 +218,21 @@ export default function DashboardLayout({
   const [searchFocused, setSearchFocused] = useState(false);
   const prevLocation = useRef(location);
 
+  // Fetch live profile from DB so name/avatar updates reflect immediately
+  const profileQuery = (trpc as any).users?.getProfile?.useQuery?.(undefined, {
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const liveProfile = profileQuery?.data;
+  const displayName = liveProfile
+    ? `${liveProfile.firstName || ""} ${liveProfile.lastName || ""}`.trim() || user?.name || "User"
+    : user?.name || "User";
+  const displayInitials = liveProfile
+    ? `${liveProfile.firstName?.charAt(0) || ""}${liveProfile.lastName?.charAt(0) || ""}`.toUpperCase() || "U"
+    : (user?.name?.split(" ").map((w: string) => w.charAt(0)).join("").slice(0, 2)) || "U";
+  const displayRole = user?.role || liveProfile?.role || "User";
+  const displayAvatar = liveProfile?.profilePicture || null;
+
   // Track route changes for page transition key
   useEffect(() => {
     prevLocation.current = location;
@@ -390,9 +405,13 @@ export default function DashboardLayout({
               >
                 <motion.div whileHover={{ scale: 1.08 }} transition={{ duration: 0.2 }}>
                   <Avatar className="w-9 h-9">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
-                      {user?.name?.charAt(0) || "U"}
-                    </AvatarFallback>
+                    {displayAvatar ? (
+                      <img src={displayAvatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+                    ) : (
+                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
+                        {displayInitials}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                 </motion.div>
                 <AnimatePresence mode="wait">
@@ -404,8 +423,8 @@ export default function DashboardLayout({
                       transition={{ duration: 0.2 }}
                       className="flex-1 text-left text-sm overflow-hidden"
                     >
-                      <p className="font-semibold truncate text-gray-200">{user?.name || "User"}</p>
-                      <p className="text-gray-500 text-xs truncate">{user?.role || "User"}</p>
+                      <p className="font-semibold truncate text-gray-200">{displayName}</p>
+                      <p className="text-gray-500 text-xs truncate">{displayRole}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -536,9 +555,13 @@ export default function DashboardLayout({
                   className="p-1 hover:bg-gray-800/50 rounded-xl transition-colors"
                 >
                   <Avatar className="w-8 h-8">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold">
-                      {(user?.name?.split(" ").map((w: string) => w.charAt(0)).join("").slice(0, 2)) || "U"}
-                    </AvatarFallback>
+                    {displayAvatar ? (
+                      <img src={displayAvatar} alt="" className="w-8 h-8 rounded-full object-cover" />
+                    ) : (
+                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-sm font-bold">
+                        {displayInitials}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                 </motion.button>
               </DropdownMenuTrigger>

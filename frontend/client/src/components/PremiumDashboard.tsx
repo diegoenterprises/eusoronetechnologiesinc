@@ -455,12 +455,42 @@ const getWidgetTitle = (widgetId: string): string => {
   return widget?.name || widgetId;
 };
 
+const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
+  SHIPPER: [
+    'weather', 'active_shipments', 'demand_heatmap',
+    'shipment_costs', 'delivery_timeline', 'carrier_ratings',
+    'live_map', 'freight_quotes', 'cost_savings',
+  ],
+  CARRIER: [
+    'weather', 'available_loads', 'fleet_status',
+    'fuel_costs', 'revenue_dashboard', 'demand_heatmap',
+    'live_map', 'load_matching', 'driver_performance',
+  ],
+  BROKER: [
+    'weather', 'load_board', 'margin_calculator',
+    'carrier_sourcing', 'market_rates', 'demand_heatmap',
+    'live_map', 'commission_tracker', 'bid_management',
+  ],
+  DRIVER: [
+    'weather', 'current_route', 'hos_tracker',
+    'earnings_summary', 'fuel_stations', 'vehicle_health',
+    'live_map', 'next_delivery', 'performance_score',
+  ],
+};
+
 const getDefaultLayout = (role: UserRole): WidgetLayout[] => {
-  const widgets = getWidgetsForRole(role);
-  const defaultWidgets = widgets.slice(0, 9);
-  
-  return defaultWidgets.map((w, idx) => ({
-    i: w.id,
+  const roleDefaults = ROLE_DEFAULT_WIDGETS[role];
+  const allWidgets = getWidgetsForRole(role);
+
+  let defaultIds: string[];
+  if (roleDefaults) {
+    defaultIds = roleDefaults.filter(id => allWidgets.some(w => w.id === id));
+  } else {
+    defaultIds = allWidgets.slice(0, 9).map(w => w.id);
+  }
+
+  return defaultIds.map((id, idx) => ({
+    i: id,
     x: (idx % 3) * 4,
     y: Math.floor(idx / 3) * 4,
     w: 4,
@@ -481,12 +511,18 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
 
-  // Persist layout to localStorage
+  // Persist layout to localStorage (versioned to pick up new defaults)
+  const LAYOUT_VERSION = 2;
   const layoutKey = `eusotrip_dashboard_layout_${role}`;
+  const versionKey = `eusotrip_dashboard_version_${role}`;
   const [layout, setLayout] = useState<WidgetLayout[]>(() => {
     try {
-      const stored = localStorage.getItem(layoutKey);
-      if (stored) return JSON.parse(stored);
+      const storedVersion = localStorage.getItem(versionKey);
+      if (storedVersion && Number(storedVersion) === LAYOUT_VERSION) {
+        const stored = localStorage.getItem(layoutKey);
+        if (stored) return JSON.parse(stored);
+      }
+      localStorage.setItem(versionKey, String(LAYOUT_VERSION));
     } catch {}
     return getDefaultLayout(role);
   });

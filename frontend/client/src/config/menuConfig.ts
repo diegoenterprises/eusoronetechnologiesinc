@@ -95,6 +95,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Invoices and payments"
     },
     { 
+      icon: "FileText", 
+      label: "Documents", 
+      path: "/documents", 
+      badge: 0,
+      description: "BOL, invoices, contracts, receipts & signatures"
+    },
+    { 
       icon: "Wallet", 
       label: "EusoWallet", 
       path: "/wallet", 
