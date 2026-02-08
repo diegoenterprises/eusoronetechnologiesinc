@@ -507,7 +507,17 @@ interface PremiumDashboardProps {
 export default function PremiumDashboard({ role: propRole }: PremiumDashboardProps) {
   const { user } = useAuth();
   const role = propRole || (user?.role as UserRole) || 'SHIPPER';
-  
+
+  // Fetch live profile so greeting shows actual saved name (not stale auth "User")
+  const profileQuery = (trpc as any).users?.getProfile?.useQuery?.(undefined, {
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const liveProfile = profileQuery?.data;
+  const displayName = liveProfile
+    ? `${liveProfile.firstName || ""} ${liveProfile.lastName || ""}`.trim() || user?.name || "User"
+    : user?.name || "User";
+
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
 
@@ -592,12 +602,12 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
                 color: 'transparent',
               }}
             >
-              Welcome back, {user?.name || 'User'}
+              Welcome back, {displayName}
             </span>
             <span
               className="relative bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent"
             >
-              Welcome back, {user?.name || 'User'}
+              Welcome back, {displayName}
             </span>
           </h1>
           <p className="text-gray-400 mt-1 flex items-center gap-2">
