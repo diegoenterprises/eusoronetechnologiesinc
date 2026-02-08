@@ -243,86 +243,231 @@ function drawTankOutline(ctx: CanvasRenderingContext2D, w: number, h: number, is
 // ============================================================================
 
 function drawLiquidTank(ctx: CanvasRenderingContext2D, w: number, h: number, t: number, compartments: number, isLight: boolean) {
-  const { margin, tankW, tankH, tankY, radius } = drawTankOutline(ctx, w, h, isLight);
-
-  // Tank body
-  ctx.save();
-  ctx.strokeStyle = isLight ? hexAlpha(BLUE, 0.3) : hexAlpha(BLUE, 0.4);
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Clip to tank shape
-  ctx.clip();
-
-  // Fill level (65-80% full with gentle oscillation)
-  const fillLevel = 0.72 + Math.sin(t * 0.5) * 0.04;
-  const liquidTop = tankY + tankH * (1 - fillLevel);
-
-  // Draw sloshing liquid waves
-  const grad = createBrandGradient(ctx, margin, liquidTop, margin, tankY + tankH, 0.6);
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.moveTo(margin - 5, tankY + tankH + 5);
-
-  // Multiple wave layers for realistic sloshing
-  for (let x = margin - 5; x <= margin + tankW + 5; x += 2) {
-    const nx = (x - margin) / tankW;
-    const wave1 = Math.sin(nx * Math.PI * 3 + t * 2.5) * 4;
-    const wave2 = Math.sin(nx * Math.PI * 5 - t * 1.8) * 2;
-    const wave3 = Math.sin(nx * Math.PI * 7 + t * 3.2) * 1.5;
-    const y = liquidTop + wave1 + wave2 + wave3;
-    ctx.lineTo(x, y);
-  }
-
-  ctx.lineTo(margin + tankW + 5, tankY + tankH + 5);
-  ctx.closePath();
-  ctx.fill();
-
-  // Highlight wave on top for glossy effect
-  const highlightGrad = createBrandGradient(ctx, margin, liquidTop - 3, margin + tankW, liquidTop + 5, 0.35);
-  ctx.strokeStyle = highlightGrad;
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  for (let x = margin; x <= margin + tankW; x += 2) {
-    const nx = (x - margin) / tankW;
-    const wave = Math.sin(nx * Math.PI * 3 + t * 2.5) * 4 + Math.sin(nx * Math.PI * 5 - t * 1.8) * 2;
-    const y = liquidTop + wave;
-    if (x === margin) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Compartment dividers
   if (compartments > 1) {
-    ctx.strokeStyle = isLight ? hexAlpha(BLUE, 0.25) : hexAlpha(PURPLE, 0.3);
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    for (let i = 1; i < compartments; i++) {
-      const divX = margin + (tankW / compartments) * i;
-      ctx.beginPath();
-      ctx.moveTo(divX, tankY);
-      ctx.lineTo(divX, tankY + tankH);
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
-  }
+    // ═══════════ MULTI-COMPARTMENT SIDE-VIEW TANKER ═══════════
+    // Shows a proper side profile of a tanker truck with visible compartment walls
+    const truckH = h * 0.48;
+    const truckY = h * 0.18;
+    const truckW = w * 0.82;
+    const truckX = (w - truckW) / 2;
+    const compW = truckW / compartments;
+    const wallThickness = 3;
 
-  ctx.restore();
-
-  // Tank label
-  ctx.font = "bold 10px Inter, system-ui, sans-serif";
-  ctx.fillStyle = isLight ? hexAlpha(BLUE, 0.5) : hexAlpha(BLUE, 0.6);
-  ctx.textAlign = "center";
-  ctx.fillText(compartments > 1 ? `${compartments}-COMP TANKER` : "LIQUID TANKER", w / 2, tankY + tankH + 18);
-
-  // Subtle reflection dots on surface
-  for (let i = 0; i < 5; i++) {
-    const rx = margin + 20 + i * (tankW / 5);
-    const ry = liquidTop + Math.sin(t * 2 + i) * 3;
-    ctx.beginPath();
-    ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
-    ctx.fillStyle = hexAlpha("#ffffff", 0.3 + Math.sin(t * 3 + i * 2) * 0.15);
+    // Truck cab (right side)
+    const cabW = w * 0.12;
+    const cabX = truckX + truckW + 2;
+    const cabH = truckH * 0.7;
+    const cabY = truckY + truckH - cabH;
+    ctx.fillStyle = isLight ? hexAlpha(BLUE, 0.12) : hexAlpha(BLUE, 0.15);
+    roundRect(ctx, cabX, cabY, cabW, cabH, 4);
     ctx.fill();
+    ctx.strokeStyle = isLight ? hexAlpha(BLUE, 0.2) : hexAlpha(BLUE, 0.3);
+    ctx.lineWidth = 1;
+    roundRect(ctx, cabX, cabY, cabW, cabH, 4);
+    ctx.stroke();
+    // Cab window
+    ctx.fillStyle = hexAlpha("#38bdf8", 0.15);
+    roundRect(ctx, cabX + 3, cabY + 3, cabW - 6, cabH * 0.35, 2);
+    ctx.fill();
+
+    // Chassis line
+    const chassisY = truckY + truckH + 2;
+    ctx.fillStyle = isLight ? hexAlpha("#475569", 0.2) : hexAlpha("#475569", 0.35);
+    roundRect(ctx, truckX - 5, chassisY, truckW + cabW + 12, 4, 2);
+    ctx.fill();
+
+    // Wheels
+    const wheelR = 7;
+    const wheelY = chassisY + 6;
+    const wheelPositions = [truckX + 15, truckX + 35, truckX + truckW - 35, truckX + truckW - 15, cabX + cabW * 0.5];
+    for (const wx of wheelPositions) {
+      ctx.beginPath();
+      ctx.arc(wx, wheelY, wheelR, 0, Math.PI * 2);
+      ctx.fillStyle = isLight ? hexAlpha("#334155", 0.35) : hexAlpha("#475569", 0.5);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(wx, wheelY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = isLight ? hexAlpha("#94a3b8", 0.4) : hexAlpha("#64748b", 0.6);
+      ctx.fill();
+      // Spinning spoke
+      const spoke = t * 3;
+      ctx.strokeStyle = hexAlpha("#94a3b8", 0.3);
+      ctx.lineWidth = 0.5;
+      for (let a = 0; a < 3; a++) {
+        const angle = spoke + (Math.PI * 2 / 3) * a;
+        ctx.beginPath();
+        ctx.moveTo(wx, wheelY);
+        ctx.lineTo(wx + Math.cos(angle) * 5, wheelY + Math.sin(angle) * 5);
+        ctx.stroke();
+      }
+    }
+
+    // Compartment fill colors (alternate between brand gradient shades)
+    const compColors = [BLUE, VIOLET, PURPLE, "#6366f1", "#3b82f6"];
+
+    for (let c = 0; c < compartments; c++) {
+      const cx = truckX + c * compW;
+      const isFirst = c === 0;
+      const isLast = c === compartments - 1;
+      const rL = isFirst ? truckH * 0.35 : 0;
+      const rR = isLast ? truckH * 0.35 : 0;
+
+      // Draw compartment outline (rounded ends for first/last)
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx + rL, truckY);
+      ctx.lineTo(cx + compW - rR, truckY);
+      if (isLast) ctx.arcTo(cx + compW, truckY, cx + compW, truckY + rR, rR);
+      else ctx.lineTo(cx + compW, truckY);
+      ctx.lineTo(cx + compW, truckY + truckH);
+      if (isLast) {} else ctx.lineTo(cx + compW, truckY + truckH);
+      ctx.lineTo(cx + rL, truckY + truckH);
+      if (isFirst) ctx.arcTo(cx, truckY + truckH, cx, truckY + truckH - rL, rL);
+      else ctx.lineTo(cx, truckY + truckH);
+      ctx.lineTo(cx, truckY + rL);
+      if (isFirst) ctx.arcTo(cx, truckY, cx + rL, truckY, rL);
+      else ctx.lineTo(cx, truckY);
+      ctx.closePath();
+
+      // Light outline
+      ctx.strokeStyle = isLight ? hexAlpha(compColors[c % compColors.length], 0.25) : hexAlpha(compColors[c % compColors.length], 0.35);
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Clip to this compartment
+      ctx.clip();
+
+      // Each compartment has its own fill level + wave phase
+      const fillLevel = 0.6 + c * 0.06 + Math.sin(t * 0.5 + c * 1.2) * 0.05;
+      const liquidTop = truckY + truckH * (1 - fillLevel);
+      const baseColor = compColors[c % compColors.length];
+
+      // Liquid fill
+      const grad = ctx.createLinearGradient(cx, liquidTop, cx, truckY + truckH);
+      grad.addColorStop(0, hexAlpha(baseColor, 0.45));
+      grad.addColorStop(0.5, hexAlpha(VIOLET, 0.5));
+      grad.addColorStop(1, hexAlpha(baseColor, 0.65));
+      ctx.fillStyle = grad;
+
+      ctx.beginPath();
+      ctx.moveTo(cx - 2, truckY + truckH + 2);
+      for (let x = cx; x <= cx + compW; x += 2) {
+        const nx = (x - cx) / compW;
+        const wave1 = Math.sin(nx * Math.PI * 4 + t * 2.5 + c * 1.5) * 3;
+        const wave2 = Math.sin(nx * Math.PI * 6 - t * 1.8 + c * 0.8) * 1.5;
+        ctx.lineTo(x, liquidTop + wave1 + wave2);
+      }
+      ctx.lineTo(cx + compW + 2, truckY + truckH + 2);
+      ctx.closePath();
+      ctx.fill();
+
+      // Wave highlight
+      ctx.strokeStyle = hexAlpha("#ffffff", 0.25);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let x = cx + 2; x <= cx + compW - 2; x += 2) {
+        const nx = (x - cx) / compW;
+        const wave = Math.sin(nx * Math.PI * 4 + t * 2.5 + c * 1.5) * 3;
+        if (x === cx + 2) ctx.moveTo(x, liquidTop + wave);
+        else ctx.lineTo(x, liquidTop + wave);
+      }
+      ctx.stroke();
+
+      // Reflection dots
+      for (let i = 0; i < 2; i++) {
+        const rx = cx + compW * 0.3 + i * compW * 0.4;
+        const ry = liquidTop + Math.sin(t * 2 + c + i) * 2;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = hexAlpha("#ffffff", 0.3 + Math.sin(t * 3 + c + i) * 0.15);
+        ctx.fill();
+      }
+
+      ctx.restore();
+
+      // Compartment wall (thick divider between compartments)
+      if (c < compartments - 1) {
+        const wallX = cx + compW - wallThickness / 2;
+        ctx.fillStyle = isLight ? hexAlpha("#475569", 0.3) : hexAlpha("#64748b", 0.4);
+        ctx.fillRect(wallX, truckY + 2, wallThickness, truckH - 4);
+        // Rivet dots
+        for (let r = 0; r < 3; r++) {
+          const ry = truckY + 8 + r * ((truckH - 16) / 2);
+          ctx.beginPath();
+          ctx.arc(wallX + wallThickness / 2, ry, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = hexAlpha("#94a3b8", 0.5);
+          ctx.fill();
+        }
+      }
+
+      // Compartment number label
+      ctx.font = "bold 9px Inter, system-ui, sans-serif";
+      ctx.fillStyle = hexAlpha("#ffffff", 0.6);
+      ctx.textAlign = "center";
+      ctx.fillText(`${c + 1}`, cx + compW / 2, truckY + 12);
+    }
+
+    // Tank label
+    ctx.font = "bold 10px Inter, system-ui, sans-serif";
+    ctx.fillStyle = isLight ? hexAlpha(BLUE, 0.5) : hexAlpha(BLUE, 0.6);
+    ctx.textAlign = "center";
+    ctx.fillText(`${compartments}-COMPARTMENT TANKER`, w / 2, wheelY + wheelR + 12);
+
+  } else {
+    // ═══════════ SINGLE COMPARTMENT TANKER ═══════════
+    const { margin, tankW, tankH, tankY } = drawTankOutline(ctx, w, h, isLight);
+
+    ctx.save();
+    ctx.strokeStyle = isLight ? hexAlpha(BLUE, 0.3) : hexAlpha(BLUE, 0.4);
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.clip();
+
+    const fillLevel = 0.72 + Math.sin(t * 0.5) * 0.04;
+    const liquidTop = tankY + tankH * (1 - fillLevel);
+
+    const grad = createBrandGradient(ctx, margin, liquidTop, margin, tankY + tankH, 0.6);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(margin - 5, tankY + tankH + 5);
+    for (let x = margin - 5; x <= margin + tankW + 5; x += 2) {
+      const nx = (x - margin) / tankW;
+      const wave1 = Math.sin(nx * Math.PI * 3 + t * 2.5) * 4;
+      const wave2 = Math.sin(nx * Math.PI * 5 - t * 1.8) * 2;
+      const wave3 = Math.sin(nx * Math.PI * 7 + t * 3.2) * 1.5;
+      ctx.lineTo(x, liquidTop + wave1 + wave2 + wave3);
+    }
+    ctx.lineTo(margin + tankW + 5, tankY + tankH + 5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Highlight wave
+    const highlightGrad = createBrandGradient(ctx, margin, liquidTop - 3, margin + tankW, liquidTop + 5, 0.35);
+    ctx.strokeStyle = highlightGrad;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = margin; x <= margin + tankW; x += 2) {
+      const nx = (x - margin) / tankW;
+      const wave = Math.sin(nx * Math.PI * 3 + t * 2.5) * 4 + Math.sin(nx * Math.PI * 5 - t * 1.8) * 2;
+      if (x === margin) ctx.moveTo(x, liquidTop + wave);
+      else ctx.lineTo(x, liquidTop + wave);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    ctx.font = "bold 10px Inter, system-ui, sans-serif";
+    ctx.fillStyle = isLight ? hexAlpha(BLUE, 0.5) : hexAlpha(BLUE, 0.6);
+    ctx.textAlign = "center";
+    ctx.fillText("LIQUID TANKER", w / 2, tankY + tankH + 18);
+
+    for (let i = 0; i < 5; i++) {
+      const rx = margin + 20 + i * (tankW / 5);
+      const ry = liquidTop + Math.sin(t * 2 + i) * 3;
+      ctx.beginPath();
+      ctx.arc(rx, ry, 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = hexAlpha("#ffffff", 0.3 + Math.sin(t * 3 + i * 2) * 0.15);
+      ctx.fill();
+    }
   }
 }
 
