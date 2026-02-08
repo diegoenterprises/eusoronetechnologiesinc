@@ -22,6 +22,7 @@ import {
   AlertTriangle, Navigation, Building2, Droplets, FlaskConical
 } from "lucide-react";
 import { useLocation } from "wouter";
+import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 
 type LoadFilter = "all" | "pending" | "scheduled" | "in_progress" | "past";
 
@@ -341,6 +342,17 @@ export default function MyLoads() {
                         <span className="text-xs text-blue-400 font-medium">Driver Assigned</span>
                       </div>
                     )}
+                  </div>
+
+                  {/* ── Animated Cargo Graphic ── */}
+                  <div className={cn("mx-5 mb-2 rounded-xl overflow-hidden", isLight ? "bg-slate-50/60" : "bg-slate-900/30")}>
+                    <LoadCargoAnimation
+                      equipmentType={load.equipmentType}
+                      cargoType={load.cargoType}
+                      compartments={load.compartments || 1}
+                      height={110}
+                      isLight={isLight}
+                    />
                   </div>
 
                   {/* ── Route Visualization ── */}
