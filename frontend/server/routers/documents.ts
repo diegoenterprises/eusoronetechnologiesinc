@@ -9,8 +9,9 @@ import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
+import { digitizeDocument } from "../services/documentOCR";
 
-const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "other"]);
+const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "freight", "financial", "company", "vehicle", "other"]);
 const documentStatusSchema = z.enum(["active", "expired", "expiring_soon", "pending_review"]);
 
 export const documentsRouter = router({
@@ -109,7 +110,18 @@ export const documentsRouter = router({
    */
   delete: protectedProcedure
     .input(z.object({ id: z.string(), documentId: z.string().optional() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (db) {
+        try {
+          const numericId = parseInt(input.id.replace(/\D/g, ''), 10);
+          if (numericId) {
+            await db.delete(documents).where(and(eq(documents.id, numericId), eq(documents.userId, ctx.user?.id || 0)));
+          }
+        } catch (err) {
+          console.error("[Documents] delete error:", err);
+        }
+      }
       return { success: true, deletedId: input.id };
     }),
 
@@ -242,15 +254,87 @@ export const documentsRouter = router({
       fileData: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const documentId = `doc_${Date.now()}`;
-      
+      const db = await getDb();
+      const userId = ctx.user?.id || 0;
+
+      if (db) {
+        try {
+          const [result] = await db.insert(documents).values({
+            userId,
+            name: input.name,
+            type: input.category,
+            fileUrl: input.fileData.slice(0, 500),
+            expiryDate: input.expirationDate ? new Date(input.expirationDate) : null,
+            status: "active",
+          });
+          return {
+            id: `d${(result as any).insertId}`,
+            name: input.name,
+            category: input.category,
+            uploadedAt: new Date().toISOString(),
+            status: "active",
+          };
+        } catch (err) {
+          console.error("[Documents] upload insert error:", err);
+        }
+      }
+
       return {
-        id: documentId,
+        id: `doc_${Date.now()}`,
         name: input.name,
         category: input.category,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: ctx.user?.name || "Unknown",
         status: "active",
+      };
+    }),
+
+  /**
+   * Digitize document: PaddleOCR + ESANG AI classification pipeline
+   * Extracts text via OCR, then classifies with AI to determine type,
+   * extract fields, detect expiry dates, and auto-categorize.
+   */
+  digitize: protectedProcedure
+    .input(z.object({
+      fileData: z.string(),
+      filename: z.string(),
+      autoSave: z.boolean().default(true),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const result = await digitizeDocument(input.fileData, input.filename);
+
+      // Auto-save to DB if requested
+      let savedId: string | null = null;
+      if (input.autoSave) {
+        const db = await getDb();
+        const userId = ctx.user?.id || 0;
+        if (db) {
+          try {
+            const [insertResult] = await db.insert(documents).values({
+              userId,
+              name: result.classification.documentTitle || input.filename,
+              type: result.classification.category,
+              fileUrl: input.fileData.slice(0, 500),
+              expiryDate: result.classification.suggestedExpiryDate
+                ? new Date(result.classification.suggestedExpiryDate)
+                : null,
+              status: "active",
+            });
+            savedId = `d${(insertResult as any).insertId}`;
+          } catch (err) {
+            console.error("[Documents] digitize save error:", err);
+          }
+        }
+      }
+
+      return {
+        savedId,
+        ocr: {
+          engine: result.ocr.engine,
+          lineCount: result.ocr.lines.length,
+          avgConfidence: result.ocr.avgConfidence,
+          textPreview: result.ocr.text.slice(0, 500),
+        },
+        classification: result.classification,
       };
     }),
 
@@ -304,7 +388,22 @@ export const documentsRouter = router({
       ];
     }),
 
-  getSummary: protectedProcedure.query(async () => ({ total: 45, pending: 5, expiring: 3, categories: 6, valid: 35, expired: 2 })),
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { total: 0, pending: 0, expiring: 0, categories: 0, valid: 0, expired: 0 };
+      try {
+        const userId = ctx.user?.id || 0;
+        const now = new Date();
+        const thirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(documents).where(eq(documents.userId, userId));
+        const [expired] = await db.select({ count: sql<number>`count(*)` }).from(documents).where(and(eq(documents.userId, userId), lte(documents.expiryDate, now)));
+        const [expiring] = await db.select({ count: sql<number>`count(*)` }).from(documents).where(and(eq(documents.userId, userId), gte(documents.expiryDate, now), lte(documents.expiryDate, thirtyDays)));
+        const totalCount = total?.count || 0;
+        const expiredCount = expired?.count || 0;
+        const expiringCount = expiring?.count || 0;
+        return { total: totalCount, pending: 0, expiring: expiringCount, categories: 0, valid: totalCount - expiredCount, expired: expiredCount };
+      } catch { return { total: 0, pending: 0, expiring: 0, categories: 0, valid: 0, expired: 0 }; }
+    }),
 
   /**
    * Get driver documents for DriverDocuments page
