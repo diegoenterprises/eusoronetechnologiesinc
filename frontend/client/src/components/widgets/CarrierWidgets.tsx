@@ -119,7 +119,9 @@ export const RevenueDashboardWidget: React.FC<{ compact?: boolean }> = ({ compac
   const { data: payments } = trpc.payments.getTransactions.useQuery({ limit: 100 });
   
   const totalRevenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-  const thisMonth = totalRevenue * 0.3; // Mock calculation
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonth = payments?.filter(p => new Date(p.date) >= monthStart).reduce((sum, p) => sum + Number(p.amount), 0) || 0;
   const avgPerLoad = payments?.length ? totalRevenue / payments.length : 0;
 
   if (compact) {
@@ -148,10 +150,9 @@ export const RevenueDashboardWidget: React.FC<{ compact?: boolean }> = ({ compac
         </div>
       </div>
       <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-400">Growth</span>
+        <span className="text-gray-400">{payments?.length || 0} transactions</span>
         <span className="text-green-400 flex items-center gap-1">
           <TrendingUp className="w-4 h-4" />
-          +12.5%
         </span>
       </div>
     </div>

@@ -105,54 +105,15 @@ export const signaturesRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx }) => {
-      const sampleDocs = [
-        { type: "bol", title: "Bill of Lading", id: "BOL-2026-001" },
-        { type: "rate_confirmation", title: "Rate Confirmation", id: "RC-2026-015" },
-        { type: "pod", title: "Proof of Delivery", id: "POD-2026-008" },
-        { type: "contract", title: "Carrier Contract", id: "CTR-2026-003" },
-        { type: "inspection", title: "Pre-Trip Inspection", id: "INS-2026-022" },
-      ];
-
-      return {
-        signatures: sampleDocs.map((doc, i) => ({
-          signatureId: `SIG-${Date.now() - i * 86400000}`,
-          documentType: doc.type,
-          documentTitle: doc.title,
-          documentId: doc.id,
-          signedAt: new Date(Date.now() - i * 86400000).toISOString(),
-          status: "valid",
-          gradientInk: true,
-        })),
-        total: sampleDocs.length,
-      };
+      // No signature table yet — return empty
+      return { signatures: [], total: 0 };
     }),
 
   // Get documents awaiting signature
   getPending: protectedProcedure
     .input(z.object({ limit: z.number().default(20) }))
     .query(async ({ ctx }) => {
-      return {
-        pending: [
-          {
-            documentId: "RC-2026-042",
-            documentType: "rate_confirmation",
-            title: "Rate Confirmation - Load #LD-8834",
-            requestedBy: "Broker Johnson",
-            requestedAt: new Date(Date.now() - 7200000).toISOString(),
-            expiresAt: new Date(Date.now() + 86400000).toISOString(),
-            urgency: "high",
-          },
-          {
-            documentId: "BOL-2026-089",
-            documentType: "bol",
-            title: "Bill of Lading - Pickup at Terminal 5",
-            requestedBy: "Shipper Martinez",
-            requestedAt: new Date(Date.now() - 3600000).toISOString(),
-            expiresAt: new Date(Date.now() + 172800000).toISOString(),
-            urgency: "medium",
-          },
-        ],
-        total: 2,
-      };
+      // No pending signatures table yet — return empty
+      return { pending: [], total: 0 };
     }),
 });

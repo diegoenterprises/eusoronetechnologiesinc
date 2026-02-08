@@ -100,59 +100,31 @@ export const claimsRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.id,
-        claimNumber: "CLM-2025-00123",
-        type: "damage",
-        status: "under_review",
-        load: {
-          loadNumber: "LOAD-45850",
-          product: "Unleaded Gasoline",
-          quantity: 8500,
-          unit: "gallons",
-          origin: "Shell Houston Terminal",
-          destination: "7-Eleven Distribution Center, Dallas",
-          pickupDate: "2025-01-17",
-          deliveryDate: "2025-01-17",
-        },
-        shipper: {
-          id: "ship_001",
-          name: "Shell Oil Company",
-          contact: "Sarah Shipper",
-          email: "claims@shell.com",
-          phone: "555-0200",
-        },
-        carrier: {
-          id: "car_001",
-          name: "ABC Transport LLC",
-          contact: "John Manager",
-          email: "claims@abctransport.com",
-          phone: "555-0100",
-        },
-        driver: {
-          id: "d1",
-          name: "Mike Johnson",
-        },
-        amount: 2500.00,
-        description: "Product contamination detected at delivery. Fuel sample tested positive for water contamination exceeding acceptable limits.",
-        evidence: [
-          { id: "ev_001", type: "photo", name: "Fuel sample test results.jpg", uploadedAt: "2025-01-18T10:00:00Z" },
-          { id: "ev_002", type: "document", name: "Lab analysis report.pdf", uploadedAt: "2025-01-18T14:00:00Z" },
-          { id: "ev_003", type: "photo", name: "Tank inspection photos.zip", uploadedAt: "2025-01-18T11:00:00Z" },
-        ],
-        timeline: [
-          { timestamp: "2025-01-17T16:00:00Z", action: "Delivery completed", user: "Mike Johnson" },
-          { timestamp: "2025-01-17T16:30:00Z", action: "Quality issue reported by receiver", user: "7-Eleven Receiving" },
-          { timestamp: "2025-01-18T09:00:00Z", action: "Claim filed by shipper", user: "Sarah Shipper" },
-          { timestamp: "2025-01-18T10:00:00Z", action: "Evidence uploaded", user: "Sarah Shipper" },
-          { timestamp: "2025-01-19T09:00:00Z", action: "Claim under review", user: "Claims Team" },
-        ],
-        notes: [
-          { id: "note_001", content: "Driver states tank was sealed properly during transport", author: "Claims Adjuster", createdAt: "2025-01-19T10:00:00Z" },
-        ],
-        filedDate: "2025-01-18",
-        filedBy: { id: "u5", name: "Sarah Shipper" },
-      };
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const numId = parseInt(input.id.replace('claim_', ''), 10);
+        if (isNaN(numId)) return null;
+        const [incident] = await db.select().from(incidents).where(eq(incidents.id, numId)).limit(1);
+        if (!incident) return null;
+        return {
+          id: input.id,
+          claimNumber: `CLM-${new Date().getFullYear()}-${String(incident.id).padStart(5, '0')}`,
+          type: incident.type || 'other',
+          status: incident.status || 'reported',
+          load: { loadNumber: 'N/A', product: '', quantity: 0, unit: '', origin: '', destination: '', pickupDate: '', deliveryDate: '' },
+          shipper: { id: '', name: '', contact: '', email: '', phone: '' },
+          carrier: { id: '', name: '', contact: '', email: '', phone: '' },
+          driver: { id: '', name: '' },
+          amount: 0,
+          description: incident.description || '',
+          evidence: [],
+          timeline: [],
+          notes: [],
+          filedDate: incident.createdAt?.toISOString().split('T')[0] || '',
+          filedBy: { id: '', name: '' },
+        };
+      } catch { return null; }
     }),
 
   /**
@@ -284,33 +256,20 @@ export const claimsRouter = router({
       period: z.enum(["month", "quarter", "year"]).default("year"),
     }))
     .query(async ({ input }) => {
-      return {
-        period: input.period,
-        total: 24,
-        byStatus: {
-          submitted: 2,
-          under_review: 3,
-          investigating: 2,
-          approved: 5,
-          denied: 4,
-          settled: 6,
-          closed: 2,
-        },
-        byType: {
-          damage: 8,
-          shortage: 6,
-          loss: 2,
-          delay: 5,
-          contamination: 2,
-          other: 1,
-        },
-        financials: {
-          totalClaimed: 125000,
-          totalSettled: 85000,
-          avgSettlementRate: 0.68,
-          avgResolutionDays: 12,
-        },
-      };
+      const db = await getDb();
+      if (!db) return { period: input.period, total: 0, byStatus: {}, byType: {}, financials: { totalClaimed: 0, totalSettled: 0, avgSettlementRate: 0, avgResolutionDays: 0 } };
+      try {
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(incidents);
+        return {
+          period: input.period,
+          total: total?.count || 0,
+          byStatus: {},
+          byType: {},
+          financials: { totalClaimed: 0, totalSettled: 0, avgSettlementRate: 0, avgResolutionDays: 0 },
+        };
+      } catch {
+        return { period: input.period, total: 0, byStatus: {}, byType: {}, financials: { totalClaimed: 0, totalSettled: 0, avgSettlementRate: 0, avgResolutionDays: 0 } };
+      }
     }),
 
   /**
