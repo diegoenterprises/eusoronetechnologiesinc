@@ -270,7 +270,7 @@ function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, op
             <div style="background:#1e293b;color:white;padding:10px;border-radius:8px;font-family:Gilroy,sans-serif;">
               <div style="font-weight:700;font-size:13px;color:#93C5FD;">${zone.name}</div>
               <div style="font-size:11px;color:#64748b;margin-top:4px;">${zone.surgeMultiplier}x · ${zone.reason}</div>
-              <div style="font-size:10px;color:#3B82F6;margin-top:4px;">❄️ Low demand zone</div>
+              <div style="font-size:10px;color:#3B82F6;margin-top:4px;">Low demand zone</div>
             </div>
           `);
           infoWindowRef.current.open(map, marker);

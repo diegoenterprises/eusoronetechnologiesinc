@@ -38,13 +38,13 @@ interface CSAScoresProps {
 }
 
 const BASIC_CATEGORIES = {
-  "Unsafe Driving": { color: "red", icon: "🚗" },
-  "Hours-of-Service": { color: "orange", icon: "⏰" },
-  "Driver Fitness": { color: "yellow", icon: "👤" },
-  "Controlled Substances": { color: "purple", icon: "💊" },
-  "Vehicle Maintenance": { color: "blue", icon: "🔧" },
-  "Hazardous Materials": { color: "green", icon: "☢️" },
-  "Crash Indicator": { color: "pink", icon: "💥" },
+  "Unsafe Driving": { color: "red", icon: "" },
+  "Hours-of-Service": { color: "orange", icon: "" },
+  "Driver Fitness": { color: "yellow", icon: "" },
+  "Controlled Substances": { color: "purple", icon: "" },
+  "Vehicle Maintenance": { color: "blue", icon: "" },
+  "Hazardous Materials": { color: "green", icon: "" },
+  "Crash Indicator": { color: "pink", icon: "" },
 };
 
 function getScoreColor(score: number, threshold: number, alert: boolean): string {
@@ -165,7 +165,7 @@ export function CSAScores({
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm text-white flex items-center gap-2">
-                    <span className="text-lg">{(BASIC_CATEGORIES as any)[basic.category]?.icon || "📊"}</span>
+                    <span className="text-lg">{(BASIC_CATEGORIES as any)[basic.category]?.icon || ""}</span>
                     {basic.category}
                   </CardTitle>
                   {basic.alert && (

@@ -164,7 +164,7 @@ export const WidgetSearchFilter: React.FC<WidgetSearchFilterProps> = ({
             showPremium ? 'border-amber-500/50 bg-amber-500/10' : ''
           }`}
         >
-          ⭐ Premium
+          Premium
           {showPremium && <span className="text-xs text-amber-300">ON</span>}
         </Button>
 

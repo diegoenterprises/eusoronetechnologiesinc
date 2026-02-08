@@ -49,7 +49,7 @@ export default function CurrentJob() {
           </div>
           <Progress value={job.progress} className="h-3 mb-4" />
           <div className="flex justify-between text-sm">
-            <span className="text-green-400">Houston, TX ✓</span>
+            <span className="text-green-400">Houston, TX</span>
             <span className="text-blue-400">On I-45 N</span>
             <span className="text-slate-400">Dallas, TX</span>
           </div>

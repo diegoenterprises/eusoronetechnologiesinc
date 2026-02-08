@@ -191,7 +191,7 @@ export default function ZeunBreakdownReport() {
                   {code.isOutOfService && (
                     <div className="mt-3 p-2 bg-red-900/30 border border-red-700 rounded">
                       <p className="text-red-300 text-xs font-bold">
-                        🚫 OUT OF SERVICE - Vehicle cannot operate legally
+                        OUT OF SERVICE - Vehicle cannot operate legally
                       </p>
                     </div>
                   )}

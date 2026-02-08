@@ -1871,7 +1871,7 @@ export const FreightQuotesWidget: React.FC = () => {
                   <div key={q.carrier} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer">
                     <div>
                       <p className="text-sm text-white">{q.carrier}</p>
-                      <p className="text-xs text-gray-500">{q.transit} • ⭐ {q.rating}</p>
+                      <p className="text-xs text-gray-500">{q.transit} • {q.rating}</p>
                     </div>
                     <span className="text-lg font-bold text-green-400">${q.rate}</span>
                   </div>

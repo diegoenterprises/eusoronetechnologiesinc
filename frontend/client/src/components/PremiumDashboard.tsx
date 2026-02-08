@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Edit3, RotateCcw, X, Plus, Settings, LayoutGrid, Store } from "lucide-react";
 import { UserRole } from '@/hooks/useRoleAccess';
