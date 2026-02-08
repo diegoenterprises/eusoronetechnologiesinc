@@ -12,12 +12,27 @@ import Stripe from "stripe";
 import { ENV } from "../_core/env";
 import { LOAD_PAYMENT_PRODUCT, calculateTotalCharge } from "./products";
 
-// Initialize Stripe with secret key
-const stripe = new Stripe(ENV.stripeSecretKey, {
-  apiVersion: "2025-10-29.clover",
-});
+// Initialize Stripe with secret key (lazy — server won't crash if key is missing at startup)
+let _stripe: Stripe | null = null;
 
-export { stripe };
+function getStripeInstance(): Stripe {
+  if (!_stripe) {
+    if (!ENV.stripeSecretKey) {
+      throw new Error("STRIPE_SECRET_KEY is not configured. Add it to your .env file.");
+    }
+    _stripe = new Stripe(ENV.stripeSecretKey, {
+      apiVersion: "2025-10-29.clover",
+    });
+  }
+  return _stripe;
+}
+
+// Named export — use stripe getter so server boots even without key
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return (getStripeInstance() as any)[prop];
+  },
+});
 
 /**
  * Create a checkout session for load payment
