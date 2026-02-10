@@ -48,10 +48,17 @@ export default function AgreementsLibrary() {
   const statsQuery = (trpc as any).agreements?.getStats?.useQuery?.() || { data: null, isLoading: false };
 
   const agData = agQuery.data;
-  const agreements: any[] = Array.isArray(agData) ? agData : (agData?.agreements || []);
-  const stats = statsQuery.data || { total: 0, active: 0, pending: 0, draft: 0, expired: 0 };
+  const agreements: any[] = Array.isArray(agData) ? agData : Array.isArray(agData?.agreements) ? agData.agreements : [];
+  const rawStats = statsQuery.data;
+  const stats = {
+    total: rawStats?.total ?? 0,
+    active: rawStats?.active ?? 0,
+    pending: rawStats?.pending ?? rawStats?.pendingSignature ?? 0,
+    draft: rawStats?.draft ?? 0,
+    expired: rawStats?.expired ?? 0,
+  };
 
-  // Filter
+  // Filter — safe: agreements is always an array
   const filtered = agreements.filter((a: any) => {
     if (typeFilter !== "all" && a.contractDuration !== typeFilter && a.agreementType !== typeFilter) return false;
     if (search) {
@@ -123,10 +130,10 @@ export default function AgreementsLibrary() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: "Total", value: stats.total || agreements.length, icon: <FileText className="w-4 h-4" />, color: "text-blue-500" },
-          { label: "Active", value: stats.active || agreements.filter((a: any) => a.status === "active").length, icon: <CheckCircle className="w-4 h-4" />, color: "text-green-500" },
-          { label: "Pending", value: stats.pending || agreements.filter((a: any) => a.status?.includes?.("pending")).length, icon: <Clock className="w-4 h-4" />, color: "text-yellow-500" },
-          { label: "Draft", value: stats.draft || agreements.filter((a: any) => a.status === "draft").length, icon: <PenTool className="w-4 h-4" />, color: "text-blue-400" },
-          { label: "Expired", value: stats.expired || agreements.filter((a: any) => a.status === "expired").length, icon: <AlertTriangle className="w-4 h-4" />, color: "text-red-400" },
+          { label: "Active", value: stats.active, icon: <CheckCircle className="w-4 h-4" />, color: "text-green-500" },
+          { label: "Pending", value: stats.pending, icon: <Clock className="w-4 h-4" />, color: "text-yellow-500" },
+          { label: "Draft", value: stats.draft, icon: <PenTool className="w-4 h-4" />, color: "text-blue-400" },
+          { label: "Expired", value: stats.expired, icon: <AlertTriangle className="w-4 h-4" />, color: "text-red-400" },
         ].map(s => (
           <div key={s.label} className={cl}>
             <div className="flex items-center gap-2 mb-1"><span className={s.color}>{s.icon}</span><span className="text-[10px] uppercase text-slate-400 font-bold">{s.label}</span></div>

@@ -33,6 +33,20 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 const PLATFORM_FEE = 3.5;
+const STATE_COORDS: Record<string, { lat: number; lng: number }> = {
+  TX: { lat: 31.97, lng: -99.90 }, CA: { lat: 36.78, lng: -119.42 }, OK: { lat: 35.47, lng: -97.52 },
+  LA: { lat: 30.98, lng: -91.96 }, NM: { lat: 34.52, lng: -105.87 }, AR: { lat: 34.75, lng: -92.29 },
+  CO: { lat: 39.55, lng: -105.78 }, KS: { lat: 38.73, lng: -98.38 }, MO: { lat: 38.57, lng: -92.60 },
+  IL: { lat: 40.63, lng: -89.40 }, FL: { lat: 27.66, lng: -81.52 }, GA: { lat: 32.16, lng: -82.90 },
+  AL: { lat: 32.32, lng: -86.90 }, MS: { lat: 32.35, lng: -89.40 }, TN: { lat: 35.52, lng: -86.58 },
+  NC: { lat: 35.76, lng: -79.02 }, SC: { lat: 33.84, lng: -81.16 }, VA: { lat: 37.43, lng: -78.66 },
+  PA: { lat: 41.20, lng: -77.19 }, NY: { lat: 42.17, lng: -74.95 }, OH: { lat: 40.42, lng: -82.91 },
+  MI: { lat: 44.31, lng: -85.60 }, IN: { lat: 40.27, lng: -86.13 }, WI: { lat: 43.78, lng: -88.79 },
+  MN: { lat: 46.73, lng: -94.69 }, ND: { lat: 47.55, lng: -101.00 }, MT: { lat: 46.88, lng: -110.36 },
+  WY: { lat: 43.08, lng: -107.29 }, NE: { lat: 41.49, lng: -99.90 }, SD: { lat: 43.97, lng: -99.90 },
+  IA: { lat: 41.88, lng: -93.10 }, AZ: { lat: 34.05, lng: -111.09 }, NV: { lat: 38.80, lng: -116.42 },
+  UT: { lat: 39.32, lng: -111.09 }, WA: { lat: 47.75, lng: -120.74 }, OR: { lat: 43.80, lng: -120.55 },
+};
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const HOS_LIMITS = { maxDrive: 11, maxDuty: 14, maxWeekly: 70, resetHours: 34 };
 
@@ -68,6 +82,92 @@ export default function RecurringLoadScheduler() {
   const [carrierName, setCarrierName] = useState("");
   const [linkedAgreement, setLinkedAgreement] = useState("");
   const [patterns, setPatterns] = useState<SchedulePattern[]>([]);
+  const [activating, setActivating] = useState(false);
+
+  // Load creation mutation — wired to loads.createLoad
+  const createLoadMutation = (trpc as any).loads?.createLoad?.useMutation?.({
+    onError: (err: any) => console.error("[RecurringScheduler] createLoad error:", err?.message),
+  });
+
+  const activateSchedule = async () => {
+    if (patterns.length === 0) { toast.error("Add at least one lane pattern"); return; }
+    setActivating(true);
+    let created = 0;
+    let failed = 0;
+
+    try {
+      // For each pattern, generate loads for the next 7 days matching the scheduled days
+      const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+      const start = new Date(startDate);
+      const end = endDate ? new Date(endDate) : new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+      // Generate first week of loads (or until end date, max 30 loads)
+      const maxLoads = 30;
+
+      for (const pattern of patterns) {
+        const originCoords = STATE_COORDS[pattern.originState.toUpperCase()] || { lat: 32.0, lng: -96.0 };
+        const destCoords = STATE_COORDS[pattern.destState.toUpperCase()] || { lat: 30.0, lng: -95.0 };
+
+        let current = new Date(start);
+        while (current <= end && created + failed < maxLoads) {
+          const dayName = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][current.getDay()];
+          if (pattern.days.includes(dayName)) {
+            // Create loadsPerDay loads for this day
+            for (let l = 0; l < pattern.loadsPerDay && created + failed < maxLoads; l++) {
+              try {
+                const [hours, minutes] = (pattern.pickupTime || "08:00").split(":").map(Number);
+                const pickupDate = new Date(current);
+                pickupDate.setHours(hours || 8, minutes || 0, 0, 0);
+                const driveMiles = parseFloat(pattern.estimatedMiles) || 300;
+                const driveHrs = parseFloat(pattern.estimatedDriveHours) || 5;
+                const deliveryDate = new Date(pickupDate.getTime() + driveHrs * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
+
+                if (createLoadMutation) {
+                  await createLoadMutation.mutateAsync({
+                    cargoType: "general" as const,
+                    pickupLocation: {
+                      address: `${pattern.originCity}, ${pattern.originState}`,
+                      city: pattern.originCity,
+                      state: pattern.originState,
+                      zipCode: "00000",
+                      lat: originCoords.lat,
+                      lng: originCoords.lng,
+                    },
+                    deliveryLocation: {
+                      address: `${pattern.destCity}, ${pattern.destState}`,
+                      city: pattern.destCity,
+                      state: pattern.destState,
+                      zipCode: "00000",
+                      lat: destCoords.lat,
+                      lng: destCoords.lng,
+                    },
+                    pickupDate,
+                    deliveryDate,
+                    rate: parseFloat(pattern.ratePerLoad) || 0,
+                    specialInstructions: `[Recurring: ${contractName}] ${pattern.equipmentType.replace(/_/g, " ")} | ${driveMiles} mi | ${carrierName ? `Dedicated: ${carrierName}` : "Open for bidding"} | ${pattern.notes || ""}`.trim(),
+                  });
+                  created++;
+                }
+              } catch { failed++; }
+            }
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      }
+
+      if (created > 0) {
+        toast.success(`Schedule activated! ${created} loads created.`, { description: carrierName ? `Dedicated to ${carrierName}` : "Posted for carrier bidding" });
+        setLocation("/loads/active");
+      } else if (failed > 0) {
+        toast.error(`Failed to create loads (${failed} errors). Check your schedule configuration.`);
+      } else {
+        toast.warning("No loads generated. Check your date range and selected days.");
+      }
+    } catch (err: any) {
+      toast.error("Failed to activate schedule", { description: err?.message });
+    } finally {
+      setActivating(false);
+    }
+  };
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
@@ -384,7 +484,7 @@ export default function RecurringLoadScheduler() {
           </CardContent></Card>
           <div className="flex gap-3">
             <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setStep("agreement")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
-            <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => { toast.success("Recurring schedule activated!"); setLocation("/agreements"); }}><Zap className="w-4 h-4 mr-2" />Activate Schedule</Button>
+            <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={activating} onClick={activateSchedule}>{activating ? <><span className="animate-spin mr-2">⏳</span>Creating Loads...</> : <><Zap className="w-4 h-4 mr-2" />Activate Schedule</>}</Button>
           </div>
         </div>
       )}
