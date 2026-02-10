@@ -18,6 +18,7 @@ interface TokenPayload {
   userId: string;
   email: string;
   role: string;
+  companyId?: string;
 }
 
 interface AuthUser {
@@ -37,6 +38,7 @@ export const authService = {
       userId: user.id,
       email: user.email,
       role: user.role,
+      companyId: user.companyId,
     };
     return jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY });
   },
@@ -65,6 +67,7 @@ export const authService = {
           id: payload.userId,
           email: payload.email,
           role: payload.role,
+          companyId: payload.companyId,
         };
       }
     }
@@ -79,6 +82,7 @@ export const authService = {
           id: payload.userId,
           email: payload.email,
           role: payload.role,
+          companyId: payload.companyId,
         };
       }
     }
