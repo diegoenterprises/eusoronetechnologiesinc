@@ -1,5 +1,5 @@
 /**
- * ZEUN Fleet Dashboard - Carrier breakdown and maintenance overview
+ * Zeun Mechanics Fleet Dashboard - Carrier breakdown and maintenance overview
  */
 
 import { useState } from "react";
@@ -61,7 +61,7 @@ export default function ZeunFleetDashboard() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Wrench className="h-6 w-6" />
-            ZEUN Fleet Dashboard
+            Zeun Mechanics Fleet Dashboard
           </h1>
           <p className="text-muted-foreground">Fleet breakdown and maintenance management</p>
         </div>

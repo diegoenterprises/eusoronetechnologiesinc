@@ -95,6 +95,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Invoices and payments"
     },
     { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements/create", 
+      badge: 0,
+      description: "Create, digitize & sign carrier agreements"
+    },
+    { 
       icon: "FileText", 
       label: "Documents", 
       path: "/documents", 
@@ -219,7 +226,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     { 
       icon: "Wrench", 
-      label: "ZEUN Fleet", 
+      label: "Zeun Mechanics", 
       path: "/zeun-fleet", 
       badge: 0,
       description: "Fleet breakdown and maintenance"

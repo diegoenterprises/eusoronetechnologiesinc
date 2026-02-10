@@ -110,6 +110,7 @@ import InvoiceDetails from "./pages/InvoiceDetails";
 import EscortJobs from "./pages/EscortJobs";
 import BidDetails from "./pages/BidDetails";
 import ContractSigning from "./pages/ContractSigning";
+import ShipperAgreementWizard from "./pages/ShipperAgreementWizard";
 import FleetOverview from "./pages/FleetOverview";
 import ComplianceCalendar from "./pages/ComplianceCalendar";
 import DriverPerformance from "./pages/DriverPerformance";
@@ -220,6 +221,7 @@ function Router() {
       <Route path={"/carriers"} component={() => (<DashboardLayout><CarriersPage /></DashboardLayout>)} />
       <Route path={"/payments"} component={() => (<DashboardLayout><PaymentsPage /></DashboardLayout>)} />
       <Route path={"/company"} component={() => (<DashboardLayout><CompanyProfile /></DashboardLayout>)} />
+      <Route path={"/agreements/create"} component={() => (<DashboardLayout><ShipperAgreementWizard /></DashboardLayout>)} />
 
       {/* ============================================ */}
       {/* CARRIER ROUTES */}
