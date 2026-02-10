@@ -183,28 +183,32 @@ export default function Wallet() {
               </p>
             )}
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: "Pending", value: balance?.pending || 0 },
-              { label: "In Escrow", value: balance?.escrow || 0 },
-              { label: "This Month", value: balance?.monthVolume || 0 },
-            ].map((box) => (
-              <div
-                key={box.label}
-                className="relative rounded-2xl p-[1.5px] overflow-hidden"
-                style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
-              >
+          {/* Outer gradient-outlined container for all 3 boxes */}
+          <div
+            className="rounded-2xl p-[1.5px] overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
+          >
+            <div className="grid grid-cols-3 gap-[1.5px]">
+              {[
+                { label: "Pending", value: balance?.pending || 0 },
+                { label: "In Escrow", value: balance?.escrow || 0 },
+                { label: "This Month", value: balance?.monthVolume || 0 },
+              ].map((box, idx) => (
                 <div
-                  className="rounded-[14.5px] p-3 backdrop-blur-md h-full"
-                  style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+                  key={box.label}
+                  className="p-4 backdrop-blur-md h-full"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(20,115,255,0.5), rgba(190,1,255,0.5))",
+                    borderRadius: idx === 0 ? "14.5px 0 0 14.5px" : idx === 2 ? "0 14.5px 14.5px 0" : "0",
+                  }}
                 >
-                  <p className="text-white/90 text-xs font-medium">{box.label}</p>
-                  <p className="text-white font-bold text-lg drop-shadow-sm">
+                  <p className="text-white text-sm font-semibold tracking-wide drop-shadow-md">{box.label}</p>
+                  <p className="text-white font-bold text-xl drop-shadow-sm mt-1">
                     {showBalance ? `$${box.value.toLocaleString()}` : '••••'}
                   </p>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
