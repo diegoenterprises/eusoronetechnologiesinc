@@ -66,6 +66,9 @@ import {
   Target,
   Navigation,
   Trophy,
+  PenTool,
+  Repeat,
+  Scale,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -135,6 +138,9 @@ const iconMap: Record<string, React.ReactNode> = {
   Target: <Target size={20} />,
   Navigation: <Navigation size={20} />,
   Trophy: <Trophy size={20} />,
+  PenTool: <PenTool size={20} />,
+  Repeat: <Repeat size={20} />,
+  Scale: <Scale size={20} />,
 };
 
 // --- Notification Bell Component ---

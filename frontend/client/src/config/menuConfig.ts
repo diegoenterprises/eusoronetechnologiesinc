@@ -97,9 +97,16 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { 
       icon: "PenTool", 
       label: "Agreements", 
-      path: "/agreements/create", 
+      path: "/agreements", 
       badge: 0,
-      description: "Create, digitize & sign carrier agreements"
+      description: "Manage & sign carrier agreements"
+    },
+    { 
+      icon: "Repeat", 
+      label: "Recurring Loads", 
+      path: "/loads/recurring", 
+      badge: 0,
+      description: "Schedule recurring shipments & dedicated lanes"
     },
     { 
       icon: "FileText", 
@@ -246,6 +253,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Revenue and commissions"
     },
     { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements", 
+      badge: 0,
+      description: "View & sign shipper agreements"
+    },
+    { 
       icon: "BarChart3", 
       label: "Analytics", 
       path: "/analytics", 
@@ -367,6 +381,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/shippers", 
       badge: 0,
       description: "Shipper accounts"
+    },
+    { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements", 
+      badge: 0,
+      description: "Manage shipper & carrier contracts"
     },
     { 
       icon: "DollarSign", 

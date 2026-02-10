@@ -111,6 +111,9 @@ import EscortJobs from "./pages/EscortJobs";
 import BidDetails from "./pages/BidDetails";
 import ContractSigning from "./pages/ContractSigning";
 import ShipperAgreementWizard from "./pages/ShipperAgreementWizard";
+import AgreementsLibrary from "./pages/AgreementsLibrary";
+import RecurringLoadScheduler from "./pages/RecurringLoadScheduler";
+import BrokerContractWizard from "./pages/BrokerContractWizard";
 import FleetOverview from "./pages/FleetOverview";
 import ComplianceCalendar from "./pages/ComplianceCalendar";
 import DriverPerformance from "./pages/DriverPerformance";
@@ -221,7 +224,10 @@ function Router() {
       <Route path={"/carriers"} component={() => (<DashboardLayout><CarriersPage /></DashboardLayout>)} />
       <Route path={"/payments"} component={() => (<DashboardLayout><PaymentsPage /></DashboardLayout>)} />
       <Route path={"/company"} component={() => (<DashboardLayout><CompanyProfile /></DashboardLayout>)} />
+      <Route path={"/agreements"} component={() => (<DashboardLayout><AgreementsLibrary /></DashboardLayout>)} />
       <Route path={"/agreements/create"} component={() => (<DashboardLayout><ShipperAgreementWizard /></DashboardLayout>)} />
+      <Route path={"/agreements/broker"} component={() => (<DashboardLayout><BrokerContractWizard /></DashboardLayout>)} />
+      <Route path={"/loads/recurring"} component={() => (<DashboardLayout><RecurringLoadScheduler /></DashboardLayout>)} />
 
       {/* ============================================ */}
       {/* CARRIER ROUTES */}
