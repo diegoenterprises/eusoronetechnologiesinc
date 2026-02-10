@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Edit3, RotateCcw, X, Plus, Settings, LayoutGrid, Store } from "lucide-react";
@@ -509,15 +510,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
   const { user } = useAuth();
   const role = propRole || (user?.role as UserRole) || 'SHIPPER';
 
-  // Fetch live profile so greeting shows actual saved name (not stale auth "User")
-  const profileQuery = (trpc as any).users?.getProfile?.useQuery?.(undefined, {
-    refetchInterval: 30000,
-    retry: false,
-  });
-  const liveProfile = profileQuery?.data;
-  const displayName = liveProfile
-    ? `${liveProfile.firstName || ""} ${liveProfile.lastName || ""}`.trim() || user?.name || "User"
-    : user?.name || "User";
+  const { displayName } = useDisplayUser();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);

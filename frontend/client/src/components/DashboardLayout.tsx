@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -218,20 +219,8 @@ export default function DashboardLayout({
   const [searchFocused, setSearchFocused] = useState(false);
   const prevLocation = useRef(location);
 
-  // Fetch live profile from DB so name/avatar updates reflect immediately
-  const profileQuery = (trpc as any).users?.getProfile?.useQuery?.(undefined, {
-    refetchInterval: 30000,
-    retry: false,
-  });
-  const liveProfile = profileQuery?.data;
-  const displayName = liveProfile
-    ? `${liveProfile.firstName || ""} ${liveProfile.lastName || ""}`.trim() || user?.name || "User"
-    : user?.name || "User";
-  const displayInitials = liveProfile
-    ? `${liveProfile.firstName?.charAt(0) || ""}${liveProfile.lastName?.charAt(0) || ""}`.toUpperCase() || "U"
-    : (user?.name?.split(" ").map((w: string) => w.charAt(0)).join("").slice(0, 2)) || "U";
-  const displayRole = user?.role || liveProfile?.role || "User";
-  const displayAvatar = liveProfile?.profilePicture || null;
+  // Centralized display user — real DB profile name, not stale auth fallback
+  const { displayName, displayInitials, displayRole, displayAvatar } = useDisplayUser();
 
   // Track route changes for page transition key
   useEffect(() => {

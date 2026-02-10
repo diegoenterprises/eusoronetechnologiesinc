@@ -8,6 +8,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -98,6 +99,7 @@ export default function CompanyChannels() {
   });
 
   const { user } = useAuth();
+  const { displayName, displayInitials, displayRole } = useDisplayUser();
   const channels = channelsQuery.data || [];
   const messages = messagesQuery.data || [];
   const activeChannel = channels.find((c: any) => c.id === selectedChannel);
@@ -228,13 +230,13 @@ export default function CompanyChannels() {
         <div className="p-4 border-t border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
-              {(user?.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+              {displayInitials}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">
-                {user?.name || 'User'}
+                {displayName}
               </p>
-              <p className="text-xs text-slate-500">{user?.role || 'Member'}</p>
+              <p className="text-xs text-slate-500">{displayRole}</p>
             </div>
           </div>
         </div>
