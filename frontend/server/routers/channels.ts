@@ -7,8 +7,8 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { groupChannels, channelMembers, messages, users } from "../../drizzle/schema";
-import { sql, eq, desc, and, count } from "drizzle-orm";
+import { groupChannels, channelMembers, messages, users, messageAttachments } from "../../drizzle/schema";
+import { sql, eq, desc, and, count, inArray } from "drizzle-orm";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   if (typeof ctxUser?.id === "number") return ctxUser.id;
@@ -277,5 +277,209 @@ export const channelsRouter = router({
         console.error('[Channels] getSummary error:', error);
         return { totalChannels: 0, unreadCount: 0, activeMembers: 0 };
       }
+    }),
+
+  /**
+   * Update channel settings (name, description, type)
+   */
+  updateChannel: protectedProcedure
+    .input(z.object({
+      channelId: z.string(),
+      name: z.string().min(1).max(50).optional(),
+      description: z.string().max(200).optional(),
+      type: z.enum(["public", "private"]).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const chId = parseInt(input.channelId) || 0;
+      if (!chId) throw new Error("Invalid channel");
+
+      const updates: Record<string, any> = {};
+      if (input.name !== undefined) updates.name = input.name;
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.type !== undefined) updates.visibility = input.type === "private" ? "PRIVATE" : "PUBLIC";
+
+      if (Object.keys(updates).length === 0) return { success: true };
+
+      await db.update(groupChannels).set(updates).where(eq(groupChannels.id, chId));
+      return { success: true };
+    }),
+
+  /**
+   * Delete / archive a channel
+   */
+  deleteChannel: protectedProcedure
+    .input(z.object({ channelId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const chId = parseInt(input.channelId) || 0;
+      if (!chId) throw new Error("Invalid channel");
+      await db.update(groupChannels).set({ isArchived: true }).where(eq(groupChannels.id, chId));
+      return { success: true };
+    }),
+
+  /**
+   * Toggle mute/unmute channel notifications for the current user
+   */
+  toggleMute: protectedProcedure
+    .input(z.object({ channelId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const chId = parseInt(input.channelId) || 0;
+      if (!chId || !userId) throw new Error("Invalid channel or user");
+
+      try {
+        // Check current membership
+        const [membership] = await db.select({
+          id: channelMembers.id,
+          isMuted: channelMembers.isMuted,
+        }).from(channelMembers)
+          .where(and(eq(channelMembers.channelId, chId), eq(channelMembers.userId, userId)))
+          .limit(1);
+
+        if (membership) {
+          const newMuted = !membership.isMuted;
+          await db.update(channelMembers)
+            .set({ isMuted: newMuted })
+            .where(eq(channelMembers.id, membership.id));
+          return { success: true, muted: newMuted };
+        } else {
+          // User not a member yet — auto-join and set muted false
+          await db.insert(channelMembers).values({
+            channelId: chId,
+            userId,
+            role: "MEMBER",
+            isMuted: false,
+          });
+          return { success: true, muted: false };
+        }
+      } catch (error) {
+        console.error('[Channels] toggleMute error:', error);
+        throw new Error("Failed to toggle notifications");
+      }
+    }),
+
+  /**
+   * Get mute status for current user on a channel
+   */
+  getMuteStatus: protectedProcedure
+    .input(z.object({ channelId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { muted: false };
+      const userId = await resolveUserId(ctx.user);
+      const chId = parseInt(input.channelId) || 0;
+      if (!chId || !userId) return { muted: false };
+      try {
+        const [membership] = await db.select({ isMuted: channelMembers.isMuted })
+          .from(channelMembers)
+          .where(and(eq(channelMembers.channelId, chId), eq(channelMembers.userId, userId)))
+          .limit(1);
+        return { muted: membership?.isMuted || false };
+      } catch { return { muted: false }; }
+    }),
+
+  /**
+   * Add a member to a channel
+   */
+  addMember: protectedProcedure
+    .input(z.object({
+      channelId: z.string(),
+      userId: z.number(),
+      role: z.enum(["OWNER", "ADMIN", "MEMBER"]).optional().default("MEMBER"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const chId = parseInt(input.channelId) || 0;
+      if (!chId) throw new Error("Invalid channel");
+      try {
+        await db.insert(channelMembers).values({
+          channelId: chId,
+          userId: input.userId,
+          role: input.role,
+        });
+        return { success: true };
+      } catch (error: any) {
+        if (error?.code === "ER_DUP_ENTRY") return { success: true, message: "Already a member" };
+        throw error;
+      }
+    }),
+
+  /**
+   * Remove a member from a channel
+   */
+  removeMember: protectedProcedure
+    .input(z.object({
+      channelId: z.string(),
+      userId: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const chId = parseInt(input.channelId) || 0;
+      await db.delete(channelMembers)
+        .where(and(eq(channelMembers.channelId, chId), eq(channelMembers.userId, input.userId)));
+      return { success: true };
+    }),
+
+  /**
+   * Upload attachment — stores base64 file data in message_attachments
+   * Returns the attachment record so it can be referenced when sending a message
+   */
+  uploadAttachment: protectedProcedure
+    .input(z.object({
+      channelId: z.string(),
+      fileName: z.string(),
+      fileData: z.string(), // base64
+      mimeType: z.string(),
+      fileSize: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+
+      // First, create a placeholder message for this attachment
+      const channelNumericId = parseInt(input.channelId) || 0;
+      if (!channelNumericId) throw new Error("Invalid channel");
+
+      const msgResult = await db.insert(messages).values({
+        conversationId: channelNumericId,
+        senderId: userId,
+        content: `📎 ${input.fileName}`,
+        createdAt: new Date(),
+      });
+      const messageId = (msgResult as any)[0]?.insertId || 0;
+
+      // Determine type
+      const mime = input.mimeType.toLowerCase();
+      let type: "image" | "document" | "audio" | "video" | "location" = "document";
+      if (mime.startsWith("image/")) type = "image";
+      else if (mime.startsWith("audio/")) type = "audio";
+      else if (mime.startsWith("video/")) type = "video";
+
+      // Store the attachment
+      const attResult = await db.insert(messageAttachments).values({
+        messageId,
+        type,
+        fileName: input.fileName,
+        fileUrl: input.fileData, // base64 data
+        fileSize: input.fileSize,
+        mimeType: input.mimeType,
+      });
+      const attachmentId = (attResult as any)[0]?.insertId || 0;
+
+      return {
+        success: true,
+        messageId: String(messageId),
+        attachmentId: String(attachmentId),
+        fileName: input.fileName,
+        type,
+      };
     }),
 });

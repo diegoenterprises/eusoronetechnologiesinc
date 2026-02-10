@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   MessageSquare, Search, Send, Users, Plus, X, Phone,
-  Check, CheckCheck, Loader2, AlertTriangle, ArrowLeft,
+  Check, CheckCheck, Loader2, AlertTriangle, ArrowLeft, Paperclip,
   User, Trash2, Archive, MoreVertical, Truck, Shield, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ export default function Messages() {
   const [paymentType, setPaymentType] = useState<"send" | "request">("send");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const msgFileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Queries (all DB-backed, real-time polling) ──
   const conversationsQuery = (trpc as any).messages.getConversations.useQuery(
@@ -93,6 +94,15 @@ export default function Messages() {
       conversationsQuery.refetch();
       toast.success("Conversation archived");
     },
+  });
+
+  const uploadMsgAttachmentMutation = (trpc as any).channels.uploadAttachment.useMutation({
+    onSuccess: (data: any) => {
+      messagesQuery.refetch();
+      conversationsQuery.refetch();
+      toast.success(`File sent: ${data.fileName}`);
+    },
+    onError: (err: any) => toast.error("Upload failed", { description: err.message }),
   });
 
   const sendPaymentMutation = (trpc as any).messages.sendPayment.useMutation({
@@ -494,7 +504,51 @@ export default function Messages() {
 
               {/* Message Input */}
               <div className="p-4 border-t border-slate-700/50">
+                <input
+                  ref={msgFileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip"
+                  onChange={(e) => {
+                    const files = e.target.files;
+                    if (!files || !selectedConversation) return;
+                    for (let i = 0; i < files.length; i++) {
+                      const file = files[i];
+                      if (file.size > 10 * 1024 * 1024) {
+                        toast.error(`File too large: ${file.name}`, { description: "Max 10MB" });
+                        continue;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const base64 = (reader.result as string).split(",")[1] || "";
+                        uploadMsgAttachmentMutation.mutate({
+                          channelId: selectedConversation,
+                          fileName: file.name,
+                          fileData: base64,
+                          mimeType: file.type || "application/octet-stream",
+                          fileSize: file.size,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                {uploadMsgAttachmentMutation.isPending && (
+                  <div className="mb-2 px-3 py-1.5 bg-blue-900/30 border border-blue-700/50 rounded-xl text-xs text-blue-300 flex items-center gap-2">
+                    <Loader2 className="w-3 h-3 animate-spin" /> Uploading file...
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => msgFileInputRef.current?.click()}
+                    className="rounded-xl h-10 w-10 p-0 text-slate-400 hover:text-blue-400 hover:bg-blue-500/10 flex-shrink-0"
+                    title="Attach file"
+                  >
+                    <Paperclip className="w-5 h-5" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

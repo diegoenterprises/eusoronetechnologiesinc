@@ -6,13 +6,14 @@
  * 100% Dynamic - No mock data
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import {
   MessageSquare,
   Plus,
@@ -24,48 +25,30 @@ import {
   Hash,
   Lock,
   Bell,
+  BellOff,
   MoreVertical,
   RefreshCw,
+  X,
+  Trash2,
+  FileText,
+  Download,
 } from "lucide-react";
-
-export interface Channel {
-  id: string;
-  name: string;
-  description: string;
-  type: "public" | "private";
-  memberCount: number;
-  unreadCount: number;
-  lastMessage?: {
-    author: string;
-    content: string;
-    timestamp: Date;
-  };
-  icon?: string;
-}
-
-export interface Message {
-  id: string;
-  author: string;
-  authorId: string;
-  content: string;
-  timestamp: Date;
-  reactions: Record<string, number>;
-  attachments?: Array<{
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-  }>;
-}
 
 export default function CompanyChannels() {
   const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateChannel, setShowCreateChannel] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelDesc, setNewChannelDesc] = useState("");
   const [newChannelType, setNewChannelType] = useState<"public" | "private">("public");
+  const [editName, setEditName] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editType, setEditType] = useState<"public" | "private">("public");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // tRPC queries
   const channelsQuery = (trpc as any).channels.list.useQuery({ search: searchQuery || undefined });
@@ -74,6 +57,14 @@ export default function CompanyChannels() {
     { enabled: !!selectedChannel }
   );
   const summaryQuery = (trpc as any).channels.getSummary.useQuery();
+  const membersQuery = (trpc as any).channels.getMembers.useQuery(
+    { channelId: selectedChannel },
+    { enabled: !!selectedChannel && showMembers }
+  );
+  const muteQuery = (trpc as any).channels.getMuteStatus.useQuery(
+    { channelId: selectedChannel },
+    { enabled: !!selectedChannel }
+  );
 
   // tRPC mutations
   const sendMessageMutation = (trpc as any).channels.sendMessage.useMutation({
@@ -81,9 +72,7 @@ export default function CompanyChannels() {
       setMessageInput("");
       messagesQuery.refetch();
     },
-    onError: (error: any) => {
-      console.error('[Channels] Send message error:', error.message);
-    },
+    onError: (error: any) => toast.error("Failed to send message", { description: error.message }),
   });
 
   const createChannelMutation = (trpc as any).channels.create.useMutation({
@@ -92,18 +81,53 @@ export default function CompanyChannels() {
       setNewChannelName("");
       setNewChannelDesc("");
       channelsQuery.refetch();
+      toast.success("Channel created");
     },
-    onError: (error: any) => {
-      console.error('[Channels] Create channel error:', error.message);
+    onError: (error: any) => toast.error("Failed to create channel", { description: error.message }),
+  });
+
+  const updateChannelMutation = (trpc as any).channels.updateChannel.useMutation({
+    onSuccess: () => {
+      channelsQuery.refetch();
+      setShowSettings(false);
+      toast.success("Channel settings saved");
     },
+    onError: (error: any) => toast.error("Failed to update channel", { description: error.message }),
+  });
+
+  const deleteChannelMutation = (trpc as any).channels.deleteChannel.useMutation({
+    onSuccess: () => {
+      channelsQuery.refetch();
+      setShowSettings(false);
+      setSelectedChannel("");
+      toast.success("Channel deleted");
+    },
+    onError: (error: any) => toast.error("Failed to delete channel", { description: error.message }),
+  });
+
+  const toggleMuteMutation = (trpc as any).channels.toggleMute.useMutation({
+    onSuccess: (data: any) => {
+      muteQuery.refetch();
+      toast.success(data.muted ? "Notifications muted" : "Notifications enabled");
+    },
+    onError: (error: any) => toast.error("Failed to toggle notifications", { description: error.message }),
+  });
+
+  const uploadAttachmentMutation = (trpc as any).channels.uploadAttachment.useMutation({
+    onSuccess: (data: any) => {
+      messagesQuery.refetch();
+      toast.success(`File sent: ${data.fileName}`);
+    },
+    onError: (error: any) => toast.error("Failed to upload file", { description: error.message }),
   });
 
   const { user } = useAuth();
   const { displayName, displayInitials, displayRole } = useDisplayUser();
   const channels = channelsQuery.data || [];
-  const messages = messagesQuery.data || [];
+  const channelMessages = messagesQuery.data || [];
   const activeChannel = channels.find((c: any) => c.id === selectedChannel);
-  const filteredChannels = channels;
+  const members = membersQuery.data || [];
+  const isMuted = muteQuery.data?.muted || false;
 
   // Auto-select first channel when channels load
   useEffect(() => {
@@ -112,14 +136,19 @@ export default function CompanyChannels() {
     }
   }, [channels, selectedChannel]);
 
-  const handleSendMessage = () => {
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [channelMessages]);
+
+  const handleSendMessage = useCallback(() => {
     if (messageInput.trim() && selectedChannel) {
       sendMessageMutation.mutate({
         channelId: selectedChannel,
         content: messageInput.trim(),
       });
     }
-  };
+  }, [messageInput, selectedChannel]);
 
   const handleCreateChannel = () => {
     if (newChannelName.trim()) {
@@ -129,6 +158,63 @@ export default function CompanyChannels() {
         type: newChannelType,
       });
     }
+  };
+
+  const handleOpenSettings = () => {
+    if (activeChannel) {
+      setEditName(activeChannel.name);
+      setEditDesc(activeChannel.description || "");
+      setEditType(activeChannel.type);
+      setShowSettings(true);
+    }
+  };
+
+  const handleSaveSettings = () => {
+    if (!selectedChannel) return;
+    updateChannelMutation.mutate({
+      channelId: selectedChannel,
+      name: editName.trim() || undefined,
+      description: editDesc.trim(),
+      type: editType,
+    });
+  };
+
+  const handleDeleteChannel = () => {
+    if (!selectedChannel) return;
+    if (confirm("Are you sure you want to delete this channel? This cannot be undone.")) {
+      deleteChannelMutation.mutate({ channelId: selectedChannel });
+    }
+  };
+
+  const handleToggleMute = () => {
+    if (selectedChannel) toggleMuteMutation.mutate({ channelId: selectedChannel });
+  };
+
+  const handleFileSelect = () => fileInputRef.current?.click();
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !selectedChannel) return;
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`File too large: ${file.name}`, { description: "Max 10MB" });
+        continue;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(",")[1] || "";
+        uploadAttachmentMutation.mutate({
+          channelId: selectedChannel,
+          fileName: file.name,
+          fileData: base64,
+          mimeType: file.type || "application/octet-stream",
+          fileSize: file.size,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
   };
 
   if (channelsQuery.isLoading) {
@@ -190,7 +276,7 @@ export default function CompanyChannels() {
 
         {/* Channels List */}
         <div className="flex-1 overflow-y-auto">
-          {filteredChannels.map((channel: any) => (
+          {channels.map((channel: any) => (
             <button
               key={channel.id}
               onClick={() => setSelectedChannel(channel.id)}
@@ -269,6 +355,7 @@ export default function CompanyChannels() {
                   variant="outline"
                   size="sm"
                   className="border-slate-700 text-slate-400 hover:bg-slate-700"
+                  onClick={() => setShowMembers(true)}
                 >
                   <Users size={18} />
                   <span className="ml-2">{activeChannel.memberCount}</span>
@@ -276,14 +363,17 @@ export default function CompanyChannels() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-700 text-slate-400 hover:bg-slate-700"
+                  className={`border-slate-700 hover:bg-slate-700 ${isMuted ? "text-red-400" : "text-slate-400"}`}
+                  onClick={handleToggleMute}
+                  disabled={toggleMuteMutation.isPending}
                 >
-                  <Bell size={18} />
+                  {isMuted ? <BellOff size={18} /> : <Bell size={18} />}
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="border-slate-700 text-slate-400 hover:bg-slate-700"
+                  onClick={handleOpenSettings}
                 >
                   <Settings size={18} />
                 </Button>
@@ -292,7 +382,7 @@ export default function CompanyChannels() {
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-slate-900">
-              {messages.map((message: any) => (
+              {channelMessages.map((message: any) => (
                 <div key={message.id} className="flex gap-4">
                   <div className="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">
                     {message.author
@@ -348,12 +438,29 @@ export default function CompanyChannels() {
                   </button>
                 </div>
               ))}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Message Input */}
             <div className="bg-slate-800 border-t border-slate-700 px-6 py-4">
+              {uploadAttachmentMutation.isPending && (
+                <div className="mb-2 px-3 py-2 bg-blue-900/30 border border-blue-700/50 rounded text-xs text-blue-300 flex items-center gap-2">
+                  <RefreshCw size={14} className="animate-spin" /> Uploading file...
+                </div>
+              )}
               <div className="flex gap-3">
-                <button className="p-2 hover:bg-slate-700 rounded transition-colors">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip"
+                />
+                <button
+                  className="p-2 hover:bg-slate-700 rounded transition-colors"
+                  onClick={handleFileSelect}
+                  title="Attach file"
+                >
                   <Paperclip size={20} className="text-slate-400" />
                 </button>
 
@@ -477,6 +584,128 @@ export default function CompanyChannels() {
           </Card>
         </div>
       )}
+
+    {/* Channel Settings Modal */}
+    {showSettings && activeChannel && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <Card className="bg-slate-800 border-slate-700 p-6 w-[420px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Channel Settings</h2>
+            <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-slate-700 rounded">
+              <X size={20} className="text-slate-400" />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Channel Name</label>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e: any) => setEditName(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Description</label>
+              <textarea
+                rows={3}
+                value={editDesc}
+                onChange={(e: any) => setEditDesc(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white placeholder-gray-500 focus:outline-none focus:border-blue-600"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-300 mb-2">Visibility</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="editType" value="public" checked={editType === "public"} onChange={() => setEditType("public")} className="rounded" />
+                  <span className="text-slate-300">Public</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="editType" value="private" checked={editType === "private"} onChange={() => setEditType("private")} className="rounded" />
+                  <span className="text-slate-300">Private</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={handleDeleteChannel}
+                variant="outline"
+                className="border-red-700 text-red-400 hover:bg-red-900/30"
+                disabled={deleteChannelMutation.isPending}
+              >
+                <Trash2 size={16} className="mr-1" />
+                Delete
+              </Button>
+              <div className="flex-1" />
+              <Button
+                onClick={() => setShowSettings(false)}
+                variant="outline"
+                className="border-gray-700 text-slate-300 hover:bg-gray-800"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSaveSettings}
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={updateChannelMutation.isPending || !editName.trim()}
+              >
+                {updateChannelMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    )}
+
+    {/* Members Modal */}
+    {showMembers && activeChannel && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <Card className="bg-slate-800 border-slate-700 p-6 w-[420px] max-h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">
+              Members ({activeChannel.memberCount})
+            </h2>
+            <button onClick={() => setShowMembers(false)} className="p-1 hover:bg-slate-700 rounded">
+              <X size={20} className="text-slate-400" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {membersQuery.isLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}
+              </div>
+            ) : members.length === 0 ? (
+              <p className="text-slate-500 text-center py-4">No members found</p>
+            ) : (
+              members.map((member: any) => (
+                <div key={member.id} className="flex items-center gap-3 p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition-colors">
+                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
+                    {(member.name || "?").split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white font-semibold truncate">{member.name}</p>
+                    <p className="text-xs text-slate-400 capitalize">{member.role}</p>
+                  </div>
+                  <div className={`w-2 h-2 rounded-full ${member.isOnline ? "bg-green-500" : "bg-slate-600"}`} />
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="mt-4 pt-4 border-t border-slate-700">
+            <Button onClick={() => setShowMembers(false)} variant="outline" className="w-full border-gray-700 text-slate-300 hover:bg-gray-800">
+              Close
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )}
     </div>
   );
 }
