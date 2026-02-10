@@ -4,13 +4,14 @@
  * Cross-referenced with carrier ContractSigning.tsx
  */
 import React, { useState, useRef } from "react";
+import { useWizardHistory } from "@/hooks/useWizardHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { FileText, CheckCircle, ArrowLeft, Shield, DollarSign, ChevronRight, Sparkles, Clock, Building2, MapPin, Plus, Trash2, FileUp, Scan, Truck, Users } from "lucide-react";
+import { FileText, CheckCircle, ArrowLeft, Shield, DollarSign, ChevronRight, Sparkles, Clock, Building2, MapPin, Plus, Trash2, FileUp, Scan, Truck, Users, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
@@ -26,7 +27,7 @@ export default function ShipperAgreementWizard() {
   const { theme } = useTheme(); const isLight = theme === "light";
   const { user } = useAuth(); const [, setLocation] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [step, setStep] = useState<Step>("mode");
+  const [step, setStep] = useWizardHistory<Step>("mode", "/agreements");
   const [mode, setMode] = useState<Mode>(null);
   const [uploadedFile, setUploadedFile] = useState<File|null>(null);
   const [isDigitizing, setIsDigitizing] = useState(false);
@@ -142,9 +143,9 @@ export default function ShipperAgreementWizard() {
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Truck className="w-5 h-5 text-purple-500"/>Equipment & Operations</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div><label className={lb}>Equipment Types</label>
-              <div className="flex flex-wrap gap-2">{["dry_van","flatbed","reefer","tanker","step_deck","lowboy","box_truck","double_drop","rgn","conestoga","hotshot","power_only","pneumatic","hopper_bottom","dump_trailer","car_hauler","intermodal","curtain_side","sprinter_van","straight_truck"].map(eq=>(<button key={eq} onClick={()=>setEqTypes(eqTypes.includes(eq)?eqTypes.filter(e=>e!==eq):[...eqTypes,eq])} className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",eqTypes.includes(eq)?"bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white":isLight?"bg-slate-100 text-slate-500":"bg-slate-800 text-slate-400")}>{eq.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</button>))}</div>
+              <div className="flex flex-wrap gap-2">{["dry_van","reefer","flatbed","liquid_tank","gas_tank","bulk_hopper","hazmat_van","cryogenic"].map(eq=>(<button key={eq} onClick={()=>setEqTypes(eqTypes.includes(eq)?eqTypes.filter(e=>e!==eq):[...eqTypes,eq])} className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",eqTypes.includes(eq)?"bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white":isLight?"bg-slate-100 text-slate-500":"bg-slate-800 text-slate-400")}>{eq.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</button>))}</div>
             </div>
-            {eqTypes.some(e=>["tanker","pneumatic","hopper_bottom"].includes(e))&&<label className={cn("flex items-center gap-3 p-3 rounded-xl cursor-pointer",cl)}>
+            {eqTypes.some(e=>["liquid_tank","gas_tank","hazmat_van","cryogenic"].includes(e))&&<label className={cn("flex items-center gap-3 p-3 rounded-xl cursor-pointer",cl)}>
               <input type="checkbox" checked={hazmat} onChange={e=>setHazmat(e.target.checked)} className="w-4 h-4 accent-[#1473FF]"/>
               <div><p className={vl}>Hazmat Required</p><p className="text-xs text-slate-400">Carrier must have hazmat endorsement</p></div>
             </label>}

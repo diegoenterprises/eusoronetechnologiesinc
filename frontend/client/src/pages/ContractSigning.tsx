@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useMemo } from "react";
+import { useWizardHistory } from "@/hooks/useWizardHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +35,7 @@ export default function ContractSigning() {
   const params = useParams();
   const loadId = params.loadId as string;
 
-  const [step, setStep] = useState<Step>("review");
+  const [step, setStep] = useWizardHistory<Step>("review", "/bids");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [agreementId, setAgreementId] = useState<number | null>(null);

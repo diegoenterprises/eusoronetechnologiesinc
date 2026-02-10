@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,7 +83,41 @@ function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 export default function LoadCreationWizard() {
-  const [step, setStep] = useState(0);
+  const [, navigate] = useLocation();
+  const [step, setStepRaw] = useState(0);
+  const stepHistoryRef = useRef<number[]>([0]);
+  const isPopRef = useRef(false);
+
+  // Browser history sync — back button goes to previous wizard step
+  useEffect(() => {
+    window.history.replaceState({ wizardStep: 0, idx: 0 }, "");
+    const onPop = (e: PopStateEvent) => {
+      if (e.state?.wizardStep !== undefined) {
+        isPopRef.current = true;
+        setStepRaw(e.state.wizardStep);
+        stepHistoryRef.current = stepHistoryRef.current.slice(0, (e.state.idx ?? 0) + 1);
+      } else {
+        navigate("/loads");
+      }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [navigate]);
+
+  // Warn on tab close when form has data
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
+
+  const setStep = useCallback((next: number) => {
+    if (isPopRef.current) { isPopRef.current = false; return; }
+    const idx = stepHistoryRef.current.length;
+    stepHistoryRef.current.push(next);
+    setStepRaw(next);
+    window.history.pushState({ wizardStep: next, idx }, "");
+  }, []);
   const [formData, setFormData] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

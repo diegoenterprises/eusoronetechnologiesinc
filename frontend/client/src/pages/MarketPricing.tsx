@@ -83,11 +83,13 @@ function DirectionBadge({ dir }: { dir: string }) {
   return <span className="inline-flex items-center justify-center w-[52px] px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-600 text-slate-300">FLAT</span>;
 }
 
-function formatPrice(price: number): string {
-  if (price >= 1000) return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (price >= 10) return price.toFixed(2);
-  if (price >= 1) return price.toFixed(4);
-  return price.toFixed(4);
+function formatPrice(price: number | string | undefined | null): string {
+  const p = Number(price);
+  if (!isFinite(p)) return "—";
+  if (p >= 1000) return p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 10) return p.toFixed(2);
+  if (p >= 1) return p.toFixed(4);
+  return p.toFixed(4);
 }
 
 export default function MarketPricing() {
@@ -275,7 +277,7 @@ export default function MarketPricing() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-white">{formatPrice(c.price)}</span>
                     <span className={`text-xs font-bold ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-                      {isUp ? "+" : ""}{c.changePercent.toFixed(2)}%
+                      {isUp ? "+" : ""}{Number(c.changePercent || 0).toFixed(2)}%
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-1.5">
@@ -342,7 +344,7 @@ export default function MarketPricing() {
                     <td className="px-4 py-3 text-xs font-semibold text-white">{c.name}</td>
                     <td className="px-4 py-3 text-sm font-bold text-white text-right">{formatPrice(c.price)} <span className="text-[10px] text-slate-500">{c.unit}</span></td>
                     <td className={`px-4 py-3 text-sm font-bold text-right ${isUp ? "text-emerald-400" : "text-red-400"}`}>
-                      {isUp ? "+" : ""}{c.changePercent.toFixed(2)}%
+                      {isUp ? "+" : ""}{Number(c.changePercent || 0).toFixed(2)}%
                     </td>
                     <td className="px-4 py-3 text-center"><DirectionBadge dir={c.intraday} /></td>
                     <td className="px-4 py-3 text-center"><DirectionBadge dir={c.daily} /></td>
@@ -367,7 +369,7 @@ export default function MarketPricing() {
                   {selected.name}
                   <Badge className="text-[10px] bg-slate-700 text-cyan-400 border-slate-600">{selected.symbol}</Badge>
                   <Badge className={`text-[10px] border ${selected.changePercent > 0 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
-                    {selected.changePercent > 0 ? "+" : ""}{selected.changePercent.toFixed(2)}%
+                    {selected.changePercent > 0 ? "+" : ""}{Number(selected.changePercent || 0).toFixed(2)}%
                   </Badge>
                 </CardTitle>
                 <p className="text-slate-500 text-xs mt-1">{selected.category} · {selected.unit} · Vol: {selected.volume}</p>
@@ -375,7 +377,7 @@ export default function MarketPricing() {
               <div className="text-right">
                 <p className="text-3xl font-bold text-white">{formatPrice(selected.price)}</p>
                 <p className={`text-sm font-bold ${selected.change > 0 ? "text-emerald-400" : "text-red-400"}`}>
-                  {selected.change > 0 ? "+" : ""}{selected.change.toFixed(selected.price > 100 ? 2 : 4)}
+                  {selected.change > 0 ? "+" : ""}{Number(selected.change || 0).toFixed(selected.price > 100 ? 2 : 4)}
                 </p>
               </div>
             </div>
@@ -425,7 +427,7 @@ export default function MarketPricing() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-white">{formatPrice(c.price)}</span>
-                  <span className="text-xs font-bold text-emerald-400 w-16 text-right">+{c.changePercent.toFixed(2)}%</span>
+                  <span className="text-xs font-bold text-emerald-400 w-16 text-right">+{Number(c.changePercent || 0).toFixed(2)}%</span>
                 </div>
               </div>
             ))}
@@ -450,7 +452,7 @@ export default function MarketPricing() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-white">{formatPrice(c.price)}</span>
-                  <span className="text-xs font-bold text-red-400 w-16 text-right">{c.changePercent.toFixed(2)}%</span>
+                  <span className="text-xs font-bold text-red-400 w-16 text-right">{Number(c.changePercent || 0).toFixed(2)}%</span>
                 </div>
               </div>
             ))}
