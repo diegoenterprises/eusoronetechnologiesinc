@@ -93,7 +93,7 @@ export default function ShipperAgreementWizard() {
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" className={cn("rounded-xl",isLight?"hover:bg-slate-100":"hover:bg-slate-700")} onClick={()=>setLocation("/loads")}><ArrowLeft className="w-4 h-4"/></Button>
+        <Button variant="ghost" size="sm" className={cn("rounded-xl",isLight?"hover:bg-slate-100":"hover:bg-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4"/></Button>
         <div><h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Agreement Wizard</h1><p className={mt}>Generate or digitize a carrier-shipper agreement</p></div>
       </div>
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
@@ -142,12 +142,12 @@ export default function ShipperAgreementWizard() {
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Truck className="w-5 h-5 text-purple-500"/>Equipment & Operations</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div><label className={lb}>Equipment Types</label>
-              <div className="flex flex-wrap gap-2">{["dry_van","flatbed","reefer","tanker","step_deck","lowboy","box_truck"].map(eq=>(<button key={eq} onClick={()=>setEqTypes(eqTypes.includes(eq)?eqTypes.filter(e=>e!==eq):[...eqTypes,eq])} className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",eqTypes.includes(eq)?"bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white":isLight?"bg-slate-100 text-slate-500":"bg-slate-800 text-slate-400")}>{eq.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</button>))}</div>
+              <div className="flex flex-wrap gap-2">{["dry_van","flatbed","reefer","tanker","step_deck","lowboy","box_truck","double_drop","rgn","conestoga","hotshot","power_only","pneumatic","hopper_bottom","dump_trailer","car_hauler","intermodal","curtain_side","sprinter_van","straight_truck"].map(eq=>(<button key={eq} onClick={()=>setEqTypes(eqTypes.includes(eq)?eqTypes.filter(e=>e!==eq):[...eqTypes,eq])} className={cn("px-3 py-1.5 rounded-full text-xs font-medium transition-all",eqTypes.includes(eq)?"bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white":isLight?"bg-slate-100 text-slate-500":"bg-slate-800 text-slate-400")}>{eq.replace(/_/g," ").replace(/\b\w/g,c=>c.toUpperCase())}</button>))}</div>
             </div>
-            <label className={cn("flex items-center gap-3 p-3 rounded-xl cursor-pointer",cl)}>
+            {eqTypes.some(e=>["tanker","pneumatic","hopper_bottom"].includes(e))&&<label className={cn("flex items-center gap-3 p-3 rounded-xl cursor-pointer",cl)}>
               <input type="checkbox" checked={hazmat} onChange={e=>setHazmat(e.target.checked)} className="w-4 h-4 accent-[#1473FF]"/>
               <div><p className={vl}>Hazmat Required</p><p className="text-xs text-slate-400">Carrier must have hazmat endorsement</p></div>
-            </label>
+            </label>}
           </CardContent></Card>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("mode")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
@@ -275,7 +275,7 @@ export default function ShipperAgreementWizard() {
             </div>
           </div>
           <div className="mt-8 flex justify-center gap-3">
-            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setLocation("/loads")}><ArrowLeft className="w-4 h-4 mr-2"/>My Loads</Button>
+            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4 mr-2"/>Agreements</Button>
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setLocation("/documents")}><FileText className="w-4 h-4 mr-2"/>View Documents</Button>
           </div>
         </div>

@@ -299,7 +299,7 @@ export default function BrokerContractWizard() {
                 <div><label className={lb}>Expires</label><Input type="date" value={expDate} onChange={(e: any) => setExpDate(e.target.value)} className={ic} /></div>
               </div>
               <div><label className={lb}>Equipment</label>
-                <div className="flex flex-wrap gap-2">{["dry_van", "flatbed", "reefer", "tanker", "step_deck"].map(eq => (
+                <div className="flex flex-wrap gap-2">{["dry_van", "flatbed", "reefer", "tanker", "step_deck", "lowboy", "box_truck", "double_drop", "rgn", "conestoga", "hotshot", "power_only", "pneumatic", "hopper_bottom", "dump_trailer", "car_hauler", "intermodal", "curtain_side", "sprinter_van", "straight_truck"].map(eq => (
                   <button key={eq} onClick={() => setEqTypes(eqTypes.includes(eq) ? eqTypes.filter(e => e !== eq) : [...eqTypes, eq])} className={cn("px-3 py-1.5 rounded-full text-xs font-medium", eqTypes.includes(eq) ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-500" : "bg-slate-800 text-slate-400")}>{eq.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</button>
                 ))}</div>
               </div>
