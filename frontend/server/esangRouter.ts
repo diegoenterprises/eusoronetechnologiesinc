@@ -154,6 +154,95 @@ export const esangRouter = router({
     return { success: true };
   }),
 
+  /**
+   * MULTI-MODEL INTENT CLASSIFICATION & ROUTING
+   * Extracted from Python ESANGMultiModelOrchestrator architecture
+   *
+   * Routes user requests to the appropriate model/handler:
+   * - COMMAND: Logic model (structured actions — assign load, start tracking)
+   * - NEGOTIATION: Logic model (rate proposals, counter-offers)
+   * - COMPLIANCE_QUERY: Logic model + ERG database (regulatory, hazmat)
+   * - GENERAL_QUESTION: Creative model (summaries, Q&A)
+   * - NEWS_SUMMARY: Creative model (news feed, market updates)
+   *
+   * In production: GPT-4.1-mini for logic, Gemini 2.5 Flash for creative
+   * Currently: Gemini handles both, but intent classification enables future split
+   */
+  classifyIntent: protectedProcedure
+    .input(z.object({
+      message: z.string().min(1).max(5000),
+      context: z.object({
+        currentPage: z.string().optional(),
+        loadId: z.string().optional(),
+        role: z.string().optional(),
+      }).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const msg = input.message.toLowerCase();
+
+      // Rule-based intent classification (fast path — no API call needed)
+      let intent: "COMMAND" | "NEGOTIATION" | "COMPLIANCE_QUERY" | "GENERAL_QUESTION" | "NEWS_SUMMARY" = "GENERAL_QUESTION";
+      let modelTarget: "logic" | "creative" = "creative";
+      let confidence = 0.85;
+
+      // Command patterns
+      const commandPatterns = ["assign", "start tracking", "dispatch", "cancel load", "update status", "transition", "create load", "post load", "submit bid"];
+      if (commandPatterns.some(p => msg.includes(p))) {
+        intent = "COMMAND";
+        modelTarget = "logic";
+        confidence = 0.92;
+      }
+      // Negotiation patterns
+      else if (/\$[\d,.]+|rate|counter.?offer|negotiate|bid|i.?ll do it for|price|per mile/.test(msg)) {
+        intent = "NEGOTIATION";
+        modelTarget = "logic";
+        confidence = 0.90;
+      }
+      // Compliance / ERG patterns
+      else if (/erg|un\d{4}|hazmat|compliance|hos|dot|fmcsa|placard|endorsement|hazard class|isolation distance|ppe|emergency/.test(msg)) {
+        intent = "COMPLIANCE_QUERY";
+        modelTarget = "logic";
+        confidence = 0.95;
+      }
+      // News patterns
+      else if (/news|market|update|summary|trend|headline|what.?s happening/.test(msg)) {
+        intent = "NEWS_SUMMARY";
+        modelTarget = "creative";
+        confidence = 0.88;
+      }
+
+      // Route to appropriate handler
+      let response: any;
+      if (modelTarget === "logic" && (intent === "COMPLIANCE_QUERY")) {
+        // For compliance queries, use ERG database directly
+        const ergMatch = msg.match(/un\s?(\d{4})/i);
+        if (ergMatch) {
+          const info = getFullERGInfo(ergMatch[1]);
+          if (info) {
+            response = { message: `ERG data for UN${ergMatch[1]}: Guide ${(info as any).guide?.number || 'N/A'}, ${(info as any).material?.name || 'Unknown'}`, data: info, source: "erg_database" };
+          }
+        }
+        if (!response) {
+          // Fall through to Gemini for complex compliance queries
+          response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId });
+          response = { ...response, source: "gemini_logic" };
+        }
+      } else {
+        // All other intents go to Gemini (both logic and creative for now)
+        response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId });
+        response = { ...response, source: modelTarget === "logic" ? "gemini_logic" : "gemini_creative" };
+      }
+
+      return {
+        intent,
+        modelTarget,
+        confidence,
+        modelUsed: "gemini-2.0-flash", // Current single model
+        futureModels: { logic: "gpt-4.1-mini", creative: "gemini-2.5-flash" },
+        response,
+      };
+    }),
+
   // Additional ESANG AI procedures
   analyzeBidFairness: protectedProcedure.input(z.object({ loadId: z.string(), bidAmount: z.number() })).mutation(async ({ input }) => ({ fair: true, marketRate: input.bidAmount * 1.05, recommendation: "Competitive bid" })),
   classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => {
