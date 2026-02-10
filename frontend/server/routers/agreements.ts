@@ -16,6 +16,7 @@ import {
   agreementAmendments,
   users,
   companies,
+  documents,
 } from "../../drizzle/schema";
 import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
 
@@ -37,6 +38,48 @@ function decryptAgreement(agreement: any): any {
     if (typeof result[f] === "string") result[f] = decryptJSON(result[f]);
   }
   return result;
+}
+
+// ============================================================================
+// HELPER: Auto-file signed/completed agreements to Documents Center
+// Files for BOTH partyA and partyB (shipper, carrier, broker — all types)
+// ============================================================================
+async function fileAgreementToDocuments(agreementId: number, status: string) {
+  try {
+    const db = await getDb();
+    if (!db) return;
+
+    const [agreement] = await db.select().from(agreements).where(eq(agreements.id, agreementId)).limit(1);
+    if (!agreement) return;
+
+    const partyIds = [agreement.partyAUserId, agreement.partyBUserId].filter(Boolean) as number[];
+    const docName = `Agreement ${agreement.agreementNumber || `#${agreementId}`} — ${status === "active" ? "Fully Executed" : status.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}`;
+    const docType = "agreements";
+
+    for (const userId of partyIds) {
+      // Check if already filed for this user (avoid duplicates on re-sign or re-update)
+      const existing = await db.select({ id: documents.id }).from(documents)
+        .where(and(
+          eq(documents.userId, userId),
+          eq(documents.name, docName),
+        )).limit(1);
+
+      if (existing.length > 0) continue;
+
+      await db.insert(documents).values({
+        userId,
+        name: docName,
+        type: docType,
+        status: "active",
+        fileUrl: `agreement://${agreementId}`,
+        expiryDate: agreement.expirationDate || null,
+      });
+    }
+
+    console.log(`[Agreements] Filed agreement ${agreementId} (${status}) to Documents for ${partyIds.length} parties`);
+  } catch (err: any) {
+    console.error(`[Agreements] fileAgreementToDocuments error:`, err?.message?.slice(0, 200));
+  }
 }
 
 // ============================================================================
@@ -555,6 +598,12 @@ export const agreementsRouter = router({
       if (input.clauses) updateData.clauses = input.clauses;
 
       await db.update(agreements).set(updateData).where(eq(agreements.id, input.id));
+
+      // Auto-file to Documents Center when agreement becomes active or completed
+      if (input.status && ["active", "completed", "signed"].includes(input.status)) {
+        await fileAgreementToDocuments(input.id, input.status);
+      }
+
       return { success: true, id: input.id };
     }),
 
@@ -623,6 +672,10 @@ export const agreementsRouter = router({
         await db.update(agreements)
           .set({ status: "active" })
           .where(eq(agreements.id, input.agreementId));
+
+        // Auto-file to Documents Center for both parties
+        await fileAgreementToDocuments(input.agreementId, "active");
+
         return {
           success: true,
           status: "active",
