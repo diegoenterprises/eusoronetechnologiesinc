@@ -1,8 +1,9 @@
 /**
  * LOAD BOARD PAGE
- * Marketplace-style load board matching the mobile-first design:
+ * Marketplace-style load board matching the My Loads premium design:
+ * - Week date picker with day selector
  * - Filter pill tabs: All / Posted / Bidding / In Transit / Delivered
- * - Load cards with company branding, route line, equipment tags
+ * - Load cards with company branding, cargo animation, route line, equipment tags
  * - Bid / View action buttons
  * Theme-aware | Brand gradient | Oil & gas industry focused
  */
@@ -19,11 +20,36 @@ import { useTheme } from "@/contexts/ThemeContext";
 import {
   Search, MapPin, Package, DollarSign, Truck, RefreshCw,
   Eye, Clock, Navigation, Building2, Droplets, FlaskConical,
-  AlertTriangle, Gavel, TrendingUp
+  AlertTriangle, Gavel, TrendingUp, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { useLocation } from "wouter";
+import LoadCargoAnimation from "@/components/LoadCargoAnimation";
 
-type BoardFilter = "all" | "posted" | "bidding" | "assigned" | "in_transit" | "delivered";
+type BoardFilter = "all" | "posted" | "bidding" | "in_transit" | "delivered";
+
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
+
+function getWeekDays(baseDate: Date) {
+  const d = new Date(baseDate);
+  const day = d.getDay();
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - ((day + 6) % 7));
+  const days: Date[] = [];
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(monday);
+    dd.setDate(monday.getDate() + i);
+    days.push(dd);
+  }
+  return days;
+}
+
+function formatMonthYear(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
+
+function isSameDay(a: Date, b: Date) {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
 
 export default function LoadBoard() {
   const { theme } = useTheme();
@@ -31,8 +57,20 @@ export default function LoadBoard() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilter, setActiveFilter] = useState<BoardFilter>("all");
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [weekBase, setWeekBase] = useState(new Date());
 
-  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, marketplace: true });
+  const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, marketplace: true, date: dateStr });
+
+  const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
+
+  const shiftWeek = (dir: number) => {
+    const d = new Date(weekBase);
+    d.setDate(d.getDate() + dir * 7);
+    setWeekBase(d);
+    setSelectedDate(d);
+  };
 
   const allLoads = (loadsQuery.data as any[]) || [];
   const totalLoads = allLoads.length;
@@ -94,35 +132,6 @@ export default function LoadBoard() {
         </Button>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {[
-          { label: "Total Loads", value: totalLoads, icon: Package, color: "blue" },
-          { label: "Posted", value: postedLoads, icon: Clock, color: "yellow" },
-          { label: "In Transit", value: inTransit, icon: Truck, color: "green" },
-          { label: "Total Value", value: `$${totalValue.toLocaleString()}`, icon: DollarSign, color: "emerald" },
-        ].map((stat) => (
-          <Card key={stat.label} className={cn(
-            "rounded-xl border",
-            isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
-          )}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl bg-${stat.color}-500/15`}>
-                  <stat.icon className={`w-5 h-5 text-${stat.color}-500`} />
-                </div>
-                <div>
-                  {loadsQuery.isLoading ? <Skeleton className="h-7 w-12" /> : (
-                    <p className={`text-xl font-bold text-${stat.color}-500`}>{stat.value}</p>
-                  )}
-                  <p className="text-[11px] text-slate-400">{stat.label}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
       {/* ── Search ── */}
       <div className={cn(
         "relative rounded-xl border",
@@ -138,6 +147,47 @@ export default function LoadBoard() {
             isLight ? "bg-transparent" : "bg-transparent text-white placeholder:text-slate-400"
           )}
         />
+      </div>
+
+      {/* ── Week Date Picker ── */}
+      <div className={cn(
+        "rounded-xl border p-4",
+        isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
+      )}>
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
+            <ChevronLeft className="w-5 h-5 text-slate-400" />
+          </button>
+          <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
+            {formatMonthYear(selectedDate)}
+          </p>
+          <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
+            <ChevronRight className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day, i) => {
+            const isSelected = isSameDay(day, selectedDate);
+            const isToday = isSameDay(day, new Date());
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedDate(day)}
+                className={cn(
+                  "flex flex-col items-center py-2 rounded-xl transition-all text-center",
+                  isSelected
+                    ? "bg-gradient-to-b from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"
+                    : isToday
+                      ? isLight ? "bg-slate-100 text-slate-800" : "bg-slate-700 text-white"
+                      : isLight ? "hover:bg-slate-50 text-slate-600" : "hover:bg-slate-700/50 text-slate-400"
+                )}
+              >
+                <span className="text-[10px] font-medium mb-0.5">{DAY_LABELS[day.getDay()]}</span>
+                <span className={cn("text-base font-bold", isSelected ? "text-white" : "")}>{day.getDate()}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ── Filter Tabs ── */}
@@ -185,6 +235,7 @@ export default function LoadBoard() {
             const isActive = ["in_transit", "assigned"].includes(load.status);
             const canBid = load.status === "posted";
             const hazmat = load.hazmatClass || (["hazmat", "chemicals", "petroleum"].includes(load.cargoType) ? "Hazardous" : null);
+            const companyName = load.companyName || load.shipperName || (load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo");
 
             return (
               <Card key={load.id} className={cn(
@@ -192,21 +243,29 @@ export default function LoadBoard() {
                 isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50"
               )}>
                 <CardContent className="p-0">
-                  {/* Card Header */}
+                  {/* ── Card Header: Company + Load # ── */}
                   <div className={cn("flex items-center justify-between px-5 pt-4 pb-3", isLight ? "border-b border-slate-100" : "border-b border-slate-700/30")}>
                     <div className="flex items-center gap-3">
+                      {(load.companyLogo || load.shipperProfilePicture) ? (
+                        <img
+                          src={load.companyLogo || load.shipperProfilePicture}
+                          alt={load.companyName || load.shipperName || "Company"}
+                          className="w-10 h-10 rounded-xl object-cover"
+                          onError={(e: any) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                        />
+                      ) : null}
                       <div className={cn(
                         "w-10 h-10 rounded-xl flex items-center justify-center",
                         load.cargoType === "petroleum" ? "bg-orange-500/15" :
-                        load.cargoType === "chemicals" ? "bg-purple-500/15" : "bg-blue-500/15"
+                        load.cargoType === "chemicals" ? "bg-purple-500/15" :
+                        load.cargoType === "gas" ? "bg-red-500/15" : "bg-blue-500/15",
+                        (load.companyLogo || load.shipperProfilePicture) ? "hidden" : ""
                       )}>
                         {getCargoIcon(load.cargoType)}
                       </div>
                       <div>
-                        <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>
-                          {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo"}
-                        </p>
-                        <p className="text-xs text-slate-400">{load.createdAt || "Recent"}</p>
+                        <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>{companyName}</p>
+                        <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : load.createdAt ? new Date(load.createdAt).toLocaleDateString() : "Recent"}</p>
                       </div>
                     </div>
                     <p className={cn("text-sm font-mono font-bold", isLight ? "text-slate-600" : "text-slate-300")}>
@@ -214,27 +273,32 @@ export default function LoadBoard() {
                     </p>
                   </div>
 
-                  {/* Equipment + Status + Tags */}
+                  {/* ── Equipment + Status + Tags Row ── */}
                   <div className="px-5 pt-3 pb-2">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
                         <Truck className="w-4 h-4 text-slate-400" />
                         <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-slate-300")}>
-                          {load.equipmentType === "tanker" ? "Tanker Truck" : load.equipmentType === "flatbed" ? "Flatbed" : "Semi Truck"}
+                          {load.equipmentType === "tank" || load.equipmentType === "liquid_tank" ? "Liquid Tank Trailer"
+                            : load.equipmentType === "tanker" || load.equipmentType === "gas_tank" ? "Gas Tank Trailer"
+                            : load.equipmentType === "flatbed" ? "Flatbed"
+                            : load.equipmentType === "reefer" ? "Refrigerated (Reefer)"
+                            : load.equipmentType === "dry-van" || load.equipmentType === "dry_van" ? "Dry Van"
+                            : load.equipmentType === "hopper" ? "Dry Bulk / Hopper"
+                            : load.equipmentType === "cryogenic" ? "Cryogenic Tank"
+                            : "Semi Truck"}
                         </span>
+                        <span className="text-slate-400 text-xs">|</span>
+                        <span className="text-xs text-slate-400">{(load.compartments || 1) > 1 ? `${load.compartments} compartments` : "Single compartment"}</span>
                       </div>
                       <Badge className={cn("border-0 text-xs font-bold px-3 py-1 rounded-md", statusCfg.bg, statusCfg.text)}>
                         {statusCfg.label}
                       </Badge>
                     </div>
 
+                    {/* Tags Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {load.distance > 0 && (
-                          <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
-                            {load.distance} miles
-                          </span>
-                        )}
                         {load.weight > 0 && (
                           <span className={cn("text-xs px-2.5 py-1 rounded-full font-medium border", isLight ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-700/50 border-slate-600 text-slate-300")}>
                             {Number(load.weight).toLocaleString()} {load.weightUnit || "lbs"}
@@ -246,37 +310,62 @@ export default function LoadBoard() {
                           </span>
                         )}
                       </div>
-                      <p className="text-xl font-bold text-green-500">${(load.rate || 0).toLocaleString()}</p>
+                      <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
                     </div>
                     {load.distance > 0 && load.rate > 0 && (
                       <p className="text-xs text-slate-400 text-right mt-0.5">${(load.rate / Math.max(load.distance, 1)).toFixed(2)}/mi</p>
                     )}
                   </div>
 
-                  {/* Route Visualization */}
+                  {/* ── Animated Cargo Graphic ── */}
+                  <div className={cn("mx-5 mb-2 rounded-xl overflow-hidden", isLight ? "bg-slate-50/60" : "bg-slate-900/30")}>
+                    <LoadCargoAnimation
+                      equipmentType={load.equipmentType}
+                      cargoType={load.cargoType}
+                      compartments={load.compartments || 1}
+                      height={110}
+                      isLight={isLight}
+                    />
+                  </div>
+
+                  {/* ── Route Visualization ── */}
                   <div className={cn("px-5 py-4 mx-5 mb-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-900/40")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-green-500" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF] to-[#4A90FF] flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-white" />
                         </div>
                         <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
                       </div>
                       <div className="flex-1 mx-4 flex items-center">
-                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
-                        <Navigation className={cn("w-4 h-4 mx-1 rotate-90", isActive ? "text-green-500" : "text-slate-400")} />
-                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
+                        <div
+                          className="flex-1 h-[2px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(to right, #1473FF, #BE01FF)',
+                            WebkitMaskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                            maskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                          }}
+                        />
+                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-[#8B5CF6]" />
+                        <div
+                          className="flex-1 h-[2px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(to right, #6C47FF, #BE01FF)',
+                            WebkitMaskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                            maskImage: 'repeating-linear-gradient(to right, black 0 8px, transparent 8px 14px)',
+                          }}
+                        />
                       </div>
                       <div className="flex items-center gap-2">
                         <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
-                        <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center">
-                          <Building2 className="w-4 h-4 text-red-500" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#8B5CF6] to-[#BE01FF] flex items-center justify-center">
+                          <Building2 className="w-4 h-4 text-white" />
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* ── Action Buttons ── */}
                   <div className="px-5 pb-4 flex justify-center gap-3">
                     {canBid ? (
                       <>
@@ -296,7 +385,7 @@ export default function LoadBoard() {
                       </>
                     ) : isActive ? (
                       <Button
-                        className="w-full max-w-xs bg-gradient-to-r from-emerald-500 to-cyan-500 text-white border-0 rounded-xl font-bold text-sm h-10"
+                        className="w-full max-w-xs bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white border-0 rounded-xl font-bold text-sm h-10"
                         onClick={() => setLocation(`/loads/${load.id}`)}
                       >
                         Track

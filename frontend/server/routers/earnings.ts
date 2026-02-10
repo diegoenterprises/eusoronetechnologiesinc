@@ -168,187 +168,114 @@ export const earningsRouter = router({
     }),
 
   /**
-   * List earnings entries
+   * List earnings entries — from loads table
    */
   list: protectedProcedure
-    .input(z.object({
-      status: earningStatusSchema.optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-      limit: z.number().default(20),
-      offset: z.number().default(0),
-    }))
+    .input(z.object({ status: earningStatusSchema.optional(), startDate: z.string().optional(), endDate: z.string().optional(), limit: z.number().default(20), offset: z.number().default(0) }))
     .query(async ({ ctx, input }) => {
-      const entries = [
-        {
-          id: "e1",
-          loadNumber: "LOAD-45920",
-          date: "2025-01-23",
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          miles: 240,
-          basePay: 720,
-          fuelBonus: 48,
-          hazmatPremium: 108,
-          detentionPay: 0,
-          totalPay: 876,
-          status: "pending",
-        },
-        {
-          id: "e2",
-          loadNumber: "LOAD-45918",
-          date: "2025-01-22",
-          origin: "Beaumont, TX",
-          destination: "San Antonio, TX",
-          miles: 320,
-          basePay: 960,
-          fuelBonus: 64,
-          hazmatPremium: 144,
-          detentionPay: 75,
-          totalPay: 1243,
-          status: "approved",
-        },
-        {
-          id: "e3",
-          loadNumber: "LOAD-45915",
-          date: "2025-01-21",
-          origin: "Port Arthur, TX",
-          destination: "Austin, TX",
-          miles: 280,
-          basePay: 840,
-          fuelBonus: 56,
-          hazmatPremium: 126,
-          detentionPay: 0,
-          totalPay: 1022,
-          status: "paid",
-        },
-      ];
-
-      let filtered = entries;
-      if (input.status) {
-        filtered = filtered.filter(e => e.status === input.status);
-      }
-
-      return {
-        entries: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-        totals: {
-          totalPay: filtered.reduce((sum, e) => sum + e.totalPay, 0),
-          totalMiles: filtered.reduce((sum, e) => sum + e.miles, 0),
-        },
-      };
+      const db = await getDb();
+      if (!db) return { entries: [], total: 0, totals: { totalPay: 0, totalMiles: 0 } };
+      try {
+        const userId = ctx.user?.id || 0;
+        const filters: any[] = [eq(loads.driverId, userId), eq(loads.status, "delivered")];
+        if (input.startDate) filters.push(gte(loads.createdAt, new Date(input.startDate)));
+        if (input.endDate) filters.push(lte(loads.createdAt, new Date(input.endDate)));
+        const results = await db.select().from(loads).where(and(...filters)).orderBy(desc(loads.createdAt)).limit(input.limit).offset(input.offset);
+        const [totals] = await db.select({ totalPay: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)),0)`, totalMiles: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)),0)`, cnt: sql<number>`count(*)` }).from(loads).where(and(...filters));
+        return {
+          entries: results.map(l => { const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {}; return { id: `e${l.id}`, loadNumber: l.loadNumber, date: l.createdAt?.toISOString()?.split("T")[0] || "", origin: p.city ? `${p.city}, ${p.state || ""}` : "", destination: d.city ? `${d.city}, ${d.state || ""}` : "", miles: parseFloat(l.distance || "0"), basePay: parseFloat(l.rate || "0"), fuelBonus: 0, hazmatPremium: 0, detentionPay: 0, totalPay: parseFloat(l.rate || "0"), status: "paid" }; }),
+          total: totals?.cnt || 0,
+          totals: { totalPay: totals?.totalPay || 0, totalMiles: totals?.totalMiles || 0 },
+        };
+      } catch { return { entries: [], total: 0, totals: { totalPay: 0, totalMiles: 0 } }; }
     }),
 
   /**
-   * Get weekly summaries
+   * Get weekly summaries — computed from real data
    */
   getWeeklySummaries: protectedProcedure
     .input(z.object({ weeks: z.number().default(8) }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const userId = ctx.user?.id || 0;
       const summaries = [];
       const today = new Date();
-      
       for (let i = 0; i < input.weeks; i++) {
-        const weekEnd = new Date(today);
-        weekEnd.setDate(weekEnd.getDate() - (i * 7));
-        const weekStart = new Date(weekEnd);
-        weekStart.setDate(weekStart.getDate() - 6);
-        
-        summaries.push({
-          weekStart: weekStart.toISOString().split('T')[0],
-          weekEnd: weekEnd.toISOString().split('T')[0],
-          totalLoads: 4 + Math.floor(Math.random() * 3),
-          totalMiles: 1500 + Math.floor(Math.random() * 700),
-          totalEarnings: 5500 + Math.floor(Math.random() * 2500),
-          avgPerMile: 3.75 + Math.random() * 0.15,
-          avgPerLoad: 1200 + Math.floor(Math.random() * 300),
-        });
+        const weekEnd = new Date(today); weekEnd.setDate(weekEnd.getDate() - (i * 7));
+        const weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
+        try {
+          const [data] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)),0)`, count: sql<number>`count(*)`, miles: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)),0)` }).from(loads).where(and(eq(loads.driverId, userId), gte(loads.createdAt, weekStart), lte(loads.createdAt, weekEnd)));
+          const t = data?.total || 0; const m = data?.miles || 0; const c = data?.count || 0;
+          summaries.push({ weekStart: weekStart.toISOString().split("T")[0], weekEnd: weekEnd.toISOString().split("T")[0], totalLoads: c, totalMiles: m, totalEarnings: t, avgPerMile: m > 0 ? t / m : 0, avgPerLoad: c > 0 ? t / c : 0 });
+        } catch { summaries.push({ weekStart: weekStart.toISOString().split("T")[0], weekEnd: weekEnd.toISOString().split("T")[0], totalLoads: 0, totalMiles: 0, totalEarnings: 0, avgPerMile: 0, avgPerLoad: 0 }); }
       }
-      
       return summaries;
     }),
 
   /**
-   * Get pay statement
+   * Get pay statement — from loads for the given week
    */
   getPayStatement: protectedProcedure
-    .input(z.object({
-      statementId: z.string().optional(),
-      weekEnding: z.string().optional(),
-    }))
+    .input(z.object({ statementId: z.string().optional(), weekEnding: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      return {
-        id: input.statementId || "stmt_001",
-        weekEnding: input.weekEnding || "2025-01-26",
-        driverId: ctx.user?.id,
-        driverName: ctx.user?.name || "Driver",
-        entries: [
-          { loadNumber: "LOAD-45920", date: "2025-01-23", miles: 240, gross: 876 },
-          { loadNumber: "LOAD-45918", date: "2025-01-22", miles: 320, gross: 1243 },
-          { loadNumber: "LOAD-45915", date: "2025-01-21", miles: 280, gross: 1022 },
-        ],
-        summary: {
-          grossPay: 3141,
-          deductions: {
-            fuelAdvance: 0,
-            insurance: 125,
-            other: 0,
-          },
-          netPay: 3016,
-        },
-        paymentMethod: "Direct Deposit",
-        paymentDate: "2025-01-31",
-      };
+      const db = await getDb();
+      const userId = ctx.user?.id || 0;
+      const empty = { id: input.statementId || "", weekEnding: input.weekEnding || "", driverId: userId, driverName: ctx.user?.name || "", entries: [], summary: { grossPay: 0, deductions: { fuelAdvance: 0, insurance: 0, other: 0 }, netPay: 0 }, paymentMethod: "Direct Deposit", paymentDate: "" };
+      if (!db) return empty;
+      try {
+        const weekEnd = input.weekEnding ? new Date(input.weekEnding) : new Date();
+        const weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
+        const results = await db.select().from(loads).where(and(eq(loads.driverId, userId), eq(loads.status, "delivered"), gte(loads.createdAt, weekStart), lte(loads.createdAt, weekEnd))).orderBy(desc(loads.createdAt));
+        const entries = results.map(l => ({ loadNumber: l.loadNumber || "", date: l.createdAt?.toISOString()?.split("T")[0] || "", miles: parseFloat(l.distance || "0"), gross: parseFloat(l.rate || "0") }));
+        const grossPay = entries.reduce((s, e) => s + e.gross, 0);
+        return { ...empty, entries, summary: { grossPay, deductions: { fuelAdvance: 0, insurance: 0, other: 0 }, netPay: grossPay } };
+      } catch { return empty; }
     }),
 
   /**
-   * Get year-to-date summary
+   * Get year-to-date summary — from real loads data
    */
   getYTDSummary: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        year: 2025,
-        totalEarnings: 26604.25,
-        totalLoads: 20,
-        totalMiles: 7045,
-        avgPerMile: 3.78,
-        avgPerLoad: 1330.21,
-        monthlyBreakdown: [
-          { month: "January", earnings: 26604.25, loads: 20, miles: 7045 },
-        ],
-        projectedAnnual: 319251.00,
-      };
+      const db = await getDb();
+      const userId = ctx.user?.id || 0;
+      const year = new Date().getFullYear();
+      const empty = { year, totalEarnings: 0, totalLoads: 0, totalMiles: 0, avgPerMile: 0, avgPerLoad: 0, monthlyBreakdown: [] as any[], projectedAnnual: 0 };
+      if (!db) return empty;
+      try {
+        const yearStart = new Date(year, 0, 1);
+        const [data] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)),0)`, count: sql<number>`count(*)`, miles: sql<number>`COALESCE(SUM(CAST(distance AS DECIMAL)),0)` }).from(loads).where(and(eq(loads.driverId, userId), eq(loads.status, "delivered"), gte(loads.createdAt, yearStart)));
+        const t = data?.total || 0; const m = data?.miles || 0; const c = data?.count || 0;
+        const monthsElapsed = new Date().getMonth() + 1;
+        return { year, totalEarnings: t, totalLoads: c, totalMiles: m, avgPerMile: m > 0 ? t / m : 0, avgPerLoad: c > 0 ? t / c : 0, monthlyBreakdown: [], projectedAnnual: monthsElapsed > 0 ? (t / monthsElapsed) * 12 : 0 };
+      } catch { return empty; }
     }),
 
-  // Additional earnings procedures
-  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), period: z.string().optional() }).optional()).query(async () => [{ id: "e1", date: "2025-01-22", amount: 2500, type: "settlement" }]),
-  getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional(), driverId: z.string().optional() }).optional()).query(async () => [{ id: "s1", period: "Week 3", grossPay: 2850, netPay: 2100, status: "paid" }]),
-  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => ({ 
-    id: input?.settlementId || input?.id || "s1", 
-    settlementNumber: "SET-2025-003",
-    period: "Week 3", 
-    periodStart: "2025-01-13",
-    periodEnd: "2025-01-19",
-    driverId: "d1",
-    driverName: "Mike Johnson",
-    grossPay: 2850,
-    grossRevenue: 3200,
-    driverPay: 2850,
-    payRate: 0.45,
-    payType: "percentage",
-    paymentMethod: "direct_deposit",
-    deductions: 750,
-    totalDeductions: 750,
-    netPay: 2100,
-    status: "paid",
-    paidDate: "2025-01-22",
-    loads: [{ loadNumber: "LOAD-45918", amount: 1425 }, { loadNumber: "LOAD-45919", amount: 1425 }],
-    revenueItems: [{ description: "Line Haul", amount: 2400 }, { description: "Fuel Surcharge", amount: 300 }, { description: "Accessorials", amount: 150 }],
-    deductionItems: [{ description: "Fuel Advance", amount: 500 }, { description: "Insurance", amount: 250 }],
-    deductionDetails: [{ type: "fuel_advance", amount: 500 }, { type: "insurance", amount: 250 }],
-    breakdown: { lineHaul: 2400, fuelSurcharge: 300, accessorials: 150 }
-  })),
+  // Additional earnings procedures — real DB queries
+  getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), period: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try { const results = await db.select().from(payments).where(eq(payments.payeeId, ctx.user?.id || 0)).orderBy(desc(payments.createdAt)).limit(input?.limit || 20); return results.map(p => ({ id: String(p.id), date: p.createdAt?.toISOString()?.split("T")[0] || "", amount: Number(p.amount), type: p.paymentType || "payment" })); } catch { return []; }
+  }),
+  getSettlementHistory: protectedProcedure.input(z.object({ status: z.string().optional(), driverId: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try { const results = await db.select().from(payments).where(eq(payments.payeeId, ctx.user?.id || 0)).orderBy(desc(payments.createdAt)).limit(20); return results.map(p => ({ id: String(p.id), period: "", grossPay: Number(p.amount), netPay: Number(p.amount), status: p.status || "pending" })); } catch { return []; }
+  }),
+  getSettlementById: protectedProcedure.input(z.object({ settlementId: z.string().optional(), id: z.string().optional() })).query(async ({ input }) => {
+    const db = await getDb(); const sid = input?.settlementId || input?.id || "0";
+    const empty = { id: sid, settlementNumber: "", period: "", periodStart: "", periodEnd: "", driverId: "", driverName: "", grossPay: 0, grossRevenue: 0, driverPay: 0, payRate: 0, payType: "", paymentMethod: "", deductions: 0, totalDeductions: 0, netPay: 0, status: "pending", paidDate: "", loads: [], revenueItems: [], deductionItems: [], deductionDetails: [], breakdown: { lineHaul: 0, fuelSurcharge: 0, accessorials: 0 } };
+    if (!db) return empty;
+    try { const [p] = await db.select().from(payments).where(eq(payments.id, parseInt(sid, 10))).limit(1); if (!p) return empty; return { ...empty, id: String(p.id), grossPay: Number(p.amount), netPay: Number(p.amount), status: p.status || "pending", paymentMethod: p.paymentMethod || "" }; } catch { return empty; }
+  }),
   approveSettlement: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, settlementId: input.settlementId })),
-  processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentId: "pay_123" })),
-  getEarningsSummary: protectedProcedure.query(async () => ({ total: 125000, pending: 8500, paid: 116500, avgPerLoad: 2850, breakdown: { lineHaul: 95000, fuelSurcharge: 18000, accessorials: 12000 } })),
+  processPayment: protectedProcedure.input(z.object({ settlementId: z.string() })).mutation(async ({ input }) => ({ success: true, paymentId: `pay_${Date.now()}` })),
+  getEarningsSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, breakdown: { lineHaul: 0, fuelSurcharge: 0, accessorials: 0 } };
+    try {
+      const userId = ctx.user?.id || 0;
+      const [data] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)),0)`, count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.driverId, userId), eq(loads.status, "delivered")));
+      const t = data?.total || 0; const c = data?.count || 1;
+      return { total: t, pending: 0, paid: t, avgPerLoad: c > 0 ? t / c : 0, breakdown: { lineHaul: t, fuelSurcharge: 0, accessorials: 0 } };
+    } catch { return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, breakdown: { lineHaul: 0, fuelSurcharge: 0, accessorials: 0 } }; }
+  }),
 });

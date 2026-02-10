@@ -645,7 +645,7 @@ export default function LoadCreationWizard() {
                             />
                             {/* ERG Suggestions Dropdown for this compartment */}
                             {showCompSuggestions && activeCompIdx === i && ergCompSearch.data?.results?.length > 0 && (
-                              <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
+                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl max-h-52 overflow-y-auto">
                                 <div className="px-3 py-1.5 text-[10px] text-slate-500 uppercase tracking-wide border-b border-slate-700/50">ERG 2020 — Compartment {i + 1}</div>
                                 {ergCompSearch.data.results.map((m: any, mi: number) => (
                                   <button key={`comp-${i}-${m.unNumber}-${mi}`} className="w-full text-left px-3 py-2 hover:bg-slate-700/50 flex items-center justify-between gap-2 border-b border-slate-700/20 last:border-0 transition-colors"
@@ -668,7 +668,7 @@ export default function LoadCreationWizard() {
                               </div>
                             )}
                             {showCompSuggestions && activeCompIdx === i && compSearchQuery.length >= 2 && ergCompSearch.isLoading && (
-                              <div className="absolute z-50 left-0 right-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-2">
+                              <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-2">
                                 <div className="flex items-center gap-2 text-slate-400 text-xs"><Sparkles className="w-3 h-3 animate-spin" />Searching ERG 2020...</div>
                               </div>
                             )}

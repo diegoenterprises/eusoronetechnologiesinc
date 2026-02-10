@@ -22,6 +22,7 @@ import { toast } from "sonner";
 export default function CompanyProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
 
   const companyQuery = (trpc as any).companies.getProfile.useQuery();
   const statsQuery = (trpc as any).companies.getStats.useQuery();
@@ -34,8 +35,41 @@ export default function CompanyProfile() {
   const company = companyQuery.data;
   const stats = statsQuery.data;
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file (PNG, JPG, etc.)");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      updateMutation.mutate({ logo: base64 }, {
+        onSuccess: () => {
+          toast.success("Company logo updated");
+          companyQuery.refetch();
+        },
+      });
+    };
+    reader.readAsDataURL(file);
+    // Reset input so re-uploading same file works
+    e.target.value = "";
+  };
+
   const handleEdit = () => {
-    setFormData(company || {});
+    // Sanitize null → "" so Zod doesn't reject null values
+    const sanitized: any = {};
+    if (company) {
+      Object.entries(company).forEach(([k, v]) => {
+        sanitized[k] = v ?? "";
+      });
+    }
+    setFormData(sanitized);
     setIsEditing(true);
   };
 
@@ -63,11 +97,31 @@ export default function CompanyProfile() {
         <Card className="bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border-cyan-500/30 rounded-xl">
           <CardContent className="p-6">
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-xl bg-slate-700/50 flex items-center justify-center">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+              <div
+                className="w-24 h-24 rounded-xl bg-slate-700/50 flex items-center justify-center relative cursor-pointer group overflow-hidden border-2 border-transparent hover:border-cyan-500/50 transition-all"
+                onClick={() => logoInputRef.current?.click()}
+                title="Click to upload company logo"
+              >
                 {company?.logo ? (
                   <img src={company.logo} alt={company.name} className="w-full h-full object-cover rounded-xl" />
                 ) : (
                   <Building className="w-12 h-12 text-slate-400" />
+                )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center rounded-xl">
+                  <Upload className="w-5 h-5 text-white mb-1" />
+                  <span className="text-white text-[10px] font-medium">Upload</span>
+                </div>
+                {updateMutation.isPending && (
+                  <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  </div>
                 )}
               </div>
               <div className="flex-1">
@@ -166,24 +220,42 @@ export default function CompanyProfile() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><label className="text-sm text-slate-400 mb-1 block">Company Name</label><Input value={formData.name || ""} onChange={(e: any) => setFormData({ ...formData, name: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Legal Name</label><Input value={formData.legalName || ""} onChange={(e: any) => setFormData({ ...formData, legalName: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">DOT Number</label><Input value={formData.dotNumber || ""} onChange={(e: any) => setFormData({ ...formData, dotNumber: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">MC Number</label><Input value={formData.mcNumber || ""} onChange={(e: any) => setFormData({ ...formData, mcNumber: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">EIN (Tax ID)</label><Input value={formData.ein || ""} onChange={(e: any) => setFormData({ ...formData, ein: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
                 <div><label className="text-sm text-slate-400 mb-1 block">Phone</label><Input value={formData.phone || ""} onChange={(e: any) => setFormData({ ...formData, phone: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
                 <div><label className="text-sm text-slate-400 mb-1 block">Email</label><Input value={formData.email || ""} onChange={(e: any) => setFormData({ ...formData, email: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
                 <div><label className="text-sm text-slate-400 mb-1 block">Website</label><Input value={formData.website || ""} onChange={(e: any) => setFormData({ ...formData, website: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
               </div>
               <div><label className="text-sm text-slate-400 mb-1 block">Address</label><Input value={formData.address || ""} onChange={(e: any) => setFormData({ ...formData, address: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><label className="text-sm text-slate-400 mb-1 block">City</label><Input value={formData.city || ""} onChange={(e: any) => setFormData({ ...formData, city: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">State</label><Input value={formData.state || ""} onChange={(e: any) => setFormData({ ...formData, state: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+                <div><label className="text-sm text-slate-400 mb-1 block">Zip Code</label><Input value={formData.zipCode || ""} onChange={(e: any) => setFormData({ ...formData, zipCode: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" /></div>
+              </div>
               <div><label className="text-sm text-slate-400 mb-1 block">Description</label><Textarea value={formData.description || ""} onChange={(e: any) => setFormData({ ...formData, description: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg min-h-[100px]" /></div>
               <div className="flex gap-3">
-                <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => updateMutation.mutate(formData)}>Save Changes</Button>
+                <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => {
+                  // Sanitize: ensure no null values sent to mutation
+                  const clean: any = {};
+                  Object.entries(formData).forEach(([k, v]) => { clean[k] = v ?? ""; });
+                  updateMutation.mutate(clean);
+                }}>Save Changes</Button>
                 <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setIsEditing(false)}>Cancel</Button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Phone</p><p className="text-white flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" />{company?.phone}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Email</p><p className="text-white flex items-center gap-2"><Mail className="w-4 h-4 text-slate-400" />{company?.email}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Website</p><p className="text-white flex items-center gap-2"><Globe className="w-4 h-4 text-slate-400" />{company?.website}</p></div>
-                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Address</p><p className="text-white flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400" />{company?.address}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Legal Name</p><p className="text-white">{company?.legalName || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">DOT Number</p><p className="text-white">{company?.dotNumber || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">MC Number</p><p className="text-white">{company?.mcNumber || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">EIN (Tax ID)</p><p className="text-white">{company?.ein || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Phone</p><p className="text-white flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" />{company?.phone || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Email</p><p className="text-white flex items-center gap-2"><Mail className="w-4 h-4 text-slate-400" />{company?.email || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Website</p><p className="text-white flex items-center gap-2"><Globe className="w-4 h-4 text-slate-400" />{company?.website || "—"}</p></div>
+                <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Address</p><p className="text-white flex items-center gap-2"><MapPin className="w-4 h-4 text-slate-400" />{[company?.address, company?.city, company?.state, company?.zipCode].filter(Boolean).join(", ") || "—"}</p></div>
               </div>
               {company?.description && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500 mb-1">Description</p><p className="text-slate-300">{company.description}</p></div>}
             </div>

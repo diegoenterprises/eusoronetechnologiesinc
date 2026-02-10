@@ -136,15 +136,33 @@ export const inspectionsRouter = router({
     }),
 
   /**
-   * Submit completed inspection
+   * Submit completed inspection — writes to inspections table
    */
   submit: protectedProcedure
     .input(inspectionSchema)
     .mutation(async ({ ctx, input }) => {
-      const inspectionId = `INS-${Date.now()}`;
-      
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+      // Resolve companyId
+      let companyId = 0;
+      try { const [u] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1); companyId = u?.companyId || 0; } catch {}
+
+      const result = await db.insert(inspections).values({
+        vehicleId: parseInt(input.vehicleId, 10),
+        driverId: userId,
+        companyId,
+        type: input.type as any,
+        status: input.defectsFound ? (input.safeToOperate ? "passed" : "failed") : "passed",
+        defectsFound: input.items.filter(i => i.status === "fail").length,
+        oosViolation: !input.safeToOperate,
+        completedAt: new Date(),
+        location: input.notes || null,
+      } as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+
       return {
-        id: inspectionId,
+        id: String(insertedId),
         status: "submitted",
         submittedAt: new Date().toISOString(),
         submittedBy: ctx.user?.id,
@@ -156,57 +174,86 @@ export const inspectionsRouter = router({
     }),
 
   /**
-   * Get inspection history for a vehicle
+   * Get inspection history for a vehicle — real DB query
    */
   getHistory: protectedProcedure
     .input(z.object({
       vehicleId: z.string(),
       limit: z.number().default(10),
     }))
-    .query(async ({ input }) => {
-      return [
-        {
-          id: "INS-001",
-          type: "pre_trip",
-          date: "2025-01-23T06:00:00",
-          driver: "Mike Johnson",
-          defectsFound: false,
-          safeToOperate: true,
-        },
-        {
-          id: "INS-002",
-          type: "dvir",
-          date: "2025-01-22T18:00:00",
-          driver: "Mike Johnson",
-          defectsFound: true,
-          defectsCorrected: true,
-          safeToOperate: true,
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const results = await db.select().from(inspections)
+          .where(eq(inspections.vehicleId, parseInt(input.vehicleId, 10)))
+          .orderBy(desc(inspections.createdAt))
+          .limit(input.limit);
+        return results.map(r => ({
+          id: String(r.id),
+          type: r.type,
+          date: r.completedAt?.toISOString() || r.createdAt?.toISOString() || "",
+          driver: String(r.driverId),
+          defectsFound: (r.defectsFound || 0) > 0,
+          defectsCorrected: false,
+          safeToOperate: !r.oosViolation,
+          status: r.status,
+        }));
+      } catch { return []; }
     }),
 
   /**
-   * Get defects requiring attention
+   * Get defects requiring attention — inspections with defects > 0
    */
   getOpenDefects: protectedProcedure
     .input(z.object({ vehicleId: z.string().optional() }))
-    .query(async ({ input }) => {
-      return [
-        {
-          id: "DEF-001",
-          vehicleId: "TRK-103",
-          inspectionId: "INS-003",
-          category: "brakes",
-          item: "Brake Lines/Hoses",
-          description: "Minor leak detected on driver side",
-          severity: "minor",
-          reportedAt: "2025-01-22T18:00:00",
-          status: "pending_repair",
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+      let companyId = 0;
+      try { const [u] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1); companyId = u?.companyId || 0; } catch {}
+      try {
+        const filters: any[] = [eq(inspections.companyId, companyId), sql`${inspections.defectsFound} > 0`];
+        if (input.vehicleId) filters.push(eq(inspections.vehicleId, parseInt(input.vehicleId, 10)));
+        const results = await db.select().from(inspections).where(and(...filters)).orderBy(desc(inspections.createdAt)).limit(20);
+        return results.map(r => ({
+          id: String(r.id),
+          vehicleId: String(r.vehicleId),
+          inspectionId: String(r.id),
+          category: "general",
+          item: "Defect found",
+          description: r.location || "Inspection defect",
+          severity: r.oosViolation ? "major" : "minor",
+          reportedAt: r.createdAt?.toISOString() || "",
+          status: r.status === "failed" ? "pending_repair" : "resolved",
+        }));
+      } catch { return []; }
     }),
 
-  // Additional inspection procedures
-  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional(), type: z.string().optional() })).query(async () => [{ id: "i1", vehicleId: "v1", type: "pre_trip", date: "2025-01-23", status: "pass" }]),
-  getPrevious: protectedProcedure.input(z.object({ vehicleId: z.string().optional() }).optional()).query(async () => [{ id: "i1", type: "pre_trip", date: "2025-01-22", status: "pass", defects: 0 }]),
+  // Additional inspection procedures — real DB queries
+  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional(), type: z.string().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+    let companyId = 0;
+    try { const [u] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1); companyId = u?.companyId || 0; } catch {}
+    try {
+      const filters: any[] = [eq(inspections.companyId, companyId)];
+      if (input.type) filters.push(eq(inspections.type, input.type as any));
+      const results = await db.select().from(inspections).where(and(...filters)).orderBy(desc(inspections.createdAt)).limit(input.limit || 10);
+      return results.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), type: r.type, date: r.completedAt?.toISOString()?.split("T")[0] || "", status: r.status || "pending" }));
+    } catch { return []; }
+  }),
+  getPrevious: protectedProcedure.input(z.object({ vehicleId: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+    try {
+      const filters: any[] = [eq(inspections.driverId, userId)];
+      if (input?.vehicleId) filters.push(eq(inspections.vehicleId, parseInt(input.vehicleId, 10)));
+      const results = await db.select().from(inspections).where(and(...filters)).orderBy(desc(inspections.createdAt)).limit(5);
+      return results.map(r => ({ id: String(r.id), type: r.type, date: r.completedAt?.toISOString()?.split("T")[0] || "", status: r.status || "pending", defects: r.defectsFound || 0 }));
+    } catch { return []; }
+  }),
 });

@@ -64,36 +64,43 @@ export const LoadBoardWidget: React.FC = () => {
       {(isExpanded) => (
         <div className="space-y-3">
           {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
             </div>
           ) : (
             <>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-400">{loads.length} Active Loads</span>
-                <Button size="sm" className="text-xs bg-purple-600 hover:bg-purple-700">+ Post Load</Button>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-sm text-gray-400 font-medium">{loads.length} Active</span>
+                </div>
+                <Button size="sm" className="text-xs bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 rounded-lg shadow-lg shadow-purple-500/20 h-7">+ Post Load</Button>
               </div>
               <div className="space-y-2">
                 {loads.slice(0, isExpanded ? 4 : 2).map((load: any) => (
-                  <div key={load.id} className="p-3 rounded-lg bg-white/5 hover:bg-white/10 transition-all cursor-pointer">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold text-white">{load.id}</span>
-                      <span className="text-sm font-bold text-green-400">${load.rate?.toLocaleString() || '0'}</span>
+                  <div key={load.id} className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06] hover:bg-white/[0.08] hover:border-white/[0.12] transition-all cursor-pointer group">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-white tracking-wide">{load.id}</span>
+                      <span className="text-sm font-bold text-emerald-400 tabular-nums">${load.rate?.toLocaleString() || '0'}</span>
                     </div>
-                    <div className="text-xs text-gray-400">
+                    <div className="text-xs text-gray-400 flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-gray-600" />
                       {load.origin?.city || 'Unknown'}, {load.origin?.state || ''} → {load.destination?.city || 'Unknown'}, {load.destination?.state || ''}
                     </div>
                     <div className="flex justify-between mt-2 text-xs">
-                      <span className={`px-1.5 py-0.5 rounded ${load.cargoType === 'hazmat' ? 'bg-red-500/20 text-red-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                      <span className={`px-2 py-0.5 rounded-md font-medium ${load.cargoType === 'hazmat' ? 'bg-red-500/15 text-red-400' : 'bg-white/[0.06] text-gray-400'}`}>
                         {load.cargoType || 'General'}
                       </span>
-                      <span className="text-blue-400">{load.bidCount || 0} bids</span>
+                      <span className="text-blue-400 font-medium">{load.bidCount || 0} bids</span>
                     </div>
                   </div>
                 ))}
               </div>
               {loads.length === 0 && (
-                <div className="text-center py-4 text-gray-500 text-sm">No active loads</div>
+                <div className="flex flex-col items-center justify-center py-6 text-gray-500">
+                  <Package className="w-8 h-8 mb-2 opacity-40" />
+                  <p className="text-xs">No active loads</p>
+                </div>
               )}
             </>
           )}
@@ -225,7 +232,7 @@ export const EarningsSummaryWidget: React.FC = () => {
           ) : (
             <>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold text-white">${earnings.total.toLocaleString()}</span>
+                <span className="text-3xl font-bold text-white">${(earnings.total || 0).toLocaleString()}</span>
                 <span className="text-sm text-green-400">This Week</span>
               </div>
               <div className="grid grid-cols-2 gap-2">
@@ -235,14 +242,14 @@ export const EarningsSummaryWidget: React.FC = () => {
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">
                   <p className="text-xs text-gray-400">Avg/Load</p>
-                  <p className="text-lg font-semibold text-green-400">${earnings.average.toLocaleString()}</p>
+                  <p className="text-lg font-semibold text-green-400">${(earnings.average || 0).toLocaleString()}</p>
                 </div>
               </div>
               {isExpanded && (
                 <div className="space-y-2">
                   <div className="flex justify-between p-2 rounded-lg bg-green-500/10">
                     <span className="text-sm text-gray-400">Trend</span>
-                    <span className={`text-sm ${earnings.trend.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>{earnings.trend}</span>
+                    <span className={`text-sm ${(earnings.trend || '').startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>{earnings.trend}</span>
                   </div>
                   <div className="flex justify-between p-2 rounded-lg bg-white/5">
                     <span className="text-sm text-gray-400">Top Lane</span>
@@ -398,11 +405,11 @@ export const SystemHealthWidget: React.FC = () => {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2 rounded-lg bg-white/5">
                     <p className="text-xs text-gray-400">Active Users</p>
-                    <p className="text-lg font-semibold text-white">{health.activeUsers.toLocaleString()}</p>
+                    <p className="text-lg font-semibold text-white">{(health.activeUsers || 0).toLocaleString()}</p>
                   </div>
                   <div className="p-2 rounded-lg bg-white/5">
                     <p className="text-xs text-gray-400">Requests/min</p>
-                    <p className="text-lg font-semibold text-white">{(health.requestsPerMinute/1000).toFixed(1)}K</p>
+                    <p className="text-lg font-semibold text-white">{((health.requestsPerMinute || 0)/1000).toFixed(1)}K</p>
                   </div>
                   <div className={`p-2 rounded-lg ${health.database === 'healthy' ? 'bg-green-500/10' : 'bg-yellow-500/10'}`}>
                     <p className="text-xs text-gray-400">Database</p>
@@ -601,7 +608,7 @@ export const ShipmentCostsWidget: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-400">Fuel</span>
-                      <span className="text-white">${costs.fuel.amount.toLocaleString()}</span>
+                      <span className="text-white">${(costs.fuel?.amount || 0).toLocaleString()}</span>
                     </div>
                     <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full" style={{ width: `${costs.fuel.percent}%` }} />
@@ -610,7 +617,7 @@ export const ShipmentCostsWidget: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-400">Labor</span>
-                      <span className="text-white">${costs.labor.amount.toLocaleString()}</span>
+                      <span className="text-white">${(costs.labor?.amount || 0).toLocaleString()}</span>
                     </div>
                     <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full" style={{ width: `${costs.labor.percent}%` }} />
@@ -619,7 +626,7 @@ export const ShipmentCostsWidget: React.FC = () => {
                   <div className="space-y-1">
                     <div className="flex justify-between text-xs">
                       <span className="text-gray-400">Maintenance</span>
-                      <span className="text-white">${costs.maintenance.amount.toLocaleString()}</span>
+                      <span className="text-white">${(costs.maintenance?.amount || 0).toLocaleString()}</span>
                     </div>
                     <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
                       <div className="h-full bg-gradient-to-r from-green-500 to-emerald-400 rounded-full" style={{ width: `${costs.maintenance.percent}%` }} />
@@ -680,7 +687,7 @@ export const LiveTrackingWidget: React.FC = () => {
 
 export const FleetStatusWidget: React.FC = () => {
   const { data: fleetData, isLoading } = trpc.dashboard.getFleetStatus.useQuery(undefined, {
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
   });
 
   const fleet = fleetData || {
@@ -692,52 +699,49 @@ export const FleetStatusWidget: React.FC = () => {
     utilization: 0,
   };
 
+  const statCards = [
+    { label: 'Total', value: fleet.total, bg: 'bg-white/[0.04]', border: 'border-white/[0.06]', text: 'text-white' },
+    { label: 'Active', value: fleet.inUse, bg: 'bg-emerald-500/[0.08]', border: 'border-emerald-500/20', text: 'text-emerald-400' },
+    { label: 'Maint.', value: fleet.maintenance, bg: 'bg-amber-500/[0.08]', border: 'border-amber-500/20', text: 'text-amber-400' },
+    { label: 'Avail.', value: fleet.available, bg: 'bg-blue-500/[0.08]', border: 'border-blue-500/20', text: 'text-blue-400' },
+  ];
+
   return (
     <ResponsiveWidget>
       {(isExpanded) => (
         <div className="space-y-4">
           {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
             </div>
           ) : (
             <>
               <div className="grid grid-cols-4 gap-2">
-                <div className="text-center p-2 rounded-lg bg-white/5">
-                  <p className="text-2xl font-bold text-white">{fleet.total}</p>
-                  <p className="text-xs text-gray-400">Total</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-green-500/10">
-                  <p className="text-2xl font-bold text-green-400">{fleet.inUse}</p>
-                  <p className="text-xs text-gray-400">Active</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-yellow-500/10">
-                  <p className="text-2xl font-bold text-yellow-400">{fleet.maintenance}</p>
-                  <p className="text-xs text-gray-400">Maint.</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-gray-500/10">
-                  <p className="text-2xl font-bold text-gray-400">{fleet.available}</p>
-                  <p className="text-xs text-gray-400">Avail.</p>
-                </div>
+                {statCards.map(s => (
+                  <div key={s.label} className={`text-center p-2.5 rounded-xl ${s.bg} border ${s.border} transition-all hover:scale-[1.02]`}>
+                    <p className={`text-xl font-bold ${s.text} tabular-nums`}>{s.value}</p>
+                    <p className="text-[10px] text-gray-500 font-medium tracking-wide mt-0.5">{s.label}</p>
+                  </div>
+                ))}
               </div>
               {isExpanded && (
-                <div className="space-y-2">
-                  <div className="p-3 rounded-lg bg-white/5">
+                <div className="space-y-2.5">
+                  <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-400">Fleet Utilization</span>
-                      <span className="text-sm font-semibold text-white">{fleet.utilization}%</span>
+                      <span className="text-xs text-gray-400 font-medium">Fleet Utilization</span>
+                      <span className="text-sm font-bold text-white tabular-nums">{fleet.utilization}%</span>
                     </div>
-                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full"
+                        className="h-full bg-gradient-to-r from-purple-500 to-cyan-400 rounded-full transition-all duration-500"
                         style={{ width: `${fleet.utilization}%` }}
                       />
                     </div>
                   </div>
                   {fleet.outOfService > 0 && (
-                    <div className="flex items-center gap-2 p-2 rounded-lg bg-red-500/10">
-                      <AlertCircle className="w-4 h-4 text-red-400" />
-                      <span className="text-sm text-red-400">{fleet.outOfService} vehicle(s) out of service</span>
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-red-500/[0.08] border border-red-500/20">
+                      <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                      <span className="text-xs text-red-400 font-medium">{fleet.outOfService} vehicle(s) out of service</span>
                     </div>
                   )}
                 </div>
@@ -858,7 +862,7 @@ export const FuelCostsWidget: React.FC = () => {
 
 export const HOSTrackerWidget: React.FC = () => {
   const { data: hosData, isLoading } = trpc.dashboard.getHOSStatus.useQuery(undefined, {
-    refetchInterval: 60000, // Refresh every minute for real-time HOS tracking
+    refetchInterval: 60000,
   });
 
   const hos = hosData || {
@@ -870,81 +874,80 @@ export const HOSTrackerWidget: React.FC = () => {
     status: 'OFF_DUTY' as 'OFF_DUTY' | 'DRIVING' | 'ON_DUTY_NOT_DRIVING' | 'SLEEPER_BERTH',
   };
 
-  // Calculate used hours from remaining
   const driving = { used: 11 - hos.drivingRemaining, limit: 11 };
   const onDuty = { used: 14 - hos.dutyRemaining, limit: 14 };
   const cycle = { used: 70 - hos.cycleRemaining, limit: 70 };
 
   const getBarColor = (used: number, limit: number) => {
-    const percent = (used / limit) * 100;
-    if (percent >= 90) return 'from-red-500 to-red-400';
-    if (percent >= 75) return 'from-yellow-500 to-yellow-400';
-    return 'from-green-500 to-green-400';
+    const pct = (used / limit) * 100;
+    if (pct >= 90) return 'from-red-500 to-red-400';
+    if (pct >= 75) return 'from-amber-500 to-amber-400';
+    return 'from-emerald-500 to-emerald-400';
   };
+
+  const getTextColor = (used: number, limit: number) => {
+    const pct = (used / limit) * 100;
+    if (pct >= 90) return 'text-red-400';
+    if (pct >= 75) return 'text-amber-400';
+    return 'text-emerald-400';
+  };
+
+  const statusConfig: Record<string, { bg: string; text: string; label: string }> = {
+    DRIVING: { bg: 'bg-emerald-500/[0.12] border-emerald-500/25', text: 'text-emerald-400', label: 'Driving' },
+    ON_DUTY_NOT_DRIVING: { bg: 'bg-blue-500/[0.12] border-blue-500/25', text: 'text-blue-400', label: 'On Duty' },
+    SLEEPER_BERTH: { bg: 'bg-purple-500/[0.12] border-purple-500/25', text: 'text-purple-400', label: 'Sleeper' },
+    OFF_DUTY: { bg: 'bg-gray-500/[0.12] border-gray-500/25', text: 'text-gray-400', label: 'Off Duty' },
+  };
+
+  const renderHOSBar = (label: string, data: { used: number; limit: number }) => (
+    <div className="p-3 rounded-xl bg-white/[0.04] border border-white/[0.06]">
+      <div className="flex justify-between items-baseline mb-2">
+        <span className="text-xs text-gray-400 font-medium">{label}</span>
+        <div className="flex items-baseline gap-1">
+          <span className={`text-sm font-bold tabular-nums ${getTextColor(data.used, data.limit)}`}>
+            {(data.limit - data.used).toFixed(1)}h
+          </span>
+          <span className="text-[10px] text-gray-600">left</span>
+        </div>
+      </div>
+      <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div 
+          className={`h-full bg-gradient-to-r ${getBarColor(data.used, data.limit)} rounded-full transition-all duration-700`}
+          style={{ width: `${Math.min((data.used / data.limit) * 100, 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+
+  const sc = statusConfig[hos.status] || statusConfig.OFF_DUTY;
 
   return (
     <ResponsiveWidget>
       {(isExpanded) => (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {isLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-purple-400" />
             </div>
           ) : (
             <>
-              <div className="space-y-3">
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-400">Driving Time</span>
-                    <span className="text-white">{driving.used.toFixed(1)}h / {driving.limit}h</span>
-                  </div>
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full bg-gradient-to-r ${getBarColor(driving.used, driving.limit)} rounded-full`}
-                      style={{ width: `${(driving.used / driving.limit) * 100}%` }}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-gray-400">On-Duty Time</span>
-                    <span className="text-white">{onDuty.used.toFixed(1)}h / {onDuty.limit}h</span>
-                  </div>
-                  <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full bg-gradient-to-r ${getBarColor(onDuty.used, onDuty.limit)} rounded-full`}
-                      style={{ width: `${(onDuty.used / onDuty.limit) * 100}%` }}
-                    />
-                  </div>
-                </div>
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border ${sc.bg}`}>
+                <div className={`w-2 h-2 rounded-full ${sc.text === 'text-emerald-400' ? 'bg-emerald-400 animate-pulse' : sc.text === 'text-blue-400' ? 'bg-blue-400' : sc.text === 'text-purple-400' ? 'bg-purple-400' : 'bg-gray-400'}`} />
+                <span className={`text-xs font-semibold ${sc.text}`}>{sc.label}</span>
               </div>
+
+              {renderHOSBar('Driving Time', driving)}
+              {renderHOSBar('On-Duty Time', onDuty)}
+
               {isExpanded && (
                 <>
-                  <div>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-400">70-Hour Cycle</span>
-                      <span className="text-white">{cycle.used.toFixed(1)}h / {cycle.limit}h</span>
-                    </div>
-                    <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full bg-gradient-to-r ${getBarColor(cycle.used, cycle.limit)} rounded-full`}
-                        style={{ width: `${(cycle.used / cycle.limit) * 100}%` }}
-                      />
-                    </div>
-                  </div>
+                  {renderHOSBar('70-Hour Cycle', cycle)}
                   {hos.breakRequired && (
-                    <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-                      <p className="text-xs text-yellow-400">30-min break required soon</p>
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-500/[0.08] border border-amber-500/20">
+                      <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 animate-pulse" />
+                      <span className="text-xs text-amber-400 font-medium">30-min break required soon</span>
                     </div>
                   )}
-                  <div className={`px-2 py-1 rounded text-xs inline-block ${
-                    hos.status === 'DRIVING' ? 'bg-green-500/20 text-green-400' :
-                    hos.status === 'ON_DUTY_NOT_DRIVING' ? 'bg-blue-500/20 text-blue-400' :
-                    hos.status === 'SLEEPER_BERTH' ? 'bg-purple-500/20 text-purple-400' :
-                    'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    Status: {hos.status.replace(/_/g, ' ')}
-                  </div>
                 </>
               )}
             </>
@@ -1225,7 +1228,7 @@ export const EscortAssignmentsWidget: React.FC = () => {
               </div>
               <div className="p-2 rounded-lg bg-green-500/10">
                 <p className="text-xs text-gray-400">Monthly Earnings</p>
-                <p className="text-lg font-semibold text-green-400">${escort.monthlyEarnings.toLocaleString()}</p>
+                <p className="text-lg font-semibold text-green-400">${(escort.monthlyEarnings || 0).toLocaleString()}</p>
               </div>
               {isExpanded && (
                 <div className="space-y-2">
@@ -1470,7 +1473,7 @@ export const DriverPerformanceWidget: React.FC = () => {
                         <p className="text-sm text-white">{d.name}</p>
                         {d.status === 'top' && <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />}
                       </div>
-                      <p className="text-xs text-gray-500">{d.miles.toLocaleString()} mi | {d.events} events</p>
+                      <p className="text-xs text-gray-500">{(d.miles || 0).toLocaleString()} mi | {d.events || 0} events</p>
                     </div>
                     <span className="text-xs text-gray-400">#{d.rank}</span>
                   </div>
@@ -2381,7 +2384,7 @@ export const AdminPlatformHealthWidget: React.FC = () => {
             <>
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2 rounded-lg bg-blue-500/10">
-                  <p className="text-lg font-bold text-blue-400">{admin.totalUsers.toLocaleString()}</p>
+                  <p className="text-lg font-bold text-blue-400">{(admin.totalUsers || 0).toLocaleString()}</p>
                   <p className="text-xs text-gray-400">Users</p>
                 </div>
                 <div className="p-2 rounded-lg bg-yellow-500/10">
@@ -2456,7 +2459,7 @@ export const BrokerDashboardWidget: React.FC = () => {
             <>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-green-400">${broker.commissionEarned.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-green-400">${(broker.commissionEarned || 0).toLocaleString()}</p>
                   <p className="text-xs text-gray-400">Commission Earned</p>
                 </div>
                 <div className="text-right">

@@ -169,7 +169,7 @@ export const CommissionTrackerWidget: React.FC<{ compact?: boolean }> = ({ compa
   return (
     <div className="space-y-4">
       <div className="text-center p-4 bg-gradient-to-br from-purple-900/30 to-pink-900/30 rounded-lg border border-purple-500/30">
-        <p className="text-3xl font-bold text-purple-400">${thisMonth.toLocaleString()}</p>
+        <p className="text-3xl font-bold text-purple-400">${(thisMonth || 0).toLocaleString()}</p>
         <p className="text-sm text-gray-400">This Month</p>
       </div>
       <div className="flex items-center justify-between">
@@ -230,7 +230,7 @@ export const ClientRelationshipsWidget: React.FC<{ compact?: boolean }> = ({ com
           </div>
           <div className="flex items-center justify-between text-xs text-gray-400">
             <span>{client.loads} loads</span>
-            <span className="text-green-400">${client.revenue.toLocaleString()}</span>
+            <span className="text-green-400">${(client.revenue || 0).toLocaleString()}</span>
           </div>
         </div>
       ))}
@@ -362,7 +362,7 @@ export const EarningsWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
     <div className="space-y-3">
       <div className="text-center p-4 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-lg border border-green-500/30">
         <DollarSign className="w-8 h-8 text-green-400 mx-auto mb-2" />
-        <p className="text-3xl font-bold text-green-400">${earnings.month.toLocaleString()}</p>
+        <p className="text-3xl font-bold text-green-400">${(earnings.month || 0).toLocaleString()}</p>
         <p className="text-sm text-gray-400">This Month</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -372,7 +372,7 @@ export const EarningsWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
         </div>
         <div className="bg-gray-800/50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-1">This Week</p>
-          <p className="text-xl font-bold text-blue-400">${earnings.week.toLocaleString()}</p>
+          <p className="text-xl font-bold text-blue-400">${(earnings.week || 0).toLocaleString()}</p>
         </div>
       </div>
     </div>

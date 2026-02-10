@@ -180,13 +180,7 @@ export const ratesRouter = router({
         },
         perMile: ratePerMile.toFixed(2),
         distance,
-        marketData: {
-          avgRate: 3.45,
-          lowRate: 2.95,
-          highRate: 4.10,
-          loadCount: 45,
-          capacityTight: true,
-        },
+        marketData: { avgRate: 0, lowRate: 0, highRate: 0, loadCount: 0, capacityTight: false },
       };
     }),
 
@@ -204,11 +198,11 @@ export const ratesRouter = router({
       return {
         lane: `${input.originState} → ${input.destState}`,
         period: input.period,
-        avgRate: 3.45,
-        trend: "up" as const,
-        trendPercent: 5.2,
-        loadToTruckRatio: 3.2,
-        volumeIndex: 85,
+        avgRate: 0,
+        trend: "stable" as const,
+        trendPercent: 0,
+        loadToTruckRatio: 0,
+        volumeIndex: 0,
         history: [
           { date: "2025-01-01", rate: 3.25 },
           { date: "2025-01-08", rate: 3.32 },
@@ -250,16 +244,7 @@ export const ratesRouter = router({
    */
   getAccessorials: protectedProcedure
     .query(async () => {
-      return [
-        { code: "DET", name: "Detention", rate: 75, unit: "per hour", freeTime: "2 hours" },
-        { code: "LAY", name: "Layover", rate: 350, unit: "per day", notes: "After 24 hours" },
-        { code: "TARP", name: "Tarping", rate: 75, unit: "flat", notes: "Per tarp" },
-        { code: "STOP", name: "Extra Stop", rate: 150, unit: "per stop", notes: "Beyond origin/dest" },
-        { code: "LUMPER", name: "Lumper Fee", rate: 0, unit: "actual", notes: "Receipt required" },
-        { code: "HAZMAT", name: "Hazmat Premium", rate: 0.45, unit: "per mile", notes: "Classes 1-9" },
-        { code: "TEAM", name: "Team Driver", rate: 0.35, unit: "per mile", notes: "Expedited" },
-        { code: "TWIC", name: "TWIC Required", rate: 50, unit: "flat", notes: "Port/refinery access" },
-      ];
+      return [];
     }),
 
   /**
@@ -289,26 +274,7 @@ export const ratesRouter = router({
   getSavedQuotes: protectedProcedure
     .input(z.object({ limit: z.number().default(10) }))
     .query(async ({ ctx }) => {
-      return [
-        {
-          id: "quote_001",
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          equipment: "tanker",
-          rate: 1250,
-          validUntil: "2025-02-01",
-          createdAt: "2025-01-20",
-        },
-        {
-          id: "quote_002",
-          origin: "Beaumont, TX",
-          destination: "San Antonio, TX",
-          equipment: "tanker",
-          rate: 1450,
-          validUntil: "2025-02-05",
-          createdAt: "2025-01-22",
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -342,17 +308,11 @@ export const ratesRouter = router({
     }),
 
   // Additional rate procedures
-  getAll: protectedProcedure.input(z.object({ search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "r1", origin: "Houston", destination: "Dallas", rate: 3.25 }]),
-  getStats: protectedProcedure.query(async () => ({ avgRate: 3.15, minRate: 2.50, maxRate: 4.25, totalLanes: 150, totalRates: 150, lanes: 150, highestRate: 4.25 })),
+  getAll: protectedProcedure.input(z.object({ search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => []),
+  getStats: protectedProcedure.query(async () => ({ avgRate: 0, minRate: 0, maxRate: 0, totalLanes: 0, totalRates: 0, lanes: 0, highestRate: 0 })),
   delete: protectedProcedure.input(z.object({ rateId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, rateId: input.rateId || input.id })),
 
   // Lane rates for LaneRates.tsx
-  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
-    { id: "lr1", origin: "Houston, TX", destination: "Dallas, TX", miles: 238, avgRate: 3.25, trend: "up", volume: 45 },
-    { id: "lr2", origin: "Austin, TX", destination: "San Antonio, TX", miles: 80, avgRate: 2.85, trend: "stable", volume: 32 },
-  ]),
-  getRecentRates: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
-    { id: "rr1", lane: "Houston-Dallas", rate: 3.25, date: "2025-01-23", loadId: "LOAD-45920" },
-    { id: "rr2", lane: "Austin-San Antonio", rate: 2.85, date: "2025-01-22", loadId: "LOAD-45919" },
-  ]),
+  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getRecentRates: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
 });

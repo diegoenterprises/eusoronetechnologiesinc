@@ -16,10 +16,7 @@ export const smsRouter = router({
     monthlyLimit: 1000,
   })),
 
-  getTemplates: protectedProcedure.query(async () => [
-    { id: "t1", name: "Load Assigned", content: "Load {{loadNumber}} has been assigned to you.", active: true },
-    { id: "t2", name: "Delivery Reminder", content: "Reminder: Delivery scheduled for {{time}}.", active: true },
-  ]),
+  getTemplates: protectedProcedure.query(async () => []),
 
   toggleTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() })).mutation(async ({ input }) => ({
     success: true,
@@ -27,19 +24,9 @@ export const smsRouter = router({
     active: input.active ?? input.enabled,
   })),
 
-  getLogs: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
-    { id: "l1", to: "+1234567890", template: "Load Assigned", status: "delivered", sentAt: "2025-01-23 10:00" },
-  ]),
+  getLogs: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
 
-  getUsage: protectedProcedure.query(async () => ({
-    sent: 450,
-    delivered: 445,
-    failed: 5,
-    remaining: 550,
-    costThisMonth: 22.50,
-    sentThisMonth: 450,
-    deliveryRate: 98.9,
-  })),
+  getUsage: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, failed: 0, remaining: 0, costThisMonth: 0, sentThisMonth: 0, deliveryRate: 0 })),
 
   sendTest: protectedProcedure.input(z.object({ to: z.string().optional(), phoneNumber: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({
     success: true,

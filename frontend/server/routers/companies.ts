@@ -60,13 +60,7 @@ export const companiesRouter = router({
   getDocuments: protectedProcedure
     .input(z.object({ category: z.string().optional() }))
     .query(async ({ input }) => {
-      const docs = [
-        { id: "d1", name: "Operating Authority.pdf", category: "authority", status: "active", expiresAt: null, uploadedAt: "2025-01-15" },
-        { id: "d2", name: "Insurance Certificate.pdf", category: "insurance", status: "active", expiresAt: "2026-01-10", uploadedAt: "2025-01-10" },
-        { id: "d3", name: "DOT Registration.pdf", category: "registration", status: "active", expiresAt: "2025-12-31", uploadedAt: "2025-01-05" },
-      ];
-      if (input.category) return docs.filter(d => d.category === input.category);
-      return docs;
+      return [];
     }),
 
   // Get document categories for CompanyDocuments page
@@ -116,7 +110,7 @@ export const companiesRouter = router({
         verified: !!company.dotNumber,
         logo: company.logo || null,
         website: company.website || "",
-        description: (company as any).description || "",
+        description: company.description || "",
       };
     }),
 
@@ -124,22 +118,28 @@ export const companiesRouter = router({
   updateProfile: protectedProcedure
     .input(
       z.object({
-        companyId: z.number().optional(),
-        id: z.number().optional(),
-        name: z.string().optional(),
-        legalName: z.string().optional(),
-        mcNumber: z.string().optional(),
-        dotNumber: z.string().optional(),
-        ein: z.string().optional(),
-        address: z.string().optional(),
-        city: z.string().optional(),
-        state: z.string().optional(),
-        zipCode: z.string().optional(),
-        phone: z.string().optional(),
-        email: z.string().optional(),
-        website: z.string().optional(),
-        description: z.string().optional(),
-      })
+        companyId: z.number().nullable().optional(),
+        id: z.number().nullable().optional(),
+        name: z.string().nullable().optional(),
+        legalName: z.string().nullable().optional(),
+        mcNumber: z.string().nullable().optional(),
+        dotNumber: z.string().nullable().optional(),
+        ein: z.string().nullable().optional(),
+        address: z.string().nullable().optional(),
+        city: z.string().nullable().optional(),
+        state: z.string().nullable().optional(),
+        zipCode: z.string().nullable().optional(),
+        phone: z.string().nullable().optional(),
+        email: z.string().nullable().optional(),
+        website: z.string().nullable().optional(),
+        description: z.string().nullable().optional(),
+        logo: z.string().nullable().optional(),
+        type: z.string().nullable().optional(),
+        verified: z.boolean().nullable().optional(),
+        scacCode: z.string().nullable().optional(),
+        taxId: z.string().nullable().optional(),
+        country: z.string().nullable().optional(),
+      }).passthrough()
     )
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -152,22 +152,24 @@ export const companiesRouter = router({
       }
       if (!targetId) throw new Error("Could not resolve company");
 
-      const { companyId: _cid, id: _id, description, ...rest } = input;
-      const updateData: Record<string, any> = { ...rest, updatedAt: new Date() };
+      // Only include fields that exist in the companies table
+      const allowedFields = [
+        "name", "legalName", "mcNumber", "dotNumber", "ein",
+        "address", "city", "state", "zipCode", "country",
+        "phone", "email", "website", "logo", "description",
+      ];
 
-      // Store description via raw SQL since column may not exist in schema yet
-      if (description !== undefined) {
-        try {
-          await db.execute(sql`UPDATE companies SET description = ${description} WHERE id = ${targetId}`);
-        } catch {
-          // Column may not exist — non-critical
+      const updateData: Record<string, any> = {};
+      for (const key of allowedFields) {
+        if (key in input && (input as any)[key] !== undefined) {
+          // Convert null to empty string for varchar/text columns
+          updateData[key] = (input as any)[key] ?? "";
         }
       }
 
-      // Remove undefined values
-      Object.keys(updateData).forEach(k => { if (updateData[k] === undefined) delete updateData[k]; });
-
-      await db.update(companies).set(updateData).where(eq(companies.id, targetId));
+      if (Object.keys(updateData).length > 0) {
+        await db.update(companies).set(updateData).where(eq(companies.id, targetId));
+      }
 
       return { success: true };
     }),
@@ -220,34 +222,34 @@ export const companiesRouter = router({
     }),
 
   // Additional company procedures
-  getStats: protectedProcedure.query(async () => ({ totalDrivers: 25, totalVehicles: 30, activeLoads: 15, revenue: 125000, employees: 35, vehicles: 30, loadsCompleted: 1250, rating: 4.8 })),
+  getStats: protectedProcedure.query(async () => ({ totalDrivers: 0, totalVehicles: 0, activeLoads: 0, revenue: 0, employees: 0, vehicles: 0, loadsCompleted: 0, rating: 0 })),
   getBilling: protectedProcedure.query(async () => ({ balance: 2500, currentBalance: 2500, nextDue: "2025-02-01", nextBillingDate: "2025-02-01", plan: "premium", planName: "Premium", status: "active", monthlyPrice: 299, monthToDate: 1850, paymentMethod: "Visa ending in 4242", pendingCharges: 450, usage: [{ name: "Loads", used: 45, limit: 100 }, { name: "API Calls", used: 1250, limit: 5000 }, { name: "Storage", used: 2.5, limit: 10 }] })),
-  getRecentInvoices: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "inv1", amount: 500, status: "paid", date: "2025-01-15" }]),
+  getRecentInvoices: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
   getUsageBreakdown: protectedProcedure.query(async () => [
-    { name: "Loads", value: 45, limit: 100 },
-    { name: "API Calls", value: 1250, limit: 5000 },
-    { name: "Storage", value: 2.5, limit: 10 },
+    { name: "Loads", value: 0, limit: 100 },
+    { name: "API Calls", value: 0, limit: 5000 },
+    { name: "Storage", value: 0, limit: 10 },
   ]),
   getCompanyProfile: protectedProcedure.input(z.object({ companyId: z.string().optional() }).optional()).query(async () => ({
-    id: 1,
-    name: "ABC Transport LLC",
-    legalName: "ABC Transport LLC",
-    type: "carrier",
-    description: "Full-service carrier specializing in petroleum transport",
-    dotNumber: "1234567",
-    mcNumber: "MC-987654",
-    verified: true,
-    ein: "12-3456789",
-    address: "1234 Transport Way",
-    city: "Houston",
-    state: "TX",
-    zipCode: "77001",
-    phone: "(713) 555-0100",
-    email: "info@abctransport.com",
-    website: "https://abctransport.com",
+    id: 0,
+    name: "",
+    legalName: "",
+    type: "",
+    description: "",
+    dotNumber: "",
+    mcNumber: "",
+    verified: false,
+    ein: "",
+    address: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    phone: "",
+    email: "",
+    website: "",
     logo: null,
-    createdAt: "2022-01-15",
-    updatedAt: "2025-01-20",
+    createdAt: "",
+    updatedAt: "",
   })),
 
   /**

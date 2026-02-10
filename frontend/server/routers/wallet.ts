@@ -352,15 +352,13 @@ export const walletRouter = router({
    * Get payout schedule
    */
   getPayoutSchedule: auditedProtectedProcedure
-    .query(async ({ ctx }) => {
-      return {
-        frequency: "weekly",
-        dayOfWeek: "friday",
-        minimumAmount: 25.00,
-        nextScheduledPayout: "2025-01-24T12:00:00Z",
-        autoPayoutEnabled: true,
-      };
-    }),
+    .query(async () => ({
+      frequency: "weekly",
+      dayOfWeek: "friday",
+      minimumAmount: 25.00,
+      nextScheduledPayout: "",
+      autoPayoutEnabled: false,
+    })),
 
   /**
    * Update payout schedule
@@ -386,28 +384,24 @@ export const walletRouter = router({
     .input(z.object({
       period: z.enum(["week", "month", "quarter"]).default("month"),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        byWeek: [
-          { week: "Jan 1-7", earnings: 1850.00, loads: 4 },
-          { week: "Jan 8-14", earnings: 2100.00, loads: 5 },
-          { week: "Jan 15-21", earnings: 2250.00, loads: 5 },
-          { week: "Jan 22-28", earnings: 2250.50, loads: 4 },
-        ],
-        byType: {
-          linehaul: 7200.00,
-          fuelSurcharge: 450.00,
-          accessorials: 200.50,
-          bonuses: 350.00,
-          other: 250.00,
-        },
-        topLoads: [
-          { loadNumber: "LOAD-45918", amount: 1250.00, date: "2025-01-22" },
-          { loadNumber: "LOAD-45915", amount: 1100.00, date: "2025-01-20" },
-          { loadNumber: "LOAD-45912", amount: 950.00, date: "2025-01-18" },
-        ],
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      const empty = { period: input.period, byWeek: [] as any[], byType: { linehaul: 0, fuelSurcharge: 0, accessorials: 0, bonuses: 0, other: 0 }, topLoads: [] as any[] };
+      if (!db) return empty;
+      try {
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+        if (!wallet) return empty;
+        const now = new Date();
+        let startDate = new Date();
+        if (input.period === "week") startDate.setDate(now.getDate() - 7);
+        else if (input.period === "month") startDate.setMonth(now.getMonth() - 1);
+        else startDate.setMonth(now.getMonth() - 3);
+        const txns = await db.select().from(walletTransactions).where(and(eq(walletTransactions.walletId, wallet.id), eq(walletTransactions.type, "earnings"), gte(walletTransactions.createdAt, startDate))).orderBy(desc(walletTransactions.createdAt)).limit(50);
+        const totalEarnings = txns.reduce((s, t) => s + parseFloat(t.amount || "0"), 0);
+        const topLoads = txns.filter(t => t.loadNumber).slice(0, 3).map(t => ({ loadNumber: t.loadNumber || "", amount: parseFloat(t.amount || "0"), date: t.createdAt?.toISOString()?.split("T")[0] || "" }));
+        return { ...empty, byType: { linehaul: totalEarnings, fuelSurcharge: 0, accessorials: 0, bonuses: 0, other: 0 }, topLoads };
+      } catch { return empty; }
     }),
 
   /**

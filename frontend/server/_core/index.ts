@@ -174,6 +174,43 @@ async function startServer() {
     severity: "LOW",
   }).catch(() => {});
 
+  // Direct binary file endpoint (bypasses tRPC JSON serialization for large files)
+  app.get("/api/documents/:id/file", async (req, res) => {
+    try {
+      const { authService } = await import("./auth");
+      const user = await authService.authenticateRequest(req);
+      if (!user) { res.status(401).json({ error: "Unauthorized" }); return; }
+      const { getDb } = await import("../db");
+      const { documents } = await import("../../drizzle/schema");
+      const { eq, and } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) { res.status(500).json({ error: "DB unavailable" }); return; }
+      const numericId = parseInt(req.params.id.replace(/\D/g, ""), 10);
+      if (!numericId) { res.status(400).json({ error: "Invalid ID" }); return; }
+      const userId = typeof user.id === "string" ? parseInt(user.id, 10) || 0 : user.id;
+      const [doc] = await db.select().from(documents).where(and(eq(documents.id, numericId), eq(documents.userId, userId))).limit(1);
+      if (!doc || !doc.fileUrl?.startsWith("data:")) { res.status(404).json({ error: "Not found" }); return; }
+      const match = doc.fileUrl.match(/^data:(.*?);base64,([\s\S]*)$/);
+      if (!match) { res.status(500).json({ error: "Invalid file data" }); return; }
+      const mime = match[1];
+      const buffer = Buffer.from(match[2], "base64");
+      const isDownload = req.query.download === "true";
+      const ext: Record<string, string> = { "application/pdf": ".pdf", "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "application/msword": ".doc", "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx" };
+      const fileName = (doc.name || "document") + (doc.name?.includes(".") ? "" : (ext[mime] || ""));
+      res.setHeader("Content-Type", mime);
+      res.setHeader("Content-Length", buffer.length);
+      if (isDownload) {
+        res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+      } else {
+        res.setHeader("Content-Disposition", `inline; filename="${fileName}"`);
+      }
+      res.send(buffer);
+    } catch (err: any) {
+      console.error("[Documents] file endpoint error:", err?.message);
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // tRPC API (protected by RBAC middleware in trpc.ts)
@@ -211,6 +248,23 @@ async function startServer() {
   if (port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
+
+  // Graceful shutdown: close DB pool + HTTP server on process exit
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`\n[Shutdown] ${signal} received. Closing connections...`);
+    try {
+      const { closeDb } = await import("../db");
+      await closeDb();
+    } catch {}
+    server.close(() => {
+      console.log("[Shutdown] Server closed cleanly");
+      process.exit(0);
+    });
+    // Force exit after 10s if graceful shutdown hangs
+    setTimeout(() => { process.exit(1); }, 10000);
+  };
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}/`);

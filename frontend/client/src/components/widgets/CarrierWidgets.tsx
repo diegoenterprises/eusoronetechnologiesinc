@@ -318,7 +318,7 @@ export const ActiveContractsWidget: React.FC<{ compact?: boolean }> = ({ compact
             </div>
             <FileText className="w-4 h-4 text-purple-400" />
           </div>
-          <p className="text-lg font-bold text-green-400">${contract.revenue.toLocaleString()}</p>
+          <p className="text-lg font-bold text-green-400">${(contract.revenue || 0).toLocaleString()}</p>
         </div>
       ))}
     </div>
@@ -477,16 +477,16 @@ export const EarningsForecastWidget: React.FC<{ compact?: boolean }> = ({ compac
     <div className="space-y-3">
       <div className="text-center p-4 bg-gradient-to-br from-green-900/30 to-emerald-900/30 rounded-lg border border-green-500/30">
         <p className="text-xs text-gray-400 mb-1">Projected This Month</p>
-        <p className="text-3xl font-bold text-green-400">${forecast.projected.toLocaleString()}</p>
+        <p className="text-3xl font-bold text-green-400">${(forecast.projected || 0).toLocaleString()}</p>
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gray-800/50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-1">This Week</p>
-          <p className="text-lg font-bold text-blue-400">${forecast.thisWeek.toLocaleString()}</p>
+          <p className="text-lg font-bold text-blue-400">${(forecast.thisWeek || 0).toLocaleString()}</p>
         </div>
         <div className="bg-gray-800/50 rounded-lg p-3">
           <p className="text-xs text-gray-400 mb-1">Month to Date</p>
-          <p className="text-lg font-bold text-purple-400">${forecast.thisMonth.toLocaleString()}</p>
+          <p className="text-lg font-bold text-purple-400">${(forecast.thisMonth || 0).toLocaleString()}</p>
         </div>
       </div>
     </div>

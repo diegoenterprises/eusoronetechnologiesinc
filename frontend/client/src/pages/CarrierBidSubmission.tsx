@@ -22,11 +22,14 @@ import { toast } from "sonner";
 import { useParams, useLocation } from "wouter";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
+const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
-function isSpectraQualified(commodity: string, hazmatClass?: string): boolean {
+function isSpectraQualified(cargoType?: string, commodity?: string, hazmatClass?: string): boolean {
+  if (cargoType && SPECTRA_CARGO_TYPES.includes(cargoType)) return true;
+  if (["2", "3"].includes(hazmatClass || "")) return true;
+  if (cargoType && ["refrigerated", "oversized", "general"].includes(cargoType)) return false;
   const c = (commodity || "").toLowerCase();
   if (SPECTRA_KEYWORDS.some(k => c.includes(k))) return true;
-  if (["2", "3"].includes(hazmatClass || "")) return true;
   return false;
 }
 
@@ -167,7 +170,7 @@ export default function CarrierBidSubmission() {
         </Card>
 
         {/* SPECTRA-MATCH™ Oil Identification - for carriers bidding on qualifying loads */}
-        {load && isSpectraQualified(load.commodity, load.hazmatClass) && (
+        {load && isSpectraQualified(load.equipmentType || load.cargoType, load.commodity, load.hazmatClass) && (
           <Card className="bg-slate-800/50 border-slate-700 rounded-xl">
             <CardContent className="p-4">
               <SpectraMatchWidget

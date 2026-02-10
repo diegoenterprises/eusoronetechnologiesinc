@@ -104,32 +104,10 @@ export const contactsRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       return {
-        id: input.id,
-        type: "shipper",
-        name: "Shell Oil Company",
-        company: "Shell Oil Company",
-        title: "Dispatch Coordinator",
-        email: "dispatch@shell.com",
-        phone: "555-0200",
-        mobile: "555-0201",
-        fax: "555-0202",
-        address: {
-          street: "1234 Energy Way",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-        },
-        website: "https://www.shell.com",
-        notes: "Primary contact for Houston area loads. Available 24/7 for emergencies.",
-        tags: ["vip", "hazmat", "tanker"],
-        favorite: true,
-        createdAt: "2023-01-15",
-        lastContact: "2025-01-22",
-        history: [
-          { date: "2025-01-22", type: "call", notes: "Discussed upcoming load schedule" },
-          { date: "2025-01-15", type: "email", notes: "Sent rate confirmation" },
-          { date: "2025-01-10", type: "meeting", notes: "Quarterly review meeting" },
-        ],
+        id: input.id, type: "", name: "", company: "", title: "",
+        email: "", phone: "", mobile: "", fax: "",
+        address: null, website: "", notes: "", tags: [],
+        favorite: false, createdAt: "", lastContact: "", history: [],
       };
     }),
 
@@ -275,11 +253,7 @@ export const contactsRouter = router({
   getRecent: protectedProcedure
     .input(z.object({ limit: z.number().default(5) }))
     .query(async ({ input }) => {
-      return [
-        { id: "con_002", name: "John Manager", company: "ABC Transport LLC", lastContact: "2025-01-23" },
-        { id: "con_004", name: "Mike Johnson", company: "ABC Transport LLC", lastContact: "2025-01-23" },
-        { id: "con_001", name: "Shell Oil Company", company: "Shell Oil Company", lastContact: "2025-01-22" },
-      ];
+      return [];
     }),
 
   /**
@@ -291,10 +265,7 @@ export const contactsRouter = router({
       limit: z.number().default(10),
     }))
     .query(async ({ input }) => {
-      return [
-        { id: "con_001", name: "Shell Oil Company", type: "shipper", email: "dispatch@shell.com" },
-        { id: "con_002", name: "John Manager", type: "carrier", email: "john@abctransport.com" },
-      ];
+      return [];
     }),
 
   /**

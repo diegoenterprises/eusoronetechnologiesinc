@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useCallback } from "react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -405,6 +406,89 @@ export default function Documents() {
   const deleteMutation = (trpc as any).documents.delete.useMutation({
     onSuccess: () => { docsQuery.refetch(); statsQuery.refetch(); },
   });
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [previewDoc, setPreviewDoc] = useState<{ name: string; blobUrl: string; mime: string } | null>(null);
+
+  // Build direct binary file URL (bypasses tRPC JSON for large files)
+  const getFileUrl = (docId: string, download?: boolean) => {
+    const numericId = docId.replace(/\D/g, '');
+    return `/api/documents/${numericId}/file${download ? '?download=true' : ''}`;
+  };
+
+  // Infer MIME type from document type field or file extension
+  const inferMime = (doc: any): string => {
+    const t = (doc.type || doc.mimeType || '').toLowerCase();
+    if (t.includes('pdf')) return 'application/pdf';
+    if (t.includes('png')) return 'image/png';
+    if (t.includes('jpg') || t.includes('jpeg')) return 'image/jpeg';
+    if (t.includes('gif')) return 'image/gif';
+    if (t.includes('doc') && !t.includes('docx')) return 'application/msword';
+    if (t.includes('docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (t.includes('xls') && !t.includes('xlsx')) return 'application/vnd.ms-excel';
+    if (t.includes('xlsx')) return 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    // Try extension from name
+    const name = (doc.name || '').toLowerCase();
+    if (name.endsWith('.pdf')) return 'application/pdf';
+    if (name.endsWith('.png')) return 'image/png';
+    if (name.endsWith('.jpg') || name.endsWith('.jpeg')) return 'image/jpeg';
+    if (name.endsWith('.gif')) return 'image/gif';
+    if (name.endsWith('.docx')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    if (name.endsWith('.doc')) return 'application/msword';
+    return 'application/pdf'; // default fallback
+  };
+
+  // Ensure filename has proper extension for download
+  const ensureExtension = (name: string, mime: string): string => {
+    if (!name) name = 'document';
+    if (name.includes('.')) return name;
+    const extMap: Record<string, string> = {
+      'application/pdf': '.pdf', 'image/png': '.png', 'image/jpeg': '.jpg', 'image/gif': '.gif',
+      'application/msword': '.doc', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx',
+      'application/vnd.ms-excel': '.xls', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+    };
+    return name + (extMap[mime] || '.pdf');
+  };
+
+  const handleDownload = useCallback(async (doc: any) => {
+    setDownloadingId(doc.id);
+    try {
+      // Fetch via binary endpoint to get proper content
+      const response = await fetch(getFileUrl(doc.id, true));
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const mime = blob.type || inferMime(doc);
+      const fileName = ensureExtension(doc.name || 'document', mime);
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      toast.success(`Downloaded ${fileName}`);
+    } catch (err) {
+      console.error("Download error:", err);
+      toast.error("Download failed");
+    } finally {
+      setDownloadingId(null);
+    }
+  }, []);
+
+  const handleView = useCallback(async (doc: any) => {
+    try {
+      // Fetch the file to determine its actual content type
+      const response = await fetch(getFileUrl(doc.id));
+      if (!response.ok) throw new Error('Could not load document');
+      const blob = await response.blob();
+      const mime = blob.type || inferMime(doc);
+      const blobUrl = URL.createObjectURL(blob);
+      setPreviewDoc({ name: doc.name || 'Document', blobUrl, mime });
+    } catch (err) {
+      console.error("Preview error:", err);
+      toast.error("Could not load document preview");
+    }
+  }, []);
 
   const stats = statsQuery.data || { total: 0, active: 0, expiring: 0, expired: 0 };
 
@@ -618,11 +702,19 @@ export default function Documents() {
                   <div className="flex items-center gap-2 shrink-0">
                     {statusBadge(doc.status)}
                     <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors">
+                      <button
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                        onClick={() => handleView(doc)}
+                        title="Preview document"
+                      >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
-                      <button className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors">
-                        <Download className="w-3.5 h-3.5" />
+                      <button
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                        onClick={() => handleDownload(doc)}
+                        title="Download document"
+                      >
+                        {downloadingId === doc.id ? <span className="w-3.5 h-3.5 border-2 border-slate-400/30 border-t-white rounded-full animate-spin inline-block" /> : <Download className="w-3.5 h-3.5" />}
                       </button>
                       <button
                         className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
@@ -659,11 +751,19 @@ export default function Documents() {
                     <p className="text-[11px] text-slate-500 mt-0.5">{doc.uploadedAt}</p>
                   )}
                   <div className="flex gap-1 mt-3 pt-3 border-t border-slate-700/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors">
+                    <button
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                      onClick={() => handleView(doc)}
+                      title="Preview document"
+                    >
                       <Eye className="w-3.5 h-3.5" />
                     </button>
-                    <button className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors">
-                      <Download className="w-3.5 h-3.5" />
+                    <button
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+                      onClick={() => handleDownload(doc)}
+                      title="Download document"
+                    >
+                      {downloadingId === doc.id ? <span className="w-3.5 h-3.5 border-2 border-slate-400/30 border-t-white rounded-full animate-spin inline-block" /> : <Download className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors ml-auto"
@@ -676,6 +776,68 @@ export default function Documents() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={() => { if (previewDoc?.blobUrl) URL.revokeObjectURL(previewDoc.blobUrl); setPreviewDoc(null); }}>
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl mx-4 shadow-2xl flex flex-col" style={{ height: '85vh' }} onClick={e => e.stopPropagation()}>
+            {/* Preview Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2 rounded-lg bg-blue-500/15">
+                  <FileText className="w-5 h-5 text-blue-400" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-white font-semibold truncate">{previewDoc.name}</h3>
+                  <p className="text-xs text-slate-500">{previewDoc.mime || 'Document'}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-cyan-600 to-emerald-600 text-white rounded-lg text-xs"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = previewDoc.blobUrl;
+                    link.download = ensureExtension(previewDoc.name, previewDoc.mime);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5 mr-1" />Download
+                </Button>
+                <button
+                  onClick={() => setPreviewDoc(null)}
+                  className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            {/* Preview Content */}
+            <div className="flex-1 overflow-auto bg-slate-950 rounded-b-2xl">
+              {previewDoc.mime === 'application/pdf' ? (
+                <iframe
+                  src={previewDoc.blobUrl}
+                  className="w-full h-full border-0"
+                  title={previewDoc.name}
+                />
+              ) : previewDoc.mime.startsWith('image/') ? (
+                <div className="flex items-center justify-center p-8 h-full overflow-auto">
+                  <img src={previewDoc.blobUrl} alt={previewDoc.name} className="max-w-full max-h-full object-contain rounded-lg" />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                  <FileText className="w-16 h-16 text-slate-600 mb-4" />
+                  <p className="text-white text-lg font-medium">Preview not available</p>
+                  <p className="text-slate-500 text-sm mt-1">This file type cannot be previewed. Use the Download button above.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

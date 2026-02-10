@@ -150,7 +150,7 @@ export const DetentionChargesWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader color="text-orange-400" /> : (
       <div className="space-y-3">
         <div className="text-center p-3 rounded-lg bg-orange-500/10">
-          <p className="text-2xl font-bold text-orange-400">${c.totalCharged.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-orange-400">${(c.totalCharged || 0).toLocaleString()}</p>
           <p className="text-xs text-gray-400">Total Detention Charges</p>
         </div>
         <StatRow label="Incidents" value={c.incidents} color="text-yellow-400" />
@@ -171,7 +171,7 @@ export const InventoryAccuracyWidget: React.FC = () => {
           <p className="text-xs text-gray-400">Inventory Accuracy</p>
         </div>
         <StatRow label="Discrepancies" value={a.discrepancies} color={a.discrepancies > 0 ? "text-red-400" : "text-green-400"} />
-        <StatRow label="Items Tracked" value={a.itemsTracked.toLocaleString()} color="text-cyan-400" />
+        <StatRow label="Items Tracked" value={(a.itemsTracked || 0).toLocaleString()} color="text-cyan-400" />
       </div>
     )}</ResponsiveWidget>
   );

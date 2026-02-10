@@ -21,12 +21,7 @@ export const supportRouter = router({
    */
   getKBCategories: protectedProcedure
     .query(async () => {
-      return [
-        { id: "c1", name: "Getting Started", icon: "rocket", articleCount: 12 },
-        { id: "c2", name: "Load Management", icon: "package", articleCount: 18 },
-        { id: "c3", name: "Billing & Payments", icon: "credit-card", articleCount: 8 },
-        { id: "c4", name: "Compliance", icon: "shield", articleCount: 15 },
-      ];
+      return [];
     }),
 
   /**
@@ -35,18 +30,7 @@ export const supportRouter = router({
   getKBArticles: protectedProcedure
     .input(z.object({ categoryId: z.string().nullable().optional(), search: z.string().optional() }))
     .query(async ({ input }) => {
-      const articles = [
-        { id: "a1", title: "How to Create a Load", categoryId: "c2", excerpt: "Step-by-step guide...", views: 1250 },
-        { id: "a2", title: "Understanding HOS Rules", categoryId: "c4", excerpt: "Hours of Service explained...", views: 980 },
-        { id: "a3", title: "Payment Methods", categoryId: "c3", excerpt: "Available payment options...", views: 750 },
-      ];
-      let filtered = articles;
-      if (input.categoryId) filtered = filtered.filter(a => a.categoryId === input.categoryId);
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(a => a.title.toLowerCase().includes(q));
-      }
-      return filtered;
+      return [];
     }),
 
   /**
@@ -57,13 +41,8 @@ export const supportRouter = router({
     .query(async ({ input }) => {
       return {
         id: input.articleId,
-        title: "How to Create a Load",
-        content: "## Overview\n\nThis guide walks you through creating a new load...",
-        category: "Load Management",
-        author: "Support Team",
-        updatedAt: "2025-01-15",
-        views: 1250,
-        helpful: 95,
+        title: "", content: "", category: "", author: "",
+        updatedAt: "", views: 0, helpful: 0,
       };
     }),
 
@@ -72,9 +51,7 @@ export const supportRouter = router({
    */
   getKBBookmarks: protectedProcedure
     .query(async () => {
-      return [
-        { articleId: "a1", title: "How to Create a Load", bookmarkedAt: "2025-01-20" },
-      ];
+      return [];
     }),
 
   /**
@@ -91,38 +68,19 @@ export const supportRouter = router({
    */
   getTickets: protectedProcedure
     .input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional())
-    .query(async ({ input }) => {
-      const tickets = [
-        { id: "t1", number: "TKT-123456", subject: "Load assignment issue", status: "open", priority: "high", createdAt: "2025-01-22" },
-        { id: "t2", number: "TKT-123455", subject: "Billing question", status: "resolved", priority: "normal", createdAt: "2025-01-20" },
-      ];
-      if (input?.status && input.status !== "all") return tickets.filter(t => t.status === input.status);
-      return tickets;
-    }),
+    .query(async () => []),
 
   /**
    * Get ticket stats for SupportTickets page
    */
   getTicketStats: protectedProcedure
-    .query(async () => {
-      return { total: 45, open: 8, inProgress: 5, resolved: 30, closed: 2, avgResponseTime: "2.5 hours" };
-    }),
+    .query(async () => ({ total: 0, open: 0, inProgress: 0, resolved: 0, closed: 0, avgResponseTime: "0" })),
 
   /**
    * Get support summary for Support page
    */
   getSummary: protectedProcedure
-    .query(async () => {
-      return {
-        openTickets: 2,
-        resolvedThisWeek: 5,
-        avgResponseTime: "2.5 hours",
-        total: 47,
-        open: 2,
-        inProgress: 3,
-        resolved: 42,
-      };
-    }),
+    .query(async () => ({ openTickets: 0, resolvedThisWeek: 0, avgResponseTime: "0", total: 0, open: 0, inProgress: 0, resolved: 0 })),
 
   /**
    * Create support ticket
@@ -151,98 +109,20 @@ export const supportRouter = router({
    * Get my tickets
    */
   getMyTickets: protectedProcedure
-    .input(z.object({
-      status: ticketStatusSchema.optional(),
-      limit: z.number().default(20),
-      offset: z.number().default(0),
-    }))
-    .query(async ({ ctx, input }) => {
-      const tickets = [
-        {
-          id: "ticket_001",
-          ticketNumber: "TKT-123456",
-          subject: "Issue with load assignment",
-          category: "load_issue",
-          priority: "high",
-          status: "in_progress",
-          createdAt: "2025-01-22T10:00:00Z",
-          lastUpdate: "2025-01-22T14:30:00Z",
-          assignedTo: "Support Agent",
-        },
-        {
-          id: "ticket_002",
-          ticketNumber: "TKT-123455",
-          subject: "Billing question",
-          category: "billing",
-          priority: "normal",
-          status: "resolved",
-          createdAt: "2025-01-20T09:00:00Z",
-          lastUpdate: "2025-01-21T16:00:00Z",
-          resolvedAt: "2025-01-21T16:00:00Z",
-        },
-      ];
-
-      let filtered = tickets;
-      if (input.status) filtered = filtered.filter(t => t.status === input.status);
-
-      return {
-        tickets: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
-    }),
+    .input(z.object({ status: ticketStatusSchema.optional(), limit: z.number().default(20), offset: z.number().default(0) }))
+    .query(async () => ({ tickets: [], total: 0 })),
 
   /**
    * Get ticket by ID
    */
   getTicketById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id,
-        ticketNumber: "TKT-123456",
-        subject: "Issue with load assignment",
-        description: "I cannot see my assigned load in the app. The load number is LOAD-45920.",
-        category: "load_issue",
-        priority: "high",
-        status: "in_progress",
-        loadId: "load_001",
-        loadNumber: "LOAD-45920",
-        createdBy: { id: "u1", name: "Mike Johnson", email: "mike.j@example.com" },
-        createdAt: "2025-01-22T10:00:00Z",
-        assignedTo: { id: "agent_001", name: "Support Agent" },
-        messages: [
-          {
-            id: "msg_001",
-            sender: "user",
-            senderName: "Mike Johnson",
-            content: "I cannot see my assigned load in the app. The load number is LOAD-45920.",
-            timestamp: "2025-01-22T10:00:00Z",
-          },
-          {
-            id: "msg_002",
-            sender: "agent",
-            senderName: "Support Agent",
-            content: "Thank you for reaching out. I'm looking into this issue now. Can you please confirm which device you're using?",
-            timestamp: "2025-01-22T10:15:00Z",
-          },
-          {
-            id: "msg_003",
-            sender: "user",
-            senderName: "Mike Johnson",
-            content: "I'm using an iPhone 14 with the latest app version.",
-            timestamp: "2025-01-22T10:20:00Z",
-          },
-          {
-            id: "msg_004",
-            sender: "agent",
-            senderName: "Support Agent",
-            content: "I found the issue. There was a sync problem with your account. I've fixed it and you should see the load now. Please log out and log back in.",
-            timestamp: "2025-01-22T14:30:00Z",
-          },
-        ],
-        attachments: [],
-      };
-    }),
+    .query(async ({ input }) => ({
+      id: input.id, ticketNumber: "", subject: "", description: "",
+      category: "", priority: "normal", status: "open", loadId: null, loadNumber: null,
+      createdBy: { id: "", name: "", email: "" }, createdAt: "",
+      assignedTo: null, messages: [], attachments: [],
+    })),
 
   /**
    * Reply to ticket
@@ -452,15 +332,15 @@ If you have trouble accepting a load, please contact support or check that your 
     }),
 
   // Live chat
-  startChatSession: protectedProcedure.input(z.object({ topic: z.string().optional() })).mutation(async () => ({ sessionId: "chat_123", agentName: "Support Agent" })),
+  startChatSession: protectedProcedure.input(z.object({ topic: z.string().optional() })).mutation(async () => ({ sessionId: `chat_${Date.now()}`, agentName: "" })),
   endChatSession: protectedProcedure.input(z.object({ sessionId: z.string() })).mutation(async ({ input }) => ({ success: true, sessionId: input.sessionId })),
-  getChatSession: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async ({ input }) => ({ sessionId: input?.sessionId || "session_123", status: "active", startedAt: "2025-01-23 10:00", active: true, agent: { id: "a1", name: "Support Agent", avatar: "/avatars/agent.png", online: true } })),
-  getChatMessages: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async () => [{ id: "m1", sender: "agent", content: "How can I help?", timestamp: "2025-01-23 10:00" }]),
-  sendChatMessage: protectedProcedure.input(z.object({ sessionId: z.string(), content: z.string() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
+  getChatSession: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async ({ input }) => ({ sessionId: input?.sessionId || "", status: "inactive", startedAt: "", active: false, agent: null })),
+  getChatMessages: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async () => []),
+  sendChatMessage: protectedProcedure.input(z.object({ sessionId: z.string(), content: z.string() })).mutation(async () => ({ success: true, messageId: `msg_${Date.now()}` })),
 
   // Surveys
-  getPendingSurveys: protectedProcedure.query(async () => [{ id: "s1", ticketId: "t1", type: "satisfaction", dueBy: "2025-01-25" }]),
-  getCompletedSurveys: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ surveys: [{ id: "s1", ticketId: "t1", title: "Support Feedback", rating: 5, completedAt: "2025-01-22" }], total: 25, avgRating: 4.6 })),
-  getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, title: "Service Feedback Survey", description: "Please rate your experience", questions: [{ id: "q1", text: "How was your experience?", type: "rating" }] })),
+  getPendingSurveys: protectedProcedure.query(async () => []),
+  getCompletedSurveys: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ surveys: [], total: 0, avgRating: 0 })),
+  getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, title: "", description: "", questions: [] })),
   submitSurvey: protectedProcedure.input(z.object({ surveyId: z.string(), responses: z.array(z.object({ questionId: z.string(), answer: z.any() })) })).mutation(async ({ input }) => ({ success: true, surveyId: input.surveyId })),
 });

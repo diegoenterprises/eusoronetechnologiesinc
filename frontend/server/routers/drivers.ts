@@ -419,24 +419,15 @@ export const driversRouter = router({
         driverId: input.driverId,
         period: input.period,
         metrics: {
-          totalMiles: 7245,
-          totalLoads: 8,
-          onTimeDeliveryRate: 96,
-          safetyScore: 95,
-          fuelEfficiency: 6.8,
-          customerRating: 4.8,
-          hosCompliance: 100,
-          inspectionPassRate: 100,
+          totalMiles: 0, totalLoads: 0, onTimeDeliveryRate: 0, safetyScore: 0,
+          fuelEfficiency: 0, customerRating: 0, hosCompliance: 0, inspectionPassRate: 0,
         },
         rankings: {
-          overall: 1,
-          totalDrivers: 18,
-          safetyRank: 1,
-          productivityRank: 2,
+          overall: 0, totalDrivers: 0, safetyRank: 0, productivityRank: 0,
         },
         trends: {
-          safetyScore: { current: 95, previous: 93, change: 2.1 },
-          onTimeRate: { current: 96, previous: 94, change: 2.1 },
+          safetyScore: { current: 0, previous: 0, change: 0 },
+          onTimeRate: { current: 0, previous: 0, change: 0 },
         },
       };
     }),
@@ -704,32 +695,10 @@ export const driversRouter = router({
   getAssignedVehicle: auditedOperationsProcedure
     .query(async ({ ctx }) => {
       return {
-        id: "v1",
-        unitNumber: "TRK-101",
-        status: "operational",
-        make: "Peterbilt",
-        model: "579",
-        year: 2022,
-        vin: "1XPWD49X1ED000001",
-        licensePlate: "TX-ABC1234",
-        equipmentType: "Tanker",
-        hazmatCertified: true,
-        odometer: 145678,
-        fuelLevel: 72,
-        defLevel: 85,
-        daysToService: 12,
-        trailer: {
-          unitNumber: "TRL-501",
-          type: "DOT-407 Tank Trailer",
-          capacity: 9000,
-          lastInspection: "2025-01-15",
-        },
-        maintenanceItems: [
-          { name: "Oil Change", lastCompleted: "2024-12-15", nextDue: "2025-02-15", daysRemaining: 22 },
-          { name: "DOT Annual Inspection", lastCompleted: "2024-06-01", nextDue: "2025-06-01", daysRemaining: 128 },
-          { name: "Brake Inspection", lastCompleted: "2024-11-01", nextDue: "2025-02-01", daysRemaining: 8 },
-          { name: "Tank Test", lastCompleted: "2024-01-15", nextDue: "2026-01-15", daysRemaining: 356 },
-        ],
+        id: "", unitNumber: "", status: "", make: "", model: "", year: 0,
+        vin: "", licensePlate: "", equipmentType: "", hazmatCertified: false,
+        odometer: 0, fuelLevel: 0, defLevel: 0, daysToService: 0,
+        trailer: null, maintenanceItems: [],
       };
     }),
 
@@ -739,13 +708,8 @@ export const driversRouter = router({
   getLastInspection: auditedOperationsProcedure
     .query(async ({ ctx }) => {
       return {
-        id: "insp1",
-        date: "2025-01-23",
-        type: "Pre-Trip",
-        passed: true,
-        defects: 0,
-        inspector: ctx.user?.id,
-        duration: 15,
+        id: "", date: "", type: "", passed: false, defects: 0,
+        inspector: ctx.user?.id, duration: 0,
       };
     }),
 
@@ -798,23 +762,8 @@ export const driversRouter = router({
   getRouteInfo: auditedOperationsProcedure
     .query(async ({ ctx }) => {
       return {
-        totalMiles: 238,
-        milesRemaining: 73,
-        eta: "1:45 PM",
-        driveTimeRemaining: "1h 15m",
-        fuelStops: [
-          { name: "Pilot Travel Center", location: "Waco, TX", miles: 25, dieselPrice: 3.29 },
-        ],
-        restAreas: [
-          { name: "I-35 Rest Area", location: "Hillsboro, TX", miles: 45 },
-        ],
-        alerts: [
-          { type: "traffic", message: "Slow traffic ahead near Waco - 15 min delay", severity: "warning" },
-          { type: "weather", message: "Clear conditions through route", severity: "info" },
-        ],
-        hazmatRestrictions: [
-          { location: "Downtown Dallas", restriction: "No hazmat 7AM-9AM, 4PM-7PM", miles: 70 },
-        ],
+        totalMiles: 0, milesRemaining: 0, eta: "", driveTimeRemaining: "",
+        fuelStops: [], restAreas: [], alerts: [], hazmatRestrictions: [],
       };
     }),
 
@@ -828,22 +777,9 @@ export const driversRouter = router({
     .query(async ({ ctx, input }) => {
       return {
         period: input.period,
-        totalEarnings: 6776.75,
-        total: 6776.75,
-        milesPaid: 7245,
-        ratePerMile: 0.55,
-        bonuses: 350,
-        deductions: 125,
-        netPay: 7001.75,
-        trend: "up",
-        trendPercent: 8.5,
-        breakdown: [
-          { category: "Line Haul", amount: 3985.75 },
-          { category: "Detention", amount: 450 },
-          { category: "Fuel Bonus", amount: 200 },
-          { category: "Safety Bonus", amount: 150 },
-          { category: "Hazmat Premium", amount: 1991 },
-        ],
+        totalEarnings: 0, total: 0, milesPaid: 0, ratePerMile: 0,
+        bonuses: 0, deductions: 0, netPay: 0, trend: "stable", trendPercent: 0,
+        breakdown: [],
       };
     }),
 
@@ -854,19 +790,13 @@ export const driversRouter = router({
     .input(z.object({ driverId: z.string() }))
     .query(async ({ input }) => {
       return {
-        driverId: input.driverId,
-        status: "driving",
-        driving: 6.5,
-        onDuty: 8,
-        cycle: 52.5,
-        drivingRemaining: "6h 30m",
-        onDutyRemaining: "8h 00m",
-        cycleRemaining: "52h 30m",
-        breakRemaining: "2h 00m",
-        lastUpdate: new Date().toISOString(),
-        drivingHours: { used: 4.5, total: 11, remaining: 6.5 },
-        onDutyHours: { used: 6, total: 14, remaining: 8 },
-        cycleHours: { used: 17.5, total: 70, remaining: 52.5 },
+        driverId: input.driverId, status: "off_duty",
+        driving: 0, onDuty: 0, cycle: 0,
+        drivingRemaining: "11h 00m", onDutyRemaining: "14h 00m", cycleRemaining: "70h 00m",
+        breakRemaining: "0h 00m", lastUpdate: new Date().toISOString(),
+        drivingHours: { used: 0, total: 11, remaining: 11 },
+        onDutyHours: { used: 0, total: 14, remaining: 14 },
+        cycleHours: { used: 0, total: 70, remaining: 70 },
       };
     }),
 
@@ -876,204 +806,92 @@ export const driversRouter = router({
   getRecentLoads: auditedOperationsProcedure
     .input(z.object({ driverId: z.string(), limit: z.number().optional().default(5) }))
     .query(async ({ input }) => {
-      return [
-        { id: "l1", loadNumber: "LOAD-45920", origin: "Houston, TX", destination: "Dallas, TX", status: "delivered", deliveredAt: "2025-01-22" },
-        { id: "l2", loadNumber: "LOAD-45915", origin: "Austin, TX", destination: "San Antonio, TX", status: "delivered", deliveredAt: "2025-01-20" },
-      ];
+      return [];
     }),
 
   // Load acceptance
   acceptLoad: auditedOperationsProcedure.input(z.object({ loadId: z.string() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
   declineLoad: auditedOperationsProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, loadId: input.loadId })),
-  getPendingLoads: auditedOperationsProcedure.query(async () => [{ id: "l1", loadNumber: "LOAD-45930", origin: "Houston, TX", destination: "Dallas, TX", rate: 2450 }]),
+  getPendingLoads: auditedOperationsProcedure.query(async () => []),
 
   // Driver applications
-  getApplications: auditedOperationsProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", name: "John Smith", status: "pending", appliedAt: "2025-01-22" }]),
-  getApplicationStats: auditedOperationsProcedure.query(async () => ({ pending: 12, approved: 150, rejected: 25, total: 187, thisWeek: 8 })),
+  getApplications: auditedOperationsProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getApplicationStats: auditedOperationsProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0, thisWeek: 0 })),
   approveApplication: auditedOperationsProcedure.input(z.object({ applicationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId || input.id })),
   rejectApplication: auditedOperationsProcedure.input(z.object({ applicationId: z.string().optional(), id: z.string().optional(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, applicationId: input.applicationId || input.id })),
 
   // Current driver info
-  getCurrentDriver: auditedOperationsProcedure.query(async () => ({ id: "d1", name: "Mike Johnson", status: "active", cdlNumber: "TX12345678" })),
-  getCurrentVehicle: auditedOperationsProcedure.query(async () => ({ id: "v1", unitNumber: "TRK-101", make: "Peterbilt", model: "579", year: 2022, number: "TRK-101", vin: "1XPWD40X5ED123456", odometer: 458250 })),
+  getCurrentDriver: auditedOperationsProcedure.query(async () => ({ id: "", name: "", status: "", cdlNumber: "" })),
+  getCurrentVehicle: auditedOperationsProcedure.query(async () => ({ id: "", unitNumber: "", make: "", model: "", year: 0, number: "", vin: "", odometer: 0 })),
 
   // Earnings
-  getEarningsStats: auditedOperationsProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 2850, lastWeek: 3100, thisMonth: 12500, avgPerLoad: 450, tripsCompleted: 28, milesDriven: 7245, perMile: 0.55, hoursWorked: 185 })),
-  getCompletedTrips: auditedOperationsProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "t1", loadNumber: "LOAD-45920", earnings: 850, completedAt: "2025-01-22" }]),
+  getEarningsStats: auditedOperationsProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 0, lastWeek: 0, thisMonth: 0, avgPerLoad: 0, tripsCompleted: 0, milesDriven: 0, perMile: 0, hoursWorked: 0 })),
+  getCompletedTrips: auditedOperationsProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // HOS
   getHOSAvailability: auditedOperationsProcedure.query(async () => ({ canDrive: true, canAccept: true, drivingRemaining: "6h 30m", dutyRemaining: "8h 00m", onDutyRemaining: "8h 00m", cycleRemaining: "34h 00m" })),
   getMyHOS: auditedOperationsProcedure.query(async () => ({ 
-    status: "driving", 
-    currentStatus: "driving",
-    driving: 6.5,
-    onDuty: 8,
-    cycle: 52.5,
-    drivingRemaining: "6h 30m", 
-    onDutyRemaining: "8h 00m", 
-    cycleRemaining: "52h 30m",
-    breakRemaining: "2h 00m",
-    drivingToday: 4.5,
-    onDutyToday: 6,
-    cycleUsed: 17.5,
-    hoursAvailable: { driving: 6.5, onDuty: 8, cycle: 52.5 },
-    violations: [],
-    lastBreak: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    nextBreakRequired: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-    breakRequired: true,
-    breakDueIn: "2h 00m",
-    drivingHours: 4.5,
-    onDutyHours: 6,
-    cycleHours: 17.5,
-    todayLog: [
-      { time: "06:00", status: "off_duty", duration: "2h" },
-      { time: "08:00", status: "on_duty", duration: "1h" },
-      { time: "09:00", status: "driving", duration: "4h 30m" },
-    ],
+    status: "off_duty", currentStatus: "off_duty",
+    driving: 0, onDuty: 0, cycle: 0,
+    drivingRemaining: "11h 00m", onDutyRemaining: "14h 00m", cycleRemaining: "70h 00m",
+    breakRemaining: "0h 00m", drivingToday: 0, onDutyToday: 0, cycleUsed: 0,
+    hoursAvailable: { driving: 11, onDuty: 14, cycle: 70 },
+    violations: [], lastBreak: null, nextBreakRequired: null,
+    breakRequired: false, breakDueIn: "",
+    drivingHours: 0, onDutyHours: 0, cycleHours: 0, todayLog: [],
   })),
   startDriving: auditedOperationsProcedure.mutation(async () => ({ success: true, startedAt: new Date().toISOString() })),
   stopDriving: auditedOperationsProcedure.mutation(async () => ({ success: true, stoppedAt: new Date().toISOString() })),
 
   // Onboarding
-  getOnboarding: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [
-    { id: "d1", name: "Mike Johnson", step: 3, totalSteps: 5, status: "in_progress", startedAt: "2025-01-20", type: "new_hire", percentage: 60 },
-    { id: "d2", name: "Sarah Williams", step: 5, totalSteps: 5, status: "completed", startedAt: "2025-01-18", type: "new_hire", percentage: 100 },
-  ]),
+  getOnboarding: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
   getOnboardingStats: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ({ 
-    step: 3,
-    totalSteps: 5,
-    percentage: 60,
-    inProgress: 15, 
-    completed: 120, 
-    dropped: 8,
-    total: 143,
-    stalled: 5,
-    completedSteps: 3,
-    inProgressSteps: 1,
-    estimatedTimeRemaining: "15 minutes",
-    trainingsCompleted: 8,
+    step: 0, totalSteps: 0, percentage: 0, inProgress: 0, completed: 0, dropped: 0,
+    total: 0, stalled: 0, completedSteps: 0, inProgressSteps: 0,
+    estimatedTimeRemaining: "", trainingsCompleted: 0,
   })),
-  getOnboardingDrivers: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ([
-    { id: "d1", name: "Mike Johnson", step: 3, totalSteps: 5, status: "in_progress", startedAt: "2025-01-20", type: "new_hire" },
-    { id: "d2", name: "Sarah Williams", step: 5, totalSteps: 5, status: "completed", startedAt: "2025-01-18", type: "new_hire" },
-  ])),
-  getOnboardingDocuments: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([
-    { id: "doc1", type: "cdl", name: "CDL License", required: true, uploaded: true, status: "approved" },
-    { id: "doc2", type: "medical", name: "Medical Card", required: true, uploaded: false, status: "pending" },
-  ])),
-  getOnboardingSteps: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([
-    { id: "s1", name: "Personal Info", title: "Personal Information", description: "Enter your basic information", status: "completed", order: 1, type: "form", estimatedTime: 10 },
-    { id: "s2", name: "Documents", title: "Document Upload", description: "Upload required documents", status: "in_progress", order: 2, type: "upload", estimatedTime: 15 },
-    { id: "s3", name: "Training", title: "Safety Training", description: "Complete required training modules", status: "pending", order: 3, type: "training", estimatedTime: 60 },
-  ])),
+  getOnboardingDrivers: auditedOperationsProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => ([])),
+  getOnboardingDocuments: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([])),
+  getOnboardingSteps: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ([])),
   getOnboardingProgress: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async () => ({
-    step: 2,
-    totalSteps: 5,
-    completed: ["personal_info"],
-    percentage: 40,
-    completedSteps: 2,
-    inProgressSteps: 1,
-    pendingSteps: 2,
-    estimatedTimeRemaining: "45 min",
-    trainingsCompleted: 2,
-    trainingsTotal: 5,
+    step: 0, totalSteps: 0, completed: [], percentage: 0,
+    completedSteps: 0, inProgressSteps: 0, pendingSteps: 0,
+    estimatedTimeRemaining: "", trainingsCompleted: 0, trainingsTotal: 0,
   })),
 
   // Performance
   getPerformance: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({
-    score: 92,
-    overallScore: 92,
-    onTimeRate: 96,
-    safetyScore: 94,
-    customerRating: 4.8,
-    name: "Mike Johnson",
-    rank: 3,
-    totalDrivers: 24,
-    trend: "up",
-    achievements: ["Perfect Week", "Safe Driver", "Customer Favorite"],
-    stats: {
-      loadsCompleted: 45,
-      milesDriver: 12500,
-      milesThisMonth: 12500,
-      hoursThisWeek: 48,
-      fuelEfficiency: 6.8,
-      revenue: 28500,
-      onTimeDeliveries: 43,
-      incidents: 0,
-    },
-    metrics: {
-      loadsCompleted: 45,
-      milesDriver: 12500,
-      revenue: 28500,
-      fuelEfficiency: 6.8,
-      safety: 94,
-      efficiency: 88,
-      compliance: 96,
-      onTime: 96,
-      customerRating: 4.8,
-    },
+    score: 0, overallScore: 0, onTimeRate: 0, safetyScore: 0, customerRating: 0,
+    name: "", rank: 0, totalDrivers: 0, trend: "stable", achievements: [],
+    stats: { loadsCompleted: 0, milesDriver: 0, milesThisMonth: 0, hoursThisWeek: 0, fuelEfficiency: 0, revenue: 0, onTimeDeliveries: 0, incidents: 0 },
+    metrics: { loadsCompleted: 0, milesDriver: 0, revenue: 0, fuelEfficiency: 0, safety: 0, efficiency: 0, compliance: 0, onTime: 0, customerRating: 0 },
   })),
-  getPerformanceReviews: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "r1", date: "2025-01-15", score: 92, notes: "Excellent performance" }]),
-  getReviewStats: auditedOperationsProcedure.query(async () => ({ avgScore: 88, totalReviews: 45, pendingReviews: 3, total: 45, completed: 42, pending: 3, avgRating: 4.5 })),
+  getPerformanceReviews: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getReviewStats: auditedOperationsProcedure.query(async () => ({ avgScore: 0, totalReviews: 0, pendingReviews: 0, total: 0, completed: 0, pending: 0, avgRating: 0 })),
   getScorecard: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), period: z.string().optional() })).query(async () => ({ 
-    safety: 94, 
-    efficiency: 88, 
-    compliance: 96, 
-    customer: 92,
-    overallScore: 92,
-    driverName: "Mike Johnson",
-    rank: 3,
-    totalDrivers: 24,
-    trend: "up",
-    metrics: {
-      loadsCompleted: 45,
-      milesDriver: 12500,
-      milesThisMonth: 12500,
-      revenue: 28500,
-      fuelEfficiency: 6.8,
-      onTimeDelivery: 96,
-      customerRating: 4.8,
-      inspectionScore: 94,
-      safetyEvents: 2,
-      hardBraking: 3,
-      speeding: 1,
-      idling: 12,
-      hosViolations: 0,
-    },
-    achievements: [{ id: "a1", name: "Perfect Week", earned: true, unlocked: true, earnedAt: "2025-01-20" }],
+    safety: 0, efficiency: 0, compliance: 0, customer: 0, overallScore: 0,
+    driverName: "", rank: 0, totalDrivers: 0, trend: "stable",
+    metrics: { loadsCompleted: 0, milesDriver: 0, milesThisMonth: 0, revenue: 0, fuelEfficiency: 0, onTimeDelivery: 0, customerRating: 0, inspectionScore: 0, safetyEvents: 0, hardBraking: 0, speeding: 0, idling: 0, hosViolations: 0 },
+    achievements: [],
   })),
-  getLeaderboard: auditedOperationsProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => [
-    { id: "d1", rank: 1, driverId: "d1", name: "Mike Johnson", score: 98, trend: "up", loadsCompleted: 45, safetyScore: 96, onTimeRate: 98, rating: 4.9, overallScore: 98 },
-    { id: "d2", rank: 2, driverId: "d2", name: "Sarah Williams", score: 96, trend: "stable", loadsCompleted: 42, safetyScore: 94, onTimeRate: 97, rating: 4.8, overallScore: 96 },
-    { id: "d3", rank: 3, driverId: "d3", name: "Tom Brown", score: 94, trend: "up", loadsCompleted: 38, safetyScore: 92, onTimeRate: 95, rating: 4.7, overallScore: 94 },
-  ]),
+  getLeaderboard: auditedOperationsProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => []),
 
   // Pre-trip
-  getPreTripChecklist: auditedOperationsProcedure.query(async () => ({
-    categories: [
-      { name: "Exterior", items: [{ id: "c1", item: "Brakes", required: true }, { id: "c2", item: "Lights", required: true }, { id: "c3", item: "Tires", required: true }] },
-      { name: "Interior", items: [{ id: "c4", item: "Mirrors", required: true }, { id: "c5", item: "Gauges", required: true }] },
-      { name: "Safety", items: [{ id: "c6", item: "Fire Extinguisher", required: true }, { id: "c7", item: "Emergency Kit", required: false }] },
-    ],
-  })),
+  getPreTripChecklist: auditedOperationsProcedure.query(async () => ({ categories: [] })),
   submitPreTripInspection: auditedOperationsProcedure.input(z.object({ vehicleId: z.string().optional(), items: z.array(z.object({ itemId: z.string(), passed: z.boolean(), notes: z.string().optional() })).optional(), checkedItems: z.record(z.string(), z.unknown()).optional(), notes: z.string().optional(), defects: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, inspectionId: "insp_123" })),
 
   // Events
-  getRecentEvents: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", type: "login", timestamp: "2025-01-23 10:30", date: "2025-01-23", description: "Driver logged in", category: "system", impact: 0, points: 0 }]),
+  getRecentEvents: auditedOperationsProcedure.input(z.object({ driverId: z.string().optional(), limit: z.number().optional() })).query(async () => []),
 
   // Terminations
-  getTerminations: auditedOperationsProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), reason: z.string().optional() }).optional()).query(async () => [{ id: "t1", driverId: "d1", driverName: "Mike Johnson", reason: "voluntary", date: "2025-01-20", status: "completed" }]),
-  getTerminationStats: auditedOperationsProcedure.query(async () => ({ total: 25, voluntary: 18, involuntary: 7, thisMonth: 3 })),
+  getTerminations: auditedOperationsProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), reason: z.string().optional() }).optional()).query(async () => []),
+  getTerminationStats: auditedOperationsProcedure.query(async () => ({ total: 0, voluntary: 0, involuntary: 0, thisMonth: 0 })),
 
   // Driver Status
-  getStatusSummary: auditedOperationsProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => ({ available: 8, driving: 12, onDuty: 3, offDuty: 4, sleeper: 2 })),
+  getStatusSummary: auditedOperationsProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => ({ available: 0, driving: 0, onDuty: 0, offDuty: 0, sleeper: 0 })),
 
   // HOS procedures for DriverHOSDashboard
-  getHOSLogs: auditedOperationsProcedure.input(z.object({ driverId: z.string(), date: z.string().optional() }).optional()).query(async () => [
-    { id: "log1", time: "06:00", status: "off_duty", duration: 480, location: "Houston, TX" },
-    { id: "log2", time: "14:00", status: "driving", duration: 240, location: "I-45 North" },
-    { id: "log3", time: "18:00", status: "on_duty", duration: 60, location: "Dallas, TX" },
-  ]),
+  getHOSLogs: auditedOperationsProcedure.input(z.object({ driverId: z.string(), date: z.string().optional() }).optional()).query(async () => []),
   getHOSViolations: auditedOperationsProcedure.input(z.object({ driverId: z.string() }).optional()).query(async () => []),
   getSyncStatus: auditedOperationsProcedure.query(async () => ({ lastSync: new Date().toISOString(), status: "synced", provider: "ELD" })),
   changeHOSStatus: auditedOperationsProcedure.input(z.object({ driverId: z.string(), status: z.string(), location: z.string().optional() })).mutation(async ({ input }) => ({ success: true, newStatus: input.status })),

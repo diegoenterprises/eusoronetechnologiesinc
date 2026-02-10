@@ -53,7 +53,7 @@ export const CostSavingsWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader color="text-green-400" /> : (
       <div className="space-y-3">
         <div className="text-center p-3 rounded-lg bg-green-500/10">
-          <p className="text-2xl font-bold text-green-400">${s.totalSaved.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-400">${(s.totalSaved || 0).toLocaleString()}</p>
           <p className="text-xs text-gray-400">Total Saved</p>
         </div>
         <StatRow label="Savings Rate" value={`${s.percentSaved}%`} color="text-green-400" />
@@ -114,7 +114,7 @@ export const FreightAuditWidget: React.FC = () => {
           { label: "Issues", value: a.discrepancies, color: "bg-red-500/10" },
           { label: "Pending", value: a.pendingReview, color: "bg-yellow-500/10" },
         ]} />
-        <StatRow label="Amount Recovered" value={`$${a.amountSaved.toLocaleString()}`} color="text-green-400" />
+        <StatRow label="Amount Recovered" value={`$${(a.amountSaved || 0).toLocaleString()}`} color="text-green-400" />
       </div>
     )}</ResponsiveWidget>
   );

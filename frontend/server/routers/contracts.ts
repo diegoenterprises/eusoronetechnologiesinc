@@ -55,127 +55,19 @@ export const contractsRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      const contracts = [
-        {
-          id: "contract_001",
-          contractNumber: "CTR-2025-00045",
-          type: "volume",
-          customer: { id: "cust_001", name: "Shell Oil Company" },
-          status: "active",
-          startDate: "2025-01-01",
-          endDate: "2025-12-31",
-          value: 500000,
-          volumeCommitment: 400,
-          volumeDelivered: 38,
-          completionRate: 0.095,
-        },
-        {
-          id: "contract_002",
-          contractNumber: "CTR-2024-00089",
-          type: "dedicated",
-          customer: { id: "cust_002", name: "ExxonMobil" },
-          status: "active",
-          startDate: "2024-07-01",
-          endDate: "2025-06-30",
-          value: 750000,
-          vehiclesCommitted: 5,
-          vehiclesAssigned: 5,
-        },
-        {
-          id: "contract_003",
-          contractNumber: "CTR-2024-00075",
-          type: "lane_commitment",
-          customer: { id: "cust_004", name: "Valero" },
-          status: "active",
-          startDate: "2024-10-01",
-          endDate: "2025-09-30",
-          lanes: [
-            { origin: "Houston, TX", destination: "Dallas, TX", weeklyVolume: 10 },
-            { origin: "Houston, TX", destination: "San Antonio, TX", weeklyVolume: 8 },
-          ],
-        },
-      ];
-
-      let filtered = contracts;
-      if (input.type) filtered = filtered.filter(c => c.type === input.type);
-      if (input.status) filtered = filtered.filter(c => c.status === input.status);
-      if (input.customerId) filtered = filtered.filter(c => c.customer.id === input.customerId);
-
-      return {
-        contracts: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
-    }),
+    .query(async () => ({ contracts: [], total: 0 })),
 
   /**
    * Get contract by ID
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id,
-        contractNumber: "CTR-2025-00045",
-        type: "volume",
-        status: "active",
-        customer: {
-          id: "cust_001",
-          name: "Shell Oil Company",
-          contact: "Sarah Shipper",
-          email: "contracts@shell.com",
-        },
-        terms: {
-          startDate: "2025-01-01",
-          endDate: "2025-12-31",
-          autoRenew: true,
-          renewalNotice: 60,
-          terminationNotice: 90,
-        },
-        pricing: {
-          rateType: "per_mile",
-          baseRate: 3.15,
-          fuelSurcharge: "DOE Index",
-          accessorials: [
-            { type: "detention", rate: 75, unit: "per_hour", freeTime: 2 },
-            { type: "layover", rate: 350, unit: "per_day" },
-            { type: "hazmat", rate: 150, unit: "flat" },
-          ],
-        },
-        volume: {
-          commitment: 400,
-          delivered: 38,
-          remaining: 362,
-          completionRate: 0.095,
-          projectedCompletion: "on_track",
-        },
-        lanes: [
-          { origin: "Houston, TX", destination: "Dallas, TX", rate: 3.15, volume: 180 },
-          { origin: "Houston, TX", destination: "San Antonio, TX", rate: 2.95, volume: 120 },
-          { origin: "Baytown, TX", destination: "Austin, TX", rate: 3.05, volume: 100 },
-        ],
-        performance: {
-          onTimePickup: 0.96,
-          onTimeDelivery: 0.94,
-          claimsRate: 0.01,
-          avgTransitTime: 4.2,
-        },
-        documents: [
-          { id: "doc_001", name: "Signed Contract", type: "contract", uploadedAt: "2024-12-15" },
-          { id: "doc_002", name: "Insurance Certificate", type: "insurance", uploadedAt: "2025-01-01" },
-          { id: "doc_003", name: "Rate Confirmation", type: "rate_con", uploadedAt: "2024-12-20" },
-        ],
-        history: [
-          { action: "created", date: "2024-12-01", user: "John Broker" },
-          { action: "sent_for_approval", date: "2024-12-10", user: "John Broker" },
-          { action: "approved", date: "2024-12-15", user: "Sarah Shipper" },
-          { action: "activated", date: "2025-01-01", user: "System" },
-        ],
-        notes: "Volume commitment based on previous year plus 10% growth.",
-        createdAt: "2024-12-01",
-        createdBy: { id: "u1", name: "John Broker" },
-      };
-    }),
+    .query(async ({ input }) => ({
+      id: input.id, contractNumber: "", type: "", status: "draft",
+      customer: null, terms: null, pricing: null, volume: null,
+      lanes: [], performance: null, documents: [], history: [],
+      notes: "", createdAt: "", createdBy: null,
+    })),
 
   /**
    * Create contract
@@ -315,92 +207,31 @@ export const contractsRouter = router({
    * Get contract performance
    */
   getPerformance: protectedProcedure
-    .input(z.object({
-      contractId: z.string(),
-      period: z.enum(["month", "quarter", "ytd"]).default("quarter"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        contractId: input.contractId,
-        period: input.period,
-        volume: {
-          committed: 100,
-          delivered: 38,
-          remaining: 62,
-          onTrack: true,
-        },
-        revenue: {
-          total: 47500,
-          projected: 125000,
-          avgPerLoad: 1250,
-        },
-        performance: {
-          onTimePickup: 0.96,
-          onTimeDelivery: 0.94,
-          claimsRate: 0.01,
-          customerSatisfaction: 4.7,
-        },
-        byLane: [
-          { lane: "Houston to Dallas", loads: 18, revenue: 22500, onTime: 0.95 },
-          { lane: "Houston to San Antonio", loads: 12, revenue: 14000, onTime: 0.92 },
-          { lane: "Baytown to Austin", loads: 8, revenue: 11000, onTime: 0.96 },
-        ],
-      };
-    }),
+    .input(z.object({ contractId: z.string(), period: z.enum(["month", "quarter", "ytd"]).default("quarter") }))
+    .query(async ({ input }) => ({
+      contractId: input.contractId, period: input.period,
+      volume: { committed: 0, delivered: 0, remaining: 0, onTrack: false },
+      revenue: { total: 0, projected: 0, avgPerLoad: 0 },
+      performance: { onTimePickup: 0, onTimeDelivery: 0, claimsRate: 0, customerSatisfaction: 0 },
+      byLane: [],
+    })),
 
   /**
    * Get expiring contracts
    */
   getExpiring: protectedProcedure
-    .input(z.object({
-      daysAhead: z.number().default(90),
-    }))
-    .query(async ({ input }) => {
-      return [
-        {
-          id: "contract_002",
-          contractNumber: "CTR-2024-00089",
-          customer: "ExxonMobil",
-          type: "dedicated",
-          endDate: "2025-06-30",
-          daysRemaining: 158,
-          value: 750000,
-          autoRenew: false,
-        },
-      ];
-    }),
+    .input(z.object({ daysAhead: z.number().default(90) }))
+    .query(async () => []),
 
   /**
    * Get contract analytics
    */
   getAnalytics: protectedProcedure
-    .input(z.object({
-      period: z.enum(["month", "quarter", "year"]).default("quarter"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        summary: {
-          activeContracts: 12,
-          totalValue: 2500000,
-          avgContractValue: 208333,
-          renewalRate: 0.85,
-        },
-        byType: [
-          { type: "volume", count: 5, value: 1200000 },
-          { type: "dedicated", count: 3, value: 900000 },
-          { type: "lane_commitment", count: 4, value: 400000 },
-        ],
-        performance: {
-          avgOnTimeDelivery: 0.94,
-          avgClaimsRate: 0.015,
-          avgCustomerSatisfaction: 4.6,
-        },
-        upcoming: {
-          expiring30Days: 1,
-          expiring90Days: 3,
-          pendingApproval: 2,
-        },
-      };
-    }),
+    .input(z.object({ period: z.enum(["month", "quarter", "year"]).default("quarter") }))
+    .query(async ({ input }) => ({
+      period: input.period,
+      summary: { activeContracts: 0, totalValue: 0, avgContractValue: 0, renewalRate: 0 },
+      byType: [], performance: { avgOnTimeDelivery: 0, avgClaimsRate: 0, avgCustomerSatisfaction: 0 },
+      upcoming: { expiring30Days: 0, expiring90Days: 0, pendingApproval: 0 },
+    })),
 });

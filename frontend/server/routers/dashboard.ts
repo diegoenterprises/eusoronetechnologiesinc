@@ -87,11 +87,28 @@ export const dashboardRouter = router({
     const db = await getDb();
     if (!db) return getSeedShipments();
 
+    const userId = typeof ctx.user?.id === 'string' ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+    const role = ctx.user?.role || 'SHIPPER';
+
     try {
+      // Scope by role: users only see THEIR relevant loads
+      let whereClause;
+      if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+        whereClause = sql`${loads.status} IN ('in_transit', 'assigned', 'bidding')`;
+      } else if (role === 'SHIPPER' || role === 'BROKER') {
+        whereClause = sql`${loads.shipperId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'bidding', 'posted')`;
+      } else if (role === 'CARRIER' || role === 'CATALYST') {
+        whereClause = sql`${loads.carrierId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading')`;
+      } else if (role === 'DRIVER') {
+        whereClause = sql`${loads.driverId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'at_pickup', 'at_delivery')`;
+      } else {
+        whereClause = sql`${loads.status} IN ('in_transit', 'assigned') AND (${loads.shipperId} = ${userId} OR ${loads.carrierId} = ${userId} OR ${loads.driverId} = ${userId})`;
+      }
+
       const results = await db
         .select()
         .from(loads)
-        .where(sql`${loads.status} IN ('in_transit', 'assigned', 'bidding')`)
+        .where(whereClause)
         .orderBy(desc(loads.createdAt))
         .limit(10);
 
@@ -342,14 +359,10 @@ export const dashboardRouter = router({
    */
   getTerminalOps: protectedProcedure.query(async ({ ctx }) => {
     return {
-      docks: { total: 12, active: 8, available: 4 },
-      appointments: { today: 24, pending: 6, completed: 18 },
-      tankLevels: [
-        { tank: 'Tank A', product: 'Diesel', level: 75, capacity: 50000 },
-        { tank: 'Tank B', product: 'Gasoline', level: 42, capacity: 75000 },
-        { tank: 'Tank C', product: 'Jet Fuel', level: 88, capacity: 100000 },
-      ],
-      throughput: { today: 125000, mtd: 2850000, unit: 'gallons' },
+      docks: { total: 0, active: 0, available: 0 },
+      appointments: { today: 0, pending: 0, completed: 0 },
+      tankLevels: [],
+      throughput: { today: 0, mtd: 0, unit: 'gallons' },
     };
   }),
 
@@ -724,7 +737,7 @@ export const dashboardRouter = router({
   })),
   saveLayout: protectedProcedure.input(z.object({ layout: z.any().optional() }).optional()).mutation(async ({ input }) => ({ success: true })),
   resetLayout: protectedProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true })),
-  getWidgets: protectedProcedure.query(async () => [{ id: "w1", type: "stats", title: "Stats", enabled: true }]),
+  getWidgets: protectedProcedure.query(async () => []),
   toggleWidget: protectedProcedure.input(z.object({ widgetId: z.string(), enabled: z.boolean() })).mutation(async ({ input }) => ({ success: true, widgetId: input.widgetId })),
 
   // ========================================================================
@@ -732,97 +745,57 @@ export const dashboardRouter = router({
   // ========================================================================
 
   getRevenueForecast: protectedProcedure.query(async () => ({
-    currentMonth: 284500, projectedMonth: 312000, lastMonth: 267800,
-    trend: [245000, 258000, 267800, 284500, 298000, 312000],
-    growth: 6.2, confidence: 87,
+    currentMonth: 0, projectedMonth: 0, lastMonth: 0,
+    trend: [], growth: 0, confidence: 0,
   })),
 
   getRouteOptimizationAI: protectedProcedure.query(async () => ({
-    optimizedRoutes: 34, fuelSaved: 2840, timeSaved: 127,
-    costSavings: 8450, avgEfficiency: 94.2,
+    optimizedRoutes: 0, fuelSaved: 0, timeSaved: 0,
+    costSavings: 0, avgEfficiency: 0,
   })),
 
   getPredictiveMaintenance: protectedProcedure.query(async () => ({
-    vehiclesMonitored: 48, alertsActive: 3, uptime: 97.8,
-    nextService: [
-      { vehicle: "TRK-2201", issue: "Brake pads", urgency: "HIGH", dueIn: "3 days" },
-      { vehicle: "TRK-1847", issue: "Oil change", urgency: "MEDIUM", dueIn: "1 week" },
-      { vehicle: "TRK-3392", issue: "Tire rotation", urgency: "LOW", dueIn: "2 weeks" },
-    ],
+    vehiclesMonitored: 0, alertsActive: 0, uptime: 0, nextService: [],
   })),
 
   getDemandHeatmap: protectedProcedure.query(async () => ({
-    hotspots: [
-      { region: "Los Angeles Basin", demand: 847, surge: 1.35, level: "CRITICAL" },
-      { region: "Houston / Gulf Coast", demand: 534, surge: 1.45, level: "CRITICAL" },
-      { region: "Chicago Metro", demand: 623, surge: 1.22, level: "HIGH" },
-      { region: "Dallas-Fort Worth", demand: 412, surge: 1.28, level: "HIGH" },
-      { region: "Atlanta Hub", demand: 389, surge: 1.18, level: "HIGH" },
-      { region: "New Jersey / NY Port", demand: 567, surge: 1.32, level: "CRITICAL" },
-      { region: "Permian Basin", demand: 298, surge: 1.55, level: "CRITICAL" },
-      { region: "Memphis Corridor", demand: 245, surge: 1.15, level: "ELEVATED" },
-    ],
+    hotspots: [],
   })),
 
   getDriverPerformanceAnalytics: protectedProcedure.query(async () => ({
-    avgScore: 92, topPerformers: 12, needsImprovement: 3, avgMilesPerDay: 487,
+    avgScore: 0, topPerformers: 0, needsImprovement: 0, avgMilesPerDay: 0,
   })),
 
   getFuelEfficiencyAnalytics: protectedProcedure.query(async () => ({
-    avgMpg: 6.8, costPerMile: 0.62, totalGallons: 14200, totalCost: 48800,
-    trend: [0.65, 0.64, 0.63, 0.62, 0.61, 0.62],
+    avgMpg: 0, costPerMile: 0, totalGallons: 0, totalCost: 0, trend: [],
   })),
 
   getLoadUtilization: protectedProcedure.query(async () => ({
-    avgUtilization: 87, fullLoads: 156, partialLoads: 23, emptyMiles: 8.2,
+    avgUtilization: 0, fullLoads: 0, partialLoads: 0, emptyMiles: 0,
   })),
 
   getComplianceScore: protectedProcedure.query(async () => ({
-    overall: 96, fmcsa: 98, phmsa: 94, dot: 97, osha: 95,
-    issues: [
-      { area: "ELD Records", status: "OK", score: 100 },
-      { area: "HOS Violations", status: "WARNING", score: 88 },
-      { area: "Vehicle Inspections", status: "OK", score: 97 },
-    ],
+    overall: 0, fmcsa: 0, phmsa: 0, dot: 0, osha: 0, issues: [],
   })),
 
   getAdvancedMarketRates: protectedProcedure.query(async () => ({
-    avgRate: 2.65, rateChange: 0.08, topLanes: [
-      { route: "LAX → PHX", rate: 3.12, volume: 234 },
-      { route: "HOU → DAL", rate: 2.85, volume: 189 },
-      { route: "CHI → DET", rate: 2.45, volume: 156 },
-    ],
+    avgRate: 0, rateChange: 0, topLanes: [],
   })),
 
   getBidWinRate: protectedProcedure.query(async () => ({
-    winRate: 34.2, totalBids: 187, won: 64, avgBidAmount: 2340,
-    trend: [28, 31, 33, 34, 36, 34],
+    winRate: 0, totalBids: 0, won: 0, avgBidAmount: 0, trend: [],
   })),
 
   getRealTimeTracking: protectedProcedure.query(async () => ({
-    activeShipments: 23, onTime: 19, delayed: 3, earlyArrival: 1,
-    vehicles: [
-      { id: "TRK-2201", lat: 32.78, lng: -96.80, status: "In Transit", eta: "2h 15m" },
-      { id: "TRK-1847", lat: 29.76, lng: -95.37, status: "Loading", eta: "4h 30m" },
-      { id: "TRK-3392", lat: 34.05, lng: -118.24, status: "In Transit", eta: "6h 45m" },
-    ],
+    activeShipments: 0, onTime: 0, delayed: 0, earlyArrival: 0, vehicles: [],
   })),
 
   getCostBreakdown: protectedProcedure.query(async () => ({
-    total: 148500,
-    categories: [
-      { name: "Fuel", amount: 48800, percent: 32.9 },
-      { name: "Labor", amount: 52000, percent: 35.0 },
-      { name: "Insurance", amount: 18700, percent: 12.6 },
-      { name: "Maintenance", amount: 15200, percent: 10.2 },
-      { name: "Tolls & Fees", amount: 8400, percent: 5.7 },
-      { name: "Other", amount: 5400, percent: 3.6 },
-    ],
+    total: 0, categories: [],
   })),
 
   getCustomerSatisfaction: protectedProcedure.query(async () => ({
-    score: 4.7, totalReviews: 342, fiveStar: 218, fourStar: 89,
-    nps: 72, responseRate: 94,
+    score: 0, totalReviews: 0, fiveStar: 0, fourStar: 0, nps: 0, responseRate: 0,
   })),
 
   // ========================================================================
@@ -830,159 +803,69 @@ export const dashboardRouter = router({
   // ========================================================================
 
   getEscortEarnings: protectedProcedure.query(async () => ({
-    today: 450, thisWeek: 2850, thisMonth: 11200, pending: 1200,
-    completedJobs: 8, avgPerJob: 350,
+    today: 0, thisWeek: 0, thisMonth: 0, pending: 0, completedJobs: 0, avgPerJob: 0,
   })),
 
   getRouteNavigation: protectedProcedure.query(async () => ({
-    activeRoute: { from: "Houston, TX", to: "Dallas, TX", distance: 239, eta: "3h 45m", progress: 42 },
-    nextWaypoint: { name: "Waco Rest Area", distance: 45, eta: "35 min" },
-    restrictions: [
-      { type: "LOW_CLEARANCE", location: "I-35 Bridge MP 245", clearance: "14'2\"" },
-      { type: "WEIGHT_LIMIT", location: "FM 2063", limit: "40,000 lbs" },
-    ],
+    activeRoute: null, nextWaypoint: null, restrictions: [],
   })),
 
   getLoadDimensions: protectedProcedure.query(async () => ({
-    length: 85, width: 14, height: 16, weight: 120000,
-    permits: ["oversize", "overweight"],
-    classification: "SUPERLOAD",
-    axleConfig: "13-axle",
+    length: 0, width: 0, height: 0, weight: 0, permits: [], classification: "", axleConfig: "",
   })),
 
   getClearanceAlerts: protectedProcedure.query(async () => ({
-    alerts: [
-      { id: "ca1", type: "BRIDGE", location: "I-10 @ San Jacinto River", clearance: "16'4\"", loadHeight: "16'0\"", margin: "4\"", severity: "WARNING" },
-      { id: "ca2", type: "OVERPASS", location: "US-290 @ Hempstead", clearance: "18'0\"", loadHeight: "16'0\"", margin: "24\"", severity: "OK" },
-      { id: "ca3", type: "UTILITY", location: "FM 1960 Power Lines", clearance: "17'2\"", loadHeight: "16'0\"", margin: "14\"", severity: "CAUTION" },
-    ],
-    totalAhead: 12, criticalCount: 1,
+    alerts: [], totalAhead: 0, criticalCount: 0,
   })),
 
   getEscortChecklist: protectedProcedure.query(async () => ({
-    items: [
-      { id: "ec1", task: "Verify pilot car equipment", completed: true },
-      { id: "ec2", task: "Check radio communication", completed: true },
-      { id: "ec3", task: "Review route permits", completed: true },
-      { id: "ec4", task: "Confirm flag/sign placement", completed: false },
-      { id: "ec5", task: "Pre-trip vehicle inspection", completed: true },
-      { id: "ec6", task: "Contact law enforcement escorts", completed: false },
-    ],
-    completedCount: 4, totalCount: 6,
+    items: [], completedCount: 0, totalCount: 0,
   })),
 
   getDriverCommunication: protectedProcedure.query(async () => ({
-    channel: "Channel 19",
-    lastMessage: { from: "Driver", text: "Clear ahead, proceeding through intersection", time: "2 min ago" },
-    signalStrength: 92,
-    recentMessages: [
-      { from: "Escort Lead", text: "Approaching low clearance bridge in 2 miles", time: "5 min ago" },
-      { from: "Driver", text: "Copy, reducing speed", time: "4 min ago" },
-      { from: "Rear Escort", text: "All clear behind, traffic holding", time: "3 min ago" },
-    ],
+    channel: "", lastMessage: null, signalStrength: 0, recentMessages: [],
   })),
 
-  getEmergencyContacts: protectedProcedure.query(async () => ({
-    contacts: [
-      { name: "TxDOT Operations", phone: "(512) 463-8588", type: "state_dot" },
-      { name: "Harris County Sheriff", phone: "(713) 221-6000", type: "law_enforcement" },
-      { name: "Dispatch Center", phone: "(800) 555-0199", type: "dispatch" },
-      { name: "Permit Office", phone: "(800) 299-1700", type: "permits" },
-    ],
-  })),
+  getEmergencyContacts: protectedProcedure.query(async () => ({ contacts: [] })),
 
   getTripLog: protectedProcedure.query(async () => ({
-    entries: [
-      { time: "06:00 AM", event: "Departed origin", location: "Houston, TX" },
-      { time: "07:15 AM", event: "Cleared interchange", location: "I-10/I-45" },
-      { time: "08:30 AM", event: "Rest stop", location: "Huntsville, TX", duration: "15 min" },
-      { time: "09:45 AM", event: "Low clearance passage", location: "Madisonville, TX" },
-    ],
-    totalDriveTime: "3h 45m", totalDistance: 142, avgSpeed: 38,
+    entries: [], totalDriveTime: "", totalDistance: 0, avgSpeed: 0,
   })),
 
   getPermitVerification: protectedProcedure.query(async () => ({
-    permits: [
-      { id: "p1", type: "Oversize/Overweight", state: "TX", number: "TX-OS-2026-45892", status: "VALID", expires: "2026-03-15" },
-      { id: "p2", type: "Superload", state: "TX", number: "TX-SL-2026-12034", status: "VALID", expires: "2026-02-28" },
-      { id: "p3", type: "Oversize", state: "OK", number: "OK-OS-2026-7821", status: "PENDING", expires: "N/A" },
-    ],
-    allValid: false, pendingCount: 1,
+    permits: [], allValid: false, pendingCount: 0,
   })),
 
   getEscortPay: protectedProcedure.query(async () => ({
-    currentJob: { rate: 45, unit: "per hour", estimatedTotal: 540, hoursWorked: 8.5 },
-    weeklyTotal: 2850, monthlyTotal: 11200,
-    recentPayments: [
-      { id: "ep1", date: "2026-02-05", amount: 630, job: "Houston → Dallas", status: "paid" },
-      { id: "ep2", date: "2026-02-03", amount: 480, job: "San Antonio → Austin", status: "paid" },
-    ],
+    currentJob: null, weeklyTotal: 0, monthlyTotal: 0, recentPayments: [],
   })),
 
   getOversizedLoads: protectedProcedure.query(async () => ({
-    active: [
-      { id: "ol1", loadNumber: "LOAD-99201", dimensions: "85' × 14' × 16'", weight: "120,000 lbs", route: "Houston → Dallas", status: "in_transit" },
-      { id: "ol2", loadNumber: "LOAD-99205", dimensions: "65' × 12' × 14'", weight: "95,000 lbs", route: "Beaumont → San Antonio", status: "scheduled" },
-    ],
-    totalActive: 2, requiresEscort: 2,
+    active: [], totalActive: 0, requiresEscort: 0,
   })),
 
   getSafetyProtocols: protectedProcedure.query(async () => ({
-    protocols: [
-      { id: "sp1", name: "Intersection Clearing", status: "active", lastReviewed: "2026-02-01" },
-      { id: "sp2", name: "Bridge Approach", status: "active", lastReviewed: "2026-02-01" },
-      { id: "sp3", name: "Emergency Stop", status: "active", lastReviewed: "2026-01-28" },
-      { id: "sp4", name: "Night Operations", status: "active", lastReviewed: "2026-01-25" },
-    ],
-    complianceScore: 96,
+    protocols: [], complianceScore: 0,
   })),
 
   getRouteRestrictions: protectedProcedure.query(async () => ({
-    restrictions: [
-      { id: "rr1", type: "TIME", description: "No travel 7-9 AM / 4-6 PM on I-45", applies: "Weekdays" },
-      { id: "rr2", type: "ROAD", description: "No travel on FM roads after dark", applies: "All days" },
-      { id: "rr3", type: "WEATHER", description: "No travel in winds > 35 mph", applies: "Current: 12 mph ✓" },
-    ],
-    currentlyRestricted: false,
+    restrictions: [], currentlyRestricted: false,
   })),
 
   getCommunicationHub: protectedProcedure.query(async () => ({
-    channels: [
-      { name: "Dispatch", status: "connected", lastActivity: "1 min ago" },
-      { name: "Driver", status: "connected", lastActivity: "2 min ago" },
-      { name: "Rear Escort", status: "connected", lastActivity: "3 min ago" },
-      { name: "Law Enforcement", status: "standby", lastActivity: "15 min ago" },
-    ],
-    unreadMessages: 2,
+    channels: [], unreadMessages: 0,
   })),
 
   getCoordinationMap: protectedProcedure.query(async () => ({
-    vehicles: [
-      { id: "v1", type: "lead_escort", lat: 30.85, lng: -96.12, heading: 0, speed: 35 },
-      { id: "v2", type: "load", lat: 30.84, lng: -96.12, heading: 0, speed: 35 },
-      { id: "v3", type: "rear_escort", lat: 30.83, lng: -96.12, heading: 0, speed: 35 },
-    ],
-    formationStatus: "TIGHT", spacing: "500 ft",
+    vehicles: [], formationStatus: "", spacing: "",
   })),
 
   getIncidentReports: protectedProcedure.query(async () => ({
-    recent: [
-      { id: "ir1", date: "2026-02-04", type: "Near Miss", location: "I-35 @ Exit 292", severity: "LOW", resolved: true },
-      { id: "ir2", date: "2026-01-28", type: "Traffic Delay", location: "US-290 Construction", severity: "MEDIUM", resolved: true },
-    ],
-    totalThisMonth: 2, totalThisYear: 8,
+    recent: [], totalThisMonth: 0, totalThisYear: 0,
   })),
 
   getEquipmentChecklist: protectedProcedure.query(async () => ({
-    items: [
-      { id: "eq1", name: "Oversize Load Signs", status: "OK", lastChecked: "Today" },
-      { id: "eq2", name: "Amber Rotating Lights", status: "OK", lastChecked: "Today" },
-      { id: "eq3", name: "Flags (Red/Orange)", status: "OK", lastChecked: "Today" },
-      { id: "eq4", name: "Two-Way Radio", status: "OK", lastChecked: "Today" },
-      { id: "eq5", name: "Height Pole", status: "NEEDS_CHECK", lastChecked: "Yesterday" },
-      { id: "eq6", name: "Fire Extinguisher", status: "OK", lastChecked: "Today" },
-    ],
-    allGood: false, issueCount: 1,
+    items: [], allGood: true, issueCount: 0,
   })),
 });
 
@@ -1276,9 +1159,9 @@ async function getAdminStats(db: any) {
     totalUsers: totalUsers?.count || 0,
     totalCompanies: totalCompanies?.count || 0,
     totalLoads: totalLoads?.count || 0,
-    activeUsers: 1247,
+    activeUsers: 0,
     systemHealth: 'healthy',
-    revenue: 2450000,
+    revenue: 0,
   };
 }
 
@@ -1287,126 +1170,25 @@ async function getAdminStats(db: any) {
 // ============================================================================
 
 function getSeedStats(role: string) {
-  const baseStats = {
-    SHIPPER: {
-      totalLoads: 156,
-      activeLoads: 12,
-      deliveredLoads: 144,
-      totalSpent: 245600,
-      onTimeRate: 94.5,
-      avgTransitTime: '2.3 days',
-    },
-    CARRIER: {
-      totalLoads: 89,
-      activeLoads: 8,
-      totalRevenue: 178500,
-      fleetSize: 24,
-      utilizationRate: 84,
-      avgRatePerMile: 2.45,
-    },
-    BROKER: {
-      activeShippers: 45,
-      activeCarriers: 128,
-      loadsThisMonth: 234,
-      totalCommission: 45600,
-      avgMargin: 12.5,
-      pendingPayments: 12400,
-    },
-    DRIVER: {
-      completedLoads: 67,
-      totalEarnings: 89400,
-      milesThisWeek: 2450,
-      safetyScore: 98,
-      hoursAvailable: 8.5,
-      nextLoad: null,
-    },
-    CATALYST: {
-      activeDrivers: 24,
-      loadsInTransit: 18,
-      pendingAssignments: 6,
-      hosViolations: 0,
-      avgResponseTime: '12 min',
-      fleetUtilization: 78,
-    },
-    TERMINAL_MANAGER: {
-      docksActive: 8,
-      docksTotal: 12,
-      appointmentsToday: 24,
-      throughputToday: 125000,
-      tankUtilization: 68,
-      pendingBOLs: 3,
-    },
-    COMPLIANCE_OFFICER: {
-      driversCompliant: 45,
-      driversTotal: 48,
-      expiringDocuments: 5,
-      pendingAudits: 2,
-      csaScore: 'Satisfactory',
-      lastAuditDate: '2025-12-15',
-    },
-    SAFETY_MANAGER: {
-      accidentsYTD: 2,
-      incidentRate: 0.8,
-      driverScoreAvg: 94,
-      inspectionsPassed: 98,
-      maintenanceDue: 4,
-      safetyMeetingsCompleted: 12,
-    },
-    ADMIN: {
-      totalUsers: 1247,
-      totalCompanies: 156,
-      totalLoads: 4521,
-      activeUsers: 892,
-      systemHealth: 'healthy',
-      revenue: 2450000,
-    },
+  const empty = {
+    SHIPPER: { totalLoads: 0, activeLoads: 0, deliveredLoads: 0, totalSpent: 0, onTimeRate: 0, avgTransitTime: '0 days' },
+    CARRIER: { totalLoads: 0, activeLoads: 0, totalRevenue: 0, fleetSize: 0, utilizationRate: 0, avgRatePerMile: 0 },
+    BROKER: { activeShippers: 0, activeCarriers: 0, loadsThisMonth: 0, totalCommission: 0, avgMargin: 0, pendingPayments: 0 },
+    DRIVER: { completedLoads: 0, totalEarnings: 0, milesThisWeek: 0, safetyScore: 0, hoursAvailable: 0, nextLoad: null },
+    CATALYST: { activeDrivers: 0, loadsInTransit: 0, pendingAssignments: 0, hosViolations: 0, avgResponseTime: '0 min', fleetUtilization: 0 },
+    TERMINAL_MANAGER: { docksActive: 0, docksTotal: 0, appointmentsToday: 0, throughputToday: 0, tankUtilization: 0, pendingBOLs: 0 },
+    COMPLIANCE_OFFICER: { driversCompliant: 0, driversTotal: 0, expiringDocuments: 0, pendingAudits: 0, csaScore: 'N/A', lastAuditDate: '' },
+    SAFETY_MANAGER: { accidentsYTD: 0, incidentRate: 0, driverScoreAvg: 0, inspectionsPassed: 0, maintenanceDue: 0, safetyMeetingsCompleted: 0 },
+    ADMIN: { totalUsers: 0, totalCompanies: 0, totalLoads: 0, activeUsers: 0, systemHealth: 'healthy', revenue: 0 },
   };
-
-  return baseStats[role as keyof typeof baseStats] || baseStats.SHIPPER;
+  return empty[role as keyof typeof empty] || empty.SHIPPER;
 }
 
-function getSeedShipments() {
-  return [
-    { id: 'LOAD-001', origin: 'Houston', destination: 'Dallas', status: 'in_transit', progress: 65, eta: '2026-01-24T14:00:00Z', driver: 'John Davis', hazmat: true, hazmatClass: '3' },
-    { id: 'LOAD-002', origin: 'Denver', destination: 'Phoenix', status: 'assigned', progress: 0, eta: '2026-01-25T10:00:00Z', driver: 'Sarah Miller', hazmat: false, hazmatClass: null },
-    { id: 'LOAD-003', origin: 'Atlanta', destination: 'Miami', status: 'in_transit', progress: 85, eta: '2026-01-23T18:00:00Z', driver: 'Mike Johnson', hazmat: true, hazmatClass: '8' },
-  ];
-}
-
-function getSeedFleetStatus() {
-  return {
-    total: 45,
-    available: 12,
-    inUse: 28,
-    maintenance: 4,
-    outOfService: 1,
-    utilization: 84,
-  };
-}
-
-function getSeedAvailableLoads() {
-  return [
-    { id: 'LOAD-101', origin: { city: 'Houston', state: 'TX' }, destination: { city: 'Dallas', state: 'TX' }, rate: 2450, weight: '42000', cargoType: 'hazmat', hazmatClass: '3', pickupDate: new Date(), status: 'posted', bidCount: 3 },
-    { id: 'LOAD-102', origin: { city: 'Chicago', state: 'IL' }, destination: { city: 'Detroit', state: 'MI' }, rate: 1850, weight: '38000', cargoType: 'general', hazmatClass: null, pickupDate: new Date(), status: 'bidding', bidCount: 7 },
-  ];
-}
-
-function getSeedEarnings() {
-  return {
-    total: 12450,
-    loads: 8,
-    average: 1556,
-    trend: '+5.2%',
-    topLane: 'DAL → HOU',
-  };
-}
-
-function getSeedComplianceAlerts() {
-  return [
-    { type: 'insurance', severity: 'warning', message: 'Insurance expires in 25 days', expiry: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000) },
-    { type: 'medical', severity: 'critical', message: 'Medical card expires in 7 days', expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
-  ];
-}
+function getSeedShipments() { return []; }
+function getSeedFleetStatus() { return { total: 0, available: 0, inUse: 0, maintenance: 0, outOfService: 0, utilization: 0 }; }
+function getSeedAvailableLoads() { return []; }
+function getSeedEarnings() { return { total: 0, loads: 0, average: 0, trend: '0%', topLane: '' }; }
+function getSeedComplianceAlerts() { return []; }
 
 function getProgressFromStatus(status: string | null): number {
   const statusProgress: Record<string, number> = {
@@ -1427,553 +1209,56 @@ function getProgressFromStatus(status: string | null): number {
 // Per User Journey Documents 01-10
 // ============================================================================
 
-/**
- * CSA BASIC Scores for Safety Manager (09_SAFETY_MANAGER_USER_JOURNEY.md)
- * 7 BASIC categories with percentile scores
- */
 export function getSeedCSAScores() {
-  return {
-    unsafeDriving: { score: 42, threshold: 65, status: 'ok' },
-    hosCompliance: { score: 51, threshold: 65, status: 'ok' },
-    driverFitness: { score: 28, threshold: 65, status: 'ok' },
-    controlledSubstances: { score: 15, threshold: 65, status: 'ok' },
-    vehicleMaintenance: { score: 78, threshold: 65, status: 'alert' },
-    hazmatCompliance: { score: 38, threshold: 65, status: 'ok' },
-    crashIndicator: { score: 52, threshold: 65, status: 'ok' },
-    lastUpdated: new Date().toISOString(),
-  };
+  return { unsafeDriving: { score: 0, threshold: 65, status: 'ok' }, hosCompliance: { score: 0, threshold: 65, status: 'ok' }, driverFitness: { score: 0, threshold: 65, status: 'ok' }, controlledSubstances: { score: 0, threshold: 65, status: 'ok' }, vehicleMaintenance: { score: 0, threshold: 65, status: 'ok' }, hazmatCompliance: { score: 0, threshold: 65, status: 'ok' }, crashIndicator: { score: 0, threshold: 65, status: 'ok' }, lastUpdated: new Date().toISOString() };
 }
-
-/**
- * Driver Scorecards for Safety Manager
- */
-export function getSeedDriverScorecard() {
-  return [
-    { id: 1, name: 'Mike Smith', score: 98, miles: 5240, events: 1, accidents: 0, rank: 1, status: 'top' },
-    { id: 2, name: 'Lisa Ross', score: 96, miles: 4890, events: 2, accidents: 0, rank: 2, status: 'top' },
-    { id: 3, name: 'John Doe', score: 94, miles: 5120, events: 4, accidents: 0, rank: 3, status: 'top' },
-    { id: 4, name: 'Sam Wilson', score: 92, miles: 4560, events: 5, accidents: 0, rank: 4, status: 'satisfactory' },
-    { id: 5, name: 'Chris Paul', score: 89, miles: 5340, events: 8, accidents: 0, rank: 5, status: 'satisfactory' },
-    { id: 6, name: 'Tom Harris', score: 78, miles: 4230, events: 18, accidents: 0, rank: 14, status: 'coaching' },
-    { id: 7, name: 'Dave King', score: 72, miles: 3890, events: 24, accidents: 1, rank: 15, status: 'action' },
-  ];
-}
-
-/**
- * Catalyst Dispatch Data (05_CATALYST_USER_JOURNEY.md)
- */
-export function getSeedDispatchData() {
-  return {
-    activeLoads: 18,
-    unassigned: 3,
-    enRoute: 4,
-    loading: 2,
-    inTransit: 8,
-    issues: 1,
-    driversAvailable: 4,
-    loadsRequiringAction: [
-      { loadId: 'LOAD-45901', route: 'HOU → DAL', status: 'UNASSIGNED', driver: null, action: 'Assign Driver' },
-      { loadId: 'LOAD-45892', route: 'BAY → AUS', status: 'BREAKDOWN', driver: 'Dave K.', action: 'Relief Driver' },
-      { loadId: 'LOAD-45887', route: 'LAP → OKC', status: 'DELAYED', driver: 'Lisa R.', action: 'Update ETA' },
-    ],
-  };
-}
-
-/**
- * Escort Jobs Data (06_ESCORT_USER_JOURNEY.md)
- */
-export function getSeedEscortJobs() {
-  return {
-    activeJobs: 2,
-    upcoming: 5,
-    completed: 127,
-    monthlyEarnings: 4850,
-    rating: 4.9,
-    availableJobs: [
-      { id: 'ESC-4520', route: 'Houston → Dallas', date: 'Tomorrow 06:00', loadType: 'Oversize tank', hazmat: true, escortType: 'Lead + Chase', position: 'Lead', pay: 480, urgent: true },
-      { id: 'ESC-4521', route: 'Beaumont → Austin', date: 'Jan 28 08:00', loadType: 'Wide load', hazmat: false, escortType: 'Lead only', position: 'Lead', pay: 380, urgent: false },
-      { id: 'ESC-4522', route: 'Dallas → OKC', date: 'Jan 29 07:00', loadType: 'Heavy haul', hazmat: false, escortType: 'Lead + Chase', position: 'Lead', pay: 420, urgent: false },
-    ],
-    certifications: [
-      { state: 'Texas', status: 'valid', expiry: '2027-06-15' },
-      { state: 'Oklahoma', status: 'reciprocity', expiry: null },
-      { state: 'Louisiana', status: 'reciprocity', expiry: null },
-      { state: 'Arkansas', status: 'not_certified', expiry: null },
-    ],
-  };
-}
-
-/**
- * Shipper Dashboard Stats (01_SHIPPER_USER_JOURNEY.md)
- */
-export function getSeedShipperDashboard() {
-  return {
-    activeLoads: 12,
-    pendingBids: 8,
-    deliveredThisWeek: 15,
-    avgRatePerMile: 2.85,
-    onTimeRate: 94.2,
-    loadsRequiringAttention: [
-      { loadId: 'LOAD-45901', issue: 'Bid selection needed', urgency: 'high' },
-      { loadId: 'LOAD-45899', issue: 'POD review', urgency: 'medium' },
-    ],
-  };
-}
-
-/**
- * Broker Dashboard Stats (03_BROKER_USER_JOURNEY.md)
- */
-export function getSeedBrokerDashboard() {
-  return {
-    activeLoads: 23,
-    pendingMatches: 14,
-    weeklyVolume: 187400,
-    commissionEarned: 18740,
-    marginAverage: 12.3,
-    shipperLoads: 14,
-    carrierCapacity: [
-      { carrier: 'ABC Transport', trucks: 3, location: 'Houston', rating: 5.0 },
-      { carrier: 'XYZ Hazmat', trucks: 2, location: 'Dallas', rating: 4.8 },
-      { carrier: 'SafeHaul', trucks: 1, location: 'Austin', rating: 4.9 },
-    ],
-  };
-}
-
-/**
- * Admin Platform Stats (10_ADMIN_USER_JOURNEY.md)
- */
-export function getSeedAdminDashboard() {
-  return {
-    totalUsers: 12458,
-    pendingVerifications: 47,
-    activeLoads: 892,
-    todaySignups: 28,
-    openTickets: 15,
-    platformHealth: {
-      api: { status: 'healthy', latency: 124 },
-      database: { status: 'healthy', uptime: 99.9 },
-      eldSync: { status: 'healthy' },
-      payment: { status: 'healthy' },
-      gps: { status: 'healthy' },
-      scada: { status: 'healthy' },
-    },
-    criticalErrors24h: 0,
-  };
-}
-
-export function getSeedCarrierSourcing() {
-  return [
-    { id: 1, name: 'Swift Transport', rating: 4.8, loads: 156, onTime: 98, location: 'Houston, TX', hazmatCert: true },
-    { id: 2, name: 'Prime Inc', rating: 4.6, loads: 89, onTime: 95, location: 'Dallas, TX', hazmatCert: true },
-    { id: 3, name: 'Werner Enterprises', rating: 4.5, loads: 124, onTime: 96, location: 'Austin, TX', hazmatCert: false },
-    { id: 4, name: 'JB Hunt', rating: 4.7, loads: 203, onTime: 97, location: 'Phoenix, AZ', hazmatCert: true },
-  ];
-}
-
-export function getSeedMarginCalculator() {
-  return {
-    shipperRate: 2500,
-    carrierRate: 1950,
-    margin: 550,
-    marginPercent: 22,
-    avgMargin: 18.5,
-    fuelSurcharge: 125,
-    accessorials: 75,
-  };
-}
-
-export function getSeedFuelStations() {
-  return [
-    { id: 1, name: 'Pilot Flying J', address: '1234 Highway 45, Houston TX', price: 3.45, distance: 2.3, amenities: ['DEF', 'Scales', 'Showers'] },
-    { id: 2, name: 'Love\'s Travel Stop', address: '5678 Interstate Dr, Dallas TX', price: 3.42, distance: 5.1, amenities: ['DEF', 'Tire Shop'] },
-    { id: 3, name: 'TA Petro', address: '9012 Truck Stop Ln, Austin TX', price: 3.48, distance: 8.7, amenities: ['DEF', 'Scales', 'Restaurant'] },
-  ];
-}
-
-export function getSeedWeatherData() {
-  return {
-    current: { temp: 72, condition: 'Partly Cloudy', humidity: 45, wind: 12 },
-    forecast: [
-      { day: 'Today', high: 78, low: 62, condition: 'Sunny' },
-      { day: 'Tomorrow', high: 75, low: 58, condition: 'Partly Cloudy' },
-      { day: 'Wed', high: 70, low: 55, condition: 'Rain' },
-    ],
-    alerts: [],
-  };
-}
-
-export function getSeedAccidentTracker() {
-  return {
-    ytd: 3,
-    lastIncident: '45 days ago',
-    severity: { minor: 2, major: 1, fatal: 0 },
-    trend: '-25%',
-    preventable: 1,
-    nonPreventable: 2,
-  };
-}
-
-export function getSeedDriverQualifications() {
-  return [
-    { id: 1, name: 'John Davis', cdl: 'Valid', cdlExp: '2027-08-15', medical: 'Valid', medExp: '2026-06-30', hazmat: 'Valid', hazmatExp: '2027-01-15', twic: 'Valid' },
-    { id: 2, name: 'Sarah Miller', cdl: 'Valid', cdlExp: '2026-12-01', medical: 'Exp 30d', medExp: '2026-02-25', hazmat: 'N/A', hazmatExp: null, twic: 'Valid' },
-    { id: 3, name: 'Mike Johnson', cdl: 'Valid', cdlExp: '2028-03-20', medical: 'Valid', medExp: '2026-09-15', hazmat: 'Valid', hazmatExp: '2026-08-01', twic: 'Exp 14d' },
-  ];
-}
-
-export function getSeedYardManagement() {
-  return {
-    totalSpots: 150,
-    occupied: 98,
-    available: 52,
-    trailers: 45,
-    containers: 32,
-    bobtails: 21,
-    docks: { total: 24, active: 18, available: 6 },
-    avgDwellTime: '4.2 hours',
-  };
-}
-
-export function getSeedRoutePermits() {
-  return [
-    { state: 'Texas', status: 'Active', number: 'TX-2024-5521', expiry: '2026-12-31' },
-    { state: 'Oklahoma', status: 'Active', number: 'OK-2024-3312', expiry: '2026-11-15' },
-    { state: 'Louisiana', status: 'Active', number: 'LA-2024-8891', expiry: '2026-10-01' },
-    { state: 'Arkansas', status: 'Pending', number: null, expiry: null },
-  ];
-}
-
-export function getSeedFormationTracking() {
-  return {
-    loadId: 'LOAD-45901',
-    escortLead: { name: 'Bob P.', distance: 0.25, status: 'In Position' },
-    mainVehicle: { driver: 'John D.', speed: 45, status: 'Moving' },
-    escortChase: { name: 'Mary S.', distance: 0.15, status: 'In Position' },
-    formationStatus: 'Optimal',
-    nextCheckpoint: 'I-45 Bridge Clearance',
-    eta: '15 min',
-  };
-}
-
-export function getSeedNotifications() {
-  return [
-    { id: 1, type: 'alert', message: 'Driver HOS warning - 1 hour remaining', time: '5 min ago', read: false },
-    { id: 2, type: 'bid', message: 'New bid received on LOAD-45901', time: '12 min ago', read: false },
-    { id: 3, type: 'delivery', message: 'LOAD-45892 delivered successfully', time: '1 hour ago', read: true },
-    { id: 4, type: 'document', message: 'Insurance certificate expires in 30 days', time: '2 hours ago', read: true },
-  ];
-}
-
-export function getSeedRecentActivity() {
-  return [
-    { id: 1, action: 'Load Created', details: 'LOAD-45905 Houston → Dallas', time: '10 min ago', user: 'ChemCo Inc' },
-    { id: 2, action: 'Bid Accepted', details: 'LOAD-45901 awarded to ABC Transport', time: '25 min ago', user: 'System' },
-    { id: 3, action: 'Driver Assigned', details: 'John D. assigned to LOAD-45901', time: '30 min ago', user: 'Dispatch' },
-    { id: 4, action: 'POD Uploaded', details: 'LOAD-45892 proof of delivery', time: '1 hour ago', user: 'Sarah M.' },
-  ];
-}
-
-export function getSeedQuickActions() {
-  return [
-    { id: 'create_load', label: 'Create Load', icon: 'Package', color: 'blue' },
-    { id: 'find_carrier', label: 'Find Carrier', icon: 'Truck', color: 'green' },
-    { id: 'view_bids', label: 'View Bids', icon: 'DollarSign', color: 'yellow' },
-    { id: 'track_shipments', label: 'Track Shipments', icon: 'MapPin', color: 'purple' },
-  ];
-}
-
-export function getSeedDocumentExpirations() {
-  return [
-    { id: 1, type: 'Medical Certificate', entity: 'John Davis', expiry: '2026-02-15', daysLeft: 23, status: 'warning' },
-    { id: 2, type: 'CDL', entity: 'Mike Johnson', expiry: '2026-03-20', daysLeft: 56, status: 'ok' },
-    { id: 3, type: 'Insurance', entity: 'Company', expiry: '2026-02-28', daysLeft: 36, status: 'ok' },
-    { id: 4, type: 'TWIC', entity: 'Sarah Miller', expiry: '2026-02-07', daysLeft: 15, status: 'critical' },
-  ];
-}
-
-export function getSeedDetentionTracking() {
-  return {
-    totalHours: 5.5,
-    estimatedCharges: 425,
-    locations: [
-      { location: 'Dallas Warehouse', hours: 3.5, status: 'billing', rate: 75 },
-      { location: 'Houston Terminal', hours: 2.0, status: 'active', rate: 75 },
-    ],
-    mtdCharges: 2850,
-    avgWaitTime: '2.3 hours',
-  };
-}
-
-export function getSeedDockScheduling() {
-  return [
-    { id: 'Dock 1', time: '10:00 AM', carrier: 'Swift Transport', type: 'Inbound', product: 'Diesel' },
-    { id: 'Dock 2', time: '10:30 AM', carrier: 'Prime Inc', type: 'Outbound', product: 'Gasoline' },
-    { id: 'Dock 3', time: '11:00 AM', carrier: 'Werner', type: 'Inbound', product: 'Jet Fuel' },
-    { id: 'Dock 4', time: '11:30 AM', carrier: 'JB Hunt', type: 'Outbound', product: 'Diesel' },
-  ];
-}
-
-export function getSeedInboundShipments() {
-  return [
-    { id: 'INB-001', eta: '10:30 AM', origin: 'Dallas Refinery', status: 'On Time', product: 'Diesel', volume: 8500 },
-    { id: 'INB-002', eta: '11:45 AM', origin: 'Houston Terminal', status: 'Delayed', product: 'Gasoline', volume: 7200 },
-    { id: 'INB-003', eta: '1:00 PM', origin: 'Baytown', status: 'On Time', product: 'Jet Fuel', volume: 9000 },
-  ];
-}
-
-export function getSeedLaborManagement() {
-  return {
-    onDuty: 24,
-    scheduled: 28,
-    overtime: 3,
-    productivity: 94,
-    departments: [
-      { name: 'Loading', count: 12, status: 'optimal' },
-      { name: 'Unloading', count: 8, status: 'optimal' },
-      { name: 'Maintenance', count: 4, status: 'understaffed' },
-    ],
-  };
-}
-
-export function getSeedVehicleHealth() {
-  return {
-    overall: 94,
-    engine: { status: 'Good', temp: 195, code: null },
-    tires: { status: 'Warning', psi: 98, alert: 'Low pressure rear left' },
-    oil: { status: 'Good', life: 72 },
-    fuel: { level: 68, range: 425 },
-    def: { level: 85 },
-    lastService: '2026-01-10',
-    nextService: '2026-02-15',
-  };
-}
-
-export function getSeedHOSMonitoring() {
-  return [
-    { id: 1, name: 'John D.', driving: 8.5, onDuty: 12, cycle: 58, status: 'warning', remaining: 2.5 },
-    { id: 2, name: 'Sarah M.', driving: 5.2, onDuty: 8, cycle: 45, status: 'ok', remaining: 5.8 },
-    { id: 3, name: 'Mike T.', driving: 10.8, onDuty: 13.5, cycle: 68, status: 'critical', remaining: 0.2 },
-    { id: 4, name: 'Lisa R.', driving: 3.0, onDuty: 5, cycle: 32, status: 'ok', remaining: 8.0 },
-  ];
-}
-
-export function getSeedGateActivity() {
-  return [
-    { time: '9:45 AM', truck: 'TRK-4521', driver: 'John D.', action: 'Check In', gate: 'Gate 1' },
-    { time: '9:30 AM', truck: 'TRK-4520', driver: 'Sarah M.', action: 'Check Out', gate: 'Gate 2' },
-    { time: '9:15 AM', truck: 'TRK-4519', driver: 'Mike T.', action: 'Check In', gate: 'Gate 1' },
-  ];
-}
-
-export function getSeedFreightQuotes() {
-  return [
-    { carrier: 'Swift Transport', rate: 2450, transit: '2 days', rating: 4.8, capacity: 'Available' },
-    { carrier: 'Prime Inc', rate: 2280, transit: '3 days', rating: 4.6, capacity: 'Available' },
-    { carrier: 'Werner', rate: 2150, transit: '2 days', rating: 4.5, capacity: 'Limited' },
-  ];
-}
-
-export function getSeedDeliveryExceptions() {
-  return [
-    { id: 'SHIP-4521', issue: 'Weather Delay', location: 'Denver, CO', delay: '2h', severity: 'warning' },
-    { id: 'SHIP-4523', issue: 'Mechanical Issue', location: 'Salt Lake City', delay: '4h', severity: 'critical' },
-  ];
-}
-
-export function getSeedShippingVolume() {
-  return {
-    mtd: 245,
-    lastMonth: 228,
-    growth: '+7.5%',
-    byMode: { ftl: 180, ltl: 45, intermodal: 20 },
-    trend: [210, 225, 218, 235, 245],
-  };
-}
-
-export function getSeedLaneAnalytics() {
-  return [
-    { lane: 'Houston → Dallas', loads: 45, avgRate: 2.85, margin: 18.5, trend: '+5%' },
-    { lane: 'Dallas → Phoenix', loads: 32, avgRate: 2.65, margin: 15.2, trend: '-2%' },
-    { lane: 'Austin → San Antonio', loads: 28, avgRate: 2.45, margin: 22.1, trend: '+8%' },
-  ];
-}
-
-export function getSeedRouteOptimization() {
-  return {
-    original: { miles: 485, hours: 8.5, fuel: 125 },
-    optimized: { miles: 452, hours: 7.8, fuel: 116 },
-    savings: { miles: 33, hours: 0.7, fuel: 9, cost: 45 },
-    hazmatCompliant: true,
-    restrictions: [],
-  };
-}
-
-export function getSeedTruckLocation() {
-  return [
-    { truck: 'TRK-4521', driver: 'John D.', location: 'I-45 N, Houston', speed: 62, eta: '2:30 PM', status: 'moving' },
-    { truck: 'TRK-4520', driver: 'Sarah M.', location: 'I-35 S, Dallas', speed: 0, eta: '4:00 PM', status: 'stopped' },
-    { truck: 'TRK-4519', driver: 'Mike T.', location: 'I-10 W, Austin', speed: 58, eta: '3:15 PM', status: 'moving' },
-  ];
-}
-
-export function getSeedMaintenanceSchedule() {
-  return [
-    { truck: 'TRK-4521', type: 'Oil Change', due: 'Jan 28', miles: 5200, priority: 'normal' },
-    { truck: 'TRK-4518', type: 'Brake Inspection', due: 'Jan 25', miles: 0, priority: 'high' },
-    { truck: 'TRK-4515', type: 'Tire Rotation', due: 'Feb 1', miles: 8500, priority: 'normal' },
-  ];
-}
-
-export function getSeedFleetUtilization() {
-  return {
-    trucks: { total: 45, active: 38, idle: 5, maintenance: 2 },
-    utilization: 84.4,
-    avgMilesPerDay: 485,
-    emptyMiles: 12.3,
-    revenuePerTruck: 4250,
-  };
-}
-
-export function getSeedEquipmentAvailability() {
-  return {
-    tankers: { total: 25, available: 8, inUse: 15, maintenance: 2 },
-    dryVan: { total: 12, available: 4, inUse: 7, maintenance: 1 },
-    flatbed: { total: 8, available: 3, inUse: 5, maintenance: 0 },
-  };
-}
-
-export function getSeedProfitability() {
-  return {
-    avgMargin: 18.5,
-    topLane: { route: 'HOU → DAL', margin: 24.2 },
-    profit: { mtd: 125000, lastMonth: 118000, growth: '+5.9%' },
-    costBreakdown: { fuel: 42, labor: 28, maintenance: 15, other: 15 },
-  };
-}
-
-export function getSeedLoadMatching() {
-  return [
-    { load: 'LOAD-45901', shipper: 'ChemCo', route: 'HOU → DAL', rate: 2450, matches: 4, bestMatch: 'Swift' },
-    { load: 'LOAD-45902', shipper: 'PetroCorp', route: 'BAY → AUS', rate: 1850, matches: 2, bestMatch: 'Prime' },
-  ];
-}
-
-export function getSeedActiveLoadsOverview() {
-  return {
-    active: 18,
-    inTransit: 12,
-    loading: 3,
-    unloading: 2,
-    delayed: 1,
-    onTime: 94.4,
-  };
-}
-
-export function getSeedUserAnalytics() {
-  return {
-    totalUsers: 15847,
-    newToday: 89,
-    activeToday: 4521,
-    churn: 0.8,
-    growth: '+12.4%',
-  };
-}
-
-export function getSeedRevenue() {
-  return {
-    mtd: 458000,
-    ytd: 4250000,
-    growth: '+18.5%',
-    target: 500000,
-    progress: 91.6,
-  };
-}
-
-export function getSeedShipmentAnalytics() {
-  return [
-    { id: 'SHIP-101', status: 'In Transit', origin: 'Houston', dest: 'Dallas', eta: '2:30 PM' },
-    { id: 'SHIP-102', status: 'Loading', origin: 'Austin', dest: 'San Antonio', eta: '4:00 PM' },
-    { id: 'SHIP-103', status: 'Delivered', origin: 'Phoenix', dest: 'Tucson', eta: 'Completed' },
-  ];
-}
-
-export function getSeedCostAnalysis() {
-  return {
-    fuel: { amount: 45000, percent: 42, trend: '+3%' },
-    labor: { amount: 32000, percent: 30, trend: '-2%' },
-    maintenance: { amount: 18000, percent: 17, trend: '+5%' },
-    other: { amount: 12000, percent: 11, trend: '0%' },
-    total: 107000,
-  };
-}
-
-export function getSeedFleetTracking() {
-  return [
-    { id: 'TRK-4521', driver: 'John D.', status: 'Moving', location: 'I-45 N', speed: 62 },
-    { id: 'TRK-4520', driver: 'Sarah M.', status: 'Stopped', location: 'Rest Area', speed: 0 },
-    { id: 'TRK-4519', driver: 'Mike T.', status: 'Moving', location: 'I-10 W', speed: 58 },
-  ];
-}
-
-export function getSeedFuelAnalytics() {
-  return {
-    avgMpg: 6.8,
-    totalGallons: 12500,
-    cost: 45000,
-    efficiency: 94,
-    trend: '+2.3%',
-  };
-}
-
-export function getSeedRouteHistory() {
-  return {
-    current: { origin: 'Houston', dest: 'Dallas', miles: 245, eta: '2:30 PM' },
-    completed: 12,
-    upcoming: 3,
-    totalMiles: 4850,
-  };
-}
-
-export function getSeedSafetyMetrics() {
-  return {
-    score: 94,
-    incidents: 2,
-    violations: 1,
-    daysWithoutAccident: 145,
-    trend: '+3%',
-  };
-}
-
-export function getSeedYardStatus() {
-  return {
-    totalSpots: 50,
-    occupied: 38,
-    available: 12,
-    checkingIn: 3,
-    checkingOut: 2,
-    utilization: 76,
-  };
-}
-
-export function getSeedDriversList() {
-  return [
-    { id: 1, name: 'John D.', status: 'Driving', hos: 6.5, load: 'LOAD-4521' },
-    { id: 2, name: 'Sarah M.', status: 'On Break', hos: 4.2, load: 'LOAD-4520' },
-    { id: 3, name: 'Mike T.', status: 'Available', hos: 10.0, load: null },
-  ];
-}
-
-export function getSeedProfitAnalysis() {
-  return {
-    avgMargin: 18.5,
-    topLane: { route: 'HOU → DAL', margin: 24.2 },
-    profit: { mtd: 125000, lastMonth: 118000, growth: '+5.9%' },
-  };
-}
-
-export function getSeedLoadMatchingResults() {
-  return [
-    { load: 'LOAD-45901', shipper: 'ChemCo', route: 'HOU → DAL', rate: 2450, matches: 4, bestMatch: 'Swift' },
-    { load: 'LOAD-45902', shipper: 'PetroCorp', route: 'BAY → AUS', rate: 1850, matches: 2, bestMatch: 'Prime' },
-  ];
-}
+export function getSeedDriverScorecard() { return []; }
+export function getSeedDispatchData() { return { activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, driversAvailable: 0, loadsRequiringAction: [] }; }
+export function getSeedEscortJobs() { return { activeJobs: 0, upcoming: 0, completed: 0, monthlyEarnings: 0, rating: 0, availableJobs: [], certifications: [] }; }
+export function getSeedShipperDashboard() { return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, avgRatePerMile: 0, onTimeRate: 0, loadsRequiringAttention: [] }; }
+export function getSeedBrokerDashboard() { return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, shipperLoads: 0, carrierCapacity: [] }; }
+export function getSeedAdminDashboard() { return { totalUsers: 0, pendingVerifications: 0, activeLoads: 0, todaySignups: 0, openTickets: 0, platformHealth: { api: { status: 'healthy', latency: 0 }, database: { status: 'healthy', uptime: 0 }, eldSync: { status: 'healthy' }, payment: { status: 'healthy' }, gps: { status: 'healthy' }, scada: { status: 'healthy' } }, criticalErrors24h: 0 }; }
+export function getSeedCarrierSourcing() { return []; }
+export function getSeedMarginCalculator() { return { shipperRate: 0, carrierRate: 0, margin: 0, marginPercent: 0, avgMargin: 0, fuelSurcharge: 0, accessorials: 0 }; }
+export function getSeedFuelStations() { return []; }
+export function getSeedWeatherData() { return { current: { temp: 0, condition: 'N/A', humidity: 0, wind: 0 }, forecast: [], alerts: [] }; }
+export function getSeedAccidentTracker() { return { ytd: 0, lastIncident: 'N/A', severity: { minor: 0, major: 0, fatal: 0 }, trend: '0%', preventable: 0, nonPreventable: 0 }; }
+export function getSeedDriverQualifications() { return []; }
+export function getSeedYardManagement() { return { totalSpots: 0, occupied: 0, available: 0, trailers: 0, containers: 0, bobtails: 0, docks: { total: 0, active: 0, available: 0 }, avgDwellTime: '0 hours' }; }
+export function getSeedRoutePermits() { return []; }
+export function getSeedFormationTracking() { return { loadId: '', escortLead: { name: '', distance: 0, status: '' }, mainVehicle: { driver: '', speed: 0, status: '' }, escortChase: { name: '', distance: 0, status: '' }, formationStatus: 'N/A', nextCheckpoint: '', eta: '' }; }
+export function getSeedNotifications() { return []; }
+export function getSeedRecentActivity() { return []; }
+export function getSeedQuickActions() { return [{ id: 'create_load', label: 'Create Load', icon: 'Package', color: 'blue' }, { id: 'find_carrier', label: 'Find Carrier', icon: 'Truck', color: 'green' }, { id: 'view_bids', label: 'View Bids', icon: 'DollarSign', color: 'yellow' }, { id: 'track_shipments', label: 'Track Shipments', icon: 'MapPin', color: 'purple' }]; }
+export function getSeedDocumentExpirations() { return []; }
+export function getSeedDetentionTracking() { return { totalHours: 0, estimatedCharges: 0, locations: [] as { location: string; hours: number }[], mtdCharges: 0, avgWaitTime: '0 hours' }; }
+export function getSeedDockScheduling() { return []; }
+export function getSeedInboundShipments() { return []; }
+export function getSeedLaborManagement() { return { onDuty: 0, scheduled: 0, overtime: 0, productivity: 0, departments: [] }; }
+export function getSeedVehicleHealth() { return { overall: 0, engine: { status: 'N/A', temp: 0, code: null }, tires: { status: 'N/A', psi: 0, alert: null }, oil: { status: 'N/A', life: 0 }, fuel: { level: 0, range: 0 }, def: { level: 0 }, lastService: '', nextService: '' }; }
+export function getSeedHOSMonitoring() { return []; }
+export function getSeedGateActivity() { return []; }
+export function getSeedFreightQuotes() { return []; }
+export function getSeedDeliveryExceptions() { return []; }
+export function getSeedShippingVolume() { return { mtd: 0, lastMonth: 0, growth: '0%', byMode: { ftl: 0, ltl: 0, intermodal: 0 }, trend: [] }; }
+export function getSeedLaneAnalytics() { return []; }
+export function getSeedRouteOptimization() { return { original: { miles: 0, hours: 0, fuel: 0 }, optimized: { miles: 0, hours: 0, fuel: 0 }, savings: { miles: 0, hours: 0, fuel: 0, cost: 0 }, hazmatCompliant: false, restrictions: [] }; }
+export function getSeedTruckLocation() { return []; }
+export function getSeedMaintenanceSchedule() { return []; }
+export function getSeedFleetUtilization() { return { trucks: { total: 0, active: 0, idle: 0, maintenance: 0 }, utilization: 0, avgMilesPerDay: 0, emptyMiles: 0, revenuePerTruck: 0 }; }
+export function getSeedEquipmentAvailability() { return { tankers: { total: 0, available: 0, inUse: 0, maintenance: 0 }, dryVan: { total: 0, available: 0, inUse: 0, maintenance: 0 }, flatbed: { total: 0, available: 0, inUse: 0, maintenance: 0 } }; }
+export function getSeedProfitability() { return { avgMargin: 0, topLane: { route: '', margin: 0 }, profit: { mtd: 0, lastMonth: 0, growth: '0%' }, costBreakdown: { fuel: 0, labor: 0, maintenance: 0, other: 0 } }; }
+export function getSeedLoadMatching() { return []; }
+export function getSeedActiveLoadsOverview() { return { active: 0, inTransit: 0, loading: 0, unloading: 0, delayed: 0, onTime: 0 }; }
+export function getSeedUserAnalytics() { return { totalUsers: 0, newToday: 0, activeToday: 0, churn: 0, growth: '0%' }; }
+export function getSeedRevenue() { return { mtd: 0, ytd: 0, growth: '0%', target: 0, progress: 0 }; }
+export function getSeedShipmentAnalytics() { return []; }
+export function getSeedCostAnalysis() { return { fuel: { amount: 0, percent: 0, trend: '0%' }, labor: { amount: 0, percent: 0, trend: '0%' }, maintenance: { amount: 0, percent: 0, trend: '0%' }, other: { amount: 0, percent: 0, trend: '0%' }, total: 0 }; }
+export function getSeedFleetTracking() { return [] as { id: string; driver: string; status: string; speed: number; lat: number; lng: number }[]; }
+export function getSeedFuelAnalytics() { return { avgMpg: 0, totalGallons: 0, cost: 0, efficiency: 0, trend: '0%' }; }
+export function getSeedRouteHistory() { return { current: { origin: '', dest: '', miles: 0, eta: '' }, completed: 0, upcoming: 0, totalMiles: 0 }; }
+export function getSeedSafetyMetrics() { return { score: 0, incidents: 0, violations: 0, daysWithoutAccident: 0, trend: '0%' }; }
+export function getSeedYardStatus() { return { totalSpots: 0, occupied: 0, available: 0, checkingIn: 0, checkingOut: 0, utilization: 0 }; }
+export function getSeedDriversList() { return []; }
+export function getSeedProfitAnalysis() { return { avgMargin: 0, topLane: { route: '', margin: 0 }, profit: { mtd: 0, lastMonth: 0, growth: '0%' } }; }
+export function getSeedLoadMatchingResults() { return []; }

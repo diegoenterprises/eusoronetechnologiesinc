@@ -130,18 +130,7 @@ export const weatherRouter = router({
       county: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      return [
-        {
-          id: "alert_001",
-          type: "Wind Advisory",
-          severity: "minor",
-          headline: "Wind Advisory until 6 PM CST",
-          description: "Southwest winds 20-30 mph with gusts up to 45 mph",
-          areas: ["Harris County", "Fort Bend County"],
-          startTime: new Date().toISOString(),
-          endTime: new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -149,10 +138,7 @@ export const weatherRouter = router({
    */
   getImpactedLoads: protectedProcedure
     .query(async () => {
-      return [
-        { loadId: "LOAD-45920", route: "Houston to Dallas", impact: "moderate", alert: "Wind Advisory", delay: "1-2 hours" },
-        { loadId: "LOAD-45918", route: "Austin to San Antonio", impact: "low", alert: "Fog Advisory", delay: "30 mins" },
-      ];
+      return [];
     }),
 
   /**

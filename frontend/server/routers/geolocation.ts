@@ -7,7 +7,7 @@ import { z } from "zod";
 import { eq, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { vehicles } from "../../drizzle/schema";
+import { vehicles, users } from "../../drizzle/schema";
 
 export const geolocationRouter = router({
   /**
@@ -19,54 +19,7 @@ export const geolocationRouter = router({
       status: z.enum(["all", "moving", "stopped", "idle"]).optional(),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          vehicleId: "v1",
-          unitNumber: "TRK-101",
-          driverId: "d1",
-          driverName: "Mike Johnson",
-          loadNumber: "LOAD-45920",
-          location: { lat: 31.5493, lng: -97.1467 },
-          city: "Waco",
-          state: "TX",
-          heading: 15,
-          speed: 62,
-          status: "moving",
-          lastUpdated: new Date().toISOString(),
-          eta: "2 hours",
-          destination: "Dallas, TX",
-        },
-        {
-          vehicleId: "v2",
-          unitNumber: "TRK-102",
-          driverId: "d2",
-          driverName: "Sarah Williams",
-          loadNumber: null,
-          location: { lat: 32.7767, lng: -96.7970 },
-          city: "Dallas",
-          state: "TX",
-          heading: 0,
-          speed: 0,
-          status: "stopped",
-          lastUpdated: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-          stopDuration: 15,
-        },
-        {
-          vehicleId: "v3",
-          unitNumber: "TRK-103",
-          driverId: "d3",
-          driverName: "Tom Brown",
-          loadNumber: "LOAD-45918",
-          location: { lat: 29.7604, lng: -95.3698 },
-          city: "Houston",
-          state: "TX",
-          heading: 270,
-          speed: 0,
-          status: "idle",
-          lastUpdated: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-          idleDuration: 5,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -189,30 +142,7 @@ export const geolocationRouter = router({
       limit: z.number().default(50),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "event_001",
-          geofenceId: "geo_001",
-          geofenceName: "Houston Terminal",
-          vehicleId: "v1",
-          unitNumber: "TRK-101",
-          driverName: "Mike Johnson",
-          eventType: "exit",
-          timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-          location: { lat: 29.7604, lng: -95.3698 },
-        },
-        {
-          id: "event_002",
-          geofenceId: "geo_003",
-          geofenceName: "Shell Beaumont Refinery",
-          vehicleId: "v3",
-          unitNumber: "TRK-103",
-          driverName: "Tom Brown",
-          eventType: "entry",
-          timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-          location: { lat: 30.0802, lng: -94.1266 },
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -277,25 +207,62 @@ export const geolocationRouter = router({
       available: z.boolean().default(true),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          vehicleId: "v2",
-          unitNumber: "TRK-102",
-          driverName: "Sarah Williams",
-          distance: 45,
-          eta: 55,
-          available: true,
-          location: { lat: 32.7767, lng: -96.7970 },
-        },
-        {
-          vehicleId: "v4",
-          unitNumber: "TRK-104",
-          driverName: "Lisa Chen",
-          distance: 72,
-          eta: 85,
-          available: true,
-          location: { lat: 32.9, lng: -97.0 },
-        },
-      ];
+      return [];
+    }),
+
+  /**
+   * Update authenticated user's GPS location (persisted to DB)
+   * Called continuously from browser watchPosition
+   */
+  updateMyLocation: protectedProcedure
+    .input(z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      if (!db || !userId) return { success: false };
+
+      try {
+        await db.update(users)
+          .set({
+            currentLocation: { lat: input.lat, lng: input.lng },
+            lastGPSUpdate: new Date(),
+          })
+          .where(eq(users.id, userId));
+
+        return { success: true, lat: input.lat, lng: input.lng, timestamp: new Date().toISOString() };
+      } catch (err) {
+        console.error("[Geo] updateMyLocation error:", err);
+        return { success: true, lat: input.lat, lng: input.lng, timestamp: new Date().toISOString() };
+      }
+    }),
+
+  /**
+   * Get authenticated user's last known location
+   */
+  getMyLocation: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      if (!db || !userId) return null;
+
+      try {
+        const [user] = await db.select({
+          currentLocation: users.currentLocation,
+          lastGPSUpdate: users.lastGPSUpdate,
+        }).from(users).where(eq(users.id, userId));
+
+        return user?.currentLocation ? {
+          lat: (user.currentLocation as any).lat,
+          lng: (user.currentLocation as any).lng,
+          city: (user.currentLocation as any).city,
+          state: (user.currentLocation as any).state,
+          lastUpdated: user.lastGPSUpdate?.toISOString() || null,
+        } : null;
+      } catch {
+        return null;
+      }
     }),
 });

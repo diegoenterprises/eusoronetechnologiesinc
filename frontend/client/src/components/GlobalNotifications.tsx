@@ -163,7 +163,7 @@ export default function GlobalNotifications({
         <Bell className="w-5 h-5" />
         {totalUnread > 0 && (
           <Badge 
-            className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1.5 bg-red-500 text-white text-[10px] font-bold border-0 rounded-full"
+            className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] font-bold border-0 rounded-full"
           >
             {totalUnread > 99 ? "99+" : totalUnread}
           </Badge>

@@ -14,17 +14,29 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Fuel, TrendingUp, TrendingDown, MapPin, Search,
-  RefreshCw, DollarSign
+  RefreshCw, DollarSign, LocateFixed, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useGeoTracking } from "@/hooks/useGeoTracking";
 
 export default function FuelPrices() {
   const [searchTerm, setSearchTerm] = useState("");
   const [fuelType, setFuelType] = useState("diesel");
 
-  const pricesQuery = (trpc as any).fuel.getPrices.useQuery({});
+  // Continuous GPS tracking — persists to DB, updates as driver moves
+  const geo = useGeoTracking();
+
+  const stationInput = {
+    lat: geo.lat ?? undefined,
+    lng: geo.lng ?? undefined,
+    fuelType,
+    limit: 25,
+    radius: 100,
+  };
+
+  const pricesQuery = (trpc as any).fuel.getPrices.useQuery(geo.lat ? { location: { lat: geo.lat, lng: geo.lng } } : {});
   const averagesQuery = (trpc as any).fuel.getAverages.useQuery({});
-  const stationsQuery = (trpc as any).fuel.getNearbyStations.useQuery({});
+  const stationsQuery = (trpc as any).fuel.getNearbyStations.useQuery(stationInput);
   const trendsQuery = (trpc as any).fuel.getTrends.useQuery({ days: 30 });
 
   const averages = averagesQuery.data;
@@ -41,7 +53,19 @@ export default function FuelPrices() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Fuel Prices
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Track fuel prices and find best rates</p>
+          <div className="flex items-center gap-2 mt-1">
+            {geo.status === "loading" ? (
+              <span className="flex items-center gap-1.5 text-xs text-yellow-400"><Loader2 className="w-3 h-3 animate-spin" />Getting your location...</span>
+            ) : geo.status === "tracking" ? (
+              <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+                <LocateFixed className="w-3 h-3" />
+                Live tracking{geo.accuracy ? ` · ±${Math.round(geo.accuracy)}m accuracy` : ""}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400"><MapPin className="w-3 h-3" />Defaulting to Houston, TX — enable location for accurate prices</span>
+            )}
+          </div>
+          <p className="text-slate-500 text-[10px] mt-0.5">Prices powered by U.S. EIA — updated weekly</p>
         </div>
         <div className="flex items-center gap-3">
           <Select value={fuelType} onValueChange={setFuelType}>
@@ -49,12 +73,11 @@ export default function FuelPrices() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="diesel">Diesel</SelectItem>
+              <SelectItem value="diesel">Diesel (ULSD)</SelectItem>
               <SelectItem value="def">DEF</SelectItem>
-              <SelectItem value="regular">Regular</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => pricesQuery.refetch()}>
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => { stationsQuery.refetch(); averagesQuery.refetch(); trendsQuery.refetch(); pricesQuery.refetch(); }}>
             <RefreshCw className="w-4 h-4 mr-2" />Refresh
           </Button>
         </div>

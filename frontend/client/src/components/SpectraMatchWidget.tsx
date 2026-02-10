@@ -168,8 +168,11 @@ export default function SpectraMatchWidget({
       saveToRunTicketMutation.mutate({
         loadId,
         crudeId: identifyMutation.data.primaryMatch.id,
+        productName: identifyMutation.data.primaryMatch.name,
+        category: identifyMutation.data.primaryMatch.type || category,
         confidence: identifyMutation.data.primaryMatch.confidence,
         parameters: { apiGravity, bsw },
+        esangVerified: identifyMutation.data.esangVerified || false,
       });
     }
   };

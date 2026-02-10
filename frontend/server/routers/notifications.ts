@@ -280,45 +280,23 @@ export const notificationsRouter = router({
   // Additional notification procedures
   getSettings: protectedProcedure.query(async () => ({ email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } })),
   updateSetting: protectedProcedure.input(z.object({ key: z.string().optional(), value: z.any(), setting: z.string().optional() })).mutation(async ({ input }) => ({ success: true, key: input.key || input.setting })),
-  getUnreadCount: protectedProcedure.query(async () => 5),
+  getUnreadCount: protectedProcedure.query(async () => 0),
   markRead: protectedProcedure.input(z.object({ notificationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, notificationId: input.notificationId || input.id })),
-  markAllRead: protectedProcedure.mutation(async () => ({ success: true, markedCount: 5 })),
+  markAllRead: protectedProcedure.mutation(async () => ({ success: true, markedCount: 0 })),
 
   // Push notifications
-  getPushStats: protectedProcedure.query(async () => ({ 
-    sent: 1250, 
-    delivered: 1200, 
-    opened: 480, 
-    openRate: 40,
-    registeredDevices: 85,
-    sentThisMonth: 1250,
-    deliveryRate: 96,
-  })),
+  getPushStats: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, opened: 0, openRate: 0, registeredDevices: 0, sentThisMonth: 0, deliveryRate: 0 })),
   getPushSettings: protectedProcedure.query(async () => ({ 
     enabled: true, 
     deviceToken: "abc123",
     categories: { loads: true, alerts: true, messages: true, system: true },
   })),
-  getDevices: protectedProcedure.query(async () => ([
-    { id: "d1", name: "iPhone 15", type: "ios", lastActive: "2025-01-23" },
-    { id: "d2", name: "Galaxy S24", type: "android", lastActive: "2025-01-22" },
-  ])),
+  getDevices: protectedProcedure.query(async () => ([])),
   sendPush: protectedProcedure.input(z.object({ userId: z.string().optional(), title: z.string(), body: z.string().optional(), message: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "msg_123" })),
 
   // SMS notifications
-  getSMSStats: protectedProcedure.query(async () => ({ 
-    sent: 450, 
-    delivered: 440, 
-    failed: 10, 
-    remaining: 550,
-    costThisMonth: 45.50,
-    sentThisMonth: 450,
-    deliveryRate: 97.8,
-  })),
+  getSMSStats: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, failed: 0, remaining: 0, costThisMonth: 0, sentThisMonth: 0, deliveryRate: 0 })),
   sendSMS: protectedProcedure.input(z.object({ to: z.string(), message: z.string(), phoneNumber: z.string().optional() })).mutation(async ({ input }) => ({ success: true, messageId: "sms_123" })),
-  getSMSTemplates: protectedProcedure.query(async () => [
-    { id: "st1", name: "Load Assignment", template: "You have been assigned to load {{loadNumber}}", active: true },
-    { id: "st2", name: "Delivery Confirmation", template: "Load {{loadNumber}} delivered successfully", active: true },
-  ]),
+  getSMSTemplates: protectedProcedure.query(async () => []),
   toggleSMSTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() })).mutation(async ({ input }) => ({ success: true, templateId: input.templateId, active: input.active ?? input.enabled })),
 });

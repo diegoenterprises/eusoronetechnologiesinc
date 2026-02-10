@@ -81,14 +81,6 @@ export const activityRouter = router({
       limit: z.number().optional().default(10),
     }))
     .query(async () => {
-      return [
-        {
-          id: "act_001",
-          type: "load_created",
-          title: "New Load Created",
-          description: "Load #LOAD-45921 created",
-          timestamp: new Date().toISOString(),
-        },
-      ];
+      return [];
     }),
 });

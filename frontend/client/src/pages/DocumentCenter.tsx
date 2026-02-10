@@ -1,7 +1,7 @@
 /**
- * DOCUMENT CENTER — COMPREHENSIVE DOCUMENT MANAGEMENT
- * BOL, Invoices, Receipts, Run Tickets, Contracts, Agreements
- * Upload, Digitize (OCR), Gradient Ink Signature, Download, Manage
+ * DOCUMENT CENTER — UNIVERSAL DOCUMENT MANAGEMENT
+ * Upload any document → AI OCR reads, classifies & labels it automatically
+ * Supports all file types: PDF, DOC, images, spreadsheets
  */
 
 import React, { useState, useRef, useEffect } from "react";
@@ -17,27 +17,92 @@ import {
   FileText, Search, Upload, Download, Trash2, Eye, X, Plus,
   CheckCircle, Clock, AlertTriangle, FolderOpen, PenTool,
   Receipt, FileSignature, ScrollText, Handshake, ClipboardList,
-  ScanLine, RotateCcw, Save, Eraser, Loader2
+  ScanLine, RotateCcw, Save, Eraser, Loader2, Sparkles, Brain, Tag
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-type DocTab = "all" | "bols" | "invoices" | "receipts" | "run_tickets" | "contracts" | "agreements";
+type DocTab = "all" | "compliance" | "financial" | "contracts" | "operations" | "other";
 
 // ── Gradient Ink Signature Pad ──
 function SignaturePad({ onSave, onClose }: { onSave: (d: string) => void; onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
-  const last = useRef<{ x: number; y: number } | null>(null);
+  const strokes = useRef<{ x: number; y: number }[][]>([]);
+  const currentStroke = useRef<{ x: number; y: number }[]>([]);
+
+  const drawBaseline = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, h - 50); ctx.lineTo(w - 40, h - 50); ctx.stroke();
+    ctx.font = "12px Inter, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.15)"; ctx.fillText("Sign here", 40, h - 30);
+  };
+
+  const lerpColor = (t: number): string => {
+    // 0-25% blue, 25-35% blue→violet, 35-65% violet→fuchsia, 65-100% fuchsia→pink
+    const colors = [
+      { r: 37, g: 99, b: 235 },   // #2563EB blue
+      { r: 124, g: 58, b: 237 },  // #7C3AED violet
+      { r: 192, g: 38, b: 211 },  // #C026D3 fuchsia
+      { r: 224, g: 64, b: 160 },  // #E040A0 pink
+    ];
+    let c0, c1, frac;
+    if (t <= 0.25) { return `rgb(${colors[0].r},${colors[0].g},${colors[0].b})`; }
+    else if (t <= 0.35) { c0 = colors[0]; c1 = colors[1]; frac = (t - 0.25) / 0.10; }
+    else if (t <= 0.65) { c0 = colors[1]; c1 = colors[2]; frac = (t - 0.35) / 0.30; }
+    else { c0 = colors[2]; c1 = colors[3]; frac = (t - 0.65) / 0.35; }
+    frac = Math.max(0, Math.min(1, frac));
+    const r = Math.round(c0.r + (c1.r - c0.r) * frac);
+    const g = Math.round(c0.g + (c1.g - c0.g) * frac);
+    const b = Math.round(c0.b + (c1.b - c0.b) * frac);
+    return `rgb(${r},${g},${b})`;
+  };
+
+  const redrawAll = () => {
+    const c = canvasRef.current; if (!c) return;
+    const ctx = c.getContext("2d"); if (!ctx) return;
+    const w = c.offsetWidth, h = c.offsetHeight;
+    ctx.clearRect(0, 0, c.width, c.height);
+    drawBaseline(ctx, w, h);
+
+    const all = [...strokes.current, ...(currentStroke.current.length > 0 ? [currentStroke.current] : [])];
+    if (all.length === 0) return;
+
+    // Compute cumulative distance for every point across all strokes
+    const segments: { p0: { x: number; y: number }; p1: { x: number; y: number }; distStart: number; distEnd: number }[] = [];
+    let totalDist = 0;
+    for (const stroke of all) {
+      for (let i = 1; i < stroke.length; i++) {
+        const dx = stroke[i].x - stroke[i - 1].x, dy = stroke[i].y - stroke[i - 1].y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        segments.push({ p0: stroke[i - 1], p1: stroke[i], distStart: totalDist, distEnd: totalDist + d });
+        totalDist += d;
+      }
+    }
+    if (totalDist === 0) return;
+
+    // Draw each segment with the correct color based on its position along the total line
+    for (const seg of segments) {
+      const t = (seg.distStart + seg.distEnd) / 2 / totalDist;
+      const color = lerpColor(t);
+      // Glow
+      ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 10;
+      ctx.strokeStyle = color.replace("rgb", "rgba").replace(")", ",0.18)"); ctx.lineWidth = 6; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(seg.p0.x, seg.p0.y); ctx.lineTo(seg.p1.x, seg.p1.y); ctx.stroke();
+      ctx.restore();
+      // Main stroke
+      ctx.save(); ctx.shadowColor = color; ctx.shadowBlur = 3;
+      ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineCap = "round"; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(seg.p0.x, seg.p0.y); ctx.lineTo(seg.p1.x, seg.p1.y); ctx.stroke();
+      ctx.restore();
+    }
+  };
 
   useEffect(() => {
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext("2d"); if (!ctx) return;
     c.width = c.offsetWidth * 2; c.height = c.offsetHeight * 2; ctx.scale(2, 2);
-    ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(40, c.offsetHeight - 50); ctx.lineTo(c.offsetWidth - 40, c.offsetHeight - 50); ctx.stroke();
-    ctx.font = "12px Inter, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fillText("Sign here", 40, c.offsetHeight - 30);
+    drawBaseline(ctx, c.offsetWidth, c.offsetHeight);
   }, []);
 
   const pos = (e: React.MouseEvent | React.TouchEvent) => {
@@ -46,32 +111,24 @@ function SignaturePad({ onSave, onClose }: { onSave: (d: string) => void; onClos
     const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
     return { x: cx - r.left, y: cy - r.top };
   };
-  const start = (e: React.MouseEvent | React.TouchEvent) => { setDrawing(true); setHasDrawn(true); last.current = pos(e); };
+  const start = (e: React.MouseEvent | React.TouchEvent) => { setDrawing(true); setHasDrawn(true); currentStroke.current = [pos(e)]; };
   const move = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!drawing || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d"); if (!ctx || !last.current) return;
-    const p = pos(e);
-    const g = ctx.createLinearGradient(last.current.x, last.current.y, p.x, p.y);
-    g.addColorStop(0, "#1473FF"); g.addColorStop(0.5, "#8B5CF6"); g.addColorStop(1, "#BE01FF");
-    ctx.strokeStyle = g; ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.lineJoin = "round";
-    ctx.beginPath(); ctx.moveTo(last.current.x, last.current.y);
-    ctx.quadraticCurveTo(last.current.x, last.current.y, (last.current.x + p.x) / 2, (last.current.y + p.y) / 2);
-    ctx.stroke();
-    ctx.save(); ctx.shadowColor = "#8B5CF6"; ctx.shadowBlur = 6;
-    ctx.strokeStyle = "rgba(139,92,246,0.3)"; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(last.current.x, last.current.y);
-    ctx.quadraticCurveTo(last.current.x, last.current.y, (last.current.x + p.x) / 2, (last.current.y + p.y) / 2);
-    ctx.stroke(); ctx.restore();
-    last.current = p;
+    if (!drawing) return;
+    currentStroke.current.push(pos(e));
+    redrawAll();
   };
-  const stop = () => { setDrawing(false); last.current = null; };
+  const stop = () => {
+    if (currentStroke.current.length > 1) strokes.current.push([...currentStroke.current]);
+    currentStroke.current = [];
+    setDrawing(false);
+    redrawAll();
+  };
   const clear = () => {
+    strokes.current = []; currentStroke.current = [];
     const c = canvasRef.current; if (!c) return;
     const ctx = c.getContext("2d"); if (!ctx) return;
     ctx.clearRect(0, 0, c.width, c.height);
-    ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(40, c.offsetHeight - 50); ctx.lineTo(c.offsetWidth - 40, c.offsetHeight - 50); ctx.stroke();
-    ctx.font = "12px Inter, sans-serif"; ctx.fillStyle = "rgba(255,255,255,0.2)"; ctx.fillText("Sign here", 40, c.offsetHeight - 30);
+    drawBaseline(ctx, c.offsetWidth, c.offsetHeight);
     setHasDrawn(false);
   };
 
@@ -86,7 +143,7 @@ function SignaturePad({ onSave, onClose }: { onSave: (d: string) => void; onClos
           <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
         </div>
         <div className="p-5">
-          <canvas ref={canvasRef} className="w-full h-[240px] rounded-xl border border-slate-700/50 bg-slate-950/50 cursor-crosshair touch-none"
+          <canvas ref={canvasRef} className="w-full h-[240px] rounded-xl border border-slate-700/50 bg-black cursor-crosshair touch-none"
             onMouseDown={start} onMouseMove={move} onMouseUp={stop} onMouseLeave={stop} onTouchStart={start} onTouchMove={move} onTouchEnd={stop} />
           <div className="flex items-center justify-between mt-4">
             <Button variant="outline" size="sm" onClick={clear} className="border-slate-600 text-slate-400 rounded-lg"><Eraser className="w-4 h-4 mr-2" />Clear</Button>
@@ -107,15 +164,19 @@ function UploadModal({ onClose, onUpload, uploading }: { onClose: () => void; on
   const [dragOver, setDragOver] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [docName, setDocName] = useState("");
-  const [docCat, setDocCat] = useState("bols");
+  const [docCat, setDocCat] = useState("other");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const cats = [
-    { v: "bols", l: "Bill of Lading (BOL)", I: ScrollText }, { v: "invoices", l: "Invoice", I: FileText },
-    { v: "receipts", l: "Receipt", I: Receipt }, { v: "run_tickets", l: "Run Ticket", I: ClipboardList },
-    { v: "contracts", l: "Contract", I: FileSignature }, { v: "agreements", l: "Agreement", I: Handshake },
-    { v: "compliance", l: "Compliance", I: CheckCircle }, { v: "insurance", l: "Insurance", I: FileText },
-    { v: "permits", l: "Permit", I: FileText }, { v: "other", l: "Other", I: FolderOpen },
+    { v: "compliance", l: "Compliance", I: CheckCircle },
+    { v: "financial", l: "Financial", I: FileText },
+    { v: "contracts", l: "Contract", I: FileSignature },
+    { v: "operations", l: "Operations", I: ClipboardList },
+    { v: "insurance", l: "Insurance", I: FileText },
+    { v: "license", l: "License / Permit", I: FileText },
+    { v: "report", l: "Report", I: FileText },
+    { v: "correspondence", l: "Correspondence", I: FileText },
+    { v: "other", l: "Other", I: FolderOpen },
   ];
 
   const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) { setFile(f); if (!docName) setDocName(f.name.replace(/\.[^/.]+$/, "")); } };
@@ -163,63 +224,107 @@ function UploadModal({ onClose, onUpload, uploading }: { onClose: () => void; on
   );
 }
 
-// ── Digitize (OCR) Modal ──
-function DigitizeModal({ onClose }: { onClose: () => void }) {
+
+// ── Document Digitize by ESANG AI ──
+function DigitizeModal({ onClose, onDigitized }: { onClose: () => void; onDigitized: () => void }) {
   const [file, setFile] = useState<File | null>(null);
   const [scanning, setScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const digitizeMut = (trpc as any).documents.digitize.useMutation();
 
-  const scan = () => {
-    if (!file) return; setScanning(true); setProgress(0);
-    const iv = setInterval(() => {
-      setProgress(p => {
-        if (p >= 100) {
-          clearInterval(iv); setScanning(false);
-          setResult({ fields: [
-            { l: "Document Type", v: "Bill of Lading" }, { l: "Shipper", v: "Acme Logistics Corp" },
-            { l: "Consignee", v: "Global Petrochemicals Inc" }, { l: "BOL Number", v: "BOL-2025-" + Math.floor(Math.random() * 9000 + 1000) },
-            { l: "Date", v: new Date().toLocaleDateString() }, { l: "Weight", v: (Math.floor(Math.random() * 40000) + 10000).toLocaleString() + " lbs" },
-            { l: "Commodity", v: "Crude Oil — UN1267" }, { l: "Origin", v: "Houston, TX" }, { l: "Destination", v: "Cushing, OK" },
-          ], confidence: 94 });
-          return 100;
-        }
-        return p + 2;
-      });
-    }, 50);
+  const readBase64 = (f: File): Promise<string> =>
+    new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(f); });
+
+  const scan = async () => {
+    if (!file) return;
+    setScanning(true);
+    try {
+      const base64 = await readBase64(file);
+      const res = await digitizeMut.mutateAsync({ fileData: base64, filename: file.name, autoSave: true });
+      setResult(res);
+      toast.success("ESANG AI analysis complete — document saved");
+      onDigitized();
+    } catch (err: any) {
+      console.error("[Digitize]", err);
+      toast.error("Digitize failed", { description: err?.message || "Try again" });
+    } finally {
+      setScanning(false);
+    }
   };
+
+  const classification = result?.classification;
+  const ocr = result?.ocr;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg shadow-2xl">
+      <div className="bg-slate-900 border border-slate-700/50 rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20"><ScanLine className="w-5 h-5 text-cyan-400" /></div>
-            <div><h3 className="text-lg font-bold text-white">Digitize Document</h3><p className="text-xs text-slate-400">AI-powered OCR scanning</p></div>
+            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-emerald-500/20"><Brain className="w-5 h-5 text-cyan-400" /></div>
+            <div><h3 className="text-lg font-bold text-white">Document Digitize</h3><p className="text-xs text-slate-400">Powered by ESANG AI — auto-classify & extract</p></div>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-lg"><X className="w-5 h-5 text-slate-400" /></button>
         </div>
         <div className="p-5 space-y-4">
           {!result ? (<>
             <div onClick={() => fileRef.current?.click()} className={cn("border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all", file ? "border-cyan-500/50 bg-cyan-500/5" : "border-slate-700 hover:border-slate-500 bg-slate-800/30")}>
-              <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.tiff" onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
-              {file ? <div className="flex items-center justify-center gap-3"><ScanLine className="w-8 h-8 text-cyan-400" /><div className="text-left"><p className="text-white font-medium">{file.name}</p><p className="text-xs text-cyan-400">Ready to scan</p></div></div>
-                : <><ScanLine className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-white font-medium">Upload document to digitize</p><p className="text-xs text-slate-400 mt-1">PDF, JPG, PNG, TIFF</p></>}
+              <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.tiff,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
+              {file ? <div className="flex items-center justify-center gap-3"><ScanLine className="w-8 h-8 text-cyan-400" /><div className="text-left"><p className="text-white font-medium">{file.name}</p><p className="text-xs text-cyan-400">Ready for ESANG AI analysis</p></div></div>
+                : <><Sparkles className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-white font-medium">Upload document to digitize</p><p className="text-xs text-slate-400 mt-1">PDF, DOC, JPG, PNG, TIFF — ESANG AI reads & classifies automatically</p></>}
             </div>
-            {scanning && <div className="space-y-2"><div className="flex justify-between text-sm"><span className="text-cyan-400 font-medium">Scanning...</span><span className="text-slate-400">{progress}%</span></div>
-              <div className="h-2 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all duration-100 rounded-full" style={{ width: `${progress}%` }} /></div></div>}
+            {scanning && <div className="flex items-center gap-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20"><Loader2 className="w-5 h-5 text-cyan-400 animate-spin" /><div><p className="text-cyan-400 font-medium text-sm">ESANG AI analyzing document...</p><p className="text-xs text-slate-400">Digitizing → extracting text → classifying</p></div></div>}
             <Button onClick={scan} disabled={!file || scanning} className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0 rounded-lg disabled:opacity-40">
-              {scanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <ScanLine className="w-4 h-4 mr-2" />}{scanning ? "Scanning..." : "Start OCR Scan"}
+              {scanning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Brain className="w-4 h-4 mr-2" />}{scanning ? "Analyzing..." : "Digitize with ESANG AI"}
             </Button>
           </>) : (<>
-            <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20"><CheckCircle className="w-5 h-5 text-green-400" /><span className="text-green-400 font-medium text-sm">Scan complete — {result.confidence}% confidence</span></div>
-            <div className="space-y-2">{result.fields.map((f: any, i: number) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700/30"><span className="text-xs text-slate-400 uppercase tracking-wider">{f.l}</span><span className="text-sm text-white font-medium">{f.v}</span></div>
-            ))}</div>
+            {/* AI Results */}
+            <div className="flex items-center gap-2 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+              <CheckCircle className="w-5 h-5 text-green-400" />
+              <span className="text-green-400 font-medium text-sm">ESANG AI analysis complete — {classification?.confidence || 0}% confidence</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
+              <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Document Type</p>
+              <p className="text-white font-semibold">{classification?.documentTitle || file?.name}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-xs">{classification?.category}</Badge>
+                <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">{classification?.subcategory}</Badge>
+              </div>
+            </div>
+            {classification?.summary && (
+              <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Summary</p>
+                <p className="text-sm text-slate-200">{classification.summary}</p>
+              </div>
+            )}
+            {classification?.extractedFields && Object.keys(classification.extractedFields).length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-slate-400 uppercase tracking-wider">Extracted Fields</p>
+                {Object.entries(classification.extractedFields).map(([k, v]) => (
+                  <div key={k} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-800/50 border border-slate-700/30">
+                    <span className="text-xs text-slate-400">{k}</span>
+                    <span className="text-sm text-white font-medium">{String(v)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {classification?.suggestedTags?.length > 0 && (
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Tag className="w-3.5 h-3.5 text-slate-400" />
+                {classification.suggestedTags.map((t: string) => (
+                  <Badge key={t} className="bg-slate-700/50 text-slate-300 border-0 text-xs">{t}</Badge>
+                ))}
+              </div>
+            )}
+            {ocr && (
+              <div className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
+                <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Document Digitize by ESANG AI — {ocr.lineCount || ocr.lines?.length || 0} lines extracted</p>
+                <p className="text-xs text-slate-500 mt-1 line-clamp-3">{ocr.textPreview || ocr.text?.slice(0, 200)}</p>
+              </div>
+            )}
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setResult(null)} className="flex-1 border-slate-600 text-slate-400 rounded-lg"><RotateCcw className="w-4 h-4 mr-2" />Scan Again</Button>
-              <Button onClick={() => { toast.success("Document digitized and saved"); onClose(); }} className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg"><Save className="w-4 h-4 mr-2" />Save</Button>
+              <Button variant="outline" onClick={() => { setResult(null); setFile(null); }} className="flex-1 border-slate-600 text-slate-400 rounded-lg"><RotateCcw className="w-4 h-4 mr-2" />Scan Another</Button>
+              <Button onClick={onClose} className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg"><CheckCircle className="w-4 h-4 mr-2" />Done</Button>
             </div>
           </>)}
         </div>
@@ -255,10 +360,12 @@ export default function DocumentCenter() {
 
   const stats = statsQuery.data;
   const tabs: { id: DocTab; label: string; icon: any }[] = [
-    { id: "all", label: "All", icon: FolderOpen }, { id: "bols", label: "BOL", icon: ScrollText },
-    { id: "invoices", label: "Invoices", icon: FileText }, { id: "receipts", label: "Receipts", icon: Receipt },
-    { id: "run_tickets", label: "Run Tickets", icon: ClipboardList }, { id: "contracts", label: "Contracts", icon: FileSignature },
-    { id: "agreements", label: "Agreements", icon: Handshake },
+    { id: "all", label: "All", icon: FolderOpen },
+    { id: "compliance", label: "Compliance", icon: CheckCircle },
+    { id: "financial", label: "Financial", icon: FileText },
+    { id: "contracts", label: "Contracts", icon: FileSignature },
+    { id: "operations", label: "Operations", icon: ClipboardList },
+    { id: "other", label: "Other", icon: FolderOpen },
   ];
 
   const getStatusBadge = (status: string) => {
@@ -275,7 +382,7 @@ export default function DocumentCenter() {
   };
 
   const getCatIcon = (c: string) => {
-    const map: Record<string, any> = { bols: ScrollText, invoices: FileText, receipts: Receipt, run_tickets: ClipboardList, contracts: FileSignature, agreements: Handshake };
+    const map: Record<string, any> = { compliance: CheckCircle, financial: FileText, contracts: FileSignature, operations: ClipboardList, other: FolderOpen };
     const I = map[c] || FileText; return <I className="w-5 h-5" />;
   };
 
@@ -292,10 +399,10 @@ export default function DocumentCenter() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Document Center</h1>
-          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Upload, digitize, sign & manage — BOL, invoices, receipts, contracts & more</p>
+          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Upload, manage & organize all your important documents with AI-powered classification</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" onClick={() => setShowDigitize(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0 rounded-lg"><ScanLine className="w-4 h-4 mr-1" />Digitize</Button>
+          <Button size="sm" onClick={() => setShowDigitize(true)} className="bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0 rounded-lg"><Brain className="w-4 h-4 mr-1" />Digitize</Button>
           <Button size="sm" onClick={() => setShowSign(true)} className={cn("rounded-lg border", isLight ? "bg-white border-slate-300 text-slate-700" : "bg-slate-800 border-slate-600 text-slate-200")}><PenTool className="w-4 h-4 mr-1" />Sign</Button>
           <Button size="sm" onClick={() => setShowUpload(true)} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-lg"><Upload className="w-4 h-4 mr-1" />Upload</Button>
         </div>
@@ -404,7 +511,7 @@ export default function DocumentCenter() {
       {/* ── Modals ── */}
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} onUpload={(d) => uploadMut.mutate(d)} uploading={uploadMut.isPending} />}
       {showSign && <SignaturePad onSave={(d) => { setSavedSig(d); toast.success("Signature saved"); setShowSign(false); }} onClose={() => setShowSign(false)} />}
-      {showDigitize && <DigitizeModal onClose={() => setShowDigitize(false)} />}
+      {showDigitize && <DigitizeModal onClose={() => setShowDigitize(false)} onDigitized={() => { docsQuery.refetch(); statsQuery.refetch(); }} />}
     </div>
   );
 }

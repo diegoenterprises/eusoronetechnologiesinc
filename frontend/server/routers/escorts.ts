@@ -109,7 +109,7 @@ export const escortsRouter = router({
         {
           id: "job_upcoming_001",
           title: "Superload Escort - Port Arthur to Austin",
-          carrier: "ABC Transport",
+          carrier: "",
           position: "both",
           startDate: "2025-01-26",
           estimatedDuration: "12 hours",

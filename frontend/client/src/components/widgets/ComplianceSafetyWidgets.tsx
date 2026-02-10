@@ -119,9 +119,9 @@ export const IFTAReportingWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader /> : (
       <div className="space-y-3">
         <StatRow label="Quarter" value={f.currentQuarter} color="text-blue-400" />
-        <StatRow label="Total Miles" value={f.totalMiles.toLocaleString()} color="text-cyan-400" />
-        <StatRow label="Gallons" value={f.totalGallons.toLocaleString()} color="text-purple-400" />
-        <StatRow label="Tax Owed" value={`$${f.taxOwed.toLocaleString()}`} color="text-orange-400" />
+        <StatRow label="Total Miles" value={(f.totalMiles || 0).toLocaleString()} color="text-cyan-400" />
+        <StatRow label="Gallons" value={(f.totalGallons || 0).toLocaleString()} color="text-purple-400" />
+        <StatRow label="Tax Owed" value={`$${(f.taxOwed || 0).toLocaleString()}`} color="text-orange-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -201,11 +201,11 @@ export const ComplianceCostsWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader color="text-green-400" /> : (
       <div className="space-y-3">
         <div className="text-center p-3 rounded-lg bg-red-500/10">
-          <p className="text-2xl font-bold text-red-400">${c.total.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-red-400">${(c.total || 0).toLocaleString()}</p>
           <p className="text-xs text-gray-400">Total Compliance Cost</p>
         </div>
-        <StatRow label="Fines" value={`$${c.fines.toLocaleString()}`} color="text-red-400" />
-        <StatRow label="Training" value={`$${c.training.toLocaleString()}`} color="text-blue-400" />
+        <StatRow label="Fines" value={`$${(c.fines || 0).toLocaleString()}`} color="text-red-400" />
+        <StatRow label="Training" value={`$${(c.training || 0).toLocaleString()}`} color="text-blue-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -276,7 +276,7 @@ export const VehicleMaintenanceWidget: React.FC = () => {
           { label: "Overdue", value: m.overdue, color: "bg-red-500/10" },
           { label: "Done", value: m.completed, color: "bg-green-500/10" },
         ]} />
-        <StatRow label="Avg Cost" value={`$${m.avgCost.toLocaleString()}`} color="text-orange-400" />
+        <StatRow label="Avg Cost" value={`$${(m.avgCost || 0).toLocaleString()}`} color="text-orange-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -412,8 +412,8 @@ export const ClaimsManagementWidget: React.FC = () => {
           { label: "Open", value: c.open, color: "bg-red-500/10" },
           { label: "Closed", value: c.closed, color: "bg-green-500/10" },
         ]} />
-        <StatRow label="Total Value" value={`$${c.totalValue.toLocaleString()}`} color="text-red-400" />
-        <StatRow label="Avg Settlement" value={`$${c.avgSettlement.toLocaleString()}`} color="text-orange-400" />
+        <StatRow label="Total Value" value={`$${(c.totalValue || 0).toLocaleString()}`} color="text-red-400" />
+        <StatRow label="Avg Settlement" value={`$${(c.avgSettlement || 0).toLocaleString()}`} color="text-orange-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -429,8 +429,8 @@ export const SafetyROIWidget: React.FC = () => {
           <p className="text-2xl font-bold text-green-400">{r.roi}%</p>
           <p className="text-xs text-gray-400">Safety Program ROI</p>
         </div>
-        <StatRow label="Invested" value={`$${r.invested.toLocaleString()}`} color="text-blue-400" />
-        <StatRow label="Saved" value={`$${r.saved.toLocaleString()}`} color="text-green-400" />
+        <StatRow label="Invested" value={`$${(r.invested || 0).toLocaleString()}`} color="text-blue-400" />
+        <StatRow label="Saved" value={`$${(r.saved || 0).toLocaleString()}`} color="text-green-400" />
       </div>
     )}</ResponsiveWidget>
   );

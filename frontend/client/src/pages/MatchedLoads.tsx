@@ -19,8 +19,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
+const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
-function isSpectraQualified(commodity: string): boolean {
+function isSpectraQualified(cargoType?: string, commodity?: string, hazmatClass?: string): boolean {
+  if (cargoType && SPECTRA_CARGO_TYPES.includes(cargoType)) return true;
+  if (["2", "3"].includes(hazmatClass || "")) return true;
+  if (cargoType && ["refrigerated", "oversized", "general"].includes(cargoType)) return false;
   const c = (commodity || "").toLowerCase();
   return SPECTRA_KEYWORDS.some(k => c.includes(k));
 }
@@ -137,7 +141,7 @@ export default function MatchedLoads() {
                   </div>
 
                   {/* SPECTRA-MATCH™ indicator for qualifying oil/gas loads */}
-                  {isSpectraQualified(load.commodity) && (
+                  {isSpectraQualified(load.equipmentType || load.cargoType, load.commodity, load.hazmatClass) && (
                     <div className="mb-3">
                       <SpectraMatchWidget
                         compact={true}

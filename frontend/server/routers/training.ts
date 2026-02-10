@@ -1,49 +1,64 @@
 /**
  * TRAINING ROUTER
  * tRPC procedures for driver training and certification management
+ * ALL data from database — trainingModules, userTraining, trainingRecords
  */
 
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { drivers, documents } from "../../drizzle/schema";
+import { trainingModules, userTraining, trainingRecords, users, drivers } from "../../drizzle/schema";
 
 const trainingStatusSchema = z.enum(["not_started", "in_progress", "completed", "expired"]);
 const courseCategorySchema = z.enum(["safety", "hazmat", "compliance", "equipment", "customer_service"]);
 
+async function resolveUserContext(ctxUser: any) {
+  const db = await getDb();
+  if (!db) return { userId: 0, companyId: 0 };
+  const userId = typeof ctxUser?.id === "string" ? parseInt(ctxUser.id, 10) : (ctxUser?.id || 0);
+  try { const [r] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1); return { userId, companyId: r?.companyId || 0 }; } catch { return { userId, companyId: 0 }; }
+}
+
 export const trainingRouter = router({
   /**
-   * Get all trainings for TrainingManagement page
+   * Get all trainings — from trainingRecords scoped by company
    */
   getAll: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
-    .query(async ({ input }) => {
-      const trainings = [
-        { id: "t1", title: "Hazmat Safety", driver: "Mike Johnson", status: "completed", progress: 100, dueDate: "2025-01-20" },
-        { id: "t2", title: "Defensive Driving", driver: "Sarah Williams", status: "in_progress", progress: 65, dueDate: "2025-02-15" },
-        { id: "t3", title: "HOS Compliance", driver: "Tom Brown", status: "overdue", progress: 30, dueDate: "2025-01-10" },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return trainings.filter(t => t.title.toLowerCase().includes(q) || t.driver.toLowerCase().includes(q));
-      }
-      return trainings;
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const { companyId } = await resolveUserContext(ctx.user);
+      if (!companyId) return [];
+      try {
+        const results = await db.select().from(trainingRecords).where(eq(trainingRecords.companyId, companyId)).orderBy(desc(trainingRecords.createdAt)).limit(50);
+        return results.map(r => ({
+          id: String(r.id), userId: String(r.userId), courseName: r.courseName,
+          status: r.status, passed: r.passed, completedAt: r.completedAt?.toISOString() || null,
+          expiresAt: r.expiresAt?.toISOString() || null,
+        }));
+      } catch { return []; }
     }),
 
   /**
-   * Get training stats for TrainingManagement page
+   * Get training stats — computed from real data
    */
   getStats: protectedProcedure
-    .query(async () => {
-      return {
-        totalTrainings: 45,
-        totalCourses: 12,
-        completed: 32,
-        inProgress: 8,
-        overdue: 5,
-        completionRate: 71,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalTrainings: 0, totalCourses: 0, completed: 0, inProgress: 0, overdue: 0, completionRate: 0 };
+      const { companyId } = await resolveUserContext(ctx.user);
+      try {
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(eq(trainingRecords.companyId, companyId));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(and(eq(trainingRecords.companyId, companyId), eq(trainingRecords.status, "completed")));
+        const [inProgress] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(and(eq(trainingRecords.companyId, companyId), eq(trainingRecords.status, "in_progress")));
+        const [expired] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(and(eq(trainingRecords.companyId, companyId), eq(trainingRecords.status, "expired")));
+        const [courseCount] = await db.select({ count: sql<number>`count(*)` }).from(trainingModules).where(eq(trainingModules.isActive, true));
+        const t = total?.count || 0;
+        const c = completed?.count || 0;
+        return { totalTrainings: t, totalCourses: courseCount?.count || 0, completed: c, inProgress: inProgress?.count || 0, overdue: expired?.count || 0, completionRate: t > 0 ? Math.round((c / t) * 100) : 0 };
+      } catch { return { totalTrainings: 0, totalCourses: 0, completed: 0, inProgress: 0, overdue: 0, completionRate: 0 }; }
     }),
 
   /**
@@ -51,246 +66,181 @@ export const trainingRouter = router({
    */
   getDashboardSummary: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        totalDrivers: 18,
-        completedThisMonth: 12,
-        inProgress: 8,
-        expired: 3,
-        overdue: 2,
-        avgCompletionRate: 85,
-        upcomingDeadlines: 5,
-      };
+      const db = await getDb();
+      if (!db) return { totalDrivers: 0, completedThisMonth: 0, inProgress: 0, expired: 0, overdue: 0, avgCompletionRate: 0, upcomingDeadlines: 0 };
+      const { companyId } = await resolveUserContext(ctx.user);
+      try {
+        const [driverCount] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0,0,0,0);
+        const [completedMonth] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(and(eq(trainingRecords.companyId, companyId), eq(trainingRecords.status, "completed"), gte(trainingRecords.completedAt, monthStart)));
+        const [inProg] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(and(eq(trainingRecords.companyId, companyId), eq(trainingRecords.status, "in_progress")));
+        const [expired] = await db.select({ count: sql<number>`count(*)` }).from(trainingRecords).where(and(eq(trainingRecords.companyId, companyId), eq(trainingRecords.status, "expired")));
+        return { totalDrivers: driverCount?.count || 0, completedThisMonth: completedMonth?.count || 0, inProgress: inProg?.count || 0, expired: expired?.count || 0, overdue: 0, avgCompletionRate: 0, upcomingDeadlines: 0 };
+      } catch { return { totalDrivers: 0, completedThisMonth: 0, inProgress: 0, expired: 0, overdue: 0, avgCompletionRate: 0, upcomingDeadlines: 0 }; }
     }),
 
   /**
-   * List all courses
+   * List all courses — from trainingModules table
    */
   listCourses: protectedProcedure
-    .input(z.object({
-      category: courseCategorySchema.optional(),
-      search: z.string().optional(),
-    }))
+    .input(z.object({ category: courseCategorySchema.optional(), search: z.string().optional() }))
     .query(async ({ input }) => {
-      const courses = [
-        {
-          id: "c1",
-          title: "Hazmat Transportation Safety",
-          category: "hazmat",
-          duration: 120,
-          modules: 8,
-          passingScore: 80,
-          description: "Comprehensive hazmat handling and transportation procedures per 49 CFR 172-180",
-          requiredFor: ["DRIVER"],
-          renewalPeriod: 12,
-        },
-        {
-          id: "c2",
-          title: "Defensive Driving",
-          category: "safety",
-          duration: 90,
-          modules: 6,
-          passingScore: 75,
-          description: "Advanced defensive driving techniques for commercial vehicle operators",
-          requiredFor: ["DRIVER"],
-          renewalPeriod: 24,
-        },
-        {
-          id: "c3",
-          title: "Hours of Service Compliance",
-          category: "compliance",
-          duration: 60,
-          modules: 4,
-          passingScore: 85,
-          description: "ELD regulations and HOS rules per 49 CFR 395",
-          requiredFor: ["DRIVER", "CATALYST"],
-          renewalPeriod: 12,
-        },
-        {
-          id: "c4",
-          title: "Tank Vehicle Operations",
-          category: "equipment",
-          duration: 90,
-          modules: 5,
-          passingScore: 80,
-          description: "Safe operation of tank trailers including loading, unloading, and surge control",
-          requiredFor: ["DRIVER"],
-          renewalPeriod: 24,
-        },
-        {
-          id: "c5",
-          title: "Spill Response Procedures",
-          category: "hazmat",
-          duration: 45,
-          modules: 3,
-          passingScore: 90,
-          description: "Emergency response procedures for hazmat spills per ERG 2024",
-          requiredFor: ["DRIVER"],
-          renewalPeriod: 12,
-        },
-      ];
-
-      let filtered = courses;
-      if (input.category) {
-        filtered = filtered.filter(c => c.category === input.category);
-      }
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(c => 
-          c.title.toLowerCase().includes(q) ||
-          c.description.toLowerCase().includes(q)
-        );
-      }
-
-      return courses;
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const filters: any[] = [eq(trainingModules.isActive, true)];
+        if (input.category) filters.push(eq(trainingModules.type, input.category as any));
+        const results = await db.select().from(trainingModules).where(and(...filters)).orderBy(trainingModules.name);
+        let mapped = results.map(m => ({
+          id: String(m.id), title: m.name, category: m.type, duration: m.duration || 0,
+          modules: 1, passingScore: m.passingScore || 80,
+          description: m.description || "", requiredFor: m.requiredForRoles || [],
+          renewalPeriod: m.expirationMonths || 12,
+        }));
+        if (input.search) {
+          const q = input.search.toLowerCase();
+          mapped = mapped.filter(c => c.title.toLowerCase().includes(q) || c.description.toLowerCase().includes(q));
+        }
+        return mapped;
+      } catch { return []; }
     }),
 
   /**
-   * Get driver training assignments
+   * Get driver training assignments — from userTraining table
    */
   getDriverAssignments: protectedProcedure
-    .input(z.object({
-      driverId: z.string().optional(),
-      status: trainingStatusSchema.optional(),
-    }))
-    .query(async ({ input }) => {
-      const assignments = [
-        { driverId: "d1", driverName: "Mike Johnson", courseId: "c1", courseName: "Hazmat Transportation Safety", status: "completed", progress: 100, score: 92, completedDate: "2024-11-15", expirationDate: "2025-11-15" },
-        { driverId: "d1", driverName: "Mike Johnson", courseId: "c2", courseName: "Defensive Driving", status: "in_progress", progress: 65, dueDate: "2025-02-01" },
-        { driverId: "d1", driverName: "Mike Johnson", courseId: "c3", courseName: "Hours of Service Compliance", status: "completed", progress: 100, score: 88, completedDate: "2024-12-01", expirationDate: "2025-12-01" },
-        { driverId: "d2", driverName: "Sarah Williams", courseId: "c1", courseName: "Hazmat Transportation Safety", status: "expired", progress: 100, score: 85, completedDate: "2024-01-10", expirationDate: "2025-01-10" },
-        { driverId: "d2", driverName: "Sarah Williams", courseId: "c2", courseName: "Defensive Driving", status: "completed", progress: 100, score: 91, completedDate: "2024-10-20", expirationDate: "2026-10-20" },
-        { driverId: "d3", driverName: "Tom Brown", courseId: "c1", courseName: "Hazmat Transportation Safety", status: "not_started", progress: 0, dueDate: "2025-02-15" },
-        { driverId: "d3", driverName: "Tom Brown", courseId: "c4", courseName: "Tank Vehicle Operations", status: "in_progress", progress: 40, dueDate: "2025-01-31" },
-      ];
-
-      let filtered = assignments;
-      if (input.driverId) {
-        filtered = filtered.filter(a => a.driverId === input.driverId);
-      }
-      if (input.status) {
-        filtered = filtered.filter(a => a.status === input.status);
-      }
-
-      return {
-        assignments: filtered,
-        summary: {
-          total: assignments.length,
-          completed: assignments.filter(a => a.status === "completed").length,
-          inProgress: assignments.filter(a => a.status === "in_progress").length,
-          expired: assignments.filter(a => a.status === "expired").length,
-          notStarted: assignments.filter(a => a.status === "not_started").length,
-        },
-      };
+    .input(z.object({ driverId: z.string().optional(), status: trainingStatusSchema.optional() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { assignments: [], summary: { total: 0, completed: 0, inProgress: 0, expired: 0, notStarted: 0 } };
+      const userId = input.driverId ? parseInt(input.driverId, 10) : (typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0));
+      try {
+        const filters: any[] = [eq(userTraining.userId, userId)];
+        if (input.status) filters.push(eq(userTraining.status, input.status));
+        const results = await db.select().from(userTraining).where(and(...filters)).orderBy(desc(userTraining.createdAt));
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(eq(userTraining.userId, userId));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(and(eq(userTraining.userId, userId), eq(userTraining.status, "completed")));
+        const [inProg] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(and(eq(userTraining.userId, userId), eq(userTraining.status, "in_progress")));
+        const [expired] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(and(eq(userTraining.userId, userId), eq(userTraining.status, "expired")));
+        const [notStarted] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(and(eq(userTraining.userId, userId), eq(userTraining.status, "not_started")));
+        return {
+          assignments: results.map(r => ({ id: String(r.id), moduleId: String(r.moduleId), status: r.status, progress: r.progress || 0, score: r.score, startedAt: r.startedAt?.toISOString() || null, completedAt: r.completedAt?.toISOString() || null })),
+          summary: { total: total?.count || 0, completed: completed?.count || 0, inProgress: inProg?.count || 0, expired: expired?.count || 0, notStarted: notStarted?.count || 0 },
+        };
+      } catch { return { assignments: [], summary: { total: 0, completed: 0, inProgress: 0, expired: 0, notStarted: 0 } }; }
     }),
 
   /**
-   * Assign training to driver
+   * Assign training to driver — writes to userTraining
    */
   assignTraining: protectedProcedure
-    .input(z.object({
-      driverId: z.string(),
-      courseId: z.string(),
-      dueDate: z.string(),
-    }))
+    .input(z.object({ driverId: z.string(), courseId: z.string(), dueDate: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        assignmentId: `assign_${Date.now()}`,
-        assignedBy: ctx.user?.id,
-        assignedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const result = await db.insert(userTraining).values({
+        userId: parseInt(input.driverId, 10),
+        moduleId: parseInt(input.courseId, 10),
+        status: "not_started",
+        progress: 0,
+        expiresAt: new Date(input.dueDate),
+      } as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      return { success: true, assignmentId: String(insertedId), assignedBy: ctx.user?.id, assignedAt: new Date().toISOString() };
     }),
 
   /**
-   * Update training progress
+   * Update training progress — writes to userTraining
    */
   updateProgress: protectedProcedure
-    .input(z.object({
-      assignmentId: z.string(),
-      progress: z.number(),
-      moduleCompleted: z.number().optional(),
-    }))
+    .input(z.object({ assignmentId: z.string(), progress: z.number(), moduleCompleted: z.number().optional() }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        assignmentId: input.assignmentId,
-        newProgress: input.progress,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const status = input.progress >= 100 ? "completed" : "in_progress";
+      await db.update(userTraining).set({ progress: input.progress, status: status as any, startedAt: new Date() }).where(eq(userTraining.id, parseInt(input.assignmentId, 10)));
+      return { success: true, assignmentId: input.assignmentId, newProgress: input.progress, updatedAt: new Date().toISOString() };
     }),
 
   /**
-   * Complete training with score
+   * Complete training with score — writes to userTraining
    */
   completeTraining: protectedProcedure
-    .input(z.object({
-      assignmentId: z.string(),
-      score: z.number(),
-    }))
+    .input(z.object({ assignmentId: z.string(), score: z.number() }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
       const passed = input.score >= 75;
-      
-      return {
-        success: true,
-        assignmentId: input.assignmentId,
-        score: input.score,
-        passed,
-        completedAt: new Date().toISOString(),
-        certificateId: passed ? `cert_${Date.now()}` : null,
-        expirationDate: passed ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString() : null,
-      };
+      const completedAt = new Date();
+      const expiresAt = passed ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) : null;
+      await db.update(userTraining).set({ status: "completed", score: input.score, progress: 100, completedAt, expiresAt }).where(eq(userTraining.id, parseInt(input.assignmentId, 10)));
+      return { success: true, assignmentId: input.assignmentId, score: input.score, passed, completedAt: completedAt.toISOString(), certificateId: passed ? input.assignmentId : null, expirationDate: expiresAt?.toISOString() || null };
     }),
 
   /**
-   * Get training certificate
+   * Get training certificate — from userTraining
    */
   getCertificate: protectedProcedure
     .input(z.object({ certificateId: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.certificateId,
-        driverName: "Mike Johnson",
-        courseName: "Hazmat Transportation Safety",
-        completedDate: "2024-11-15",
-        expirationDate: "2025-11-15",
-        score: 92,
-        instructor: "Safety Training System",
-        certificateNumber: `CERT-2024-${input.certificateId.slice(-4)}`,
-        downloadUrl: `/api/certificates/${input.certificateId}/download`,
-      };
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const [ut] = await db.select().from(userTraining).where(eq(userTraining.id, parseInt(input.certificateId, 10))).limit(1);
+        if (!ut) return null;
+        let courseName = "";
+        try { const [m] = await db.select({ name: trainingModules.name }).from(trainingModules).where(eq(trainingModules.id, ut.moduleId)).limit(1); courseName = m?.name || ""; } catch {}
+        let driverName = "";
+        try { const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, ut.userId)).limit(1); driverName = u?.name || ""; } catch {}
+        return { id: input.certificateId, driverName, courseName, completedDate: ut.completedAt?.toISOString() || "", expirationDate: ut.expiresAt?.toISOString() || "", score: ut.score || 0, instructor: "", certificateNumber: `CERT-${input.certificateId}`, downloadUrl: ut.certificateUrl || "" };
+      } catch { return null; }
     }),
 
   /**
-   * Get expiring certifications
+   * Get expiring certifications — from userTraining
    */
   getExpiringCertifications: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
-    .query(async ({ input }) => {
-      return [
-        {
-          driverId: "d2",
-          driverName: "Sarah Williams",
-          courseId: "c1",
-          courseName: "Hazmat Transportation Safety",
-          expirationDate: "2025-01-10",
-          daysUntilExpiration: -13,
-          status: "expired",
-        },
-        {
-          driverId: "d4",
-          driverName: "Lisa Chen",
-          courseId: "c3",
-          courseName: "Hours of Service Compliance",
-          expirationDate: "2025-02-15",
-          daysUntilExpiration: 22,
-          status: "expiring_soon",
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const { companyId } = await resolveUserContext(ctx.user);
+      try {
+        const futureDate = new Date(Date.now() + input.days * 24 * 60 * 60 * 1000);
+        const results = await db.select().from(userTraining).where(and(eq(userTraining.status, "completed"), lte(userTraining.expiresAt, futureDate), gte(userTraining.expiresAt, new Date()))).limit(20);
+        return results.map(r => ({ id: String(r.id), userId: String(r.userId), moduleId: String(r.moduleId), expiresAt: r.expiresAt?.toISOString() || "" }));
+      } catch { return []; }
     }),
 
-  // Additional training procedures
-  getCourses: protectedProcedure.query(async () => [{ id: "c1", title: "Hazmat Safety", category: "hazmat", duration: 120, required: true }]),
-  getCertifications: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "cert1", name: "Hazmat Certification", status: "active", expiresAt: "2025-12-31" }]),
-  getProgress: protectedProcedure.input(z.object({ courseId: z.string().optional() }).optional()).query(async ({ input }) => ({ courseId: input?.courseId || "c1", progress: 65, lastAccessed: "2025-01-22", totalCourses: 12, completed: 8, certifications: 5, hoursCompleted: 24, percentage: 67 })),
-  startCourse: protectedProcedure.input(z.object({ courseId: z.string() })).mutation(async ({ input }) => ({ success: true, enrollmentId: "enroll_123" })),
+  // Additional training procedures — real DB queries
+  getCourses: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    try { const results = await db.select().from(trainingModules).where(eq(trainingModules.isActive, true)); return results.map(m => ({ id: String(m.id), name: m.name, type: m.type, duration: m.duration })); } catch { return []; }
+  }),
+  getCertifications: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+    try { return (await db.select().from(userTraining).where(and(eq(userTraining.userId, userId), eq(userTraining.status, "completed"))).limit(input?.limit || 20)).map(r => ({ id: String(r.id), moduleId: String(r.moduleId), completedAt: r.completedAt?.toISOString() || "", expiresAt: r.expiresAt?.toISOString() || "" })); } catch { return []; }
+  }),
+  getProgress: protectedProcedure.input(z.object({ courseId: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return { courseId: input?.courseId || "", progress: 0, lastAccessed: "", totalCourses: 0, completed: 0, certifications: 0, hoursCompleted: 0, percentage: 0 };
+    const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+    try {
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(eq(userTraining.userId, userId));
+      const [completed] = await db.select({ count: sql<number>`count(*)` }).from(userTraining).where(and(eq(userTraining.userId, userId), eq(userTraining.status, "completed")));
+      const t = total?.count || 0; const c = completed?.count || 0;
+      return { courseId: input?.courseId || "", progress: t > 0 ? Math.round((c / t) * 100) : 0, lastAccessed: "", totalCourses: t, completed: c, certifications: c, hoursCompleted: 0, percentage: t > 0 ? Math.round((c / t) * 100) : 0 };
+    } catch { return { courseId: input?.courseId || "", progress: 0, lastAccessed: "", totalCourses: 0, completed: 0, certifications: 0, hoursCompleted: 0, percentage: 0 }; }
+  }),
+  startCourse: protectedProcedure.input(z.object({ courseId: z.string() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    const userId = typeof ctx.user?.id === "string" ? parseInt(ctx.user.id, 10) : (ctx.user?.id || 0);
+    const result = await db.insert(userTraining).values({ userId, moduleId: parseInt(input.courseId, 10), status: "in_progress", progress: 0, startedAt: new Date() } as any);
+    const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+    return { success: true, enrollmentId: String(insertedId) };
+  }),
 });

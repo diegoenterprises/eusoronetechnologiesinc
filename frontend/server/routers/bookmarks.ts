@@ -40,10 +40,7 @@ export const bookmarksRouter = router({
 
     try {
       const [loadCount] = await db.select({ count: sql<number>`count(*)` }).from(loads);
-      return [
-        { id: "f1", name: "Important Loads", count: loadCount?.count || 0 },
-        { id: "f2", name: "Favorite Carriers", count: 0 },
-      ];
+      return [];
     } catch (error) {
       console.error('[Bookmarks] getFolders error:', error);
       return [];

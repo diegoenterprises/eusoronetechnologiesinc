@@ -18,18 +18,24 @@ import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
+const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
-function isSpectraQualified(commodity: string, hazmatClass?: string): boolean {
+function isSpectraQualified(cargoType?: string, commodity?: string, hazmatClass?: string): boolean {
+  // Primary check: cargoType from DB must be a qualifying type
+  if (cargoType && SPECTRA_CARGO_TYPES.includes(cargoType)) return true;
+  // Secondary: hazmat class 2 (gases) or 3 (flammable liquids)
+  if (["2", "3"].includes(hazmatClass || "")) return true;
+  // Tertiary: commodity keyword match (only if cargoType isn't explicitly non-qualifying)
+  if (cargoType && ["refrigerated", "oversized", "general"].includes(cargoType)) return false;
   const c = (commodity || "").toLowerCase();
   if (SPECTRA_KEYWORDS.some(k => c.includes(k))) return true;
-  if (["2", "3"].includes(hazmatClass || "")) return true;
   return false;
 }
 
 export default function LoadDetails() {
   const [, setLocation] = useLocation();
   const params = useParams();
-  const loadId = params.id as string;
+  const loadId = (params.loadId || params.id) as string;
 
   const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId });
   const load = loadQuery.data;
@@ -64,7 +70,7 @@ export default function LoadDetails() {
             <Package className="w-10 h-10 text-slate-500" />
           </div>
           <p className="text-slate-400 text-lg">Load not found</p>
-          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/load/board")}>
+          <Button className="mt-4 bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation("/loads/active")}>
             <ArrowLeft className="w-4 h-4 mr-2" />Back to Loads
           </Button>
         </div>
@@ -77,7 +83,7 @@ export default function LoadDetails() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/load/board")}>
+          <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white" onClick={() => setLocation("/loads/active")}>
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
@@ -91,10 +97,10 @@ export default function LoadDetails() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
+          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => setLocation("/messages")}>
             <Phone className="w-4 h-4 mr-2" />Contact
           </Button>
-          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
+          <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg" onClick={() => setLocation("/tracking")}>
             <Navigation className="w-4 h-4 mr-2" />Track
           </Button>
         </div>
@@ -125,9 +131,9 @@ export default function LoadDetails() {
           <CardContent>
             <div className="flex items-start gap-4">
               <div className="flex flex-col items-center">
-                <div className="w-4 h-4 rounded-full bg-green-400" />
+                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF]" />
                 <div className="w-0.5 h-16 bg-slate-600" />
-                <div className="w-4 h-4 rounded-full bg-red-400" />
+                <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#BE01FF] to-[#1473FF]" />
               </div>
               <div className="flex-1 space-y-6">
                 <div>
@@ -200,9 +206,11 @@ export default function LoadDetails() {
               <CardTitle className="text-white text-lg flex items-center gap-2">
                 <Shield className="w-5 h-5 text-cyan-400" />
                 ERG Hazmat Classification
-                <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 ml-auto">
-                  <CheckCircle className="w-3 h-3 mr-1" />SPECTRA-MATCH Verified
-                </Badge>
+                {load.spectraMatchVerified && (
+                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 ml-auto">
+                    <CheckCircle className="w-3 h-3 mr-1" />SPECTRA-MATCH Verified
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -254,15 +262,17 @@ export default function LoadDetails() {
         )}
 
         {/* SPECTRA-MATCH™ Oil Identification - for drivers/catalysts/carriers */}
-        {isSpectraQualified(load.commodity, load.hazmatClass) && (
+        {isSpectraQualified(load.equipmentType || load.cargoType, load.commodity, load.hazmatClass) && (
           <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
             <CardContent className="p-4">
               <SpectraMatchWidget
                 compact={true}
                 loadId={loadId}
                 showSaveButton={true}
+                productName={load.commodity}
                 onIdentify={(result) => {
                   console.log("SpectraMatch result:", result);
+                  loadQuery.refetch();
                 }}
               />
             </CardContent>

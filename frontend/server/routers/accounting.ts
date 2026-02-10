@@ -86,16 +86,8 @@ export const accountingRouter = router({
     }))
     .query(async ({ input }) => {
       return {
-        payables: [
-          { id: "pay_001", vendor: "FleetPro Maintenance", description: "PM Service - TRK-101", amount: 850, status: "pending", dueDate: "2025-01-30" },
-          { id: "pay_002", vendor: "Pilot Flying J", description: "Fuel Invoice - Week 3", amount: 4500, status: "approved", dueDate: "2025-02-05" },
-          { id: "pay_003", vendor: "TruckTire Express", description: "Tire Replacement", amount: 1200, status: "paid", dueDate: "2025-01-20", paidAt: "2025-01-18" },
-        ],
-        summary: {
-          totalPending: 850,
-          totalApproved: 4500,
-          dueThisWeek: 850,
-        },
+        payables: [],
+        summary: { totalPending: 0, totalApproved: 0, dueThisWeek: 0 },
       };
     }),
 
@@ -171,15 +163,10 @@ export const accountingRouter = router({
       limit: z.number().default(50),
     }))
     .query(async ({ input }) => {
-      const expenses = [
-        { id: "exp_001", type: "fuel", description: "Fuel - TRK-101", amount: 458.08, date: "2025-01-23", vehicle: "TRK-101", driver: "Mike Johnson" },
-        { id: "exp_002", type: "maintenance", description: "PM Service", amount: 850, date: "2025-01-20", vehicle: "TRK-101", vendor: "FleetPro" },
-        { id: "exp_003", type: "tolls", description: "Toll Charges", amount: 45.50, date: "2025-01-23", vehicle: "TRK-101" },
-        { id: "exp_004", type: "fuel", description: "Fuel - TRK-102", amount: 425.30, date: "2025-01-22", vehicle: "TRK-102", driver: "Sarah Williams" },
-      ];
+      const expenses: any[] = [];
 
       let filtered = expenses;
-      if (input.type) filtered = filtered.filter(e => e.type === input.type);
+      if (input.type) filtered = filtered.filter((e: any) => e.type === input.type);
 
       return {
         expenses: filtered.slice(0, input.limit),
@@ -223,30 +210,10 @@ export const accountingRouter = router({
     .query(async ({ input }) => {
       return {
         period: input.period,
-        revenue: {
-          linehaul: 125000,
-          fuelSurcharge: 18500,
-          accessorials: 4500,
-          total: 148000,
-        },
-        expenses: {
-          fuel: 42000,
-          driverPay: 38000,
-          maintenance: 8500,
-          insurance: 12000,
-          equipment: 5500,
-          tolls: 2800,
-          permits: 1200,
-          other: 3500,
-          total: 113500,
-        },
-        grossProfit: 34500,
-        grossMargin: 0.233,
-        comparison: input.compareToLast ? {
-          revenueChange: 0.08,
-          expenseChange: 0.05,
-          profitChange: 0.15,
-        } : null,
+        revenue: { linehaul: 0, fuelSurcharge: 0, accessorials: 0, total: 0 },
+        expenses: { fuel: 0, driverPay: 0, maintenance: 0, insurance: 0, equipment: 0, tolls: 0, permits: 0, other: 0, total: 0 },
+        grossProfit: 0, grossMargin: 0,
+        comparison: input.compareToLast ? { revenueChange: 0, expenseChange: 0, profitChange: 0 } : null,
       };
     }),
 
@@ -260,22 +227,10 @@ export const accountingRouter = router({
     .query(async ({ input }) => {
       return {
         period: input.period,
-        openingBalance: 85000,
-        inflows: {
-          customerPayments: 125000,
-          other: 2500,
-          total: 127500,
-        },
-        outflows: {
-          vendorPayments: 45000,
-          driverPayroll: 38000,
-          fuelCards: 28000,
-          other: 8500,
-          total: 119500,
-        },
-        netCashFlow: 8000,
-        closingBalance: 93000,
-        projectedBalance: 105000,
+        openingBalance: 0,
+        inflows: { customerPayments: 0, other: 0, total: 0 },
+        outflows: { vendorPayments: 0, driverPayroll: 0, fuelCards: 0, other: 0, total: 0 },
+        netCashFlow: 0, closingBalance: 0, projectedBalance: 0,
       };
     }),
 
@@ -285,17 +240,13 @@ export const accountingRouter = router({
   getAgingReport: protectedProcedure
     .query(async () => {
       return {
-        current: { count: 8, amount: 25000 },
-        days1to30: { count: 5, amount: 15000 },
-        days31to60: { count: 3, amount: 8500 },
-        days61to90: { count: 2, amount: 4200 },
-        over90: { count: 1, amount: 2100 },
-        total: { count: 19, amount: 54800 },
-        byCustomer: [
-          { customer: "Shell Oil Company", current: 12000, days1to30: 3500, days31to60: 0, days61to90: 0, over90: 0 },
-          { customer: "ExxonMobil", current: 8000, days1to30: 5500, days31to60: 2100, days61to90: 0, over90: 0 },
-          { customer: "Valero", current: 5000, days1to30: 6000, days31to60: 6400, days61to90: 4200, over90: 2100 },
-        ],
+        current: { count: 0, amount: 0 },
+        days1to30: { count: 0, amount: 0 },
+        days31to60: { count: 0, amount: 0 },
+        days61to90: { count: 0, amount: 0 },
+        over90: { count: 0, amount: 0 },
+        total: { count: 0, amount: 0 },
+        byCustomer: [],
       };
     }),
 

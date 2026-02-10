@@ -10,17 +10,15 @@ import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 
 export const rateConfirmationsRouter = router({
-  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
-    { id: "rc1", loadNumber: "LOAD-45920", carrier: "ABC Transport", rate: 2450, status: "pending", createdAt: "2025-01-23" },
-  ]),
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => ({
-    id: input.id, loadNumber: "LOAD-45920", carrier: "ABC Transport", rate: 2450, status: "pending",
+    id: input.id, loadNumber: "", carrier: "", rate: 0, status: "",
   })),
 
   send: protectedProcedure.input(z.object({ loadId: z.string().optional(), carrierId: z.string().optional(), rate: z.number().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({
     success: true, confirmationId: "rc_123",
   })),
 
-  getSummary: protectedProcedure.query(async () => ({ pending: 8, signed: 45, total: 53, totalValue: 125000 })),
+  getSummary: protectedProcedure.query(async () => ({ pending: 0, signed: 0, total: 0, totalValue: 0 })),
 });

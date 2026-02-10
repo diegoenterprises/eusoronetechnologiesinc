@@ -1,35 +1,212 @@
 /**
- * WIDGETS ROUTER
- * Dashboard widget management procedures
+ * WIDGETS ROUTER — DB-BACKED DASHBOARD WIDGET MANAGEMENT
+ * 
+ * Provides real CRUD for:
+ *  • Widget catalog (dashboard_widgets table — 153 seeded widgets)
+ *  • User layouts (dashboard_layouts table — grid positions per user/role)
+ *  • Widget configs (widget_configurations table — per-user settings)
  */
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { dashboardWidgets, dashboardLayouts, widgetConfigurations } from "../../drizzle/schema";
+import { eq, and, sql } from "drizzle-orm";
 
 export const widgetsRouter = router({
-  // Generic CRUD
-  create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+  /**
+   * Get all widgets available for the user's role from DB
+   */
+  getWidgetCatalog: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const role = ctx.user?.role || 'SHIPPER';
+    if (!db) return { items: [] };
+    try {
+      const all = await db.select().from(dashboardWidgets).where(eq(dashboardWidgets.isActive, true));
+      const filtered = all.filter(w => {
+        const roles = w.rolesAllowed as string[] | null;
+        if (!roles) return true;
+        return roles.includes(role) || roles.includes('ADMIN') || role === 'ADMIN' || role === 'SUPER_ADMIN';
+      });
+      return { items: filtered };
+    } catch (e) {
+      console.error('[Widgets] getWidgetCatalog error:', e);
+      return { items: [] };
+    }
+  }),
+
+  /**
+   * Get user's saved dashboard layout from DB
+   * Falls back to null if none saved (frontend uses default)
+   */
+  getMyLayout: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const userId = ctx.user?.id;
+    const role = ctx.user?.role || 'SHIPPER';
+    if (!db || !userId) return { layout: null, role };
+    try {
+      const [saved] = await db.select()
+        .from(dashboardLayouts)
+        .where(and(eq(dashboardLayouts.userId, userId), eq(dashboardLayouts.role, role)))
+        .limit(1);
+      return {
+        layout: saved?.layoutJson || null,
+        role,
+        layoutId: saved?.id || null,
+        name: saved?.name || null,
+      };
+    } catch (e) {
+      console.error('[Widgets] getMyLayout error:', e);
+      return { layout: null, role };
+    }
+  }),
+
+  /**
+   * Save user's dashboard layout to DB (upsert)
+   */
+  saveLayout: protectedProcedure
+    .input(z.object({
+      layout: z.array(z.object({
+        widgetId: z.string(),
+        x: z.number(),
+        y: z.number(),
+        w: z.number(),
+        h: z.number(),
+      })),
+      name: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      const role = ctx.user?.role || 'SHIPPER';
+      if (!db || !userId) return { success: false, error: 'No database connection' };
+      try {
+        const [existing] = await db.select({ id: dashboardLayouts.id })
+          .from(dashboardLayouts)
+          .where(and(eq(dashboardLayouts.userId, userId), eq(dashboardLayouts.role, role)))
+          .limit(1);
+
+        if (existing) {
+          await db.update(dashboardLayouts)
+            .set({
+              layoutJson: input.layout,
+              name: input.name || null,
+            })
+            .where(eq(dashboardLayouts.id, existing.id));
+        } else {
+          await db.insert(dashboardLayouts).values({
+            userId,
+            role,
+            layoutJson: input.layout,
+            name: input.name || 'Default',
+            isDefault: false,
+          });
+        }
+        return { success: true };
+      } catch (e) {
+        console.error('[Widgets] saveLayout error:', e);
+        return { success: false, error: String(e) };
+      }
     }),
 
-  update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+  /**
+   * Reset layout — delete user's custom layout so frontend falls back to defaults
+   */
+  resetLayout: protectedProcedure
+    .input(z.object({}).optional())
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      const role = ctx.user?.role || 'SHIPPER';
+      if (!db || !userId) return { success: false };
+      try {
+        await db.delete(dashboardLayouts)
+          .where(and(eq(dashboardLayouts.userId, userId), eq(dashboardLayouts.role, role)));
+        return { success: true };
+      } catch (e) {
+        console.error('[Widgets] resetLayout error:', e);
+        return { success: false };
+      }
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+  /**
+   * Get per-widget configurations for current user
+   */
+  getWidgetConfig: protectedProcedure
+    .input(z.object({ widgetId: z.number() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      if (!db || !userId) return { configs: [] };
+      try {
+        if (input?.widgetId) {
+          const [config] = await db.select()
+            .from(widgetConfigurations)
+            .where(and(eq(widgetConfigurations.userId, userId), eq(widgetConfigurations.widgetId, input.widgetId)))
+            .limit(1);
+          return { configs: config ? [config] : [] };
+        }
+        const configs = await db.select()
+          .from(widgetConfigurations)
+          .where(eq(widgetConfigurations.userId, userId));
+        return { configs };
+      } catch (e) {
+        console.error('[Widgets] getWidgetConfig error:', e);
+        return { configs: [] };
+      }
     }),
 
-  // Widget procedures
+  /**
+   * Save per-widget configuration (upsert)
+   */
+  saveWidgetConfig: protectedProcedure
+    .input(z.object({
+      widgetId: z.number(),
+      settings: z.record(z.string(), z.unknown()).optional(),
+      isVisible: z.boolean().optional(),
+      refreshInterval: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = ctx.user?.id;
+      if (!db || !userId) return { success: false };
+      try {
+        const [existing] = await db.select({ id: widgetConfigurations.id })
+          .from(widgetConfigurations)
+          .where(and(eq(widgetConfigurations.userId, userId), eq(widgetConfigurations.widgetId, input.widgetId)))
+          .limit(1);
+
+        if (existing) {
+          await db.update(widgetConfigurations)
+            .set({
+              settings: input.settings || {},
+              isVisible: input.isVisible ?? true,
+              refreshInterval: input.refreshInterval ?? 60,
+            })
+            .where(eq(widgetConfigurations.id, existing.id));
+        } else {
+          await db.insert(widgetConfigurations).values({
+            userId,
+            widgetId: input.widgetId,
+            settings: input.settings || {},
+            isVisible: input.isVisible ?? true,
+            refreshInterval: input.refreshInterval ?? 60,
+          });
+        }
+        return { success: true };
+      } catch (e) {
+        console.error('[Widgets] saveWidgetConfig error:', e);
+        return { success: false };
+      }
+    }),
+
+  // ════════════════════════════════════════════════════════
+  // Legacy stubs — kept for backward compatibility
+  // ════════════════════════════════════════════════════════
+  create: protectedProcedure.input(z.object({ type: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => ({ success: true, id: crypto.randomUUID(), ...input?.data })),
+  update: protectedProcedure.input(z.object({ id: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => ({ success: true, id: input?.id })),
+  delete: protectedProcedure.input(z.object({ id: z.string() }).optional()).mutation(async ({ input }) => ({ success: true, id: input?.id })),
   getWidgets: protectedProcedure.query(async () => ({ items: [] })),
-  getWidgetCatalog: protectedProcedure.query(async () => ({ items: [] })),
-  getWidgetConfig: protectedProcedure.query(async () => ({ config: {} })),
   getWidgetTemplates: protectedProcedure.query(async () => ({ templates: [] })),
   getWidgetSharing: protectedProcedure.query(async () => ({ shared: [] })),
   getWidgetDataSources: protectedProcedure.query(async () => ({ sources: [] })),

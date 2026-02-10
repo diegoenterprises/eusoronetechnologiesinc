@@ -184,18 +184,27 @@ export default function Wallet() {
             )}
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white/10 backdrop-blur rounded-2xl p-3">
-              <p className="text-white/60 text-xs">Pending</p>
-              <p className="text-white font-bold text-lg">{showBalance ? `$${(balance?.pending || 0).toLocaleString()}` : '••••'}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-2xl p-3">
-              <p className="text-white/60 text-xs">In Escrow</p>
-              <p className="text-white font-bold text-lg">{showBalance ? `$${(balance?.escrow || 0).toLocaleString()}` : '••••'}</p>
-            </div>
-            <div className="bg-white/10 backdrop-blur rounded-2xl p-3">
-              <p className="text-white/60 text-xs">This Month</p>
-              <p className="text-white font-bold text-lg">{showBalance ? `$${(balance?.monthVolume || 0).toLocaleString()}` : '••••'}</p>
-            </div>
+            {[
+              { label: "Pending", value: balance?.pending || 0 },
+              { label: "In Escrow", value: balance?.escrow || 0 },
+              { label: "This Month", value: balance?.monthVolume || 0 },
+            ].map((box) => (
+              <div
+                key={box.label}
+                className="relative rounded-2xl p-[1.5px] overflow-hidden"
+                style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
+              >
+                <div
+                  className="rounded-[14.5px] p-3 backdrop-blur-md h-full"
+                  style={{ backgroundColor: "rgba(0, 0, 0, 0.6)" }}
+                >
+                  <p className="text-white/90 text-xs font-medium">{box.label}</p>
+                  <p className="text-white font-bold text-lg drop-shadow-sm">
+                    {showBalance ? `$${box.value.toLocaleString()}` : '••••'}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

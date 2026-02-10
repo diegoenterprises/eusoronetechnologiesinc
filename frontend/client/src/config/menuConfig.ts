@@ -56,42 +56,42 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Package", 
       label: "My Loads", 
       path: "/loads", 
-      badge: 3,
+      badge: 0,
       description: "Manage your shipments"
     },
     { 
       icon: "TrendingUp", 
       label: "Active Loads", 
       path: "/loads/active", 
-      badge: 5,
+      badge: 0,
       description: "In-transit shipments"
     },
     { 
       icon: "MapPin", 
       label: "Track Shipments", 
       path: "/tracking", 
-      badge: 2,
+      badge: 0,
       description: "Real-time GPS tracking"
     },
     { 
       icon: "Users", 
       label: "Carriers", 
       path: "/carriers", 
-      badge: 12,
+      badge: 0,
       description: "Bid management"
     },
     { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 4,
+      badge: 0,
       description: "Communication with carriers"
     },
     { 
       icon: "DollarSign", 
       label: "Payments", 
       path: "/payments", 
-      badge: 1,
+      badge: 0,
       description: "Invoices and payments"
     },
     { 
@@ -119,7 +119,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 2,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -179,35 +179,35 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Search", 
       label: "Find Loads", 
       path: "/marketplace", 
-      badge: 24,
+      badge: 0,
       description: "Available loads to bid on"
     },
     { 
       icon: "Briefcase", 
       label: "My Bids", 
       path: "/bids", 
-      badge: 7,
+      badge: 0,
       description: "Active and pending bids"
     },
     { 
       icon: "CheckCircle", 
       label: "Assigned Loads", 
       path: "/loads", 
-      badge: 3,
+      badge: 0,
       description: "Accepted loads"
     },
     { 
       icon: "TrendingUp", 
       label: "In Transit", 
       path: "/loads/transit", 
-      badge: 2,
+      badge: 0,
       description: "Currently moving loads"
     },
     { 
       icon: "Truck", 
       label: "Fleet", 
       path: "/fleet", 
-      badge: 5,
+      badge: 0,
       description: "Manage vehicles"
     },
     { 
@@ -228,7 +228,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Users", 
       label: "Drivers", 
       path: "/drivers", 
-      badge: 8,
+      badge: 0,
       description: "Driver management"
     },
     { 
@@ -249,7 +249,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 3,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -263,7 +263,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -330,14 +330,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Package", 
       label: "Marketplace", 
       path: "/marketplace", 
-      badge: 45,
+      badge: 0,
       description: "All available loads"
     },
     { 
       icon: "TrendingUp", 
       label: "Active Loads", 
       path: "/loads/active", 
-      badge: 12,
+      badge: 0,
       description: "In-market loads"
     },
     { 
@@ -351,14 +351,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Users", 
       label: "Carriers", 
       path: "/carriers", 
-      badge: 28,
+      badge: 0,
       description: "Carrier network"
     },
     { 
       icon: "Building2", 
       label: "Shippers", 
       path: "/shippers", 
-      badge: 15,
+      badge: 0,
       description: "Shipper accounts"
     },
     { 
@@ -379,7 +379,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 5,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -393,7 +393,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -453,14 +453,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Briefcase", 
       label: "My Jobs", 
       path: "/jobs", 
-      badge: 2,
+      badge: 0,
       description: "Assigned jobs"
     },
     { 
       icon: "CheckCircle", 
       label: "Current Job", 
       path: "/jobs/current", 
-      badge: 1,
+      badge: 0,
       description: "Active job details"
     },
     { 
@@ -488,21 +488,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "AlertCircle", 
       label: "Diagnostics", 
       path: "/diagnostics", 
-      badge: 2,
+      badge: 0,
       description: "Vehicle health"
     },
     { 
       icon: "FileText", 
       label: "Documents", 
       path: "/documents", 
-      badge: 1,
+      badge: 0,
       description: "License and permits"
     },
     { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 2,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -516,7 +516,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Target", 
       label: "Missions", 
       path: "/missions", 
-      badge: 3,
+      badge: 0,
       description: "Complete missions for rewards"
     },
     { 
@@ -544,14 +544,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Gift", 
       label: "Rewards", 
       path: "/rewards", 
-      badge: 2,
+      badge: 0,
       description: "Earned rewards and XP"
     },
     { 
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -611,21 +611,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Zap", 
       label: "Specializations", 
       path: "/specializations", 
-      badge: 3,
+      badge: 0,
       description: "Your expertise areas"
     },
     { 
       icon: "Search", 
       label: "Matched Loads", 
       path: "/matched-loads", 
-      badge: 8,
+      badge: 0,
       description: "AI-matched opportunities"
     },
     { 
       icon: "TrendingUp", 
       label: "Opportunities", 
       path: "/opportunities", 
-      badge: 15,
+      badge: 0,
       description: "Recommended loads"
     },
     { 
@@ -646,14 +646,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Brain", 
       label: "AI Assistant", 
       path: "/ai-assistant", 
-      badge: 1,
+      badge: 0,
       description: "ESANG AI chat"
     },
     { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 2,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -667,7 +667,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -713,14 +713,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Shield", 
       label: "Active Convoys", 
       path: "/convoys", 
-      badge: 2,
+      badge: 0,
       description: "Current escort jobs"
     },
     { 
       icon: "Users", 
       label: "Team", 
       path: "/team", 
-      badge: 4,
+      badge: 0,
       description: "Escort personnel"
     },
     { 
@@ -741,7 +741,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "AlertTriangle", 
       label: "Incidents", 
       path: "/incidents", 
-      badge: 1,
+      badge: 0,
       description: "Security incidents"
     },
     { 
@@ -755,7 +755,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 1,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -769,7 +769,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -822,7 +822,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Truck", 
       label: "Incoming", 
       path: "/incoming", 
-      badge: 5,
+      badge: 0,
       description: "Arriving shipments"
     },
     { 
@@ -836,7 +836,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Package", 
       label: "Outgoing", 
       path: "/outgoing", 
-      badge: 3,
+      badge: 0,
       description: "Departing shipments"
     },
     { 
@@ -850,14 +850,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "CheckCircle", 
       label: "Operations", 
       path: "/operations", 
-      badge: 2,
+      badge: 0,
       description: "Daily operations"
     },
     { 
       icon: "AlertTriangle", 
       label: "Compliance", 
       path: "/compliance", 
-      badge: 1,
+      badge: 0,
       description: "Regulatory compliance"
     },
     { 
@@ -892,7 +892,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 1,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -906,7 +906,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -938,42 +938,42 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Shield", 
       label: "Compliance", 
       path: "/compliance", 
-      badge: 3,
+      badge: 0,
       description: "Regulatory compliance monitoring"
     },
     { 
       icon: "FileText", 
       label: "Documents", 
       path: "/documents", 
-      badge: 5,
+      badge: 0,
       description: "Compliance documents"
     },
     { 
       icon: "AlertTriangle", 
       label: "Violations", 
       path: "/violations", 
-      badge: 2,
+      badge: 0,
       description: "Compliance violations"
     },
     { 
       icon: "CheckCircle", 
       label: "Audits", 
       path: "/audits", 
-      badge: 1,
+      badge: 0,
       description: "Compliance audits"
     },
     { 
       icon: "Truck", 
       label: "Fleet Compliance", 
       path: "/fleet-compliance", 
-      badge: 4,
+      badge: 0,
       description: "Vehicle compliance status"
     },
     { 
       icon: "Users", 
       label: "Driver Compliance", 
       path: "/driver-compliance", 
-      badge: 3,
+      badge: 0,
       description: "Driver certifications"
     },
     { 
@@ -987,7 +987,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 1,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -1001,7 +1001,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -1040,28 +1040,28 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "AlertTriangle", 
       label: "Incidents", 
       path: "/incidents", 
-      badge: 2,
+      badge: 0,
       description: "Safety incidents"
     },
     { 
       icon: "Heart", 
       label: "Driver Health", 
       path: "/driver-health", 
-      badge: 1,
+      badge: 0,
       description: "Driver health monitoring"
     },
     { 
       icon: "Truck", 
       label: "Vehicle Safety", 
       path: "/vehicle-safety", 
-      badge: 3,
+      badge: 0,
       description: "Vehicle safety inspections"
     },
     { 
       icon: "FileText", 
       label: "Training", 
       path: "/training", 
-      badge: 4,
+      badge: 0,
       description: "Safety training programs"
     },
     { 
@@ -1075,14 +1075,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "AlertCircle", 
       label: "HazMat", 
       path: "/hazmat", 
-      badge: 1,
+      badge: 0,
       description: "Hazardous materials safety"
     },
     { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
-      badge: 1,
+      badge: 0,
       description: "Communication"
     },
     { 
@@ -1096,7 +1096,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "MessageSquare", 
       label: "Company Channels", 
       path: "/company-channels", 
-      badge: 1,
+      badge: 0,
       description: "Team communication channels"
     },
     { 
@@ -1128,21 +1128,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Users", 
       label: "Users", 
       path: "/admin/users", 
-      badge: 12,
+      badge: 0,
       description: "User management"
     },
     { 
       icon: "Building2", 
       label: "Companies", 
       path: "/admin/companies", 
-      badge: 5,
+      badge: 0,
       description: "Company management"
     },
     { 
       icon: "Package", 
       label: "Loads", 
       path: "/admin/loads", 
-      badge: 24,
+      badge: 0,
       description: "Load management"
     },
     { 
@@ -1163,21 +1163,21 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "DollarSign", 
       label: "Payments", 
       path: "/admin/payments", 
-      badge: 3,
+      badge: 0,
       description: "Payment processing"
     },
     { 
       icon: "AlertTriangle", 
       label: "Disputes", 
       path: "/admin/disputes", 
-      badge: 2,
+      badge: 0,
       description: "Dispute resolution"
     },
     { 
       icon: "FileText", 
       label: "Documents", 
       path: "/admin/documents", 
-      badge: 8,
+      badge: 0,
       description: "Document verification"
     },
     { 
@@ -1286,7 +1286,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       icon: "Shield", 
       label: "Security", 
       path: "/super-admin/security", 
-      badge: 1,
+      badge: 0,
       description: "Security settings"
     },
     { 

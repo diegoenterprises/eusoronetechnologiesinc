@@ -9,16 +9,9 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 
 export const quickActionsRouter = router({
-  list: protectedProcedure.query(async () => [
-    { id: "qa1", name: "Create Load", icon: "plus", path: "/loads/new" },
-    { id: "qa2", name: "Find Driver", icon: "search", path: "/drivers" },
-  ]),
+  list: protectedProcedure.query(async () => []),
 
-  getFavorites: protectedProcedure.query(async () => [
-    { id: "qa1", name: "Create Load", icon: "plus", path: "/loads/new" },
-  ]),
+  getFavorites: protectedProcedure.query(async () => []),
 
-  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [
-    { id: "qa2", name: "Find Driver", usedAt: "2025-01-23 10:00" },
-  ]),
+  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
 });

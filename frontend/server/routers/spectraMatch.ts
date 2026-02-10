@@ -12,7 +12,7 @@
  */
 
 import { z } from "zod";
-import { sql, desc } from "drizzle-orm";
+import { sql, desc, eq } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
@@ -312,12 +312,14 @@ export const spectraMatchRouter = router({
       };
     }),
 
-  // Save identification to run ticket
+  // Save identification to load record in DB
   saveToRunTicket: protectedProcedure
     .input(
       z.object({
         loadId: z.string(),
         crudeId: z.string(),
+        productName: z.string().optional(),
+        category: z.string().optional(),
         confidence: z.number(),
         parameters: z.object({
           apiGravity: z.number(),
@@ -332,22 +334,59 @@ export const spectraMatchRouter = router({
         }),
         terminalId: z.string().optional(),
         notes: z.string().optional(),
+        esangVerified: z.boolean().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      // In production, this would save to database
-      return {
-        success: true,
-        runTicketId: `RT-${Date.now()}`,
-        loadId: input.loadId,
-        crudeIdentification: {
-          crudeId: input.crudeId,
-          confidence: input.confidence,
-          verifiedBy: ctx.user?.id,
-          verifiedAt: new Date().toISOString(),
-        },
-        message: "SpectraMatch identification saved to run ticket",
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const loadId = parseInt(input.loadId, 10);
+      const verifiedAt = new Date().toISOString();
+
+      // Look up crude name from our database if not provided
+      const crude = getCrudeById(input.crudeId);
+      const productName = input.productName || crude?.name || input.crudeId;
+
+      const spectraMatchResult = {
+        crudeId: input.crudeId,
+        productName,
+        confidence: input.confidence,
+        category: input.category || crude?.type || "unknown",
+        apiGravity: input.parameters.apiGravity,
+        bsw: input.parameters.bsw,
+        sulfur: input.parameters.sulfur,
+        flashPoint: input.parameters.flashPoint,
+        verifiedBy: (ctx.user as any)?.id || 0,
+        verifiedAt,
+        esangVerified: input.esangVerified || false,
       };
+
+      try {
+        await db.update(loads)
+          .set({
+            spectraMatchResult: spectraMatchResult as any,
+            commodityName: productName,
+          } as any)
+          .where(eq(loads.id, loadId));
+
+        return {
+          success: true,
+          runTicketId: `RT-${Date.now()}`,
+          loadId: input.loadId,
+          crudeIdentification: {
+            crudeId: input.crudeId,
+            productName,
+            confidence: input.confidence,
+            verifiedBy: (ctx.user as any)?.id,
+            verifiedAt,
+          },
+          message: "SpectraMatch identification saved to load",
+        };
+      } catch (error) {
+        console.error("[SpectraMatch] saveToRunTicket DB error:", error);
+        throw new Error("Failed to save SpectraMatch result");
+      }
     }),
 
   // Get identification history for a terminal
@@ -368,18 +407,23 @@ export const spectraMatchRouter = router({
           .orderBy(desc(loads.createdAt))
           .limit(input.limit);
 
+        const verified = history.filter(l => !!(l as any).spectraMatchResult);
         return {
-          identifications: history.map((load, idx) => ({
-            id: `SM-${String(load.id).padStart(3, '0')}`,
-            timestamp: load.createdAt?.toISOString() || new Date().toISOString(),
-            crudeType: (load as any).commodityName || "Unknown",
-            confidence: 90 + Math.floor(Math.random() * 10),
-            apiGravity: 38 + Math.random() * 10,
-            bsw: 0.2 + Math.random() * 0.2,
-            loadId: `LD-${load.id}`,
-            verifiedBy: "System",
-          })),
-          total: history.length,
+          identifications: verified.map((load) => {
+            const sm = (load as any).spectraMatchResult as any;
+            return {
+              id: `SM-${String(load.id).padStart(3, '0')}`,
+              timestamp: sm?.verifiedAt || load.createdAt?.toISOString() || new Date().toISOString(),
+              crudeType: sm?.productName || (load as any).commodityName || "Unknown",
+              confidence: sm?.confidence || 0,
+              apiGravity: sm?.apiGravity || 0,
+              bsw: sm?.bsw || 0,
+              loadId: `LD-${load.id}`,
+              verifiedBy: sm?.esangVerified ? "ESANG AI" : "System",
+              category: sm?.category || "unknown",
+            };
+          }),
+          total: verified.length,
         };
       } catch (error) {
         console.error('[SpectraMatch] getHistory error:', error);

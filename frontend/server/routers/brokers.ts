@@ -298,14 +298,8 @@ export const brokersRouter = router({
     .input(z.object({ timeframe: z.string().optional().default("30d") }))
     .query(async () => {
       return {
-        matchRate: 78,
-        avgTimeToMatch: "2.5 hours",
-        carrierRetention: 92,
-        disputeRate: 1.2,
-        metrics: [
-          { name: "Response Time", value: 15, unit: "min" },
-          { name: "Win Rate", value: 68, unit: "%" },
-        ],
+        matchRate: 0, avgTimeToMatch: "", carrierRetention: 0, disputeRate: 0,
+        metrics: [],
       };
     }),
 
@@ -334,14 +328,14 @@ export const brokersRouter = router({
             carrierId: `car_${c.id}`,
             name: c.name,
             dotNumber: c.dotNumber || '',
-            safetyScore: 90,
+            safetyScore: 0,
             availableTrucks: availableVehicles?.count || 0,
-            equipment: ['tanker'],
-            hazmatCertified: true,
+            equipment: [],
+            hazmatCertified: false,
             preferredLanes: [],
             lastActiveLoad: '',
-            avgRate: 3.25,
-            onTimeRate: 95,
+            avgRate: 0,
+            onTimeRate: 0,
           };
         }));
       } catch (error) {
@@ -409,19 +403,9 @@ export const brokersRouter = router({
     .query(async ({ input }) => {
       return {
         period: input.period,
-        totalCommission: 15750,
-        totalLoads: 52,
-        avgCommissionPerLoad: 302.88,
-        avgMargin: 10.0,
-        byStatus: {
-          paid: 12500,
-          pending: 2500,
-          invoiced: 750,
-        },
-        topLoads: [
-          { loadNumber: "LOAD-45890", shipper: "Shell Oil", carrier: "ABC Transport", revenue: 4200, commission: 420 },
-          { loadNumber: "LOAD-45885", shipper: "ExxonMobil", carrier: "FastHaul", revenue: 3800, commission: 380 },
-        ],
+        totalCommission: 0, totalLoads: 0, avgCommissionPerLoad: 0, avgMargin: 0,
+        byStatus: { paid: 0, pending: 0, invoiced: 0 },
+        topLoads: [],
       };
     }),
 
@@ -430,34 +414,7 @@ export const brokersRouter = router({
    */
   getLoadsInProgress: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
-      return [
-        {
-          id: "load_active_001",
-          loadNumber: "LOAD-45918",
-          shipper: "Shell Oil Company",
-          carrier: "ABC Transport LLC",
-          status: "in_transit",
-          origin: { city: "Houston", state: "TX" },
-          destination: { city: "Dallas", state: "TX" },
-          currentLocation: { city: "Waco", state: "TX" },
-          eta: "2 hours",
-          revenue: 2450,
-          commission: 245,
-        },
-        {
-          id: "load_active_002",
-          loadNumber: "LOAD-45915",
-          shipper: "ExxonMobil",
-          carrier: "FastHaul LLC",
-          status: "loading",
-          origin: { city: "Beaumont", state: "TX" },
-          destination: { city: "Austin", state: "TX" },
-          currentLocation: { city: "Beaumont", state: "TX" },
-          eta: "6 hours",
-          revenue: 2800,
-          commission: 280,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -493,14 +450,8 @@ export const brokersRouter = router({
         matchRate: 85,
         carrierRetention: 78,
         shipperSatisfaction: 4.6,
-        topShippers: [
-          { name: "Shell Oil Company", loads: 18, revenue: 54000 },
-          { name: "ExxonMobil", loads: 12, revenue: 36000 },
-        ],
-        topCarriers: [
-          { name: "ABC Transport LLC", loads: 15, rating: 4.8 },
-          { name: "FastHaul LLC", loads: 10, rating: 4.5 },
-        ],
+        topShippers: [],
+        topCarriers: [],
       };
     }),
 
@@ -516,76 +467,7 @@ export const brokersRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const loads = [
-        {
-          id: "mkt1",
-          equipmentType: "Tanker",
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          miles: 238,
-          pickupDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          shipperRate: 2450,
-          potentialMargin: 245,
-          hazmat: true,
-          hazmatClass: "3",
-          commodity: "Diesel Fuel",
-          weight: 42000,
-        },
-        {
-          id: "mkt2",
-          equipmentType: "Tanker",
-          origin: "Beaumont, TX",
-          destination: "San Antonio, TX",
-          miles: 285,
-          pickupDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-          shipperRate: 2800,
-          potentialMargin: 280,
-          hazmat: true,
-          hazmatClass: "3",
-          commodity: "Gasoline",
-          weight: 45000,
-        },
-        {
-          id: "mkt3",
-          equipmentType: "Dry Bulk",
-          origin: "Corpus Christi, TX",
-          destination: "Houston, TX",
-          miles: 212,
-          pickupDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-          shipperRate: 1950,
-          potentialMargin: 195,
-          hazmat: false,
-          commodity: "Cement",
-          weight: 48000,
-        },
-        {
-          id: "mkt4",
-          equipmentType: "Reefer",
-          origin: "Austin, TX",
-          destination: "El Paso, TX",
-          miles: 580,
-          pickupDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-          shipperRate: 3200,
-          potentialMargin: 320,
-          hazmat: false,
-          commodity: "Frozen Foods",
-          weight: 38000,
-        },
-        {
-          id: "mkt5",
-          equipmentType: "Tanker",
-          origin: "Port Arthur, TX",
-          destination: "Lubbock, TX",
-          miles: 520,
-          pickupDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-          shipperRate: 3500,
-          potentialMargin: 350,
-          hazmat: true,
-          hazmatClass: "8",
-          commodity: "Sulfuric Acid",
-          weight: 40000,
-        },
-      ];
+      const loads: any[] = [];
 
       let filtered = loads;
       if (input.search) {
@@ -609,15 +491,8 @@ export const brokersRouter = router({
   getMarketplaceStats: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        availableLoads: 47,
-        availableCarriers: 23,
-        avgMargin: 285,
-        matchRate: 78,
-        pendingMatches: 8,
-        hotLanes: [
-          { origin: "Houston", destination: "Dallas", count: 12 },
-          { origin: "Beaumont", destination: "San Antonio", count: 8 },
-        ],
+        availableLoads: 0, availableCarriers: 0, avgMargin: 0,
+        matchRate: 0, pendingMatches: 0, hotLanes: [],
       };
     }),
 
@@ -633,111 +508,7 @@ export const brokersRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const carriers = [
-        {
-          id: "car1",
-          name: "ABC Transport LLC",
-          mcNumber: "MC-987654",
-          dotNumber: "1234567",
-          tier: "platinum",
-          status: "active",
-          fleetSize: 25,
-          loadsCompleted: 156,
-          safetyScore: 95,
-          rating: 4.8,
-          phone: "(713) 555-0101",
-          email: "dispatch@abctransport.com",
-          location: "Houston, TX",
-          equipment: ["tanker", "hazmat"],
-          hazmatCertified: true,
-        },
-        {
-          id: "car2",
-          name: "FastHaul LLC",
-          mcNumber: "MC-876543",
-          dotNumber: "2345678",
-          tier: "gold",
-          status: "active",
-          fleetSize: 15,
-          loadsCompleted: 98,
-          safetyScore: 88,
-          rating: 4.5,
-          phone: "(214) 555-0202",
-          email: "dispatch@fasthaul.com",
-          location: "Dallas, TX",
-          equipment: ["tanker", "flatbed"],
-          hazmatCertified: true,
-        },
-        {
-          id: "car3",
-          name: "Bulk Carriers Inc",
-          mcNumber: "MC-765432",
-          dotNumber: "3456789",
-          tier: "silver",
-          status: "active",
-          fleetSize: 8,
-          loadsCompleted: 45,
-          safetyScore: 82,
-          rating: 4.2,
-          phone: "(512) 555-0303",
-          email: "ops@bulkcarriers.com",
-          location: "Austin, TX",
-          equipment: ["dry_bulk", "tanker"],
-          hazmatCertified: false,
-        },
-        {
-          id: "car4",
-          name: "Premium Logistics",
-          mcNumber: "MC-654321",
-          dotNumber: "4567890",
-          tier: "gold",
-          status: "pending",
-          fleetSize: 12,
-          loadsCompleted: 0,
-          safetyScore: 90,
-          rating: 0,
-          phone: "(210) 555-0404",
-          email: "info@premiumlogistics.com",
-          location: "San Antonio, TX",
-          equipment: ["reefer", "tanker"],
-          hazmatCertified: true,
-        },
-        {
-          id: "car5",
-          name: "Regional Tankers Co",
-          mcNumber: "MC-543210",
-          dotNumber: "5678901",
-          tier: "bronze",
-          status: "suspended",
-          fleetSize: 5,
-          loadsCompleted: 23,
-          safetyScore: 72,
-          rating: 3.8,
-          phone: "(361) 555-0505",
-          email: "dispatch@regionaltankers.com",
-          location: "Corpus Christi, TX",
-          equipment: ["tanker"],
-          hazmatCertified: true,
-        },
-      ];
-
-      let filtered = carriers;
-      if (input.search) {
-        const s = input.search.toLowerCase();
-        filtered = filtered.filter(c => 
-          c.name.toLowerCase().includes(s) ||
-          c.mcNumber.toLowerCase().includes(s) ||
-          c.dotNumber.includes(s)
-        );
-      }
-      if (input.status) {
-        filtered = filtered.filter(c => c.status === input.status);
-      }
-      if (input.tier) {
-        filtered = filtered.filter(c => c.tier === input.tier);
-      }
-
-      return filtered;
+      return [];
     }),
 
   /**
@@ -746,12 +517,8 @@ export const brokersRouter = router({
   getCarrierStats: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        totalCarriers: 47,
-        activeCarriers: 42,
-        preferredCarriers: 12,
-        pendingVetting: 3,
-        avgSafetyScore: 86,
-        avgRating: 4.3,
+        totalCarriers: 0, activeCarriers: 0, preferredCarriers: 0,
+        pendingVetting: 0, avgSafetyScore: 0, avgRating: 0,
       };
     }),
 
@@ -764,22 +531,9 @@ export const brokersRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       return {
-        totalCommission: 28500,
-        commissionTrend: 12.5,
-        loadsBrokered: 87,
-        loadsTrend: 8.2,
-        avgMarginPercent: 10.5,
-        avgMarginDollars: 327,
-        activeCarriers: 34,
-        newCarriers: 5,
-        topLanes: [
-          { origin: "Houston", destination: "Dallas", loads: 23, totalCommission: 5750, avgMargin: 10.2 },
-          { origin: "Beaumont", destination: "San Antonio", loads: 18, totalCommission: 4500, avgMargin: 9.8 },
-          { origin: "Corpus Christi", destination: "Houston", loads: 15, totalCommission: 3750, avgMargin: 11.0 },
-          { origin: "Austin", destination: "El Paso", loads: 12, totalCommission: 3600, avgMargin: 10.5 },
-          { origin: "Port Arthur", destination: "Lubbock", loads: 10, totalCommission: 3500, avgMargin: 12.0 },
-          { origin: "Dallas", destination: "Houston", loads: 9, totalCommission: 2250, avgMargin: 9.5 },
-        ],
+        totalCommission: 0, commissionTrend: 0, loadsBrokered: 0, loadsTrend: 0,
+        avgMarginPercent: 0, avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0,
+        topLanes: [],
       };
     }),
 
@@ -792,14 +546,7 @@ export const brokersRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       return {
-        total: 28500,
-        breakdown: [
-          { category: "Hazmat Loads", amount: 12500, loads: 35, percentage: 44 },
-          { category: "Liquid Bulk", amount: 8500, loads: 28, percentage: 30 },
-          { category: "Dry Bulk", amount: 4500, loads: 15, percentage: 16 },
-          { category: "Refrigerated", amount: 2000, loads: 6, percentage: 7 },
-          { category: "Specialized", amount: 1000, loads: 3, percentage: 3 },
-        ],
+        total: 0, breakdown: [],
       };
     }),
 
@@ -843,84 +590,44 @@ export const brokersRouter = router({
     }),
 
   // Carrier vetting
-  getPendingVetting: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [{ id: "v1", carrierId: "c1", carrierName: "ABC Transport", submittedAt: "2025-01-22" }]),
-  getVettingStats: protectedProcedure.query(async () => ({ pending: 8, approved: 120, rejected: 15, total: 143 })),
+  getPendingVetting: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
+  getVettingStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
   approveCarrier: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
   rejectCarrier: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
 
   // Capacity & Commission
-  getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 150, available: 45, booked: 105, verified: 120, avgRating: 4.6 })),
-  getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "c1", loadId: "l1", amount: 245, date: "2025-01-22" }]),
+  getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 0, available: 0, booked: 0, verified: 0, avgRating: 0 })),
+  getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // Shippers
-  shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => [{ id: "s1", name: "Shell Oil", activeLoads: 5, rating: 4.8 }]),
+  shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => []),
 
   // Network Stats
-  getNetworkStats: protectedProcedure.query(async () => ({
-    totalCarriers: 156,
-    activeCarriers: 142,
-    preferredCarriers: 28,
-    newThisMonth: 8,
-    avgRating: 4.5,
-    totalCapacity: 380,
-  })),
+  getNetworkStats: protectedProcedure.query(async () => ({ totalCarriers: 0, activeCarriers: 0, preferredCarriers: 0, newThisMonth: 0, avgRating: 0, totalCapacity: 0 })),
 
   // Onboarding
-  getOnboardingCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
-    { id: "onb1", name: "New Carrier LLC", dotNumber: "1234567", mcNumber: "MC-123456", status: "pending_documents", submittedAt: new Date().toISOString(), progress: 60 },
-    { id: "onb2", name: "Fresh Transport", dotNumber: "2345678", mcNumber: "MC-234567", status: "under_review", submittedAt: new Date().toISOString(), progress: 80 },
-  ]),
-  getOnboardingStats: protectedProcedure.query(async () => ({
-    pending: 5,
-    inProgress: 12,
-    completed: 45,
-    rejected: 3,
-    avgCompletionDays: 3.5,
-  })),
+  getOnboardingCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
+  getOnboardingStats: protectedProcedure.query(async () => ({ pending: 0, inProgress: 0, completed: 0, rejected: 0, avgCompletionDays: 0 })),
   sendOnboardingReminder: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
 
   // Prequalification
   getPrequalificationCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
-    { id: "pq1", name: "ABC Transport", dotNumber: "1234567", status: "approved", safetyScore: 95, insuranceVerified: true, authorityVerified: true },
-    { id: "pq2", name: "XYZ Logistics", dotNumber: "2345678", status: "pending", safetyScore: 88, insuranceVerified: true, authorityVerified: false },
   ]),
-  getPrequalificationStats: protectedProcedure.query(async () => ({
-    pending: 8,
-    approved: 120,
-    rejected: 15,
-    avgProcessingTime: "2.5 days",
-    approvedToday: 3,
-    rejectedToday: 1,
-    totalVerified: 135,
-    urgent: 2,
-  })),
+  getPrequalificationStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, avgProcessingTime: "0 days", approvedToday: 0, rejectedToday: 0, totalVerified: 0, urgent: 0 })),
 
   // Customers
-  getCustomers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
-    { id: "cust1", name: "Shell Oil Company", type: "shipper", status: "active", totalLoads: 156, totalRevenue: 425000, avgMargin: 10.5, rating: 4.8, since: "2023-01-15" },
-    { id: "cust2", name: "ExxonMobil", type: "shipper", status: "active", totalLoads: 98, totalRevenue: 285000, avgMargin: 9.8, rating: 4.6, since: "2023-03-20" },
-  ]),
+  getCustomers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
   getCustomerStats: protectedProcedure.query(async () => ({
-    totalCustomers: 45,
-    activeCustomers: 42,
-    newThisMonth: 3,
-    avgLifetimeValue: 125000,
-    retentionRate: 92,
+    totalCustomers: 0,
+    activeCustomers: 0,
+    newThisMonth: 0,
+    avgLifetimeValue: 0,
+    retentionRate: 0,
   })),
 
   // Lane Rates
-  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => [
-    { id: "lr1", origin: "Houston, TX", destination: "Dallas, TX", miles: 238, avgRate: 2.85, minRate: 2.50, maxRate: 3.20, lastUpdated: new Date().toISOString(), volume: 45 },
-    { id: "lr2", origin: "Beaumont, TX", destination: "San Antonio, TX", miles: 285, avgRate: 3.10, minRate: 2.75, maxRate: 3.45, lastUpdated: new Date().toISOString(), volume: 32 },
-  ]),
-  getMarketRates: protectedProcedure.input(z.object({ origin: z.string().optional(), destination: z.string().optional() }).optional()).query(async () => ({
-    avgRatePerMile: 2.95,
-    trendDirection: "up",
-    trendPercent: 3.5,
-    fuelSurcharge: 0.45,
-    spotRate: 3.15,
-    contractRate: 2.85,
-  })),
+  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
+  getMarketRates: protectedProcedure.input(z.object({ origin: z.string().optional(), destination: z.string().optional() }).optional()).query(async () => ({ avgRatePerMile: 0, trendDirection: "stable", trendPercent: 0, fuelSurcharge: 0, spotRate: 0, contractRate: 0 })),
   addLaneRate: protectedProcedure.input(z.object({ origin: z.string(), destination: z.string(), rate: z.number() })).mutation(async ({ input }) => ({ success: true, id: `lr_${Date.now()}`, ...input })),
 
   /**

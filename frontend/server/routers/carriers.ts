@@ -511,8 +511,8 @@ export const carriersRouter = router({
             activeDrivers: 0,
           },
           insurance: {
-            liability: { amount: 1000000, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '', provider: '' },
-            cargo: { amount: 100000, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '', provider: '' },
+            liability: { amount: 0, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '', provider: '' },
+            cargo: { amount: 0, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '', provider: '' },
             workersComp: { valid: true, expiration: '' },
           },
           certifications: {
@@ -560,19 +560,19 @@ export const carriersRouter = router({
       return {
         verified: true,
         dotNumber: input.dotNumber,
-        legalName: "ABC Transport LLC",
-        dbaName: "ABC Hazmat Carriers",
-        operatingStatus: "AUTHORIZED",
-        safetyRating: "SATISFACTORY",
+        legalName: "",
+        dbaName: "",
+        operatingStatus: "PENDING_VERIFICATION",
+        safetyRating: "NOT_RATED",
         outOfServiceDate: null,
-        mcNumber: "MC-987654",
+        mcNumber: "",
         address: {
-          street: "1234 Industrial Blvd",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
+          street: "",
+          city: "",
+          state: "",
+          zip: "",
         },
-        phone: "555-0100",
+        phone: "",
         authority: {
           common: true,
           contract: true,
@@ -949,8 +949,8 @@ export const carriersRouter = router({
           address: `${company.address || ''}, ${company.city || ''}, ${company.state || ''} ${company.zipCode || ''}`,
           verified: company.complianceStatus === 'compliant',
           memberSince: company.createdAt?.toISOString().split('T')[0] || '',
-          liabilityInsurance: { amount: 1000000, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
-          cargoInsurance: { amount: 100000, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
+          liabilityInsurance: { amount: 0, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
+          cargoInsurance: { amount: 0, expiration: company.insuranceExpiry?.toISOString().split('T')[0] || '' },
         };
       } catch (error) {
         console.error('[Carriers] getProfile error:', error);
@@ -1041,62 +1041,45 @@ export const carriersRouter = router({
         lastAudit: "2025-01-15",
         nextAuditDue: "2026-01-15",
         basicScores: [
-          { name: "Unsafe Driving", score: 15, threshold: 65 },
-          { name: "HOS Compliance", score: 8, threshold: 65 },
-          { name: "Vehicle Maintenance", score: 12, threshold: 80 },
+          { name: "Unsafe Driving", score: 0, threshold: 65 },
+          { name: "HOS Compliance", score: 0, threshold: 65 },
+          { name: "Vehicle Maintenance", score: 0, threshold: 80 },
           { name: "Controlled Substances", score: 0, threshold: 80 },
-          { name: "Driver Fitness", score: 5, threshold: 80 },
-          { name: "Crash Indicator", score: 3, threshold: 65 },
-          { name: "Hazmat Compliance", score: 2, threshold: 80 },
+          { name: "Driver Fitness", score: 0, threshold: 80 },
+          { name: "Crash Indicator", score: 0, threshold: 65 },
+          { name: "Hazmat Compliance", score: 0, threshold: 80 },
         ],
       };
     }),
 
   // Carrier packets
-  getPackets: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
-    { id: "p1", carrierId: "c1", carrierName: "ABC Transport", status: "pending", progress: 60, submittedAt: "2025-01-20" },
-    { id: "p2", carrierId: "c2", carrierName: "XYZ Logistics", status: "completed", progress: 100, submittedAt: "2025-01-18" },
-  ])),
-  getPacketStats: protectedProcedure.query(async () => ({ total: 45, pending: 12, completed: 33, complete: 33, avgCompletion: 78 })),
+  getPackets: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getPacketStats: protectedProcedure.query(async () => ({ total: 0, pending: 0, completed: 0, complete: 0, avgCompletion: 0 })),
   getPacketById: protectedProcedure.input(z.object({ carrierId: z.string().optional(), id: z.string().optional() }).optional()).query(async ({ input }) => ({
-    id: input?.id || "p1",
-    carrierId: input?.carrierId || "c1",
-    carrierName: "ABC Transport",
-    status: "pending",
-    progress: 60,
-    documents: [
-      { name: "W-9", status: "uploaded" },
-      { name: "Certificate of Insurance", status: "pending" },
-    ],
+    id: input?.id || "",
+    carrierId: input?.carrierId || "",
+    carrierName: "",
+    status: "none",
+    progress: 0,
+    documents: [],
   })),
   resendPacket: protectedProcedure.input(z.object({ carrierId: z.string(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, packetId: input.id || "p1" })),
 
   // Additional carrier procedures
   approve: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
   reject: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
-  getDrivers: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", cdl: "TX12345678" }]),
-  getCSAScores: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ([{ name: "Unsafe Driving", score: 15, category: "unsafe_driving", threshold: 65 }, { name: "HOS Compliance", score: 8, category: "hos", threshold: 65 }, { name: "Vehicle Maintenance", score: 12, category: "vehicle", threshold: 80 }, { name: "Controlled Substances", score: 0, category: "drugs", threshold: 80 }])),
-  getCSAScoresList: protectedProcedure.input(z.object({ carrierId: z.string().optional() }).optional()).query(async () => [
-    { name: "Unsafe Driving", score: 15, threshold: 65, status: "ok" },
-    { name: "HOS Compliance", score: 8, threshold: 65, status: "ok" },
-    { name: "Vehicle Maintenance", score: 12, threshold: 80, status: "ok" },
-    { name: "Controlled Substances", score: 0, threshold: 80, status: "ok" },
-    { name: "Driver Fitness", score: 5, threshold: 80, status: "ok" },
-    { name: "Crash Indicator", score: 3, threshold: 65, status: "ok" },
-    { name: "Hazmat Compliance", score: 2, threshold: 80, status: "ok" },
-  ]),
-  getInsurance: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => ([{ type: "Liability", amount: 1000000, expiration: "2025-12-31", carrier: "Progressive", policyNumber: "POL-123456", coverage: 1000000, expirationDate: "2025-12-31", verified: true }, { type: "Cargo", amount: 100000, expiration: "2025-12-31", carrier: "Progressive", policyNumber: "POL-123457", coverage: 100000, expirationDate: "2025-12-31", verified: true }])),
-  getLoadHistory: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "delivered", date: "2025-01-20", route: "Houston, TX - Dallas, TX", rate: 2450 }]),
-  getRecentLoads: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "l1", loadNumber: "LOAD-45920", status: "in_transit" }]),
-  getScorecards: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 92, trend: "up" }]),
-  getTopPerformers: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ carrierId: "c1", name: "ABC Transport", score: 98, loads: 150 }]),
+  getDrivers: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getCSAScores: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => []),
+  getCSAScoresList: protectedProcedure.input(z.object({ carrierId: z.string().optional() }).optional()).query(async () => []),
+  getInsurance: protectedProcedure.input(z.object({ carrierId: z.string().optional() })).query(async () => []),
+  getLoadHistory: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => []),
+  getRecentLoads: protectedProcedure.input(z.object({ carrierId: z.string().optional(), limit: z.number().optional() })).query(async () => []),
+  getScorecards: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getTopPerformers: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
 
   // Vetting
-  getVettingList: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
-    { id: "v1", carrierId: "c1", name: "ABC Transport", dotNumber: "1234567", status: "pending", submittedAt: "2025-01-20" },
-    { id: "v2", carrierId: "c2", name: "FastHaul LLC", dotNumber: "2345678", status: "approved", submittedAt: "2025-01-18" },
-  ]),
-  getVettingStats: protectedProcedure.query(async () => ({ pending: 5, approved: 42, rejected: 3, total: 50 })),
+  getVettingList: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
+  getVettingStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
 
   /**
    * Get carrier analytics for CarrierAnalytics page

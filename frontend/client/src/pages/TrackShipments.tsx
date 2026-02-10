@@ -107,7 +107,7 @@ export default function TrackShipments() {
                   <div className="p-4 rounded-xl bg-slate-700/30 mb-4">
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 rounded-full bg-green-400" />
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF]" />
                         <div className="w-0.5 h-8 bg-slate-600" />
                         {shipment.currentLocation && (
                           <>
@@ -115,7 +115,7 @@ export default function TrackShipments() {
                             <div className="w-0.5 h-8 bg-slate-600" />
                           </>
                         )}
-                        <div className="w-3 h-3 rounded-full bg-red-400" />
+                        <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#BE01FF] to-[#1473FF]" />
                       </div>
                       <div className="flex-1 space-y-3">
                         <div className="flex items-center justify-between">

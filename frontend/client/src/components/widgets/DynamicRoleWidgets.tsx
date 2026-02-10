@@ -532,7 +532,7 @@ export const BrokerCommissionWidget: React.FC<{ compact?: boolean }> = ({ compac
       <div className="p-4 rounded-lg bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-500/30">
         <DollarSign className="w-6 h-6 text-green-400 mb-1" />
         <p className="text-2xl font-bold text-green-400">
-          ${totalCommission.toLocaleString()}
+          ${(totalCommission || 0).toLocaleString()}
         </p>
         <p className="text-xs text-slate-400">This Month</p>
       </div>
@@ -543,7 +543,7 @@ export const BrokerCommissionWidget: React.FC<{ compact?: boolean }> = ({ compac
             <p className="text-xs text-slate-400">Loads</p>
           </div>
           <div className="p-2 rounded-lg bg-slate-700/30">
-            <p className="text-sm font-bold text-white">${data?.total?.toLocaleString() || 0}</p>
+            <p className="text-sm font-bold text-white">${(data?.total || 0).toLocaleString()}</p>
             <p className="text-xs text-slate-400">Total</p>
           </div>
         </div>

@@ -99,13 +99,13 @@ export const safetyRouter = router({
     .query(async () => {
       return {
         basics: [
-          { name: "Unsafe Driving", score: 42, threshold: 65, status: "ok" },
-          { name: "Hours of Service", score: 38, threshold: 65, status: "ok" },
+          { name: "Unsafe Driving", score: 0, threshold: 65, status: "ok" },
+          { name: "Hours of Service", score: 0, threshold: 65, status: "ok" },
           { name: "Driver Fitness", score: 0, threshold: 80, status: "ok" },
           { name: "Controlled Substances", score: 0, threshold: 80, status: "ok" },
-          { name: "Vehicle Maintenance", score: 58, threshold: 80, status: "warning" },
-          { name: "Hazmat Compliance", score: 25, threshold: 80, status: "ok" },
-          { name: "Crash Indicator", score: 35, threshold: 65, status: "ok" },
+          { name: "Vehicle Maintenance", score: 0, threshold: 80, status: "ok" },
+          { name: "Hazmat Compliance", score: 0, threshold: 80, status: "ok" },
+          { name: "Crash Indicator", score: 0, threshold: 65, status: "ok" },
         ],
         lastUpdated: new Date().toISOString(),
       };
@@ -257,35 +257,18 @@ export const safetyRouter = router({
   getCSAScores: protectedProcedure
     .input(z.object({ carrierId: z.string().optional() }).optional())
     .query(async ({ ctx }) => {
-      const categories = [
-        { id: "csa1", name: "Unsafe Driving", score: 42, threshold: 65, percentile: 42, status: "ok", inspections: 12, violations: 3 },
-        { id: "csa2", name: "Hours of Service", score: 38, threshold: 65, percentile: 38, status: "ok", inspections: 12, violations: 2 },
-        { id: "csa3", name: "Driver Fitness", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
-        { id: "csa4", name: "Controlled Substances", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
-        { id: "csa5", name: "Vehicle Maintenance", score: 58, threshold: 80, percentile: 58, status: "warning", inspections: 15, violations: 5 },
-        { id: "csa6", name: "Hazmat Compliance", score: 25, threshold: 80, percentile: 25, status: "ok", inspections: 6, violations: 1 },
-        { id: "csa7", name: "Crash Indicator", score: 35, threshold: 65, percentile: 35, status: "ok", inspections: 3, violations: 1 },
-      ];
       return {
         lastUpdated: new Date().toISOString(),
-        overallScore: 85,
-        categoriesPassing: 6,
-        alertsCount: 1,
-        alerts: [{ type: "warning", message: "Vehicle Maintenance score approaching threshold" }],
-        trend: "up",
-        trendPercent: 5.2,
-        carrier: { dotNumber: "1234567", name: "ABC Transport LLC", mcNumber: "MC-987654" },
-        basics: [
-          { name: "Unsafe Driving", score: 42, percentile: 42, threshold: 65 },
-          { name: "Hours of Service", score: 38, percentile: 38, threshold: 65 },
-          { name: "Driver Fitness", score: 0, percentile: 0, threshold: 80 },
-          { name: "Controlled Substances", score: 0, percentile: 0, threshold: 80 },
-          { name: "Vehicle Maintenance", score: 58, percentile: 58, threshold: 80 },
-          { name: "Hazmat Compliance", score: 25, percentile: 25, threshold: 80 },
-          { name: "Crash Indicator", score: 35, percentile: 35, threshold: 65 },
-        ],
-        categories,
-        map: (fn: any) => categories.map(fn),
+        overallScore: 0,
+        categoriesPassing: 0,
+        alertsCount: 0,
+        alerts: [],
+        trend: "stable",
+        trendPercent: 0,
+        carrier: { dotNumber: "", name: "", mcNumber: "" },
+        basics: [],
+        categories: [],
+        map: (fn: any) => ([] as any[]).map(fn),
       };
     }),
 
@@ -295,17 +278,7 @@ export const safetyRouter = router({
   getAccidentIncidents: protectedProcedure
     .input(z.object({ filter: z.string().optional(), search: z.string().optional() }))
     .query(async ({ input }) => {
-      const incidents = [
-        { id: "a1", number: "ACC-2025-0012", status: "investigating", date: "2025-01-22", driver: "John Smith", vehicle: "TRK-101", severity: "major" },
-        { id: "a2", number: "ACC-2025-0011", status: "closed", date: "2025-01-18", driver: "Tom Brown", vehicle: "TRK-103", severity: "minor" },
-      ];
-      let filtered = incidents;
-      if (input.filter && input.filter !== "all") filtered = filtered.filter(i => i.status === input.filter);
-      if (input?.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(i => i.driver.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
-      }
-      return filtered;
+      return [];
     }),
 
   /**
@@ -313,7 +286,7 @@ export const safetyRouter = router({
    */
   getAccidentStats: protectedProcedure
     .query(async () => {
-      return { total: 8, open: 2, investigating: 2, closed: 6, thisYear: 3, avgResolutionDays: 14 };
+      return { total: 0, open: 0, investigating: 0, closed: 0, thisYear: 0, avgResolutionDays: 0 };
     }),
 
   /**
@@ -328,19 +301,7 @@ export const safetyRouter = router({
       filter: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      const incidents = [
-        { id: "i1", number: "INC-2025-0045", type: "accident", status: "investigating", date: "2025-01-22", driver: "John Smith", severity: "major" },
-        { id: "i2", number: "INC-2025-0044", type: "near_miss", status: "closed", date: "2025-01-20", driver: "Sarah Williams", severity: "minor" },
-        { id: "i3", number: "INC-2025-0043", type: "violation", status: "open", date: "2025-01-18", driver: "Tom Brown", severity: "moderate" },
-      ];
-      let filtered = incidents;
-      if (input?.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(i => i.driver.toLowerCase().includes(q) || i.number.toLowerCase().includes(q));
-      }
-      if (input?.status) filtered = filtered.filter(i => i.status === input.status);
-      if (input?.type) filtered = filtered.filter(i => i.type === input.type);
-      return filtered;
+      return [];
     }),
 
   /**
@@ -357,80 +318,10 @@ export const safetyRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
-      const incidents = [
-        {
-          id: "i1",
-          incidentNumber: "INC-2025-0045",
-          type: "accident",
-          severity: "major",
-          status: "investigating",
-          date: "2025-01-22",
-          time: "14:30",
-          location: "I-45 N, Mile Marker 52, Houston, TX",
-          description: "Minor collision with another vehicle at traffic light",
-          driverName: "John Smith",
-          vehicleNumber: "TRK-101",
-          loadNumber: "LOAD-45890",
-          injuries: false,
-          hazmatRelease: false,
-          propertyDamage: true,
-          estimatedCost: 2500,
-        },
-        {
-          id: "i2",
-          incidentNumber: "INC-2025-0044",
-          type: "spill",
-          severity: "minor",
-          status: "closed",
-          date: "2025-01-20",
-          time: "09:15",
-          location: "Terminal A, Houston Refinery",
-          description: "Small diesel spill during unloading - contained immediately",
-          driverName: "Mike Johnson",
-          vehicleNumber: "TRK-102",
-          loadNumber: "LOAD-45885",
-          injuries: false,
-          hazmatRelease: true,
-          propertyDamage: false,
-          estimatedCost: 500,
-        },
-        {
-          id: "i3",
-          incidentNumber: "INC-2025-0043",
-          type: "near_miss",
-          severity: "minor",
-          status: "pending_review",
-          date: "2025-01-19",
-          time: "16:45",
-          location: "US-290 W, Austin, TX",
-          description: "Vehicle cut off driver, emergency braking required",
-          driverName: "Sarah Williams",
-          vehicleNumber: "TRK-103",
-          injuries: false,
-          hazmatRelease: false,
-          propertyDamage: false,
-        },
-      ];
-
-      let filtered = incidents;
-      if (input.status) {
-        filtered = filtered.filter(i => i.status === input.status);
-      }
-      if (input.type) {
-        filtered = filtered.filter(i => i.type === input.type);
-      }
-      if (input.severity) {
-        filtered = filtered.filter(i => i.severity === input.severity);
-      }
-
       return {
-        incidents: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-        summary: {
-          total: incidents.length,
-          open: incidents.filter(i => i.status !== "closed").length,
-          critical: incidents.filter(i => i.severity === "critical").length,
-        },
+        incidents: [],
+        total: 0,
+        summary: { total: 0, open: 0, critical: 0 },
       };
     }),
 
@@ -442,37 +333,23 @@ export const safetyRouter = router({
     .query(async ({ input }) => {
       return {
         id: input.id,
-        incidentNumber: "INC-2025-0045",
-        type: "accident",
-        severity: "major",
-        status: "investigating",
-        date: "2025-01-22",
-        time: "14:30",
-        location: {
-          address: "I-45 N, Mile Marker 52",
-          city: "Houston",
-          state: "TX",
-          lat: 29.8168,
-          lng: -95.3422,
-        },
-        description: "Minor collision with another vehicle at traffic light. No injuries.",
-        driver: { id: "d1", name: "John Smith", phone: "555-0101" },
-        vehicle: { id: "v1", unitNumber: "TRK-101", make: "Peterbilt", model: "579" },
-        loadNumber: "LOAD-45890",
+        incidentNumber: "",
+        type: "",
+        severity: "",
+        status: "",
+        date: "",
+        time: "",
+        location: { address: "", city: "", state: "", lat: 0, lng: 0 },
+        description: "",
+        driver: { id: "", name: "", phone: "" },
+        vehicle: { id: "", unitNumber: "", make: "", model: "" },
+        loadNumber: "",
         injuries: false,
         hazmatRelease: false,
-        propertyDamage: true,
-        estimatedCost: 2500,
-        timeline: [
-          { timestamp: "2025-01-22T14:30:00", action: "Incident occurred", user: "System" },
-          { timestamp: "2025-01-22T14:35:00", action: "Driver reported incident", user: "John Smith" },
-          { timestamp: "2025-01-22T14:45:00", action: "Safety manager notified", user: "System" },
-          { timestamp: "2025-01-22T15:00:00", action: "Investigation started", user: "Bob Safety" },
-        ],
-        documents: [
-          { id: "doc1", name: "Scene Photos.zip", type: "photos", uploadedAt: "2025-01-22T15:30:00" },
-          { id: "doc2", name: "Police Report.pdf", type: "report", uploadedAt: "2025-01-22T18:00:00" },
-        ],
+        propertyDamage: false,
+        estimatedCost: 0,
+        timeline: [],
+        documents: [],
       };
     }),
 
@@ -531,53 +408,7 @@ export const safetyRouter = router({
   getDriverScorecards: protectedProcedure
     .input(z.object({ limit: z.number().optional(), search: z.string().optional(), sortBy: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      return [
-        {
-          driverId: "d1",
-          name: "Mike Johnson",
-          overallScore: 95,
-          rank: 1,
-          metrics: {
-            safetyEvents: 0,
-            hardBraking: 2,
-            speeding: 1,
-            hosViolations: 0,
-            inspectionScore: 98,
-          },
-          trend: "up",
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          driverId: "d2",
-          name: "Sarah Williams",
-          overallScore: 92,
-          rank: 2,
-          metrics: {
-            safetyEvents: 1,
-            hardBraking: 4,
-            speeding: 2,
-            hosViolations: 0,
-            inspectionScore: 95,
-          },
-          trend: "stable",
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          driverId: "d3",
-          name: "Tom Brown",
-          overallScore: 88,
-          rank: 3,
-          metrics: {
-            safetyEvents: 0,
-            hardBraking: 6,
-            speeding: 4,
-            hosViolations: 1,
-            inspectionScore: 90,
-          },
-          trend: "down",
-          lastUpdated: new Date().toISOString(),
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -589,36 +420,7 @@ export const safetyRouter = router({
       status: z.enum(["scheduled", "completed", "pending_results"]).optional(),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "dat1",
-          driverId: "d1",
-          driverName: "Mike Johnson",
-          testType: "random",
-          testDate: "2025-01-15",
-          status: "completed",
-          result: "negative",
-          facility: "LabCorp Houston",
-        },
-        {
-          id: "dat2",
-          driverId: "d2",
-          driverName: "Sarah Williams",
-          testType: "pre_employment",
-          testDate: "2025-01-20",
-          status: "pending_results",
-          facility: "Quest Diagnostics Dallas",
-        },
-        {
-          id: "dat3",
-          driverId: "d3",
-          driverName: "Tom Brown",
-          testType: "random",
-          testDate: "2025-01-25",
-          status: "scheduled",
-          facility: "LabCorp Austin",
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -633,81 +435,7 @@ export const safetyRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const incidents = [
-        {
-          id: "inc1",
-          type: "accident",
-          severity: "major",
-          status: "investigating",
-          description: "Minor collision with another vehicle at I-45 intersection",
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "John Smith",
-          vehicle: "Unit 2847",
-          location: "Houston, TX",
-        },
-        {
-          id: "inc2",
-          type: "spill",
-          severity: "critical",
-          status: "open",
-          description: "Diesel fuel spill during unloading at Terminal B - 50 gallons",
-          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Mike Johnson",
-          vehicle: "Unit 1923",
-          location: "Beaumont Terminal",
-        },
-        {
-          id: "inc3",
-          type: "injury",
-          severity: "minor",
-          status: "closed",
-          description: "Driver minor back strain during loading operations",
-          date: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Sarah Williams",
-          vehicle: null,
-          location: "Houston Terminal",
-        },
-        {
-          id: "inc4",
-          type: "equipment",
-          severity: "minor",
-          status: "resolved",
-          description: "Tanker valve malfunction - repaired on-site",
-          date: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Tom Brown",
-          vehicle: "Unit 3456",
-          location: "Dallas, TX",
-        },
-        {
-          id: "inc5",
-          type: "near_miss",
-          severity: "minor",
-          status: "closed",
-          description: "Vehicle cut off driver, emergency braking prevented collision",
-          date: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Lisa Chen",
-          vehicle: "Unit 2156",
-          location: "Austin, TX",
-        },
-      ];
-
-      let filtered = incidents;
-      if (input?.search) {
-        const s = input.search.toLowerCase();
-        filtered = filtered.filter(i => 
-          i.description.toLowerCase().includes(s) ||
-          i.driver?.toLowerCase().includes(s) ||
-          i.location?.toLowerCase().includes(s)
-        );
-      }
-      if (input.status) {
-        filtered = filtered.filter(i => i.status === input.status);
-      }
-      if (input.type) {
-        filtered = filtered.filter(i => i.type === input.type);
-      }
-
-      return filtered;
+      return [];
     }),
 
   /**
@@ -717,16 +445,16 @@ export const safetyRouter = router({
     .input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       return {
-        total: 35,
-        open: 2,
-        investigating: 1,
-        thisMonth: 5,
-        resolved: 12,
-        severe: 3,
-        critical: 3,
-        closed: 30,
-        daysWithoutIncident: 8,
-        yearToDate: 23,
+        total: 0,
+        open: 0,
+        investigating: 0,
+        thisMonth: 0,
+        resolved: 0,
+        severe: 0,
+        critical: 0,
+        closed: 0,
+        daysWithoutIncident: 0,
+        yearToDate: 0,
         severity: { high: 3, medium: 8, low: 24 },
       };
     }),
@@ -796,61 +524,8 @@ export const safetyRouter = router({
    * Get vehicle inspections
    */
   getVehicleInspections: protectedProcedure
-    .input(z.object({
-      vehicleId: z.string().optional(),
-      status: z.string().optional(),
-      type: z.string().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const inspections = [
-        {
-          id: "vi1",
-          vehicleId: "v1",
-          vehicleNumber: "Unit 2847",
-          type: "pre_trip",
-          status: "passed",
-          date: new Date().toISOString(),
-          inspector: "Mike Johnson",
-          defects: [],
-          nextDue: null,
-        },
-        {
-          id: "vi2",
-          vehicleId: "v2",
-          vehicleNumber: "Unit 1923",
-          type: "dot_annual",
-          status: "passed",
-          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          inspector: "Third Party Inspector",
-          defects: [],
-          nextDue: new Date(Date.now() + 335 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "vi3",
-          vehicleId: "v3",
-          vehicleNumber: "Unit 3456",
-          type: "tank_test",
-          status: "due",
-          date: null,
-          inspector: null,
-          defects: [],
-          nextDue: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
-
-      let filtered = inspections;
-      if (input.vehicleId) {
-        filtered = filtered.filter(i => i.vehicleId === input.vehicleId);
-      }
-      if (input.status) {
-        filtered = filtered.filter(i => i.status === input.status);
-      }
-      if (input.type) {
-        filtered = filtered.filter(i => i.type === input.type);
-      }
-
-      return filtered;
-    }),
+    .input(z.object({ vehicleId: z.string().optional(), status: z.string().optional(), type: z.string().optional() }))
+    .query(async () => []),
 
   /**
    * Submit vehicle inspection
@@ -879,65 +554,35 @@ export const safetyRouter = router({
     }),
 
   // Accident reports
-  getAccidentReports: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [
-    { id: "ar1", driverId: "d1", driverName: "Mike Johnson", vehicleUnit: "TRK-101", date: "2025-01-15", time: "14:30", location: "Houston, TX", severity: "minor", status: "investigating", reportNumber: "AR-2025-001", description: "Minor fender bender in parking lot" }
-  ]),
+  getAccidentReports: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
   getAccidentSummary: protectedProcedure.query(async () => ({ 
-    total: 8, totalReports: 8, thisYear: 2, investigating: 1, closed: 7, open: 1, openReports: 1,
-    daysSinceLastIncident: 45, avgResolutionDays: 12, severe: 1, resolved: 7, thisMonth: 1,
-    bySeverity: { critical: 0, major: 1, minor: 7, nearMiss: 3 },
-    severity: { high: 1, medium: 2, low: 5 }
+    total: 0, totalReports: 0, thisYear: 0, investigating: 0, closed: 0, open: 0, openReports: 0,
+    daysSinceLastIncident: 0, avgResolutionDays: 0, severe: 0, resolved: 0, thisMonth: 0,
+    bySeverity: { critical: 0, major: 0, minor: 0, nearMiss: 0 },
+    severity: { high: 0, medium: 0, low: 0 }
   })),
   submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional(), description: z.string().optional(), severity: z.string().optional() }).optional()).mutation(async ({ input }) => ({ success: true, reportId: "ar_123" })),
   updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: input.reportId })),
-  getPendingReports: protectedProcedure.query(async () => [{ id: "ar1", type: "accident", status: "pending_review", submittedAt: "2025-01-20" }]),
+  getPendingReports: protectedProcedure.query(async () => []),
 
   // CSA
-  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() }).optional()).query(async () => [{ month: "Jan 2025", scores: { unsafeDriving: 15, hosCompliance: 8, vehicleMaintenance: 12 } }]),
+  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() }).optional()).query(async () => []),
   getCSASummary: protectedProcedure.query(async () => ({ 
-    overallRisk: "low", 
-    overallScore: 85,
-    alertCount: 0, 
-    improvementAreas: ["Vehicle Maintenance"],
-    trend: 2.5,
-    trendPercent: 2.5,
-    satisfactory: 42,
-    conditional: 3,
-    unsatisfactory: 0,
-    inspections: 28,
+    overallRisk: "none", overallScore: 0, alertCount: 0, improvementAreas: [],
+    trend: 0, trendPercent: 0, satisfactory: 0, conditional: 0, unsatisfactory: 0, inspections: 0,
   })),
-  getCSAScoresList: protectedProcedure.query(async () => [
-    { id: "csa1", name: "Unsafe Driving", description: "Unsafe driving behaviors", score: 42, threshold: 65, percentile: 42, status: "ok", inspections: 12, violations: 3 },
-    { id: "csa2", name: "Hours of Service", description: "HOS compliance", score: 38, threshold: 65, percentile: 38, status: "ok", inspections: 12, violations: 2 },
-    { id: "csa3", name: "Driver Fitness", description: "Driver fitness requirements", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
-    { id: "csa4", name: "Controlled Substances", description: "Drug and alcohol compliance", score: 0, threshold: 80, percentile: 0, status: "ok", inspections: 8, violations: 0 },
-    { id: "csa5", name: "Vehicle Maintenance", description: "Vehicle maintenance compliance", score: 58, threshold: 80, percentile: 58, status: "warning", inspections: 15, violations: 5 },
-    { id: "csa6", name: "Hazmat Compliance", description: "Hazmat handling compliance", score: 25, threshold: 80, percentile: 25, status: "ok", inspections: 6, violations: 1 },
-    { id: "csa7", name: "Crash Indicator", description: "Crash history indicator", score: 35, threshold: 65, percentile: 35, status: "ok", inspections: 3, violations: 1 },
-  ]),
+  getCSAScoresList: protectedProcedure.query(async () => []),
 
   // Driver safety
-  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ({ avgScore: 92, incidents: 2, inspections: 15, violations: 1, excellent: 18, good: 4, needsImprovement: 2 })),
-  getDriverScores: protectedProcedure.input(z.object({ limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [{ driverId: "d1", name: "Mike Johnson", score: 98, trend: "up" }]),
+  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ({ avgScore: 0, incidents: 0, inspections: 0, violations: 0, excellent: 0, good: 0, needsImprovement: 0 })),
+  getDriverScores: protectedProcedure.input(z.object({ limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => []),
   getDriverScoreDetail: protectedProcedure.input(z.object({ driverId: z.string() }).optional()).query(async ({ input }) => ({ 
-    driverId: input?.driverId || "d1", 
-    name: "Mike Johnson", 
-    overall: 92, 
-    overallScore: 92, 
-    licenseNumber: "TX12345678",
-    categories: [
-      { name: "Safety", score: 94, trend: "up" },
-      { name: "Compliance", score: 90, trend: "stable" },
-      { name: "Efficiency", score: 92, trend: "up" },
-    ],
-    recentEvents: [
-      { id: "e1", type: "inspection", result: "passed", date: "2025-01-20" },
-      { id: "e2", type: "training", result: "completed", date: "2025-01-18" },
-    ],
+    driverId: input?.driverId || "", name: "", overall: 0, overallScore: 0, licenseNumber: "",
+    categories: [], recentEvents: [],
   })),
-  getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 88, topPerformer: "Mike Johnson", improvementNeeded: 3, totalDrivers: 25, improving: 18, needsAttention: 3 })),
+  getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 0, topPerformer: "", improvementNeeded: 0, totalDrivers: 0, improving: 0, needsAttention: 0 })),
 
   // Meetings
-  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [{ id: "m1", type: "safety_meeting", date: "2025-01-25", attendees: 15 }]),
-  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 4, attendance: 92, topics: ["HOS Compliance", "Winter Driving"], total: 48, upcoming: 2, completed: 46, avgAttendance: 92 })),
+  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => []),
+  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 0, attendance: 0, topics: [], total: 0, upcoming: 0, completed: 0, avgAttendance: 0 })),
 });

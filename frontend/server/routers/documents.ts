@@ -139,82 +139,10 @@ export const documentsRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ ctx, input }) => {
-      const documents = [
-        {
-          id: "doc_001",
-          name: "MC Authority Letter.pdf",
-          category: "permits",
-          type: "pdf",
-          size: 245000,
-          uploadedBy: "John Admin",
-          uploadedAt: "2025-01-15T10:30:00",
-          status: "active",
-          tags: ["authority", "fmcsa"],
-        },
-        {
-          id: "doc_002",
-          name: "Insurance Certificate - Liability.pdf",
-          category: "insurance",
-          type: "pdf",
-          size: 380000,
-          uploadedBy: "John Admin",
-          uploadedAt: "2025-01-10T14:00:00",
-          expirationDate: "2026-01-10",
-          status: "active",
-          tags: ["insurance", "liability"],
-        },
-        {
-          id: "doc_003",
-          name: "Cargo Insurance Policy.pdf",
-          category: "insurance",
-          type: "pdf",
-          size: 520000,
-          uploadedBy: "John Admin",
-          uploadedAt: "2025-01-10T14:15:00",
-          expirationDate: "2025-02-15",
-          status: "expiring_soon",
-          tags: ["insurance", "cargo"],
-        },
-        {
-          id: "doc_004",
-          name: "BOL-2025-0845.pdf",
-          category: "bols",
-          type: "pdf",
-          size: 125000,
-          uploadedBy: "System",
-          uploadedAt: "2025-01-23T12:30:00",
-          status: "active",
-          tags: ["bol", "delivered"],
-          relatedTo: { type: "load", id: "load_45918", name: "Load #45918" },
-        },
-      ];
-
-      let filtered = documents;
-
-      if (input.category) {
-        filtered = filtered.filter(d => d.category === input.category);
-      }
-      if (input.status) {
-        filtered = filtered.filter(d => d.status === input.status);
-      }
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(d => 
-          d.name.toLowerCase().includes(q) || 
-          d.tags.some(t => t.toLowerCase().includes(q))
-        );
-      }
-
-      const result = filtered.slice(input.offset, input.offset + input.limit) as any;
-      result.documents = result;
-      result.total = filtered.length;
-      result.stats = {
-        total: documents.length,
-        expired: documents.filter(d => d.status === "expired").length,
-        expiringSoon: documents.filter(d => d.status === "expiring_soon").length,
-        storageUsed: documents.reduce((sum, d) => sum + d.size, 0),
-      };
-      result.filter = (fn: any) => result.filter(fn);
+      const result = [] as any;
+      result.documents = [];
+      result.total = 0;
+      result.stats = { total: 0, expired: 0, expiringSoon: 0, storageUsed: 0 };
       return result;
     }),
 
@@ -226,16 +154,16 @@ export const documentsRouter = router({
     .query(async ({ input }) => {
       return {
         id: input.id,
-        name: "MC Authority Letter.pdf",
-        category: "permits",
-        type: "pdf",
-        size: 245000,
-        uploadedBy: "John Admin",
-        uploadedAt: "2025-01-15T10:30:00",
+        name: "",
+        category: "",
+        type: "",
+        size: 0,
+        uploadedBy: "",
+        uploadedAt: "",
         status: "active",
-        tags: ["authority", "fmcsa"],
-        description: "Motor Carrier Authority documentation",
-        url: "/documents/doc_001/download",
+        tags: [],
+        description: "",
+        url: "",
       };
     }),
 
@@ -256,6 +184,7 @@ export const documentsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = ctx.user?.id || 0;
+      console.log(`[Documents] upload: name=${input.name} fileData.length=${input.fileData.length} startsWithData=${input.fileData.startsWith('data:')}`);
 
       if (db) {
         try {
@@ -263,10 +192,11 @@ export const documentsRouter = router({
             userId,
             name: input.name,
             type: input.category,
-            fileUrl: input.fileData.slice(0, 500),
+            fileUrl: input.fileData,
             expiryDate: input.expirationDate ? new Date(input.expirationDate) : null,
             status: "active",
           });
+          console.log(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
           return {
             id: `d${(result as any).insertId}`,
             name: input.name,
@@ -274,8 +204,8 @@ export const documentsRouter = router({
             uploadedAt: new Date().toISOString(),
             status: "active",
           };
-        } catch (err) {
-          console.error("[Documents] upload insert error:", err);
+        } catch (err: any) {
+          console.error("[Documents] upload insert error:", err?.message?.slice(0, 200));
         }
       }
 
@@ -300,6 +230,7 @@ export const documentsRouter = router({
       autoSave: z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
+      console.log(`[Documents] digitize: filename=${input.filename} fileData.length=${input.fileData.length} startsWithData=${input.fileData.startsWith('data:')}`);
       const result = await digitizeDocument(input.fileData, input.filename);
 
       // Auto-save to DB if requested
@@ -313,15 +244,16 @@ export const documentsRouter = router({
               userId,
               name: result.classification.documentTitle || input.filename,
               type: result.classification.category,
-              fileUrl: input.fileData.slice(0, 500),
+              fileUrl: input.fileData,
               expiryDate: result.classification.suggestedExpiryDate
                 ? new Date(result.classification.suggestedExpiryDate)
                 : null,
               status: "active",
             });
             savedId = `d${(insertResult as any).insertId}`;
-          } catch (err) {
-            console.error("[Documents] digitize save error:", err);
+            console.log(`[Documents] digitize save SUCCESS: id=${savedId} stored ${input.fileData.length} chars`);
+          } catch (err: any) {
+            console.error("[Documents] digitize save error:", err?.message?.slice(0, 200));
           }
         }
       }
@@ -336,6 +268,28 @@ export const documentsRouter = router({
         },
         classification: result.classification,
       };
+    }),
+
+  /**
+   * Get document file data for download
+   */
+  getFileData: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const numericId = parseInt(input.id.replace(/\D/g, ''), 10);
+        if (!numericId) return null;
+        const [doc] = await db.select().from(documents).where(and(eq(documents.id, numericId), eq(documents.userId, ctx.user?.id || 0))).limit(1);
+        if (!doc) return null;
+        const fileUrl = doc.fileUrl || '';
+        console.log(`[Documents] getFileData id=${numericId} name=${doc.name} fileUrl.length=${fileUrl.length} startsWithData=${fileUrl.startsWith('data:')}`);
+        return { id: input.id, name: doc.name, fileUrl, type: doc.type };
+      } catch (err) {
+        console.error('[Documents] getFileData error:', err);
+        return null;
+      }
     }),
 
   /**
@@ -369,23 +323,7 @@ export const documentsRouter = router({
   getExpiring: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "doc_003",
-          name: "Cargo Insurance Policy.pdf",
-          category: "insurance",
-          expirationDate: "2025-02-15",
-          daysUntilExpiration: 22,
-        },
-        {
-          id: "doc_005",
-          name: "Medical Card - Mike Johnson.pdf",
-          category: "compliance",
-          expirationDate: "2025-02-01",
-          daysUntilExpiration: 8,
-          relatedTo: { type: "driver", id: "drv_001", name: "Mike Johnson" },
-        },
-      ];
+      return [];
     }),
 
   getSummary: protectedProcedure.query(async ({ ctx }) => {
@@ -431,16 +369,16 @@ export const documentsRouter = router({
    */
   getComplianceStatus: protectedProcedure.query(async ({ ctx }) => {
     return {
-      score: 85,
-      totalRequired: 12,
-      completed: 10,
-      pending: 1,
-      expired: 1,
+      score: 0,
+      totalRequired: 0,
+      completed: 0,
+      pending: 0,
+      expired: 0,
       categories: {
-        license: { status: 'verified', expiring: false },
-        medical: { status: 'verified', expiring: true },
-        hazmat: { status: 'pending', expiring: false },
-        drugTest: { status: 'verified', expiring: false },
+        license: { status: 'none', expiring: false },
+        medical: { status: 'none', expiring: false },
+        hazmat: { status: 'none', expiring: false },
+        drugTest: { status: 'none', expiring: false },
       }
     };
   }),

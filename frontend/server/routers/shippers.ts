@@ -391,35 +391,7 @@ export const shippersRouter = router({
       period: z.enum(["month", "quarter", "year"]).default("quarter"),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          carrierId: "car_001",
-          name: "ABC Transport LLC",
-          loadsCompleted: 25,
-          onTimeRate: 96,
-          avgRating: 4.8,
-          avgRate: 3.25,
-          claims: 0,
-        },
-        {
-          carrierId: "car_002",
-          name: "FastHaul LLC",
-          loadsCompleted: 18,
-          onTimeRate: 92,
-          avgRating: 4.5,
-          avgRate: 3.35,
-          claims: 0,
-        },
-        {
-          carrierId: "car_003",
-          name: "SafeHaul Transport",
-          loadsCompleted: 12,
-          onTimeRate: 95,
-          avgRating: 4.7,
-          avgRate: 3.20,
-          claims: 0,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -432,20 +404,13 @@ export const shippersRouter = router({
     .query(async ({ input }) => {
       return {
         period: input.period,
-        totalSpend: 89500,
-        loadCount: 32,
-        avgPerLoad: 2797,
-        avgPerMile: 3.45,
-        vsMarketRate: -5.2,
-        byLane: [
-          { lane: "Houston → Dallas", spend: 28500, loads: 12 },
-          { lane: "Beaumont → San Antonio", spend: 19200, loads: 8 },
-          { lane: "Port Arthur → Austin", spend: 14400, loads: 6 },
-        ],
-        byCarrier: [
-          { carrier: "ABC Transport", spend: 35000, loads: 15 },
-          { carrier: "FastHaul LLC", spend: 28500, loads: 10 },
-        ],
+        totalSpend: 0,
+        loadCount: 0,
+        avgPerLoad: 0,
+        avgPerMile: 0,
+        vsMarketRate: 0,
+        byLane: [],
+        byCarrier: [],
       };
     }),
 
@@ -454,10 +419,7 @@ export const shippersRouter = router({
    */
   getFavoriteCarriers: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        { carrierId: "car_001", name: "ABC Transport LLC", loadsCompleted: 45, rating: 4.8 },
-        { carrierId: "car_002", name: "FastHaul LLC", loadsCompleted: 32, rating: 4.5 },
-      ];
+      return [];
     }),
 
   /**
@@ -482,17 +444,7 @@ export const shippersRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          loadId: "load_003",
-          loadNumber: "LOAD-45918",
-          deliveredAt: "2025-01-22T16:30:00Z",
-          confirmedAt: "2025-01-22T17:00:00Z",
-          status: "confirmed",
-          signature: "John Receiver",
-          documents: ["BOL-45918.pdf", "POD-45918.pdf"],
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -517,44 +469,17 @@ export const shippersRouter = router({
    * Get shipper profile for ShipperProfile page
    */
   getProfile: protectedProcedure
-    .query(async () => {
-      return {
-        id: "s1",
-        companyName: "Shell Oil Company",
-        contactName: "John Smith",
-        email: "john.smith@shell.com",
-        phone: "555-0100",
-        address: "123 Energy Way, Houston, TX 77001",
-        dotNumber: "1234567",
-        mcNumber: "MC-123456",
-        verified: true,
-        memberSince: "2024-01-15",
-        website: "https://www.shell.com",
-      };
-    }),
+    .query(async () => ({
+      id: "", companyName: "", contactName: "", email: "", phone: "",
+      address: "", dotNumber: "", mcNumber: "", verified: false, memberSince: "", website: "",
+    })),
 
   /**
    * Get shipper stats for ShipperProfile page
    */
   getStats: protectedProcedure
-    .query(async () => {
-      return {
-        totalLoads: 245,
-        totalSpend: 875000,
-        avgRatePerMile: 3.45,
-        onTimeDeliveryRate: 96,
-        preferredCarriers: 12,
-        avgPaymentTime: 15,
-        onTimeRate: 96,
-        monthlyVolume: [
-          { month: "Jan", loads: 22 },
-          { month: "Feb", loads: 28 },
-          { month: "Mar", loads: 35 },
-          { month: "Apr", loads: 42 },
-          { month: "May", loads: 38 },
-          { month: "Jun", loads: 45 },
-        ],
-        maxMonthlyLoads: 50,
-      };
-    }),
+    .query(async () => ({
+      totalLoads: 0, totalSpend: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0,
+      preferredCarriers: 0, avgPaymentTime: 0, onTimeRate: 0, monthlyVolume: [], maxMonthlyLoads: 0,
+    })),
 });

@@ -8,7 +8,7 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, bids, users, companies } from "../../drizzle/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, inArray } from "drizzle-orm";
 import {
   emitLoadStatusChange,
   emitBidReceived,
@@ -118,7 +118,14 @@ export const loadsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      const loadNumber = `LOAD-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      // Collision-safe load number: date prefix + 8-char crypto-random suffix
+      // If a duplicate key collision occurs, retry with a new number (up to 3 times)
+      const generateLoadNumber = () => {
+        const dateStr = new Date().toISOString().slice(2, 10).replace(/-/g, '');
+        const rand = Math.random().toString(36).substring(2, 10).toUpperCase();
+        return `LD-${dateStr}-${rand}`;
+      };
+      let loadNumber = generateLoadNumber();
       const hazClass = input?.hazmatClass || "";
       const cargoType = hazClass ? (
         hazClass.startsWith("2") ? "gas" as const :
@@ -160,27 +167,39 @@ export const loadsRouter = router({
       const dbUserId = await resolveUserId(ctx.user);
       if (!dbUserId) throw new Error("Could not resolve user account");
 
-      const result = await db.insert(loads).values({
-        shipperId: dbUserId,
-        loadNumber,
-        status: "posted",
-        cargoType,
-        hazmatClass: input?.hazmatClass || null,
-        unNumber: input?.unNumber || null,
-        weight: input?.weight || null,
-        weightUnit: input?.weightUnit || "lbs",
-        volume: input?.quantity || null,
-        volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
-        pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
-        deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
-        pickupDate: input?.pickupDate ? new Date(input.pickupDate) : undefined,
-        deliveryDate: input?.deliveryDate ? new Date(input.deliveryDate) : undefined,
-        rate: input?.rate || null,
-        equipmentType: input?.equipment || null,
-        compartments: input?.compartments || 1,
-        specialInstructions: ergNotes || null,
-      });
-      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      // Retry insert up to 3 times in case of duplicate loadNumber collision
+      let insertedId = 0;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const result = await db.insert(loads).values({
+            shipperId: dbUserId,
+            loadNumber,
+            status: "posted",
+            cargoType,
+            hazmatClass: input?.hazmatClass || null,
+            unNumber: input?.unNumber || null,
+            weight: input?.weight || null,
+            weightUnit: input?.weightUnit || "lbs",
+            volume: input?.quantity || null,
+            volumeUnit: input?.quantityUnit === "Gallons" ? "gal" : input?.quantityUnit === "Barrels" ? "bbl" : input?.quantityUnit?.toLowerCase() || "gal",
+            commodityName: input?.productName || null,
+            pickupLocation: input?.origin ? { address: input.origin, city: input.origin.split(",")[0]?.trim() || "", state: input.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+            deliveryLocation: input?.destination ? { address: input.destination, city: input.destination.split(",")[0]?.trim() || "", state: input.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 } : undefined,
+            pickupDate: input?.pickupDate ? new Date(input.pickupDate) : undefined,
+            deliveryDate: input?.deliveryDate ? new Date(input.deliveryDate) : undefined,
+            rate: input?.rate || null,
+            specialInstructions: ergNotes || null,
+          } as any);
+          insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+          break; // success
+        } catch (err: any) {
+          if (err?.code === "ER_DUP_ENTRY" && attempt < 2) {
+            loadNumber = generateLoadNumber(); // regenerate and retry
+            continue;
+          }
+          throw err; // non-retryable error
+        }
+      }
 
       emitLoadStatusChange({
         loadId: String(insertedId),
@@ -252,6 +271,7 @@ export const loadsRouter = router({
 
   /**
    * Get tracked loads for TrackShipments page
+   * Returns ALL user loads (except draft) so they can quick-track any shipment
    */
   getTrackedLoads: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
@@ -264,21 +284,21 @@ export const loadsRouter = router({
         const loadList = await db
           .select()
           .from(loads)
-          .where(sql`${loads.shipperId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'delivered')`)
+          .where(sql`${loads.shipperId} = ${userId} AND ${loads.status} != 'draft'`)
           .orderBy(desc(loads.createdAt))
-          .limit(20);
+          .limit(25);
 
         let result = loadList.map(l => {
           const pickup = l.pickupLocation as any || {};
           const delivery = l.deliveryLocation as any || {};
-          const progress = l.status === 'delivered' ? 100 : l.status === 'in_transit' ? 65 : 10;
+          const progress = l.status === 'delivered' ? 100 : l.status === 'in_transit' ? 65 : l.status === 'assigned' ? 25 : l.status === 'loading' ? 35 : l.status === 'at_pickup' ? 30 : l.status === 'en_route_pickup' ? 20 : 10;
           return {
             id: String(l.id),
             loadNumber: l.loadNumber,
             origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
             destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
             status: l.status,
-            eta: l.deliveryDate?.toLocaleTimeString() || 'TBD',
+            eta: l.deliveryDate ? new Date(l.deliveryDate).toLocaleDateString() : 'TBD',
             driver: 'Assigned Driver',
             progress,
           };
@@ -351,19 +371,42 @@ export const loadsRouter = router({
         const pickup = load.pickupLocation as any || {};
         const delivery = load.deliveryLocation as any || {};
         const current = load.currentLocation as any || {};
-        const progress = load.status === 'delivered' ? 100 : load.status === 'in_transit' ? 65 : 10;
+        const progress = load.status === 'delivered' ? 100 : load.status === 'in_transit' ? 65 : load.status === 'assigned' ? 25 : load.status === 'loading' ? 35 : load.status === 'at_pickup' ? 30 : load.status === 'en_route_pickup' ? 20 : 10;
+
+        const originStr = [pickup.city, pickup.state].filter(Boolean).join(', ') || 'Unknown';
+        const destStr = [delivery.city, delivery.state].filter(Boolean).join(', ') || 'Unknown';
+
+        // Parse product from specialInstructions
+        const notes = load.specialInstructions || '';
+        const product = notes.match(/^Product: (.+)$/m)?.[1] || load.cargoType || 'General Cargo';
+
+        // Build tracking history from load lifecycle
+        const history: { status: string; timestamp: string; location: string; notes?: string }[] = [];
+        if (load.createdAt) history.push({ status: 'Load Created', timestamp: new Date(load.createdAt).toLocaleString(), location: 'System', notes: `Load ${load.loadNumber} posted` });
+        if (load.status !== 'posted' && load.status !== 'bidding') history.push({ status: 'Carrier Assigned', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: originStr });
+        if (['loading', 'at_pickup', 'in_transit', 'at_delivery', 'unloading', 'delivered'].includes(load.status)) history.push({ status: 'Picked Up', timestamp: load.pickupDate ? new Date(load.pickupDate).toLocaleString() : 'N/A', location: originStr });
+        if (['in_transit', 'at_delivery', 'unloading', 'delivered'].includes(load.status)) history.push({ status: 'In Transit', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: current.city ? `${current.city}, ${current.state}` : 'En Route' });
+        if (load.status === 'delivered') history.push({ status: 'Delivered', timestamp: (load as any).actualDeliveryDate ? new Date((load as any).actualDeliveryDate).toLocaleString() : 'N/A', location: destStr });
+        if (load.status === 'cancelled') history.push({ status: 'Cancelled', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: 'N/A', notes: 'Shipment cancelled' });
 
         return {
+          id: String(load.id),
           loadNumber: load.loadNumber,
           status: load.status,
-          origin: { city: pickup.city || '', state: pickup.state || '' },
-          destination: { city: delivery.city || '', state: delivery.state || '' },
-          currentLocation: { city: '', state: '', lat: current.lat || 0, lng: current.lng || 0 },
+          origin: originStr,
+          destination: destStr,
+          currentLocation: { city: current.city || '', state: current.state || '', lat: current.lat || 0, lng: current.lng || 0 },
           driver: 'Assigned Driver',
           carrier: 'Assigned Carrier',
-          eta: load.deliveryDate?.toLocaleTimeString() || 'TBD',
+          eta: load.deliveryDate ? new Date(load.deliveryDate).toLocaleDateString() : 'TBD',
           progress,
-          lastUpdate: load.updatedAt?.toISOString() || new Date().toISOString(),
+          lastUpdate: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : new Date().toLocaleString(),
+          product,
+          weight: load.weight ? `${load.weight} ${load.weightUnit || 'lbs'}` : 'N/A',
+          truck: (load as any).equipmentType || load.cargoType || 'Standard',
+          hazmatClass: load.hazmatClass || null,
+          rate: load.rate ? parseFloat(String(load.rate)) : 0,
+          history: history.reverse(),
         };
       } catch (error) {
         console.error('[Loads] trackLoad error:', error);
@@ -391,11 +434,24 @@ export const loadsRouter = router({
       // Build proper Drizzle conditions (not raw SQL strings)
       const filters: any[] = [];
 
-      // If marketplace mode, show ALL loads (for Load Board / Find Loads)
-      // Otherwise filter by the current user's shipperId (for My Loads)
+      // If marketplace mode, show ALL posted/bidding loads (for Load Board / Find Loads)
+      // Otherwise scope by user role so each user only sees THEIR loads
       if (!input.marketplace) {
         const dbUserId = await resolveUserId(ctx.user);
-        filters.push(eq(loads.shipperId, dbUserId));
+        const role = ctx.user?.role || 'SHIPPER';
+        if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+          // Admins see all
+        } else if (role === 'CARRIER' || role === 'CATALYST') {
+          filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.carrierId} = ${dbUserId})`);
+        } else if (role === 'DRIVER' || role === 'ESCORT') {
+          filters.push(sql`(${loads.driverId} = ${dbUserId} OR ${loads.shipperId} = ${dbUserId})`);
+        } else {
+          // SHIPPER, BROKER, etc. — see loads they created
+          filters.push(eq(loads.shipperId, dbUserId));
+        }
+      } else {
+        // Marketplace: only show publicly available loads
+        filters.push(sql`${loads.status} IN ('posted', 'bidding')`);
       }
       if (input.status) {
         filters.push(eq(loads.status, input.status as any));
@@ -425,33 +481,36 @@ export const loadsRouter = router({
 
       console.log(`[loads.list] Returned ${results.length} rows`);
 
-      // Batch-fetch shipper profiles (profile picture) and company logos
+      // Batch-fetch shipper, carrier, driver profiles and company logos
       const shipperIds = Array.from(new Set(results.map((r: any) => r.shipperId).filter(Boolean)));
-      const shipperMap = new Map<number, { name: string | null; profilePicture: string | null; companyId: number | null }>();
+      const carrierIds = Array.from(new Set(results.map((r: any) => r.carrierId).filter(Boolean)));
+      const driverIds = Array.from(new Set(results.map((r: any) => r.driverId).filter(Boolean)));
+      const allUserIds = Array.from(new Set([...shipperIds, ...carrierIds, ...driverIds]));
+      const userMap = new Map<number, { name: string | null; profilePicture: string | null; companyId: number | null; phone: string | null }>();
       const companyMap = new Map<number, { name: string; logo: string | null }>();
 
-      if (shipperIds.length > 0) {
+      if (allUserIds.length > 0) {
         try {
-          const shipperRows = await db
-            .select({ id: users.id, name: users.name, profilePicture: users.profilePicture, companyId: users.companyId })
+          const userRows = await db
+            .select({ id: users.id, name: users.name, profilePicture: users.profilePicture, companyId: users.companyId, phone: users.phone })
             .from(users)
-            .where(sql`${users.id} IN (${sql.raw(shipperIds.join(','))})`);
-          for (const s of shipperRows) {
-            shipperMap.set(s.id, { name: s.name, profilePicture: s.profilePicture, companyId: s.companyId });
+            .where(inArray(users.id, allUserIds));
+          for (const s of userRows) {
+            userMap.set(s.id, { name: s.name, profilePicture: s.profilePicture, companyId: s.companyId, phone: (s as any).phone || null });
           }
-          // Fetch company logos for shippers that have a companyId
-          const companyIds = Array.from(new Set(shipperRows.filter(s => s.companyId).map(s => s.companyId!)));
+          // Fetch company logos
+          const companyIds = Array.from(new Set(userRows.filter(s => s.companyId).map(s => s.companyId!)));
           if (companyIds.length > 0) {
             const companyRows = await db
               .select({ id: companies.id, name: companies.name, logo: companies.logo })
               .from(companies)
-              .where(sql`${companies.id} IN (${sql.raw(companyIds.join(','))})`);
+              .where(inArray(companies.id, companyIds));
             for (const c of companyRows) {
               companyMap.set(c.id, { name: c.name, logo: c.logo });
             }
           }
         } catch (err) {
-          console.warn("[loads.list] Failed to fetch shipper/company profiles:", err);
+          console.warn("[loads.list] Failed to fetch user/company profiles:", err);
         }
       }
 
@@ -459,11 +518,16 @@ export const loadsRouter = router({
       return results.map((row: any) => {
         const pickup = row.pickupLocation as any || {};
         const delivery = row.deliveryLocation as any || {};
-        const shipper = shipperMap.get(row.shipperId);
+        const shipper = userMap.get(row.shipperId);
+        const carrier = row.carrierId ? userMap.get(row.carrierId) : null;
+        const driver = row.driverId ? userMap.get(row.driverId) : null;
         const company = shipper?.companyId ? companyMap.get(shipper.companyId) : null;
+        const carrierCompany = carrier?.companyId ? companyMap.get(carrier.companyId) : null;
         return {
           ...row,
           id: String(row.id),
+          carrierId: row.carrierId ? row.carrierId : null,
+          driverId: row.driverId ? row.driverId : null,
           origin: { city: pickup.city || "", state: pickup.state || "", address: pickup.address || "" },
           destination: { city: delivery.city || "", state: delivery.state || "", address: delivery.address || "" },
           rate: row.rate ? parseFloat(String(row.rate)) : 0,
@@ -471,10 +535,18 @@ export const loadsRouter = router({
           distance: row.distance ? parseFloat(String(row.distance)) : 0,
           createdAt: row.createdAt ? new Date(row.createdAt).toLocaleDateString() : "",
           pickupDate: row.pickupDate ? new Date(row.pickupDate).toLocaleDateString() : "",
+          deliveryDate: row.deliveryDate ? new Date(row.deliveryDate).toLocaleDateString() : "",
           shipperName: shipper?.name || null,
           shipperProfilePicture: shipper?.profilePicture || null,
           companyName: company?.name || null,
           companyLogo: company?.logo || null,
+          carrierName: carrier?.name || null,
+          carrierCompanyName: carrierCompany?.name || null,
+          driverName: driver?.name || null,
+          driverPhone: driver?.phone || null,
+          commodity: (row as any).commodityName || row.cargoType || 'General',
+          equipmentType: row.cargoType || 'general',
+          spectraMatchVerified: !!(row as any).spectraMatchResult,
         };
       });
     }),
@@ -512,12 +584,14 @@ export const loadsRouter = router({
         destination: { address: delivery.address || "", city: delivery.city || "", state: delivery.state || "", zip: delivery.zipCode || "" },
         pickupLocation: { city: pickup.city || "", state: pickup.state || "" },
         deliveryLocation: { city: delivery.city || "", state: delivery.state || "" },
-        commodity: ergProduct || load.cargoType || "General",
+        commodity: (load as any).commodityName || ergProduct || load.cargoType || "General",
         ergGuide,
         biddingEnds: load.pickupDate || new Date().toISOString(),
         suggestedRateMin: rateNum * 0.9,
         suggestedRateMax: rateNum * 1.1,
-        equipmentType: "dry_van",
+        equipmentType: load.cargoType || "general",
+        spectraMatchResult: (load as any).spectraMatchResult || null,
+        spectraMatchVerified: !!(load as any).spectraMatchResult,
         notes,
       };
     }),
@@ -1072,7 +1146,7 @@ export const bidsRouter = router({
       totalValue: totalValue?.sum || 0,
     };
   }),
-  getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", loadId: "L-001", origin: "Houston", destination: "Dallas", amount: 2350, analysis: "good", createdAt: "2025-01-22" }]),
+  getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
   submit: protectedProcedure.input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() })).mutation(async () => ({ success: true, bidId: "bid_123" })),
   accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),

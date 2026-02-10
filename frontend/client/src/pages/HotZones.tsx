@@ -343,6 +343,8 @@ export default function HotZones() {
   const feedColdZones = feedQuery.data?.coldZones || [];
   const pulse = feedQuery.data?.marketPulse;
   const detail = detailQuery.data;
+  const roleContext = feedQuery.data?.roleContext;
+  const platformDataAvailable = feedQuery.data?.platformDataAvailable;
 
   // Convert feed zones to map-compatible format
   const zones = feedZones.map((z: any) => ({
@@ -394,7 +396,12 @@ export default function HotZones() {
             <Flame className="w-8 h-8 text-orange-500" />
             Hot Zones
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Geographic demand intelligence & surge pricing heatmap</p>
+          <p className="text-slate-400 text-sm mt-1">
+            {roleContext?.description || "Geographic demand intelligence & surge pricing heatmap"}
+            {platformDataAvailable && (
+              <span className="ml-2 text-emerald-400 text-[10px] font-bold">● PLATFORM DATA ACTIVE</span>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">

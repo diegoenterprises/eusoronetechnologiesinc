@@ -6,7 +6,8 @@
  * 100% Dynamic - No mock data
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,7 +58,7 @@ export interface Message {
 }
 
 export default function CompanyChannels() {
-  const [selectedChannel, setSelectedChannel] = useState<string>("general");
+  const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateChannel, setShowCreateChannel] = useState(false);
@@ -96,10 +97,18 @@ export default function CompanyChannels() {
     },
   });
 
+  const { user } = useAuth();
   const channels = channelsQuery.data || [];
   const messages = messagesQuery.data || [];
   const activeChannel = channels.find((c: any) => c.id === selectedChannel);
   const filteredChannels = channels;
+
+  // Auto-select first channel when channels load
+  useEffect(() => {
+    if (!selectedChannel && channels.length > 0) {
+      setSelectedChannel(channels[0].id);
+    }
+  }, [channels, selectedChannel]);
 
   const handleSendMessage = () => {
     if (messageInput.trim() && selectedChannel) {
@@ -140,13 +149,13 @@ export default function CompanyChannels() {
           <h1 className="text-3xl font-bold text-white">Company Channels</h1>
           <p className="text-slate-400 mt-1">Team communication and collaboration</p>
         </div>
-        <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all">
+        <Button onClick={() => setShowCreateChannel(true)} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold transition-all">
           <Plus size={18} className="mr-2" />
           New Channel
         </Button>
       </div>
 
-    <div className="flex h-96 bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
+    <div className="flex h-[calc(100vh-220px)] bg-slate-900 rounded-lg overflow-hidden border border-slate-700">
       {/* Sidebar - Channels List */}
       <div className="w-64 bg-slate-800 border-r border-slate-700 flex flex-col">
         {/* Header */}
@@ -219,13 +228,13 @@ export default function CompanyChannels() {
         <div className="p-4 border-t border-slate-700">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-bold">
-              DU
+              {(user?.name || 'U').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-white truncate">
-                Diego Usoro
+                {user?.name || 'User'}
               </p>
-              <p className="text-xs text-slate-500">Admin</p>
+              <p className="text-xs text-slate-500">{user?.role || 'Member'}</p>
             </div>
           </div>
         </div>
@@ -373,7 +382,7 @@ export default function CompanyChannels() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <MessageSquare className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-              <p className="text-slate-400">Select a channel to start chatting</p>
+              <p className="text-slate-400">{channels.length === 0 ? 'No channels yet. Create one to get started!' : 'Select a channel to start chatting'}</p>
             </div>
           </div>
         )}

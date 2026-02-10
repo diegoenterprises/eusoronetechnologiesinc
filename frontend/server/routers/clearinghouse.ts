@@ -102,60 +102,11 @@ export const clearinghouseRouter = router({
     }))
     .query(async ({ input }) => {
       return {
-        queries: [
-          {
-            id: "chq_001",
-            driverId: "d1",
-            driverName: "Mike Johnson",
-            cdlNumber: "TX-12345678",
-            queryType: "annual",
-            queryDate: "2025-01-05",
-            status: "completed",
-            result: "no_violations",
-            responseDate: "2025-01-06",
-            expiresAt: "2026-01-05",
-          },
-          {
-            id: "chq_002",
-            driverId: "d2",
-            driverName: "Sarah Williams",
-            cdlNumber: "TX-87654321",
-            queryType: "annual",
-            queryDate: "2025-01-10",
-            status: "completed",
-            result: "no_violations",
-            responseDate: "2025-01-11",
-            expiresAt: "2026-01-10",
-          },
-          {
-            id: "chq_003",
-            driverId: "d3",
-            driverName: "Tom Brown",
-            cdlNumber: "TX-11223344",
-            queryType: "pre_employment",
-            queryDate: "2024-11-28",
-            status: "completed",
-            result: "no_violations",
-            responseDate: "2024-11-29",
-            expiresAt: null,
-          },
-          {
-            id: "chq_004",
-            driverId: "d7",
-            driverName: "Emily Martinez",
-            cdlNumber: "TX-55667788",
-            queryType: "annual",
-            queryDate: "2025-01-20",
-            status: "pending",
-            result: null,
-            responseDate: null,
-            expiresAt: null,
-          },
-        ],
-        total: 54,
+        queries: [],
+        total: 0,
         summary: {
-          pending: 1,
-          completed: 53,
+          pending: 0,
+          completed: 0,
           withViolations: 0,
         },
       };
@@ -170,8 +121,8 @@ export const clearinghouseRouter = router({
       return {
         id: input.queryId,
         driverId: "d1",
-        driverName: "Mike Johnson",
-        cdlNumber: "TX-12345678",
+        driverName: "",
+        cdlNumber: "",
         cdlState: "TX",
         dateOfBirth: "1985-**-**",
         queryType: "annual",
@@ -191,7 +142,7 @@ export const clearinghouseRouter = router({
           responseId: "FMCSA-2025-00123456-R",
         },
         expiresAt: "2026-01-05",
-        submittedBy: { id: "u1", name: "HR Manager" },
+        submittedBy: { id: "", name: "" },
       };
     }),
 
@@ -251,44 +202,9 @@ export const clearinghouseRouter = router({
     }))
     .query(async ({ input }) => {
       return {
-        consents: [
-          {
-            driverId: "d1",
-            driverName: "Mike Johnson",
-            consentType: "general",
-            status: "active",
-            validFrom: "2025-01-04",
-            validUntil: "2026-01-04",
-          },
-          {
-            driverId: "d2",
-            driverName: "Sarah Williams",
-            consentType: "limited",
-            status: "active",
-            validFrom: "2025-01-08",
-            validUntil: "2026-01-08",
-          },
-          {
-            driverId: "d4",
-            driverName: "Lisa Chen",
-            consentType: "general",
-            status: "expiring_soon",
-            validFrom: "2024-02-15",
-            validUntil: "2025-02-15",
-          },
-          {
-            driverId: "d7",
-            driverName: "Emily Martinez",
-            consentType: null,
-            status: "pending",
-            requestSentAt: "2025-01-20",
-          },
-        ],
+        consents: [],
         summary: {
-          active: 38,
-          expiringSoon: 5,
-          expired: 2,
-          pending: 3,
+          active: 0, expiringSoon: 0, expired: 0, pending: 0,
         },
       };
     }),
@@ -345,36 +261,8 @@ export const clearinghouseRouter = router({
     }))
     .query(async ({ input }) => {
       return {
-        drivers: [
-          {
-            id: "d4",
-            name: "Lisa Chen",
-            cdlNumber: "TX-44556677",
-            lastQueryDate: "2024-02-15",
-            dueDate: "2025-02-15",
-            daysRemaining: 23,
-            consentStatus: "active",
-          },
-          {
-            id: "d6",
-            name: "David Lee",
-            cdlNumber: "TX-99887766",
-            lastQueryDate: "2024-02-20",
-            dueDate: "2025-02-20",
-            daysRemaining: 28,
-            consentStatus: "needs_renewal",
-          },
-          {
-            id: "d9",
-            name: "Chris Taylor",
-            cdlNumber: "TX-33221100",
-            lastQueryDate: "2024-03-01",
-            dueDate: "2025-03-01",
-            daysRemaining: 37,
-            consentStatus: "active",
-          },
-        ],
-        total: 5,
+        drivers: [],
+        total: 0,
       };
     }),
 
@@ -467,7 +355,7 @@ export const clearinghouseRouter = router({
     }),
 
   // Additional clearinghouse procedures
-  getSummary: protectedProcedure.query(async () => ({ totalDrivers: 45, compliant: 42, pendingQueries: 3, clearDrivers: 42, violations: 0 })),
-  getQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "q1", driverId: "d1", type: "annual", status: "completed" }]),
-  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async ({ input }) => [{ driverId: input?.driverId || "d1", status: "clear", lastQuery: "2025-01-15" }]),
+  getSummary: protectedProcedure.query(async () => ({ totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0 })),
+  getQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async ({ input }) => []),
 });

@@ -19,28 +19,13 @@ export const quotesRouter = router({
    */
   getAll: protectedProcedure
     .input(z.object({ search: z.string().optional(), status: z.string().optional() }))
-    .query(async ({ input }) => {
-      const quotes = [
-        { id: "q1", number: "QT-2025-0045", customer: "Shell Oil", origin: "Houston, TX", destination: "Dallas, TX", amount: 2850, status: "sent", createdAt: "2025-01-22" },
-        { id: "q2", number: "QT-2025-0044", customer: "ExxonMobil", origin: "Austin, TX", destination: "San Antonio, TX", amount: 1650, status: "accepted", createdAt: "2025-01-20" },
-        { id: "q3", number: "QT-2025-0043", customer: "Valero", origin: "Corpus Christi, TX", destination: "Houston, TX", amount: 2100, status: "expired", createdAt: "2025-01-15" },
-      ];
-      let filtered = quotes;
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(qt => qt.customer.toLowerCase().includes(q) || qt.number.toLowerCase().includes(q));
-      }
-      if (input.status && input.status !== "all") filtered = filtered.filter(qt => qt.status === input.status);
-      return filtered;
-    }),
+    .query(async () => []),
 
   /**
    * Get quote stats for QuoteManagement page
    */
   getStats: protectedProcedure
-    .query(async () => {
-      return { total: 45, sent: 12, accepted: 28, declined: 3, expired: 2, conversionRate: 62, totalValue: 285000, quoted: 35 };
-    }),
+    .query(async () => ({ total: 0, sent: 0, accepted: 0, declined: 0, expired: 0, conversionRate: 0, totalValue: 0, quoted: 0 })),
 
   /**
    * Get instant quote
@@ -144,119 +129,22 @@ export const quotesRouter = router({
    * List quotes
    */
   list: protectedProcedure
-    .input(z.object({
-      status: quoteStatusSchema.optional(),
-      customerId: z.string().optional(),
-      limit: z.number().default(20),
-      offset: z.number().default(0),
-    }))
-    .query(async ({ input }) => {
-      const quotes = [
-        {
-          id: "quote_001",
-          quoteNumber: "Q-2025-00123",
-          customer: { id: "cust_001", name: "Shell Oil Company" },
-          origin: "Houston, TX",
-          destination: "Dallas, TX",
-          total: 1250.00,
-          status: "sent",
-          createdAt: "2025-01-22T10:00:00Z",
-          validUntil: "2025-01-29T10:00:00Z",
-        },
-        {
-          id: "quote_002",
-          quoteNumber: "Q-2025-00120",
-          customer: { id: "cust_002", name: "ExxonMobil" },
-          origin: "Houston, TX",
-          destination: "San Antonio, TX",
-          total: 980.00,
-          status: "accepted",
-          createdAt: "2025-01-20T14:00:00Z",
-          validUntil: "2025-01-27T14:00:00Z",
-          convertedToLoad: "LOAD-45855",
-        },
-        {
-          id: "quote_003",
-          quoteNumber: "Q-2025-00115",
-          customer: { id: "cust_003", name: "Valero" },
-          origin: "Corpus Christi, TX",
-          destination: "Austin, TX",
-          total: 1100.00,
-          status: "expired",
-          createdAt: "2025-01-10T09:00:00Z",
-          validUntil: "2025-01-17T09:00:00Z",
-        },
-      ];
-
-      let filtered = quotes;
-      if (input.status) filtered = filtered.filter(q => q.status === input.status);
-      if (input.customerId) filtered = filtered.filter(q => q.customer.id === input.customerId);
-
-      return filtered.slice(input.offset, input.offset + input.limit);
-    }),
+    .input(z.object({ status: quoteStatusSchema.optional(), customerId: z.string().optional(), limit: z.number().default(20), offset: z.number().default(0) }))
+    .query(async () => []),
 
   /**
    * Get quote by ID
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id,
-        quoteNumber: "Q-2025-00123",
-        status: "sent",
-        customer: {
-          id: "cust_001",
-          name: "Shell Oil Company",
-          contact: "Sarah Shipper",
-          email: "sarah@shell.com",
-          phone: "555-0200",
-        },
-        origin: {
-          name: "Shell Houston Terminal",
-          address: "1234 Refinery Rd",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-        },
-        destination: {
-          name: "7-Eleven Distribution",
-          address: "5678 Commerce Dr",
-          city: "Dallas",
-          state: "TX",
-          zip: "75201",
-        },
-        distance: 239,
-        equipmentType: "tanker",
-        commodity: "Unleaded Gasoline",
-        weight: 58000,
-        hazmat: true,
-        pickupDate: "2025-01-25",
-        deliveryDate: "2025-01-25",
-        pricing: {
-          ratePerMile: 3.20,
-          linehaul: 764.80,
-          fuelSurcharge: 107.55,
-          accessorials: [
-            { type: "Hazmat", amount: 150 },
-            { type: "Detention", amount: 0, note: "First 2 hours free" },
-          ],
-          subtotal: 1022.35,
-          discount: 0,
-          total: 1022.35,
-        },
-        notes: "Standard terms apply. Quote valid for 7 days.",
-        createdBy: { id: "u1", name: "John Broker" },
-        createdAt: "2025-01-22T10:00:00Z",
-        validUntil: "2025-01-29T10:00:00Z",
-        viewedAt: "2025-01-22T14:30:00Z",
-        history: [
-          { action: "created", timestamp: "2025-01-22T10:00:00Z", user: "John Broker" },
-          { action: "sent", timestamp: "2025-01-22T10:05:00Z", user: "John Broker" },
-          { action: "viewed", timestamp: "2025-01-22T14:30:00Z", user: "Sarah Shipper" },
-        ],
-      };
-    }),
+    .query(async ({ input }) => ({
+      id: input.id, quoteNumber: "", status: "draft",
+      customer: null, origin: null, destination: null,
+      distance: 0, equipmentType: "", commodity: "", weight: 0, hazmat: false,
+      pickupDate: "", deliveryDate: "",
+      pricing: { ratePerMile: 0, linehaul: 0, fuelSurcharge: 0, accessorials: [], subtotal: 0, discount: 0, total: 0 },
+      notes: "", createdBy: null, createdAt: "", validUntil: "", viewedAt: null, history: [],
+    })),
 
   /**
    * Update quote
@@ -357,34 +245,14 @@ export const quotesRouter = router({
    * Get quote analytics
    */
   getAnalytics: protectedProcedure
-    .input(z.object({
-      period: z.enum(["week", "month", "quarter"]).default("month"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        summary: {
-          totalQuotes: 45,
-          sent: 38,
-          accepted: 22,
-          declined: 8,
-          expired: 6,
-          pending: 9,
-        },
-        conversionRate: 0.58,
-        avgQuoteValue: 1150,
-        totalQuotedValue: 51750,
-        totalConvertedValue: 30000,
-        avgResponseTime: 18,
-        topCustomers: [
-          { name: "Shell Oil Company", quotes: 12, converted: 8 },
-          { name: "ExxonMobil", quotes: 8, converted: 5 },
-          { name: "Valero", quotes: 6, converted: 3 },
-        ],
-      };
-    }),
+    .input(z.object({ period: z.enum(["week", "month", "quarter"]).default("month") }))
+    .query(async ({ input }) => ({
+      period: input.period,
+      summary: { totalQuotes: 0, sent: 0, accepted: 0, declined: 0, expired: 0, pending: 0 },
+      conversionRate: 0, avgQuoteValue: 0, totalQuotedValue: 0, totalConvertedValue: 0, avgResponseTime: 0, topCustomers: [],
+    })),
 
   // Additional quote procedures
-  getSummary: protectedProcedure.query(async () => ({ pending: 12, accepted: 28, total: 45, avgValue: 2150, quoted: 35 })),
+  getSummary: protectedProcedure.query(async () => ({ pending: 0, accepted: 0, total: 0, avgValue: 0, quoted: 0 })),
   respond: protectedProcedure.input(z.object({ quoteId: z.string(), action: z.enum(["accept", "decline"]), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, quoteId: input.quoteId })),
 });

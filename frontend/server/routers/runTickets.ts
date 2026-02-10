@@ -18,52 +18,13 @@ export const runTicketsRouter = router({
       if (!userId) return [];
       
       // Return run tickets for the user
-      return [
-        {
-          id: 1,
-          ticketNumber: "RT-2026-001",
-          loadId: 1,
-          loadNumber: "LD-12345",
-          status: "active",
-          createdAt: new Date().toISOString(),
-          completedAt: null,
-          origin: "Chicago, IL",
-          destination: "Dallas, TX",
-          totalMiles: 920,
-          totalFuel: 425.50,
-          totalTolls: 45.00,
-          totalExpenses: 520.50,
-          driverNotes: null,
-        },
-        {
-          id: 2,
-          ticketNumber: "RT-2026-002",
-          loadId: 2,
-          loadNumber: "LD-12346",
-          status: "completed",
-          createdAt: new Date(Date.now() - 86400000).toISOString(),
-          completedAt: new Date().toISOString(),
-          origin: "Los Angeles, CA",
-          destination: "Phoenix, AZ",
-          totalMiles: 370,
-          totalFuel: 180.00,
-          totalTolls: 12.00,
-          totalExpenses: 215.00,
-          driverNotes: "Smooth delivery",
-        },
-      ].filter(t => !input.status || t.status === input.status);
+      return [];
     }),
 
   getStats: protectedProcedure.query(async ({ ctx }) => {
     return {
-      total: 45,
-      active: 3,
-      completed: 38,
-      pendingReview: 4,
-      totalFuel: 12500,
-      totalTolls: 890,
-      totalExpenses: 15200,
-      avgPerTrip: 337,
+      total: 0, active: 0, completed: 0, pendingReview: 0,
+      totalFuel: 0, totalTolls: 0, totalExpenses: 0, avgPerTrip: 0,
     };
   }),
 
@@ -102,12 +63,7 @@ export const runTicketsRouter = router({
   getExpenses: protectedProcedure
     .input(z.object({ ticketId: z.number() }))
     .query(async ({ ctx, input }) => {
-      return [
-        { id: 1, type: "fuel", amount: 245.50, description: "Pilot Flying J - I-35", createdAt: new Date().toISOString() },
-        { id: 2, type: "toll", amount: 25.00, description: "IL Tollway", createdAt: new Date().toISOString() },
-        { id: 3, type: "fuel", amount: 180.00, description: "Love's - Oklahoma City", createdAt: new Date().toISOString() },
-        { id: 4, type: "toll", amount: 20.00, description: "TX Turnpike", createdAt: new Date().toISOString() },
-      ];
+      return [];
     }),
 
   complete: protectedProcedure
@@ -128,23 +84,12 @@ export const runTicketsRouter = router({
     .query(async ({ ctx, input }) => {
       return {
         id: input.id,
-        ticketNumber: `RT-2026-${String(input.id).padStart(3, '0')}`,
-        loadId: 1,
-        loadNumber: "LD-12345",
-        status: "active",
-        createdAt: new Date().toISOString(),
-        completedAt: null,
-        origin: "Chicago, IL",
-        destination: "Dallas, TX",
-        totalMiles: 920,
-        totalFuel: 425.50,
-        totalTolls: 45.00,
-        totalExpenses: 520.50,
-        driverNotes: null,
-        expenses: [
-          { id: 1, type: "fuel", amount: 245.50, description: "Pilot Flying J" },
-          { id: 2, type: "toll", amount: 25.00, description: "IL Tollway" },
-        ],
+        ticketNumber: `RT-${new Date().getFullYear()}-${String(input.id).padStart(3, '0')}`,
+        loadId: 0, loadNumber: "", status: "",
+        createdAt: "", completedAt: null,
+        origin: "", destination: "",
+        totalMiles: 0, totalFuel: 0, totalTolls: 0, totalExpenses: 0,
+        driverNotes: null, expenses: [],
       };
     }),
 

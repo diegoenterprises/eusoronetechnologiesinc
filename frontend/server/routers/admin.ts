@@ -130,13 +130,10 @@ export const adminRouter = router({
   getWebhooks: auditedAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
-      const webhooks = [
-        { id: "w1", name: "Load Status Updates", url: "https://api.example.com/webhooks/loads", events: ["load.created", "load.updated"], status: "active", lastTriggered: "2025-01-23" },
-        { id: "w2", name: "Driver Alerts", url: "https://api.example.com/webhooks/drivers", events: ["driver.hos_warning"], status: "active", lastTriggered: "2025-01-22" },
-      ];
+      const webhooks: any[] = [];
       if (input.search) {
         const q = input.search.toLowerCase();
-        return webhooks.filter(w => w.name.toLowerCase().includes(q));
+        return webhooks.filter((w: any) => w.name?.toLowerCase().includes(q));
       }
       return webhooks;
     }),
@@ -146,7 +143,7 @@ export const adminRouter = router({
    */
   getWebhookStats: auditedAdminProcedure
     .query(async () => {
-      return { total: 8, active: 6, failed: 1, disabled: 1, triggeredToday: 45, deliveriesToday: 45, failing: 1 };
+      return { total: 0, active: 0, failed: 0, disabled: 0, triggeredToday: 0, deliveriesToday: 0, failing: 0 };
     }),
 
   /**
@@ -172,11 +169,7 @@ export const adminRouter = router({
    */
   getFeatureFlags: auditedAdminProcedure
     .query(async () => {
-      return [
-        { id: "f1", name: "new_dashboard", description: "Enable new dashboard UI", enabled: true, rollout: 100 },
-        { id: "f2", name: "ai_load_matching", description: "AI-powered load matching", enabled: true, rollout: 50 },
-        { id: "f3", name: "mobile_app_v2", description: "Mobile app version 2", enabled: false, rollout: 0 },
-      ];
+      return [];
     }),
 
   /**
@@ -194,15 +187,7 @@ export const adminRouter = router({
   getAPIKeys: auditedAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
-      const keys = [
-        { id: "k1", name: "Production API", key: "pk_live_****abc", status: "active", lastUsed: "2025-01-23", requests: 12500 },
-        { id: "k2", name: "Development API", key: "pk_test_****xyz", status: "active", lastUsed: "2025-01-22", requests: 3200 },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return keys.filter(k => k.name.toLowerCase().includes(q));
-      }
-      return keys;
+      return [];
     }),
 
   /**
@@ -210,7 +195,7 @@ export const adminRouter = router({
    */
   getAPIStats: auditedAdminProcedure
     .query(async () => {
-      return { totalKeys: 5, activeKeys: 4, totalRequests: 45000, avgLatency: 125, requestsToday: 1250, revokedKeys: 1 };
+      return { totalKeys: 0, activeKeys: 0, totalRequests: 0, avgLatency: 0, requestsToday: 0, revokedKeys: 0 };
     }),
 
   /**
@@ -227,11 +212,7 @@ export const adminRouter = router({
    */
   getScheduledTasks: auditedAdminProcedure
     .query(async () => {
-      return [
-        { id: "t1", name: "Daily Report Generation", schedule: "0 6 * * *", status: "active", lastRun: "2025-01-23 06:00", nextRun: "2025-01-24 06:00" },
-        { id: "t2", name: "Compliance Check", schedule: "0 8 * * 1", status: "active", lastRun: "2025-01-20 08:00", nextRun: "2025-01-27 08:00" },
-        { id: "t3", name: "Database Backup", schedule: "0 2 * * *", status: "active", lastRun: "2025-01-23 02:00", nextRun: "2025-01-24 02:00" },
-      ];
+      return [];
     }),
 
   /**
@@ -240,10 +221,7 @@ export const adminRouter = router({
   getTaskHistory: auditedAdminProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async () => {
-      return [
-        { id: "h1", taskName: "Daily Report Generation", status: "success", startedAt: "2025-01-23 06:00", completedAt: "2025-01-23 06:02", duration: 120 },
-        { id: "h2", taskName: "Database Backup", status: "success", startedAt: "2025-01-23 02:00", completedAt: "2025-01-23 02:15", duration: 900 },
-      ];
+      return [];
     }),
 
   /**
@@ -275,10 +253,7 @@ export const adminRouter = router({
   getExports: auditedAdminProcedure
     .input(z.object({ dataType: z.string().optional(), status: z.string().optional(), limit: z.number().optional() }).optional())
     .query(async () => {
-      return [
-        { id: "e1", name: "Loads Export", dataType: "loads", format: "csv", status: "completed", createdAt: "2025-01-22", size: "2.5 MB", downloadUrl: "/exports/e1.csv" },
-        { id: "e2", name: "Drivers Export", dataType: "drivers", format: "xlsx", status: "completed", createdAt: "2025-01-20", size: "850 KB", downloadUrl: "/exports/e2.xlsx" },
-      ];
+      return [];
     }),
 
   /**
@@ -286,7 +261,7 @@ export const adminRouter = router({
    */
   getExportStats: auditedAdminProcedure
     .query(async () => {
-      return { totalExports: 25, thisMonth: 8, avgSize: "1.2 MB", storageUsed: "45 MB", total: 25, completed: 23, processing: 2, totalSize: "45 MB" };
+      return { totalExports: 0, thisMonth: 0, avgSize: "0 MB", storageUsed: "0 MB", total: 0, completed: 0, processing: 0, totalSize: "0 MB" };
     }),
 
   /**
@@ -305,16 +280,7 @@ export const adminRouter = router({
   getEmailTemplates: auditedAdminProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
-      const templates = [
-        { id: "t1", name: "Load Confirmation", category: "transactional", subject: "Load {{loadNumber}} Confirmed", status: "active", lastUsed: "2025-01-23" },
-        { id: "t2", name: "Driver Assignment", category: "notification", subject: "New Load Assignment", status: "active", lastUsed: "2025-01-22" },
-        { id: "t3", name: "Invoice Sent", category: "transactional", subject: "Invoice #{{invoiceNumber}}", status: "active", lastUsed: "2025-01-21" },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return templates.filter(t => t.name.toLowerCase().includes(q));
-      }
-      return templates;
+      return [];
     }),
 
   /**
@@ -322,7 +288,7 @@ export const adminRouter = router({
    */
   getEmailTemplateStats: auditedAdminProcedure
     .query(async () => {
-      return { total: 15, active: 12, draft: 3, sentThisMonth: 2450, categories: 5 };
+      return { total: 0, active: 0, draft: 0, sentThisMonth: 0, categories: 0 };
     }),
 
   /**
@@ -331,13 +297,7 @@ export const adminRouter = router({
   getBackups: auditedAdminProcedure
     .input(z.object({ type: z.string().optional() }))
     .query(async ({ input }) => {
-      const backups = [
-        { id: "b1", name: "Full Backup", type: "full", status: "completed", size: "2.5 GB", createdAt: "2025-01-23 02:00", downloadUrl: "/backups/b1.zip" },
-        { id: "b2", name: "Database Backup", type: "database", status: "completed", size: "850 MB", createdAt: "2025-01-22 02:00", downloadUrl: "/backups/b2.sql" },
-        { id: "b3", name: "Config Backup", type: "config", status: "completed", size: "15 MB", createdAt: "2025-01-21 02:00", downloadUrl: "/backups/b3.zip" },
-      ];
-      if (input.type && input.type !== "all") return backups.filter(b => b.type === input.type);
-      return backups;
+      return [];
     }),
 
   /**
@@ -345,7 +305,7 @@ export const adminRouter = router({
    */
   getBackupStats: auditedAdminProcedure
     .query(async () => {
-      return { totalBackups: 45, totalSize: "125 GB", lastBackup: "2025-01-23 02:00", nextScheduled: "2025-01-24 02:00", total: 45, successful: 42 };
+      return { totalBackups: 0, totalSize: "0 GB", lastBackup: "", nextScheduled: "", total: 0, successful: 0 };
     }),
 
   /**
@@ -373,19 +333,16 @@ export const adminRouter = router({
     .input(z.object({}).optional())
     .query(async () => {
       return {
-        status: "healthy",
-        uptime: "45 days",
-        version: "MySQL 8.0.32",
-        connections: { active: 25, max: 100, available: 75 },
-        storage: { used: "45 GB", total: "100 GB", percentage: 45 },
-        performance: { avgQueryTime: 15, slowQueries: 3, indexHitRate: 98.5 },
-        queriesPerSec: 125,
-        avgQueryTime: 15,
-        dbSize: "45 GB",
-        tables: [
-          { name: "loads", rows: 125000, size: "12 GB", lastVacuum: "2025-01-22" },
-          { name: "drivers", rows: 450, size: "500 MB", lastVacuum: "2025-01-22" },
-        ],
+        status: "unknown",
+        uptime: "",
+        version: "",
+        connections: { active: 0, max: 0, available: 0 },
+        storage: { used: "0 GB", total: "0 GB", percentage: 0 },
+        performance: { avgQueryTime: 0, slowQueries: 0, indexHitRate: 0 },
+        queriesPerSec: 0,
+        avgQueryTime: 0,
+        dbSize: "0 GB",
+        tables: [],
       };
     }),
 
@@ -395,10 +352,7 @@ export const adminRouter = router({
   getSlowQueries: auditedAdminProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async () => {
-      return [
-        { id: "q1", query: "SELECT * FROM loads WHERE...", avgTime: 250, calls: 150, lastRun: "2025-01-23 10:15" },
-        { id: "q2", query: "SELECT * FROM drivers JOIN...", avgTime: 180, calls: 85, lastRun: "2025-01-23 09:45" },
-      ];
+      return [];
     }),
 
   /**
@@ -415,12 +369,7 @@ export const adminRouter = router({
    */
   getIntegrations: auditedAdminProcedure
     .query(async () => {
-      return [
-        { id: "i1", name: "QuickBooks", type: "accounting", status: "connected", lastSync: "2025-01-23 10:00" },
-        { id: "i2", name: "Samsara", type: "eld", status: "connected", lastSync: "2025-01-23 09:45" },
-        { id: "i3", name: "Stripe", type: "payment", status: "connected", lastSync: "2025-01-23 08:30" },
-        { id: "i4", name: "Twilio", type: "communication", status: "disconnected", lastSync: null },
-      ];
+      return [];
     }),
 
   /**
@@ -428,7 +377,7 @@ export const adminRouter = router({
    */
   getIntegrationStats: auditedAdminProcedure
     .query(async () => {
-      return { total: 8, connected: 6, disconnected: 2, syncedToday: 45, syncsToday: 45, errors: 2 };
+      return { total: 0, connected: 0, disconnected: 0, syncedToday: 0, syncsToday: 0, errors: 0 };
     }),
 
   /**
@@ -455,12 +404,7 @@ export const adminRouter = router({
   getServiceStatus: auditedAdminProcedure
     .input(z.object({}).optional())
     .query(async () => {
-      return [
-        { id: "s1", name: "API Server", status: "healthy", uptime: "99.9%", responseTime: 45, lastCheck: "2025-01-23 10:30" },
-        { id: "s2", name: "Database", status: "healthy", uptime: "99.99%", responseTime: 12, lastCheck: "2025-01-23 10:30" },
-        { id: "s3", name: "Redis Cache", status: "healthy", uptime: "99.95%", responseTime: 2, lastCheck: "2025-01-23 10:30" },
-        { id: "s4", name: "File Storage", status: "healthy", uptime: "99.8%", responseTime: 85, lastCheck: "2025-01-23 10:30" },
-      ];
+      return [];
     }),
 
   /**
@@ -469,12 +413,7 @@ export const adminRouter = router({
   getWebhookLogs: auditedAdminProcedure
     .input(z.object({ status: z.string().optional(), limit: z.number().optional().default(50) }))
     .query(async ({ input }) => {
-      const logs = [
-        { id: "wl1", webhookId: "w1", event: "load.created", status: "success", responseCode: 200, duration: 125, timestamp: "2025-01-23 10:15", payload: "{}" },
-        { id: "wl2", webhookId: "w1", event: "load.updated", status: "failed", responseCode: 500, duration: 450, timestamp: "2025-01-23 09:45", payload: "{}", error: "Server error" },
-      ];
-      if (input.status) return logs.filter(l => l.status === input.status);
-      return logs;
+      return [];
     }),
 
   /**
@@ -482,7 +421,7 @@ export const adminRouter = router({
    */
   getWebhookSummary: auditedAdminProcedure
     .query(async () => {
-      return { total: 245, successful: 238, failed: 7, avgResponseTime: 145, totalSent: 245, successRate: 97.1, avgLatency: 145 };
+      return { total: 0, successful: 0, failed: 0, avgResponseTime: 0, totalSent: 0, successRate: 0, avgLatency: 0 };
     }),
 
   /**
@@ -500,12 +439,7 @@ export const adminRouter = router({
   getVerificationQueue: auditedAdminProcedure
     .input(z.object({ type: z.enum(["user", "company", "document", "all"]).optional(), limit: z.number().optional(), filter: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      const items = [
-        { id: "v1", type: "driver", name: "John Driver", submittedAt: "2025-01-22", documents: ["CDL", "Medical Card"], status: "pending" },
-        { id: "v2", type: "carrier", name: "ABC Transport", submittedAt: "2025-01-21", documents: ["MC Authority", "Insurance"], status: "pending" },
-      ];
-      if (input?.type) return items.filter(i => i.type === input.type);
-      return items;
+      return [];
     }),
 
   /**
@@ -513,7 +447,7 @@ export const adminRouter = router({
    */
   getVerificationSummary: auditedAdminProcedure
     .query(async () => {
-      return { pending: 12, approved: 145, rejected: 8, avgProcessingTime: "2.5 hours", approvedToday: 8, rejectedToday: 2, avgWaitTime: "2.5 hours" };
+      return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", approvedToday: 0, rejectedToday: 0, avgWaitTime: "" };
     }),
 
   /**
@@ -594,32 +528,13 @@ export const adminRouter = router({
   getDashboardSummary: auditedAdminProcedure
     .query(async ({ ctx }) => {
       return {
-        users: {
-          total: 2450,
-          active: 1890,
-          pending: 145,
-          suspended: 12,
-        },
-        companies: {
-          total: 320,
-          carriers: 180,
-          shippers: 85,
-          brokers: 35,
-          other: 20,
-        },
-        loads: {
-          active: 450,
-          completedToday: 125,
-          totalThisMonth: 2850,
-        },
-        revenue: {
-          gmvToday: 485000,
-          gmvThisMonth: 8500000,
-          platformFeesThisMonth: 170000,
-        },
-        pendingVerifications: 23,
-        openTickets: 8,
-        systemHealth: "healthy",
+        users: { total: 0, active: 0, pending: 0, suspended: 0 },
+        companies: { total: 0, carriers: 0, shippers: 0, brokers: 0, other: 0 },
+        loads: { active: 0, completedToday: 0, totalThisMonth: 0 },
+        revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
+        pendingVerifications: 0,
+        openTickets: 0,
+        systemHealth: "unknown",
       };
     }),
 
@@ -635,67 +550,9 @@ export const adminRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      const users = [
-        {
-          id: "u1",
-          email: "mike.johnson@example.com",
-          name: "Mike Johnson",
-          role: "DRIVER",
-          companyId: "car_001",
-          companyName: "ABC Transport LLC",
-          status: "active",
-          createdAt: "2022-03-15",
-          lastLogin: "2025-01-23",
-        },
-        {
-          id: "u2",
-          email: "john.manager@abctransport.com",
-          name: "John Manager",
-          role: "CARRIER",
-          companyId: "car_001",
-          companyName: "ABC Transport LLC",
-          status: "active",
-          createdAt: "2021-06-01",
-          lastLogin: "2025-01-23",
-        },
-        {
-          id: "u3",
-          email: "sarah.shipper@shell.com",
-          name: "Sarah Shipper",
-          role: "SHIPPER",
-          companyId: "ship_001",
-          companyName: "Shell Oil Company",
-          status: "active",
-          createdAt: "2020-01-15",
-          lastLogin: "2025-01-22",
-        },
-        {
-          id: "u4",
-          email: "new.user@example.com",
-          name: "New User",
-          role: "CARRIER",
-          companyId: null,
-          companyName: null,
-          status: "pending",
-          createdAt: "2025-01-22",
-          lastLogin: null,
-        },
-      ];
-
-      let filtered = users;
-      if (input.status) filtered = filtered.filter(u => u.status === input.status);
-      if (input.role) filtered = filtered.filter(u => u.role === input.role);
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(u => 
-          u.name.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q)
-        );
-      }
-
       return {
-        users: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
+        users: [],
+        total: 0,
       };
     }),
 
@@ -707,18 +564,18 @@ export const adminRouter = router({
     .query(async ({ input }) => {
       return {
         id: input.id,
-        email: "mike.johnson@example.com",
-        name: "Mike Johnson",
-        phone: "555-0101",
-        role: "DRIVER",
-        companyId: "car_001",
-        companyName: "ABC Transport LLC",
-        status: "active",
-        verified: true,
-        createdAt: "2022-03-15",
-        lastLogin: "2025-01-23T10:30:00Z",
-        loginCount: 245,
-        permissions: ["view_loads", "accept_loads", "submit_documents"],
+        email: "",
+        name: "",
+        phone: "",
+        role: "",
+        companyId: null,
+        companyName: null,
+        status: "",
+        verified: false,
+        createdAt: "",
+        lastLogin: null,
+        loginCount: 0,
+        permissions: [],
         notes: [],
       };
     }),
@@ -754,39 +611,7 @@ export const adminRouter = router({
       search: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "ver_001",
-          type: "company",
-          entityId: "car_003",
-          entityName: "SafeHaul Transport",
-          submittedAt: "2025-01-22T14:00:00Z",
-          priority: "high",
-          documents: ["Operating Authority", "Insurance Certificate", "W-9"],
-          assignedTo: null,
-        },
-        {
-          id: "ver_002",
-          type: "user",
-          entityId: "u4",
-          entityName: "New User",
-          submittedAt: "2025-01-22T16:00:00Z",
-          priority: "normal",
-          documents: ["Driver License", "CDL"],
-          assignedTo: null,
-        },
-        {
-          id: "ver_003",
-          type: "document",
-          entityId: "doc_123",
-          entityName: "Insurance Certificate Renewal",
-          parentEntity: "ABC Transport LLC",
-          submittedAt: "2025-01-21T10:00:00Z",
-          priority: "normal",
-          documents: ["Insurance Certificate"],
-          assignedTo: "Admin User",
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -819,28 +644,10 @@ export const adminRouter = router({
     .query(async ({ input }) => {
       return {
         period: input.period,
-        users: {
-          total: 2450,
-          newThisPeriod: 145,
-          activeThisPeriod: 1890,
-          churnRate: 2.1,
-        },
-        loads: {
-          total: 8500,
-          completed: 8100,
-          avgValue: 2850,
-          totalGMV: 24225000,
-        },
-        revenue: {
-          platformFees: 485000,
-          subscriptions: 45000,
-          total: 530000,
-        },
-        performance: {
-          avgLoadTime: 42,
-          onTimeRate: 94.5,
-          customerSatisfaction: 4.6,
-        },
+        users: { total: 0, newThisPeriod: 0, activeThisPeriod: 0, churnRate: 0 },
+        loads: { total: 0, completed: 0, avgValue: 0, totalGMV: 0 },
+        revenue: { platformFees: 0, subscriptions: 0, total: 0 },
+        performance: { avgLoadTime: 0, onTimeRate: 0, customerSatisfaction: 0 },
       };
     }),
 
@@ -851,21 +658,15 @@ export const adminRouter = router({
     .input(z.object({}).optional())
     .query(async () => {
       return {
-        overall: "healthy",
-        uptime: 99.97,
-        cpuUsage: 42,
-        memoryUsage: 68,
-        diskUsage: 55,
-        services: [
-          { name: "API Server", status: "healthy", uptime: 99.99, latency: 45 },
-          { name: "Database", status: "healthy", uptime: 99.98, latency: 12 },
-          { name: "GPS Tracking", status: "healthy", uptime: 99.95, latency: 85 },
-          { name: "Notifications", status: "healthy", uptime: 99.90, latency: 120 },
-          { name: "File Storage", status: "healthy", uptime: 99.99, latency: 35 },
-        ],
+        overall: "unknown",
+        uptime: 0,
+        cpuUsage: 0,
+        memoryUsage: 0,
+        diskUsage: 0,
+        services: [],
         lastCheck: new Date().toISOString(),
-        networkIO: 85,
-        networkUsage: 85,
+        networkIO: 0,
+        networkUsage: 0,
       };
     }),
 
@@ -911,13 +712,7 @@ export const adminRouter = router({
   getRecentActivity: auditedAdminProcedure
     .input(z.object({ limit: z.number().default(50) }))
     .query(async ({ input }) => {
-      return [
-        { timestamp: new Date().toISOString(), action: "User login", user: "Mike Johnson", details: "Successful login from mobile app" },
-        { timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), action: "Load created", user: "Sarah Shipper", details: "Load LOAD-45925 created" },
-        { timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(), action: "Bid submitted", user: "ABC Transport", details: "Bid on LOAD-45921" },
-        { timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(), action: "Document uploaded", user: "Tom Brown", details: "CDL renewal uploaded" },
-        { timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(), action: "Company verified", user: "Admin", details: "SafeHaul Transport verified" },
-      ];
+      return [];
     }),
 
   /**
@@ -942,7 +737,7 @@ export const adminRouter = router({
    */
   getVerificationStats: auditedAdminProcedure
     .query(async () => {
-      return { pending: 8, approved: 245, rejected: 12, avgProcessingTime: "1.5 hours", approvedToday: 15, rejectedToday: 2, totalVerified: 257 };
+      return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", approvedToday: 0, rejectedToday: 0, totalVerified: 0 };
     }),
 
   /**
@@ -966,95 +761,92 @@ export const adminRouter = router({
   // Content moderation
   approveContent: auditedAdminProcedure.input(z.object({ contentId: z.string().optional(), reportId: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId || input.reportId })),
   removeContent: auditedAdminProcedure.input(z.object({ contentId: z.string().optional(), reportId: z.string().optional(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, contentId: input.contentId || input.reportId })),
-  getContentReports: auditedAdminProcedure.input(z.object({ type: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "r1", contentId: "c1", reason: "spam", status: "pending", reportedAt: "2025-01-23" }]),
-  getModerationSummary: auditedAdminProcedure.query(async () => ({ pending: 5, approved: 120, rejected: 8, totalReports: 133, approvedToday: 15, removedToday: 3, highSeverity: 2 })),
+  getContentReports: auditedAdminProcedure.input(z.object({ type: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getModerationSummary: auditedAdminProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, totalReports: 0, approvedToday: 0, removedToday: 0, highSeverity: 0 })),
 
   // Cache management
-  getCacheStats: auditedAdminProcedure.query(async () => ({ hitRate: 94, totalKeys: 1250, memoryUsed: "128MB", uptime: "5d 12h", requestsPerSec: 450, memoryLimit: "512MB", memoryPercentage: 25 })),
-  getCacheKeys: auditedAdminProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ key: "user:123", ttl: 3600, size: "2KB" }]),
+  getCacheStats: auditedAdminProcedure.query(async () => ({ hitRate: 0, totalKeys: 0, memoryUsed: "0MB", uptime: "", requestsPerSec: 0, memoryLimit: "0MB", memoryPercentage: 0 })),
+  getCacheKeys: auditedAdminProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
   clearCacheKey: auditedAdminProcedure.input(z.object({ key: z.string() })).mutation(async ({ input }) => ({ success: true, key: input.key })),
-  clearAllCache: auditedAdminProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, clearedKeys: 1250 })),
+  clearAllCache: auditedAdminProcedure.input(z.object({}).optional()).mutation(async () => ({ success: true, clearedKeys: 0 })),
 
   // Queue management
-  getQueues: auditedAdminProcedure.query(async () => [{ name: "emails", pending: 25, processing: 2, failed: 1 }, { name: "notifications", pending: 12, processing: 1, failed: 0 }]),
+  getQueues: auditedAdminProcedure.query(async () => []),
   clearQueue: auditedAdminProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName })),
   pauseQueue: auditedAdminProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: true })),
   resumeQueue: auditedAdminProcedure.input(z.object({ queueName: z.string() })).mutation(async ({ input }) => ({ success: true, queue: input.queueName, paused: false })),
-  getRecentJobs: auditedAdminProcedure.input(z.object({ queueName: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "j1", queue: "emails", status: "completed", completedAt: "2025-01-23" }]),
+  getRecentJobs: auditedAdminProcedure.input(z.object({ queueName: z.string().optional(), limit: z.number().optional() })).query(async () => []),
 
   // API keys management
-  getApiKeys: auditedAdminProcedure.query(async () => [{ id: "k1", name: "Production", prefix: "pk_live_", status: "active", lastUsed: "2025-01-23" }]),
+  getApiKeys: auditedAdminProcedure.query(async () => []),
   createApiKey: auditedAdminProcedure.input(z.object({ name: z.string(), permissions: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, key: "pk_live_abc123", name: input.name })),
   revokeApiKey: auditedAdminProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ input }) => ({ success: true, keyId: input.keyId })),
 
   // Audit logs
-  getAuditLogs: auditedAdminProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "a1", userId: "u1", action: "login", ip: "192.168.1.1", timestamp: "2025-01-23 10:30" }]),
-  getAuditStats: auditedAdminProcedure.query(async () => ({ totalLogs: 15000, todayLogs: 250, uniqueUsers: 45, topActions: ["login", "load_create", "profile_update"], total: 15000, today: 250, criticalActions: 12 })),
+  getAuditLogs: auditedAdminProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getAuditStats: auditedAdminProcedure.query(async () => ({ totalLogs: 0, todayLogs: 0, uniqueUsers: 0, topActions: [], total: 0, today: 0, criticalActions: 0 })),
 
   // Broadcasts
-  getBroadcasts: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "b1", title: "System Update", status: "sent", sentAt: "2025-01-22", recipients: 1250 }]),
-  sendBroadcast: auditedAdminProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional(), audience: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: "b2", recipients: 1250 })),
+  getBroadcasts: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  sendBroadcast: auditedAdminProcedure.input(z.object({ title: z.string(), message: z.string(), audienceId: z.string().optional(), audience: z.string().optional() })).mutation(async ({ input }) => ({ success: true, broadcastId: `b_${Date.now()}`, recipients: 0 })),
   deleteBroadcast: auditedAdminProcedure.input(z.object({ broadcastId: z.string() })).mutation(async ({ input }) => ({ success: true, broadcastId: input.broadcastId })),
-  getAudiences: auditedAdminProcedure.query(async () => [{ id: "aud1", name: "All Users", count: 2450 }, { id: "aud2", name: "Carriers", count: 850 }]),
+  getAudiences: auditedAdminProcedure.query(async () => []),
 
   // Company management
-  getCompanies: auditedAdminProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => [{ id: "c1", name: "ABC Transport", type: "carrier", status: "active", verified: true }]),
-  getCompanyStats: auditedAdminProcedure.query(async () => ({ total: 450, active: 420, pending: 25, suspended: 5, verified: 410 })),
-  getPendingCompanies: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "c2", name: "New Carrier LLC", submittedAt: "2025-01-22" }]),
+  getCompanies: auditedAdminProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => []),
+  getCompanyStats: auditedAdminProcedure.query(async () => ({ total: 0, active: 0, pending: 0, suspended: 0, verified: 0 })),
+  getPendingCompanies: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
   verifyCompany: auditedAdminProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   rejectCompany: auditedAdminProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
-  getCompanyVerificationSummary: auditedAdminProcedure.query(async () => ({ pending: 25, approved: 400, rejected: 25, avgProcessingTime: "2.5 hours", total: 450, verified: 400 })),
+  getCompanyVerificationSummary: auditedAdminProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", total: 0, verified: 0 })),
 
   // Disputes
-  getDisputes: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", type: "payment", status: "open", amount: 2500, createdAt: "2025-01-21" }]),
-  getDisputeSummary: auditedAdminProcedure.query(async () => ({ open: 8, investigating: 3, resolved: 45, totalAmount: 125000, inReview: 5, resolvedThisMonth: 12 })),
+  getDisputes: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getDisputeSummary: auditedAdminProcedure.query(async () => ({ open: 0, investigating: 0, resolved: 0, totalAmount: 0, inReview: 0, resolvedThisMonth: 0 })),
   resolveDispute: auditedAdminProcedure.input(z.object({ disputeId: z.string(), resolution: z.string().optional(), refundAmount: z.number().optional() })).mutation(async ({ input }) => ({ success: true, disputeId: input.disputeId })),
 
   // Email logs
-  getEmailLogs: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "e1", to: "user@example.com", subject: "Welcome", status: "delivered", sentAt: "2025-01-23" }]),
-  getEmailSummary: auditedAdminProcedure.query(async () => ({ sent: 5000, delivered: 4850, bounced: 100, opened: 3200, openRate: 66, totalSent: 5000, deliveryRate: 97, failed: 50 })),
+  getEmailLogs: auditedAdminProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => []),
+  getEmailSummary: auditedAdminProcedure.query(async () => ({ sent: 0, delivered: 0, bounced: 0, opened: 0, openRate: 0, totalSent: 0, deliveryRate: 0, failed: 0 })),
   resendEmail: auditedAdminProcedure.input(z.object({ emailId: z.string() })).mutation(async ({ input }) => ({ success: true, emailId: input.emailId })),
 
   // Error logs
-  getErrorLogs: auditedAdminProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "err1", message: "Connection timeout", severity: "warning", count: 5, lastOccurred: "2025-01-23" }]),
-  getErrorSummary: auditedAdminProcedure.query(async () => ({ total: 250, critical: 2, warning: 45, info: 203, errors: 2, warnings: 45, lastError: "2025-01-23 14:30" })),
+  getErrorLogs: auditedAdminProcedure.input(z.object({ severity: z.string().optional(), limit: z.number().optional() })).query(async () => []),
+  getErrorSummary: auditedAdminProcedure.query(async () => ({ total: 0, critical: 0, warning: 0, info: 0, errors: 0, warnings: 0, lastError: "" })),
 
   // Imports
-  getImports: auditedAdminProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [{ id: "imp1", type: "users", status: "completed", records: 150, createdAt: "2025-01-22" }]),
-  getImportStats: auditedAdminProcedure.query(async () => ({ total: 25, completed: 22, failed: 2, processing: 1, recordsImported: 12500 })),
-  getImportHistory: auditedAdminProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => [
-    { id: "imp1", dataType: "drivers", fileName: "drivers_jan.csv", status: "completed", recordsImported: 45, createdAt: "2025-01-20" },
-    { id: "imp2", dataType: "vehicles", fileName: "fleet_update.csv", status: "completed", recordsImported: 12, createdAt: "2025-01-18" },
-  ]),
+  getImports: auditedAdminProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => []),
+  getImportStats: auditedAdminProcedure.query(async () => ({ total: 0, completed: 0, failed: 0, processing: 0, recordsImported: 0 })),
+  getImportHistory: auditedAdminProcedure.input(z.object({ dataType: z.string().optional() }).optional()).query(async () => []),
 
   // Performance
-  getPerformanceMetrics: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 125, p50ResponseTime: 95, p95ResponseTime: 350, p99ResponseTime: 520, requestsPerSecond: 45, errorRate: 0.5, cpu: 42, memory: 68, disk: 55, uptime: 99.99, bandwidth: 85, bandwidthUsed: 425, bandwidthLimit: 500 })),
-  getSlowEndpoints: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/loads", avgTime: 450, calls: 1200 }]),
-  getTopPerformers: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional(), timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ endpoint: "/api/health", avgTime: 5, calls: 50000 }]),
+  getPerformanceMetrics: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 0, p50ResponseTime: 0, p95ResponseTime: 0, p99ResponseTime: 0, requestsPerSecond: 0, errorRate: 0, cpu: 0, memory: 0, disk: 0, uptime: 0, bandwidth: 0, bandwidthUsed: 0, bandwidthLimit: 0 })),
+  getSlowEndpoints: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getTopPerformers: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional(), timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // Platform
-  getPlatformHealth: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "healthy", overallStatus: "healthy", uptime: 99.99, activeUsers: 1250, loadAvg: 0.45, cpu: 42, memory: 68, disk: 55, network: 125, latency: 45 })),
-  getPlatformMetrics: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 1250, monthlyActiveUsers: 3500, totalLoads: 15000, totalRevenue: 2500000, totalUsers: 5500, usersChange: 8.5, usersChangeType: "increase", loadsChange: 12.3, loadsChangeType: "increase", revenue: 2500000, revenueChange: 15.2, revenueChangeType: "increase", activeSessions: 850, sessionsChange: 5.2, sessionsChangeType: "increase" })),
-  getPlatformTrends: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => [{ date: "2025-01-20", users: 1200, loads: 450, revenue: 125000 }, { date: "2025-01-21", users: 1250, loads: 470, revenue: 130000 }]),
+  getPlatformHealth: auditedAdminProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ status: "unknown", overallStatus: "unknown", uptime: 0, activeUsers: 0, loadAvg: 0, cpu: 0, memory: 0, disk: 0, network: 0, latency: 0 })),
+  getPlatformMetrics: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 0, monthlyActiveUsers: 0, totalLoads: 0, totalRevenue: 0, totalUsers: 0, usersChange: 0, usersChangeType: "stable", loadsChange: 0, loadsChangeType: "stable", revenue: 0, revenueChange: 0, revenueChangeType: "stable", activeSessions: 0, sessionsChange: 0, sessionsChangeType: "stable" })),
+  getPlatformTrends: auditedAdminProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => []),
 
   // Permissions & Roles
-  getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [{ id: "p1", name: "loads.create", description: "Create loads" }] as any; perms.categories = [{ name: "Loads", permissions: [{ id: "p1", name: "loads.create", description: "Create loads", enabled: true }] }]; return perms; }),
-  getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 5, carrier: 850, shipper: 1200, driver: 1500, totalRoles: 12, totalPermissions: 85, usersWithRoles: 3555, customRoles: 4 })),
-  getRoles: auditedAdminProcedure.query(async () => [{ id: "r1", name: "Admin", description: "Full access", permissions: ["read", "write", "delete"], userCount: 5, categories: [{ name: "Users", permissions: ["create", "read", "update", "delete"] }] }]),
+  getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [] as any; perms.categories = []; return perms; }),
+  getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 0, carrier: 0, shipper: 0, driver: 0, totalRoles: 0, totalPermissions: 0, usersWithRoles: 0, customRoles: 0 })),
+  getRoles: auditedAdminProcedure.query(async () => []),
   updateRolePermissions: auditedAdminProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
 
   // Rate limiting
-  getRateLimitStats: auditedAdminProcedure.query(async () => ({ blocked: 25, blockedRequests: 25, throttled: 150, total: 50000, totalRequests: 50000, avgLatency: 145, activeUsers: 1250, topBlockedIps: [{ ip: "192.168.1.100", count: 12 }, { ip: "10.0.0.50", count: 8 }] })),
+  getRateLimitStats: auditedAdminProcedure.query(async () => ({ blocked: 0, blockedRequests: 0, throttled: 0, total: 0, totalRequests: 0, avgLatency: 0, activeUsers: 0, topBlockedIps: [] })),
   getRateLimitConfig: auditedAdminProcedure.query(async () => ({ defaultLimit: 100, windowMs: 60000, endpoints: [], enabled: true, anonymousRpm: 30, authenticatedRpm: 100, burstLimit: 150, blockDuration: 3600 })),
   updateRateLimitConfig: auditedAdminProcedure.input(z.object({ limit: z.number().optional(), windowMs: z.number().optional(), enabled: z.boolean().optional(), anonymousRpm: z.number().optional(), authenticatedRpm: z.number().optional(), burstLimit: z.number().optional(), blockDuration: z.number().optional() })).mutation(async ({ input }) => ({ success: true })),
 
   // Missing procedures for frontend pages
   resetPassword: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
   deleteUser: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
-  getSystemLogs: auditedAdminProcedure.input(z.object({ level: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "log1", level: "info", message: "System started", timestamp: new Date().toISOString() }]),
-  getLogStats: auditedAdminProcedure.query(async () => ({ total: 5000, error: 25, warning: 150, info: 4825, debug: 0 })),
-  getOnboardingUsers: auditedAdminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [{ id: "u1", name: "New User", email: "new@example.com", step: 3, totalSteps: 5, status: "in_progress" }]),
-  getOnboardingStats: auditedAdminProcedure.query(async () => ({ total: 50, completed: 35, inProgress: 12, abandoned: 3, avgCompletionTime: "2.5 days" })),
+  getSystemLogs: auditedAdminProcedure.input(z.object({ level: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getLogStats: auditedAdminProcedure.query(async () => ({ total: 0, error: 0, warning: 0, info: 0, debug: 0 })),
+  getOnboardingUsers: auditedAdminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => []),
+  getOnboardingStats: auditedAdminProcedure.query(async () => ({ total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: "" })),
   sendOnboardingReminder: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
 
   // Audit log
@@ -1063,22 +855,12 @@ export const adminRouter = router({
     userId: "user_123",
     action: "load.create",
     timestamp: new Date().toISOString(),
-    details: { loadId: "LOAD-45920", action: "created" },
+    details: {},
   })),
 
   // API Documentation
   getAPIUsageStats: auditedAdminProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
-    totalRequests: 45000,
-    successfulRequests: 44500,
-    failedRequests: 500,
-    avgResponseTime: 125,
-    successRate: 98.9,
-    avgLatency: 125,
-    remainingQuota: 55000,
-    topEndpoints: [
-      { endpoint: "/api/loads", requests: 15000 },
-      { endpoint: "/api/drivers", requests: 12000 },
-      { endpoint: "/api/tracking", requests: 8000 },
-    ],
+    totalRequests: 0, successfulRequests: 0, failedRequests: 0, avgResponseTime: 0,
+    successRate: 0, avgLatency: 0, remainingQuota: 0, topEndpoints: [],
   })),
 });

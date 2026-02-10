@@ -57,26 +57,7 @@ export const alertsRouter = router({
       filter: z.string().optional(),
     }))
     .query(async () => {
-      return [
-        {
-          id: "alert_001",
-          type: "system",
-          severity: "warning",
-          title: "Driver HOS Approaching Limit",
-          message: "Driver Mike Johnson has 2 hours remaining on 11-hour drive time",
-          createdAt: new Date().toISOString(),
-          acknowledged: false,
-        },
-        {
-          id: "alert_002",
-          type: "compliance",
-          severity: "critical",
-          title: "Medical Certificate Expiring",
-          message: "3 driver medical certificates expire within 30 days",
-          createdAt: new Date(Date.now() - 3600000).toISOString(),
-          acknowledged: true,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -85,12 +66,7 @@ export const alertsRouter = router({
   getSummary: protectedProcedure
     .query(async () => {
       return {
-        total: 12,
-        critical: 2,
-        warning: 5,
-        info: 5,
-        unacknowledged: 4,
-        resolved: 8,
+        total: 0, critical: 0, warning: 0, info: 0, unacknowledged: 0, resolved: 0,
       };
     }),
 
@@ -132,7 +108,7 @@ export const alertsRouter = router({
     .mutation(async () => {
       return {
         success: true,
-        count: 12,
+        count: 0,
         dismissedAt: new Date().toISOString(),
       };
     }),
@@ -143,13 +119,7 @@ export const alertsRouter = router({
   getStats: protectedProcedure
     .query(async () => {
       return {
-        total: 12,
-        critical: 2,
-        warning: 5,
-        warnings: 5,
-        info: 5,
-        resolvedToday: 3,
-        dismissed: 8,
+        total: 0, critical: 0, warning: 0, warnings: 0, info: 0, resolvedToday: 0, dismissed: 0,
       };
     }),
 
@@ -158,10 +128,7 @@ export const alertsRouter = router({
    */
   getWeatherAlerts: protectedProcedure
     .input(z.object({ state: z.string().optional() }).optional())
-    .query(async () => [
-      { id: "w1", type: "winter_storm", severity: "warning", headline: "Winter Storm Warning", description: "Heavy snow expected", areas: ["North Texas"], startTime: "2025-01-24T06:00:00Z", endTime: "2025-01-25T18:00:00Z" },
-      { id: "w2", type: "wind", severity: "advisory", headline: "Wind Advisory", description: "Gusts up to 45 mph", areas: ["West Texas"], startTime: "2025-01-24T12:00:00Z", endTime: "2025-01-24T22:00:00Z" },
-    ]),
+    .query(async () => []),
 
   /**
    * Get weather forecast
@@ -169,13 +136,6 @@ export const alertsRouter = router({
   getWeatherForecast: protectedProcedure
     .input(z.object({ city: z.string(), state: z.string(), days: z.number().optional() }))
     .query(async ({ input }) => ({
-      location: `${input.city}, ${input.state}`,
-      avgWindSpeed: 12,
-      days: input.days || 5,
-      forecasts: [
-        { date: "2025-01-24", dayName: "Friday", high: 45, low: 32, condition: "Partly Cloudy", precipChance: 10, humidity: 55, windSpeed: 8 },
-        { date: "2025-01-25", dayName: "Saturday", high: 52, low: 38, condition: "Sunny", precipChance: 0, humidity: 45, windSpeed: 5 },
-        { date: "2025-01-26", dayName: "Sunday", high: 48, low: 35, condition: "Cloudy", precipChance: 30, humidity: 65, windSpeed: 12 },
-      ],
+      location: `${input.city}, ${input.state}`, avgWindSpeed: 0, days: input.days || 5, forecasts: [],
     })),
 });

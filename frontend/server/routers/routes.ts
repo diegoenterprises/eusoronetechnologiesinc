@@ -38,35 +38,8 @@ export const routesRouter = router({
     .mutation(async ({ input }) => {
       return {
         routeId: `route_${Date.now()}`,
-        distance: 285.4,
-        duration: 4.5,
-        estimatedFuel: 46.2,
-        tollCost: 12.50,
-        segments: [
-          {
-            start: { lat: 29.7604, lng: -95.3698, address: "Houston, TX" },
-            end: { lat: 30.2672, lng: -97.7431, address: "Austin, TX" },
-            distance: 165.2,
-            duration: 2.5,
-            instructions: "Take I-10 W to TX-71 W",
-          },
-          {
-            start: { lat: 30.2672, lng: -97.7431, address: "Austin, TX" },
-            end: { lat: 32.7767, lng: -96.7970, address: "Dallas, TX" },
-            distance: 195.2,
-            duration: 3.0,
-            instructions: "Take I-35 N",
-          },
-        ],
-        warnings: input.hazmat ? [
-          { type: "tunnel_restriction", message: "Hazmat vehicles restricted in downtown tunnels" },
-        ] : [],
-        fuelStops: [
-          { name: "Pilot Travel Center", address: "Waco, TX", distance: 180, dieselPrice: 3.65 },
-        ],
-        restAreas: [
-          { name: "Rest Area Mile 156", distance: 156, amenities: ["restrooms", "vending"] },
-        ],
+        distance: 0, duration: 0, estimatedFuel: 0, tollCost: 0,
+        segments: [], warnings: [], fuelStops: [], restAreas: [],
       };
     }),
 

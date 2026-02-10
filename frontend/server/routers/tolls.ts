@@ -16,8 +16,6 @@ export const tollsRouter = router({
     .input(z.object({ limit: z.number().optional().default(5) }))
     .query(async () => {
       return [
-        { id: "r1", origin: "Houston, TX", destination: "Dallas, TX", tollCost: 24.50, lastUsed: "2025-01-22" },
-        { id: "r2", origin: "Austin, TX", destination: "San Antonio, TX", tollCost: 8.75, lastUsed: "2025-01-20" },
       ];
     }),
 
@@ -35,14 +33,8 @@ export const tollsRouter = router({
         origin: input.origin,
         destination: input.destination,
         vehicleType: input.vehicleType,
-        distance: 240,
-        tollCost: 24.50,
-        tollPlazas: [
-          { name: "Hardy Toll Road", cost: 8.50 },
-          { name: "SH 130", cost: 12.00 },
-          { name: "NTTA", cost: 4.00 },
-        ],
-        estimatedTime: "3h 45m", totalTolls: 24.50, tollBreakdown: [{ name: "Hardy Toll Road", cost: 8.50 }, { name: "SH 130", cost: 12.00 }, { name: "NTTA", cost: 4.00 }],
+        distance: 0, tollCost: 0, tollPlazas: [],
+        estimatedTime: "", totalTolls: 0, tollBreakdown: [],
       };
     }),
 });

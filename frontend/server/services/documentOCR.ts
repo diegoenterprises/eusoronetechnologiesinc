@@ -14,9 +14,13 @@
 
 import { execFile } from "child_process";
 import { writeFileSync, unlinkSync, existsSync } from "fs";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 import { tmpdir } from "os";
 import { ENV } from "../_core/env";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ---------------------------------------------------------------------------
 // TYPES
@@ -49,7 +53,7 @@ export interface DigitizeResult {
 // 1. PaddleOCR (Python subprocess)
 // ---------------------------------------------------------------------------
 async function runPaddleOCR(base64Data: string): Promise<OCRResult | null> {
-  const scriptPath = join(__dirname, "paddleOCR.py");
+  const scriptPath = join(__dirname, "paddleOCR.py");  // ESM-safe __dirname defined above
   if (!existsSync(scriptPath)) return null;
 
   // Write base64 data to temp file
@@ -274,7 +278,8 @@ async function classifyWithESANG(ocrText: string, filename: string): Promise<Doc
 // Fallback: regex-based classification when AI is unavailable
 // ---------------------------------------------------------------------------
 function fallbackClassification(filename: string, text: string): DocumentClassification {
-  const combined = `${filename} ${text}`.toLowerCase();
+  // Normalize underscores/hyphens to spaces so filenames like "Permit_Cost_Estimates" match
+  const combined = `${filename} ${text}`.toLowerCase().replace(/[_-]+/g, " ");
 
   const rules: { pattern: RegExp; category: string; subcategory: string; isExpirable: boolean; tags: string[] }[] = [
     { pattern: /certificate\s*of\s*ins|liability\s*ins|bipd|general\s*liability/i, category: "insurance", subcategory: "liability_insurance", isExpirable: true, tags: ["insurance", "liability"] },
@@ -300,6 +305,19 @@ function fallbackClassification(filename: string, text: string): DocumentClassif
     { pattern: /w-?9|tax\s*id|ein/i, category: "company", subcategory: "w9", isExpirable: false, tags: ["w9", "tax"] },
     { pattern: /registration|title|vin/i, category: "vehicle", subcategory: "vehicle_registration", isExpirable: true, tags: ["vehicle", "registration"] },
     { pattern: /inspection|annual\s*insp/i, category: "vehicle", subcategory: "inspection", isExpirable: true, tags: ["vehicle", "inspection"] },
+    // Broader catch-all rules (MUST be after specific rules)
+    { pattern: /\bpermit\b/i, category: "permits", subcategory: "general_permit", isExpirable: true, tags: ["permit"] },
+    { pattern: /\bestimate\b|\bcost.?estimate/i, category: "financial", subcategory: "estimate", isExpirable: false, tags: ["estimate", "financial"] },
+    { pattern: /\bquote\b|\bquotation\b/i, category: "financial", subcategory: "quote", isExpirable: false, tags: ["quote", "financial"] },
+    { pattern: /\bpurchase\b|\bprocurement\b/i, category: "financial", subcategory: "purchase_order", isExpirable: false, tags: ["purchase", "financial"] },
+    { pattern: /\bbudget\b|\bexpense\b/i, category: "financial", subcategory: "budget", isExpirable: false, tags: ["budget", "financial"] },
+    { pattern: /\bproposal\b|\bbid\b/i, category: "contracts", subcategory: "proposal", isExpirable: false, tags: ["proposal", "bid"] },
+    { pattern: /\blicense\b|\blicence\b/i, category: "compliance", subcategory: "license", isExpirable: true, tags: ["license", "compliance"] },
+    { pattern: /\binsurance\b|\bcoverage\b|\bpolicy\b/i, category: "insurance", subcategory: "general_insurance", isExpirable: true, tags: ["insurance"] },
+    { pattern: /\bcertificate\b|\bcertification\b/i, category: "compliance", subcategory: "certification", isExpirable: true, tags: ["certificate", "compliance"] },
+    { pattern: /\breport\b|\baudit\b/i, category: "compliance", subcategory: "report", isExpirable: false, tags: ["report", "compliance"] },
+    { pattern: /\bletter\b|\bcorrespondence\b|\bmemo\b/i, category: "company", subcategory: "correspondence", isExpirable: false, tags: ["letter", "correspondence"] },
+    { pattern: /\bmanual\b|\bguide\b|\bhandbook\b/i, category: "company", subcategory: "manual", isExpirable: false, tags: ["manual", "guide"] },
   ];
 
   for (const rule of rules) {

@@ -157,6 +157,9 @@ import ZeunFleetDashboard from "./pages/ZeunFleetDashboard";
 import ZeunAdminDashboard from "./pages/ZeunAdminDashboard";
 import HotZones from "./pages/HotZones";
 import MarketPricing from "./pages/MarketPricing";
+import CarrierCompliance from "./pages/CarrierCompliance";
+import FuelPrices from "./pages/FuelPrices";
+import WeatherAlerts from "./pages/WeatherAlerts";
 
 function Router() {
   // CLEAN ROUTING - NO DUPLICATES
@@ -378,6 +381,9 @@ function Router() {
       <Route path={"/tools/rate-calculator"} component={() => (<DashboardLayout><RateCalculator /></DashboardLayout>)} />
       <Route path={"/directory"} component={() => (<DashboardLayout><IndustryDirectory /></DashboardLayout>)} />
       <Route path={"/live-news"} component={() => (<DashboardLayout><LiveNewsFeed /></DashboardLayout>)} />
+      <Route path={"/carrier-compliance"} component={() => (<DashboardLayout><CarrierCompliance /></DashboardLayout>)} />
+      <Route path={"/fuel-prices"} component={() => (<DashboardLayout><FuelPrices /></DashboardLayout>)} />
+      <Route path={"/weather-alerts"} component={() => (<DashboardLayout><WeatherAlerts /></DashboardLayout>)} />
       <Route path={"/audit-log"} component={() => (<DashboardLayout><AuditLog /></DashboardLayout>)} />
       <Route path={"/procedures"} component={() => (<DashboardLayout><ProceduresPage /></DashboardLayout>)} />
       <Route path={"/shipments"} component={() => (<DashboardLayout><ShipmentPage /></DashboardLayout>)} />

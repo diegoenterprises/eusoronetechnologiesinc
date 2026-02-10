@@ -71,7 +71,7 @@ export const facilitiesRouter = router({
         },
         {
           id: "fac_004",
-          name: "ABC Transport Yard",
+          name: "",
           type: "yard",
           address: "2000 Trucking Lane",
           city: "Houston",
@@ -178,7 +178,7 @@ export const facilitiesRouter = router({
         },
         {
           id: "fac_004",
-          name: "ABC Transport Yard",
+          name: "",
           type: "yard",
           address: "2000 Trucking Lane, Houston, TX",
           distance: 8.5,
@@ -217,15 +217,7 @@ export const facilitiesRouter = router({
       return {
         facilityId: input.facilityId,
         date: input.date,
-        slots: [
-          { time: "06:00", appointments: 2, capacity: 4, available: 2 },
-          { time: "08:00", appointments: 4, capacity: 4, available: 0 },
-          { time: "10:00", appointments: 3, capacity: 4, available: 1 },
-          { time: "12:00", appointments: 2, capacity: 4, available: 2 },
-          { time: "14:00", appointments: 3, capacity: 4, available: 1 },
-          { time: "16:00", appointments: 1, capacity: 4, available: 3 },
-          { time: "18:00", appointments: 2, capacity: 4, available: 2 },
-        ],
+        slots: [],
         closures: [],
       };
     }),

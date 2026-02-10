@@ -257,9 +257,7 @@ export const complianceRouter = router({
   getRecentHOSViolations: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(10) }))
     .query(async () => {
-      return [
-        { id: "v1", driver: "Tom Brown", type: "Drive Time Exceeded", date: "2025-01-22", duration: "45 min" },
-      ];
+      return [];
     }),
 
   /**
@@ -359,9 +357,7 @@ export const complianceRouter = router({
   getExpiringHazmat: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(5) }))
     .query(async () => {
-      return [
-        { id: "h1", driver: "Sarah Williams", endorsement: "H", expiresAt: "2025-02-15", daysRemaining: 22 },
-      ];
+      return [];
     }),
 
   /**
@@ -370,16 +366,7 @@ export const complianceRouter = router({
   getMedicalCerts: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
-      const certs = [
-        { id: "m1", driver: "Mike Johnson", status: "valid", expiresAt: "2025-11-15", examiner: "Dr. Smith", daysRemaining: 295 },
-        { id: "m2", driver: "Sarah Williams", status: "expiring", expiresAt: "2025-02-15", examiner: "Dr. Brown", daysRemaining: 22 },
-        { id: "m3", driver: "Tom Brown", status: "valid", expiresAt: "2025-08-20", examiner: "Dr. Davis", daysRemaining: 208 },
-      ];
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        return certs.filter(c => c.driver.toLowerCase().includes(q));
-      }
-      return certs;
+      return [];
     }),
 
   /**
@@ -387,7 +374,7 @@ export const complianceRouter = router({
    */
   getMedicalCertStats: protectedProcedure
     .query(async () => {
-      return { totalDrivers: 18, valid: 15, expiringSoon: 2, expired: 1, complianceRate: 94, total: 18, expiring: 2 };
+      return { totalDrivers: 0, valid: 0, expiringSoon: 0, expired: 0, complianceRate: 0, total: 0, expiring: 0 };
     }),
 
   /**
@@ -396,15 +383,7 @@ export const complianceRouter = router({
   getComplianceScores: protectedProcedure
     .query(async () => {
       return {
-        overall: 94,
-        categories: [
-          { name: "DQ Files", score: 96, status: "good" },
-          { name: "HOS Compliance", score: 92, status: "good" },
-          { name: "Drug & Alcohol", score: 100, status: "excellent" },
-          { name: "Vehicle Inspections", score: 88, status: "warning" },
-          { name: "Hazmat", score: 95, status: "good" },
-          { name: "Documentation", score: 90, status: "good" },
-        ],
+        overall: 0, categories: [],
       };
     }),
 
@@ -414,18 +393,18 @@ export const complianceRouter = router({
   getDashboardSummary: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        overallScore: 94,
+        overallScore: 0,
         scores: {
-          dqFiles: { score: 96, items: 18, issues: 1 },
-          hos: { score: 92, items: 18, issues: 2 },
-          drugAlcohol: { score: 100, items: 18, issues: 0 },
-          vehicle: { score: 88, items: 24, issues: 3 },
-          hazmat: { score: 95, items: 12, issues: 1 },
-          documentation: { score: 90, items: 45, issues: 5 },
+          dqFiles: { score: 0, items: 0, issues: 0 },
+          hos: { score: 0, items: 0, issues: 0 },
+          drugAlcohol: { score: 0, items: 0, issues: 0 },
+          vehicle: { score: 0, items: 0, issues: 0 },
+          hazmat: { score: 0, items: 0, issues: 0 },
+          documentation: { score: 0, items: 0, issues: 0 },
         },
-        expiringDocuments: 5,
-        overdueItems: 2,
-        pendingAudits: 1,
+        expiringDocuments: 0,
+        overdueItems: 0,
+        pendingAudits: 0,
         recentViolations: 0,
       };
     }),
@@ -454,14 +433,8 @@ export const complianceRouter = router({
   getPermitStats: protectedProcedure
     .query(async () => {
       return {
-        totalPermits: 12,
-        activePermits: 10,
-        expiringPermits: 2,
-        expiredPermits: 0,
-        total: 12,
-        active: 10,
-        expiring: 2,
-        states: 8,
+        totalPermits: 0, activePermits: 0, expiringPermits: 0, expiredPermits: 0,
+        total: 0, active: 0, expiring: 0, states: 0,
       };
     }),
 
@@ -474,70 +447,9 @@ export const complianceRouter = router({
       status: documentStatusSchema.optional(),
     }))
     .query(async ({ input }) => {
-      const drivers = [
-        {
-          driverId: "d1",
-          driverName: "Mike Johnson",
-          hireDate: "2022-03-15",
-          overallStatus: "valid",
-          completionPercentage: 100,
-          documents: [
-            { type: "cdl", name: "Commercial Driver's License", status: "valid", expirationDate: "2026-03-15" },
-            { type: "medical_card", name: "Medical Examiner's Certificate", status: "valid", expirationDate: "2025-11-15" },
-            { type: "mvr", name: "Motor Vehicle Record", status: "valid", lastUpdated: "2024-12-01" },
-            { type: "road_test", name: "Road Test Certificate", status: "valid", completedDate: "2022-03-20" },
-            { type: "application", name: "Employment Application", status: "valid", completedDate: "2022-03-10" },
-            { type: "clearinghouse", name: "Clearinghouse Query", status: "valid", lastQueried: "2025-01-01" },
-          ],
-        },
-        {
-          driverId: "d2",
-          driverName: "Sarah Williams",
-          hireDate: "2021-06-01",
-          overallStatus: "expiring_soon",
-          completionPercentage: 100,
-          documents: [
-            { type: "cdl", name: "Commercial Driver's License", status: "valid", expirationDate: "2025-06-01" },
-            { type: "medical_card", name: "Medical Examiner's Certificate", status: "expiring_soon", expirationDate: "2025-02-15" },
-            { type: "mvr", name: "Motor Vehicle Record", status: "valid", lastUpdated: "2024-11-15" },
-            { type: "road_test", name: "Road Test Certificate", status: "valid", completedDate: "2021-06-05" },
-            { type: "application", name: "Employment Application", status: "valid", completedDate: "2021-05-25" },
-            { type: "clearinghouse", name: "Clearinghouse Query", status: "valid", lastQueried: "2025-01-01" },
-          ],
-        },
-        {
-          driverId: "d3",
-          driverName: "Tom Brown",
-          hireDate: "2023-01-10",
-          overallStatus: "expired",
-          completionPercentage: 85,
-          documents: [
-            { type: "cdl", name: "Commercial Driver's License", status: "valid", expirationDate: "2027-01-10" },
-            { type: "medical_card", name: "Medical Examiner's Certificate", status: "expired", expirationDate: "2025-01-10" },
-            { type: "mvr", name: "Motor Vehicle Record", status: "valid", lastUpdated: "2024-10-01" },
-            { type: "road_test", name: "Road Test Certificate", status: "valid", completedDate: "2023-01-15" },
-            { type: "application", name: "Employment Application", status: "valid", completedDate: "2023-01-05" },
-            { type: "clearinghouse", name: "Clearinghouse Query", status: "missing" },
-          ],
-        },
-      ];
-
-      let filtered = drivers;
-      if (input.driverId) {
-        filtered = filtered.filter(d => d.driverId === input.driverId);
-      }
-      if (input.status) {
-        filtered = filtered.filter(d => d.overallStatus === input.status);
-      }
-
       return {
-        drivers: filtered,
-        summary: {
-          total: drivers.length,
-          valid: drivers.filter(d => d.overallStatus === "valid").length,
-          expiringSoon: drivers.filter(d => d.overallStatus === "expiring_soon").length,
-          expired: drivers.filter(d => d.overallStatus === "expired").length,
-        },
+        drivers: [],
+        summary: { total: 0, valid: 0, expiringSoon: 0, expired: 0 },
       };
     }),
 
@@ -547,35 +459,7 @@ export const complianceRouter = router({
   getExpiringDocuments: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "exp1",
-          documentType: "medical_card",
-          documentName: "Medical Examiner's Certificate",
-          relatedTo: { type: "driver", id: "d2", name: "Sarah Williams" },
-          expirationDate: "2025-02-15",
-          daysUntilExpiration: 22,
-          status: "expiring_soon",
-        },
-        {
-          id: "exp2",
-          documentType: "insurance",
-          documentName: "Cargo Insurance Policy",
-          relatedTo: { type: "company", id: "c1", name: "ABC Transport LLC" },
-          expirationDate: "2025-02-10",
-          daysUntilExpiration: 17,
-          status: "expiring_soon",
-        },
-        {
-          id: "exp3",
-          documentType: "hazmat_endorsement",
-          documentName: "Hazmat Endorsement",
-          relatedTo: { type: "driver", id: "d4", name: "Lisa Chen" },
-          expirationDate: "2025-03-01",
-          daysUntilExpiration: 36,
-          status: "expiring_soon",
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -588,41 +472,7 @@ export const complianceRouter = router({
       endDate: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "audit1",
-          type: "dot_inspection",
-          date: "2025-01-15",
-          inspector: "DOT Officer Smith",
-          location: "I-45 Weigh Station, TX",
-          result: "satisfactory",
-          violations: 0,
-          notes: "Routine inspection, no issues found",
-        },
-        {
-          id: "audit2",
-          type: "internal_audit",
-          date: "2025-01-10",
-          inspector: "John Admin",
-          location: "Houston Terminal",
-          result: "passed",
-          violations: 0,
-          notes: "Quarterly compliance review",
-        },
-        {
-          id: "audit3",
-          type: "dot_inspection",
-          date: "2024-12-20",
-          inspector: "DOT Officer Johnson",
-          location: "US-290 Checkpoint, TX",
-          result: "conditional",
-          violations: 1,
-          notes: "Minor brake adjustment required",
-          violationDetails: [
-            { code: "393.47", description: "Brake adjustment out of spec", severity: "minor" },
-          ],
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -632,12 +482,12 @@ export const complianceRouter = router({
     .query(async ({ ctx }) => {
       return {
         carrier: {
-          dotNumber: "1234567",
-          mcNumber: "MC-987654",
-          legalName: "ABC Transport LLC",
-          dbaName: "ABC Hazmat Carriers",
-          address: "1234 Industrial Blvd, Houston, TX 77001",
-          phone: "(713) 555-0100",
+          dotNumber: "",
+          mcNumber: "",
+          legalName: "",
+          dbaName: "",
+          address: "",
+          phone: "",
         },
         operatingStatus: "authorized",
         insuranceStatus: "compliant",
@@ -719,88 +569,7 @@ export const complianceRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const violations = [
-        {
-          id: "v1",
-          code: "395.8",
-          description: "Driver failed to maintain accurate log of duty status",
-          severity: "major",
-          status: "open",
-          date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Tom Brown",
-          vehicle: "Unit 2847",
-          location: "Houston, TX",
-          fineAmount: 1500,
-        },
-        {
-          id: "v2",
-          code: "393.47",
-          description: "Brake adjustment out of specification",
-          severity: "minor",
-          status: "in_progress",
-          date: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Mike Johnson",
-          vehicle: "Unit 1923",
-          location: "Dallas, TX",
-          fineAmount: 500,
-        },
-        {
-          id: "v3",
-          code: "172.704",
-          description: "Hazmat shipping papers not properly annotated",
-          severity: "critical",
-          status: "open",
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Sarah Williams",
-          vehicle: "Unit 3456",
-          location: "San Antonio, TX",
-          fineAmount: 2500,
-        },
-        {
-          id: "v4",
-          code: "382.305",
-          description: "Random drug test not completed within required timeframe",
-          severity: "major",
-          status: "resolved",
-          date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Lisa Chen",
-          vehicle: null,
-          location: "Houston Terminal",
-          fineAmount: 1000,
-          resolvedDate: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        {
-          id: "v5",
-          code: "177.817",
-          description: "Placarding not visible from all four sides",
-          severity: "minor",
-          status: "resolved",
-          date: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-          driver: "Robert Davis",
-          vehicle: "Unit 2156",
-          location: "Austin, TX",
-          fineAmount: 750,
-          resolvedDate: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-      ];
-
-      let filtered = violations;
-      if (input.search) {
-        const s = input.search.toLowerCase();
-        filtered = filtered.filter(v => 
-          v.code.toLowerCase().includes(s) || 
-          v.description.toLowerCase().includes(s) ||
-          v.driver?.toLowerCase().includes(s)
-        );
-      }
-      if (input.status) {
-        filtered = filtered.filter(v => v.status === input.status);
-      }
-      if (input.severity) {
-        filtered = filtered.filter(v => v.severity === input.severity);
-      }
-
-      return filtered;
+      return [];
     }),
 
   /**
@@ -809,12 +578,12 @@ export const complianceRouter = router({
   getViolationStats: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        open: 2,
-        critical: 1,
-        inProgress: 1,
-        resolved: 8,
-        totalFines: 6250,
-        avgResolutionDays: 12,
+        open: 0,
+        critical: 0,
+        inProgress: 0,
+        resolved: 0,
+        totalFines: 0,
+        avgResolutionDays: 0,
       };
     }),
 
@@ -848,70 +617,7 @@ export const complianceRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const audits = [
-        {
-          id: "a1",
-          name: "Q1 2025 DOT Compliance Audit",
-          type: "dot",
-          status: "scheduled",
-          scheduledDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Quarterly DOT compliance review covering all driver qualification files",
-          auditor: "DOT Regional Office",
-          location: "Houston Terminal",
-          progress: 0,
-        },
-        {
-          id: "a2",
-          name: "Hazmat Certification Review",
-          type: "hazmat",
-          status: "in_progress",
-          scheduledDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Annual hazmat certification verification for all certified drivers",
-          auditor: "John Safety Manager",
-          location: "All Terminals",
-          progress: 65,
-          findings: 2,
-        },
-        {
-          id: "a3",
-          name: "FMCSA Safety Audit",
-          type: "fmcsa",
-          status: "completed",
-          scheduledDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-          completedDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Comprehensive safety management controls audit",
-          auditor: "FMCSA Field Office",
-          location: "Houston Terminal",
-          progress: 100,
-          findings: 3,
-          result: "satisfactory",
-        },
-        {
-          id: "a4",
-          name: "Internal Driver File Audit",
-          type: "internal",
-          status: "completed",
-          scheduledDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-          completedDate: new Date(Date.now() - 58 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "Monthly review of driver qualification files for compliance",
-          auditor: "Compliance Team",
-          location: "Houston Terminal",
-          progress: 100,
-          findings: 1,
-          result: "passed",
-        },
-        {
-          id: "a5",
-          name: "Tank Wagon Inspection Audit",
-          type: "hazmat",
-          status: "scheduled",
-          scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          description: "DOT-required tank wagon inspection and certification review",
-          auditor: "Third Party Inspector",
-          location: "Equipment Yard",
-          progress: 0,
-        },
-      ];
+      const audits: any[] = [];
 
       let filtered = audits;
       if (input.search) {
@@ -979,86 +685,9 @@ export const complianceRouter = router({
       status: z.string().optional(),
     }))
     .query(async ({ ctx, input }) => {
-      const records = [
-        {
-          id: "t1",
-          driverId: "d1",
-          driverName: "Mike Johnson",
-          trainingType: "hazmat_awareness",
-          trainingName: "Hazmat General Awareness Training",
-          status: "completed",
-          completedDate: "2024-12-15",
-          expirationDate: "2027-12-15",
-          score: 95,
-          certificateId: "CERT-HAZ-001",
-        },
-        {
-          id: "t2",
-          driverId: "d1",
-          driverName: "Mike Johnson",
-          trainingType: "hazmat_function",
-          trainingName: "Hazmat Function-Specific Training",
-          status: "completed",
-          completedDate: "2024-12-15",
-          expirationDate: "2027-12-15",
-          score: 92,
-          certificateId: "CERT-HAZ-002",
-        },
-        {
-          id: "t3",
-          driverId: "d2",
-          driverName: "Sarah Williams",
-          trainingType: "hazmat_security",
-          trainingName: "Hazmat Security Awareness Training",
-          status: "in_progress",
-          assignedDate: "2025-01-10",
-          dueDate: "2025-02-10",
-          progress: 60,
-        },
-        {
-          id: "t4",
-          driverId: "d3",
-          driverName: "Tom Brown",
-          trainingType: "defensive_driving",
-          trainingName: "Defensive Driving Certification",
-          status: "overdue",
-          assignedDate: "2024-11-01",
-          dueDate: "2025-01-01",
-          progress: 30,
-        },
-        {
-          id: "t5",
-          driverId: "d4",
-          driverName: "Lisa Chen",
-          trainingType: "tanker_endorsement",
-          trainingName: "Tanker Endorsement Training",
-          status: "completed",
-          completedDate: "2024-10-20",
-          expirationDate: "2027-10-20",
-          score: 98,
-          certificateId: "CERT-TANK-001",
-        },
-      ];
-
-      let filtered = records;
-      if (input.driverId) {
-        filtered = filtered.filter(r => r.driverId === input.driverId);
-      }
-      if (input.type) {
-        filtered = filtered.filter(r => r.trainingType === input.type);
-      }
-      if (input.status) {
-        filtered = filtered.filter(r => r.status === input.status);
-      }
-
       return {
-        records: filtered,
-        summary: {
-          completed: records.filter(r => r.status === "completed").length,
-          inProgress: records.filter(r => r.status === "in_progress").length,
-          overdue: records.filter(r => r.status === "overdue").length,
-          upcoming: records.filter(r => r.status === "assigned").length,
-        },
+        records: [],
+        summary: { completed: 0, inProgress: 0, overdue: 0, upcoming: 0 },
       };
     }),
 
@@ -1084,86 +713,62 @@ export const complianceRouter = router({
     }),
 
   // Background checks
-  getBackgroundChecks: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "bg1", driverId: "d1", driverName: "John Smith", status: "completed", completedAt: "2025-01-20" }]),
-  getBackgroundCheckStats: protectedProcedure.query(async () => ({ total: 150, pending: 5, completed: 140, failed: 5, clear: 130, review: 10 })),
+  getBackgroundChecks: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
+  getBackgroundCheckStats: protectedProcedure.query(async () => ({ total: 0, pending: 0, completed: 0, failed: 0, clear: 0, review: 0 })),
   initiateBackgroundCheck: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, checkId: "bg_123", driverId: input.driverId })),
 
   // Calendar
-  getCalendarEvents: protectedProcedure.input(z.object({ month: z.number().optional(), year: z.number().optional() })).query(async () => [{ id: "ev1", title: "Medical Card Renewal", date: "2025-02-15", type: "renewal" }]),
-  getCalendarSummary: protectedProcedure.query(async () => ({ thisMonth: 12, nextMonth: 8, overdue: 2, totalEvents: 22, upcoming: 8, completed: 10 })),
+  getCalendarEvents: protectedProcedure.input(z.object({ month: z.number().optional(), year: z.number().optional() })).query(async () => []),
+  getCalendarSummary: protectedProcedure.query(async () => ({ thisMonth: 0, nextMonth: 0, overdue: 0, totalEvents: 0, upcoming: 0, completed: 0 })),
 
   // Clearinghouse
-  getClearinghouseQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional(), filter: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [
-    { id: "ch1", driverId: "d1", driverName: "Mike Johnson", type: "pre-employment", status: "completed", completedAt: "2025-01-18", lastQuery: "2025-01-18" },
-    { id: "ch2", driverId: "d2", driverName: "Sarah Williams", type: "annual", status: "pending", completedAt: null, lastQuery: "2024-12-15" },
-  ]),
-  getClearinghouseStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalDrivers: 45, compliant: 42, pendingQueries: 3, clearDrivers: 42, violations: 2, totalQueries: 250, thisMonth: 15, clear: 42, pending: 3, total: 250 })),
-  getClearinghouseDrivers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => [
-    { driverId: "d1", name: "Mike Johnson", status: "clear", lastQuery: "2025-01-18" },
-    { driverId: "d2", name: "Sarah Williams", status: "pending", lastQuery: "2024-12-15" },
-  ]),
+  getClearinghouseQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional(), filter: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getClearinghouseStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0, totalQueries: 0, thisMonth: 0, clear: 0, pending: 0, total: 0 })),
+  getClearinghouseDrivers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => []),
 
   // DQ File
-  getDQDrivers: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "d1", name: "Mike Johnson", status: "complete", lastUpdated: "2025-01-20" }]),
-  getDQStats: protectedProcedure.query(async () => ({ total: 150, complete: 140, incomplete: 8, missing: 2, expiringSoon: 5, totalDrivers: 25 })),
-  getDriverDQFile: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() })).query(async ({ input }) => ({ driverId: input.driverId, name: "Mike Johnson", dqStatus: "complete", cdlNumber: "TX12345678", hireDate: "2022-01-15", completionPercent: 95, documents: [{ type: "cdl", status: "valid" }, { type: "medical", status: "valid" }] })),
-  getDQFiles: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ driverId: "d1", name: "Mike Johnson", dqStatus: "complete", cdlNumber: "TX12345678", hireDate: "2022-01-15", completionPercent: 95, documents: [{ type: "cdl", status: "valid" }] }]),
+  getDQDrivers: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
+  getDQStats: protectedProcedure.query(async () => ({ total: 0, complete: 0, incomplete: 0, missing: 0, expiringSoon: 0, totalDrivers: 0 })),
+  getDriverDQFile: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() })).query(async ({ input }) => ({ driverId: input?.driverId || "", name: "", dqStatus: "", cdlNumber: "", hireDate: "", completionPercent: 0, documents: [] })),
+  getDQFiles: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
 
   // Drug & Alcohol
-  getDrugAlcoholTests: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "da1", driverId: "d1", type: "random", status: "negative", date: "2025-01-15" }]),
-  getDrugAlcoholStats: protectedProcedure.query(async () => ({ totalTests: 450, negative: 445, positive: 3, pending: 2, scheduled: 5, totalYTD: 450 })),
-  getUpcomingTests: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "ut1", driverId: "d1", type: "random", scheduledDate: "2025-02-01" }]),
+  getDrugAlcoholTests: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional(), search: z.string().optional() })).query(async () => []),
+  getDrugAlcoholStats: protectedProcedure.query(async () => ({ totalTests: 0, negative: 0, positive: 0, pending: 0, scheduled: 0, totalYTD: 0 })),
+  getUpcomingTests: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
   scheduleTest: protectedProcedure.input(z.object({ driverId: z.string().optional(), type: z.string().optional(), date: z.string().optional() }).optional()).mutation(async ({ input }) => ({ success: true, testId: "test_123" })),
 
   // Employment History
-  getEmploymentHistory: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input }) => [{ id: "eh1", employer: "ABC Transport", startDate: "2020-01-15", endDate: "2024-12-31" }]),
-  getEmploymentHistoryStats: protectedProcedure.query(async () => ({ verified: 120, pending: 15, unverifiable: 5, total: 140, drivers: 85 })),
+  getEmploymentHistory: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async ({ input }) => []),
+  getEmploymentHistoryStats: protectedProcedure.query(async () => ({ verified: 0, pending: 0, unverifiable: 0, total: 0, drivers: 0 })),
 
   // Licenses
-  getLicenses: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "lic1", driverId: "d1", type: "CDL-A", state: "TX", expiration: "2026-06-15", status: "valid" }]),
-  getLicenseStats: protectedProcedure.query(async () => ({ total: 150, valid: 145, expiring: 3, expired: 2 })),
+  getLicenses: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
+  getLicenseStats: protectedProcedure.query(async () => ({ total: 0, valid: 0, expiring: 0, expired: 0 })),
 
   // MVR Reports
-  getMVRReports: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "mvr1", driverId: "d1", date: "2025-01-10", status: "clean", violations: 0 }]),
-  getMVRStats: protectedProcedure.query(async () => ({ total: 150, clean: 140, violations: 10, clear: 140, dueForRenewal: 5 })),
+  getMVRReports: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() })).query(async () => []),
+  getMVRStats: protectedProcedure.query(async () => ({ total: 0, clean: 0, violations: 0, clear: 0, dueForRenewal: 0 })),
   requestMVR: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "mvr_123" })),
 
   // PSP Reports
-  getPSPReports: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "psp1", driverId: "d1", date: "2025-01-10", crashes: 0, inspections: 5 }]),
-  getPSPStats: protectedProcedure.query(async () => ({ total: 150, requested: 145, pending: 5, clear: 140, issues: 5, thisMonth: 12 })),
+  getPSPReports: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getPSPStats: protectedProcedure.query(async () => ({ total: 0, requested: 0, pending: 0, clear: 0, issues: 0, thisMonth: 0 })),
   requestPSP: protectedProcedure.input(z.object({ driverId: z.string() })).mutation(async ({ input }) => ({ success: true, requestId: "psp_123" })),
 
   // Road Tests
-  getRoadTests: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => [{ id: "rt1", driverId: "d1", date: "2025-01-05", result: "passed", examiner: "John Examiner" }]),
-  getRoadTestStats: protectedProcedure.query(async () => ({ total: 150, passed: 145, failed: 3, scheduled: 2 })),
+  getRoadTests: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
+  getRoadTestStats: protectedProcedure.query(async () => ({ total: 0, passed: 0, failed: 0, scheduled: 0 })),
 
   // SAFER Lookup
-  saferLookup: protectedProcedure.input(z.object({ dotNumber: z.string().optional(), mcNumber: z.string().optional(), type: z.string().optional(), value: z.string().optional() })).mutation(async ({ input }) => ({ dotNumber: input.dotNumber || input.value || "1234567", legalName: "ABC Transport LLC", status: "AUTHORIZED", safetyRating: "Satisfactory" })),
+  saferLookup: protectedProcedure.input(z.object({ dotNumber: z.string().optional(), mcNumber: z.string().optional(), type: z.string().optional(), value: z.string().optional() })).mutation(async ({ input }) => ({ dotNumber: input.dotNumber || input.value || "", legalName: "", status: "", safetyRating: "" })),
 
   // Permit Requirements
-  getPermitRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => [
-    { id: "pr1", type: "oversize", state: input.state, requirements: ["Permit application", "Route survey", "Escort vehicles"], fees: 150, renewalPeriod: "Annual" },
-    { id: "pr2", type: "overweight", state: input.state, requirements: ["Weight certification", "Bridge analysis"], fees: 200, renewalPeriod: "Per trip" },
-  ]),
-  getStatePermits: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async () => ({
-    permits: [
-      { id: "sp1", number: "TX-2025-001", state: "TX", expiresAt: "2025-12-31", status: "valid" },
-      { id: "sp2", number: "OK-2025-002", state: "OK", expiresAt: "2025-02-15", status: "expiring" },
-    ],
-    total: 12,
-    valid: 10,
-    expiringSoon: 2,
-    expired: 0,
-  })),
+  getPermitRequirements: protectedProcedure.input(z.object({ state: z.string() })).query(async ({ input }) => []),
+  getStatePermits: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async () => ({ permits: [], total: 0, valid: 0, expiringSoon: 0, expired: 0 })),
 
   // Fleet Compliance for Compliance Officer
-  getFleetCompliance: protectedProcedure.query(async () => ({
-    totalVehicles: 45,
-    compliant: 38,
-    expiringSoon: 5,
-    outOfCompliance: 2,
-    overallScore: 84,
-  })),
+  getFleetCompliance: protectedProcedure.query(async () => ({ totalVehicles: 0, compliant: 0, expiringSoon: 0, outOfCompliance: 0, overallScore: 0 })),
 
   getVehicleComplianceList: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => ({
     vehicles: [
@@ -1185,13 +790,7 @@ export const complianceRouter = router({
   })),
 
   getDriverComplianceList: protectedProcedure.input(z.object({ limit: z.number().optional() })).query(async () => ({
-    drivers: [
-      { id: "1", name: "John Smith", cdlNumber: "TX123456", status: "compliant", cdlExpiry: "2027-03-15", medicalExpiry: "2026-08-20", hazmatExpiry: "2026-12-10" },
-      { id: "2", name: "Maria Garcia", cdlNumber: "TX789012", status: "expiring", cdlExpiry: "2027-06-22", medicalExpiry: "2026-02-05", hazmatExpiry: "2027-01-15" },
-      { id: "3", name: "James Wilson", cdlNumber: "TX345678", status: "compliant", cdlExpiry: "2028-01-10", medicalExpiry: "2026-09-30", hazmatExpiry: "2027-04-20" },
-      { id: "4", name: "Sarah Johnson", cdlNumber: "TX901234", status: "expired", cdlExpiry: "2027-08-05", medicalExpiry: "2026-01-15", hazmatExpiry: "2026-11-30" },
-      { id: "5", name: "Michael Brown", cdlNumber: "TX567890", status: "compliant", cdlExpiry: "2027-11-28", medicalExpiry: "2026-07-18", hazmatExpiry: "2027-02-25" },
-    ],
+    drivers: [],
   })),
 
   /**
@@ -1215,90 +814,43 @@ export const complianceRouter = router({
   getChecklists: protectedProcedure
     .input(z.object({}).optional())
     .query(async () => {
-      return [
-        { id: 1, name: "Daily Pre-Trip Inspection", completed: 0, total: 5, items: [{ id: 1, text: "Check tire pressure", checked: false, required: true }, { id: 2, text: "Inspect brake system", checked: false, required: true }] },
-        { id: 2, name: "HazMat Loading Checklist", completed: 0, total: 5, items: [{ id: 3, text: "Verify HazMat placards", checked: false, required: true }, { id: 4, text: "Check shipping papers", checked: false, required: true }] },
-      ];
+      return [];
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // CARRIER COMPLIANCE - MC Authority, DOT, Insurance, FMCSA
   // ═══════════════════════════════════════════════════════════════════════════
   getCarrierCompliance: protectedProcedure.query(async ({ ctx }) => ({
-    score: 92,
-    mcAuthority: "active", dotNumber: "1234567", ucr: "current", ifta: "current", irp: "current",
-    liabilityInsurance: { status: "active", coverage: 1000000, expires: "2026-12-31" },
-    cargoInsurance: { status: "active", coverage: 100000, expires: "2026-12-31" },
-    safetyRating: "Satisfactory", csaScore: 42,
+    score: 0, mcAuthority: "", dotNumber: "", ucr: "", ifta: "", irp: "",
+    liabilityInsurance: { status: "", coverage: 0, expires: "" },
+    cargoInsurance: { status: "", coverage: 0, expires: "" },
+    safetyRating: "", csaScore: 0,
   })),
 
-  getCarrierDocuments: protectedProcedure.query(async ({ ctx }) => [
-    { id: 1, type: "mc_authority", name: "MC Authority", status: "verified", category: "authority", required: true, expirationDate: null },
-    { id: 2, type: "dot_number", name: "DOT Number", status: "verified", category: "authority", required: true },
-    { id: 3, type: "ucr_registration", name: "UCR Registration", status: "verified", category: "authority", required: true, expirationDate: "2026-12-31" },
-    { id: 4, type: "ifta_license", name: "IFTA License", status: "verified", category: "authority", required: true, expirationDate: "2026-12-31" },
-    { id: 5, type: "irp_cab_card", name: "IRP Cab Card", status: "verified", category: "authority", required: true, expirationDate: "2026-03-31" },
-    { id: 6, type: "boc3", name: "BOC-3 Process Agent", status: "verified", category: "authority", required: true },
-    { id: 7, type: "liability_insurance", name: "Liability Insurance ($1M+)", status: "verified", category: "insurance", required: true, expirationDate: "2026-12-31" },
-    { id: 8, type: "cargo_insurance", name: "Cargo Insurance ($100K+)", status: "verified", category: "insurance", required: true, expirationDate: "2026-12-31" },
-    { id: 9, type: "workers_comp", name: "Workers Compensation", status: "expiring", category: "insurance", required: true, expirationDate: "2026-02-28" },
-    { id: 10, type: "auto_liability", name: "Auto Liability", status: "verified", category: "insurance", required: true, expirationDate: "2026-12-31" },
-    { id: 11, type: "safety_rating", name: "FMCSA Safety Rating", status: "verified", category: "safety", required: true },
-    { id: 12, type: "drug_program", name: "Drug Testing Program", status: "verified", category: "safety", required: true },
-    { id: 13, type: "w9", name: "W-9 Form", status: "verified", category: "financial", required: true },
-    { id: 14, type: "bank_ach", name: "Banking/ACH Info", status: "pending", category: "financial", required: true },
-    { id: 15, type: "equipment_list", name: "Equipment List", status: "verified", category: "operational", required: true },
-  ]),
+  getCarrierDocuments: protectedProcedure.query(async ({ ctx }) => []),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // BROKER COMPLIANCE - Authority, Surety Bond, Insurance
   // ═══════════════════════════════════════════════════════════════════════════
   getBrokerCompliance: protectedProcedure.query(async ({ ctx }) => ({
-    score: 95,
-    brokerAuthority: "active", mcNumber: "MC-987654",
-    suretyBond: { status: "active", amount: 75000, provider: "SuretyOne", expires: "2026-12-31" },
-    contingentCargo: { status: "active", coverage: 100000, expires: "2026-12-31" },
-    generalLiability: { status: "active", coverage: 1000000, expires: "2026-12-31" },
+    score: 0, brokerAuthority: "", mcNumber: "",
+    suretyBond: { status: "", amount: 0, provider: "", expires: "" },
+    contingentCargo: { status: "", coverage: 0, expires: "" },
+    generalLiability: { status: "", coverage: 0, expires: "" },
   })),
 
-  getBrokerDocuments: protectedProcedure.query(async ({ ctx }) => [
-    { id: 1, type: "broker_authority", name: "Broker Authority (MC-B)", status: "verified", category: "authority", required: true },
-    { id: 2, type: "broker_license", name: "Broker License", status: "verified", category: "authority", required: true },
-    { id: 3, type: "boc3", name: "BOC-3 Process Agent", status: "verified", category: "authority", required: true },
-    { id: 4, type: "ucr_registration", name: "UCR Registration", status: "verified", category: "authority", required: true, expirationDate: "2026-12-31" },
-    { id: 5, type: "surety_bond", name: "Surety Bond ($75,000)", status: "verified", category: "bond", required: true, expirationDate: "2026-12-31" },
-    { id: 6, type: "contingent_cargo", name: "Contingent Cargo Insurance", status: "verified", category: "insurance", required: true, expirationDate: "2026-12-31" },
-    { id: 7, type: "general_liability", name: "General Liability Insurance", status: "verified", category: "insurance", required: true, expirationDate: "2026-12-31" },
-    { id: 8, type: "errors_omissions", name: "Errors & Omissions Insurance", status: "verified", category: "insurance", required: false, expirationDate: "2026-12-31" },
-    { id: 9, type: "w9", name: "W-9 Form", status: "verified", category: "financial", required: true },
-    { id: 10, type: "bank_info", name: "Banking Information", status: "verified", category: "financial", required: true },
-    { id: 11, type: "carrier_setup_packet", name: "Carrier Setup Packet", status: "verified", category: "operational", required: true },
-    { id: 12, type: "shipper_agreement", name: "Shipper Agreement Template", status: "pending", category: "operational", required: true },
-  ]),
+  getBrokerDocuments: protectedProcedure.query(async ({ ctx }) => []),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // SHIPPER COMPLIANCE - Business Verification, Credit, Insurance
   // ═══════════════════════════════════════════════════════════════════════════
   getShipperCompliance: protectedProcedure.query(async ({ ctx }) => ({
-    score: 88,
-    businessVerified: true, creditApproved: true,
-    creditLimit: 50000, availableCredit: 42500, paymentTerms: "Net 30", creditRating: "A",
-    generalLiability: { status: "active", coverage: 1000000, expires: "2026-12-31" },
+    score: 0, businessVerified: false, creditApproved: false,
+    creditLimit: 0, availableCredit: 0, paymentTerms: "", creditRating: "",
+    generalLiability: { status: "", coverage: 0, expires: "" },
   })),
 
-  getShipperDocuments: protectedProcedure.query(async ({ ctx }) => [
-    { id: 1, type: "business_license", name: "Business License", status: "verified", category: "business", required: true },
-    { id: 2, type: "ein_letter", name: "EIN Verification Letter", status: "verified", category: "business", required: true },
-    { id: 3, type: "articles_incorporation", name: "Articles of Incorporation", status: "verified", category: "business", required: true },
-    { id: 4, type: "credit_application", name: "Credit Application", status: "verified", category: "credit", required: true },
-    { id: 5, type: "trade_references", name: "Trade References (3+)", status: "verified", category: "credit", required: true },
-    { id: 6, type: "bank_reference", name: "Bank Reference Letter", status: "pending", category: "credit", required: false },
-    { id: 7, type: "general_liability", name: "General Liability Insurance", status: "verified", category: "insurance", required: true, expirationDate: "2026-12-31" },
-    { id: 8, type: "cargo_insurance", name: "Cargo Insurance", status: "verified", category: "insurance", required: false, expirationDate: "2026-12-31" },
-    { id: 9, type: "w9", name: "W-9 Form", status: "verified", category: "financial", required: true },
-    { id: 10, type: "payment_terms", name: "Payment Terms Agreement", status: "verified", category: "financial", required: true },
-    { id: 11, type: "ach_authorization", name: "ACH Authorization", status: "verified", category: "financial", required: false },
-  ]),
+  getShipperDocuments: protectedProcedure.query(async ({ ctx }) => []),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // UNIVERSAL DOCUMENT UPLOAD - All User Types

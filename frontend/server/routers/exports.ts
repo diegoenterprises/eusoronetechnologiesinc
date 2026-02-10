@@ -9,15 +9,9 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 
 export const exportsRouter = router({
-  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [
-    { id: "e1", name: "January Loads Report", type: "loads", format: "csv", status: "completed", createdAt: "2025-01-22" },
-    { id: "e2", name: "Driver Performance", type: "drivers", format: "xlsx", status: "processing", createdAt: "2025-01-23" },
-  ]),
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
-  getTemplates: protectedProcedure.query(async () => [
-    { id: "t1", name: "Loads Report", fields: ["loadNumber", "origin", "destination", "status"], format: "csv" },
-    { id: "t2", name: "Driver Summary", fields: ["name", "loads", "miles", "earnings"], format: "xlsx" },
-  ]),
+  getTemplates: protectedProcedure.query(async () => []),
 
   create: protectedProcedure.input(z.object({
     name: z.string().optional(),

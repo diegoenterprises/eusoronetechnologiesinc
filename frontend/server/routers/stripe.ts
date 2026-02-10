@@ -11,7 +11,7 @@
  */
 
 import { z } from "zod";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, wallets, walletTransactions, payments } from "../../drizzle/schema";
@@ -50,40 +50,41 @@ async function resolveUser(openIdOrEmail: string | number, email?: string): Prom
   return null;
 }
 
-// Helper: get or create Stripe customer for a user
+// Helper: get or create Stripe customer for a user (race-safe)
+// Uses Stripe idempotency key to prevent duplicate customers under concurrent requests
 async function getOrCreateStripeCustomer(userOpenId: string | number, email: string, name?: string): Promise<string> {
   const resolved = await resolveUser(userOpenId, email);
 
-  // Check if user already has a Stripe customer ID stored in DB
+  // 1. Check if user already has a Stripe customer ID stored in DB
   if (resolved) {
     const stripeCustomerId = (resolved.row as any)?.stripeCustomerId;
     if (stripeCustomerId) {
       try {
-        await stripe.customers.retrieve(stripeCustomerId);
-        return stripeCustomerId;
+        const cust = await stripe.customers.retrieve(stripeCustomerId);
+        if (!(cust as any).deleted) return stripeCustomerId;
       } catch {
-        // Customer was deleted from Stripe, create a new one
+        // Customer was deleted from Stripe or doesn't exist, create a new one
       }
     }
   }
 
-  // Try to find existing Stripe customer by email
+  // 2. Try to find existing Stripe customer by email (handles orphaned customers)
   try {
     const existing = await stripe.customers.list({ email, limit: 1 });
     if (existing.data.length > 0) {
       const cust = existing.data[0];
-      // Store back to DB if we resolved the user
       if (resolved) {
         const db = await getDb();
         if (db) {
-          try { await db.execute(`UPDATE users SET stripe_customer_id = '${cust.id}' WHERE id = ${resolved.id}`); } catch {}
+          try { await db.update(users).set({ stripeCustomerId: cust.id }).where(eq(users.id, resolved.id)); } catch {}
         }
       }
       return cust.id;
     }
   } catch {}
 
-  // Create new Stripe customer
+  // 3. Create new Stripe customer with idempotency key to prevent race-condition duplicates
+  const idempotencyKey = `create-customer-${resolved ? resolved.id : String(userOpenId)}-${email}`;
   const customer = await stripe.customers.create({
     email,
     name: name || email,
@@ -91,15 +92,29 @@ async function getOrCreateStripeCustomer(userOpenId: string | number, email: str
       userId: resolved ? String(resolved.id) : String(userOpenId),
       platform: "eusotrip",
     },
+  }, {
+    idempotencyKey,
   });
 
-  // Store the customer ID on the user record
+  // 4. Store the customer ID on the user record (use conditional update to avoid overwriting a concurrent write)
   if (resolved) {
     const db = await getDb();
     if (db) {
-      try { await db.execute(`UPDATE users SET stripe_customer_id = '${customer.id}' WHERE id = ${resolved.id}`); } catch {
+      try {
+        await db.update(users)
+          .set({ stripeCustomerId: customer.id })
+          .where(and(eq(users.id, resolved.id), sql`(${users.stripeCustomerId} IS NULL OR ${users.stripeCustomerId} = '')`));
+      } catch {
         console.warn("[Stripe] Could not store customer ID on user record");
       }
+
+      // Re-read to ensure we return the winning customer ID (in case another request wrote first)
+      try {
+        const [fresh] = await db.select({ stripeCustomerId: users.stripeCustomerId }).from(users).where(eq(users.id, resolved.id)).limit(1);
+        if (fresh?.stripeCustomerId && fresh.stripeCustomerId !== customer.id) {
+          return fresh.stripeCustomerId;
+        }
+      } catch {}
     }
   }
 

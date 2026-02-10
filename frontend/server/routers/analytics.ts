@@ -57,19 +57,7 @@ export const analyticsRouter = router({
   getRevenueBreakdown: protectedProcedure
     .input(z.object({ dateRange: z.string().optional() }))
     .query(async () => {
-      return {
-        byCategory: [
-          { category: "Hazmat", amount: 52000, percentage: 41 },
-          { category: "Dry Van", amount: 38000, percentage: 30 },
-          { category: "Tanker", amount: 25500, percentage: 20 },
-          { category: "Flatbed", amount: 12000, percentage: 9 },
-        ],
-        topSources: [
-          { source: "ABC Chemicals", amount: 28000 },
-          { source: "XYZ Logistics", amount: 22000 },
-          { source: "Global Transport", amount: 18000 },
-        ],
-      };
+      return { byCategory: [], topSources: [] };
     }),
 
   /**
@@ -78,12 +66,7 @@ export const analyticsRouter = router({
   getRevenueTrends: protectedProcedure
     .input(z.object({ dateRange: z.string().optional() }))
     .query(async () => {
-      return [
-        { date: "Week 1", revenue: 28000 },
-        { date: "Week 2", revenue: 32000 },
-        { date: "Week 3", revenue: 35000 },
-        { date: "Week 4", revenue: 32500 },
-      ];
+      return [];
     }),
 
   /**
@@ -91,7 +74,7 @@ export const analyticsRouter = router({
    */
   getRevenueGoals: protectedProcedure
     .query(async () => {
-      return { target: 150000, current: 127500, percentage: 85, daysRemaining: 7, remaining: 22500 };
+      return { target: 0, current: 0, percentage: 0, daysRemaining: 0, remaining: 0 };
     }),
 
   /**
@@ -100,7 +83,7 @@ export const analyticsRouter = router({
   getUtilizationSummary: protectedProcedure
     .input(z.object({ dateRange: z.string().optional() }).optional())
     .query(async () => {
-      return { fleetUtilization: 78, avgMilesPerVehicle: 2450, avgHoursPerDriver: 42, avgHoursPerDay: 8.5, idleTime: 12, activeDays: 22, trend: 5.2, targetUtilization: 85 };
+      return { fleetUtilization: 0, avgMilesPerVehicle: 0, avgHoursPerDriver: 0, avgHoursPerDay: 0, idleTime: 0, activeDays: 0, trend: 0, targetUtilization: 0 };
     }),
 
   /**
@@ -109,10 +92,7 @@ export const analyticsRouter = router({
   getUtilizationByVehicle: protectedProcedure
     .input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
-      return [
-        { vehicleId: "v1", unitNumber: "TRK-101", utilization: 85, miles: 2850, hours: 48 },
-        { vehicleId: "v2", unitNumber: "TRK-102", utilization: 72, miles: 2100, hours: 38 },
-      ];
+      return [];
     }),
 
   /**
@@ -121,10 +101,7 @@ export const analyticsRouter = router({
   getUtilizationByDriver: protectedProcedure
     .input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }))
     .query(async () => {
-      return [
-        { driverId: "d1", name: "Mike Johnson", utilization: 82, miles: 2650, hours: 45 },
-        { driverId: "d2", name: "Sarah Williams", utilization: 78, miles: 2400, hours: 42 },
-      ];
+      return [];
     }),
 
   /**
@@ -133,15 +110,7 @@ export const analyticsRouter = router({
   getUtilizationTrends: protectedProcedure
     .input(z.object({ dateRange: z.string().optional() }))
     .query(async () => {
-      return [
-        { date: "2025-01-17", utilization: 75 },
-        { date: "2025-01-18", utilization: 78 },
-        { date: "2025-01-19", utilization: 72 },
-        { date: "2025-01-20", utilization: 80 },
-        { date: "2025-01-21", utilization: 82 },
-        { date: "2025-01-22", utilization: 78 },
-        { date: "2025-01-23", utilization: 76 },
-      ];
+      return [];
     }),
 
   /**
@@ -149,53 +118,23 @@ export const analyticsRouter = router({
    */
   getSummary: protectedProcedure
     .input(z.object({ period: z.string().optional().default("month") }))
-    .query(async ({ input }) => {
-      return {
-        revenue: { total: 127500, change: 12.5 },
-        loads: { total: 45, change: 8.2 },
-        drivers: { active: 18, utilization: 78 },
-        onTimeRate: 96,
-        safetyScore: 92,
-        revenueChange: 12.5,
-        totalLoads: 45,
-        loadsChange: 8.2,
-        milesLogged: 125000,
-        milesChange: 5.8,
-        avgDeliveryTime: 4.2,
-        deliveryTimeChange: -8.5,
-        avgRatePerMile: 2.85,
-        fleetUtilization: 78,
-        customerSatisfaction: 4.7,
-        completedLoads: 42,
-        inTransitLoads: 3,
-        pendingLoads: 5,
-      };
-    }),
+    .query(async () => ({
+      revenue: { total: 0, change: 0 }, loads: { total: 0, change: 0 },
+      drivers: { active: 0, utilization: 0 }, onTimeRate: 0, safetyScore: 0,
+      revenueChange: 0, totalLoads: 0, loadsChange: 0, milesLogged: 0, milesChange: 0,
+      avgDeliveryTime: 0, deliveryTimeChange: 0, avgRatePerMile: 0, fleetUtilization: 0,
+      customerSatisfaction: 0, completedLoads: 0, inTransitLoads: 0, pendingLoads: 0,
+    })),
 
   /**
    * Get trends for Analytics page
    */
   getTrends: protectedProcedure
     .input(z.object({ period: z.string().optional() }).optional())
-    .query(async ({ input }) => {
-      const result = [
-        { name: "Revenue", value: 127500, change: 12.5, trend: "up" },
-        { name: "Loads Completed", value: 45, change: 8.2, trend: "up" },
-        { name: "On-Time Rate", value: 96.5, change: 2.1, trend: "up" },
-        { name: "Customer Satisfaction", value: 4.8, change: 0.3, trend: "up" },
-      ] as any;
-      result.revenue = [
-        { date: "Jan 1", value: 28000 },
-        { date: "Jan 8", value: 32000 },
-        { date: "Jan 15", value: 35000 },
-        { date: "Jan 22", value: 32500 },
-      ];
-      result.loads = [
-        { date: "Jan 1", value: 10 },
-        { date: "Jan 8", value: 12 },
-        { date: "Jan 15", value: 14 },
-        { date: "Jan 22", value: 9 },
-      ];
+    .query(async () => {
+      const result = [] as any;
+      result.revenue = [];
+      result.loads = [];
       return result;
     }),
 
@@ -203,40 +142,15 @@ export const analyticsRouter = router({
    * Get carrier analytics summary
    */
   getCarrierAnalytics: protectedProcedure
-    .input(z.object({
-      period: periodSchema.default("month"),
-    }))
-    .query(async ({ ctx, input }) => {
-      return {
-        period: input.period,
-        revenue: {
-          total: 127500,
-          change: 12.5,
-          trend: "up" as const,
-        },
-        loads: {
-          total: 45,
-          completed: 42,
-          inProgress: 3,
-          change: 8.2,
-        },
-        efficiency: {
-          onTimeRate: 96,
-          avgLoadTime: 45,
-          utilizationRate: 78,
-        },
-        performance: {
-          safetyScore: 92,
-          customerRating: 4.7,
-          claimsRatio: 0.02,
-        },
-        topLanes: [
-          { origin: "Houston, TX", destination: "Dallas, TX", loads: 12, revenue: 28500 },
-          { origin: "Beaumont, TX", destination: "San Antonio, TX", loads: 8, revenue: 19200 },
-          { origin: "Port Arthur, TX", destination: "Austin, TX", loads: 6, revenue: 14400 },
-        ],
-      };
-    }),
+    .input(z.object({ period: periodSchema.default("month") }))
+    .query(async ({ input }) => ({
+      period: input.period,
+      revenue: { total: 0, change: 0, trend: "stable" as const },
+      loads: { total: 0, completed: 0, inProgress: 0, change: 0 },
+      efficiency: { onTimeRate: 0, avgLoadTime: 0, utilizationRate: 0 },
+      performance: { safetyScore: 0, customerRating: 0, claimsRatio: 0 },
+      topLanes: [],
+    })),
 
   /**
    * Get shipper analytics
@@ -249,30 +163,26 @@ export const analyticsRouter = router({
       return {
         period: input.period,
         spending: {
-          total: 89500,
-          change: -5.2,
-          trend: "down" as const,
+          total: 0,
+          change: 0,
+          trend: "stable" as const,
         },
         loads: {
-          total: 32,
-          delivered: 30,
-          inTransit: 2,
-          change: 15.3,
+          total: 0,
+          delivered: 0,
+          inTransit: 0,
+          change: 0,
         },
         savings: {
-          vsMarketRate: 8500,
-          percentSavings: 8.7,
+          vsMarketRate: 0,
+          percentSavings: 0,
         },
         carrierPerformance: {
-          avgDeliveryTime: 18.5,
-          onTimeRate: 94,
-          avgRating: 4.6,
+          avgDeliveryTime: 0,
+          onTimeRate: 0,
+          avgRating: 0,
         },
-        topCarriers: [
-          { name: "ABC Transport", loads: 12, rating: 4.8, onTime: 100 },
-          { name: "FastHaul LLC", loads: 8, rating: 4.5, onTime: 92 },
-          { name: "SafeHaul Transport", loads: 6, rating: 4.7, onTime: 95 },
-        ],
+        topCarriers: [],
       };
     }),
 
@@ -287,24 +197,21 @@ export const analyticsRouter = router({
       return {
         period: input.period,
         commission: {
-          total: 15750,
-          change: 22.3,
-          trend: "up" as const,
+          total: 0,
+          change: 0,
+          trend: "stable" as const,
         },
         volume: {
-          totalLoads: 52,
-          totalRevenue: 157500,
-          avgMargin: 10.0,
+          totalLoads: 0,
+          totalRevenue: 0,
+          avgMargin: 0,
         },
         performance: {
-          matchRate: 85,
-          avgTimeToMatch: 2.5,
-          carrierRetention: 78,
+          matchRate: 0,
+          avgTimeToMatch: 0,
+          carrierRetention: 0,
         },
-        topShippers: [
-          { name: "Shell Oil Company", loads: 18, revenue: 54000, margin: 5400 },
-          { name: "ExxonMobil", loads: 12, revenue: 36000, margin: 3600 },
-        ],
+        topShippers: [],
       };
     }),
 
@@ -312,166 +219,56 @@ export const analyticsRouter = router({
    * Get platform-wide analytics (admin)
    */
   getPlatformAnalytics: protectedProcedure
-    .input(z.object({
-      period: periodSchema.default("month"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        users: {
-          total: 2450,
-          active: 1890,
-          newThisPeriod: 145,
-          churnRate: 2.1,
-        },
-        loads: {
-          total: 8500,
-          completed: 8100,
-          inProgress: 400,
-          avgValue: 2850,
-        },
-        revenue: {
-          gmv: 24225000,
-          platformFees: 485000,
-          change: 18.5,
-        },
-        engagement: {
-          dailyActiveUsers: 1250,
-          avgSessionDuration: 24.5,
-          loadPostToBookRatio: 3.2,
-        },
-      };
-    }),
+    .input(z.object({ period: periodSchema.default("month") }))
+    .query(async ({ input }) => ({
+      period: input.period,
+      users: { total: 0, active: 0, newThisPeriod: 0, churnRate: 0 },
+      loads: { total: 0, completed: 0, inProgress: 0, avgValue: 0 },
+      revenue: { gmv: 0, platformFees: 0, change: 0 },
+      engagement: { dailyActiveUsers: 0, avgSessionDuration: 0, loadPostToBookRatio: 0 },
+    })),
 
   /**
    * Get revenue trends (detailed version)
    */
   getRevenueTrendsDetailed: protectedProcedure
-    .input(z.object({
-      period: periodSchema.default("month"),
-      granularity: z.enum(["day", "week", "month"]).default("week"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        data: [
-          { date: "2025-01-01", revenue: 28500, loads: 10 },
-          { date: "2025-01-08", revenue: 32000, loads: 12 },
-          { date: "2025-01-15", revenue: 35500, loads: 13 },
-          { date: "2025-01-22", revenue: 31500, loads: 10 },
-        ],
-        totals: {
-          revenue: 127500,
-          loads: 45,
-          avgPerLoad: 2833,
-        },
-      };
-    }),
+    .input(z.object({ period: periodSchema.default("month"), granularity: z.enum(["day", "week", "month"]).default("week") }))
+    .query(async ({ input }) => ({
+      period: input.period, data: [], totals: { revenue: 0, loads: 0, avgPerLoad: 0 },
+    })),
 
   /**
    * Get lane analytics
    */
   getLaneAnalytics: protectedProcedure
-    .input(z.object({
-      originState: z.string().optional(),
-      destState: z.string().optional(),
-      period: periodSchema.default("month"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        lanes: [
-          {
-            origin: "TX",
-            destination: "TX",
-            loads: 120,
-            avgRate: 3.45,
-            volume: 345000,
-            trend: "up" as const,
-          },
-          {
-            origin: "TX",
-            destination: "LA",
-            loads: 45,
-            avgRate: 3.65,
-            volume: 125000,
-            trend: "stable" as const,
-          },
-          {
-            origin: "TX",
-            destination: "OK",
-            loads: 32,
-            avgRate: 3.55,
-            volume: 88000,
-            trend: "up" as const,
-          },
-        ],
-        summary: {
-          totalLanes: 25,
-          avgRate: 3.52,
-          highestVolumeLane: "TX → TX",
-          fastestGrowingLane: "TX → NM",
-        },
-      };
-    }),
+    .input(z.object({ originState: z.string().optional(), destState: z.string().optional(), period: periodSchema.default("month") }))
+    .query(async () => ({
+      lanes: [], summary: { totalLanes: 0, avgRate: 0, highestVolumeLane: "", fastestGrowingLane: "" },
+    })),
 
   /**
    * Get safety analytics
    */
   getSafetyAnalytics: protectedProcedure
-    .input(z.object({
-      period: periodSchema.default("month"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        overallScore: 92,
-        incidents: {
-          total: 3,
-          accidents: 1,
-          violations: 1,
-          nearMisses: 1,
-          change: -40,
-        },
-        inspections: {
-          total: 45,
-          passed: 43,
-          passRate: 95.6,
-        },
-        csaScores: {
-          unsafeDriving: 42,
-          hos: 38,
-          vehicleMaintenance: 58,
-          hazmat: 25,
-        },
-        topConcerns: [
-          { area: "Vehicle Maintenance", score: 58, threshold: 80 },
-        ],
-      };
-    }),
+    .input(z.object({ period: periodSchema.default("month") }))
+    .query(async ({ input }) => ({
+      period: input.period, overallScore: 0,
+      incidents: { total: 0, accidents: 0, violations: 0, nearMisses: 0, change: 0 },
+      inspections: { total: 0, passed: 0, passRate: 0 },
+      csaScores: { unsafeDriving: 0, hos: 0, vehicleMaintenance: 0, hazmat: 0 },
+      topConcerns: [],
+    })),
 
   /**
    * Get compliance analytics
    */
   getComplianceAnalytics: protectedProcedure
-    .input(z.object({
-      period: periodSchema.default("month"),
-    }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        overallScore: 94,
-        categories: {
-          dqFiles: { score: 96, items: 18, issues: 1 },
-          hos: { score: 92, items: 18, issues: 2 },
-          drugAlcohol: { score: 100, items: 18, issues: 0 },
-          vehicle: { score: 88, items: 24, issues: 3 },
-          hazmat: { score: 95, items: 12, issues: 1 },
-        },
-        expiringDocuments: 5,
-        auditsCompleted: 2,
-        auditsPending: 1,
-      };
-    }),
+    .input(z.object({ period: periodSchema.default("month") }))
+    .query(async ({ input }) => ({
+      period: input.period, overallScore: 0,
+      categories: { dqFiles: { score: 0, items: 0, issues: 0 }, hos: { score: 0, items: 0, issues: 0 }, drugAlcohol: { score: 0, items: 0, issues: 0 }, vehicle: { score: 0, items: 0, issues: 0 }, hazmat: { score: 0, items: 0, issues: 0 } },
+      expiringDocuments: 0, auditsCompleted: 0, auditsPending: 0,
+    })),
 
   /**
    * Export analytics report
@@ -492,188 +289,40 @@ export const analyticsRouter = router({
     }),
 
   // Benchmarks & Market
-  getBenchmarks: protectedProcedure.query(async () => [{ metric: "Rate per Mile", ourValue: 3.05, industryAvg: 2.85 }, { metric: "On-Time Rate", ourValue: 96, industryAvg: 92 }, { metric: "Customer Satisfaction", ourValue: 4.8, industryAvg: 4.2 }, { metric: "Load Acceptance", ourValue: 88, industryAvg: 75 }]),
-  getCompetitors: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ name: "Industry Average", ratePerMile: 2.85, marketShare: 100 }]),
-  getMarketShare: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ yourShare: 2.5, ourShare: 2.5, topCompetitor: 8.2, marketSize: 850000000, shareChange: 0.3, marketRank: 15 })),
+  getBenchmarks: protectedProcedure.query(async () => []),
+  getCompetitors: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getMarketShare: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ yourShare: 0, ourShare: 0, topCompetitor: 0, marketSize: 0, shareChange: 0, marketRank: 0 })),
 
   // Deadhead analysis
-  getDeadheadSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ 
-    totalMiles: 12500, 
-    percentage: 18, 
-    cost: 8750,
-    deadheadPercentage: 18,
-    deadheadMiles: 12500,
-    trendPercent: -2.5,
-    trend: -2.5,
-    lostRevenue: 15000,
-    targetPercentage: 15,
-  })),
-  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => [{ month: "Jan", percentage: 18 }, { month: "Dec", percentage: 20 }]),
-  getDeadheadByDriver: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ driverId: "d1", name: "Mike Johnson", deadheadPct: 15 }]),
-  getDeadheadByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ lane: "Houston-Dallas", deadheadPct: 12, loads: 45 }]),
+  getDeadheadSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ totalMiles: 0, percentage: 0, cost: 0, deadheadPercentage: 0, deadheadMiles: 0, trendPercent: 0, trend: 0, lostRevenue: 0, targetPercentage: 0 })),
+  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => []),
+  getDeadheadByDriver: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getDeadheadByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // On-time analysis
-  getOnTimeSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ 
-    rate: 96, 
-    onTime: 450, 
-    late: 18, 
-    lateDeliveries: 18,
-    early: 32,
-    onTimeRate: 96,
-    onTimeDeliveries: 450,
-    trendPercent: 2.1,
-    trend: "up",
-    targetRate: 95,
-  })),
-  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => [{ month: "Jan", rate: 96 }, { month: "Dec", rate: 94 }]),
-  getOnTimeByCustomer: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ customerId: "c1", name: "Shell Oil", rate: 98, loads: 120 }]),
-  getOnTimeByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ lane: "Houston-Dallas", rate: 97, loads: 85 }]),
+  getOnTimeSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ rate: 0, onTime: 0, late: 0, lateDeliveries: 0, early: 0, onTimeRate: 0, onTimeDeliveries: 0, trendPercent: 0, trend: "stable", targetRate: 0 })),
+  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => []),
+  getOnTimeByCustomer: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getOnTimeByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // Performance reports
-  getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => ({
-    revenue: 127500,
-    revenueChange: 12.5,
-    loads: 45,
-    loadsChange: 8.2,
-    milesLogged: 125000,
-    avgLoadTime: 4.2,
-    totalReports: 52,
-    mostPopular: "Revenue Analysis",
-  })),
-  getPerformanceTrends: protectedProcedure.input(z.object({ metric: z.string(), period: z.string().optional() })).query(async ({ input }) => ({
-    revenue: [
-      { date: "Jan 1", value: 28000 },
-      { date: "Jan 8", value: 32000 },
-      { date: "Jan 15", value: 35000 },
-      { date: "Jan 22", value: 32500 },
-    ],
-    loads: [
-      { date: "Jan 1", value: 10 },
-      { date: "Jan 8", value: 12 },
-      { date: "Jan 15", value: 14 },
-      { date: "Jan 22", value: 9 },
-    ],
-    miles: [
-      { date: "Jan 1", value: 28000 },
-      { date: "Jan 8", value: 32000 },
-      { date: "Jan 15", value: 35000 },
-      { date: "Jan 22", value: 30000 },
-    ],
-    onTime: [
-      { date: "Jan 1", value: 95 },
-      { date: "Jan 8", value: 97 },
-      { date: "Jan 15", value: 96 },
-      { date: "Jan 22", value: 98 },
-    ],
-  })),
-  getReportsSummary: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
-    avgLoadTime: 2.5,
-    totalReports: 45,
-    mostPopular: "Revenue Report",
-    revenue: 127500,
-    loads: 45,
-    loadsCompleted: 45,
-    avgMargin: 12.5,
-    onTimeRate: 96.5,
-    milesLogged: 125000,
-  })),
-  getReportsTrends: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
-    revenue: [
-      { date: "Jan 1", value: 28000 },
-      { date: "Jan 8", value: 32000 },
-      { date: "Jan 15", value: 35000 },
-      { date: "Jan 22", value: 32500 },
-    ],
-    loads: [
-      { date: "Jan 1", value: 10 },
-      { date: "Jan 8", value: 12 },
-      { date: "Jan 15", value: 14 },
-      { date: "Jan 22", value: 9 },
-    ],
-    onTime: [
-      { date: "Jan 1", value: 95 },
-      { date: "Jan 8", value: 97 },
-      { date: "Jan 15", value: 96 },
-      { date: "Jan 22", value: 98 },
-    ],
-    miles: [
-      { date: "Jan 1", value: 28000 },
-      { date: "Jan 8", value: 32000 },
-      { date: "Jan 15", value: 35000 },
-      { date: "Jan 22", value: 30000 },
-    ],
-  })),
+  getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => ({ revenue: 0, revenueChange: 0, loads: 0, loadsChange: 0, milesLogged: 0, avgLoadTime: 0, totalReports: 0, mostPopular: "" })),
+  getPerformanceTrends: protectedProcedure.input(z.object({ metric: z.string(), period: z.string().optional() })).query(async () => ({ revenue: [], loads: [], miles: [], onTime: [] })),
+  getReportsSummary: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ avgLoadTime: 0, totalReports: 0, mostPopular: "", revenue: 0, loads: 0, loadsCompleted: 0, avgMargin: 0, onTimeRate: 0, milesLogged: 0 })),
+  getReportsTrends: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ revenue: [], loads: [], onTime: [], miles: [] })),
   getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
-    { id: "d1", name: "Mike Johnson", score: 98, revenue: 28500, loads: 12 },
-    { id: "d2", name: "Sarah Williams", score: 96, revenue: 26000, loads: 11 },
-    { id: "d3", name: "Tom Brown", score: 94, revenue: 24500, loads: 10 },
   ])),
 
   // Performance monitoring
-  getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({
-    avgResponseTime: 145,
-    p95ResponseTime: 320,
-    requestsPerSecond: 1250,
-    errorRate: 0.02,
-    cpu: { current: 42, avg: 38, peak: 72 },
-    memory: { current: 68, avg: 65, peak: 82 },
-    disk: { current: 55, used: 275, total: 500 },
-    network: { inbound: 125, outbound: 85 },
-  })),
-  getPerformanceHistory: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
-    { timestamp: "10:00", cpu: 42, memory: 68, responseTime: 145 },
-    { timestamp: "10:05", cpu: 45, memory: 70, responseTime: 152 },
-    { timestamp: "10:10", cpu: 38, memory: 65, responseTime: 138 },
-  ])),
+  getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 0, p95ResponseTime: 0, requestsPerSecond: 0, errorRate: 0, cpu: { current: 0, avg: 0, peak: 0 }, memory: { current: 0, avg: 0, peak: 0 }, disk: { current: 0, used: 0, total: 0 }, network: { inbound: 0, outbound: 0 } })),
+  getPerformanceHistory: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // Platform analytics
-  getPlatformStats: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({
-    dailyActiveUsers: 1250,
-    monthlyActiveUsers: 8500,
-    totalLoads: 45,
-    totalRevenue: 127500,
-    revenue: 127500,
-    totalUsers: 2500,
-    usersChange: 12.5,
-    usersChangeType: "up",
-    loadsChange: 8.2,
-    loadsChangeType: "up",
-    revenueChange: 15.3,
-    revenueChangeType: "up",
-  })),
-  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ([
-    { date: "Jan 1", users: 1200, loads: 40, revenue: 115000 },
-    { date: "Jan 8", users: 1250, loads: 45, revenue: 127500 },
-  ])),
-  getPlatformTopUsers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ([
-    { id: "u1", name: "Shell Oil", loads: 18, revenue: 54000 },
-    { id: "u2", name: "ExxonMobil", loads: 12, revenue: 36000 },
-  ])),
+  getPlatformStats: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 0, monthlyActiveUsers: 0, totalLoads: 0, totalRevenue: 0, revenue: 0, totalUsers: 0, usersChange: 0, usersChangeType: "stable", loadsChange: 0, loadsChangeType: "stable", revenueChange: 0, revenueChangeType: "stable" })),
+  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => []),
+  getPlatformTopUsers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   // Performance Reports
-  getPerformanceData: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
-    revenue: [
-      { date: "Jan 1", value: 28000 },
-      { date: "Jan 8", value: 32000 },
-      { date: "Jan 15", value: 35000 },
-    ],
-    loads: [
-      { date: "Jan 1", value: 12 },
-      { date: "Jan 8", value: 15 },
-      { date: "Jan 15", value: 18 },
-    ],
-    onTime: [
-      { date: "Jan 1", value: 95 },
-      { date: "Jan 8", value: 97 },
-      { date: "Jan 15", value: 96 },
-    ],
-  })),
-  getPerformanceStats: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({
-    avgLoadTime: 4.2,
-    totalReports: 156,
-    mostPopular: "Revenue by Lane",
-    revenue: 285000,
-    loads: 125,
-    onTimeRate: 96,
-  })),
+  getPerformanceData: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ revenue: [], loads: [], onTime: [] })),
+  getPerformanceStats: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({ avgLoadTime: 0, totalReports: 0, mostPopular: "", revenue: 0, loads: 0, onTimeRate: 0 })),
 });

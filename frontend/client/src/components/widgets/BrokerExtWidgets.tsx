@@ -84,11 +84,11 @@ export const CommissionTrackerWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader color="text-green-400" /> : (
       <div className="space-y-3">
         <div className="text-center p-3 rounded-lg bg-green-500/10">
-          <p className="text-2xl font-bold text-green-400">${c.totalEarned.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-400">${(c.totalEarned || 0).toLocaleString()}</p>
           <p className="text-xs text-gray-400">Total Earned</p>
         </div>
-        <StatRow label="This Month" value={`$${c.thisMonth.toLocaleString()}`} color="text-cyan-400" />
-        <StatRow label="Pending" value={`$${c.pending.toLocaleString()}`} color="text-yellow-400" />
+        <StatRow label="This Month" value={`$${(c.thisMonth || 0).toLocaleString()}`} color="text-cyan-400" />
+        <StatRow label="Pending" value={`$${(c.pending || 0).toLocaleString()}`} color="text-yellow-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -165,7 +165,7 @@ export const PaymentStatusWidget: React.FC = () => {
           { label: "Pending", value: p.pending, color: "bg-yellow-500/10" },
           { label: "Overdue", value: p.overdue, color: "bg-red-500/10" },
         ]} />
-        <StatRow label="Outstanding" value={`$${p.totalOutstanding.toLocaleString()}`} color="text-orange-400" />
+        <StatRow label="Outstanding" value={`$${(p.totalOutstanding || 0).toLocaleString()}`} color="text-orange-400" />
       </div>
     )}</ResponsiveWidget>
   );

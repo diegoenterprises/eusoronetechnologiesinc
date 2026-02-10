@@ -24,11 +24,14 @@ import LoadVisualization from "@/components/LoadVisualization";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 
 // Products that qualify for SPECTRA-MATCH™ oil identification
+const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
-function isSpectraQualified(productName: string, hazmatClass: string): boolean {
-  const p = productName.toLowerCase();
+function isSpectraQualified(cargoType?: string, productName?: string, hazmatClass?: string): boolean {
+  if (cargoType && SPECTRA_CARGO_TYPES.includes(cargoType)) return true;
+  if (["2", "3"].includes(hazmatClass || "")) return true;
+  if (cargoType && ["refrigerated", "oversized", "general"].includes(cargoType)) return false;
+  const p = (productName || "").toLowerCase();
   if (SPECTRA_KEYWORDS.some(k => p.includes(k))) return true;
-  if (["2", "3"].includes(hazmatClass)) return true;
   return false;
 }
 
@@ -211,7 +214,7 @@ export default function LoadWizard() {
               </div>
             </div>
             {/* SPECTRA-MATCH™ Oil Identification */}
-            {isSpectraQualified(formData.productName, formData.hazmatClass) && (
+            {isSpectraQualified(formData.equipmentType || undefined, formData.productName, formData.hazmatClass) && (
               <SpectraMatchWidget
                 compact={true}
                 showSaveButton={false}

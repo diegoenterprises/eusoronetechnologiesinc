@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, sql, or, like, isNull } from "drizzle-orm";
+import { eq, and, desc, sql, or, like, isNull, inArray } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { messages, users, conversations, conversationParticipants } from "../../drizzle/schema";
@@ -111,7 +111,7 @@ export const messagesRouter = router({
         // Batch-fetch conversation details
         const convIds = participantRows.map(r => r.convId);
         const convRows = await db.select().from(conversations)
-          .where(sql`${conversations.id} IN (${sql.raw(convIds.join(","))})`)
+          .where(inArray(conversations.id, convIds))
           .orderBy(desc(conversations.lastMessageAt));
 
         const convMap = new Map(convRows.map(c => [c.id, c]));
@@ -220,7 +220,7 @@ export const messagesRouter = router({
         if (senderIds.length > 0) {
           const senders = await db.select({ id: users.id, name: users.name, profilePicture: users.profilePicture })
             .from(users)
-            .where(sql`${users.id} IN (${sql.raw(senderIds.join(","))})`);
+            .where(inArray(users.id, senderIds));
           for (const s of senders) {
             senderMap.set(s.id, { name: s.name || "Unknown", profilePicture: s.profilePicture });
           }
@@ -552,7 +552,7 @@ export const messagesRouter = router({
         const senderMap = new Map<number, string>();
         if (senderIds.length > 0) {
           const senders = await db.select({ id: users.id, name: users.name }).from(users)
-            .where(sql`${users.id} IN (${sql.raw(senderIds.join(","))})`);
+            .where(inArray(users.id, senderIds));
           for (const s of senders) senderMap.set(s.id, s.name || "Unknown");
         }
 
@@ -705,7 +705,7 @@ export const messagesRouter = router({
         const partUsers = parts.length > 0
           ? await db.select({ id: users.id, name: users.name, role: users.role, profilePicture: users.profilePicture, phone: users.phone })
               .from(users)
-              .where(sql`${users.id} IN (${sql.raw(parts.map(p => p.userId).join(","))})`)
+              .where(inArray(users.id, parts.map(p => p.userId)))
           : [];
 
         return {

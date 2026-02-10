@@ -10,12 +10,7 @@ import { getDb } from "../db";
 import { auditLogs } from "../../drizzle/schema";
 
 export const developerRouter = router({
-  getAPIKey: protectedProcedure.query(async () => ({
-    key: "pk_live_****abcd1234",
-    createdAt: "2025-01-01",
-    lastUsed: "2025-01-23",
-    status: "active",
-  })),
+  getAPIKey: protectedProcedure.query(async () => ({ key: "", createdAt: "", lastUsed: "", status: "" })),
 
   regenerateAPIKey: protectedProcedure.mutation(async () => ({
     success: true,
@@ -24,19 +19,8 @@ export const developerRouter = router({
   })),
 
   getAPIUsage: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({
-    totalRequests: 12500,
-    successfulRequests: 12450,
-    failedRequests: 50,
-    avgResponseTime: 125, successRate: 99.6, avgLatency: 125, remainingQuota: 87500,
-    topEndpoints: [
-      { endpoint: "/loads", requests: 5000 },
-      { endpoint: "/drivers", requests: 3500 },
-    ],
+    totalRequests: 0, successfulRequests: 0, failedRequests: 0, avgResponseTime: 0, successRate: 0, avgLatency: 0, remainingQuota: 0, topEndpoints: [],
   })),
 
-  getEndpoints: protectedProcedure.query(async () => [
-    { path: "/api/v1/loads", method: "GET", description: "List all loads", rateLimit: 100 },
-    { path: "/api/v1/loads/:id", method: "GET", description: "Get load by ID", rateLimit: 100 },
-    { path: "/api/v1/drivers", method: "GET", description: "List all drivers", rateLimit: 100 },
-  ]),
+  getEndpoints: protectedProcedure.query(async () => []),
 });

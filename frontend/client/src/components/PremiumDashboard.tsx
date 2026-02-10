@@ -522,25 +522,46 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAddWidget, setShowAddWidget] = useState(false);
 
-  // Persist layout to localStorage (versioned to pick up new defaults)
-  const LAYOUT_VERSION = 2;
-  const layoutKey = `eusotrip_dashboard_layout_${role}`;
-  const versionKey = `eusotrip_dashboard_version_${role}`;
-  const [layout, setLayout] = useState<WidgetLayout[]>(() => {
-    try {
-      const storedVersion = localStorage.getItem(versionKey);
-      if (storedVersion && Number(storedVersion) === LAYOUT_VERSION) {
-        const stored = localStorage.getItem(layoutKey);
-        if (stored) return JSON.parse(stored);
-      }
-      localStorage.setItem(versionKey, String(LAYOUT_VERSION));
-    } catch {}
-    return getDefaultLayout(role);
+  // DB-backed layout persistence via tRPC
+  const layoutQuery = trpc.widgets.getMyLayout.useQuery(undefined, { staleTime: 30000 });
+  const saveLayoutMutation = trpc.widgets.saveLayout.useMutation();
+  const resetLayoutMutation = trpc.widgets.resetLayout.useMutation({
+    onSuccess: () => layoutQuery.refetch(),
   });
 
+  const [layout, setLayout] = useState<WidgetLayout[]>(() => getDefaultLayout(role));
+  const [layoutLoaded, setLayoutLoaded] = useState(false);
+
+  // Load layout from DB when query resolves
   useEffect(() => {
-    try { localStorage.setItem(layoutKey, JSON.stringify(layout)); } catch {}
-  }, [layout, layoutKey]);
+    if (layoutQuery.data && !layoutLoaded) {
+      if (layoutQuery.data.layout && Array.isArray(layoutQuery.data.layout) && layoutQuery.data.layout.length > 0) {
+        setLayout(layoutQuery.data.layout.map((item: any) => ({
+          i: item.widgetId,
+          x: item.x,
+          y: item.y,
+          w: item.w,
+          h: item.h,
+          minW: 2,
+          minH: 2,
+        })));
+      }
+      setLayoutLoaded(true);
+    }
+  }, [layoutQuery.data, layoutLoaded]);
+
+  // Debounced save to DB when layout changes (only after initial load)
+  const saveTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!layoutLoaded) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      saveLayoutMutation.mutate({
+        layout: layout.map(l => ({ widgetId: l.i, x: l.x, y: l.y, w: l.w, h: l.h })),
+      });
+    }, 1500);
+    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
+  }, [layout, layoutLoaded]);
   
   const availableWidgets = getWidgetsForRole(role);
   const activeWidgetIds = layout.map(l => l.i);
@@ -567,6 +588,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
 
   const resetLayout = () => {
     setLayout(getDefaultLayout(role));
+    resetLayoutMutation.mutate({});
   };
 
   const getRoleDisplayName = (r: string) => {

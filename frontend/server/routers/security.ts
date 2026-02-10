@@ -20,10 +20,10 @@ export const securityRouter = router({
         loginAlerts: true,
         loginNotifications: true,
         sessionTimeout: 30,
-        ipWhitelist: ["192.168.1.0/24"],
-        passwordLastChanged: "2024-12-15",
-        recoveryEmailVerified: true,
-        score: 85,
+        ipWhitelist: [],
+        passwordLastChanged: "",
+        recoveryEmailVerified: false,
+        score: 0,
         suspiciousActivityAlerts: true,
       };
     }),
@@ -35,8 +35,6 @@ export const securityRouter = router({
     .input(z.object({ limit: z.number().optional().default(5) }))
     .query(async () => {
       return [
-        { id: "a1", type: "login_attempt", message: "Failed login attempt from unknown IP", timestamp: "2025-01-21 09:15", severity: "warning" },
-        { id: "a2", type: "password_change", message: "Password changed successfully", timestamp: "2024-12-15 14:30", severity: "info" },
       ];
     }),
 

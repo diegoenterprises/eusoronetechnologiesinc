@@ -468,38 +468,7 @@ export const fleetRouter = router({
   getMaintenanceSchedule: protectedProcedure
     .input(z.object({ vehicleId: z.string().optional(), filter: z.string().optional() }).optional())
     .query(async ({ input }) => {
-      return [
-        {
-          id: "m1",
-          vehicleId: "v1",
-          unitNumber: "TRK-101",
-          type: "oil_change",
-          description: "Oil and filter change",
-          scheduledDate: "2025-02-15",
-          status: "scheduled",
-          estimatedCost: 450,
-        },
-        {
-          id: "m2",
-          vehicleId: "v2",
-          unitNumber: "TRK-102",
-          type: "brake_inspection",
-          description: "Brake pad inspection and replacement",
-          scheduledDate: "2025-01-28",
-          status: "overdue",
-          estimatedCost: 1200,
-        },
-        {
-          id: "m3",
-          vehicleId: "v3",
-          unitNumber: "TRK-103",
-          type: "oil_change",
-          description: "Scheduled oil change and brake inspection",
-          scheduledDate: "2025-01-23",
-          status: "in_progress",
-          estimatedCost: 650,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -533,14 +502,7 @@ export const fleetRouter = router({
     }))
     .query(async ({ input }) => {
       return {
-        totalGallons: 2450,
-        totalCost: 8575,
-        avgMPG: 6.8,
-        entries: [
-          { date: "2025-01-22", vehicleId: "v1", gallons: 125, cost: 437.50, location: "Houston, TX" },
-          { date: "2025-01-21", vehicleId: "v2", gallons: 110, cost: 385.00, location: "Dallas, TX" },
-          { date: "2025-01-20", vehicleId: "v1", gallons: 130, cost: 455.00, location: "Austin, TX" },
-        ],
+        totalGallons: 0, totalCost: 0, avgMPG: 0, entries: [],
       };
     }),
 
@@ -550,11 +512,7 @@ export const fleetRouter = router({
   getMaintenanceHistory: protectedProcedure
     .input(z.object({ vehicleId: z.string(), limit: z.number().optional().default(5) }))
     .query(async ({ input }) => {
-      return [
-        { id: "m1", type: "Oil Change", date: "2025-01-15", cost: 150, mileage: 124500, provider: "FleetServ" },
-        { id: "m2", type: "Tire Rotation", date: "2025-01-01", cost: 80, mileage: 123000, provider: "TireMax" },
-        { id: "m3", type: "Brake Inspection", date: "2024-12-15", cost: 200, mileage: 121500, provider: "FleetServ" },
-      ];
+      return [];
     }),
 
   /**
@@ -563,77 +521,44 @@ export const fleetRouter = router({
   getInspections: protectedProcedure
     .input(z.object({ vehicleId: z.string(), limit: z.number().optional().default(5) }))
     .query(async ({ input }) => {
-      return [
-        { id: "i1", type: "Pre-trip", date: "2025-01-23", status: "passed", driver: "Mike Johnson", issues: 0 },
-        { id: "i2", type: "Post-trip", date: "2025-01-22", status: "passed", driver: "Mike Johnson", issues: 0 },
-        { id: "i3", type: "DOT Inspection", date: "2025-01-20", status: "passed", driver: "Mike Johnson", issues: 1 },
-      ];
+      return [];
     }),
 
   // Maintenance
   completeMaintenance: protectedProcedure.input(z.object({ maintenanceId: z.string().optional(), taskId: z.string().optional(), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, maintenanceId: input.maintenanceId || input.taskId })),
-  getMaintenanceStats: protectedProcedure.input(z.object({ filter: z.string().optional(), vehicleId: z.string().optional() }).optional()).query(async () => ({ scheduled: 12, overdue: 2, completed: 150, avgCost: 450, upcoming: 8, inProgress: 4, completedThisMonth: 12 })),
+  getMaintenanceStats: protectedProcedure.input(z.object({ filter: z.string().optional(), vehicleId: z.string().optional() }).optional()).query(async () => ({ scheduled: 0, overdue: 0, completed: 0, avgCost: 0, upcoming: 0, inProgress: 0, completedThisMonth: 0 })),
 
   // DVIRs
-  getDVIRs: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => [{ id: "dvir1", vehicleId: "v1", vehicleNumber: "TRK-101", driver: "Mike Johnson", status: "passed", date: "2025-01-23", defects: [] }]),
-  getDVIRStats: protectedProcedure.query(async () => ({ total: 450, passed: 440, defects: 10, openDefects: 2, outOfService: 1 })),
+  getDVIRs: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => []),
+  getDVIRStats: protectedProcedure.query(async () => ({ total: 0, passed: 0, defects: 0, openDefects: 0, outOfService: 0 })),
 
   // Drivers
-  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", status: "active", vehicleId: "v1" }]),
-  getDriverStats: protectedProcedure.query(async () => ({ total: 25, active: 22, inactive: 3, expiringDocs: 5, avgSafetyScore: 88 })),
+  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getDriverStats: protectedProcedure.query(async () => ({ total: 0, active: 0, inactive: 0, expiringDocs: 0, avgSafetyScore: 0 })),
 
   // Equipment
-  getEquipment: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional() }).optional()).query(async () => [{ id: "e1", type: "trailer", number: "TRL-101", status: "active" }]),
-  getEquipmentStats: protectedProcedure.query(async () => ({ trucks: 25, trailers: 30, other: 5, total: 60, available: 45, inUse: 12, maintenance: 3 })),
+  getEquipment: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
+  getEquipmentStats: protectedProcedure.query(async () => ({ trucks: 0, trailers: 0, other: 0, total: 0, available: 0, inUse: 0, maintenance: 0 })),
 
   // Fleet Map
-  getFleetMapStats: protectedProcedure.input(z.object({ filters: z.any().optional() }).optional()).query(async () => ({ moving: 18, stopped: 5, idle: 2, offline: 0, totalVehicles: 25, total: 25, inTransit: 18, loading: 3, available: 2, atShipper: 1, atConsignee: 1, offDuty: 0, issues: 2, utilization: 92 })),
-  getVehicleLocations: protectedProcedure.input(z.object({ filter: z.string().optional() }).optional()).query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, heading: 45, speed: 65 }]),
+  getFleetMapStats: protectedProcedure.input(z.object({ filters: z.any().optional() }).optional()).query(async () => ({ moving: 0, stopped: 0, idle: 0, offline: 0, totalVehicles: 0, total: 0, inTransit: 0, loading: 0, available: 0, atShipper: 0, atConsignee: 0, offDuty: 0, issues: 0, utilization: 0 })),
+  getVehicleLocations: protectedProcedure.input(z.object({ filter: z.string().optional() }).optional()).query(async () => []),
 
   // Fuel
-  getFuelTransactions: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), limit: z.number().optional(), period: z.string().optional() })).query(async () => [{ id: "f1", vehicleId: "v1", gallons: 125, cost: 437.50, location: "Houston, TX", date: "2025-01-22" }]),
-  getFuelStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalGallons: 2450, totalCost: 8575, avgMPG: 6.8, avgMpg: 6.8, avgCostPerGallon: 3.50, avgPricePerGallon: 3.50 })),
+  getFuelTransactions: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), limit: z.number().optional(), period: z.string().optional() })).query(async () => []),
+  getFuelStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ totalGallons: 0, totalCost: 0, avgMPG: 0, avgMpg: 0, avgCostPerGallon: 0, avgPricePerGallon: 0 })),
 
   // GPS
-  getGPSLocations: protectedProcedure.input(z.object({ filter: z.string().optional() }).optional()).query(async () => [{ vehicleId: "v1", lat: 29.7604, lng: -95.3698, speed: 65, heading: 45, timestamp: new Date().toISOString() }]),
-  getGPSStats: protectedProcedure.input(z.object({ vehicleId: z.string().optional() }).optional()).query(async () => ({ totalVehicles: 25, total: 25, tracking: 24, offline: 1, moving: 18, stopped: 6 })),
+  getGPSLocations: protectedProcedure.input(z.object({ filter: z.string().optional() }).optional()).query(async () => []),
+  getGPSStats: protectedProcedure.input(z.object({ vehicleId: z.string().optional() }).optional()).query(async () => ({ totalVehicles: 0, total: 0, tracking: 0, offline: 0, moving: 0, stopped: 0 })),
 
   // IFTA
-  getIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).query(async ({ input }) => ({ 
-    quarter: input.quarter, 
-    year: input.year || 2025, 
-    totalMiles: 125000, 
-    totalGallons: 18500, 
-    fuelTax: 2850,
-    status: "pending",
-    dueDate: "2025-04-30",
-    filedDate: null,
-    jurisdictions: [
-      { state: "TX", miles: 45000, gallons: 6600, taxRate: 0.20, taxDue: 1320 },
-      { state: "LA", miles: 32000, gallons: 4700, taxRate: 0.20, taxDue: 940 },
-      { state: "OK", miles: 28000, gallons: 4100, taxRate: 0.19, taxDue: 779 },
-    ],
-  })),
-  getIFTAStats: protectedProcedure.input(z.object({ quarter: z.string().optional() }).optional()).query(async () => ({ 
-    totalMiles: 500000, 
-    totalGallons: 74000, 
-    taxesDue: 11400,
-    taxOwed: 11400,
-    jurisdictions: 12,
-  })),
+  getIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).query(async ({ input }) => ({ quarter: input.quarter, year: input.year || new Date().getFullYear(), totalMiles: 0, totalGallons: 0, fuelTax: 0, status: "pending", dueDate: "", filedDate: null, jurisdictions: [] })),
+  getIFTAStats: protectedProcedure.input(z.object({ quarter: z.string().optional() }).optional()).query(async () => ({ totalMiles: 0, totalGallons: 0, taxesDue: 0, taxOwed: 0, jurisdictions: 0 })),
   generateIFTAReport: protectedProcedure.input(z.object({ quarter: z.string(), year: z.number().optional() })).mutation(async ({ input }) => ({ success: true, reportId: "ifta_123" })),
 
   // Vehicle details
   getVehicleById: protectedProcedure.input(z.object({ vehicleId: z.string().optional(), id: z.string().optional() }).optional()).query(async ({ input }) => ({
-    id: input?.vehicleId || input?.id || "v1",
-    unitNumber: "TRK-101",
-    make: "Peterbilt",
-    model: "579",
-    year: 2022,
-    vin: "1XPWD40X1ED215307",
-    licensePlate: "TX-ABC-1234",
-    odometer: 125000,
-    status: "active",
-    lastInspection: "2025-01-15",
+    id: input?.vehicleId || input?.id || "", unitNumber: "", make: "", model: "", year: 0, vin: "", licensePlate: "", odometer: 0, status: "", lastInspection: "",
   })),
 });

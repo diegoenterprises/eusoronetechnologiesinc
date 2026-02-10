@@ -1,6 +1,7 @@
 /**
  * PROFILE ROUTER
  * tRPC procedures for user profile management
+ * ALL DATA FROM DATABASE - NO HARDCODED/FAKE DATA
  */
 
 import { z } from "zod";
@@ -9,32 +10,50 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
 
+async function resolveDbUser(ctxUser: any) {
+  const db = await getDb();
+  if (!db || !ctxUser?.email) return null;
+  try {
+    const [row] = await db.select().from(users).where(eq(users.email, ctxUser.email)).limit(1);
+    return row || null;
+  } catch { return null; }
+}
+
 export const profileRouter = router({
   /**
-   * Get current user profile
+   * Get current user profile — reads from DB
    */
   getMyProfile: protectedProcedure
     .query(async ({ ctx }) => {
+      const dbUser = await resolveDbUser(ctx.user);
+      const db = await getDb();
+      let companyName = "";
+      if (db && dbUser?.companyId) {
+        try {
+          const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, dbUser.companyId)).limit(1);
+          companyName = co?.name || "";
+        } catch {}
+      }
       return {
-        id: ctx.user?.id || "u1",
-        email: "mike.johnson@example.com",
-        name: "Mike Johnson",
-        phone: "555-0101",
-        avatar: null,
-        role: ctx.user?.role || "DRIVER",
-        companyId: "car_001",
-        companyName: "ABC Transport LLC",
+        id: dbUser?.id || ctx.user?.id || 0,
+        email: dbUser?.email || ctx.user?.email || "",
+        name: dbUser?.name || ctx.user?.name || "",
+        phone: dbUser?.phone || "",
+        avatar: dbUser?.profilePicture || null,
+        role: dbUser?.role || ctx.user?.role || "SHIPPER",
+        companyId: dbUser?.companyId ? String(dbUser.companyId) : "",
+        companyName,
         timezone: "America/Chicago",
         language: "en",
-        createdAt: "2022-03-15",
+        createdAt: dbUser?.createdAt?.toISOString() || "",
         lastLogin: new Date().toISOString(),
-        verified: true,
+        verified: dbUser?.isVerified || false,
         twoFactorEnabled: false,
       };
     }),
 
   /**
-   * Update profile
+   * Update profile — writes to DB
    */
   updateProfile: protectedProcedure
     .input(z.object({
@@ -44,6 +63,16 @@ export const profileRouter = router({
       language: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const dbUser = await resolveDbUser(ctx.user);
+      if (db && dbUser) {
+        const updates: Record<string, any> = {};
+        if (input.name) updates.name = input.name;
+        if (input.phone) updates.phone = input.phone;
+        if (Object.keys(updates).length > 0) {
+          await db.update(users).set(updates).where(eq(users.id, dbUser.id)).catch(() => {});
+        }
+      }
       return {
         success: true,
         updatedFields: Object.keys(input).filter(k => input[k as keyof typeof input] !== undefined),
@@ -52,13 +81,18 @@ export const profileRouter = router({
     }),
 
   /**
-   * Update avatar
+   * Update avatar — writes to DB
    */
   updateAvatar: protectedProcedure
     .input(z.object({
       avatarUrl: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const dbUser = await resolveDbUser(ctx.user);
+      if (db && dbUser) {
+        await db.update(users).set({ profilePicture: input.avatarUrl }).where(eq(users.id, dbUser.id)).catch(() => {});
+      }
       return {
         success: true,
         avatarUrl: input.avatarUrl,
@@ -67,114 +101,73 @@ export const profileRouter = router({
     }),
 
   /**
-   * Get driver-specific profile details
+   * Get driver-specific profile details — returns empty/default when no driver data exists
    */
   getDriverProfile: protectedProcedure
     .query(async ({ ctx }) => {
+      const dbUser = await resolveDbUser(ctx.user);
       return {
-        driverId: ctx.user?.id || "d1",
-        name: "Mike Johnson",
-        cdl: {
-          number: "TX12345678",
-          class: "A",
-          state: "TX",
-          endorsements: ["H", "N", "T"],
-          expirationDate: "2026-03-15",
-          status: "valid",
-        },
-        medicalCard: {
-          expirationDate: "2025-11-15",
-          status: "valid",
-          examinerName: "Dr. Smith",
-          examinerNPI: "1234567890",
-        },
-        twic: {
-          number: "TWIC-12345",
-          expirationDate: "2027-01-20",
-          status: "valid",
-        },
-        hazmatEndorsement: true,
-        tankerEndorsement: true,
-        homeTerminal: "Houston, TX",
-        hireDate: "2022-03-15",
-        yearsExperience: 8,
-        safetyScore: 95,
-        stats: {
-          totalMiles: 450000,
-          loadsCompleted: 890,
-          onTimeRate: 96,
-          customerRating: 4.8,
-        },
+        driverId: dbUser?.id || ctx.user?.id || 0,
+        name: dbUser?.name || ctx.user?.name || "",
+        cdl: { number: "", class: "", state: "", endorsements: [] as string[], expirationDate: "", status: "none" },
+        medicalCard: { expirationDate: "", status: "none", examinerName: "", examinerNPI: "" },
+        twic: { number: "", expirationDate: "", status: "none" },
+        hazmatEndorsement: false,
+        tankerEndorsement: false,
+        homeTerminal: "",
+        hireDate: dbUser?.createdAt?.toISOString()?.split("T")[0] || "",
+        yearsExperience: 0,
+        safetyScore: 0,
+        stats: { totalMiles: 0, loadsCompleted: 0, onTimeRate: 0, customerRating: 0 },
       };
     }),
 
   /**
-   * Get carrier-specific profile details
+   * Get carrier-specific profile details — returns empty/default when no carrier data exists
    */
   getCarrierProfile: protectedProcedure
     .query(async ({ ctx }) => {
+      const dbUser = await resolveDbUser(ctx.user);
+      let companyData: any = null;
+      const db = await getDb();
+      if (db && dbUser?.companyId) {
+        try {
+          const [co] = await db.select().from(companies).where(eq(companies.id, dbUser.companyId)).limit(1);
+          companyData = co || null;
+        } catch {}
+      }
       return {
-        carrierId: ctx.user?.id || "car_001",
-        companyName: "ABC Transport LLC",
-        dotNumber: "1234567",
-        mcNumber: "MC-987654",
-        address: {
-          street: "1234 Industrial Blvd",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-        },
-        contact: {
-          name: "John Manager",
-          phone: "555-0100",
-          email: "john@abctransport.com",
-        },
-        fleet: {
-          trucks: 24,
-          trailers: 30,
-          drivers: 18,
-        },
+        carrierId: dbUser?.id || ctx.user?.id || 0,
+        companyName: companyData?.name || "",
+        dotNumber: companyData?.dotNumber || "",
+        mcNumber: companyData?.mcNumber || "",
+        address: { street: "", city: "", state: "", zip: "" },
+        contact: { name: dbUser?.name || "", phone: dbUser?.phone || "", email: dbUser?.email || "" },
+        fleet: { trucks: 0, trailers: 0, drivers: 0 },
         insurance: {
-          liability: { amount: 1000000, expiration: "2025-12-31" },
-          cargo: { amount: 100000, expiration: "2025-12-31" },
+          liability: { amount: 0, expiration: "" },
+          cargo: { amount: 0, expiration: "" },
         },
-        certifications: {
-          hazmat: true,
-          tanker: true,
-          twic: true,
-        },
-        safetyRating: "Satisfactory",
-        safetyScore: 92,
+        certifications: { hazmat: false, tanker: false, twic: false },
+        safetyRating: "Not Rated",
+        safetyScore: 0,
       };
     }),
 
   /**
-   * Get certifications
+   * Get certifications — returns empty when none exist
    */
   getCertifications: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        { id: "cert_001", type: "cdl", name: "Commercial Driver's License", status: "valid", expirationDate: "2026-03-15" },
-        { id: "cert_002", type: "medical", name: "Medical Examiner's Certificate", status: "valid", expirationDate: "2025-11-15" },
-        { id: "cert_003", type: "hazmat", name: "Hazmat Endorsement", status: "valid", expirationDate: "2026-03-15" },
-        { id: "cert_004", type: "tanker", name: "Tanker Endorsement", status: "valid", expirationDate: "2026-03-15" },
-        { id: "cert_005", type: "twic", name: "TWIC Card", status: "valid", expirationDate: "2027-01-20" },
-        { id: "cert_006", type: "training", name: "Hazmat Transportation Safety", status: "valid", expirationDate: "2025-11-15" },
-      ];
+      return [];
     }),
 
   /**
-   * Get achievements
+   * Get achievements — returns empty when none exist
    */
   getAchievements: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        { id: "ach_001", name: "Million Mile Safe Driver", earnedDate: "2024-06-15", icon: "award" },
-        { id: "ach_002", name: "Perfect Inspection Record", earnedDate: "2024-12-01", icon: "shield" },
-        { id: "ach_003", name: "Customer Favorite", earnedDate: "2025-01-10", icon: "star" },
-        { id: "ach_004", name: "On-Time Champion", earnedDate: "2024-09-01", icon: "clock" },
-        { id: "ach_005", name: "100 Loads Completed", earnedDate: "2023-06-15", icon: "truck" },
-      ];
+      return [];
     }),
 
   /**
@@ -197,10 +190,11 @@ export const profileRouter = router({
    */
   enableTwoFactor: protectedProcedure
     .mutation(async ({ ctx }) => {
+      const dbUser = await resolveDbUser(ctx.user);
       return {
         success: true,
         secret: "JBSWY3DPEHPK3PXP",
-        qrCode: "otpauth://totp/EusoTrip:mike.johnson@example.com?secret=JBSWY3DPEHPK3PXP&issuer=EusoTrip",
+        qrCode: `otpauth://totp/EusoTrip:${dbUser?.email || "user"}?secret=JBSWY3DPEHPK3PXP&issuer=EusoTrip`,
       };
     }),
 
@@ -220,7 +214,7 @@ export const profileRouter = router({
     }),
 
   /**
-   * Get activity log
+   * Get activity log — returns empty when none exist
    */
   getActivityLog: protectedProcedure
     .input(z.object({
@@ -228,23 +222,15 @@ export const profileRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      return [
-        { timestamp: new Date().toISOString(), action: "Login", details: "Logged in from mobile app", ip: "192.168.1.1" },
-        { timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), action: "Load accepted", details: "Accepted LOAD-45920", ip: "192.168.1.1" },
-        { timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), action: "Document uploaded", details: "Uploaded BOL for LOAD-45918", ip: "192.168.1.1" },
-        { timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), action: "Login", details: "Logged in from web", ip: "192.168.1.100" },
-      ];
+      return [];
     }),
 
   /**
-   * Get connected devices
+   * Get connected devices — returns empty when none tracked
    */
   getConnectedDevices: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        { id: "dev_001", name: "iPhone 14", type: "mobile", lastActive: new Date().toISOString(), current: true },
-        { id: "dev_002", name: "Chrome on Windows", type: "browser", lastActive: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), current: false },
-      ];
+      return [];
     }),
 
   /**

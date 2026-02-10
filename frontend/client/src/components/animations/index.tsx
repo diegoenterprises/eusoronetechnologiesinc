@@ -533,7 +533,7 @@ export function NotificationBadge({ count, className = "" }: { count: number; cl
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0, opacity: 0 }}
           transition={{ type: "spring", stiffness: 500, damping: 25 }}
-          className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full ${className}`}
+          className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-gradient-to-r from-[#1473FF] to-[#BE01FF] rounded-full ${className}`}
         >
           {count > 99 ? "99+" : count}
         </motion.span>

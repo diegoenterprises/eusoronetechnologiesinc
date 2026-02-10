@@ -214,8 +214,8 @@ export default function FindLoads() {
                   <div className={cn("px-5 py-4 mx-5 mb-3 rounded-xl", isLight ? "bg-slate-50" : "bg-slate-900/40")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center">
-                          <MapPin className="w-4 h-4 text-green-500" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 flex items-center justify-center">
+                          <MapPin className="w-4 h-4 text-[#1473FF]" />
                         </div>
                         <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
                       </div>
@@ -226,8 +226,8 @@ export default function FindLoads() {
                       </div>
                       <div className="flex items-center gap-2">
                         <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
-                        <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center">
-                          <Building2 className="w-4 h-4 text-red-500" />
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BE01FF]/15 to-[#1473FF]/15 flex items-center justify-center">
+                          <Building2 className="w-4 h-4 text-[#BE01FF]" />
                         </div>
                       </div>
                     </div>

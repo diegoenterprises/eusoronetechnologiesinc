@@ -153,11 +153,11 @@ export const EscortEarningsWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader color="text-green-400" /> : (
       <div className="space-y-3">
         <div className="text-center p-3 rounded-lg bg-green-500/10">
-          <p className="text-2xl font-bold text-green-400">${e.total.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-400">${(e.total || 0).toLocaleString()}</p>
           <p className="text-xs text-gray-400">Total Earnings</p>
         </div>
-        <StatRow label="This Week" value={`$${e.thisWeek.toLocaleString()}`} color="text-cyan-400" />
-        <StatRow label="Pending" value={`$${e.pending.toLocaleString()}`} color="text-yellow-400" />
+        <StatRow label="This Week" value={`$${(e.thisWeek || 0).toLocaleString()}`} color="text-cyan-400" />
+        <StatRow label="Pending" value={`$${(e.pending || 0).toLocaleString()}`} color="text-yellow-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -196,7 +196,7 @@ export const LoadDimensionsWidget: React.FC = () => {
           { label: "Width", value: `${d.width}'`, color: "bg-cyan-500/10" },
           { label: "Height", value: `${d.height}'`, color: "bg-purple-500/10" },
         ]} />
-        <StatRow label="Weight" value={`${d.weight.toLocaleString()} lbs`} color="text-orange-400" />
+        <StatRow label="Weight" value={`${(d.weight || 0).toLocaleString()} lbs`} color="text-orange-400" />
       </div>
     )}</ResponsiveWidget>
   );
@@ -327,10 +327,10 @@ export const EscortPayWidget: React.FC = () => {
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader color="text-green-400" /> : (
       <div className="space-y-3">
         <div className="text-center p-3 rounded-lg bg-green-500/10">
-          <p className="text-2xl font-bold text-green-400">${p.thisTrip.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-400">${(p.thisTrip || 0).toLocaleString()}</p>
           <p className="text-xs text-gray-400">This Trip</p>
         </div>
-        <StatRow label="This Week" value={`$${p.thisWeek.toLocaleString()}`} color="text-cyan-400" />
+        <StatRow label="This Week" value={`$${(p.thisWeek || 0).toLocaleString()}`} color="text-cyan-400" />
         <StatRow label="Hourly Rate" value={`$${p.hourlyRate}/hr`} color="text-blue-400" />
       </div>
     )}</ResponsiveWidget>

@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,25 @@ const formatDate = (dateStr: string) => {
   try { return formatDistanceToNow(new Date(dateStr), { addSuffix: true }); }
   catch { return dateStr; }
 };
+
+function QuickLinksNav() {
+  const [, navigate] = useLocation();
+  const links = [
+    { label: "FMCSA Updates", icon: Shield, path: "/carrier-compliance" },
+    { label: "Fuel Prices", icon: DollarSign, path: "/fuel-prices" },
+    { label: "Weather Alerts", icon: AlertTriangle, path: "/weather-alerts" },
+    { label: "Load Board", icon: Truck, path: "/load-board" },
+  ];
+  return (
+    <div className="space-y-1">
+      {links.map((link, idx) => (
+        <Button key={idx} variant="ghost" size="sm" className="w-full justify-start text-slate-400 hover:text-white h-8" onClick={() => navigate(link.path)}>
+          <link.icon className="w-3.5 h-3.5 mr-2" />{link.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
 
 export default function NewsFeed() {
   const [activeTab, setActiveTab] = useState("all");
@@ -328,18 +348,7 @@ export default function NewsFeed() {
               <CardTitle className="text-white text-base">Quick Links</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1">
-                {[
-                  { label: "FMCSA Updates", icon: Shield },
-                  { label: "Fuel Prices", icon: DollarSign },
-                  { label: "Weather Alerts", icon: AlertTriangle },
-                  { label: "Load Board", icon: Truck },
-                ].map((link, idx) => (
-                  <Button key={idx} variant="ghost" size="sm" className="w-full justify-start text-slate-400 hover:text-white h-8">
-                    <link.icon className="w-3.5 h-3.5 mr-2" />{link.label}
-                  </Button>
-                ))}
-              </div>
+              <QuickLinksNav />
             </CardContent>
           </Card>
         </div>

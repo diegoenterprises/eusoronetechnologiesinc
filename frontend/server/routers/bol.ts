@@ -79,18 +79,10 @@ export const bolRouter = router({
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
       return {
-        id: input.id,
-        number: "BOL-2025-0234",
-        loadNumber: "LOAD-45920",
-        shipper: { name: "Shell Oil Company", address: "1234 Refinery Rd, Houston, TX" },
-        carrier: { name: "ABC Transport LLC", mc: "MC-987654" },
-        consignee: { name: "Fuel Depot Dallas", address: "5678 Industrial Blvd, Dallas, TX" },
-        product: "Unleaded Gasoline",
-        quantity: 8500,
-        unit: "gallons",
-        status: "completed",
-        createdAt: "2025-01-23T08:00:00Z",
-        deliveredAt: "2025-01-23T16:30:00Z",
+        id: input.id, number: "", loadNumber: "",
+        shipper: null, carrier: null, consignee: null,
+        product: "", quantity: 0, unit: "", status: "",
+        createdAt: "", deliveredAt: "",
       };
     }),
 

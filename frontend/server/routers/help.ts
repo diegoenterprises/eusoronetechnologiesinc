@@ -9,14 +9,9 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 
 export const helpRouter = router({
-  getCategories: publicProcedure.query(async () => [
-    { id: "c1", name: "Getting Started", articleCount: 12 },
-    { id: "c2", name: "Loads & Dispatch", articleCount: 25 },
-  ]),
+  getCategories: publicProcedure.query(async () => []),
 
-  getArticles: publicProcedure.input(z.object({ categoryId: z.string().optional(), search: z.string().optional() })).query(async () => [
-    { id: "a1", title: "How to create a load", category: "Getting Started", views: 1500 },
-  ]),
+  getArticles: publicProcedure.input(z.object({ categoryId: z.string().optional(), search: z.string().optional() })).query(async () => []),
 
-  getStats: protectedProcedure.query(async () => ({ totalArticles: 150, categories: 12, recentSearches: ["loads", "HOS"], articles: 150, guides: 45, videos: 30, faqs: 75 })),
+  getStats: protectedProcedure.query(async () => ({ totalArticles: 0, categories: 0, recentSearches: [], articles: 0, guides: 0, videos: 0, faqs: 0 })),
 });

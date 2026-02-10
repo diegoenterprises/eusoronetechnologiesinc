@@ -27,16 +27,10 @@ export const reportsRouter = router({
       if (!db) return [];
 
       // Return static report templates - these are pre-defined reports available to all users
-      const reports = [
-        { id: "r1", name: "Monthly Revenue", type: "revenue", lastRun: new Date().toISOString().split('T')[0], schedule: "monthly", status: "active" },
-        { id: "r2", name: "Fleet Utilization", type: "fleet", lastRun: new Date().toISOString().split('T')[0], schedule: "weekly", status: "active" },
-        { id: "r3", name: "Driver Performance", type: "driver_performance", lastRun: new Date().toISOString().split('T')[0], schedule: "monthly", status: "active" },
-        { id: "r4", name: "Safety Summary", type: "safety", lastRun: new Date().toISOString().split('T')[0], schedule: "monthly", status: "active" },
-        { id: "r5", name: "Compliance Status", type: "compliance", lastRun: new Date().toISOString().split('T')[0], schedule: "weekly", status: "active" },
-      ];
+      const reports: any[] = [];
       if (input.search) {
         const q = input.search.toLowerCase();
-        return reports.filter(r => r.name.toLowerCase().includes(q));
+        return reports.filter((r: any) => r.name?.toLowerCase().includes(q));
       }
       return reports;
     }),
@@ -47,15 +41,15 @@ export const reportsRouter = router({
   getReportStats: protectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
-      if (!db) return { total: 0, scheduled: 0, recentRuns: 0, avgRunTime: 0, generatedThisMonth: 0, templates: 5 };
+      if (!db) return { total: 0, scheduled: 0, recentRuns: 0, avgRunTime: 0, generatedThisMonth: 0, templates: 0 };
 
       try {
         const companyId = ctx.user?.companyId || 0;
         const [loadCount] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, ctx.user?.id || 0));
-        return { total: 5, scheduled: 3, recentRuns: loadCount?.count || 0, avgRunTime: 15, generatedThisMonth: 5, templates: 5 };
+        return { total: 0, scheduled: 0, recentRuns: loadCount?.count || 0, avgRunTime: 0, generatedThisMonth: 0, templates: 0 };
       } catch (error) {
         console.error('[Reports] getReportStats error:', error);
-        return { total: 0, scheduled: 0, recentRuns: 0, avgRunTime: 0, generatedThisMonth: 0, templates: 5 };
+        return { total: 0, scheduled: 0, recentRuns: 0, avgRunTime: 0, generatedThisMonth: 0, templates: 0 };
       }
     }),
 
@@ -298,46 +292,16 @@ export const reportsRouter = router({
     .query(async ({ input }) => {
       return {
         period: input.period,
-        revenue: {
-          total: 458000,
-          change: 12.5,
-          trend: "up",
-        },
-        loads: {
-          total: 342,
-          completed: 318,
-          inProgress: 24,
-          change: 8.2,
-        },
-        fleet: {
-          utilization: 0.82,
-          availableVehicles: 8,
-          totalVehicles: 45,
-        },
-        safety: {
-          score: 94,
-          incidents: 2,
-          violations: 0,
-        },
-        compliance: {
-          score: 98,
-          expiringItems: 5,
-          overdueItems: 0,
-        },
+        revenue: { total: 0, change: 0, trend: "stable" },
+        loads: { total: 0, completed: 0, inProgress: 0, change: 0 },
+        fleet: { utilization: 0, availableVehicles: 0, totalVehicles: 0 },
+        safety: { score: 0, incidents: 0, violations: 0 },
+        compliance: { score: 0, expiringItems: 0, overdueItems: 0 },
       };
     }),
 
   // Additional report procedures
-  getPerformanceMetrics: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ avgLoadTime: 2.5, totalReports: 150, mostPopular: "revenue", revenue: 125000, loads: 450, drivers: 24, avgScore: 92, loadsCompleted: 450, onTimeRate: 96.5, avgDeliveryTime: 2.5, acceptanceRate: 92, satisfaction: 4.8, fleetUtilization: 78, driverRetention: 95, revenueByCategory: [{ name: "Fuel", value: 65000 }, { name: "Chemicals", value: 35000 }, { name: "LPG", value: 25000 }] })),
-  getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => [{ id: "d1", name: "Mike Johnson", score: 98, loads: 45 }]),
-  getTrends: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({ 
-    revenue: 125000, 
-    loads: 450, 
-    drivers: 24, 
-    onTime: 96.5,
-    avgDelivery: 2.3,
-    revenueData: [{ date: "2025-01-20", value: 125000 }], 
-    loadsData: [{ date: "2025-01-20", value: 45 }], 
-    driversData: [{ date: "2025-01-20", value: 24 }] 
-  })),
+  getPerformanceMetrics: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ avgLoadTime: 0, totalReports: 0, mostPopular: "", revenue: 0, loads: 0, drivers: 0, avgScore: 0, loadsCompleted: 0, onTimeRate: 0, avgDeliveryTime: 0, acceptanceRate: 0, satisfaction: 0, fleetUtilization: 0, driverRetention: 0, revenueByCategory: [] })),
+  getTopPerformers: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getTrends: protectedProcedure.input(z.object({ metric: z.string().optional(), period: z.string().optional() }).optional()).query(async () => ({ revenue: 0, loads: 0, drivers: 0, onTime: 0, avgDelivery: 0, revenueData: [], loadsData: [], driversData: [] })),
 });

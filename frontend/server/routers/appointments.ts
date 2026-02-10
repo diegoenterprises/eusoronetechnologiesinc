@@ -14,9 +14,17 @@ const appointmentStatusSchema = z.enum([
 ]);
 const appointmentTypeSchema = z.enum(["pickup", "delivery", "live_load", "drop_trailer"]);
 
+// Resolve user's terminalId or companyId for scoping
+async function resolveUserContext(ctxUser: any) {
+  const db = await getDb();
+  if (!db) return { userId: 0, companyId: 0 };
+  const userId = typeof ctxUser?.id === "string" ? parseInt(ctxUser.id, 10) : (ctxUser?.id || 0);
+  try { const [r] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1); return { userId, companyId: r?.companyId || 0 }; } catch { return { userId, companyId: 0 }; }
+}
+
 export const appointmentsRouter = router({
   /**
-   * List appointments
+   * List appointments — real DB query
    */
   list: protectedProcedure
     .input(z.object({
@@ -29,302 +37,232 @@ export const appointmentsRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      const appointments = [
-        {
-          id: "apt_001",
-          type: "pickup",
-          loadNumber: "LOAD-45920",
-          facility: { id: "f1", name: "Shell Houston Terminal", address: "1234 Refinery Rd, Houston, TX" },
-          carrier: { id: "car_001", name: "ABC Transport LLC" },
-          carrierName: "ABC Transport LLC",
-          driver: { id: "d1", name: "Mike Johnson" },
-          driverName: "Mike Johnson",
-          scheduledDate: "2025-01-24",
-          scheduledTime: "08:00",
-          windowEnd: "10:00",
-          status: "confirmed",
-          product: "Unleaded Gasoline",
-          quantity: 8500,
-          unit: "gal",
-          confirmationNumber: "CONF-45920-A",
-          rackId: "r1",
-          rackName: "Rack 1",
-          truckNumber: "TRK-001",
-        },
-        {
-          id: "apt_002",
-          type: "delivery",
-          loadNumber: "LOAD-45920",
-          facility: { id: "f2", name: "7-Eleven Distribution Center", address: "5678 Commerce Dr, Dallas, TX" },
-          carrier: { id: "car_001", name: "ABC Transport LLC" },
-          driver: { id: "d1", name: "Mike Johnson" },
-          scheduledDate: "2025-01-24",
-          scheduledTime: "14:00",
-          windowEnd: "16:00",
-          status: "scheduled",
-          product: "Unleaded Gasoline",
-          quantity: 8500,
-          unit: "gal",
-          confirmationNumber: "CONF-45920-B",
-        },
-        {
-          id: "apt_003",
-          type: "pickup",
-          loadNumber: "LOAD-45921",
-          facility: { id: "f3", name: "Exxon Beaumont Refinery", address: "900 Industrial Blvd, Beaumont, TX" },
-          carrier: { id: "car_002", name: "FastHaul LLC" },
-          driver: { id: "d2", name: "Sarah Williams" },
-          scheduledDate: "2025-01-25",
-          scheduledTime: "06:00",
-          windowEnd: "08:00",
-          status: "scheduled",
-          product: "Diesel",
-          quantity: 9000,
-          unit: "gal",
-          confirmationNumber: "CONF-45921-A",
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { appointments: [], total: 0 };
+      try {
+        const filters: any[] = [];
+        if (input.facilityId) filters.push(eq(appointments.terminalId, parseInt(input.facilityId, 10)));
+        if (input.status) filters.push(eq(appointments.status, input.status as any));
+        if (input.type) filters.push(eq(appointments.type, input.type as any));
+        if (input.date) {
+          const dayStart = new Date(input.date); dayStart.setHours(0,0,0,0);
+          const dayEnd = new Date(input.date); dayEnd.setHours(23,59,59,999);
+          filters.push(gte(appointments.scheduledAt, dayStart));
+          filters.push(lte(appointments.scheduledAt, dayEnd));
+        }
 
-      let filtered = appointments;
-      if (input.date) filtered = filtered.filter(a => a.scheduledDate === input.date);
-      if (input.facilityId) filtered = filtered.filter(a => a.facility.id === input.facilityId);
-      if (input.carrierId) filtered = filtered.filter(a => a.carrier.id === input.carrierId);
-      if (input.status) filtered = filtered.filter(a => a.status === input.status);
-      if (input.type) filtered = filtered.filter(a => a.type === input.type);
+        const results = await db.select().from(appointments)
+          .where(filters.length > 0 ? and(...filters) : undefined)
+          .orderBy(desc(appointments.scheduledAt))
+          .limit(input.limit).offset(input.offset);
+        const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(filters.length > 0 ? and(...filters) : undefined);
 
-      return {
-        appointments: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+        return {
+          appointments: results.map(a => ({
+            id: String(a.id), type: a.type, terminalId: String(a.terminalId),
+            loadId: a.loadId ? String(a.loadId) : null, driverId: a.driverId ? String(a.driverId) : null,
+            scheduledAt: a.scheduledAt?.toISOString() || "", dockNumber: a.dockNumber || "",
+            status: a.status || "scheduled",
+          })),
+          total: countRow?.count || 0,
+        };
+      } catch (err) { console.error("[appointments.list]", err); return { appointments: [], total: 0 }; }
     }),
 
   /**
-   * Get appointment by ID
+   * Get appointment by ID — real DB query
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id,
-        type: "pickup",
-        loadNumber: "LOAD-45920",
-        facility: {
-          id: "f1",
-          name: "Shell Houston Terminal",
-          address: "1234 Refinery Rd",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-          contact: { name: "John Terminal", phone: "555-0150" },
-          instructions: "Check in at guard shack. Present BOL and driver ID.",
-        },
-        carrier: { id: "car_001", name: "ABC Transport LLC", dotNumber: "1234567" },
-        driver: { id: "d1", name: "Mike Johnson", phone: "555-0101", cdl: "TX12345678" },
-        vehicle: { id: "v1", unitNumber: "TRK-101", trailerNumber: "TRL-201" },
-        scheduledDate: "2025-01-24",
-        scheduledTime: "08:00",
-        windowEnd: "10:00",
-        status: "confirmed",
-        product: "Unleaded Gasoline",
-        quantity: 8500,
-        unit: "gal",
-        hazmat: { class: "3", unNumber: "1203" },
-        confirmationNumber: "CONF-45920-A",
-        timeline: [
-          { timestamp: "2025-01-22T10:00:00Z", action: "Appointment created", user: "System" },
-          { timestamp: "2025-01-22T10:05:00Z", action: "Appointment confirmed by facility", user: "Shell Terminal" },
-        ],
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      try {
+        const [apt] = await db.select().from(appointments).where(eq(appointments.id, parseInt(input.id, 10))).limit(1);
+        if (!apt) return null;
+        return {
+          id: String(apt.id), type: apt.type, loadNumber: apt.loadId ? `LOAD-${apt.loadId}` : "",
+          facility: { id: String(apt.terminalId), name: "", address: "", city: "", state: "", zip: "", contact: { name: "", phone: "" }, instructions: "" },
+          carrier: { id: "", name: "", dotNumber: "" },
+          driver: { id: apt.driverId ? String(apt.driverId) : "", name: "", phone: "", cdl: "" },
+          vehicle: { id: "", unitNumber: "", trailerNumber: "" },
+          scheduledDate: apt.scheduledAt?.toISOString()?.split("T")[0] || "",
+          scheduledTime: apt.scheduledAt?.toISOString()?.split("T")[1]?.substring(0,5) || "",
+          windowEnd: "", status: apt.status || "scheduled",
+          product: "", quantity: 0, unit: "gal", hazmat: null,
+          confirmationNumber: `CONF-${String(apt.id).padStart(6, "0")}`,
+          dockNumber: apt.dockNumber || "",
+          timeline: [],
+        };
+      } catch { return null; }
     }),
 
   /**
-   * Create appointment
+   * Create appointment — writes to appointments table
    */
   create: protectedProcedure
     .input(z.object({
-      type: appointmentTypeSchema,
-      loadId: z.string(),
-      facilityId: z.string(),
-      carrierId: z.string(),
-      driverId: z.string().optional(),
-      vehicleId: z.string().optional(),
-      scheduledDate: z.string(),
-      scheduledTime: z.string(),
-      product: z.string().optional(),
-      quantity: z.number().optional(),
-      notes: z.string().optional(),
+      type: appointmentTypeSchema, loadId: z.string(), facilityId: z.string(),
+      carrierId: z.string(), driverId: z.string().optional(), vehicleId: z.string().optional(),
+      scheduledDate: z.string(), scheduledTime: z.string(),
+      product: z.string().optional(), quantity: z.number().optional(), notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const confirmationNumber = `CONF-${Date.now().toString().slice(-6)}`;
-      
-      return {
-        id: `apt_${Date.now()}`,
-        confirmationNumber,
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const result = await db.insert(appointments).values({
+        terminalId: parseInt(input.facilityId, 10),
+        loadId: parseInt(input.loadId, 10) || null,
+        driverId: input.driverId ? parseInt(input.driverId, 10) : null,
+        type: input.type as any,
+        scheduledAt: new Date(`${input.scheduledDate}T${input.scheduledTime}`),
         status: "scheduled",
-        createdBy: ctx.user?.id,
-        createdAt: new Date().toISOString(),
-      };
+      } as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+      return { id: String(insertedId), confirmationNumber: `CONF-${String(insertedId).padStart(6, "0")}`, status: "scheduled", createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
   /**
-   * Update appointment
+   * Update appointment — writes to DB
    */
   update: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      scheduledDate: z.string().optional(),
-      scheduledTime: z.string().optional(),
-      driverId: z.string().optional(),
-      vehicleId: z.string().optional(),
-      notes: z.string().optional(),
-    }))
+    .input(z.object({ id: z.string(), scheduledDate: z.string().optional(), scheduledTime: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional(), notes: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const updateData: any = {};
+      if (input.scheduledDate && input.scheduledTime) updateData.scheduledAt = new Date(`${input.scheduledDate}T${input.scheduledTime}`);
+      if (input.driverId) updateData.driverId = parseInt(input.driverId, 10);
+      if (input.notes) updateData.dockNumber = input.notes; // Store notes in dockNumber for now
+      if (Object.keys(updateData).length > 0) {
+        await db.update(appointments).set(updateData).where(eq(appointments.id, parseInt(input.id, 10)));
+      }
+      return { success: true, id: input.id, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
-   * Update appointment status
+   * Update appointment status — writes to DB
    */
   updateStatus: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      status: appointmentStatusSchema,
-      notes: z.string().optional(),
-      timestamp: z.string().optional(),
-    }))
+    .input(z.object({ id: z.string(), status: appointmentStatusSchema, notes: z.string().optional(), timestamp: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        newStatus: input.status,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(appointments).set({ status: input.status as any }).where(eq(appointments.id, parseInt(input.id, 10)));
+      return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
-   * Check in for appointment
+   * Check in for appointment — updates status to checked_in
    */
   checkIn: protectedProcedure
-    .input(z.object({
-      appointmentId: z.string(),
-      driverId: z.string().optional(),
-      vehicleId: z.string().optional(),
-      trailerNumber: z.string().optional(),
-      notes: z.string().optional(),
-    }))
+    .input(z.object({ appointmentId: z.string(), driverId: z.string().optional(), vehicleId: z.string().optional(), trailerNumber: z.string().optional(), notes: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        appointmentId: input.appointmentId,
-        checkInTime: new Date().toISOString(),
-        queuePosition: 3,
-        estimatedWait: 25,
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(appointments).set({ status: "checked_in" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+      return { success: true, appointmentId: input.appointmentId, checkInTime: new Date().toISOString(), queuePosition: 0, estimatedWait: 0 };
     }),
 
   /**
-   * Cancel appointment
+   * Cancel appointment — updates status to cancelled
    */
   cancel: protectedProcedure
-    .input(z.object({
-      id: z.string(),
-      reason: z.string(),
-    }))
+    .input(z.object({ id: z.string(), reason: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        cancelledBy: ctx.user?.id,
-        cancelledAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      await db.update(appointments).set({ status: "cancelled" as any }).where(eq(appointments.id, parseInt(input.id, 10)));
+      return { success: true, id: input.id, cancelledBy: ctx.user?.id, cancelledAt: new Date().toISOString() };
     }),
 
   /**
-   * Get available time slots
+   * Get available time slots — computed from real bookings
    */
   getAvailableSlots: protectedProcedure
-    .input(z.object({
-      facilityId: z.string(),
-      date: z.string(),
-      type: appointmentTypeSchema,
-    }))
+    .input(z.object({ facilityId: z.string(), date: z.string(), type: appointmentTypeSchema }))
     .query(async ({ input }) => {
-      return {
-        facilityId: input.facilityId,
-        date: input.date,
-        slots: [
-          { time: "06:00", available: true, capacity: 2, booked: 0 },
-          { time: "08:00", available: true, capacity: 2, booked: 1 },
-          { time: "10:00", available: true, capacity: 2, booked: 0 },
-          { time: "12:00", available: false, capacity: 2, booked: 2 },
-          { time: "14:00", available: true, capacity: 2, booked: 1 },
-          { time: "16:00", available: true, capacity: 2, booked: 0 },
-        ],
-      };
+      const db = await getDb();
+      if (!db) return { facilityId: input.facilityId, date: input.date, slots: [] };
+      try {
+        const dayStart = new Date(input.date); dayStart.setHours(0,0,0,0);
+        const dayEnd = new Date(input.date); dayEnd.setHours(23,59,59,999);
+        const booked = await db.select({ scheduledAt: appointments.scheduledAt }).from(appointments)
+          .where(and(eq(appointments.terminalId, parseInt(input.facilityId, 10)), gte(appointments.scheduledAt, dayStart), lte(appointments.scheduledAt, dayEnd), sql`${appointments.status} != 'cancelled'`));
+        const bookedHours = booked.map(b => b.scheduledAt?.getHours() || 0);
+        const capacity = 2;
+        const slots = [6, 8, 10, 12, 14, 16].map(hour => {
+          const count = bookedHours.filter(h => h === hour).length;
+          return { time: `${String(hour).padStart(2, "0")}:00`, available: count < capacity, capacity, booked: count };
+        });
+        return { facilityId: input.facilityId, date: input.date, slots };
+      } catch { return { facilityId: input.facilityId, date: input.date, slots: [] }; }
     }),
 
   /**
-   * Get my appointments (driver)
+   * Get my appointments (driver) — scoped by driverId
    */
   getMyAppointments: protectedProcedure
-    .input(z.object({
-      status: z.enum(["upcoming", "today", "past"]).default("upcoming"),
-    }))
+    .input(z.object({ status: z.enum(["upcoming", "today", "past"]).default("upcoming") }))
     .query(async ({ ctx, input }) => {
-      return [
-        {
-          id: "apt_001",
-          type: "pickup",
-          loadNumber: "LOAD-45920",
-          facilityName: "Shell Houston Terminal",
-          address: "1234 Refinery Rd, Houston, TX",
-          scheduledDate: "2025-01-24",
-          scheduledTime: "08:00",
-          status: "confirmed",
-          product: "Unleaded Gasoline",
-          quantity: 8500,
-        },
-        {
-          id: "apt_002",
-          type: "delivery",
-          loadNumber: "LOAD-45920",
-          facilityName: "7-Eleven Distribution Center",
-          address: "5678 Commerce Dr, Dallas, TX",
-          scheduledDate: "2025-01-24",
-          scheduledTime: "14:00",
-          status: "scheduled",
-          product: "Unleaded Gasoline",
-          quantity: 8500,
-        },
-      ];
+      const db = await getDb();
+      if (!db) return [];
+      const { userId } = await resolveUserContext(ctx.user);
+      try {
+        const now = new Date();
+        const filters: any[] = [eq(appointments.driverId, userId)];
+        if (input.status === "upcoming") filters.push(gte(appointments.scheduledAt, now));
+        else if (input.status === "today") {
+          const dayStart = new Date(); dayStart.setHours(0,0,0,0);
+          const dayEnd = new Date(); dayEnd.setHours(23,59,59,999);
+          filters.push(gte(appointments.scheduledAt, dayStart));
+          filters.push(lte(appointments.scheduledAt, dayEnd));
+        } else filters.push(lte(appointments.scheduledAt, now));
+
+        const results = await db.select().from(appointments).where(and(...filters)).orderBy(desc(appointments.scheduledAt)).limit(20);
+        return results.map(a => ({
+          id: String(a.id), type: a.type, loadNumber: a.loadId ? `LOAD-${a.loadId}` : "",
+          facilityName: "", address: "",
+          scheduledDate: a.scheduledAt?.toISOString()?.split("T")[0] || "",
+          scheduledTime: a.scheduledAt?.toISOString()?.split("T")[1]?.substring(0,5) || "",
+          status: a.status || "scheduled", product: "", quantity: 0,
+        }));
+      } catch { return []; }
     }),
 
   /**
    * Send appointment reminder
    */
   sendReminder: protectedProcedure
-    .input(z.object({
-      appointmentId: z.string(),
-      recipientType: z.enum(["driver", "carrier", "facility"]),
-    }))
+    .input(z.object({ appointmentId: z.string(), recipientType: z.enum(["driver", "carrier", "facility"]) }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        appointmentId: input.appointmentId,
-        sentTo: input.recipientType,
-        sentAt: new Date().toISOString(),
-      };
+      return { success: true, appointmentId: input.appointmentId, sentTo: input.recipientType, sentAt: new Date().toISOString() };
     }),
 
-  // Additional appointment procedures
-  getSummary: protectedProcedure.input(z.object({ date: z.string().optional() }).optional()).query(async () => ({ today: 12, todayTotal: 12, completed: 8, inProgress: 2, upcoming: 15, cancelled: 1 })),
-  startLoading: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId })),
-  complete: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => ({ success: true, appointmentId: input.appointmentId, completedAt: new Date().toISOString() })),
+  // Additional appointment procedures — real DB queries
+  getSummary: protectedProcedure.input(z.object({ date: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { today: 0, todayTotal: 0, completed: 0, inProgress: 0, upcoming: 0, cancelled: 0 };
+    try {
+      const dayStart = new Date(); dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(); dayEnd.setHours(23,59,59,999);
+      const [todayCount] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, dayStart), lte(appointments.scheduledAt, dayEnd)));
+      const [completedCount] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, dayStart), lte(appointments.scheduledAt, dayEnd), eq(appointments.status, "completed")));
+      const [cancelledCount] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, dayStart), lte(appointments.scheduledAt, dayEnd), eq(appointments.status, "cancelled")));
+      const [upcomingCount] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, dayEnd)));
+      const total = todayCount?.count || 0;
+      return { today: total, todayTotal: total, completed: completedCount?.count || 0, inProgress: 0, upcoming: upcomingCount?.count || 0, cancelled: cancelledCount?.count || 0 };
+    } catch { return { today: 0, todayTotal: 0, completed: 0, inProgress: 0, upcoming: 0, cancelled: 0 }; }
+  }),
+  startLoading: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (db) await db.update(appointments).set({ status: "loading" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+    return { success: true, appointmentId: input.appointmentId };
+  }),
+  complete: protectedProcedure.input(z.object({ appointmentId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (db) await db.update(appointments).set({ status: "completed" as any }).where(eq(appointments.id, parseInt(input.appointmentId, 10)));
+    return { success: true, appointmentId: input.appointmentId, completedAt: new Date().toISOString() };
+  }),
 });

@@ -46,6 +46,24 @@ function formatStripeInvoice(inv: any) {
   };
 }
 
+// Helper: resolve the current user's Stripe customer ID from DB
+async function resolveStripeCustomerId(ctxUser: any): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const email = ctxUser?.email || "";
+  const userId = typeof ctxUser?.id === "string" ? parseInt(ctxUser.id, 10) : (ctxUser?.id || 0);
+  try {
+    const [row] = await db.select({ stripeCustomerId: users.stripeCustomerId }).from(users).where(eq(users.id, userId)).limit(1);
+    if (row?.stripeCustomerId) return row.stripeCustomerId;
+  } catch {}
+  // Fallback: look up by email in Stripe
+  if (email) {
+    const result = await safeStripe(() => stripe.customers.list({ email, limit: 1 }));
+    if (result && result.data.length > 0) return result.data[0].id;
+  }
+  return null;
+}
+
 export const paymentsRouter = router({
   // ════════════════════════════════════════════════════════════════
   // WALLET BALANCE — real DB query
@@ -186,8 +204,11 @@ export const paymentsRouter = router({
   // ════════════════════════════════════════════════════════════════
   getInvoices: protectedProcedure
     .input(z.object({ status: z.string().optional() }))
-    .query(async ({ input }) => {
-      const params: any = { limit: 50 };
+    .query(async ({ ctx, input }) => {
+      // Scope by user's Stripe customer ID — each user only sees their own invoices
+      const customerId = await resolveStripeCustomerId(ctx.user);
+      if (!customerId) return [];
+      const params: any = { limit: 50, customer: customerId };
       if (input.status === "paid") params.status = "paid";
       else if (input.status === "outstanding" || input.status === "overdue") params.status = "open";
       const result = await safeStripe(() => stripe.invoices.list(params));
@@ -201,8 +222,10 @@ export const paymentsRouter = router({
   // ════════════════════════════════════════════════════════════════
   // RECEIVABLES — open Stripe invoices (money owed to you)
   // ════════════════════════════════════════════════════════════════
-  getReceivables: protectedProcedure.query(async () => {
-    const result = await safeStripe(() => stripe.invoices.list({ status: "open", limit: 50 }));
+  getReceivables: protectedProcedure.query(async ({ ctx }) => {
+    const customerId = await resolveStripeCustomerId(ctx.user);
+    if (!customerId) return [];
+    const result = await safeStripe(() => stripe.invoices.list({ status: "open", limit: 50, customer: customerId }));
     if (!result) return [];
     return result.data.map((inv) => ({
       id: inv.id,
@@ -220,8 +243,9 @@ export const paymentsRouter = router({
   // ════════════════════════════════════════════════════════════════
   getReceipts: protectedProcedure.query(async ({ ctx }) => {
     const receipts: any[] = [];
-    // Stripe paid invoices
-    const stripeResult = await safeStripe(() => stripe.invoices.list({ status: "paid", limit: 30 }));
+    // Stripe paid invoices (scoped to this user's customer)
+    const customerId = await resolveStripeCustomerId(ctx.user);
+    const stripeResult = customerId ? await safeStripe(() => stripe.invoices.list({ status: "paid", limit: 30, customer: customerId })) : null;
     if (stripeResult) {
       for (const inv of stripeResult.data) {
         receipts.push({

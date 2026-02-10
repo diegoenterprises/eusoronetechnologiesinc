@@ -33,7 +33,7 @@ export const DetentionTimeWidget: React.FC = () => {
           <p className="text-2xl font-bold text-orange-400">{d.avgHours}h</p>
           <p className="text-xs text-gray-400">Avg Detention</p>
         </div>
-        <StatRow label="Total Cost" value={`$${d.totalCost.toLocaleString()}`} color="text-red-400" />
+        <StatRow label="Total Cost" value={`$${(d.totalCost || 0).toLocaleString()}`} color="text-red-400" />
         <StatRow label="Incidents" value={d.incidents} color="text-yellow-400" />
       </div>
     )}</ResponsiveWidget>
@@ -51,7 +51,7 @@ export const InsuranceTrackerWidget: React.FC = () => {
           { label: "Expiring", value: s.expiringSoon, color: "bg-yellow-500/10" },
           { label: "Expired", value: s.expired, color: "bg-red-500/10" },
         ]} />
-        <StatRow label="Total Premium" value={`$${s.totalPremium.toLocaleString()}/yr`} color="text-blue-400" />
+        <StatRow label="Total Premium" value={`$${(s.totalPremium || 0).toLocaleString()}/yr`} color="text-blue-400" />
       </div>
     )}</ResponsiveWidget>
   );

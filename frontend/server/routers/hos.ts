@@ -22,170 +22,80 @@ const logEntrySchema = z.object({
 
 export const hosRouter = router({
   /**
-   * Get simple HOS status for dashboard
+   * Get simple HOS status for dashboard — empty for new users (no HOS table yet)
    */
   getStatus: protectedProcedure.query(async () => ({
-    drivingRemaining: 8,
-    onDutyRemaining: 11,
-    cycleRemaining: 55,
-    breakRequired: false,
-    nextBreakDue: null,
+    drivingRemaining: 11, onDutyRemaining: 14, cycleRemaining: 70,
+    breakRequired: false, nextBreakDue: null,
   })),
 
   /**
-   * Get current HOS status and remaining time
+   * Get current HOS status — fresh driver starts with full limits
    */
   getCurrentStatus: protectedProcedure
     .input(z.object({ driverId: z.string().optional() }))
-    .query(async ({ ctx, input }) => {
-      const driverId = input.driverId || ctx.user?.id;
-      
-      return {
-        driverId,
-        currentStatus: "driving" as const,
-        statusStartTime: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        limits: {
-          driving: { used: 420, limit: 660, remaining: 240 },
-          onDuty: { used: 480, limit: 840, remaining: 360 },
-          cycle: { used: 3600, limit: 4200, remaining: 600 },
-        },
-        breakRequired: false,
-        nextBreakDue: null,
-        lastRestartDate: "2025-01-17",
-        violations: [],
-      };
-    }),
+    .query(async ({ ctx, input }) => ({
+      driverId: input.driverId || ctx.user?.id,
+      currentStatus: "off_duty" as const,
+      statusStartTime: new Date().toISOString(),
+      limits: {
+        driving: { used: 0, limit: 660, remaining: 660 },
+        onDuty: { used: 0, limit: 840, remaining: 840 },
+        cycle: { used: 0, limit: 4200, remaining: 4200 },
+      },
+      breakRequired: false, nextBreakDue: null, lastRestartDate: "", violations: [],
+    })),
 
   /**
    * Change duty status
    */
   changeStatus: protectedProcedure
-    .input(z.object({
-      newStatus: dutyStatusSchema,
-      location: z.string(),
-      notes: z.string().optional(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        previousStatus: "on_duty",
-        newStatus: input.newStatus,
-        timestamp: new Date().toISOString(),
-        location: input.location,
-      };
-    }),
+    .input(z.object({ newStatus: dutyStatusSchema, location: z.string(), notes: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => ({
+      success: true, previousStatus: "off_duty", newStatus: input.newStatus,
+      timestamp: new Date().toISOString(), location: input.location,
+    })),
 
   /**
-   * Get daily log for a specific date
+   * Get daily log — empty for new users
    */
   getDailyLog: protectedProcedure
-    .input(z.object({
-      driverId: z.string().optional(),
-      date: z.string(),
-    }))
-    .query(async ({ ctx, input }) => {
-      return {
-        date: input.date,
-        driverId: input.driverId || ctx.user?.id,
-        entries: [
-          { id: "e1", status: "off_duty", startTime: "00:00", endTime: "06:00", duration: 360, location: "Houston, TX" },
-          { id: "e2", status: "on_duty", startTime: "06:00", endTime: "06:30", duration: 30, location: "Houston, TX", notes: "Pre-trip inspection" },
-          { id: "e3", status: "driving", startTime: "06:30", endTime: "10:30", duration: 240, location: "En route to Dallas" },
-          { id: "e4", status: "on_duty", startTime: "10:30", endTime: "11:00", duration: 30, location: "Rest Area I-45", notes: "30-min break" },
-          { id: "e5", status: "driving", startTime: "11:00", endTime: "14:00", duration: 180, location: "En route to Dallas" },
-        ],
-        totals: {
-          driving: 420,
-          onDuty: 480,
-          offDuty: 360,
-          sleeper: 0,
-        },
-        violations: [],
-        certified: false,
-      };
-    }),
+    .input(z.object({ driverId: z.string().optional(), date: z.string() }))
+    .query(async ({ ctx, input }) => ({
+      date: input.date, driverId: input.driverId || ctx.user?.id,
+      entries: [], totals: { driving: 0, onDuty: 0, offDuty: 1440, sleeper: 0 },
+      violations: [], certified: false,
+    })),
 
   /**
-   * Get log history for past 8 days (for 70-hour cycle)
+   * Get log history — empty for new users
    */
   getLogHistory: protectedProcedure
-    .input(z.object({
-      driverId: z.string().optional(),
-      days: z.number().default(8),
-    }))
-    .query(async ({ ctx, input }) => {
-      const logs = [];
-      const today = new Date();
-      
-      for (let i = 0; i < input.days; i++) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        
-        logs.push({
-          date: date.toISOString().split('T')[0],
-          totalDriving: i === 0 ? 420 : 480,
-          totalOnDuty: i === 0 ? 480 : 540,
-          violations: i === 3 ? ["Exceeded 11-hour driving limit"] : [],
-          certified: i > 0,
-        });
-      }
-      
-      return logs;
-    }),
+    .input(z.object({ driverId: z.string().optional(), days: z.number().default(8) }))
+    .query(async () => []),
 
   /**
    * Certify daily log
    */
   certifyLog: protectedProcedure
-    .input(z.object({
-      date: z.string(),
-      signature: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        date: input.date,
-        certifiedAt: new Date().toISOString(),
-        certifiedBy: ctx.user?.id,
-      };
-    }),
+    .input(z.object({ date: z.string(), signature: z.string() }))
+    .mutation(async ({ ctx, input }) => ({
+      success: true, date: input.date, certifiedAt: new Date().toISOString(), certifiedBy: ctx.user?.id,
+    })),
 
   /**
    * Add remark to log
    */
   addRemark: protectedProcedure
-    .input(z.object({
-      date: z.string(),
-      time: z.string(),
-      remark: z.string(),
-    }))
-    .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        remarkId: `RMK-${Date.now()}`,
-        addedAt: new Date().toISOString(),
-      };
-    }),
+    .input(z.object({ date: z.string(), time: z.string(), remark: z.string() }))
+    .mutation(async ({ ctx, input }) => ({
+      success: true, remarkId: `RMK-${Date.now()}`, addedAt: new Date().toISOString(),
+    })),
 
   /**
-   * Get violations for a driver
+   * Get violations — empty for new users
    */
   getViolations: protectedProcedure
-    .input(z.object({
-      driverId: z.string().optional(),
-      startDate: z.string().optional(),
-      endDate: z.string().optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      return [
-        {
-          id: "VIO-001",
-          date: "2025-01-20",
-          type: "driving_limit",
-          description: "Exceeded 11-hour driving limit by 15 minutes",
-          severity: "minor",
-          acknowledged: true,
-        },
-      ];
-    }),
+    .input(z.object({ driverId: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() }))
+    .query(async () => []),
 });

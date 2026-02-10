@@ -61,15 +61,18 @@ export const users = mysqlTable(
     stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
     stripeConnectId: varchar("stripeConnectId", { length: 255 }),
     metadata: text("metadata"),
+    currentLocation: json("currentLocation").$type<{ lat: number; lng: number; city?: string; state?: string }>(),
+    lastGPSUpdate: timestamp("lastGPSUpdate"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
     deletedAt: timestamp("deletedAt"),
   },
   (table) => ({
-    emailIdx: index("email_idx").on(table.email),
+    emailIdx: unique("email_unique").on(table.email),
     roleIdx: index("role_idx").on(table.role),
     companyIdx: index("company_idx").on(table.companyId),
+    activeRoleIdx: index("active_role_idx").on(table.isActive, table.role),
   })
 );
 
@@ -98,6 +101,7 @@ export const companies = mysqlTable(
     email: varchar("email", { length: 320 }),
     website: varchar("website", { length: 255 }),
     logo: text("logo"),
+    description: text("description"),
     insurancePolicy: text("insurancePolicy"),
     insuranceExpiry: timestamp("insuranceExpiry"),
     twicCard: text("twicCard"),
@@ -243,6 +247,20 @@ export const loads = mysqlTable(
     rate: decimal("rate", { precision: 10, scale: 2 }),
     currency: varchar("currency", { length: 3 }).default("USD"),
     specialInstructions: text("specialInstructions"),
+    commodityName: varchar("commodityName", { length: 255 }),
+    spectraMatchResult: json("spectraMatchResult").$type<{
+      crudeId: string;
+      productName: string;
+      confidence: number;
+      category: string;
+      apiGravity?: number;
+      bsw?: number;
+      sulfur?: number;
+      flashPoint?: number;
+      verifiedBy: number;
+      verifiedAt: string;
+      esangVerified: boolean;
+    }>(),
     documents: json("documents").$type<string[]>(),
     currentLocation: json("currentLocation").$type<{ lat: number; lng: number }>(),
     route: json("route").$type<Array<{ lat: number; lng: number }>>(),
@@ -2596,8 +2614,8 @@ export const dashboardWidgets = mysqlTable(
     name: varchar("name", { length: 100 }).notNull(),
     description: text("description"),
     category: mysqlEnum("category", [
-      "LOAD_MANAGEMENT", "FINANCIAL", "COMMUNICATION", "NAVIGATION",
-      "COMPLIANCE", "GAMIFICATION", "ANALYTICS", "ZEUN_MECHANICS", "SYSTEM"
+      "analytics", "operations", "financial", "communication", "productivity",
+      "safety", "compliance", "performance", "planning", "tracking", "reporting", "management", "system"
     ]).notNull(),
     defaultWidth: int("defaultWidth").default(2),
     defaultHeight: int("defaultHeight").default(2),

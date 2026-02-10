@@ -1,21 +1,88 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import mysql2 from "mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
+let _pool: ReturnType<typeof mysql2.createPool> | null = null;
 
-// Lazily create the drizzle instance so local tooling can run without a DB.
+/**
+ * Connection pool configuration for multi-user scale.
+ * - connectionLimit: max concurrent connections (Azure MySQL default max = 300)
+ * - waitForConnections: queue requests when all connections are in use
+ * - queueLimit: max queued requests before rejecting (0 = unlimited)
+ * - idleTimeout: release idle connections after 60s
+ * - enableKeepAlive: prevent connection drops on Azure
+ * - maxIdle: keep at least 5 connections ready for instant use
+ */
+function createPool() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) throw new Error("DATABASE_URL is required");
+
+  return mysql2.createPool({
+    uri: dbUrl,
+    connectionLimit: 20,
+    waitForConnections: true,
+    queueLimit: 100,
+    idleTimeout: 60000,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 30000,
+    maxIdle: 5,
+    connectTimeout: 10000,
+  });
+}
+
+// Lazily create the drizzle instance backed by a connection pool.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _pool = createPool();
+      _db = drizzle(_pool);
+      console.log("[Database] Connection pool initialized (limit: 20)");
     } catch (error) {
-      console.warn("[Database] Failed to connect:", error);
+      console.error("[Database] Failed to create connection pool:", error);
+      _pool = null;
       _db = null;
     }
   }
   return _db;
+}
+
+// Get the raw pool (promise-wrapped) for transactions and raw queries
+export function getPool() {
+  return _pool?.promise() || null;
+}
+
+// Graceful shutdown — call on process exit
+export async function closeDb(): Promise<void> {
+  if (_pool) {
+    await new Promise<void>((resolve, reject) => {
+      _pool!.end((err) => { if (err) reject(err); else resolve(); });
+    });
+    _pool = null;
+    _db = null;
+    console.log("[Database] Connection pool closed");
+  }
+}
+
+// Retry wrapper for transient DB failures (deadlocks, connection resets)
+const RETRYABLE_CODES = ["ER_LOCK_DEADLOCK", "ECONNRESET", "PROTOCOL_CONNECTION_LOST", "ER_LOCK_WAIT_TIMEOUT"];
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+  let lastError: any;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      const isRetryable = RETRYABLE_CODES.includes(err?.code) || err?.message?.includes("Connection lost");
+      if (!isRetryable || attempt === maxRetries) throw err;
+      const delay = Math.min(100 * Math.pow(2, attempt), 2000);
+      console.warn(`[Database] Retryable error (attempt ${attempt}/${maxRetries}): ${err.code || err.message}. Retrying in ${delay}ms...`);
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastError;
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {
@@ -100,14 +167,17 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  // Safe column selection (openId column may not exist in actual DB)
+  // Include openId in select so callers (sdk.ts) can reference it
   const safeSelect = {
-    id: users.id, name: users.name, email: users.email,
-    phone: users.phone, role: users.role, companyId: users.companyId,
+    id: users.id, openId: users.openId, name: users.name, email: users.email,
+    phone: users.phone, passwordHash: users.passwordHash, loginMethod: users.loginMethod,
+    role: users.role, companyId: users.companyId,
     isActive: users.isActive, isVerified: users.isVerified,
     stripeCustomerId: users.stripeCustomerId, stripeConnectId: users.stripeConnectId,
-    profilePicture: users.profilePicture,
+    profilePicture: users.profilePicture, metadata: users.metadata,
+    currentLocation: users.currentLocation, lastGPSUpdate: users.lastGPSUpdate,
     createdAt: users.createdAt, updatedAt: users.updatedAt,
+    lastSignedIn: users.lastSignedIn, deletedAt: users.deletedAt,
   };
 
   // Try openId lookup — may fail if column doesn't exist in actual DB

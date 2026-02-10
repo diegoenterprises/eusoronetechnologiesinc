@@ -177,6 +177,7 @@ export const eusoTicketRouter = router({
           };
         }
 
+        const smResult = (load as any).spectraMatchResult as any;
         return {
           ticketNumber: input.ticketNumber,
           status: load.status || "pending",
@@ -185,11 +186,11 @@ export const eusoTicketRouter = router({
           driverId: String(load.driverId || ""),
           vehicleId: "",
           originTerminalId: "",
-          productName: (load as any).commodityName || "Unknown Product",
-          crudeType: (load as any).commodityName || "",
-          apiGravity: 0,
-          bsw: 0,
-          sulfurContent: 0,
+          productName: (load as any).commodityName || smResult?.productName || "Unknown Product",
+          crudeType: smResult?.crudeId || (load as any).commodityName || "",
+          apiGravity: smResult?.apiGravity || 0,
+          bsw: smResult?.bsw || 0,
+          sulfurContent: smResult?.sulfur || 0,
           temperature: 0,
           grossVolume: parseFloat(String(load.weight)) || 0,
           netVolume: parseFloat(String(load.weight)) || 0,
@@ -201,8 +202,9 @@ export const eusoTicketRouter = router({
           bayNumber: "",
           meterNumber: "",
           sealNumbers: [],
-          spectraMatchVerified: false,
-          spectraMatchConfidence: 0,
+          spectraMatchVerified: !!smResult,
+          spectraMatchConfidence: smResult?.confidence || 0,
+          spectraMatchResult: smResult || null,
           createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
         };
       } catch (error) {
@@ -226,29 +228,27 @@ export const eusoTicketRouter = router({
       if (!db) return { tickets: [], total: 0 };
 
       try {
-        const loadsList = await db.select({
-          id: loads.id,
-          status: loads.status,
-          commodityName: (loads as any).commodityName,
-          weight: loads.weight,
-          createdAt: loads.createdAt,
-        }).from(loads)
+        const loadsList = await db.select().from(loads)
           .orderBy(desc(loads.createdAt))
           .limit(input.limit);
 
         return {
-          tickets: loadsList.map(load => ({
-            ticketNumber: `RT-${load.id}`,
-            status: load.status || "pending",
-            productName: load.commodityName || "Unknown",
-            netVolume: parseFloat(String(load.weight)) || 0,
-            apiGravity: 0,
-            driverName: "Driver",
-            vehiclePlate: "",
-            terminalName: "Terminal",
-            createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
-            spectraMatchVerified: false,
-          })),
+          tickets: loadsList.map(load => {
+            const smResult = (load as any).spectraMatchResult as any;
+            return {
+              ticketNumber: `RT-${load.id}`,
+              status: load.status || "pending",
+              productName: (load as any).commodityName || smResult?.productName || "Unknown",
+              netVolume: parseFloat(String(load.weight)) || 0,
+              apiGravity: smResult?.apiGravity || 0,
+              driverName: "Driver",
+              vehiclePlate: "",
+              terminalName: "Terminal",
+              createdAt: load.createdAt?.toISOString() || new Date().toISOString(),
+              spectraMatchVerified: !!smResult,
+              spectraMatchConfidence: smResult?.confidence || 0,
+            };
+          }),
           total: loadsList.length,
         };
       } catch (error) {
@@ -284,33 +284,33 @@ export const eusoTicketRouter = router({
     .query(async ({ input }) => {
       return {
         bolNumber: input.bolNumber,
-        runTicketId: "RT-2024-001",
-        status: "delivered",
-        shipperName: "ABC Oil Company",
-        shipperAddress: "123 Oil Field Rd, Midland, TX 79701",
-        consigneeName: "XYZ Refinery",
-        consigneeAddress: "456 Refinery Way, Houston, TX 77001",
-        carrierName: "EusoTrip Transport LLC",
-        carrierMC: "MC-123456",
-        carrierDOT: "DOT-789012",
-        driverName: "John Smith",
-        driverCDL: "TX-CDL-12345",
-        vehiclePlate: "TX-1234",
-        trailerPlate: "TX-T-5678",
-        productDescription: "West Texas Intermediate Crude Oil",
-        quantity: 8475,
-        quantityUnit: "gallons",
-        isHazmat: true,
-        hazmatClass: "3",
-        unNumber: "UN1267",
-        packingGroup: "II",
-        ergNumber: "128",
-        freightTerms: "prepaid",
-        freightCharges: 2500,
-        specialInstructions: "Temperature sensitive - maintain below 100°F",
-        emergencyContact: "1-800-555-0123",
-        shipperSignature: "signed",
-        carrierSignature: "signed",
+        runTicketId: "",
+        status: "",
+        shipperName: "",
+        shipperAddress: "",
+        consigneeName: "",
+        consigneeAddress: "",
+        carrierName: "",
+        carrierMC: "",
+        carrierDOT: "",
+        driverName: "",
+        driverCDL: "",
+        vehiclePlate: "",
+        trailerPlate: "",
+        productDescription: "",
+        quantity: 0,
+        quantityUnit: "",
+        isHazmat: false,
+        hazmatClass: "",
+        unNumber: "",
+        packingGroup: "",
+        ergNumber: "",
+        freightTerms: "",
+        freightCharges: 0,
+        specialInstructions: "",
+        emergencyContact: "",
+        shipperSignature: "",
+        carrierSignature: "",
         createdAt: new Date().toISOString(),
         deliveredAt: new Date().toISOString(),
       };
@@ -328,43 +328,8 @@ export const eusoTicketRouter = router({
     }))
     .query(async ({ input }) => {
       return {
-        bols: [
-          {
-            bolNumber: "BOL-2024-001",
-            runTicketId: "RT-2024-001",
-            status: "delivered",
-            shipperName: "ABC Oil Company",
-            consigneeName: "XYZ Refinery",
-            productDescription: "WTI Crude Oil",
-            quantity: 8475,
-            quantityUnit: "gallons",
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            deliveredAt: new Date().toISOString(),
-          },
-          {
-            bolNumber: "BOL-2024-002",
-            runTicketId: "RT-2024-002",
-            status: "in_transit",
-            shipperName: "Bakken Energy LLC",
-            consigneeName: "Gulf Coast Refinery",
-            productDescription: "Bakken Crude Oil",
-            quantity: 8200,
-            quantityUnit: "gallons",
-            createdAt: new Date(Date.now() - 43200000).toISOString(),
-          },
-          {
-            bolNumber: "BOL-2024-003",
-            runTicketId: "RT-2024-003",
-            status: "issued",
-            shipperName: "Eagle Ford Resources",
-            consigneeName: "Corpus Christi Terminal",
-            productDescription: "Eagle Ford Condensate",
-            quantity: 7900,
-            quantityUnit: "gallons",
-            createdAt: new Date(Date.now() - 21600000).toISOString(),
-          },
-        ],
-        total: 3,
+        bols: [],
+        total: 0,
       };
     }),
 
@@ -409,22 +374,12 @@ export const eusoTicketRouter = router({
     .query(async ({ input }) => {
       return {
         terminalId: input.terminalId,
-        todayTickets: 12,
-        todayVolume: 98500,
-        weekTickets: 67,
-        weekVolume: 568750,
-        monthTickets: 289,
-        monthVolume: 2451250,
-        avgLoadTime: 45, // minutes
-        avgApiGravity: 40.2,
-        topCrudeTypes: [
-          { type: "WTI", count: 145, percentage: 50.2 },
-          { type: "Bakken", count: 72, percentage: 24.9 },
-          { type: "Eagle Ford", count: 52, percentage: 18.0 },
-          { type: "Other", count: 20, percentage: 6.9 },
-        ],
-        pendingTickets: 3,
-        pendingBOLs: 5,
+        todayTickets: 0, todayVolume: 0,
+        weekTickets: 0, weekVolume: 0,
+        monthTickets: 0, monthVolume: 0,
+        avgLoadTime: 0, avgApiGravity: 0,
+        topCrudeTypes: [],
+        pendingTickets: 0, pendingBOLs: 0,
       };
     }),
 

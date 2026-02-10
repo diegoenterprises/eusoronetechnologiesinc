@@ -121,33 +121,10 @@ export const certificationsRouter = router({
     .query(async ({ input }) => {
       return {
         id: input.id,
-        type: "cdl",
-        name: "Commercial Driver's License - Class A",
-        entityType: "driver",
-        entityId: "d1",
-        entityName: "Mike Johnson",
-        number: "TX-12345678",
-        issuedBy: "Texas DPS",
-        issuedDate: "2022-03-15",
-        expiresAt: "2026-03-15",
-        status: "active",
-        endorsements: [
-          { code: "H", name: "Hazardous Materials", status: "active" },
-          { code: "N", name: "Tank Vehicles", status: "active" },
-          { code: "T", name: "Double/Triple Trailers", status: "active" },
-        ],
-        restrictions: [],
-        documents: [
-          { id: "doc_001", name: "CDL Front", type: "image", uploadedAt: "2024-01-15" },
-          { id: "doc_002", name: "CDL Back", type: "image", uploadedAt: "2024-01-15" },
-        ],
-        history: [
-          { action: "issued", date: "2022-03-15", notes: "Initial issuance" },
-          { action: "renewed", date: "2024-03-15", notes: "4-year renewal" },
-        ],
-        verificationStatus: "verified",
-        verifiedAt: "2024-01-20",
-        verifiedBy: "FMCSA Query",
+        type: "", name: "", entityType: "", entityId: "", entityName: "",
+        number: "", issuedBy: "", issuedDate: "", expiresAt: "", status: "",
+        endorsements: [], restrictions: [], documents: [], history: [],
+        verificationStatus: "", verifiedAt: "", verifiedBy: "",
       };
     }),
 
@@ -223,38 +200,7 @@ export const certificationsRouter = router({
       entityType: z.enum(["driver", "company", "vehicle", "all"]).default("all"),
     }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "cert_002",
-          type: "hazmat",
-          name: "Hazmat Endorsement",
-          entityType: "driver",
-          entityName: "Mike Johnson",
-          expiresAt: "2025-06-01",
-          daysRemaining: 129,
-          renewalUrl: "https://hazmat.tsa.gov/renewal",
-        },
-        {
-          id: "cert_005",
-          type: "medical_card",
-          name: "DOT Medical Certificate",
-          entityType: "driver",
-          entityName: "Sarah Williams",
-          expiresAt: "2025-03-15",
-          daysRemaining: 51,
-          renewalUrl: null,
-        },
-        {
-          id: "cert_006",
-          type: "cdl",
-          name: "CDL Class A",
-          entityType: "driver",
-          entityName: "Tom Brown",
-          expiresAt: "2025-04-20",
-          daysRemaining: 87,
-          renewalUrl: "https://txdps.gov/cdl-renewal",
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -319,10 +265,7 @@ export const certificationsRouter = router({
           { category: "Hazmat", compliant: 28, nonCompliant: 1, expiringSoon: 2 },
           { category: "TWIC", compliant: 25, nonCompliant: 0, expiringSoon: 1 },
         ],
-        actionRequired: [
-          { driverName: "Tom Brown", certification: "Medical Card", action: "Schedule renewal", dueDate: "2025-02-15" },
-          { driverName: "Lisa Chen", certification: "Hazmat", action: "Complete background check", dueDate: "2025-02-28" },
-        ],
+        actionRequired: [],
         upcomingRenewals: 11,
         estimatedRenewalCost: 2500,
       };

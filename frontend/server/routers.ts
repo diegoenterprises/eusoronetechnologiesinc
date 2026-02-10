@@ -147,6 +147,7 @@ import { laneContractsRouter } from "./routers/laneContracts";
 import { stripeRouter } from "./routers/stripe";
 import { fmcsaRouter } from "./routers/fmcsa";
 import { complianceNetworksRouter } from "./routers/complianceNetworks";
+import { sidebarRouter } from "./routers/sidebar";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -614,6 +615,9 @@ export const appRouter = router({
 
   // Compliance Network Memberships (Avetta, ISNetworld, Veriforce, etc.)
   complianceNetworks: complianceNetworksRouter,
+
+  // Sidebar Dynamic Badge Counts
+  sidebar: sidebarRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

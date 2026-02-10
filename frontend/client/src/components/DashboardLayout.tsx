@@ -240,7 +240,21 @@ export default function DashboardLayout({
 
   // Get menu items based on user role
   const userRole = user?.role || "default";
-  const menuItems = getMenuForRole(userRole);
+  const staticMenuItems = getMenuForRole(userRole);
+
+  // Fetch dynamic badge counts from DB (polls every 30s)
+  const badgeQuery = (trpc as any).sidebar?.getBadgeCounts?.useQuery?.(undefined, {
+    refetchInterval: 30000,
+    retry: false,
+    staleTime: 15000,
+  });
+  const badgeCounts: Record<string, number> = badgeQuery?.data || {};
+
+  // Merge dynamic badge counts into menu items
+  const menuItems = staticMenuItems.map((item) => ({
+    ...item,
+    badge: badgeCounts[item.path] || 0,
+  }));
 
   // Determine active menu item based on current location
   const activeMenuItem = menuItems.find((item) => item.path === location);
@@ -356,7 +370,7 @@ export default function DashboardLayout({
                         <motion.span
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
-                          className="bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center"
+                          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] font-bold rounded-full min-w-[20px] h-5 px-1.5 flex items-center justify-center"
                         >
                           {item.badge}
                         </motion.span>

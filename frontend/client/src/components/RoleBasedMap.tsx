@@ -17,6 +17,7 @@ import { Loader2, MapPin, AlertCircle, RefreshCw, Truck, Package, Building2, War
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { useFleetTracking } from "@/hooks/useRealtimeEvents";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MapLocation {
   id: string;
@@ -47,6 +48,8 @@ export default function RoleBasedMap({
   refreshInterval = 30000,
 }: RoleBasedMapProps) {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const mapRef = useRef<HTMLDivElement>(null);
   const [selectedLocation, setSelectedLocation] = useState<MapLocation | null>(null);
 
@@ -154,54 +157,42 @@ export default function RoleBasedMap({
     return date.toLocaleTimeString();
   };
 
+  const isWidget = height === "h-full";
+  const Wrapper = isWidget ? ({ children, className }: any) => <div className={`h-full w-full ${className || ""}`}>{children}</div> : ({ children, className }: any) => <Card className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-gray-200'} overflow-hidden ${className || ""}`}>{children}</Card>;
+
   // Loading skeleton
   if (isLoading) {
     return (
-      <Card className="bg-slate-800 border-slate-700 overflow-hidden">
-        <div className={`${height} relative`}>
-          <Skeleton className="w-full h-full bg-slate-700" />
+      <Wrapper>
+        <div className={`${isWidget ? "h-full" : height} relative`}>
+          <Skeleton className={`w-full h-full ${isDark ? 'bg-slate-700' : 'bg-gray-200'}`} />
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-            <Loader2 className="animate-spin text-blue-400" size={32} />
-            <p className="text-gray-400 text-sm">Loading map data...</p>
+            <Loader2 className="animate-spin text-blue-500" size={24} />
+            <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'} text-xs`}>Loading map...</p>
           </div>
         </div>
-        <div className="p-4 border-t border-slate-700">
-          <Skeleton className="h-4 w-32 mb-2 bg-slate-700" />
-          <div className="space-y-2">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-12 w-full bg-slate-700" />
-            ))}
-          </div>
-        </div>
-      </Card>
+      </Wrapper>
     );
   }
 
   // Error state with retry
   if (error) {
     return (
-      <Card className="bg-slate-800 border-slate-700 overflow-hidden">
-        <div className={`${height} relative flex flex-col items-center justify-center gap-4`}>
-          <AlertCircle className="text-red-400" size={48} />
-          <p className="text-red-400 text-sm">Failed to load map data</p>
-          <p className="text-gray-500 text-xs">{error.message}</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Retry
+      <Wrapper>
+        <div className={`${isWidget ? "h-full" : height} relative flex flex-col items-center justify-center gap-3`}>
+          <AlertCircle className="text-red-400" size={32} />
+          <p className="text-red-400 text-sm">Failed to load map</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className={`${isDark ? 'bg-slate-700 border-slate-600 text-white hover:bg-slate-600' : 'bg-gray-100 border-gray-300 text-gray-700 hover:bg-gray-200'}`}>
+            <RefreshCw className="w-4 h-4 mr-2" />Retry
           </Button>
         </div>
-      </Card>
+      </Wrapper>
     );
   }
 
   return (
-    <Card className="bg-slate-800 border-slate-700 overflow-hidden">
-      <div ref={mapRef} className={`${height} relative bg-slate-900`}>
+    <Wrapper>
+      <div ref={mapRef} className={`${isWidget ? "h-full" : height} relative ${isDark ? 'bg-slate-900' : 'bg-gray-50'}`}>
         {/* Map Header with Refresh */}
         <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
           <Button
@@ -209,29 +200,36 @@ export default function RoleBasedMap({
             size="sm"
             onClick={() => refetch()}
             disabled={isRefetching}
-            className="bg-slate-800/80 backdrop-blur border border-slate-700 text-white hover:bg-slate-700"
+            className={`backdrop-blur border ${isDark ? 'bg-slate-800/80 border-slate-700 text-white hover:bg-slate-700' : 'bg-white/80 border-gray-300 text-gray-700 hover:bg-gray-100'}`}
           >
             <RefreshCw className={`w-4 h-4 ${isRefetching ? 'animate-spin' : ''}`} />
           </Button>
         </div>
 
         {/* Map Background with Grid */}
-        <div className="w-full h-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative">
+        <div className={`w-full h-full bg-gradient-to-br ${isDark ? 'from-slate-900 via-slate-800 to-slate-900' : 'from-gray-50 via-white to-gray-100'} relative`}>
           {/* Grid lines for visual reference */}
           <div className="absolute inset-0 opacity-10">
             <div className="w-full h-full" style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+              backgroundImage: isDark
+                ? 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)'
+                : 'linear-gradient(rgba(0,0,0,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.06) 1px, transparent 1px)',
               backgroundSize: '50px 50px'
             }} />
           </div>
 
-          {/* Empty state */}
+          {/* Empty state with US outline */}
           {locations.length === 0 && (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <MapPin size={48} className="text-gray-600 mb-4" />
-              <p className="text-gray-500 text-sm mb-2">No active locations</p>
-              <p className="text-gray-600 text-xs">
-                Tracking data will appear here when available
+              <div className="relative mb-2">
+                <svg viewBox="0 0 960 600" className={`${isWidget ? "w-40 h-24" : "w-64 h-40"} ${isDark ? 'opacity-20' : 'opacity-30'}`}>
+                  <path stroke={isDark ? '#3B82F6' : '#6366F1'} d="M161,491 L155,468 L142,446 L137,437 L138,427 L132,417 L122,412 L114,406 L103,397 L94,396 L85,395 L78,389 L75,378 L68,372 L60,369 L53,360 L48,353 L44,343 L40,336 L37,331 L38,323 L43,315 L47,308 L55,303 L62,295 L68,288 L72,280 L78,274 L84,268 L90,263 L97,259 L106,257 L115,254 L123,248 L132,244 L141,238 L148,232 L155,224 L161,216 L168,210 L175,205 L183,199 L190,195 L198,192 L206,190 L214,186 L222,181 L230,176 L238,170 L244,162 L249,154 L255,147 L262,140 L270,134 L280,130 L290,128 L300,125 L310,124 L320,123 L330,120 L340,116 L350,112 L360,108 L370,105 L380,103 L390,100 L400,98 L410,97 L420,97 L430,99 L440,100 L450,99 L460,96 L470,94 L480,93 L490,95 L500,98 L510,102 L520,106 L530,109 L540,112 L550,115 L560,116 L570,118 L580,118 L590,117 L600,115 L610,112 L620,110 L630,108 L640,107 L650,107 L660,109 L670,112 L680,116 L690,120 L700,125 L710,131 L720,137 L730,143 L740,148 L750,152 L760,156 L770,159 L780,162 L790,165 L800,170 L810,176 L820,183 L828,190 L835,198 L840,206 L843,215 L845,224 L846,234 L848,243 L850,252 L853,260 L856,268 L860,275 L863,280 L860,288 L855,296 L848,304 L840,310 L832,316 L824,322 L816,327 L808,332 L800,337 L792,343 L784,349 L775,354 L766,360 L758,366 L750,372 L742,378 L734,384 L726,390 L718,396 L710,402 L702,407 L694,412 L685,416 L676,419 L667,421 L658,424 L650,428 L642,433 L634,438 L626,444 L618,450 L610,456 L602,460 L593,464 L584,467 L575,470 L565,472 L555,474 L545,477 L536,481 L528,486 L520,490 L512,494 L504,497 L496,498 L487,498 L478,497 L469,496 L460,496 L452,497 L444,500 L436,504 L428,508 L420,510 L410,510 L400,508 L390,505 L380,503 L370,502 L360,502 L350,504 L340,506 L330,507 L320,508 L310,507 L300,504 L290,500 L280,498 L270,497 L260,498 L250,500 L240,502 L230,503 L220,502 L210,500 L200,498 L190,497 L180,496 L170,494 L161,491Z" fill="none" strokeWidth="2"/>
+                </svg>
+                <MapPin size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 animate-pulse" />
+              </div>
+              <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} ${isWidget ? "text-xs" : "text-sm"} font-medium mb-1`}>Live Map Ready</p>
+              <p className={`${isDark ? 'text-gray-600' : 'text-gray-400'} ${isWidget ? "text-[10px]" : "text-xs"} text-center max-w-xs`}>
+                GPS tracking data will appear here in real time
               </p>
             </div>
           )}
@@ -282,12 +280,12 @@ export default function RoleBasedMap({
                     )}
 
                     {/* Tooltip */}
-                    <div className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-3 bg-slate-900 border border-slate-600 
-                      rounded-lg p-3 whitespace-nowrap text-xs text-white shadow-xl z-20
+                    <div className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-3 ${isDark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-gray-200 text-gray-900'} border
+                      rounded-lg p-3 whitespace-nowrap text-xs shadow-xl z-20
                       ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity pointer-events-none`}
                     >
                       <p className="font-semibold text-sm">{location.title}</p>
-                      {location.details && <p className="text-gray-400 mt-1">{location.details}</p>}
+                      {location.details && <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{location.details}</p>}
                       {location.loadNumber && (
                         <p className="text-blue-400 mt-1">Load: {location.loadNumber}</p>
                       )}
@@ -298,7 +296,7 @@ export default function RoleBasedMap({
                         Updated: {formatLastUpdate(location.updatedAt)}
                       </p>
                       {/* Tooltip arrow */}
-                      <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-900" />
+                      <div className={`absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent ${isDark ? 'border-t-slate-900' : 'border-t-white'}`} />
                     </div>
                   </div>
                 );
@@ -307,37 +305,37 @@ export default function RoleBasedMap({
           )}
 
           {/* Legend */}
-          <div className="absolute bottom-4 left-4 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-lg p-3 text-xs space-y-1.5">
-            <p className="text-white font-semibold mb-2 flex items-center gap-2">
+          <div className={`absolute bottom-4 left-4 backdrop-blur border rounded-lg p-3 text-xs space-y-1.5 ${isDark ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-gray-200 shadow-lg'}`}>
+            <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold mb-2 flex items-center gap-2`}>
               <MapPin className="w-3 h-3" />
               Legend
             </p>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-              <span className="text-gray-400">Trucks</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Trucks</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="text-gray-400">Jobs/Loads</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Jobs/Loads</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-              <span className="text-gray-400">Terminals</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Terminals</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <span className="text-gray-400">Pending</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Pending</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span className="text-gray-400">Idle</span>
+              <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Idle</span>
             </div>
           </div>
 
           {/* Stats overlay */}
-          <div className="absolute top-4 left-4 bg-slate-900/90 backdrop-blur border border-slate-700 rounded-lg p-3 text-xs">
-            <p className="text-white font-semibold mb-1">{userRole} View</p>
-            <p className="text-gray-400">{locations.length} locations</p>
+          <div className={`absolute top-4 left-4 backdrop-blur border rounded-lg p-3 text-xs ${isDark ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-gray-200 shadow-lg'}`}>
+            <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold mb-1`}>{userRole} View</p>
+            <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{locations.length} locations</p>
             {mapData?.lastUpdated && (
               <p className="text-gray-500 text-[10px] mt-1">
                 Last sync: {formatLastUpdate(mapData.lastUpdated)}
@@ -349,8 +347,8 @@ export default function RoleBasedMap({
 
       {/* Locations List */}
       {locations.length > 0 && (
-        <div className="p-4 border-t border-slate-700 max-h-40 overflow-y-auto">
-          <p className="text-xs font-semibold text-gray-400 mb-2 flex items-center justify-between">
+        <div className={`p-4 border-t max-h-40 overflow-y-auto ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+          <p className={`text-xs font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2 flex items-center justify-between`}>
             <span>Active Locations ({locations.length})</span>
             {isRefetching && <Loader2 className="w-3 h-3 animate-spin text-blue-400" />}
           </p>
@@ -362,15 +360,15 @@ export default function RoleBasedMap({
                 className={`p-2 rounded border cursor-pointer transition-all text-xs
                   ${selectedLocation?.id === location.id 
                     ? 'bg-blue-500/20 border-blue-500' 
-                    : 'bg-slate-700/50 border-slate-600 hover:border-blue-500/50'}`}
+                    : isDark ? 'bg-slate-700/50 border-slate-600 hover:border-blue-500/50' : 'bg-gray-50 border-gray-200 hover:border-blue-400'}`}
               >
                 <div className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-full ${getMarkerColor(location.type, location.status)} flex items-center justify-center`}>
                     {getMarkerIcon(location.type)}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold truncate">{location.title}</p>
-                    {location.details && <p className="text-gray-400 text-xs truncate">{location.details}</p>}
+                    <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold truncate`}>{location.title}</p>
+                    {location.details && <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'} text-xs truncate`}>{location.details}</p>}
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span
@@ -401,7 +399,6 @@ export default function RoleBasedMap({
           </div>
         </div>
       )}
-    </Card>
+    </Wrapper>
   );
 }
-

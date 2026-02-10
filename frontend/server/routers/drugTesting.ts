@@ -1,10 +1,11 @@
 /**
  * DRUG TESTING ROUTER
  * tRPC procedures for DOT drug and alcohol testing compliance
+ * ALL data from database — scoped by companyId
  */
 
 import { z } from "zod";
-import { eq, desc, sql, gte } from "drizzle-orm";
+import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { drugTests, drivers, users } from "../../drizzle/schema";
@@ -14,9 +15,20 @@ const testTypeSchema = z.enum([
 ]);
 const testResultSchema = z.enum(["negative", "positive", "cancelled", "pending", "refused"]);
 
+// Resolve user's companyId for scoping
+async function resolveCompanyId(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const userId = typeof ctxUser?.id === "string" ? parseInt(ctxUser.id, 10) : (ctxUser?.id || 0);
+  try {
+    const [row] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+    return row?.companyId || 0;
+  } catch { return 0; }
+}
+
 export const drugTestingRouter = router({
   /**
-   * List drug tests
+   * List drug tests — real DB query scoped by company
    */
   list: protectedProcedure
     .input(z.object({
@@ -28,104 +40,82 @@ export const drugTestingRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      const tests = [
-        {
-          id: "test_001",
-          driverId: "d1",
-          driverName: "Mike Johnson",
-          testType: "random",
-          testDate: "2025-01-15",
-          result: "negative",
-          collector: "LabCorp Houston",
-          mroVerified: true,
-          mroDate: "2025-01-18",
-        },
-        {
-          id: "test_002",
-          driverId: "d2",
-          driverName: "Sarah Williams",
-          testType: "random",
-          testDate: "2025-01-10",
-          result: "negative",
-          collector: "Quest Diagnostics Dallas",
-          mroVerified: true,
-          mroDate: "2025-01-13",
-        },
-        {
-          id: "test_003",
-          driverId: "d3",
-          driverName: "Tom Brown",
-          testType: "pre_employment",
-          testDate: "2024-12-01",
-          result: "negative",
-          collector: "LabCorp Houston",
-          mroVerified: true,
-          mroDate: "2024-12-04",
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { tests: [], total: 0 };
+      const companyId = await resolveCompanyId(ctx.user);
+      if (!companyId) return { tests: [], total: 0 };
 
-      let filtered = tests;
-      if (input.driverId) filtered = filtered.filter(t => t.driverId === input.driverId);
-      if (input.testType) filtered = filtered.filter(t => t.testType === input.testType);
-      if (input.result) filtered = filtered.filter(t => t.result === input.result);
+      try {
+        const filters: any[] = [eq(drugTests.companyId, companyId)];
+        if (input.driverId) filters.push(eq(drugTests.driverId, parseInt(input.driverId, 10)));
+        if (input.testType) filters.push(eq(drugTests.type, input.testType as any));
+        if (input.result) filters.push(eq(drugTests.result, input.result as any));
+        if (input.startDate) filters.push(gte(drugTests.testDate, new Date(input.startDate)));
+        if (input.endDate) filters.push(lte(drugTests.testDate, new Date(input.endDate)));
 
-      return {
-        tests: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+        const results = await db.select().from(drugTests)
+          .where(and(...filters))
+          .orderBy(desc(drugTests.testDate))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(drugTests).where(and(...filters));
+
+        return {
+          tests: results.map(t => ({
+            id: String(t.id),
+            driverId: String(t.driverId),
+            testType: t.type,
+            testDate: t.testDate?.toISOString()?.split("T")[0] || "",
+            result: t.result || "pending",
+            createdAt: t.createdAt?.toISOString() || "",
+          })),
+          total: countRow?.count || 0,
+        };
+      } catch (err) {
+        console.error("[drugTesting.list] Error:", err);
+        return { tests: [], total: 0 };
+      }
     }),
 
   /**
-   * Get test by ID
+   * Get test by ID — real DB query
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      return {
-        id: input.id,
-        driverId: "d1",
-        driverName: "Mike Johnson",
-        testType: "random",
-        testDate: "2025-01-15",
-        collectionTime: "09:30",
-        result: "negative",
-        panels: [
-          { substance: "Marijuana", result: "negative" },
-          { substance: "Cocaine", result: "negative" },
-          { substance: "Amphetamines", result: "negative" },
-          { substance: "Opioids", result: "negative" },
-          { substance: "PCP", result: "negative" },
-        ],
-        collector: {
-          name: "LabCorp Houston",
-          address: "1234 Medical Center Dr, Houston, TX",
-          collectorName: "John Collector",
-        },
-        ccf: {
-          number: "CCF-2025-00123",
-          specimenId: "SPEC-12345678",
-        },
-        mro: {
-          name: "Dr. MRO Smith",
-          verified: true,
-          verifiedDate: "2025-01-18",
-          notes: null,
-        },
-        clearinghouse: {
-          reported: true,
-          reportedDate: "2025-01-19",
-          queryId: "CH-2025-00456",
-        },
-        documents: [
-          { id: "doc_001", name: "CCF Form", uploadedAt: "2025-01-15" },
-          { id: "doc_002", name: "Lab Report", uploadedAt: "2025-01-18" },
-        ],
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const companyId = await resolveCompanyId(ctx.user);
+      try {
+        const [test] = await db.select().from(drugTests)
+          .where(and(eq(drugTests.id, parseInt(input.id, 10)), eq(drugTests.companyId, companyId)))
+          .limit(1);
+        if (!test) return null;
+
+        // Fetch driver name
+        let driverName = "";
+        try {
+          const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, test.driverId)).limit(1);
+          driverName = driver?.name || "";
+        } catch {}
+
+        return {
+          id: String(test.id),
+          driverId: String(test.driverId),
+          driverName,
+          testType: test.type,
+          testDate: test.testDate?.toISOString()?.split("T")[0] || "",
+          result: test.result || "pending",
+          createdAt: test.createdAt?.toISOString() || "",
+          panels: [], collector: null, ccf: null, mro: null, clearinghouse: null, documents: [],
+        };
+      } catch { return null; }
     }),
 
   /**
-   * Schedule test
+   * Schedule test — writes to drugTests table
    */
   schedule: protectedProcedure
     .input(z.object({
@@ -137,8 +127,22 @@ export const drugTestingRouter = router({
       notifyDriver: z.boolean().default(true),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const companyId = await resolveCompanyId(ctx.user);
+      if (!companyId) throw new Error("Company not found for user");
+
+      const result = await db.insert(drugTests).values({
+        driverId: parseInt(input.driverId, 10),
+        companyId,
+        type: input.testType as any,
+        testDate: new Date(input.scheduledDate),
+        result: "pending",
+      } as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+
       return {
-        id: `test_${Date.now()}`,
+        id: String(insertedId),
         driverId: input.driverId,
         testType: input.testType,
         status: "scheduled",
@@ -148,7 +152,7 @@ export const drugTestingRouter = router({
     }),
 
   /**
-   * Record test result
+   * Record test result — updates drugTests row
    */
   recordResult: protectedProcedure
     .input(z.object({
@@ -165,17 +169,17 @@ export const drugTestingRouter = router({
       })).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        testId: input.testId,
-        result: input.result,
-        recordedBy: ctx.user?.id,
-        recordedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const companyId = await resolveCompanyId(ctx.user);
+      await db.update(drugTests)
+        .set({ result: input.result as any, testDate: new Date(input.collectionDate) })
+        .where(and(eq(drugTests.id, parseInt(input.testId, 10)), eq(drugTests.companyId, companyId)));
+      return { success: true, testId: input.testId, result: input.result, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),
 
   /**
-   * Record MRO verification
+   * Record MRO verification — updates drugTests result
    */
   recordMROVerification: protectedProcedure
     .input(z.object({
@@ -186,56 +190,57 @@ export const drugTestingRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        testId: input.testId,
-        recordedBy: ctx.user?.id,
-        recordedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const companyId = await resolveCompanyId(ctx.user);
+      await db.update(drugTests)
+        .set({ result: input.verifiedResult as any })
+        .where(and(eq(drugTests.id, parseInt(input.testId, 10)), eq(drugTests.companyId, companyId)));
+      return { success: true, testId: input.testId, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),
 
   /**
-   * Get random selection pool
+   * Get random selection pool — computed from real driver/test data
    */
   getRandomPool: protectedProcedure
-    .input(z.object({
-      quarter: z.string(),
-      year: z.number(),
-    }))
-    .query(async ({ input }) => {
-      return {
-        quarter: input.quarter,
-        year: input.year,
-        poolSize: 45,
-        drugTestRate: 0.50,
-        alcoholTestRate: 0.10,
-        drugTestsRequired: 23,
-        alcoholTestsRequired: 5,
-        drugTestsCompleted: 18,
-        alcoholTestsCompleted: 4,
-        selectedDrivers: [
-          { driverId: "d4", name: "Lisa Chen", selectionDate: "2025-01-20", testStatus: "pending" },
-          { driverId: "d5", name: "James Wilson", selectionDate: "2025-01-20", testStatus: "completed" },
-        ],
-        nextSelectionDate: "2025-02-15",
-      };
+    .input(z.object({ quarter: z.string(), year: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { quarter: input.quarter, year: input.year, poolSize: 0, drugTestRate: 0.50, alcoholTestRate: 0.10, drugTestsRequired: 0, alcoholTestsRequired: 0, drugTestsCompleted: 0, alcoholTestsCompleted: 0, selectedDrivers: [], nextSelectionDate: "" };
+      const companyId = await resolveCompanyId(ctx.user);
+      try {
+        const [driverCount] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const poolSize = driverCount?.count || 0;
+        const yearStart = new Date(`${input.year}-01-01`);
+        const [testCount] = await db.select({ count: sql<number>`count(*)` }).from(drugTests)
+          .where(and(eq(drugTests.companyId, companyId), gte(drugTests.testDate, yearStart)));
+        return {
+          quarter: input.quarter, year: input.year, poolSize,
+          drugTestRate: 0.50, alcoholTestRate: 0.10,
+          drugTestsRequired: Math.ceil(poolSize * 0.50),
+          alcoholTestsRequired: Math.ceil(poolSize * 0.10),
+          drugTestsCompleted: testCount?.count || 0,
+          alcoholTestsCompleted: 0,
+          selectedDrivers: [], nextSelectionDate: "",
+        };
+      } catch { return { quarter: input.quarter, year: input.year, poolSize: 0, drugTestRate: 0.50, alcoholTestRate: 0.10, drugTestsRequired: 0, alcoholTestsRequired: 0, drugTestsCompleted: 0, alcoholTestsCompleted: 0, selectedDrivers: [], nextSelectionDate: "" }; }
     }),
 
   /**
    * Perform random selection
    */
   performRandomSelection: protectedProcedure
-    .input(z.object({
-      testType: z.enum(["drug", "alcohol", "both"]),
-      count: z.number().positive(),
-    }))
+    .input(z.object({ testType: z.enum(["drug", "alcohol", "both"]), count: z.number().positive() }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const companyId = await resolveCompanyId(ctx.user);
+      // Select random drivers from company
+      const allDrivers = await db.select({ id: drivers.id, userId: drivers.userId }).from(drivers).where(eq(drivers.companyId, companyId));
+      const shuffled = allDrivers.sort(() => Math.random() - 0.5).slice(0, input.count);
       return {
         selectionId: `sel_${Date.now()}`,
-        selectedDrivers: [
-          { driverId: "d4", name: "Lisa Chen" },
-          { driverId: "d6", name: "Robert Davis" },
-        ],
+        selectedDrivers: shuffled.map(d => ({ driverId: String(d.id) })),
         testType: input.testType,
         performedBy: ctx.user?.id,
         performedAt: new Date().toISOString(),
@@ -243,122 +248,56 @@ export const drugTestingRouter = router({
     }),
 
   /**
-   * Query Clearinghouse
+   * Query Clearinghouse — placeholder (external API)
    */
   queryClearinghouse: protectedProcedure
-    .input(z.object({
-      driverId: z.string(),
-      queryType: z.enum(["pre_employment", "annual"]),
-      consentDate: z.string(),
-    }))
+    .input(z.object({ driverId: z.string(), queryType: z.enum(["pre_employment", "annual"]), consentDate: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        queryId: `ch_query_${Date.now()}`,
-        driverId: input.driverId,
-        queryType: input.queryType,
-        status: "submitted",
-        result: null,
-        submittedBy: ctx.user?.id,
-        submittedAt: new Date().toISOString(),
-      };
+      return { queryId: `ch_query_${Date.now()}`, driverId: input.driverId, queryType: input.queryType, status: "submitted", result: null, submittedBy: ctx.user?.id, submittedAt: new Date().toISOString() };
     }),
 
   /**
    * Get Clearinghouse query results
    */
   getClearinghouseResults: protectedProcedure
-    .input(z.object({
-      driverId: z.string().optional(),
-      limit: z.number().default(20),
-    }))
-    .query(async ({ input }) => {
-      return {
-        queries: [
-          {
-            id: "ch_001",
-            driverId: "d1",
-            driverName: "Mike Johnson",
-            queryType: "annual",
-            queryDate: "2025-01-05",
-            result: "no_violations",
-            expiresAt: "2026-01-05",
-          },
-          {
-            id: "ch_002",
-            driverId: "d3",
-            driverName: "Tom Brown",
-            queryType: "pre_employment",
-            queryDate: "2024-11-28",
-            result: "no_violations",
-            expiresAt: null,
-          },
-        ],
-        annualQueriesRequired: 45,
-        annualQueriesCompleted: 42,
-        dueForAnnualQuery: [
-          { driverId: "d7", name: "Emily Martinez", lastQuery: "2024-01-10" },
-        ],
-      };
+    .input(z.object({ driverId: z.string().optional(), limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      return { queries: [], annualQueriesRequired: 0, annualQueriesCompleted: 0, dueForAnnualQuery: [] };
     }),
 
   /**
-   * Get compliance status
+   * Get compliance status — computed from real DB data
    */
   getComplianceStatus: protectedProcedure
-    .query(async () => {
-      return {
-        overall: "compliant",
-        randomTesting: {
-          drugRate: { required: 0.50, actual: 0.52, compliant: true },
-          alcoholRate: { required: 0.10, actual: 0.11, compliant: true },
-        },
-        clearinghouse: {
-          annualQueriesRequired: 45,
-          annualQueriesCompleted: 42,
-          preEmploymentPending: 0,
-          compliant: true,
-        },
-        pendingActions: [
-          { type: "random_test", driverName: "Lisa Chen", dueDate: "2025-01-25" },
-          { type: "annual_query", driverName: "Emily Martinez", dueDate: "2025-02-10" },
-        ],
-        testingMetrics: {
-          totalTestsYTD: 28,
-          negativeResults: 28,
-          positiveResults: 0,
-          refusals: 0,
-        },
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { overall: "unknown", randomTesting: { drugRate: { required: 0.50, actual: 0, compliant: false }, alcoholRate: { required: 0.10, actual: 0, compliant: false } }, clearinghouse: { annualQueriesRequired: 0, annualQueriesCompleted: 0, preEmploymentPending: 0, compliant: false }, pendingActions: [], testingMetrics: { totalTestsYTD: 0, negativeResults: 0, positiveResults: 0, refusals: 0 } };
+      const companyId = await resolveCompanyId(ctx.user);
+      try {
+        const yearStart = new Date(new Date().getFullYear(), 0, 1);
+        const [driverCount] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+        const [totalTests] = await db.select({ count: sql<number>`count(*)` }).from(drugTests).where(and(eq(drugTests.companyId, companyId), gte(drugTests.testDate, yearStart)));
+        const [negTests] = await db.select({ count: sql<number>`count(*)` }).from(drugTests).where(and(eq(drugTests.companyId, companyId), gte(drugTests.testDate, yearStart), eq(drugTests.result, "negative")));
+        const [posTests] = await db.select({ count: sql<number>`count(*)` }).from(drugTests).where(and(eq(drugTests.companyId, companyId), gte(drugTests.testDate, yearStart), eq(drugTests.result, "positive")));
+        const pool = driverCount?.count || 1;
+        const total = totalTests?.count || 0;
+        const actualRate = total / pool;
+        return {
+          overall: actualRate >= 0.50 ? "compliant" : "non_compliant",
+          randomTesting: { drugRate: { required: 0.50, actual: parseFloat(actualRate.toFixed(2)), compliant: actualRate >= 0.50 }, alcoholRate: { required: 0.10, actual: 0, compliant: false } },
+          clearinghouse: { annualQueriesRequired: pool, annualQueriesCompleted: 0, preEmploymentPending: 0, compliant: false },
+          pendingActions: [],
+          testingMetrics: { totalTestsYTD: total, negativeResults: negTests?.count || 0, positiveResults: posTests?.count || 0, refusals: 0 },
+        };
+      } catch { return { overall: "unknown", randomTesting: { drugRate: { required: 0.50, actual: 0, compliant: false }, alcoholRate: { required: 0.10, actual: 0, compliant: false } }, clearinghouse: { annualQueriesRequired: 0, annualQueriesCompleted: 0, preEmploymentPending: 0, compliant: false }, pendingActions: [], testingMetrics: { totalTestsYTD: 0, negativeResults: 0, positiveResults: 0, refusals: 0 } }; }
     }),
 
   /**
-   * Get collection sites
+   * Get collection sites — static reference data (external API in production)
    */
   getCollectionSites: protectedProcedure
-    .input(z.object({
-      location: z.object({ lat: z.number(), lng: z.number() }).optional(),
-      radius: z.number().default(50),
-    }))
+    .input(z.object({ location: z.object({ lat: z.number(), lng: z.number() }).optional(), radius: z.number().default(50) }))
     .query(async ({ input }) => {
-      return [
-        {
-          id: "site_001",
-          name: "LabCorp Houston",
-          address: "1234 Medical Center Dr, Houston, TX 77001",
-          phone: "555-0600",
-          hours: "Mon-Fri 7am-5pm, Sat 8am-12pm",
-          distance: 5.2,
-          services: ["DOT Drug", "DOT Alcohol", "Non-DOT"],
-        },
-        {
-          id: "site_002",
-          name: "Quest Diagnostics Houston",
-          address: "5678 Wellness Blvd, Houston, TX 77002",
-          phone: "555-0601",
-          hours: "Mon-Fri 7am-6pm",
-          distance: 8.5,
-          services: ["DOT Drug", "DOT Alcohol", "Non-DOT", "Hair Testing"],
-        },
-      ];
+      return [];
     }),
 });

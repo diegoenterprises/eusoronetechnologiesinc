@@ -113,38 +113,7 @@ export const maintenanceRouter = router({
       search: z.string().optional(),
     }))
     .query(async () => {
-      return [
-        {
-          id: "maint_001",
-          vehicleId: "veh_001",
-          vehicleUnit: "T-101",
-          type: "Oil Change",
-          description: "Regular 15,000 mile oil change",
-          scheduledDate: "2025-01-28",
-          status: "scheduled",
-          estimatedCost: 150,
-        },
-        {
-          id: "maint_002",
-          vehicleId: "veh_002",
-          vehicleUnit: "T-102",
-          type: "Brake Inspection",
-          description: "Routine brake pad inspection",
-          scheduledDate: "2025-01-25",
-          status: "overdue",
-          estimatedCost: 250,
-        },
-        {
-          id: "maint_003",
-          vehicleId: "veh_003",
-          vehicleUnit: "T-103",
-          type: "Tire Rotation",
-          description: "Tire rotation and alignment check",
-          scheduledDate: "2025-01-30",
-          status: "scheduled",
-          estimatedCost: 120,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -155,32 +124,7 @@ export const maintenanceRouter = router({
       limit: z.number().optional().default(20),
     }))
     .query(async () => {
-      return [
-        {
-          id: "hist_001",
-          vehicleUnit: "T-101",
-          type: "Oil Change",
-          description: "Regular oil change completed",
-          completedDate: "2025-01-15",
-          actualCost: 145,
-        },
-        {
-          id: "hist_002",
-          vehicleUnit: "T-104",
-          type: "Transmission Service",
-          description: "Transmission fluid replacement",
-          completedDate: "2025-01-10",
-          actualCost: 380,
-        },
-        {
-          id: "hist_003",
-          vehicleUnit: "T-102",
-          type: "Air Filter",
-          description: "Engine air filter replacement",
-          completedDate: "2025-01-08",
-          actualCost: 65,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -188,22 +132,7 @@ export const maintenanceRouter = router({
    */
   getAlerts: protectedProcedure
     .query(async () => {
-      return [
-        {
-          id: "alert_001",
-          vehicleUnit: "T-102",
-          type: "Brake Service",
-          message: "Brake pads below 20% - immediate service required",
-          priority: "critical",
-        },
-        {
-          id: "alert_002",
-          vehicleUnit: "T-105",
-          type: "Engine Light",
-          message: "Check engine light detected - diagnostics needed",
-          priority: "high",
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -268,16 +197,8 @@ export const maintenanceRouter = router({
       days: z.number().optional().default(30),
     }))
     .query(async () => {
-      return [
-        {
-          id: "maint_001",
-          vehicleUnit: "T-101",
-          type: "oil_change",
-          dueDate: "2025-01-28",
-          daysRemaining: 4,
-        },
-      ];
+      return [];
     }),
 
-  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => [{ id: "m1", vehicleId: "v1", type: "oil_change", status: "scheduled", dueDate: "2025-01-28" }]),
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => []),
 });
