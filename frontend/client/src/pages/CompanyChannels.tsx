@@ -33,6 +33,7 @@ import {
   FileText,
   Download,
 } from "lucide-react";
+import { useEncryption } from "@/hooks/useEncryption";
 
 export default function CompanyChannels() {
   const [selectedChannel, setSelectedChannel] = useState<string>("");
@@ -123,6 +124,7 @@ export default function CompanyChannels() {
 
   const { user } = useAuth();
   const { displayName, displayInitials, displayRole } = useDisplayUser();
+  const { ready: e2eReady, encryptForChannel, decryptFromChannel, initChannelKey } = useEncryption({ userId: user?.id || user?.email });
   const channels = channelsQuery.data || [];
   const channelMessages = messagesQuery.data || [];
   const activeChannel = channels.find((c: any) => c.id === selectedChannel);
@@ -345,9 +347,16 @@ export default function CompanyChannels() {
                     {activeChannel.name}
                   </h1>
                 </div>
-                <p className="text-sm text-slate-400 mt-1">
-                  {activeChannel.description}
-                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-sm text-slate-400">
+                    {activeChannel.description}
+                  </p>
+                  {e2eReady && (
+                    <span className="flex items-center gap-0.5 text-[10px] text-emerald-400/80 ml-2">
+                      <Lock size={10} /> E2E Encrypted
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
@@ -443,6 +452,12 @@ export default function CompanyChannels() {
 
             {/* Message Input */}
             <div className="bg-slate-800 border-t border-slate-700 px-6 py-4">
+              {e2eReady && (
+                <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] text-emerald-500/60">
+                  <Lock size={10} />
+                  <span>Channel messages are end-to-end encrypted. Only company members can read them.</span>
+                </div>
+              )}
               {uploadAttachmentMutation.isPending && (
                 <div className="mb-2 px-3 py-2 bg-blue-900/30 border border-blue-700/50 rounded text-xs text-blue-300 flex items-center gap-2">
                   <RefreshCw size={14} className="animate-spin" /> Uploading file...

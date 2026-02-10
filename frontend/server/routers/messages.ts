@@ -787,6 +787,66 @@ export const messagesRouter = router({
     }),
 
   /**
+   * Upload attachment in a DM conversation — raw SQL to avoid column-mapping issues
+   */
+  uploadAttachment: protectedProcedure
+    .input(z.object({
+      conversationId: z.string(),
+      fileName: z.string(),
+      fileData: z.string(),
+      mimeType: z.string(),
+      fileSize: z.number(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) throw new Error("User not found");
+
+      const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
+      if (!convId) throw new Error("Invalid conversation");
+
+      // Verify participant
+      const [isPart] = await db.select({ id: conversationParticipants.id })
+        .from(conversationParticipants)
+        .where(and(
+          eq(conversationParticipants.conversationId, convId),
+          eq(conversationParticipants.userId, userId),
+        )).limit(1);
+      if (!isPart) throw new Error("Access denied — not a participant");
+
+      // Determine attachment type
+      const mime = input.mimeType.toLowerCase();
+      let type = "document";
+      if (mime.startsWith("image/")) type = "image";
+      else if (mime.startsWith("audio/")) type = "audio";
+      else if (mime.startsWith("video/")) type = "video";
+
+      // Insert message via raw SQL
+      const msgResult = await db.execute(
+        sql`INSERT INTO messages (conversationId, senderId, messageType, content, createdAt) VALUES (${convId}, ${userId}, ${type}, ${`📎 ${input.fileName}`}, NOW())`
+      );
+      const messageId = (msgResult as any)[0]?.insertId || 0;
+
+      // Store attachment via raw SQL
+      const attResult = await db.execute(
+        sql`INSERT INTO message_attachments (messageId, type, fileName, fileUrl, fileSize, mimeType, createdAt) VALUES (${messageId}, ${type}, ${input.fileName}, ${input.fileData}, ${input.fileSize}, ${input.mimeType}, NOW())`
+      );
+      const attachmentId = (attResult as any)[0]?.insertId || 0;
+
+      // Update conversation timestamp
+      await db.execute(sql`UPDATE conversations SET lastMessageAt = NOW() WHERE id = ${convId}`).catch(() => {});
+
+      return {
+        success: true,
+        messageId: String(messageId),
+        attachmentId: String(attachmentId),
+        fileName: input.fileName,
+        type,
+      };
+    }),
+
+  /**
    * Send a payment message (like Apple Pay / Cash App)
    * Creates a message with type payment_sent or payment_request
    * Metadata stores amount, currency, note, and status

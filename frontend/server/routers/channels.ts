@@ -485,12 +485,10 @@ export const channelsRouter = router({
       const channelNumericId = parseInt(input.channelId) || 0;
       if (!channelNumericId) throw new Error("Invalid channel");
 
-      const msgResult = await db.insert(messages).values({
-        conversationId: channelNumericId,
-        senderId: userId,
-        content: `📎 ${input.fileName}`,
-        createdAt: new Date(),
-      });
+      // Use raw SQL to avoid Drizzle column-mapping issues
+      const msgResult = await db.execute(
+        sql`INSERT INTO messages (conversationId, senderId, messageType, content, createdAt) VALUES (${channelNumericId}, ${userId}, 'image', ${`📎 ${input.fileName}`}, NOW())`
+      );
       const messageId = (msgResult as any)[0]?.insertId || 0;
 
       // Determine type
@@ -500,15 +498,10 @@ export const channelsRouter = router({
       else if (mime.startsWith("audio/")) type = "audio";
       else if (mime.startsWith("video/")) type = "video";
 
-      // Store the attachment
-      const attResult = await db.insert(messageAttachments).values({
-        messageId,
-        type,
-        fileName: input.fileName,
-        fileUrl: input.fileData, // base64 data
-        fileSize: input.fileSize,
-        mimeType: input.mimeType,
-      });
+      // Store the attachment via raw SQL
+      const attResult = await db.execute(
+        sql`INSERT INTO message_attachments (messageId, type, fileName, fileUrl, fileSize, mimeType, createdAt) VALUES (${messageId}, ${type}, ${input.fileName}, ${input.fileData}, ${input.fileSize}, ${input.mimeType}, NOW())`
+      );
       const attachmentId = (attResult as any)[0]?.insertId || 0;
 
       return {

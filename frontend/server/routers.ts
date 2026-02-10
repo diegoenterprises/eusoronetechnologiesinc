@@ -148,6 +148,7 @@ import { stripeRouter } from "./routers/stripe";
 import { fmcsaRouter } from "./routers/fmcsa";
 import { complianceNetworksRouter } from "./routers/complianceNetworks";
 import { sidebarRouter } from "./routers/sidebar";
+import { encryptionRouter } from "./routers/encryption";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -255,6 +256,9 @@ export const appRouter = router({
 
   // Company Channels
   channels: channelsRouter,
+
+  // E2E Encryption Key Management
+  encryption: encryptionRouter,
 
   // Rate Calculator & Market Data
   rates: ratesRouter,

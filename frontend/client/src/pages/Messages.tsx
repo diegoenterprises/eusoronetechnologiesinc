@@ -15,10 +15,13 @@ import { trpc } from "@/lib/trpc";
 import {
   MessageSquare, Search, Send, Users, Plus, X, Phone,
   Check, CheckCheck, Loader2, AlertTriangle, ArrowLeft, Paperclip,
-  User, Trash2, Archive, MoreVertical, Truck, Shield, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft
+  User, Trash2, Archive, MoreVertical, Truck, Shield, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useEncryption } from "@/hooks/useEncryption";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { isEncryptedMessage } from "@/lib/e2eEncryption";
 
 export default function Messages() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -96,7 +99,7 @@ export default function Messages() {
     },
   });
 
-  const uploadMsgAttachmentMutation = (trpc as any).channels.uploadAttachment.useMutation({
+  const uploadMsgAttachmentMutation = (trpc as any).messages.uploadAttachment.useMutation({
     onSuccess: (data: any) => {
       messagesQuery.refetch();
       conversationsQuery.refetch();
@@ -104,6 +107,10 @@ export default function Messages() {
     },
     onError: (err: any) => toast.error("Upload failed", { description: err.message }),
   });
+
+  // ── E2E Encryption ──
+  const { user: authUser } = useAuth();
+  const { ready: e2eReady, encryptForUser, decryptFromUser } = useEncryption({ userId: authUser?.id || authUser?.email });
 
   const sendPaymentMutation = (trpc as any).messages.sendPayment.useMutation({
     onSuccess: (data: any) => {
@@ -382,6 +389,11 @@ export default function Messages() {
                             {selectedConv.role}
                           </Badge>
                         )}
+                        {e2eReady && (
+                          <span className="flex items-center gap-0.5 text-[10px] text-emerald-400/80">
+                            <Lock className="w-2.5 h-2.5" /> E2E
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -504,6 +516,12 @@ export default function Messages() {
 
               {/* Message Input */}
               <div className="p-4 border-t border-slate-700/50">
+                {e2eReady && (
+                  <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] text-emerald-500/60">
+                    <Lock className="w-2.5 h-2.5" />
+                    <span>Messages are end-to-end encrypted. Only you and the recipient can read them.</span>
+                  </div>
+                )}
                 <input
                   ref={msgFileInputRef}
                   type="file"
@@ -522,7 +540,7 @@ export default function Messages() {
                       reader.onload = () => {
                         const base64 = (reader.result as string).split(",")[1] || "";
                         uploadMsgAttachmentMutation.mutate({
-                          channelId: selectedConversation,
+                          conversationId: selectedConversation,
                           fileName: file.name,
                           fileData: base64,
                           mimeType: file.type || "application/octet-stream",
