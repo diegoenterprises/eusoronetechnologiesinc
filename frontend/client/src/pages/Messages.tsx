@@ -610,18 +610,19 @@ export default function Messages() {
 
       {/* ═══ Payment Modal (Apple Pay / Cash App style) ═══ */}
       {showPaymentModal && selectedConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowPaymentModal(false)}>
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowPaymentModal(false)}>
+          <div className="p-[1.5px] rounded-2xl w-full max-w-sm mx-4" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
                   <DollarSign className="w-4 h-4 text-white" />
                 </div>
                 <h2 className="text-lg font-bold text-white">Send / Request</h2>
               </div>
-              <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowPaymentModal(false)}>
-                <X className="w-4 h-4 text-slate-400" />
-              </Button>
+              <button className="text-slate-500 hover:text-white transition-colors" onClick={() => setShowPaymentModal(false)}>
+                <X className="w-4 h-4" />
+              </button>
             </div>
             <div className="p-5 space-y-4">
               {/* Type toggle */}
@@ -705,19 +706,21 @@ export default function Messages() {
               </Button>
             </div>
           </div>
+          </div>
         </div>
       )}
 
       {/* ═══ New Conversation Modal ═══ */}
       {showNewConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowNewConversation(false)}>
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" style={{ animation: "eusoDialogFadeIn 0.2s ease-out" }} onClick={() => setShowNewConversation(false)}>
+          <div className="p-[1.5px] rounded-2xl w-full max-w-md mx-4" style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)", animation: "eusoDialogScaleIn 0.2s ease-out" }} onClick={(e) => e.stopPropagation()}>
+          <div className="bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl shadow-2xl shadow-[0_8px_32px_rgba(20,115,255,0.15)]">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
+            <div className="flex items-center justify-between p-5 border-b border-white/10">
               <h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">New Conversation</h2>
-              <Button variant="ghost" size="sm" className="rounded-xl" onClick={() => setShowNewConversation(false)}>
-                <X className="w-4 h-4 text-slate-400" />
-              </Button>
+              <button className="text-slate-500 hover:text-white transition-colors" onClick={() => setShowNewConversation(false)}>
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* User Search */}
@@ -780,6 +783,7 @@ export default function Messages() {
                 <Loader2 className="w-4 h-4 animate-spin" /> Creating conversation...
               </div>
             )}
+          </div>
           </div>
         </div>
       )}

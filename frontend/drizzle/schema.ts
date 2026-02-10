@@ -1047,6 +1047,7 @@ export const wallets = mysqlTable(
   (table) => ({
     userIdx: unique("wallet_user_unique").on(table.userId),
     stripeIdx: index("wallet_stripe_idx").on(table.stripeCustomerId),
+    stripeConnectIdx: index("wallet_stripe_connect_idx").on(table.stripeConnectId),
   })
 );
 

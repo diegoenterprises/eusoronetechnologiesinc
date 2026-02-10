@@ -17,7 +17,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, or, like, isNull, inArray } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { messages, users, conversations, conversationParticipants } from "../../drizzle/schema";
+import { messages, users, conversations, conversationParticipants, wallets } from "../../drizzle/schema";
 import { emitMessage } from "../_core/websocket";
 
 // Resolve ctx.user to a numeric DB user ID (same pattern as loads.ts)
@@ -848,8 +848,8 @@ export const messagesRouter = router({
 
   /**
    * Send a payment message (like Apple Pay / Cash App)
-   * Creates a message with type payment_sent or payment_request
-   * Metadata stores amount, currency, note, and status
+   * For "send": debits sender wallet, credits recipient wallet, creates payment_sent message
+   * For "request": creates payment_request message (no money movement until accepted)
    */
   sendPayment: protectedProcedure
     .input(z.object({
@@ -863,67 +863,119 @@ export const messagesRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      try {
-        const userId = await resolveUserId(ctx.user);
-        const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
-        if (!convId) throw new Error("Invalid conversation ID");
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) throw new Error("User not authenticated");
 
-        const [sender] = await db.select({ name: users.name, email: users.email })
-          .from(users).where(eq(users.id, userId)).limit(1);
+      const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
+      if (!convId) throw new Error("Invalid conversation ID");
 
-        const messageType = input.type === "send" ? "payment_sent" : "payment_request";
-        const content = input.type === "send"
-          ? `💰 Sent $${input.amount.toFixed(2)} ${input.currency}${input.note ? ` — ${input.note}` : ""}`
-          : `🔔 Requested $${input.amount.toFixed(2)} ${input.currency}${input.note ? ` — ${input.note}` : ""}`;
+      const [sender] = await db.select({ name: users.name, email: users.email })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      if (!sender) throw new Error("Sender not found");
 
-        const metadata = {
-          amount: input.amount,
-          currency: input.currency,
-          note: input.note || "",
-          status: input.type === "send" ? "completed" : "pending",
-          senderName: sender?.name || "User",
-          timestamp: new Date().toISOString(),
-        };
+      // Find the other participant in the conversation (recipient)
+      const participants = await db.select({ userId: conversationParticipants.userId })
+        .from(conversationParticipants)
+        .where(and(
+          eq(conversationParticipants.conversationId, convId),
+          isNull(conversationParticipants.leftAt),
+        ));
+      const recipientId = participants.find(p => p.userId !== userId)?.userId;
+      if (!recipientId) throw new Error("Recipient not found in conversation");
 
-        const [result] = await db.insert(messages).values({
-          conversationId: convId,
-          senderId: userId,
-          messageType: messageType as any,
-          content,
-          metadata,
-        });
+      // For "send" type — actually process wallet transfer
+      if (input.type === "send") {
+        // Get sender wallet
+        const [senderWallet] = await db.select()
+          .from(wallets).where(eq(wallets.userId, userId)).limit(1);
+        if (!senderWallet) throw new Error("Wallet not found. Set up your EusoWallet first.");
 
-        const msgId = (result as any).insertId;
+        const available = parseFloat(senderWallet.availableBalance || "0");
+        if (available < input.amount) {
+          throw new Error(`Insufficient balance. Available: $${available.toFixed(2)}`);
+        }
 
-        // Update conversation timestamp
-        await db.execute(sql`UPDATE conversations SET last_message_at = NOW(), updated_at = NOW() WHERE id = ${convId}`);
+        // Get or create recipient wallet
+        let [recipientWallet] = await db.select()
+          .from(wallets).where(eq(wallets.userId, recipientId)).limit(1);
+        if (!recipientWallet) {
+          await db.insert(wallets).values({ userId: recipientId, availableBalance: "0", pendingBalance: "0" });
+          [recipientWallet] = await db.select()
+            .from(wallets).where(eq(wallets.userId, recipientId)).limit(1);
+        }
 
-        // Increment unread for other participants
-        await db.execute(sql`UPDATE conversation_participants SET unread_count = unread_count + 1 WHERE conversation_id = ${convId} AND user_id != ${userId} AND left_at IS NULL`);
+        // Debit sender
+        await db.update(wallets)
+          .set({
+            availableBalance: String((available - input.amount).toFixed(2)),
+            totalSpent: String((parseFloat(senderWallet.totalSpent || "0") + input.amount).toFixed(2)),
+          })
+          .where(eq(wallets.id, senderWallet.id));
 
-        // Emit real-time event
-        try {
-          emitMessage({
-            conversationId: String(convId),
-            messageId: String(msgId),
-            senderId: String(userId),
-            senderName: sender?.name || "User",
-            content,
-            messageType,
-            timestamp: new Date().toISOString(),
-          } as any);
-        } catch {}
-
-        return {
-          id: String(msgId),
-          type: messageType,
-          amount: input.amount,
-          currency: input.currency,
-          status: metadata.status,
-        };
-      } catch (error) {
-        console.error("[Messages] sendPayment error:", error);
-        throw new Error("Failed to send payment");
+        // Credit recipient
+        const recipientBalance = parseFloat(recipientWallet.availableBalance || "0");
+        await db.update(wallets)
+          .set({
+            availableBalance: String((recipientBalance + input.amount).toFixed(2)),
+            totalReceived: String((parseFloat(recipientWallet.totalReceived || "0") + input.amount).toFixed(2)),
+          })
+          .where(eq(wallets.id, recipientWallet.id));
       }
+
+      const messageType = input.type === "send" ? "payment_sent" : "payment_request";
+      const content = input.type === "send"
+        ? `Sent $${input.amount.toFixed(2)} ${input.currency}${input.note ? ` - ${input.note}` : ""}`
+        : `Requested $${input.amount.toFixed(2)} ${input.currency}${input.note ? ` - ${input.note}` : ""}`;
+
+      const metadata = {
+        amount: input.amount,
+        currency: input.currency,
+        note: input.note || "",
+        status: input.type === "send" ? "completed" : "pending",
+        recipientId,
+        senderName: sender?.name || "User",
+        timestamp: new Date().toISOString(),
+      };
+
+      const [result] = await db.insert(messages).values({
+        conversationId: convId,
+        senderId: userId,
+        messageType: messageType as any,
+        content,
+        metadata,
+      });
+
+      const msgId = (result as any).insertId;
+
+      // Update conversation timestamp (camelCase column names match Drizzle schema)
+      await db.update(conversations)
+        .set({ lastMessageAt: new Date() })
+        .where(eq(conversations.id, convId));
+
+      // Increment unread for other participants
+      await db.execute(
+        sql`UPDATE conversation_participants SET unreadCount = unreadCount + 1 WHERE conversationId = ${convId} AND userId != ${userId} AND leftAt IS NULL`
+      );
+
+      // Emit real-time event
+      try {
+        emitMessage({
+          conversationId: String(convId),
+          messageId: String(msgId),
+          senderId: String(userId),
+          senderName: sender?.name || "User",
+          content,
+          messageType,
+          timestamp: new Date().toISOString(),
+        } as any);
+      } catch {}
+
+      return {
+        id: String(msgId),
+        type: messageType,
+        amount: input.amount,
+        currency: input.currency,
+        status: metadata.status,
+      };
     }),
 });

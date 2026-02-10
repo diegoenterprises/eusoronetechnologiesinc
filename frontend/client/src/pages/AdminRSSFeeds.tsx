@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from "react";
+import { useEusoDialog } from "@/components/EusoDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,7 @@ const CATEGORIES = [
 ];
 
 export default function AdminRSSFeeds() {
+  const dialog = useEusoDialog();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -350,10 +352,9 @@ export default function AdminRSSFeeds() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          if (confirm("Delete this RSS feed?")) {
-                            deleteFeedMutation.mutate({ id: feed.id });
-                          }
+                        onClick={async () => {
+                          const ok = await dialog.confirm("Delete this RSS feed?", { confirmLabel: "Delete", cancelLabel: "Cancel" });
+                          if (ok) deleteFeedMutation.mutate({ id: feed.id });
                         }}
                         className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
                       >

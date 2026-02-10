@@ -1,5 +1,6 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { EusoDialogProvider } from "@/components/EusoDialog";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -445,8 +446,10 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider>
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <EusoDialogProvider>
+            <Toaster />
+            <Router />
+          </EusoDialogProvider>
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useEusoDialog } from "@/components/EusoDialog";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useDisplayUser } from "@/hooks/useDisplayUser";
 import { Card } from "@/components/ui/card";
@@ -36,6 +37,7 @@ import {
 import { useEncryption } from "@/hooks/useEncryption";
 
 export default function CompanyChannels() {
+  const dialog = useEusoDialog();
   const [selectedChannel, setSelectedChannel] = useState<string>("");
   const [messageInput, setMessageInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -181,11 +183,10 @@ export default function CompanyChannels() {
     });
   };
 
-  const handleDeleteChannel = () => {
+  const handleDeleteChannel = async () => {
     if (!selectedChannel) return;
-    if (confirm("Are you sure you want to delete this channel? This cannot be undone.")) {
-      deleteChannelMutation.mutate({ channelId: selectedChannel });
-    }
+    const ok = await dialog.confirm("Are you sure you want to delete this channel? This cannot be undone.", { confirmLabel: "Delete", cancelLabel: "Cancel" });
+    if (ok) deleteChannelMutation.mutate({ channelId: selectedChannel });
   };
 
   const handleToggleMute = () => {

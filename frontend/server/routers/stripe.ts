@@ -108,6 +108,25 @@ async function getOrCreateStripeCustomer(userOpenId: string | number, email: str
         console.warn("[Stripe] Could not store customer ID on user record");
       }
 
+      // Sync stripeCustomerId to wallet (ensure wallet↔user isolation)
+      try {
+        const [wallet] = await db.select({ id: wallets.id })
+          .from(wallets).where(eq(wallets.userId, resolved.id)).limit(1);
+        if (wallet) {
+          await db.update(wallets)
+            .set({ stripeCustomerId: customer.id })
+            .where(eq(wallets.userId, resolved.id));
+        } else {
+          // Auto-create wallet for this user
+          await db.insert(wallets).values({
+            userId: resolved.id,
+            availableBalance: "0",
+            pendingBalance: "0",
+            stripeCustomerId: customer.id,
+          });
+        }
+      } catch {}
+
       // Re-read to ensure we return the winning customer ID (in case another request wrote first)
       try {
         const [fresh] = await db.select({ stripeCustomerId: users.stripeCustomerId }).from(users).where(eq(users.id, resolved.id)).limit(1);
@@ -483,6 +502,19 @@ export const stripeRouter = router({
       businessType: z.enum(["individual", "company"]).default("individual"),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user.id) || 0;
+
+      // Idempotency guard: check if user already has a Connect account
+      if (db) {
+        const [existing] = await db.select({ stripeConnectId: users.stripeConnectId })
+          .from(users).where(eq(users.id, userId)).limit(1);
+        if (existing?.stripeConnectId) {
+          // Already has a Connect account — return it instead of creating a duplicate
+          return { accountId: existing.stripeConnectId };
+        }
+      }
+
       const account = await stripe.accounts.create({
         type: "express",
         country: "US",
@@ -492,22 +524,44 @@ export const stripeRouter = router({
           transfers: { requested: true },
         },
         metadata: {
-          userId: String(ctx.user.id),
+          userId: String(userId),
           platform: "eusotrip",
           userRole: ctx.user.role || "carrier",
         },
       });
 
-      // Store connect account ID on user
-      try {
-        const db = await getDb();
-        if (db) {
-          await db.execute(
-            `UPDATE users SET stripe_connect_id = '${account.id}' WHERE id = ${ctx.user.id}`
-          );
+      // Store connect account ID on BOTH users and wallets tables
+      if (db) {
+        try {
+          // Update users table (Drizzle ORM — correct camelCase column)
+          await db.update(users)
+            .set({ stripeConnectId: account.id })
+            .where(eq(users.id, userId));
+        } catch {
+          console.warn("[Stripe] Could not store connect ID on user record");
         }
-      } catch {
-        console.warn("[Stripe] Could not store connect ID on user record");
+
+        try {
+          // Ensure wallet exists and sync Connect ID to wallet
+          const [wallet] = await db.select({ id: wallets.id })
+            .from(wallets).where(eq(wallets.userId, userId)).limit(1);
+          if (wallet) {
+            await db.update(wallets)
+              .set({ stripeConnectId: account.id, stripeAccountStatus: "pending" })
+              .where(eq(wallets.userId, userId));
+          } else {
+            // Auto-create wallet for user if it doesn't exist
+            await db.insert(wallets).values({
+              userId,
+              availableBalance: "0",
+              pendingBalance: "0",
+              stripeConnectId: account.id,
+              stripeAccountStatus: "pending",
+            });
+          }
+        } catch (err) {
+          console.warn("[Stripe] Could not sync connect ID to wallet:", err);
+        }
       }
 
       return {
