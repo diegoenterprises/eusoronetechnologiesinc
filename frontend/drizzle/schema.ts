@@ -300,6 +300,7 @@ export const bids = mysqlTable(
       .default("pending")
       .notNull(),
     expiresAt: timestamp("expiresAt"),
+    isEncrypted: boolean("isEncrypted").default(false),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -349,6 +350,7 @@ export const payments = mysqlTable(
       .notNull(),
     failureReason: text("failureReason"),
     metadata: json("metadata"),
+    isEncrypted: boolean("isEncrypted").default(false),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -3733,6 +3735,9 @@ export const agreements = mysqlTable(
     // Metadata
     notes: text("notes"),
     tags: json("tags").$type<string[]>(),
+    // Encryption at rest
+    isEncrypted: boolean("isEncrypted").default(false),
+    encryptionVersion: varchar("encryptionVersion", { length: 10 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
     deletedAt: timestamp("deletedAt"),
@@ -3968,6 +3973,8 @@ export const negotiations = mysqlTable(
     responseDeadline: timestamp("responseDeadline"),
     expiresAt: timestamp("expiresAt"),
     resolvedAt: timestamp("resolvedAt"),
+    isEncrypted: boolean("isEncrypted").default(false),
+    encryptionVersion: varchar("encryptionVersion", { length: 10 }),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
     updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   },
@@ -4023,6 +4030,7 @@ export const negotiationMessages = mysqlTable(
     // State
     isRead: boolean("isRead").default(false),
     readAt: timestamp("readAt"),
+    isEncrypted: boolean("isEncrypted").default(false),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
   },
   (table) => ({

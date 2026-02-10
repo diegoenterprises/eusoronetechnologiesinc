@@ -14,6 +14,28 @@ import {
   users,
   companies,
 } from "../../drizzle/schema";
+import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
+
+const ENC_VERSION = "v1";
+
+/** Decrypt negotiation record for client */
+function decryptNegotiation(neg: any): any {
+  if (!neg || !neg.isEncrypted) return neg;
+  const result = { ...neg };
+  if (typeof result.currentOffer === "string") result.currentOffer = decryptJSON(result.currentOffer);
+  if (typeof result.agreedTerms === "string") result.agreedTerms = decryptJSON(result.agreedTerms);
+  if (result.description) result.description = decryptField(result.description);
+  return result;
+}
+
+/** Decrypt negotiation message for client */
+function decryptNegMessage(msg: any): any {
+  if (!msg || !msg.isEncrypted) return msg;
+  const result = { ...msg };
+  if (result.content) result.content = decryptField(result.content);
+  if (typeof result.offerTerms === "string") result.offerTerms = decryptJSON(result.offerTerms);
+  return result;
+}
 
 function generateNegotiationNumber(): string {
   const year = new Date().getFullYear();
@@ -208,25 +230,28 @@ export const rateNegotiationsRouter = router({
         respondentUserId: input.respondentUserId,
         respondentCompanyId: input.respondentCompanyId,
         subject: input.subject,
-        description: input.description,
-        currentOffer,
+        description: input.description ? encryptField(input.description) : null,
+        currentOffer: currentOffer ? (encryptJSON(currentOffer) as any) : null,
         totalRounds: 1,
         status: "awaiting_response",
         responseDeadline,
+        isEncrypted: true,
+        encryptionVersion: ENC_VERSION,
       }).$returningId();
 
       const negId = negResult[0]!.id;
 
-      // Create initial message/offer
+      // Create initial message/offer — encrypted
       await db.insert(negotiationMessages).values({
         negotiationId: negId,
         senderUserId: ctx.user!.id,
         round: 1,
         messageType: "initial_offer",
-        content: input.message || `Initial offer: $${input.initialOffer || 0}`,
+        content: encryptField(input.message || `Initial offer: $${input.initialOffer || 0}`),
         offerAmount: input.initialOffer?.toString(),
         offerRateType: input.offerRateType,
-        offerTerms: input.offerTerms || {},
+        offerTerms: encryptJSON(input.offerTerms || {}) as any,
+        isEncrypted: true,
       });
 
       return { id: negId, negotiationNumber, status: "awaiting_response" };
@@ -260,22 +285,25 @@ export const rateNegotiationsRouter = router({
       };
 
       await db.update(negotiations).set({
-        currentOffer,
+        currentOffer: encryptJSON(currentOffer) as any,
         totalRounds: newRound,
         status: "counter_offered",
         responseDeadline: new Date(Date.now() + 48 * 60 * 60 * 1000),
+        isEncrypted: true,
+        encryptionVersion: ENC_VERSION,
       }).where(eq(negotiations.id, input.negotiationId));
 
-      // Create counter-offer message
+      // Create counter-offer message — encrypted
       await db.insert(negotiationMessages).values({
         negotiationId: input.negotiationId,
         senderUserId: ctx.user!.id,
         round: newRound,
         messageType: "counter_offer",
-        content: input.message || `Counter offer: $${input.amount}`,
+        content: encryptField(input.message || `Counter offer: $${input.amount}`),
         offerAmount: input.amount.toString(),
         offerRateType: input.rateType,
-        offerTerms: input.terms || {},
+        offerTerms: encryptJSON(input.terms || {}) as any,
+        isEncrypted: true,
       });
 
       return { success: true, round: newRound, status: "counter_offered" };
@@ -297,17 +325,19 @@ export const rateNegotiationsRouter = router({
       await db.update(negotiations).set({
         status: "agreed",
         outcome: "accepted",
-        agreedTerms: neg.currentOffer,
+        agreedTerms: encryptJSON(neg.currentOffer) as any,
         resolvedAt: new Date(),
+        isEncrypted: true,
       }).where(eq(negotiations.id, input.negotiationId));
 
-      // Create accept message
+      // Create accept message — encrypted
       await db.insert(negotiationMessages).values({
         negotiationId: input.negotiationId,
         senderUserId: ctx.user!.id,
         round: (neg.totalRounds || 0) + 1,
         messageType: "accept",
-        content: input.message || "Offer accepted. Deal!",
+        content: encryptField(input.message || "Offer accepted. Deal!"),
+        isEncrypted: true,
       });
 
       return { success: true, status: "agreed", agreedTerms: neg.currentOffer };
@@ -336,7 +366,8 @@ export const rateNegotiationsRouter = router({
         senderUserId: ctx.user!.id,
         round: (neg?.totalRounds || 0) + 1,
         messageType: "reject",
-        content: input.reason || "Negotiation rejected.",
+        content: encryptField(input.reason || "Negotiation rejected."),
+        isEncrypted: true,
       });
 
       return { success: true, status: "rejected" };
@@ -364,8 +395,9 @@ export const rateNegotiationsRouter = router({
         senderUserId: ctx.user!.id,
         round: neg?.totalRounds || 1,
         messageType: "message",
-        content: input.content,
+        content: encryptField(input.content),
         attachments: input.attachments || [],
+        isEncrypted: true,
       });
 
       return { success: true };

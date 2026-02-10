@@ -17,6 +17,27 @@ import {
   users,
   companies,
 } from "../../drizzle/schema";
+import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
+
+// Encryption version tag for forward compatibility
+const ENC_VERSION = "v1";
+
+// Fields that get encrypted at rest in the agreements table
+const AGREEMENT_ENCRYPTED_STRING_FIELDS = ["generatedContent", "notes"] as const;
+const AGREEMENT_ENCRYPTED_JSON_FIELDS = ["clauses", "strategicInputs", "lanes", "accessorialSchedule"] as const;
+
+/** Decrypt an agreement record for client consumption */
+function decryptAgreement(agreement: any): any {
+  if (!agreement || !agreement.isEncrypted) return agreement;
+  const result = { ...agreement };
+  for (const f of AGREEMENT_ENCRYPTED_STRING_FIELDS) {
+    if (result[f]) result[f] = decryptField(result[f]);
+  }
+  for (const f of AGREEMENT_ENCRYPTED_JSON_FIELDS) {
+    if (typeof result[f] === "string") result[f] = decryptJSON(result[f]);
+  }
+  return result;
+}
 
 // ============================================================================
 // HELPER: Generate agreement number
@@ -479,16 +500,18 @@ export const agreementsRouter = router({
         hazmatRequired: input.hazmatRequired || false,
         twicRequired: input.twicRequired || false,
         tankerEndorsementRequired: input.tankerEndorsementRequired || false,
-        lanes: input.lanes || [],
-        accessorialSchedule: input.accessorialSchedule || [],
-        generatedContent: content,
-        clauses: templateClauses,
-        strategicInputs: input.strategicInputs,
+        lanes: encryptJSON(input.lanes || []) as any,
+        accessorialSchedule: encryptJSON(input.accessorialSchedule || []) as any,
+        generatedContent: encryptField(content),
+        clauses: encryptJSON(templateClauses) as any,
+        strategicInputs: encryptJSON(input.strategicInputs) as any,
         status: "draft",
         effectiveDate: input.effectiveDate ? new Date(input.effectiveDate) : null,
         expirationDate: input.expirationDate ? new Date(input.expirationDate) : null,
         autoRenew: input.autoRenew || false,
-        notes: input.notes,
+        notes: input.notes ? encryptField(input.notes) : null,
+        isEncrypted: true,
+        encryptionVersion: ENC_VERSION,
         platformFeeAcknowledged: true,
       }).$returningId();
 

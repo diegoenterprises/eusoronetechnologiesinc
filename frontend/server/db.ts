@@ -20,17 +20,62 @@ function createPool() {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) throw new Error("DATABASE_URL is required");
 
-  return mysql2.createPool({
+  const pool = mysql2.createPool({
     uri: dbUrl,
-    connectionLimit: 20,
+    connectionLimit: 30,
     waitForConnections: true,
-    queueLimit: 100,
+    queueLimit: 200,
     idleTimeout: 60000,
     enableKeepAlive: true,
-    keepAliveInitialDelay: 30000,
-    maxIdle: 5,
-    connectTimeout: 10000,
+    keepAliveInitialDelay: 15000,
+    maxIdle: 10,
+    connectTimeout: 15000,
   });
+
+  // Pool event listeners for observability and auto-recovery
+  pool.on("connection", () => {
+    _poolStats.totalCreated++;
+  });
+  pool.on("release", () => {
+    _poolStats.totalReleased++;
+  });
+  pool.on("enqueue", () => {
+    _poolStats.totalQueued++;
+    if (_poolStats.totalQueued % 50 === 0) {
+      console.warn(`[Database] Pool queue pressure: ${_poolStats.totalQueued} queued requests`);
+    }
+  });
+
+  return pool;
+}
+
+// Pool stats for monitoring
+const _poolStats = { totalCreated: 0, totalReleased: 0, totalQueued: 0, healthCheckFailures: 0 };
+
+// Health check — ping the DB periodically to detect stale connections
+let _healthCheckInterval: NodeJS.Timeout | null = null;
+function startHealthCheck() {
+  if (_healthCheckInterval) return;
+  _healthCheckInterval = setInterval(async () => {
+    if (!_pool) return;
+    try {
+      const conn = _pool.promise();
+      await conn.query("SELECT 1");
+    } catch (err: any) {
+      _poolStats.healthCheckFailures++;
+      console.error(`[Database] Health check failed (${_poolStats.healthCheckFailures}x):`, err.message);
+      // If pool is dead, recreate it
+      if (_poolStats.healthCheckFailures >= 3) {
+        console.warn("[Database] Recreating connection pool after 3 consecutive health check failures");
+        try {
+          _pool?.end(() => {});
+        } catch {}
+        _pool = null;
+        _db = null;
+        _poolStats.healthCheckFailures = 0;
+      }
+    }
+  }, 30000); // Every 30 seconds
 }
 
 // Lazily create the drizzle instance backed by a connection pool.
@@ -39,7 +84,8 @@ export async function getDb() {
     try {
       _pool = createPool();
       _db = drizzle(_pool);
-      console.log("[Database] Connection pool initialized (limit: 20)");
+      startHealthCheck();
+      console.log("[Database] Connection pool initialized (limit: 30, keepAlive: 15s, healthCheck: 30s)");
     } catch (error) {
       console.error("[Database] Failed to create connection pool:", error);
       _pool = null;
@@ -47,6 +93,11 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+// Get pool stats for monitoring endpoints
+export function getPoolStats() {
+  return { ..._poolStats, poolActive: !!_pool };
 }
 
 // Get the raw pool (promise-wrapped) for transactions and raw queries

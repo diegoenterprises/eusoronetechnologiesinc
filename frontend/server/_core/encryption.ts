@@ -185,6 +185,114 @@ export function validateEncryption(): boolean {
   }
 }
 
+// ─── INTERACTION-LEVEL ENCRYPTION ────────────────────────────────────────────
+// Encrypt/decrypt JSON payloads, financial data, contract content.
+// Used by agreements, negotiations, bids, payments routers.
+
+const ENCRYPTED_PREFIX = "🔐enc:";
+
+/**
+ * Check if a value is already encrypted by our system.
+ */
+export function isEncrypted(value: string | null | undefined): boolean {
+  return typeof value === "string" && value.startsWith(ENCRYPTED_PREFIX);
+}
+
+/**
+ * Encrypt a JSON-serializable object for DB storage.
+ */
+export function encryptJSON(data: unknown): string {
+  if (data === null || data === undefined) return "";
+  const json = JSON.stringify(data);
+  return ENCRYPTED_PREFIX + encrypt(json);
+}
+
+/**
+ * Decrypt a JSON object from DB storage.
+ */
+export function decryptJSON<T = unknown>(encrypted: string): T | null {
+  if (!encrypted || !isEncrypted(encrypted)) {
+    // Not encrypted — try parsing as raw JSON
+    try { return JSON.parse(encrypted); } catch { return null; }
+  }
+  try {
+    const ciphertext = encrypted.slice(ENCRYPTED_PREFIX.length);
+    const json = decrypt(ciphertext);
+    return JSON.parse(json);
+  } catch (error) {
+    console.error("[ENCRYPTION] Failed to decrypt JSON:", error);
+    return null;
+  }
+}
+
+/**
+ * Encrypt a string field for DB storage. Returns prefixed ciphertext.
+ */
+export function encryptField(value: string | null | undefined): string {
+  if (!value) return "";
+  return ENCRYPTED_PREFIX + encrypt(value);
+}
+
+/**
+ * Decrypt a string field from DB. Returns plaintext.
+ * If the value is not encrypted, returns it as-is (backward compatible).
+ */
+export function decryptField(value: string | null | undefined): string {
+  if (!value) return "";
+  if (!isEncrypted(value)) return value; // Not encrypted — return as-is
+  try {
+    return decrypt(value.slice(ENCRYPTED_PREFIX.length));
+  } catch {
+    return "[Encrypted — unable to decrypt]";
+  }
+}
+
+/**
+ * Encrypt specific fields in an object. Returns a new object with encrypted fields.
+ * Non-specified fields are left untouched.
+ */
+export function encryptFields<T extends Record<string, any>>(
+  data: T,
+  fieldNames: (keyof T)[]
+): T {
+  const result = { ...data };
+  for (const field of fieldNames) {
+    const val = result[field];
+    if (val !== null && val !== undefined) {
+      if (typeof val === "string") {
+        (result as any)[field] = encryptField(val);
+      } else {
+        (result as any)[field] = encryptJSON(val);
+      }
+    }
+  }
+  return result;
+}
+
+/**
+ * Decrypt specific fields in an object. Returns a new object with decrypted fields.
+ */
+export function decryptFields<T extends Record<string, any>>(
+  data: T,
+  stringFields: (keyof T)[],
+  jsonFields: (keyof T)[] = []
+): T {
+  const result = { ...data };
+  for (const field of stringFields) {
+    const val = result[field];
+    if (typeof val === "string" && isEncrypted(val)) {
+      (result as any)[field] = decryptField(val);
+    }
+  }
+  for (const field of jsonFields) {
+    const val = result[field];
+    if (typeof val === "string" && isEncrypted(val)) {
+      (result as any)[field] = decryptJSON(val);
+    }
+  }
+  return result;
+}
+
 export const encryptionService = {
   encrypt,
   decrypt,
@@ -194,6 +302,13 @@ export const encryptionService = {
   maskBankAccount,
   maskEIN,
   validateEncryption,
+  encryptJSON,
+  decryptJSON,
+  encryptField,
+  decryptField,
+  encryptFields,
+  decryptFields,
+  isEncrypted,
 };
 
 export default encryptionService;
