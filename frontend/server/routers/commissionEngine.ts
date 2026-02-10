@@ -16,6 +16,7 @@
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getLiveCommodityValues, getAllCommodityIndexes } from "../_core/commodityData";
 
 // ── CONSTANTS ──
 const BASE_PLATFORM_FEE = 0.08;  // 8%
@@ -23,21 +24,15 @@ const MAX_PLATFORM_FEE = 0.15;   // 15%
 const MIN_PLATFORM_FEE = 0.05;   // 5%
 const DRIVER_COMMISSION_RATE = 0.25; // 25%
 const GAMIFICATION_MAX_BONUS = 0.03; // 3%
-
-// Commodity index mock values (in production, fetched from real-time APIs)
-const COMMODITY_INDEXES: Record<string, number> = {
-  WTI: 78.50,  // West Texas Intermediate (crude oil)
-  BDI: 1450,   // Baltic Dry Index
-  DIESEL: 3.85, // National avg diesel price
-};
 const COMMODITY_NORMALIZATION_BASE = 50.0;
 
 // ── HELPER FUNCTIONS ──
 
-function getCommodityIndexFactor(cargoType: string): number {
+async function getCommodityIndexFactor(cargoType: string): Promise<number> {
   if (['liquid', 'petroleum', 'gas', 'chemicals'].includes(cargoType)) {
+    const live = await getLiveCommodityValues();
     const index = cargoType === 'liquid' || cargoType === 'petroleum' ? 'WTI' : 'BDI';
-    const indexValue = COMMODITY_INDEXES[index] || COMMODITY_NORMALIZATION_BASE;
+    const indexValue = live[index] || COMMODITY_NORMALIZATION_BASE;
     return Math.round((indexValue / COMMODITY_NORMALIZATION_BASE) * 10000) / 10000;
   }
   return 1.0;
@@ -66,15 +61,15 @@ function calculateGamificationBonus(driverScore: number): number {
   return Math.round(clampedScore * GAMIFICATION_MAX_BONUS * 10000) / 10000;
 }
 
-function calculateDynamicPlatformFee(
+async function calculateDynamicPlatformFee(
   cargoType: string,
   distanceMiles: number,
   driverScore: number,
   hazmatClass?: string
-): number {
+): Promise<number> {
   const riskFactor = calculateRiskFactor(cargoType, distanceMiles, hazmatClass);
   const gamificationBonus = calculateGamificationBonus(driverScore);
-  const commodityFactor = getCommodityIndexFactor(cargoType);
+  const commodityFactor = await getCommodityIndexFactor(cargoType);
 
   // Formula: BASE_FEE * (1 + RISK_FACTOR - GAMIFICATION_BONUS) * COMMODITY_FACTOR
   const dynamicRate = BASE_PLATFORM_FEE * (1.0 + riskFactor - gamificationBonus) * commodityFactor;
@@ -84,17 +79,18 @@ function calculateDynamicPlatformFee(
   return Math.round(finalRate * 10000) / 10000;
 }
 
-function calculateSplit(
+async function calculateSplit(
   grossRate: number,
   cargoType: string,
   distanceMiles: number,
   driverScore: number,
   hazmatClass?: string
 ) {
-  const platformFeeRate = calculateDynamicPlatformFee(cargoType, distanceMiles, driverScore, hazmatClass);
+  const platformFeeRate = await calculateDynamicPlatformFee(cargoType, distanceMiles, driverScore, hazmatClass);
   const platformFeeAmount = Math.round(grossRate * platformFeeRate * 100) / 100;
   const driverCommission = Math.round(grossRate * DRIVER_COMMISSION_RATE * 100) / 100;
   const netToCarrier = Math.round((grossRate - platformFeeAmount - driverCommission) * 100) / 100;
+  const commodityFactor = await getCommodityIndexFactor(cargoType);
 
   return {
     grossRate: Math.round(grossRate * 100) / 100,
@@ -107,7 +103,7 @@ function calculateSplit(
     netToCarrier,
     riskFactor: calculateRiskFactor(cargoType, distanceMiles, hazmatClass),
     gamificationBonus: calculateGamificationBonus(driverScore),
-    commodityFactor: getCommodityIndexFactor(cargoType),
+    commodityFactor,
   };
 }
 
@@ -126,7 +122,7 @@ export const commissionEngineRouter = router({
       driverScore: z.number().min(0).max(1).default(0.5),
       hazmatClass: z.string().optional(),
     }))
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       return calculateSplit(
         input.grossRate,
         input.cargoType,
@@ -146,8 +142,9 @@ export const commissionEngineRouter = router({
       driverScore: z.number().min(0).max(1).default(0.5),
       hazmatClass: z.string().optional(),
     }))
-    .query(({ input }) => {
-      const rate = calculateDynamicPlatformFee(input.cargoType, input.distanceMiles, input.driverScore, input.hazmatClass);
+    .query(async ({ input }) => {
+      const rate = await calculateDynamicPlatformFee(input.cargoType, input.distanceMiles, input.driverScore, input.hazmatClass);
+      const commodityFactor = await getCommodityIndexFactor(input.cargoType);
       return {
         feeRate: rate,
         feePercent: Math.round(rate * 100 * 100) / 100,
@@ -156,7 +153,7 @@ export const commissionEngineRouter = router({
         maxFee: MAX_PLATFORM_FEE,
         riskFactor: calculateRiskFactor(input.cargoType, input.distanceMiles, input.hazmatClass),
         gamificationBonus: calculateGamificationBonus(input.driverScore),
-        commodityFactor: getCommodityIndexFactor(input.cargoType),
+        commodityFactor,
       };
     }),
 
@@ -174,11 +171,11 @@ export const commissionEngineRouter = router({
         hazmatClass: z.string().optional(),
       })),
     }))
-    .mutation(({ input }) => {
-      const results = input.loads.map(l => ({
+    .mutation(async ({ input }) => {
+      const results = await Promise.all(input.loads.map(async l => ({
         loadId: l.loadId,
-        ...calculateSplit(l.grossRate, l.cargoType, l.distanceMiles, l.driverScore, l.hazmatClass),
-      }));
+        ...(await calculateSplit(l.grossRate, l.cargoType, l.distanceMiles, l.driverScore, l.hazmatClass)),
+      })));
       const totalGross = results.reduce((s, r) => s + r.grossRate, 0);
       const totalFees = results.reduce((s, r) => s + r.platformFeeAmount, 0);
       const totalDriverComm = results.reduce((s, r) => s + r.driverCommission, 0);
@@ -199,13 +196,8 @@ export const commissionEngineRouter = router({
   /**
    * Get commodity index values (for display in dashboards)
    */
-  getCommodityIndexes: protectedProcedure.query(() => {
-    return Object.entries(COMMODITY_INDEXES).map(([name, value]) => ({
-      name,
-      value,
-      factor: Math.round((value / COMMODITY_NORMALIZATION_BASE) * 10000) / 10000,
-      updatedAt: new Date().toISOString(),
-    }));
+  getCommodityIndexes: protectedProcedure.query(async () => {
+    return getAllCommodityIndexes();
   }),
 
   /**

@@ -16,6 +16,19 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
+import { fetchMarketSnapshot, type MarketSnapshot } from "../services/marketDataService";
+
+// Cached live snapshot (shared across endpoints)
+let _liveSnapshot: MarketSnapshot | null = null;
+let _liveSnapshotAt = 0;
+async function getLiveSnapshot(): Promise<MarketSnapshot | null> {
+  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 30 * 60 * 1000) return _liveSnapshot;
+  try {
+    _liveSnapshot = await fetchMarketSnapshot();
+    _liveSnapshotAt = Date.now();
+    return _liveSnapshot;
+  } catch { return _liveSnapshot; }
+}
 
 // Market rate indices (like Platts/Argus benchmarks)
 const FREIGHT_INDICES = {
@@ -67,14 +80,32 @@ const LANE_BENCHMARKS = [
   { origin: "Bakken, ND", destination: "Cushing, OK", miles: 1147, equipment: "TANKER", rate: 3.40, volume: "MEDIUM", trend: "stable", changePercent: 1.0 },
 ];
 
-// Fuel surcharge data
-const FUEL_INDEX = {
+// Fuel surcharge data (defaults — overridden by live EIA data)
+const FUEL_INDEX_DEFAULTS = {
   diesel: { current: 3.89, previous: 3.82, weekAgo: 3.75, monthAgo: 3.62, yearAgo: 4.15 },
   def: { current: 2.95, previous: 2.92, weekAgo: 2.88 },
   surchargePerMile: 0.58,
   eiaDieselAvg: 3.89,
   lastUpdated: new Date().toISOString(),
 };
+
+async function getLiveFuelIndex() {
+  const snap = await getLiveSnapshot();
+  if (snap?.isLiveData && snap.dieselNational) {
+    const dieselPrice = snap.dieselNational.price;
+    // DOE surcharge formula: (current diesel - $1.25 base) / 6 MPG
+    const surchargePerMile = Math.max(0, +((dieselPrice - 1.25) / 6).toFixed(3));
+    return {
+      diesel: { current: dieselPrice, previous: +(dieselPrice / (1 + snap.dieselNational.change / 100)).toFixed(3), weekAgo: FUEL_INDEX_DEFAULTS.diesel.weekAgo, monthAgo: FUEL_INDEX_DEFAULTS.diesel.monthAgo, yearAgo: FUEL_INDEX_DEFAULTS.diesel.yearAgo },
+      def: { current: +(dieselPrice * 0.88 + 0.05).toFixed(3), previous: FUEL_INDEX_DEFAULTS.def.previous, weekAgo: FUEL_INDEX_DEFAULTS.def.weekAgo },
+      surchargePerMile,
+      eiaDieselAvg: dieselPrice,
+      lastUpdated: snap.fetchedAt,
+      isLive: true,
+    };
+  }
+  return { ...FUEL_INDEX_DEFAULTS, isLive: false };
+}
 
 // Seasonal adjustment factors
 const SEASONAL_FACTORS: Record<string, number> = {
@@ -171,8 +202,8 @@ export const marketPricingRouter = router({
     }).optional())
     .query(async () => {
       try {
-        const { fetchMarketSnapshot } = await import("../services/marketDataService");
-        const snapshot = await fetchMarketSnapshot();
+        const snapshot = await getLiveSnapshot();
+        if (!snapshot) throw new Error("No snapshot available");
 
         // If we got live data, overlay it onto the seed commodity list
         if (snapshot.isLiveData) {
@@ -221,14 +252,59 @@ export const marketPricingRouter = router({
       }
     }),
 
-  // Get all commodity market data
+  // Get all commodity market data — overlays live FRED/EIA data on energy commodities
   getCommodities: protectedProcedure
     .input(z.object({
       category: z.string().optional(),
       search: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      let data = [...COMMODITIES];
+      // Start with seed data, then overlay live prices
+      let all = [...COMMODITIES];
+      const snap = await getLiveSnapshot();
+
+      if (snap?.isLiveData) {
+        const overrides: Record<string, { price: number; change: number }> = {};
+        if (snap.crudeOilWTI) overrides["CL"] = { price: snap.crudeOilWTI.price, change: snap.crudeOilWTI.change };
+        if (snap.naturalGas) overrides["NG"] = { price: snap.naturalGas.price, change: snap.naturalGas.change };
+        if (snap.dieselNational) {
+          overrides["ULSD"] = { price: snap.dieselNational.price, change: snap.dieselNational.change };
+          overrides["DOE"] = { price: snap.dieselNational.price, change: snap.dieselNational.change };
+        }
+        // Apply overrides
+        all = all.map(c => {
+          const ov = overrides[c.symbol];
+          if (!ov) return c;
+          const changeAmt = +(c.price * ov.change / 100).toFixed(4);
+          return {
+            ...c,
+            price: ov.price,
+            change: changeAmt,
+            changePercent: ov.change,
+            previousClose: +(ov.price - changeAmt).toFixed(4),
+            open: +(ov.price - changeAmt * 0.5).toFixed(4),
+            high: +(ov.price * 1.005).toFixed(4),
+            low: +(ov.price * 0.995).toFixed(4),
+            intraday: ov.change > 0.5 ? "BULL" as const : ov.change < -0.5 ? "BEAR" as const : "FLAT" as const,
+            daily: ov.change > 0 ? "UP" as const : ov.change < 0 ? "DOWN" as const : "FLAT" as const,
+            sparkline: generateSparkline(ov.price, ov.change > 0.5 ? "up" : ov.change < -0.5 ? "down" : "flat"),
+          };
+        });
+
+        // Also update fuel index commodities with live EIA
+        const liveFuel = await getLiveFuelIndex();
+        all = all.map(c => {
+          if (c.symbol === "FSC" && liveFuel.isLive) {
+            return { ...c, price: liveFuel.surchargePerMile, change: +(liveFuel.surchargePerMile - 0.57).toFixed(4), changePercent: +((liveFuel.surchargePerMile - 0.57) / 0.57 * 100).toFixed(2) };
+          }
+          if (c.symbol === "DEF" && liveFuel.isLive) {
+            return { ...c, price: liveFuel.def.current };
+          }
+          return c;
+        });
+      }
+
+      let data = [...all];
       if (input?.category && input.category !== "ALL") {
         data = data.filter(c => c.category === input.category);
       }
@@ -236,20 +312,22 @@ export const marketPricingRouter = router({
         const q = input.search.toLowerCase();
         data = data.filter(c => c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q));
       }
-      const categories = Array.from(new Set(COMMODITIES.map(c => c.category)));
-      const gainers = [...COMMODITIES].sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
-      const losers = [...COMMODITIES].sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
+      const categories = Array.from(new Set(all.map(c => c.category)));
+      const gainers = [...all].sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
+      const losers = [...all].sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
       return {
         commodities: data,
         categories,
         topGainers: gainers,
         topLosers: losers,
         marketBreadth: {
-          advancing: COMMODITIES.filter(c => c.changePercent > 0).length,
-          declining: COMMODITIES.filter(c => c.changePercent < 0).length,
-          unchanged: COMMODITIES.filter(c => c.changePercent === 0).length,
+          advancing: all.filter(c => c.changePercent > 0).length,
+          declining: all.filter(c => c.changePercent < 0).length,
+          unchanged: all.filter(c => c.changePercent === 0).length,
         },
-        lastUpdated: new Date().toISOString(),
+        lastUpdated: snap?.fetchedAt || new Date().toISOString(),
+        isLiveData: snap?.isLiveData || false,
+        source: snap?.source || "Seed Data",
       };
     }),
 
@@ -268,9 +346,11 @@ export const marketPricingRouter = router({
       const currentMonth = new Date().toLocaleString('en', { month: 'short' }).toUpperCase();
       const seasonalFactor = SEASONAL_FACTORS[currentMonth] || 1.0;
 
+      const liveFuel = await getLiveFuelIndex();
+
       return {
         indices,
-        fuel: FUEL_INDEX,
+        fuel: liveFuel,
         seasonalFactor,
         marketCondition: seasonalFactor > 1.05 ? "TIGHT" : seasonalFactor < 0.96 ? "LOOSE" : "BALANCED",
         publishedAt: new Date().toISOString(),
@@ -300,17 +380,19 @@ export const marketPricingRouter = router({
         lanes = lanes.filter(l => l.equipment === input.equipment);
       }
 
+      const liveFuel = await getLiveFuelIndex();
+
       return {
         lanes: lanes.slice(0, input?.limit || 20).map(lane => ({
           ...lane,
           totalRate: Math.round(lane.rate * lane.miles),
-          rateWithFuel: +(lane.rate + FUEL_INDEX.surchargePerMile).toFixed(2),
+          rateWithFuel: +(lane.rate + liveFuel.surchargePerMile).toFixed(2),
           marginEstimate: +(lane.rate * 0.15).toFixed(2),
           driverPayEstimate: +(lane.rate * 0.72).toFixed(2),
         })),
         totalLanes: lanes.length,
         averageRate: +(lanes.reduce((sum, l) => sum + l.rate, 0) / lanes.length).toFixed(2),
-        fuelSurcharge: FUEL_INDEX.surchargePerMile,
+        fuelSurcharge: liveFuel.surchargePerMile,
       };
     }),
 
@@ -354,9 +436,11 @@ export const marketPricingRouter = router({
       else if (input.miles < 500) baseRate *= 1.10;
       else if (input.miles > 2000) baseRate *= 0.92;
 
+      const liveFuel = await getLiveFuelIndex();
+
       const ratePerMile = +baseRate.toFixed(2);
       const totalRate = Math.round(ratePerMile * input.miles);
-      const fuelSurcharge = Math.round(FUEL_INDEX.surchargePerMile * input.miles);
+      const fuelSurcharge = Math.round(liveFuel.surchargePerMile * input.miles);
 
       return {
         ratePerMile,
@@ -452,21 +536,26 @@ export const marketPricingRouter = router({
       };
     }),
 
-  // Get fuel price index
+  // Get fuel price index — live from EIA
   getFuelIndex: protectedProcedure.query(async () => {
-    return FUEL_INDEX;
+    return getLiveFuelIndex();
   }),
 
-  // Get market summary for dashboard widgets
+  // Get market summary for dashboard widgets — live data
   getMarketSummary: protectedProcedure.query(async () => {
     const equipmentTypes = Object.keys(FREIGHT_INDICES) as Array<keyof typeof FREIGHT_INDICES>;
+    const liveFuel = await getLiveFuelIndex();
+    const snap = await getLiveSnapshot();
     return {
       overview: {
         avgNationalRate: +(equipmentTypes.reduce((s, k) => s + FREIGHT_INDICES[k].national.current, 0) / equipmentTypes.length).toFixed(2),
         avgSpotRate: +(equipmentTypes.reduce((s, k) => s + FREIGHT_INDICES[k].spot.current, 0) / equipmentTypes.length).toFixed(2),
         marketCondition: "BALANCED",
         loadToTruckRatio: 5.8,
-        dieselPrice: FUEL_INDEX.diesel.current,
+        dieselPrice: liveFuel.diesel.current,
+        crudeOilWTI: snap?.crudeOilWTI?.price || 78.50,
+        naturalGas: snap?.naturalGas?.price || 2.85,
+        isLiveData: snap?.isLiveData || false,
       },
       topMovers: LANE_BENCHMARKS
         .sort((a, b) => Math.abs(b.changePercent) - Math.abs(a.changePercent))
@@ -483,7 +572,9 @@ export const marketPricingRouter = router({
         contract: FREIGHT_INDICES[k].contract.current,
         change: FREIGHT_INDICES[k].national.change,
       })),
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: snap?.fetchedAt || new Date().toISOString(),
+      isLiveData: snap?.isLiveData || false,
+      source: snap?.source || "Seed Data",
     };
   }),
 });
