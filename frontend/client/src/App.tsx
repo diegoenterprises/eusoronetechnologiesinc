@@ -109,6 +109,7 @@ import ELDLogs from "./pages/ELDLogs";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import EscortJobs from "./pages/EscortJobs";
 import BidDetails from "./pages/BidDetails";
+import ContractSigning from "./pages/ContractSigning";
 import FleetOverview from "./pages/FleetOverview";
 import ComplianceCalendar from "./pages/ComplianceCalendar";
 import DriverPerformance from "./pages/DriverPerformance";
@@ -227,6 +228,7 @@ function Router() {
       <Route path={"/bids"} component={() => (<DashboardLayout><BidManagement /></DashboardLayout>)} />
       <Route path={"/bids/submit/:loadId"} component={() => (<DashboardLayout><CarrierBidSubmission /></DashboardLayout>)} />
       <Route path={"/bids/:bidId"} component={() => (<DashboardLayout><BidDetails /></DashboardLayout>)} />
+      <Route path={"/contract/sign/:loadId"} component={() => (<DashboardLayout><ContractSigning /></DashboardLayout>)} />
       <Route path={"/loads/transit"} component={() => (<DashboardLayout><InTransitPage /></DashboardLayout>)} />
       <Route path={"/loads/:loadId/bids"} component={() => (<DashboardLayout><LoadBids /></DashboardLayout>)} />
       <Route path={"/load/:loadId"} component={() => (<DashboardLayout><LoadDetails /></DashboardLayout>)} />

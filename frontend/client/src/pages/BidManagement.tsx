@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Gavel, DollarSign, CheckCircle, XCircle, Clock,
-  TrendingUp, Package, Sparkles, Search, Navigation, MapPin, Building2, Eye
+  TrendingUp, Package, Sparkles, Search, Navigation, MapPin, Building2, Eye, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -207,9 +207,20 @@ export default function BidManagement() {
                       </div>
                       <p className="text-xs text-slate-400 mt-1">Submitted: {bid.submittedAt}</p>
                     </div>
-                    <div className="text-right flex-shrink-0 ml-4">
-                      <p className="text-xl font-bold text-emerald-500">${bid.amount?.toLocaleString()}</p>
-                      <p className="text-xs text-slate-400">${bid.perMile}/mi</p>
+                    <div className="flex items-center gap-3 flex-shrink-0 ml-4">
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-emerald-500">${bid.amount?.toLocaleString()}</p>
+                        <p className="text-xs text-slate-400">${bid.perMile}/mi</p>
+                      </div>
+                      {bid.status === "accepted" && bid.loadId && (
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-xs h-9"
+                          onClick={(e: React.MouseEvent) => { e.stopPropagation(); setLocation(`/contract/sign/${bid.loadId}`); }}
+                        >
+                          <FileText className="w-3.5 h-3.5 mr-1" />Sign
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
