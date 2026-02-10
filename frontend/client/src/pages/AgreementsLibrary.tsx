@@ -47,7 +47,8 @@ export default function AgreementsLibrary() {
   const agQuery = (trpc as any).agreements?.list?.useQuery?.({ status: tab === "all" ? undefined : tab, limit: 50 }) || { data: [], isLoading: false };
   const statsQuery = (trpc as any).agreements?.getStats?.useQuery?.() || { data: null, isLoading: false };
 
-  const agreements: any[] = agQuery.data || [];
+  const agData = agQuery.data;
+  const agreements: any[] = Array.isArray(agData) ? agData : (agData?.agreements || []);
   const stats = statsQuery.data || { total: 0, active: 0, pending: 0, draft: 0, expired: 0 };
 
   // Filter
