@@ -237,14 +237,14 @@ export default function FindLoads() {
                   <div className="px-5 pb-4 flex justify-center gap-3">
                     <Button
                       className="flex-1 max-w-[200px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl font-bold text-sm h-10"
-                      onClick={() => setLocation(`/loads/${load.id}`)}
+                      onClick={() => setLocation(`/bids/submit/${load.id}`)}
                     >
                       <Gavel className="w-4 h-4 mr-2" /> Place Bid
                     </Button>
                     <Button
                       variant="outline"
                       className={cn("flex-1 max-w-[200px] rounded-xl font-bold text-sm h-10", isLight ? "border-slate-200" : "border-slate-600")}
-                      onClick={() => setLocation(`/loads/${load.id}`)}
+                      onClick={() => setLocation(`/load/${load.id}`)}
                     >
                       <Eye className="w-4 h-4 mr-2" /> Details
                     </Button>
