@@ -253,6 +253,18 @@ export const loadsRouter = router({
         if (input.data.status) updateSet.status = input.data.status;
         if (input.data.rate) updateSet.rate = String(input.data.rate);
         if (input.data.specialInstructions) updateSet.specialInstructions = input.data.specialInstructions;
+        // Dispatch control: pickup/delivery location changes
+        if (input.data.pickupLocation) updateSet.pickupLocation = input.data.pickupLocation;
+        if (input.data.deliveryLocation) updateSet.deliveryLocation = input.data.deliveryLocation;
+        if (input.data.pickupDate) updateSet.pickupDate = new Date(input.data.pickupDate);
+        if (input.data.deliveryDate) updateSet.deliveryDate = new Date(input.data.deliveryDate);
+        // Additional stops / multi-drop
+        if (input.data.stops) updateSet.stops = input.data.stops;
+        // Dispatch notes for carrier coordination
+        if (input.data.dispatchNotes) updateSet.specialInstructions = [
+          updateSet.specialInstructions || input.data.specialInstructions || "",
+          `[DISPATCH UPDATE ${new Date().toISOString()}] ${input.data.dispatchNotes}`
+        ].filter(Boolean).join("\n");
         await db.update(loads).set(updateSet).where(and(eq(loads.id, loadId), eq(loads.shipperId, userId)));
       }
       return { success: true, id: input.id };

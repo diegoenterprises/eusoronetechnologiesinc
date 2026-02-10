@@ -67,6 +67,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "In-transit shipments"
     },
     { 
+      icon: "Navigation", 
+      label: "Dispatch Control", 
+      path: "/dispatch", 
+      badge: 0,
+      description: "Modify routes, stops & coordinate with carriers"
+    },
+    { 
       icon: "MapPin", 
       label: "Track Shipments", 
       path: "/tracking", 

@@ -114,6 +114,7 @@ import ShipperAgreementWizard from "./pages/ShipperAgreementWizard";
 import AgreementsLibrary from "./pages/AgreementsLibrary";
 import RecurringLoadScheduler from "./pages/RecurringLoadScheduler";
 import BrokerContractWizard from "./pages/BrokerContractWizard";
+import ShipperDispatchControl from "./pages/ShipperDispatchControl";
 import FleetOverview from "./pages/FleetOverview";
 import ComplianceCalendar from "./pages/ComplianceCalendar";
 import DriverPerformance from "./pages/DriverPerformance";
@@ -228,6 +229,7 @@ function Router() {
       <Route path={"/agreements/create"} component={() => (<DashboardLayout><ShipperAgreementWizard /></DashboardLayout>)} />
       <Route path={"/agreements/broker"} component={() => (<DashboardLayout><BrokerContractWizard /></DashboardLayout>)} />
       <Route path={"/loads/recurring"} component={() => (<DashboardLayout><RecurringLoadScheduler /></DashboardLayout>)} />
+      <Route path={"/dispatch"} component={() => (<DashboardLayout><ShipperDispatchControl /></DashboardLayout>)} />
 
       {/* ============================================ */}
       {/* CARRIER ROUTES */}
