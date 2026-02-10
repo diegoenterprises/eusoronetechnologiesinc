@@ -82,9 +82,10 @@ interface GoogleHeatMapProps {
   radius: number;
   opacity: number;
   intensity: number;
+  roleContext?: { perspective: string; primaryMetric: string; secondaryMetric: string; description: string } | null;
 }
 
-function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, opacity, intensity }: GoogleHeatMapProps) {
+function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, opacity, intensity, roleContext }: GoogleHeatMapProps) {
   const { theme } = useTheme();
   const mapRef = useRef<HTMLDivElement>(null);
   const googleMapRef = useRef<google.maps.Map | null>(null);
@@ -236,9 +237,9 @@ function GoogleHeatMap({ zones, coldZones, selectedZone, onZoneClick, radius, op
                 <span style="color:#34d399;font-weight:700;font-size:13px;">${zone.surgeMultiplier}x surge</span>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px;">
-                <div><div style="color:#94a3b8;font-size:9px;">LOADS</div><div style="font-weight:700;color:#60a5fa;">${zone.loadCount}</div></div>
-                <div><div style="color:#94a3b8;font-size:9px;">RATE/MI</div><div style="font-weight:700;">$${zone.avgRate}</div></div>
-                <div><div style="color:#94a3b8;font-size:9px;">TRUCKS</div><div style="font-weight:700;color:#c084fc;">${zone.truckCount}</div></div>
+                <div><div style="color:#94a3b8;font-size:9px;">${roleContext?.perspective === 'carrier_availability' ? 'TRUCKS' : 'LOADS'}</div><div style="font-weight:700;color:#60a5fa;">${roleContext?.perspective === 'carrier_availability' ? zone.truckCount : zone.loadCount}</div></div>
+                <div><div style="color:#94a3b8;font-size:9px;">${roleContext?.secondaryMetric?.toUpperCase() || 'RATE/MI'}</div><div style="font-weight:700;">$${zone.avgRate}</div></div>
+                <div><div style="color:#94a3b8;font-size:9px;">DEMAND</div><div style="font-weight:700;color:#c084fc;">${zone.surgeMultiplier}x</div></div>
               </div>
               <div style="margin-top:8px;font-size:10px;color:#64748b;">${zone.reasons?.[0] || ''}</div>
             </div>
@@ -416,15 +417,15 @@ export default function HotZones() {
         </div>
       </div>
 
-      {/* Summary Stats — Live Pulse */}
+      {/* Summary Stats — Live Pulse (role-adaptive) */}
       {pulse && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
             { label: "Active Hot Zones", value: zones.length, icon: Flame, color: "text-orange-400", bg: "from-orange-500/10 to-red-500/10" },
             { label: "Critical Zones", value: pulse.criticalZones, icon: AlertTriangle, color: "text-red-400", bg: "from-red-500/10 to-rose-500/10" },
-            { label: "Avg Rate/mi", value: `$${pulse.avgRate}`, icon: TrendingUp, color: "text-emerald-400", bg: "from-emerald-500/10 to-green-500/10" },
-            { label: "Open Loads", value: pulse.totalLoads.toLocaleString(), icon: Truck, color: "text-blue-400", bg: "from-blue-500/10 to-cyan-500/10" },
-            { label: "Available Trucks", value: pulse.totalTrucks.toLocaleString(), icon: Navigation, color: "text-purple-400", bg: "from-purple-500/10 to-violet-500/10" },
+            { label: roleContext?.secondaryMetric || "Avg Rate/mi", value: `$${pulse.avgRate}`, icon: TrendingUp, color: "text-emerald-400", bg: "from-emerald-500/10 to-green-500/10" },
+            { label: roleContext?.primaryMetric || "Open Loads", value: pulse.totalLoads.toLocaleString(), icon: Truck, color: "text-blue-400", bg: "from-blue-500/10 to-cyan-500/10" },
+            { label: roleContext?.perspective === "carrier_availability" ? "Available Trucks" : roleContext?.perspective === "spread_opportunity" ? "Load:Truck Spread" : "Demand Score", value: roleContext?.perspective === "carrier_availability" ? pulse.totalTrucks.toLocaleString() : roleContext?.perspective === "spread_opportunity" ? `${(pulse.totalLoads / Math.max(pulse.totalTrucks, 1)).toFixed(1)}x` : `${Math.round((pulse.totalLoads / Math.max(pulse.totalTrucks, 1)) * 33)}`, icon: Navigation, color: "text-purple-400", bg: "from-purple-500/10 to-violet-500/10" },
           ].map((stat) => (
             <div key={stat.label} className={`relative overflow-hidden rounded-xl p-4 bg-gradient-to-br ${stat.bg} border border-white/10 transition-all duration-500`}>
               <stat.icon className={`w-5 h-5 ${stat.color} mb-2`} />
@@ -543,6 +544,7 @@ export default function HotZones() {
                     radius={radius[0]}
                     opacity={mapOpacity[0]}
                     intensity={intensity[0]}
+                    roleContext={roleContext}
                   />
                 </div>
               )}
@@ -602,12 +604,12 @@ export default function HotZones() {
                       <p className="text-sm font-bold text-emerald-400">{zone.surgeMultiplier}x</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-500">Rate/mi</p>
+                      <p className="text-[10px] text-slate-500">{roleContext?.secondaryMetric || 'Rate/mi'}</p>
                       <p className="text-sm font-bold text-white">${zone.avgRate}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-500">Loads</p>
-                      <p className="text-sm font-bold text-blue-400">{zone.loadCount}</p>
+                      <p className="text-[10px] text-slate-500">{roleContext?.perspective === 'carrier_availability' ? 'Trucks' : roleContext?.primaryMetric || 'Loads'}</p>
+                      <p className="text-sm font-bold text-blue-400">{roleContext?.perspective === 'carrier_availability' ? zone.truckCount : zone.loadCount}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-1 mt-2">

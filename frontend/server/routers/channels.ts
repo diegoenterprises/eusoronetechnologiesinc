@@ -20,6 +20,23 @@ async function resolveUserId(ctxUser: any): Promise<number> {
   } catch { return 0; }
 }
 
+/**
+ * Resolve the current user's companyId from DB — CRITICAL for data isolation.
+ * Each user sees ONLY their own company's channels. Never fall back to "all".
+ */
+async function resolveCompanyId(ctxUser: any): Promise<number> {
+  // Try auth context first
+  const ctxCompanyId = Number(ctxUser?.companyId) || 0;
+  if (ctxCompanyId > 0) return ctxCompanyId;
+  // Fall back to DB lookup by email
+  const db = await getDb();
+  if (!db || !ctxUser?.email) return 0;
+  try {
+    const [row] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.email, ctxUser.email)).limit(1);
+    return row?.companyId || 0;
+  } catch { return 0; }
+}
+
 export const channelsRouter = router({
   /**
    * Get all channels for user's company
@@ -30,7 +47,10 @@ export const channelsRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      const companyId = (ctx.user as any)?.companyId;
+      const companyId = await resolveCompanyId(ctx.user);
+      // STRICT ISOLATION: If we can't determine the company, return nothing.
+      // Never show channels from other companies.
+      if (!companyId) return [];
 
       try {
         const rows = await db.select({
@@ -41,10 +61,10 @@ export const channelsRouter = router({
           type: groupChannels.type,
           isArchived: groupChannels.isArchived,
         }).from(groupChannels)
-          .where(companyId
-            ? and(eq(groupChannels.isArchived, false), eq(groupChannels.companyId, companyId))
-            : eq(groupChannels.isArchived, false)
-          )
+          .where(and(
+            eq(groupChannels.isArchived, false),
+            eq(groupChannels.companyId, companyId),
+          ))
           .orderBy(groupChannels.name);
 
         // Get member counts per channel
@@ -86,6 +106,14 @@ export const channelsRouter = router({
 
       const channelNumericId = parseInt(input.channelId) || 0;
       if (!channelNumericId) return [];
+
+      // STRICT ISOLATION: verify channel belongs to user's company
+      const companyId = await resolveCompanyId(ctx.user);
+      if (companyId) {
+        const [ch] = await db.select({ companyId: groupChannels.companyId })
+          .from(groupChannels).where(eq(groupChannels.id, channelNumericId)).limit(1);
+        if (!ch || ch.companyId !== companyId) return [];
+      }
 
       try {
         const channelMessages = await db.select({
@@ -136,6 +164,14 @@ export const channelsRouter = router({
       const channelNumericId = parseInt(input.channelId) || 0;
       if (!channelNumericId) throw new Error("Invalid channel");
 
+      // STRICT ISOLATION: verify channel belongs to user's company
+      const companyId = await resolveCompanyId(ctx.user);
+      if (companyId) {
+        const [ch] = await db.select({ companyId: groupChannels.companyId })
+          .from(groupChannels).where(eq(groupChannels.id, channelNumericId)).limit(1);
+        if (!ch || ch.companyId !== companyId) throw new Error("Access denied");
+      }
+
       const result = await db.insert(messages).values({
         conversationId: channelNumericId,
         senderId: userId,
@@ -164,7 +200,8 @@ export const channelsRouter = router({
       if (!db) throw new Error("Database not available");
 
       const userId = await resolveUserId(ctx.user);
-      const companyId = typeof ctx.user?.companyId === "number" ? ctx.user.companyId : 0;
+      const companyId = await resolveCompanyId(ctx.user);
+      if (!companyId) throw new Error("Company not found — cannot create channel without a company");
       const result = await db.insert(groupChannels).values({
         name: input.name,
         description: input.description || null,

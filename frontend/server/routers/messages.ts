@@ -194,6 +194,24 @@ export const messagesRouter = router({
         const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
         if (!convId) return [];
 
+        // STRICT ISOLATION: verify user is a participant of this conversation
+        const [participant] = await db.select({ id: conversationParticipants.id })
+          .from(conversationParticipants)
+          .where(and(
+            eq(conversationParticipants.conversationId, convId),
+            eq(conversationParticipants.userId, userId),
+          )).limit(1);
+        if (!participant) {
+          // Also check legacy JSON column
+          const [legacyConv] = await db.select({ id: conversations.id })
+            .from(conversations)
+            .where(and(
+              eq(conversations.id, convId),
+              sql`JSON_CONTAINS(${conversations.participants}, CAST(${userId} AS JSON))`,
+            )).limit(1);
+          if (!legacyConv) return []; // User is NOT a participant — block access
+        }
+
         // Build filters
         const filters: any[] = [eq(messages.conversationId, convId), isNull(messages.deletedAt)];
         if (input.before) {
@@ -270,6 +288,19 @@ export const messagesRouter = router({
       const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
       if (!convId) throw new Error("Invalid conversation ID");
 
+      // STRICT ISOLATION: verify user is a participant
+      const [isParticipant] = await db.select({ id: conversationParticipants.id })
+        .from(conversationParticipants)
+        .where(and(
+          eq(conversationParticipants.conversationId, convId),
+          eq(conversationParticipants.userId, userId),
+        )).limit(1);
+      if (!isParticipant) {
+        const [legacyCheck] = await db.select({ id: conversations.id }).from(conversations)
+          .where(and(eq(conversations.id, convId), sql`JSON_CONTAINS(${conversations.participants}, CAST(${userId} AS JSON))`)).limit(1);
+        if (!legacyCheck) throw new Error("Access denied — not a participant");
+      }
+
       // Insert message into DB
       const result = await db.insert(messages).values({
         conversationId: convId,
@@ -335,6 +366,19 @@ export const messagesRouter = router({
 
       const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
       if (!convId) throw new Error("Invalid conversation ID");
+
+      // STRICT ISOLATION: verify user is a participant
+      const [isPart] = await db.select({ id: conversationParticipants.id })
+        .from(conversationParticipants)
+        .where(and(
+          eq(conversationParticipants.conversationId, convId),
+          eq(conversationParticipants.userId, userId),
+        )).limit(1);
+      if (!isPart) {
+        const [legCheck] = await db.select({ id: conversations.id }).from(conversations)
+          .where(and(eq(conversations.id, convId), sql`JSON_CONTAINS(${conversations.participants}, CAST(${userId} AS JSON))`)).limit(1);
+        if (!legCheck) throw new Error("Access denied — not a participant");
+      }
 
       const result = await db.insert(messages).values({
         conversationId: convId,

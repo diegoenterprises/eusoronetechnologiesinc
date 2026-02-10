@@ -480,7 +480,7 @@ export default function Messages() {
                               "rounded-2xl px-4 py-2.5",
                               message.isOwn
                                 ? "bg-gradient-to-r from-[#1473FF] to-[#1473FF]/90 text-white rounded-br-md"
-                                : "bg-slate-700/60 text-slate-100 rounded-bl-md"
+                                : "bg-slate-700 text-white rounded-bl-md"
                             )}>
                               <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
                             </div>
