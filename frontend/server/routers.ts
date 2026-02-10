@@ -149,6 +149,8 @@ import { fmcsaRouter } from "./routers/fmcsa";
 import { complianceNetworksRouter } from "./routers/complianceNetworks";
 import { sidebarRouter } from "./routers/sidebar";
 import { encryptionRouter } from "./routers/encryption";
+import { commissionEngineRouter } from "./routers/commissionEngine";
+import { loadLifecycleRouter } from "./routers/loadLifecycle";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -619,6 +621,12 @@ export const appRouter = router({
 
   // Compliance Network Memberships (Avetta, ISNetworld, Veriforce, etc.)
   complianceNetworks: complianceNetworksRouter,
+
+  // Dynamic Platform Fee & Commission Engine (Team Alpha Fintech)
+  commissionEngine: commissionEngineRouter,
+
+  // Load Lifecycle State Machine (Hyper-Compliance)
+  loadLifecycle: loadLifecycleRouter,
 
   // Sidebar Dynamic Badge Counts
   sidebar: sidebarRouter,
