@@ -433,7 +433,7 @@ export default function Messages() {
                     const isUnsent = message.metadata?.unsent === true;
 
                     return (
-                      <div key={message.id} className={cn("flex gap-2 relative", message.isOwn ? "justify-end" : "justify-start")}>
+                      <div key={message.id} className={cn("flex gap-2 relative group/msg", message.isOwn ? "justify-end" : "justify-start")}>
                         {!message.isOwn && showName && (
                           <div className="flex-shrink-0 mt-5">
                             {message.senderAvatar ? (
@@ -447,28 +447,29 @@ export default function Messages() {
                         )}
                         {!message.isOwn && !showName && <div className="w-8 flex-shrink-0" />}
 
+                        {/* Unsend hover button for own messages — flex sibling so clicks always work */}
+                        {message.isOwn && !isUnsent && (
+                          <button
+                            className="self-center opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-full hover:bg-slate-700/80 transition-all flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setMessageContextMenu({ id: String(message.id), x: rect.left, y: rect.top });
+                            }}
+                          >
+                            <MoreVertical className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                          </button>
+                        )}
+
                         <div
-                          className="max-w-[70%] group/msg relative"
+                          className="max-w-[70%] relative"
                           onContextMenu={(e) => {
                             if (message.isOwn && !isUnsent) {
                               e.preventDefault();
-                              setMessageContextMenu({ id: message.id, x: e.clientX, y: e.clientY });
+                              setMessageContextMenu({ id: String(message.id), x: e.clientX, y: e.clientY });
                             }
                           }}
                         >
-                          {/* Unsend hover button for own messages */}
-                          {message.isOwn && !isUnsent && (
-                            <button
-                              className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-full hover:bg-slate-700/80 transition-all z-10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                setMessageContextMenu({ id: message.id, x: rect.left, y: rect.top });
-                              }}
-                            >
-                              <MoreVertical className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-                            </button>
-                          )}
                           {showName && !message.isOwn && (
                             <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
                           )}

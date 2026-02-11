@@ -3678,34 +3678,16 @@ export const agreements = mysqlTable(
     twicRequired: boolean("twicRequired").default(false),
     tankerEndorsementRequired: boolean("tankerEndorsementRequired").default(false),
     // Lane commitments
-    lanes: json("lanes").$type<{
-      origin: { city: string; state: string; radius?: number };
-      destination: { city: string; state: string; radius?: number };
-      rate: number;
-      rateType: string;
-      volumeCommitment?: number;
-      volumePeriod?: string;
-    }[]>(),
+    lanes: text("lanes"),
     volumeCommitmentTotal: int("volumeCommitmentTotal"),
     volumeCommitmentPeriod: varchar("volumeCommitmentPeriod", { length: 20 }),
     // Accessorial schedule
-    accessorialSchedule: json("accessorialSchedule").$type<{
-      type: string;
-      rate: number;
-      unit: string;
-      description: string;
-    }[]>(),
+    accessorialSchedule: text("accessorialSchedule"),
     // Full generated contract content
     generatedContent: text("generatedContent"),
-    clauses: json("clauses").$type<{
-      id: string;
-      title: string;
-      body: string;
-      isModified: boolean;
-      modifiedBy?: number;
-    }[]>(),
+    clauses: text("clauses"),
     // Strategic inputs that generated this agreement
-    strategicInputs: json("strategicInputs"),
+    strategicInputs: text("strategicInputs"),
     // Uploaded original document
     originalDocumentUrl: text("originalDocumentUrl"),
     // Contract lifecycle
