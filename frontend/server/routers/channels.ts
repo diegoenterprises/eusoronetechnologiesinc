@@ -122,6 +122,7 @@ export const channelsRouter = router({
           senderId: messages.senderId,
           createdAt: messages.createdAt,
           senderName: users.name,
+          profilePicture: users.profilePicture,
         }).from(messages)
           .leftJoin(users, eq(messages.senderId, users.id))
           .where(eq(messages.conversationId, channelNumericId))
@@ -132,6 +133,7 @@ export const channelsRouter = router({
           id: String(msg.id),
           author: msg.senderName || "Unknown",
           authorId: String(msg.senderId),
+          authorAvatar: msg.profilePicture || null,
           content: msg.content || "",
           timestamp: msg.createdAt?.toISOString() || new Date().toISOString(),
           reactions: {},

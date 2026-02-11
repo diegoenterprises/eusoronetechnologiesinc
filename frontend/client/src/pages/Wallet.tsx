@@ -161,54 +161,51 @@ export default function Wallet() {
         </div>
       </div>
 
-      {/* Balance Hero Card */}
-      <div className={`rounded-3xl overflow-hidden border-0 ${isLight ? 'shadow-xl shadow-blue-500/10' : ''}`}>
-        <div className="bg-gradient-to-br from-[#1473FF] via-[#6C47FF] to-[#BE01FF] p-6 md:p-8">
+      {/* Balance Hero Card — Matte cotton gradient (matches Earnings) */}
+      <div className={`rounded-3xl overflow-hidden border ${isLight ? 'bg-white border-slate-200 shadow-xl shadow-purple-500/5' : 'bg-slate-800/60 border-slate-700/50'}`}>
+        <div
+          className="p-6 md:p-8"
+          style={{ background: isLight
+            ? "linear-gradient(135deg, #ffffff 0%, #f8f0ff 40%, #f0d6ff 70%, #e8bfff 100%)"
+            : "linear-gradient(135deg, rgba(20,115,255,0.08) 0%, rgba(108,71,255,0.1) 40%, rgba(190,1,255,0.12) 100%)"
+          }}
+        >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
-                <WalletIcon className="w-5 h-5 text-white" />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLight ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white/10 backdrop-blur'}`}>
+                <WalletIcon className={`w-5 h-5 ${isLight ? 'text-slate-800' : 'text-white'}`} />
               </div>
-              <span className="text-white/90 font-semibold text-lg">EusoWallet</span>
+              <span className={`font-semibold text-lg ${isLight ? 'text-slate-800' : 'text-white/90'}`}>EusoWallet</span>
             </div>
-            <button onClick={() => setShowBalance(!showBalance)} className="text-white/70 hover:text-white transition-colors">
+            <button onClick={() => setShowBalance(!showBalance)} className={`${isLight ? 'text-slate-400 hover:text-slate-600' : 'text-white/50 hover:text-white'} transition-colors`}>
               {showBalance ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
             </button>
           </div>
           <div className="mb-6">
-            <p className="text-white/70 text-sm mb-1">Available Balance</p>
-            {balanceQuery.isLoading ? <Skeleton className="h-12 w-48 bg-white/20 rounded-2xl" /> : (
-              <p className="text-4xl md:text-5xl font-bold text-white tracking-tight">
+            <p className={`text-sm mb-1 ${isLight ? 'text-slate-500' : 'text-white/60'}`}>Available Balance</p>
+            {balanceQuery.isLoading ? <Skeleton className={`h-12 w-48 rounded-2xl ${isLight ? 'bg-slate-200' : 'bg-white/20'}`} /> : (
+              <p className={`text-4xl md:text-5xl font-bold tracking-tight ${isLight ? 'text-emerald-500' : 'text-white'}`}>
                 {showBalance ? `$${(balance?.available || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '••••••'}
               </p>
             )}
           </div>
-          {/* Outer gradient-outlined container for all 3 boxes */}
-          <div
-            className="rounded-2xl p-[1.5px] overflow-hidden"
-            style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
-          >
-            <div className="grid grid-cols-3 gap-[1.5px]">
-              {[
-                { label: "Pending", value: balance?.pending || 0 },
-                { label: "In Escrow", value: balance?.escrow || 0 },
-                { label: "This Month", value: balance?.monthVolume || 0 },
-              ].map((box, idx) => (
-                <div
-                  key={box.label}
-                  className="p-4 backdrop-blur-md h-full"
-                  style={{
-                    background: "linear-gradient(135deg, rgba(20,115,255,0.5), rgba(190,1,255,0.5))",
-                    borderRadius: idx === 0 ? "14.5px 0 0 14.5px" : idx === 2 ? "0 14.5px 14.5px 0" : "0",
-                  }}
-                >
-                  <p className="text-white text-sm font-semibold tracking-wide drop-shadow-md">{box.label}</p>
-                  <p className="text-white font-bold text-xl drop-shadow-sm mt-1">
-                    {showBalance ? `$${box.value.toLocaleString()}` : '••••'}
-                  </p>
-                </div>
-              ))}
-            </div>
+          {/* Sub-stat boxes */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: "Pending", value: balance?.pending || 0 },
+              { label: "In Escrow", value: balance?.escrow || 0 },
+              { label: "This Month", value: balance?.monthVolume || 0 },
+            ].map((box) => (
+              <div
+                key={box.label}
+                className={`p-4 rounded-2xl ${isLight ? 'bg-white/60 border border-purple-100/60 backdrop-blur-sm' : 'bg-white/[0.06] border border-white/[0.08] backdrop-blur-md'}`}
+              >
+                <p className={`text-sm font-semibold tracking-wide ${isLight ? 'text-slate-700' : 'text-white/80'}`}>{box.label}</p>
+                <p className={`font-bold text-xl mt-1 ${isLight ? 'text-slate-900' : 'text-white'}`}>
+                  {showBalance ? `$${box.value.toLocaleString()}` : '••••'}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

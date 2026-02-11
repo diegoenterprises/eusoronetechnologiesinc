@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 type LoadFilter = "all" | "pending" | "scheduled" | "in_progress" | "past";
 
@@ -124,20 +125,27 @@ export default function MyLoads() {
     return <Package className="w-4 h-4" />;
   };
 
+  const { user: authUser } = useAuth();
+  const isCarrier = (authUser?.role || "").toUpperCase() === "CARRIER";
+  const isDriver = (authUser?.role || "").toUpperCase() === "DRIVER";
+  const canCreateLoads = !isCarrier && !isDriver;
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-          My Loads
+          {isCarrier ? "Assigned Loads" : "My Loads"}
         </h1>
-        <Button
-          className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl px-5"
-          onClick={() => setLocation("/loads/create")}
-        >
-          <Plus className="w-4 h-4 mr-2" /> Create New Load
-        </Button>
+        {canCreateLoads && (
+          <Button
+            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl px-5"
+            onClick={() => setLocation("/loads/create")}
+          >
+            <Plus className="w-4 h-4 mr-2" /> Create New Load
+          </Button>
+        )}
       </div>
 
       {/* ── Search ── */}
@@ -232,13 +240,24 @@ export default function MyLoads() {
             <Package className="w-10 h-10 text-slate-400" />
           </div>
           <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No loads found</p>
-          <p className="text-sm text-slate-400 mt-1">Create your first load to get started</p>
-          <Button
-            className="mt-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl"
-            onClick={() => setLocation("/loads/create")}
-          >
-            <Plus className="w-4 h-4 mr-2" /> Create New Load
-          </Button>
+          <p className="text-sm text-slate-400 mt-1">
+            {isCarrier ? "No assigned loads yet. Browse the marketplace to find and bid on loads." : "Create your first load to get started"}
+          </p>
+          {canCreateLoads ? (
+            <Button
+              className="mt-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl"
+              onClick={() => setLocation("/loads/create")}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Create New Load
+            </Button>
+          ) : (
+            <Button
+              className="mt-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl"
+              onClick={() => setLocation("/marketplace")}
+            >
+              <Search className="w-4 h-4 mr-2" /> Find Loads
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

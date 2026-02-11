@@ -399,6 +399,13 @@ export default function CompanyChannels() {
                 return (
                 <div key={message.id} className={`group flex gap-3 px-2 py-1 rounded-xl hover:bg-white/[0.03] transition-colors ${showAvatar ? "mt-3" : ""}`}>
                   {showAvatar ? (
+                    (message as any).authorAvatar ? (
+                      <img
+                        src={(message as any).authorAvatar}
+                        alt={message.author}
+                        className="w-9 h-9 rounded-full flex-shrink-0 object-cover ring-1 ring-white/10 shadow-md shadow-blue-500/10"
+                      />
+                    ) : (
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] flex-shrink-0 flex items-center justify-center ring-1 ring-white/10 shadow-md shadow-blue-500/10">
                       <span className="text-[11px] font-semibold text-white tracking-tight">
                         {message.author
@@ -407,6 +414,7 @@ export default function CompanyChannels() {
                           .join("")}
                       </span>
                     </div>
+                    )
                   ) : (
                     <div className="w-9 flex-shrink-0 flex items-center justify-center">
                       <span className="text-[9px] text-slate-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
