@@ -798,6 +798,293 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
   }
 
   /**
+   * EUSOCONTRACT™ — AI-Powered Agreement Generation
+   * Uses Gemini to generate intelligent, legally-sound freight/logistics contract content
+   * based on the specific parties, terms, lanes, equipment, and regulatory requirements.
+   */
+  async generateAgreementContent(request: {
+    agreementType: string;
+    contractDuration: string;
+    partyA: { name: string; company?: string; role: string; mc?: string; dot?: string };
+    partyB: { name: string; company?: string; role: string; mc?: string; dot?: string };
+    financial: {
+      rateType?: string; baseRate?: number; currency?: string;
+      fuelSurchargeType?: string; fuelSurchargeValue?: number;
+      minimumCharge?: number; maximumCharge?: number;
+      paymentTermDays?: number; quickPayDiscount?: number; quickPayDays?: number;
+    };
+    insurance: { minInsurance?: number; liability?: number; cargo?: number };
+    operational: { equipmentTypes?: string[]; hazmat?: boolean; twic?: boolean; tanker?: boolean };
+    lanes?: Array<{ origin: { city: string; state: string }; destination: { city: string; state: string }; rate: number; rateType: string }>;
+    dates: { effective?: string; expiration?: string; autoRenew?: boolean };
+    notes?: string;
+    clauses: Array<{ id: string; title: string; body: string }>;
+  }): Promise<{ content: string; enhancedClauses: Array<{ id: string; title: string; body: string; isModified: boolean }>; complianceNotes: string[]; riskFlags: string[] }> {
+
+    const AGREEMENT_AI_PROMPT = `You are ESANG AI™ acting as EusoContract™, an expert freight/logistics contract attorney AI for the EusoTrip platform. You specialize in:
+
+## Legal Knowledge Base
+- **FMCSA Regulations** (49 CFR Parts 371-399): Broker/carrier relationships, operating authority, financial responsibility
+- **Carmack Amendment** (49 USC §14706): Carrier liability for loss/damage to cargo in interstate commerce
+- **TILA/Regulation Z**: Truth in Lending for any financing terms
+- **UETA & E-SIGN Act** (15 U.S.C. ch. 96): Electronic signature compliance
+- **MAP-21 & FAST Act**: Freight transportation reform requirements
+- **PHMSA Regulations** (49 CFR Parts 171-180): Hazardous materials transportation
+- **DOT Hours of Service** (49 CFR Part 395): Driver safety regulations
+- **Uniform Intermodal Interchange Agreement**: Equipment interchange standards
+- **NMFTA Classification**: National Motor Freight Classification system
+- **Coercion Rule** (49 CFR §390.6): Prohibition against coercing drivers
+
+## Contract Types You Generate
+- Carrier-Shipper Transportation Agreements (49 CFR §371.3)
+- Broker-Carrier Agreements (49 CFR §371.7) with anti-double-brokering
+- Broker-Shipper Agreements with fiduciary duty clauses
+- Independent Contractor (Owner-Operator) Agreements per IRS 20-factor test
+- Escort/Pilot Car Service Agreements per state permit requirements
+- Master Service Agreements with SLA frameworks
+- Lane Commitment Agreements with volume guarantees
+- Fuel Surcharge Schedules (DOE index-based)
+- NDA/Non-Circumvention Agreements
+
+## Required Contract Elements
+Every agreement MUST include:
+1. Proper legal recitals identifying parties with MC#/DOT# where applicable
+2. FMCSA operating authority verification clause
+3. Insurance requirements meeting FMCSA minimums ($750K auto liability, $5K cargo for household goods or $100K+ for general freight)
+4. Indemnification with Carmack Amendment reference for carrier liability
+5. Force majeure covering Acts of God, government action, pandemics, infrastructure failures
+6. Dispute resolution (mediation → arbitration → litigation with venue)
+7. Governing law clause
+8. Severability clause
+9. Non-circumvention tied to EusoTrip platform Terms of Service
+10. Platform fee acknowledgment (fees come from per-load transactions, not the agreement)
+
+## Output Format
+Respond in VALID JSON only:
+{
+  "enhancedClauses": [{ "id": "string", "title": "ARTICLE TITLE", "body": "Full legal clause text with specific terms filled in", "isModified": true }],
+  "complianceNotes": ["string array of regulatory compliance notes and recommendations"],
+  "riskFlags": ["string array of any risk factors or missing information that should be addressed"]
+}
+
+Generate professional, legally-precise clause language. Fill in all specific values from the provided terms. Reference specific CFR sections where applicable. Use formal legal drafting style.`;
+
+    const requestPrompt = `Generate a comprehensive ${this.getAgreementTypeLabel(request.agreementType)} with these specific terms:
+
+**PARTIES:**
+- Party A: ${request.partyA.name}${request.partyA.company ? ` (${request.partyA.company})` : ""} — Role: ${request.partyA.role}${request.partyA.mc ? `, MC# ${request.partyA.mc}` : ""}${request.partyA.dot ? `, DOT# ${request.partyA.dot}` : ""}
+- Party B: ${request.partyB.name}${request.partyB.company ? ` (${request.partyB.company})` : ""} — Role: ${request.partyB.role}${request.partyB.mc ? `, MC# ${request.partyB.mc}` : ""}${request.partyB.dot ? `, DOT# ${request.partyB.dot}` : ""}
+
+**CONTRACT DURATION:** ${request.contractDuration}
+**EFFECTIVE:** ${request.dates.effective || "Upon execution"} — **EXPIRES:** ${request.dates.expiration || "Per duration terms"}
+**AUTO-RENEW:** ${request.dates.autoRenew ? "Yes" : "No"}
+
+**FINANCIAL TERMS:**
+- Rate: $${request.financial.baseRate || "TBD"} ${request.financial.rateType || "flat_rate"}
+- Fuel Surcharge: ${request.financial.fuelSurchargeType || "none"}${request.financial.fuelSurchargeValue ? ` (${request.financial.fuelSurchargeValue})` : ""}
+- Min Charge: $${request.financial.minimumCharge || "N/A"} | Max Charge: $${request.financial.maximumCharge || "N/A"}
+- Payment Terms: Net ${request.financial.paymentTermDays || 30} days
+${request.financial.quickPayDiscount ? `- Quick Pay: ${request.financial.quickPayDiscount}% discount for payment within ${request.financial.quickPayDays || 7} days` : ""}
+
+**INSURANCE:**
+- General/Auto Liability: $${request.insurance.minInsurance || "1,000,000"}
+- Liability Limit: $${request.insurance.liability || "1,000,000"}
+- Cargo Insurance: $${request.insurance.cargo || "100,000"}
+
+**OPERATIONAL:**
+- Equipment: ${(request.operational.equipmentTypes || ["dry_van"]).join(", ")}
+- HazMat Required: ${request.operational.hazmat ? "Yes (PHMSA 49 CFR 171-180)" : "No"}
+- TWIC Required: ${request.operational.twic ? "Yes" : "No"}
+- Tanker Endorsement: ${request.operational.tanker ? "Yes" : "No"}
+
+${request.lanes && request.lanes.length > 0 ? `**LANES:**\n${request.lanes.map((l, i) => `${i + 1}. ${l.origin.city}, ${l.origin.state} → ${l.destination.city}, ${l.destination.state} @ $${l.rate} ${l.rateType}`).join("\n")}` : "**LANES:** Open/spot basis"}
+
+${request.notes ? `**SPECIAL NOTES:** ${request.notes}` : ""}
+
+**EXISTING CLAUSE STRUCTURE TO ENHANCE:**
+${request.clauses.map((c, i) => `${i + 1}. [${c.id}] ${c.title}`).join("\n")}
+
+Enhance each clause with specific, legally-precise language incorporating all the above terms. Add any missing critical clauses (force majeure, severability, entire agreement, waiver, assignment, notices). Reference specific CFR sections.`;
+
+    try {
+      if (!this.apiKey) {
+        return this.fallbackAgreementContent(request);
+      }
+
+      const contents = [
+        { role: "user", parts: [{ text: AGREEMENT_AI_PROMPT }] },
+        { role: "model", parts: [{ text: '{"ready": true, "mode": "EusoContract"}' }] },
+        { role: "user", parts: [{ text: requestPrompt }] },
+      ];
+
+      const response = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents,
+          generationConfig: { temperature: 0.4, topK: 30, topP: 0.9, maxOutputTokens: 8192 },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+          ],
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("[EUSOCONTRACT AI] Gemini API error:", response.status);
+        return this.fallbackAgreementContent(request);
+      }
+
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+      let parsed: any;
+      try {
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(jsonMatch ? jsonMatch[0] : text);
+      } catch {
+        console.warn("[EUSOCONTRACT AI] Failed to parse Gemini response, using fallback");
+        return this.fallbackAgreementContent(request);
+      }
+
+      // Build full contract document from AI-enhanced clauses
+      const enhancedClauses = (parsed.enhancedClauses || []).map((c: any) => ({
+        id: c.id || `clause_${Math.random().toString(36).slice(2, 8)}`,
+        title: c.title || "Untitled Clause",
+        body: c.body || "",
+        isModified: true,
+      }));
+
+      const content = this.renderAgreementDocument(request, enhancedClauses);
+
+      console.log(`[EUSOCONTRACT AI] Generated ${request.agreementType} agreement with ${enhancedClauses.length} AI-enhanced clauses`);
+
+      return {
+        content,
+        enhancedClauses,
+        complianceNotes: parsed.complianceNotes || [],
+        riskFlags: parsed.riskFlags || [],
+      };
+    } catch (error) {
+      console.error("[EUSOCONTRACT AI] Error:", error);
+      return this.fallbackAgreementContent(request);
+    }
+  }
+
+  /** Render a full agreement document from clauses */
+  private renderAgreementDocument(request: any, clauses: Array<{ id: string; title: string; body: string }>): string {
+    const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    const typeLabel = this.getAgreementTypeLabel(request.agreementType);
+
+    let doc = `${typeLabel.toUpperCase()}\n\n`;
+    doc += `Date: ${now}\n`;
+    doc += `Generated by: EusoContract™ powered by ESANG AI™\n\n`;
+    doc += `This Agreement ("Agreement") is entered into by and between:\n\n`;
+    doc += `PARTY A: ${request.partyA.name}`;
+    if (request.partyA.company) doc += ` ("${request.partyA.company}")`;
+    if (request.partyA.mc) doc += ` | MC# ${request.partyA.mc}`;
+    if (request.partyA.dot) doc += ` | DOT# ${request.partyA.dot}`;
+    doc += `\nRole: ${request.partyA.role}\n\n`;
+    doc += `PARTY B: ${request.partyB.name}`;
+    if (request.partyB.company) doc += ` ("${request.partyB.company}")`;
+    if (request.partyB.mc) doc += ` | MC# ${request.partyB.mc}`;
+    if (request.partyB.dot) doc += ` | DOT# ${request.partyB.dot}`;
+    doc += `\nRole: ${request.partyB.role}\n\n`;
+    doc += `${"═".repeat(60)}\n\n`;
+
+    clauses.forEach((clause, idx) => {
+      doc += `ARTICLE ${idx + 1}: ${clause.title.toUpperCase()}\n\n`;
+      doc += `${clause.body}\n\n`;
+    });
+
+    doc += `${"═".repeat(60)}\n\n`;
+    doc += `SIGNATURES\n\n`;
+    doc += `Party A: ${request.partyA.name}\nTitle: Authorized Representative\nSignature: _________________________\nDate: _______________\n\n`;
+    doc += `Party B: ${request.partyB.name}\nTitle: Authorized Representative\nSignature: _________________________\nDate: _______________\n\n`;
+    doc += `\nThis agreement was generated on the EusoTrip platform using EusoContract™ AI.\n`;
+    doc += `Platform transaction fees apply per load as outlined in the EusoTrip Terms of Service.\n`;
+    doc += `Digital signatures verified via Gradient Ink™ (ESIGN Act & UETA compliant).\n`;
+
+    return doc;
+  }
+
+  /** Get human-readable agreement type label */
+  private getAgreementTypeLabel(type: string): string {
+    const labels: Record<string, string> = {
+      carrier_shipper: "Carrier-Shipper Transportation Agreement",
+      broker_carrier: "Broker-Carrier Agreement",
+      broker_shipper: "Broker-Shipper Agreement",
+      carrier_driver: "Independent Contractor (Owner-Operator) Agreement",
+      escort_service: "Escort/Pilot Car Service Agreement",
+      catalyst_dispatch: "Dispatch Service Agreement",
+      terminal_access: "Terminal Access & Services Agreement",
+      master_service: "Master Service Agreement",
+      lane_commitment: "Lane Commitment Agreement",
+      fuel_surcharge: "Fuel Surcharge Schedule",
+      accessorial_schedule: "Accessorial Charges Schedule",
+      nda: "Non-Disclosure & Non-Circumvention Agreement",
+      custom: "Custom Service Agreement",
+    };
+    return labels[type] || "Service Agreement";
+  }
+
+  /** Fallback agreement content when Gemini is unavailable */
+  private fallbackAgreementContent(request: any): { content: string; enhancedClauses: any[]; complianceNotes: string[]; riskFlags: string[] } {
+    // Use the existing clause structure with terms filled in
+    const clauses = request.clauses.map((c: any) => {
+      let body = c.body;
+      const replacements: Record<string, string> = {
+        partyAName: request.partyA.name,
+        partyBName: request.partyB.name,
+        partyACompany: request.partyA.company || "",
+        partyBCompany: request.partyB.company || "",
+        partyAMc: request.partyA.mc || "N/A",
+        partyBMc: request.partyB.mc || "N/A",
+        partyADot: request.partyA.dot || "N/A",
+        partyBDot: request.partyB.dot || "N/A",
+        baseRate: String(request.financial.baseRate || "TBD"),
+        rateType: request.financial.rateType || "flat_rate",
+        paymentTermDays: String(request.financial.paymentTermDays || 30),
+        minInsuranceAmount: String(request.insurance.minInsurance || "1,000,000"),
+        liabilityLimit: String(request.insurance.liability || "1,000,000"),
+        cargoInsuranceRequired: String(request.insurance.cargo || "100,000"),
+        equipmentTypes: (request.operational.equipmentTypes || ["dry_van"]).join(", "),
+        hazmatRequired: request.operational.hazmat ? "Yes" : "No",
+        twicRequired: request.operational.twic ? "Yes" : "No",
+        effectiveDate: request.dates.effective || "upon execution",
+        expirationDate: request.dates.expiration || "per duration terms",
+        fuelSurchargeType: request.financial.fuelSurchargeType || "none",
+        fuelSurchargeValue: String(request.financial.fuelSurchargeValue || "N/A"),
+        terminationNoticeDays: "30",
+        nonCircumventionMonths: "24",
+      };
+      Object.entries(replacements).forEach(([key, value]) => {
+        body = body.replace(new RegExp(`\\{\\{${key}\\}\\}`, "g"), value);
+      });
+      return { ...c, body, isModified: false };
+    });
+
+    const content = this.renderAgreementDocument(request, clauses);
+
+    return {
+      content,
+      enhancedClauses: clauses,
+      complianceNotes: [
+        "Agreement generated using static templates (AI enhancement unavailable)",
+        "Review all terms carefully before execution",
+        "Verify operating authority (MC#/DOT#) through FMCSA SAFER system",
+        "Confirm insurance certificates are current and meet FMCSA minimums",
+      ],
+      riskFlags: [
+        "AI-enhanced clause language unavailable — using standard templates",
+        "Manual review recommended for regulatory compliance",
+      ],
+    };
+  }
+
+  /**
    * Clear conversation history for a user
    */
   clearHistory(userId: string): void {

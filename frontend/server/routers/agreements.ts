@@ -19,6 +19,7 @@ import {
   documents,
 } from "../../drizzle/schema";
 import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
+import { esangAI } from "../_core/esangAI";
 
 // Encryption version tag for forward compatibility
 const ENC_VERSION = "v1";
@@ -557,23 +558,80 @@ export const agreementsRouter = router({
         templateClauses = getDefaultClauses(input.agreementType);
       }
 
-      // Generate the contract content
-      const content = generateContractContent(
-        input.agreementType,
-        input.strategicInputs,
-        templateClauses
-      );
-
       const numericUserId = await resolveUserId(ctx.user);
       if (!numericUserId) throw new Error("Could not resolve user ID");
+
+      // ── ESANG AI™ EusoContract — Intelligent Agreement Generation ──
+      // Build the AI request with all strategic inputs for context-aware generation
+      const si = input.strategicInputs || {};
+      const aiRequest = {
+        agreementType: input.agreementType,
+        contractDuration: input.contractDuration,
+        partyA: {
+          name: (si.partyAName as string) || ctx.user?.name || "Party A",
+          company: (si.partyACompany as string) || undefined,
+          role: ctx.user?.role || "SHIPPER",
+          mc: (si.partyAMc as string) || undefined,
+          dot: (si.partyADot as string) || undefined,
+        },
+        partyB: {
+          name: (si.partyBName as string) || "Party B",
+          company: (si.partyBCompany as string) || undefined,
+          role: input.partyBRole,
+          mc: (si.partyBMc as string) || undefined,
+          dot: (si.partyBDot as string) || undefined,
+        },
+        financial: {
+          rateType: input.rateType,
+          baseRate: input.baseRate,
+          fuelSurchargeType: input.fuelSurchargeType,
+          fuelSurchargeValue: input.fuelSurchargeValue,
+          minimumCharge: input.minimumCharge,
+          maximumCharge: input.maximumCharge,
+          paymentTermDays: input.paymentTermDays,
+          quickPayDiscount: input.quickPayDiscount,
+          quickPayDays: input.quickPayDays,
+        },
+        insurance: {
+          minInsurance: input.minInsuranceAmount,
+          liability: input.liabilityLimit,
+          cargo: input.cargoInsuranceRequired,
+        },
+        operational: {
+          equipmentTypes: input.equipmentTypes,
+          hazmat: input.hazmatRequired,
+          twic: input.twicRequired,
+          tanker: input.tankerEndorsementRequired,
+        },
+        lanes: input.lanes,
+        dates: {
+          effective: input.effectiveDate,
+          expiration: input.expirationDate,
+          autoRenew: input.autoRenew,
+        },
+        notes: input.notes,
+        clauses: templateClauses,
+      };
+
+      // Call ESANG AI for intelligent content generation (falls back to static if unavailable)
+      let aiResult: { content: string; enhancedClauses: any[]; complianceNotes: string[]; riskFlags: string[] };
+      try {
+        aiResult = await esangAI.generateAgreementContent(aiRequest);
+        console.log(`[EUSOCONTRACT] AI generated ${aiResult.enhancedClauses.length} clauses, ${aiResult.complianceNotes.length} notes, ${aiResult.riskFlags.length} flags`);
+      } catch (aiErr: any) {
+        console.warn("[EUSOCONTRACT] AI generation failed, using static fallback:", aiErr?.message?.slice(0, 200));
+        // Static fallback
+        const content = generateContractContent(input.agreementType, input.strategicInputs, templateClauses);
+        aiResult = { content, enhancedClauses: templateClauses, complianceNotes: [], riskFlags: [] };
+      }
+
+      const finalClauses = aiResult.enhancedClauses.length > 0 ? aiResult.enhancedClauses : templateClauses;
 
       // Resolve Party B — if partyBUserId is 0 or missing, create/find a placeholder
       // from the strategic inputs so multi-user accounts work properly
       let partyBId = input.partyBUserId;
       if (!partyBId || partyBId === 0) {
-        const bName = (input.strategicInputs?.partyBName as string) || "Counterparty";
-        const bCompany = (input.strategicInputs?.partyBCompany as string) || "";
-        // Try to find by name first, otherwise create a placeholder user
+        const bName = (si.partyBName as string) || "Counterparty";
         try {
           const [existing] = await db.select({ id: users.id }).from(users)
             .where(eq(users.name, bName)).limit(1);
@@ -581,21 +639,20 @@ export const agreementsRouter = router({
             partyBId = existing.id;
           } else {
             const placeholderEmail = `${bName.toLowerCase().replace(/\s+/g, ".")}@pending.eusotrip.com`;
-            const result = await db.insert(users).values({
+            const insResult = await db.insert(users).values({
               name: bName,
               email: placeholderEmail,
               role: (input.partyBRole as any) || "CARRIER",
               isActive: true,
               isVerified: false,
             } as any);
-            partyBId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+            partyBId = (insResult as any).insertId || (insResult as any)[0]?.insertId || 0;
             if (!partyBId) {
               const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, placeholderEmail)).limit(1);
               partyBId = row?.id || 0;
             }
           }
         } catch {
-          // If all else fails, use numericUserId as placeholder (self-agreement draft)
           partyBId = numericUserId;
         }
       }
@@ -629,8 +686,8 @@ export const agreementsRouter = router({
         tankerEndorsementRequired: input.tankerEndorsementRequired || false,
         lanes: encryptJSON(input.lanes || []) as any,
         accessorialSchedule: encryptJSON(input.accessorialSchedule || []) as any,
-        generatedContent: encryptField(content),
-        clauses: encryptJSON(templateClauses) as any,
+        generatedContent: encryptField(aiResult.content),
+        clauses: encryptJSON(finalClauses) as any,
         strategicInputs: encryptJSON(input.strategicInputs) as any,
         status: "draft",
         effectiveDate: input.effectiveDate ? new Date(input.effectiveDate) : null,
@@ -646,7 +703,10 @@ export const agreementsRouter = router({
         id: result[0]?.id,
         agreementNumber,
         status: "draft",
-        generatedContent: content,
+        generatedContent: aiResult.content,
+        complianceNotes: aiResult.complianceNotes,
+        riskFlags: aiResult.riskFlags,
+        poweredBy: "EusoContract™ / ESANG AI™",
       };
     }),
 
@@ -913,120 +973,64 @@ export const agreementsRouter = router({
 
 function getDefaultClauses(type: string) {
   const commonClauses = [
-    {
-      id: "scope",
-      title: "Scope of Services",
-      body: "{{partyAName}} (\"Party A\") engages {{partyBName}} (\"Party B\") to provide transportation and logistics services as outlined in this Agreement. Services shall be performed in accordance with all applicable federal, state, and local regulations.",
-      isModified: false,
-    },
-    {
-      id: "term",
-      title: "Term & Duration",
-      body: "This Agreement shall be effective as of {{effectiveDate}} and shall remain in effect until {{expirationDate}}, unless earlier terminated in accordance with the terms herein.",
-      isModified: false,
-    },
-    {
-      id: "compensation",
-      title: "Compensation & Rate Structure",
-      body: "Party A shall compensate Party B at the agreed-upon rate of {{baseRate}} {{rateType}}. Payment shall be made within {{paymentTermDays}} days of receipt of proper invoice and supporting documentation. All rates are exclusive of the EusoTrip platform transaction fee, which applies per load as outlined in the platform Terms of Service.",
-      isModified: false,
-    },
-    {
-      id: "insurance",
-      title: "Insurance Requirements",
-      body: "Party B shall maintain, at minimum, the following insurance coverage: General Liability of ${{minInsuranceAmount}}, Cargo Insurance of ${{cargoInsuranceRequired}}, and Auto Liability as required by FMCSA regulations. Certificates of insurance must be provided prior to commencement of services.",
-      isModified: false,
-    },
-    {
-      id: "indemnification",
-      title: "Indemnification & Liability",
-      body: "Each party shall indemnify, defend, and hold harmless the other party from and against any and all claims, damages, losses, and expenses arising from the indemnifying party's negligence or breach of this Agreement. Liability shall be limited to ${{liabilityLimit}} per occurrence.",
-      isModified: false,
-    },
-    {
-      id: "compliance",
-      title: "Regulatory Compliance",
-      body: "Both parties shall comply with all applicable laws and regulations including, but not limited to, FMCSA regulations (49 CFR), DOT requirements, OSHA standards, and all applicable state transportation regulations. Party B shall maintain all required operating authority, licenses, and permits.",
-      isModified: false,
-    },
-    {
-      id: "confidentiality",
-      title: "Confidentiality",
-      body: "Both parties agree to keep confidential all proprietary information, trade secrets, customer lists, pricing structures, and business strategies disclosed during the term of this Agreement. This obligation shall survive termination for a period of two (2) years.",
-      isModified: false,
-    },
-    {
-      id: "non_circumvention",
-      title: "Non-Circumvention",
-      body: "Both parties agree that all business relationships established through the EusoTrip platform shall be conducted through the platform for a period of {{nonCircumventionMonths}} months. Neither party shall attempt to circumvent the platform to avoid applicable transaction fees.",
-      isModified: false,
-    },
-    {
-      id: "termination",
-      title: "Termination",
-      body: "Either party may terminate this Agreement with {{terminationNoticeDays}} days written notice. Termination for cause may be immediate upon material breach, failure to maintain required insurance, or loss of operating authority.",
-      isModified: false,
-    },
-    {
-      id: "dispute",
-      title: "Dispute Resolution",
-      body: "Any dispute arising under this Agreement shall first be submitted to mediation. If mediation fails, disputes shall be resolved through binding arbitration in accordance with the rules of the American Arbitration Association.",
-      isModified: false,
-    },
-    {
-      id: "governing_law",
-      title: "Governing Law",
-      body: "This Agreement shall be governed by and construed in accordance with the laws of the State of Texas, without regard to its conflict of law provisions.",
-      isModified: false,
-    },
+    { id: "recitals", title: "Recitals & Purpose", body: "WHEREAS, {{partyAName}} (\"Party A\") desires to engage {{partyBName}} (\"Party B\") for transportation and logistics services; and WHEREAS, Party B represents that it possesses the necessary authority, equipment, qualifications, and personnel to provide such services; NOW THEREFORE, in consideration of the mutual covenants herein, the parties agree as follows.", isModified: false },
+    { id: "scope", title: "Scope of Services", body: "Party A engages Party B to provide transportation and logistics services as outlined in this Agreement and any associated rate confirmations, bills of lading, or load tenders incorporated herein by reference. Services shall be performed in accordance with all applicable federal, state, and local regulations, including FMCSA regulations (49 CFR Parts 371-399), DOT requirements, and PHMSA regulations where hazardous materials are involved.", isModified: false },
+    { id: "term", title: "Term & Duration", body: "This Agreement shall be effective as of {{effectiveDate}} and shall remain in effect until {{expirationDate}}, unless earlier terminated in accordance with the terms herein. Upon expiration, this Agreement shall automatically renew for successive periods of equal duration unless either party provides written notice of non-renewal at least thirty (30) days prior to the expiration date.", isModified: false },
+    { id: "authority", title: "Operating Authority & Compliance", body: "Party B represents and warrants that it holds valid operating authority issued by FMCSA and maintains all required licenses, permits, and registrations. Party B shall immediately notify Party A of any change in its operating authority status, any conditional or unsatisfactory safety rating, or any investigation or enforcement action. Loss of operating authority shall constitute automatic termination of this Agreement.", isModified: false },
+    { id: "compensation", title: "Compensation & Rate Structure", body: "Party A shall compensate Party B at the agreed-upon rate of ${{baseRate}} {{rateType}} as specified in individual rate confirmations or load tenders. Payment shall be made within {{paymentTermDays}} days of receipt of proper invoice, signed bill of lading (BOL), proof of delivery (POD), and required supporting documentation. All rates are exclusive of the EusoTrip platform transaction fee, which applies per load as outlined in the platform Terms of Service.", isModified: false },
+    { id: "detention", title: "Detention & Demurrage", body: "If loading or unloading exceeds two (2) hours of free time, detention charges shall accrue at $75.00 per hour or as specified in the applicable rate confirmation. Demurrage for tank trailers shall accrue at $150.00 per calendar day after the first twenty-four (24) hours of free time. Party B shall document all detention and demurrage time with timestamped records.", isModified: false },
+    { id: "insurance", title: "Insurance Requirements", body: "Party B shall maintain with carriers rated A- VII or better by A.M. Best: (a) Commercial General Liability of $1,000,000 per occurrence; (b) Auto Liability of ${{minInsuranceAmount}} combined single limit per FMCSA requirements (49 CFR §387); (c) Cargo Insurance of ${{cargoInsuranceRequired}} per shipment; (d) Workers' Compensation as required by law. Certificates of insurance naming Party A as additional insured shall be provided prior to commencement of services.", isModified: false },
+    { id: "cargo_liability", title: "Cargo Liability & Claims (Carmack Amendment)", body: "Party B shall be liable for loss, damage, or delay to cargo from pickup to delivery pursuant to the Carmack Amendment (49 USC §14706). Liability shall not exceed ${{liabilityLimit}} per occurrence unless a higher declared value is agreed in writing. Claims must be filed within nine (9) months of delivery. Party B shall acknowledge claims within thirty (30) days and pay, decline, or make a firm offer within one hundred twenty (120) days per 49 CFR §370.", isModified: false },
+    { id: "indemnification", title: "Indemnification & Hold Harmless", body: "Each party shall indemnify, defend, and hold harmless the other party from claims, damages, losses, liabilities, costs, and expenses (including attorneys' fees) arising from: (a) the indemnifying party's negligence, willful misconduct, or breach; (b) bodily injury or death; (c) property damage; (d) violation of any law; or (e) environmental contamination caused by the indemnifying party. This obligation survives termination.", isModified: false },
+    { id: "force_majeure", title: "Force Majeure", body: "Neither party shall be liable for failure or delay in performance due to causes beyond reasonable control, including: Acts of God, fire, flood, earthquake, hurricane, pandemic, war, terrorism, government action, embargo, pipeline failure, refinery shutdown, power outage, cybersecurity incident, or labor dispute. The affected party shall provide prompt written notice. If force majeure continues for more than thirty (30) days, either party may terminate without liability.", isModified: false },
+    { id: "compliance", title: "Regulatory Compliance", body: "Both parties shall comply with all applicable laws including: FMCSA regulations (49 CFR); DOT safety regulations; OSHA standards; PHMSA hazmat regulations (49 CFR Parts 171-180) where applicable; EPA environmental regulations; Hours of Service (HOS) rules (49 CFR Part 395); Drug & Alcohol testing (49 CFR Part 382); ELD mandate (49 CFR Part 395 Subpart B); and the Anti-Coercion Rule (49 CFR §390.6). Party B shall not operate in violation of any out-of-service order.", isModified: false },
+    { id: "independent_contractor", title: "Independent Contractor Relationship", body: "The relationship between the parties is that of independent contractors. Nothing herein creates an employer-employee, principal-agent, partnership, or joint venture relationship. Party B shall have exclusive control over the manner and means of performing services, including selection of routes, personnel, and equipment. Party B is solely responsible for all taxes, insurance, and compensation for its employees.", isModified: false },
+    { id: "confidentiality", title: "Confidentiality & Data Protection", body: "Both parties shall keep confidential all proprietary information, trade secrets, customer lists, pricing structures, and business strategies (\"Confidential Information\"). Confidential Information shall not be disclosed to third parties without prior written consent, except as required by law. Each party shall implement reasonable security measures to protect Confidential Information. This obligation survives termination for three (3) years.", isModified: false },
+    { id: "non_circumvention", title: "Non-Circumvention & Platform Integrity", body: "Both parties agree that all business relationships established through the EusoTrip platform shall be conducted through the platform for a period of {{nonCircumventionMonths}} months from initial introduction. Neither party shall circumvent the platform to eliminate or reduce transaction fees. Direct dealings outside the platform during the non-circumvention period shall entitle EusoTrip to a commission equal to applicable platform fees.", isModified: false },
+    { id: "termination", title: "Termination", body: "Either party may terminate: (a) without cause, upon {{terminationNoticeDays}} days' written notice; (b) immediately for cause, upon material breach uncured for fifteen (15) days after written notice; (c) immediately upon bankruptcy, insolvency, or assignment for creditors; (d) immediately upon loss of operating authority, insurance, or required permits. Party B shall complete loads in transit; Party A shall pay for services rendered prior to termination.", isModified: false },
+    { id: "dispute", title: "Dispute Resolution", body: "Disputes shall be resolved as follows: (a) good-faith negotiation for thirty (30) days; (b) mediation administered by JAMS or a mutually agreed mediator; (c) if unresolved within sixty (60) days, binding arbitration per the Commercial Arbitration Rules of the AAA, held in Houston, Texas. Either party may seek injunctive relief in any court of competent jurisdiction.", isModified: false },
+    { id: "governing_law", title: "Governing Law & Jurisdiction", body: "This Agreement shall be governed by federal transportation law (49 USC Subtitle IV, Part B) to the extent applicable, and otherwise by the laws of the State of Texas, without regard to conflict of law provisions. The parties consent to exclusive jurisdiction and venue of the state and federal courts in Harris County, Texas.", isModified: false },
+    { id: "electronic_signatures", title: "Electronic Signatures", body: "This Agreement may be executed electronically via EusoTrip's Gradient Ink™ digital signature system, in compliance with the E-SIGN Act (15 U.S.C. ch. 96) and UETA. Electronic signatures shall have the same legal force as original ink signatures. Each party consents to electronic records for all notices and communications under this Agreement.", isModified: false },
+    { id: "severability", title: "Severability", body: "If any provision of this Agreement is held invalid, illegal, or unenforceable, the remaining provisions shall continue in full force and effect. The invalid provision shall be modified to the minimum extent necessary to make it valid while preserving the parties' original intent.", isModified: false },
+    { id: "entire_agreement", title: "Entire Agreement & Amendments", body: "This Agreement, together with all exhibits, schedules, rate confirmations, and load tenders incorporated herein, constitutes the entire agreement and supersedes all prior negotiations, representations, and agreements. No modification shall be effective unless in writing and signed by both parties. Terms on bills of lading that conflict with this Agreement shall be governed by this Agreement except as required by law.", isModified: false },
+    { id: "assignment", title: "Assignment & Subcontracting", body: "Neither party may assign this Agreement without prior written consent, except to an affiliate or in connection with a merger, acquisition, or sale of substantially all assets. Party B shall not subcontract, re-broker, or assign any load tendered under this Agreement without prior written consent of Party A per 49 CFR §371.3.", isModified: false },
+    { id: "notices", title: "Notices", body: "All notices shall be in writing via: (a) the EusoTrip platform messaging system; (b) certified mail, return receipt requested; (c) nationally recognized overnight courier; or (d) email with confirmed receipt. Notices are effective upon delivery or three (3) business days after mailing.", isModified: false },
   ];
 
   // Add type-specific clauses
   const typeSpecific: Record<string, any[]> = {
     carrier_shipper: [
-      {
-        id: "equipment",
-        title: "Equipment & Vehicle Requirements",
-        body: "Party B shall provide equipment meeting the following specifications: {{equipmentTypes}}. All vehicles must pass DOT inspections and maintain current registration and safety certifications. Hazmat endorsement required: {{hazmatRequired}}. TWIC card required: {{twicRequired}}.",
-        isModified: false,
-      },
-      {
-        id: "fuel_surcharge",
-        title: "Fuel Surcharge",
-        body: "Fuel surcharge shall be calculated based on {{fuelSurchargeType}} methodology. Current fuel surcharge rate: {{fuelSurchargeValue}}. Fuel surcharge adjustments shall be made {{fuelSurchargePeriod}}.",
-        isModified: false,
-      },
+      { id: "equipment", title: "Equipment & Vehicle Requirements", body: "Party B shall provide equipment meeting the following specifications: {{equipmentTypes}}. All vehicles must pass DOT inspections per 49 CFR Part 396 and maintain current registration, safety certifications, and FMCSA inspection stickers. Equipment shall be clean, odor-free, and suitable for the cargo. Hazmat endorsement required: {{hazmatRequired}}. TWIC card required: {{twicRequired}}. Party B shall immediately report any equipment failure, accident, or cargo damage.", isModified: false },
+      { id: "fuel_surcharge", title: "Fuel Surcharge Schedule", body: "Fuel surcharge shall be calculated based on {{fuelSurchargeType}} methodology. Current rate: {{fuelSurchargeValue}}. The base fuel price index shall be the U.S. DOE National Average Diesel Price published weekly. Adjustments effective the Monday following DOE publication. The parties may agree to a different methodology in individual rate confirmations.", isModified: false },
+      { id: "loading_safety", title: "Loading, Unloading & Driver Safety", body: "Party A shall provide safe and accessible loading/unloading facilities. Party B's drivers shall not be required to perform lumper services or product handling unless specifically agreed and compensated. Party A shall comply with the Anti-Coercion Rule (49 CFR §390.6) and shall not coerce drivers to operate in violation of safety regulations, HOS limits, or vehicle weight laws.", isModified: false },
+      { id: "hazmat_protocol", title: "Hazardous Materials Protocol", body: "Where hazardous materials are involved, both parties shall comply with PHMSA regulations (49 CFR Parts 171-180). Party A shall provide proper shipping papers, placards, and emergency response information per 49 CFR §172. Party B's drivers shall possess valid CDL with hazmat endorsement and current PHMSA training certification. Emergency procedures shall follow ERG 2024 guidelines. Contact CHEMTREC at 1-800-424-9300 for emergencies.", isModified: false },
     ],
     broker_carrier: [
-      {
-        id: "broker_authority",
-        title: "Broker Authority & Relationship",
-        body: "Party A (Broker) holds valid broker authority (MC# {{partyAMc}}) issued by the Federal Motor Carrier Safety Administration. Party B (Carrier) holds valid motor carrier authority (MC# {{partyBMc}}, DOT# {{partyBDot}}). The relationship between the parties is that of independent contractors.",
-        isModified: false,
-      },
-      {
-        id: "double_brokering",
-        title: "Prohibition of Double Brokering",
-        body: "Party B shall not re-broker, co-broker, or assign any loads tendered under this Agreement without prior written consent of Party A. Violation of this provision shall constitute grounds for immediate termination.",
-        isModified: false,
-      },
+      { id: "broker_authority", title: "Broker Authority & Relationship", body: "Party A (Broker) holds valid property broker authority (MC# {{partyAMc}}) and maintains the required surety bond or trust fund per 49 CFR §387.307 ($75,000 minimum). Party B (Carrier) holds valid motor carrier authority (MC# {{partyBMc}}, DOT# {{partyBDot}}) with a satisfactory or better safety rating. The relationship is that of independent contractors per 49 CFR §371.7. The Broker does not assume carrier liability under the Carmack Amendment.", isModified: false },
+      { id: "double_brokering", title: "Prohibition of Double Brokering", body: "Party B shall not re-broker, co-broker, assign, transfer, or interline any loads tendered under this Agreement to any other carrier, broker, or third party without prior written consent of Party A. All loads must be transported on Party B's own equipment and under Party B's own operating authority. Violation constitutes grounds for immediate termination, forfeiture of payment for affected loads, and indemnification for all resulting damages.", isModified: false },
+      { id: "broker_payment", title: "Payment Terms & Factoring", body: "Broker shall pay Carrier the agreed rate within {{paymentTermDays}} days of receipt of completed documentation. If Carrier factors its receivables, Carrier shall provide written notice and a valid notice of assignment. Broker shall not be liable for double payment. Rate confirmations govern over conflicting terms on bills of lading. Broker's surety bond information available upon request per 49 CFR §387.307.", isModified: false },
+      { id: "carrier_selection", title: "Carrier Qualification & Monitoring", body: "Broker shall verify Carrier's operating authority, insurance, safety rating, and driver qualifications through the FMCSA SAFER system prior to tendering loads. Broker reserves the right to reject any driver or equipment that does not meet safety standards. Carrier shall maintain a satisfactory FMCSA safety rating throughout the term of this Agreement.", isModified: false },
+    ],
+    broker_shipper: [
+      { id: "broker_fiduciary", title: "Broker Fiduciary Duty", body: "Party A (Broker) shall exercise reasonable care in selecting carriers and shall verify each carrier's operating authority, insurance, and safety record through the FMCSA SAFER system. Party A shall act in a fiduciary capacity regarding carrier selection and management. Party A shall disclose any carrier-related issues that may affect service quality or cargo safety.", isModified: false },
+      { id: "shipper_obligations", title: "Shipper Obligations", body: "Party B (Shipper) shall provide accurate descriptions of cargo including weight, dimensions, commodity, value, and special handling requirements. Party B shall properly classify and label all hazardous materials per 49 CFR Part 172. Party B shall provide safe loading facilities and shall not detain carriers beyond the agreed free time.", isModified: false },
+    ],
+    carrier_driver: [
+      { id: "ic_status", title: "Independent Contractor Classification", body: "Party B (Driver/Owner-Operator) is engaged as an independent contractor, not an employee. Party B maintains control over: (a) when and how long to work; (b) route selection; (c) vehicle maintenance and operation; (d) acceptance or rejection of load offers. Party A does not provide benefits, withhold taxes, or control the manner of Party B's performance.", isModified: false },
+      { id: "lease_agreement", title: "Equipment Lease & Maintenance", body: "If Party B leases equipment from Party A, such lease shall comply with 49 CFR Part 376 (Lease and Interchange of Vehicles). The lease shall specify: compensation for equipment use, responsibility for maintenance and repairs, insurance allocation, and the requirement that all equipment display Party A's name and DOT number during the lease period.", isModified: false },
+      { id: "settlement", title: "Settlement & Pay", body: "Party A shall provide itemized settlement statements within fifteen (15) days of load completion, detailing: gross revenue, all deductions, fuel charges, advances, and net pay. All deductions must be authorized in writing. Party B shall receive not less than the agreed percentage of line-haul revenue as specified in the individual rate confirmation.", isModified: false },
     ],
     escort_service: [
-      {
-        id: "escort_requirements",
-        title: "Escort Vehicle Requirements",
-        body: "Party B shall provide certified escort/pilot car services in compliance with all applicable state requirements. Escort vehicles must be equipped with required signage, lighting, flags, and communication equipment as mandated by the states of operation.",
-        isModified: false,
-      },
-      {
-        id: "state_permits",
-        title: "State Permits & Certifications",
-        body: "Party B shall maintain current escort vehicle permits and operator certifications for all states in which services are performed. Party B is responsible for permit renewals and compliance with state-specific reciprocity requirements.",
-        isModified: false,
-      },
+      { id: "escort_requirements", title: "Escort Vehicle Requirements", body: "Party B shall provide certified escort/pilot car services in compliance with all applicable state requirements. Escort vehicles must be equipped with required signage (\"OVERSIZE LOAD\" / \"WIDE LOAD\"), lighting, flags, height poles, and two-way communication equipment. Vehicles must be in good mechanical condition, properly registered and insured.", isModified: false },
+      { id: "state_permits", title: "State Permits & Certifications", body: "Party B shall maintain current escort vehicle permits and operator certifications for all states in which services are performed. Party B is responsible for permit renewals and compliance with state-specific reciprocity requirements. Party B shall be familiar with state-specific escort vehicle laws for each route.", isModified: false },
+      { id: "route_survey", title: "Route Survey & Planning", body: "For loads requiring permits, Party B shall conduct or assist with route surveys identifying potential obstacles including low bridges, narrow roads, construction zones, and utility conflicts. Party B shall communicate all route hazards to the carrier and relevant authorities in advance of the move.", isModified: false },
+    ],
+    master_service: [
+      { id: "sla_framework", title: "Service Level Agreement (SLA)", body: "Party B shall meet the following performance standards: (a) On-time pickup: 95% or better; (b) On-time delivery: 93% or better; (c) Claims ratio: less than 1% of total shipments; (d) Tender acceptance: 90% or better during contract period. Performance shall be measured quarterly. Failure to meet SLA targets for two consecutive quarters may result in rate renegotiation or termination.", isModified: false },
+      { id: "volume_commitment", title: "Volume Commitment & Pricing Tiers", body: "Party A commits to tender a minimum volume as specified in the lane schedule attached hereto. Rates are based on the committed volume. If actual volume falls below 80% of commitment, Party B may adjust rates to the next applicable tier. If actual volume exceeds 120% of commitment, the parties shall negotiate a volume discount in good faith.", isModified: false },
     ],
   };
 
   const specific = typeSpecific[type] || [];
-  return [...commonClauses.slice(0, 3), ...specific, ...commonClauses.slice(3)];
+  return [...commonClauses.slice(0, 4), ...specific, ...commonClauses.slice(4)];
 }
