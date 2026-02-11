@@ -444,7 +444,7 @@ export default function Messages() {
                         {!message.isOwn && !showName && <div className="w-8 flex-shrink-0" />}
 
                         <div
-                          className="max-w-[70%]"
+                          className="max-w-[70%] group/msg relative"
                           onContextMenu={(e) => {
                             if (message.isOwn && !isUnsent) {
                               e.preventDefault();
@@ -452,6 +452,19 @@ export default function Messages() {
                             }
                           }}
                         >
+                          {/* Unsend hover button for own messages */}
+                          {message.isOwn && !isUnsent && (
+                            <button
+                              className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/msg:opacity-100 p-1 rounded-full hover:bg-slate-700/80 transition-all z-10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                setMessageContextMenu({ id: message.id, x: rect.left, y: rect.top });
+                              }}
+                            >
+                              <MoreVertical className="w-3.5 h-3.5 text-slate-400" />
+                            </button>
+                          )}
                           {showName && !message.isOwn && (
                             <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
                           )}
@@ -521,7 +534,7 @@ export default function Messages() {
                               "px-4 py-2.5 transition-all",
                               message.isOwn
                                 ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
-                                : "bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.08]"
+                                : "bg-slate-700/60 backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-slate-600/50 shadow-md"
                             )}>
                               <p className={cn(
                                 "text-[13.5px] leading-[1.55] whitespace-pre-wrap tracking-[-0.01em]",
