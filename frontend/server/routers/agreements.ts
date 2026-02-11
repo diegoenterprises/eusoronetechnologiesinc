@@ -20,6 +20,7 @@ import {
 } from "../../drizzle/schema";
 import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/encryption";
 import { esangAI } from "../_core/esangAI";
+import { fmcsaService } from "../services/fmcsa";
 
 // Encryption version tag for forward compatibility
 const ENC_VERSION = "v1";
@@ -561,9 +562,138 @@ export const agreementsRouter = router({
       const numericUserId = await resolveUserId(ctx.user);
       if (!numericUserId) throw new Error("Could not resolve user ID");
 
+      const si = input.strategicInputs || {};
+
+      // ── FMCSA AUTO-VERIFICATION & COMPLIANCE GUARDRAILS ──
+      // Verify both parties' DOT numbers against the federal SAFER system
+      const fmcsaVerification: {
+        partyA: any | null;
+        partyB: any | null;
+        warnings: string[];
+        blockers: string[];
+        verified: boolean;
+      } = { partyA: null, partyB: null, warnings: [], blockers: [], verified: false };
+
+      const partyADot = (si.partyADot as string) || "";
+      const partyBDot = (si.partyBDot as string) || "";
+
+      // Run FMCSA verification in parallel for both parties
+      const [partyAVerification, partyBVerification] = await Promise.all([
+        partyADot ? fmcsaService.verifyCarrier(partyADot).catch(() => null) : Promise.resolve(null),
+        partyBDot ? fmcsaService.verifyCarrier(partyBDot).catch(() => null) : Promise.resolve(null),
+      ]);
+
+      if (partyAVerification) {
+        fmcsaVerification.partyA = partyAVerification;
+        if (!partyAVerification.isValid) {
+          partyAVerification.errors?.forEach((e: string) =>
+            fmcsaVerification.blockers.push(`Party A: ${e}`)
+          );
+        }
+        partyAVerification.warnings?.forEach((w: string) =>
+          fmcsaVerification.warnings.push(`Party A: ${w}`)
+        );
+      }
+
+      if (partyBVerification) {
+        fmcsaVerification.partyB = partyBVerification;
+        if (!partyBVerification.isValid) {
+          partyBVerification.errors?.forEach((e: string) =>
+            fmcsaVerification.blockers.push(`Party B: ${e}`)
+          );
+        }
+        partyBVerification.warnings?.forEach((w: string) =>
+          fmcsaVerification.warnings.push(`Party B: ${w}`)
+        );
+      }
+
+      fmcsaVerification.verified = !!(partyAVerification?.isValid || partyBVerification?.isValid);
+
+      // ── COMPLIANCE GUARDRAILS ──
+      // 1) Block if carrier has Unsatisfactory safety rating or no operating authority
+      if (fmcsaVerification.blockers.length > 0) {
+        console.warn(`[EUSOCONTRACT] FMCSA blockers: ${fmcsaVerification.blockers.join("; ")}`);
+        // Don't hard-block — include as risk flags so the user is fully informed
+        // Hard-block only for truly dangerous situations
+        const hardBlock = fmcsaVerification.blockers.some(b =>
+          b.includes("Unsatisfactory safety rating") || b.includes("not have active operating authority")
+        );
+        if (hardBlock) {
+          throw new Error(
+            `Agreement generation blocked by compliance guardrails:\n` +
+            fmcsaVerification.blockers.join("\n") +
+            `\n\nResolve these issues before generating an agreement. ` +
+            `Carriers must have active operating authority and a satisfactory or conditional safety rating.`
+          );
+        }
+      }
+
+      // 2) Insurance minimum checks
+      const INSURANCE_MINIMUMS: Record<string, number> = {
+        carrier_shipper: 750000,
+        broker_carrier: 750000,
+        broker_shipper: 75000,    // Broker bond minimum
+        carrier_driver: 750000,
+        escort_service: 300000,
+        master_service: 750000,
+        lane_commitment: 750000,
+        catalyst_dispatch: 75000,
+        terminal_access: 500000,
+      };
+
+      const requiredMinInsurance = INSURANCE_MINIMUMS[input.agreementType] || 750000;
+      const declaredInsurance = input.minInsuranceAmount || 0;
+
+      if (declaredInsurance > 0 && declaredInsurance < requiredMinInsurance) {
+        fmcsaVerification.warnings.push(
+          `Declared insurance ($${declaredInsurance.toLocaleString()}) is below the ` +
+          `recommended FMCSA minimum ($${requiredMinInsurance.toLocaleString()}) for ${input.agreementType} agreements`
+        );
+      }
+
+      // 3) Verify Party B insurance on file with FMCSA (if DOT verified)
+      if (partyBVerification?.insurance) {
+        const validIns = partyBVerification.insurance;
+        if (validIns.length === 0) {
+          fmcsaVerification.warnings.push("Party B has no valid insurance on file with FMCSA");
+        } else {
+          // Check if coverage meets declared minimums
+          const maxCoverage = Math.max(...validIns.map((i: any) => i.coverageValue || 0));
+          if (maxCoverage > 0 && declaredInsurance > 0 && maxCoverage < declaredInsurance) {
+            fmcsaVerification.warnings.push(
+              `Party B's FMCSA-filed insurance ($${maxCoverage.toLocaleString()}) is below ` +
+              `the agreement's declared minimum ($${declaredInsurance.toLocaleString()})`
+            );
+          }
+        }
+      }
+
+      // 4) Cargo insurance check for carrier agreements
+      const carrierTypes = ["carrier_shipper", "broker_carrier", "carrier_driver", "master_service", "lane_commitment"];
+      if (carrierTypes.includes(input.agreementType)) {
+        if (!input.cargoInsuranceRequired || Number(input.cargoInsuranceRequired) < 100000) {
+          fmcsaVerification.warnings.push(
+            "Cargo insurance should be at least $100,000 for carrier agreements per industry standards"
+          );
+        }
+      }
+
+      // 5) Hazmat authority check
+      if (input.hazmatRequired && partyBVerification?.carrier) {
+        if (partyBVerification.carrier.hmFlag !== "Y") {
+          fmcsaVerification.blockers.push("Party B is not registered for hazmat with FMCSA but agreement requires hazmat");
+          throw new Error(
+            "Agreement generation blocked: Party B (carrier) is not registered for hazardous materials " +
+            "with FMCSA, but this agreement requires hazmat authorization. " +
+            "The carrier must obtain hazmat authorization before proceeding."
+          );
+        }
+      }
+
+      console.log(`[EUSOCONTRACT] FMCSA verification complete — verified: ${fmcsaVerification.verified}, warnings: ${fmcsaVerification.warnings.length}, blockers: ${fmcsaVerification.blockers.length}`);
+
       // ── ESANG AI™ EusoContract — Intelligent Agreement Generation ──
       // Build the AI request with all strategic inputs for context-aware generation
-      const si = input.strategicInputs || {};
       const aiRequest = {
         agreementType: input.agreementType,
         contractDuration: input.contractDuration,
@@ -611,6 +741,15 @@ export const agreementsRouter = router({
         },
         notes: input.notes,
         clauses: templateClauses,
+        fmcsaVerification: {
+          partyAVerified: !!partyAVerification?.isValid,
+          partyBVerified: !!partyBVerification?.isValid,
+          partyASafetyRating: partyAVerification?.safetyRating?.rating || null,
+          partyBSafetyRating: partyBVerification?.safetyRating?.rating || null,
+          partyALegalName: partyAVerification?.carrier?.legalName || null,
+          partyBLegalName: partyBVerification?.carrier?.legalName || null,
+          complianceWarnings: fmcsaVerification.warnings,
+        },
       };
 
       // Call ESANG AI for intelligent content generation (falls back to static if unavailable)
@@ -699,14 +838,43 @@ export const agreementsRouter = router({
         platformFeeAcknowledged: true,
       }).$returningId();
 
+      // Merge AI compliance notes with FMCSA warnings
+      const allComplianceNotes = [
+        ...aiResult.complianceNotes,
+        ...fmcsaVerification.warnings,
+      ];
+      const allRiskFlags = [
+        ...aiResult.riskFlags,
+        ...fmcsaVerification.blockers,
+      ];
+
       return {
         id: result[0]?.id,
         agreementNumber,
         status: "draft",
         generatedContent: aiResult.content,
-        complianceNotes: aiResult.complianceNotes,
-        riskFlags: aiResult.riskFlags,
-        poweredBy: "EusoContract™ / ESANG AI™",
+        complianceNotes: allComplianceNotes,
+        riskFlags: allRiskFlags,
+        fmcsaVerification: {
+          verified: fmcsaVerification.verified,
+          partyA: partyAVerification ? {
+            dotNumber: partyADot,
+            legalName: partyAVerification.carrier?.legalName || null,
+            isValid: partyAVerification.isValid,
+            safetyRating: partyAVerification.safetyRating?.rating || "Not Rated",
+            hasActiveAuthority: partyAVerification.authorities?.some((a: any) => a.authorityStatus === "Active") || false,
+            insuranceOnFile: (partyAVerification.insurance?.length || 0) > 0,
+          } : null,
+          partyB: partyBVerification ? {
+            dotNumber: partyBDot,
+            legalName: partyBVerification.carrier?.legalName || null,
+            isValid: partyBVerification.isValid,
+            safetyRating: partyBVerification.safetyRating?.rating || "Not Rated",
+            hasActiveAuthority: partyBVerification.authorities?.some((a: any) => a.authorityStatus === "Active") || false,
+            insuranceOnFile: (partyBVerification.insurance?.length || 0) > 0,
+          } : null,
+        },
+        poweredBy: "EusoContract™ / ESANG AI™ + FMCSA SAFER",
       };
     }),
 
