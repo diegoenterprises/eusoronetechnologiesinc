@@ -83,37 +83,37 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
           animation: "eusoDialogScaleIn 0.2s ease-out",
         }}
       >
-        <div className="relative bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl px-8 py-7 min-w-[340px] max-w-[480px]">
+        <div className="relative bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl px-10 py-10 min-w-[420px] max-w-[540px]">
           {/* Close X */}
           <button
             onClick={() => onClose(false)}
-            className="absolute top-3 right-3 text-slate-500 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
 
           {/* Icon */}
           {defaults.icon && (
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-5">
               {defaults.icon}
             </div>
           )}
 
           {/* Title */}
           {dialog.title && (
-            <h3 className="text-center text-white font-bold text-lg mb-2">{dialog.title}</h3>
+            <h3 className="text-center text-white font-bold text-xl mb-3">{dialog.title}</h3>
           )}
 
           {/* Message */}
-          <p className="text-center text-white/90 text-sm leading-relaxed mb-6">
+          <p className="text-center text-white/90 text-base leading-relaxed mb-8">
             {dialog.message}
           </p>
 
           {/* Buttons */}
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-4">
             <button
               onClick={() => onClose(true)}
-              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+              className="px-8 py-3 rounded-xl text-base font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
               style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
             >
               {confirmLabel}
@@ -121,7 +121,7 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
             {showCancel && (
               <button
                 onClick={() => onClose(false)}
-                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white/90 border border-[#BE01FF]/50 bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="px-8 py-3 rounded-xl text-base font-bold text-white/90 border border-[#BE01FF]/50 bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 {cancelLabel}
               </button>

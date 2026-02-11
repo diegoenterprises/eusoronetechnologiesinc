@@ -18,8 +18,8 @@ export default function Login() {
   const loginMutation = (trpc as any).auth.login.useMutation({
     onSuccess: (data: any) => {
       toast.success(`Welcome back, ${data.user.name}!`);
-      setLocation('/');
-      window.location.reload();
+      // Single clean navigation — avoids race between setLocation and reload
+      setTimeout(() => { window.location.href = '/'; }, 300);
     },
     onError: (err: any) => {
       setError(err.message || 'Invalid credentials');

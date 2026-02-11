@@ -17,7 +17,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, or, like, isNull, inArray } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { messages, users, conversations, conversationParticipants, wallets } from "../../drizzle/schema";
+import { messages, users, conversations, conversationParticipants, wallets, walletTransactions } from "../../drizzle/schema";
 import { emitMessage } from "../_core/websocket";
 
 // Resolve ctx.user to a numeric DB user ID (same pattern as loads.ts)
@@ -920,6 +920,29 @@ export const messagesRouter = router({
             totalReceived: String((parseFloat(recipientWallet.totalReceived || "0") + input.amount).toFixed(2)),
           })
           .where(eq(wallets.id, recipientWallet.id));
+
+        // Record wallet transactions (audit trail)
+        await db.insert(walletTransactions).values({
+          walletId: senderWallet.id,
+          type: "transfer",
+          amount: String(-input.amount),
+          fee: "0",
+          netAmount: String(-input.amount),
+          status: "completed",
+          description: `Chat payment sent — $${input.amount.toFixed(2)}${input.note ? ` — ${input.note}` : ""}`,
+          completedAt: new Date(),
+        }).catch(() => {});
+
+        await db.insert(walletTransactions).values({
+          walletId: recipientWallet.id,
+          type: "transfer",
+          amount: String(input.amount),
+          fee: "0",
+          netAmount: String(input.amount),
+          status: "completed",
+          description: `Chat payment received — $${input.amount.toFixed(2)}${input.note ? ` — ${input.note}` : ""}`,
+          completedAt: new Date(),
+        }).catch(() => {});
       }
 
       const messageType = input.type === "send" ? "payment_sent" : "payment_request";
@@ -977,5 +1000,202 @@ export const messagesRouter = router({
         currency: input.currency,
         status: metadata.status,
       };
+    }),
+
+  /**
+   * Unsend a message — only the original sender can unsend
+   * Replaces content with system notice, keeps the row for conversation integrity
+   */
+  unsendMessage: protectedProcedure
+    .input(z.object({ messageId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) throw new Error("User not authenticated");
+
+      const msgId = parseInt(input.messageId, 10);
+      if (!msgId) throw new Error("Invalid message ID");
+
+      // Verify ownership
+      const [msg] = await db.select({ senderId: messages.senderId, conversationId: messages.conversationId })
+        .from(messages).where(eq(messages.id, msgId)).limit(1);
+      if (!msg) throw new Error("Message not found");
+      if (msg.senderId !== userId) throw new Error("You can only unsend your own messages");
+
+      // Soft-unsend: replace content, mark type as unsent
+      await db.update(messages)
+        .set({
+          content: "This message was unsent",
+          messageType: "system_notification" as any,
+          metadata: { unsent: true, unsentAt: new Date().toISOString(), originalSenderId: userId },
+        })
+        .where(eq(messages.id, msgId));
+
+      return { success: true, messageId: input.messageId };
+    }),
+
+  /**
+   * Accept a payment request — the recipient pays the requester
+   * Fully user-isolated: wallets looked up by userId, not shared IDs
+   */
+  acceptPaymentRequest: protectedProcedure
+    .input(z.object({ messageId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) throw new Error("User not authenticated");
+
+      const msgId = parseInt(input.messageId, 10);
+      if (!msgId) throw new Error("Invalid message ID");
+
+      // Fetch the payment request message
+      const [msg] = await db.select()
+        .from(messages).where(eq(messages.id, msgId)).limit(1);
+      if (!msg) throw new Error("Message not found");
+
+      const meta = (msg.metadata || {}) as any;
+      if (meta.status === "completed") throw new Error("This payment request has already been paid");
+      if (msg.messageType !== "payment_request") throw new Error("This is not a payment request");
+
+      // The requester (sender of the request message) is who gets paid
+      const requesterId = msg.senderId;
+      if (requesterId === userId) throw new Error("You cannot pay your own request");
+
+      const amount = meta.amount;
+      if (!amount || amount <= 0) throw new Error("Invalid payment amount");
+
+      // Get payer (current user) wallet
+      const [payerWallet] = await db.select()
+        .from(wallets).where(eq(wallets.userId, userId)).limit(1);
+      if (!payerWallet) throw new Error("Wallet not found. Set up your EusoWallet first.");
+
+      const available = parseFloat(payerWallet.availableBalance || "0");
+      if (available < amount) {
+        throw new Error(`Insufficient balance. Available: $${available.toFixed(2)}, Required: $${amount.toFixed(2)}`);
+      }
+
+      // Get or create requester wallet
+      let [requesterWallet] = await db.select()
+        .from(wallets).where(eq(wallets.userId, requesterId)).limit(1);
+      if (!requesterWallet) {
+        await db.insert(wallets).values({ userId: requesterId, availableBalance: "0", pendingBalance: "0" });
+        [requesterWallet] = await db.select()
+          .from(wallets).where(eq(wallets.userId, requesterId)).limit(1);
+      }
+
+      // Debit payer
+      await db.update(wallets)
+        .set({
+          availableBalance: String((available - amount).toFixed(2)),
+          totalSpent: String((parseFloat(payerWallet.totalSpent || "0") + amount).toFixed(2)),
+        })
+        .where(eq(wallets.id, payerWallet.id));
+
+      // Credit requester
+      const requesterBalance = parseFloat(requesterWallet.availableBalance || "0");
+      await db.update(wallets)
+        .set({
+          availableBalance: String((requesterBalance + amount).toFixed(2)),
+          totalReceived: String((parseFloat(requesterWallet.totalReceived || "0") + amount).toFixed(2)),
+        })
+        .where(eq(wallets.id, requesterWallet.id));
+
+      // Record wallet transactions (audit trail)
+      const [requesterUser] = await db.select({ name: users.name, email: users.email })
+        .from(users).where(eq(users.id, requesterId)).limit(1);
+
+      await db.insert(walletTransactions).values({
+        walletId: payerWallet.id,
+        type: "transfer",
+        amount: String(-amount),
+        fee: "0",
+        netAmount: String(-amount),
+        status: "completed",
+        description: `Payment request paid — $${amount.toFixed(2)} to ${requesterUser?.name || "user"}${meta.note ? ` — ${meta.note}` : ""}`,
+        completedAt: new Date(),
+      }).catch(() => {});
+
+      await db.insert(walletTransactions).values({
+        walletId: requesterWallet.id,
+        type: "transfer",
+        amount: String(amount),
+        fee: "0",
+        netAmount: String(amount),
+        status: "completed",
+        description: `Payment request fulfilled — $${amount.toFixed(2)} received${meta.note ? ` — ${meta.note}` : ""}`,
+        completedAt: new Date(),
+      }).catch(() => {});
+
+      // Stripe Connect transfer (if both parties have Connect accounts)
+      try {
+        if (requesterWallet.stripeConnectId && payerWallet.stripeConnectId) {
+          const Stripe = (await import("stripe")).default;
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+          await stripe.transfers.create({
+            amount: Math.round(amount * 100),
+            currency: meta.currency?.toLowerCase() || "usd",
+            destination: requesterWallet.stripeConnectId,
+            metadata: {
+              type: "payment_request_accepted",
+              payerUserId: String(userId),
+              requesterUserId: String(requesterId),
+              messageId: String(msgId),
+              platform: "eusotrip",
+            },
+          });
+        }
+      } catch (stripeErr) {
+        console.warn("[Stripe] Connect transfer skipped:", stripeErr);
+      }
+
+      // Update the original request message status to "completed"
+      await db.update(messages)
+        .set({
+          metadata: { ...meta, status: "completed", paidBy: userId, paidAt: new Date().toISOString() },
+        })
+        .where(eq(messages.id, msgId));
+
+      // Create a confirmation payment_sent message
+      const [payer] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+      const [result] = await db.insert(messages).values({
+        conversationId: msg.conversationId,
+        senderId: userId,
+        messageType: "payment_sent" as any,
+        content: `Paid $${amount.toFixed(2)} ${meta.currency || "USD"}${meta.note ? ` - ${meta.note}` : ""}`,
+        metadata: {
+          amount,
+          currency: meta.currency || "USD",
+          note: meta.note || "",
+          status: "completed",
+          recipientId: requesterId,
+          senderName: payer?.name || "User",
+          inResponseTo: msgId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+
+      // Update conversation timestamp
+      await db.update(conversations)
+        .set({ lastMessageAt: new Date() })
+        .where(eq(conversations.id, msg.conversationId));
+
+      // Emit real-time event
+      try {
+        emitMessage({
+          conversationId: String(msg.conversationId),
+          messageId: String((result as any).insertId),
+          senderId: String(userId),
+          senderName: payer?.name || "User",
+          content: `Paid $${amount.toFixed(2)}`,
+          messageType: "payment_sent",
+          timestamp: new Date().toISOString(),
+        } as any);
+      } catch {}
+
+      return { success: true, amount, messageId: input.messageId };
     }),
 });

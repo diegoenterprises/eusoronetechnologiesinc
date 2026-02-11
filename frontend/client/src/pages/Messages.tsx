@@ -35,6 +35,7 @@ export default function Messages() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentType, setPaymentType] = useState<"send" | "request">("send");
+  const [messageContextMenu, setMessageContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const msgFileInputRef = useRef<HTMLInputElement>(null);
@@ -112,6 +113,16 @@ export default function Messages() {
   const { user: authUser } = useAuth();
   const { ready: e2eReady, encryptForUser, decryptFromUser } = useEncryption({ userId: authUser?.id || authUser?.email });
 
+  const unsendMessageMutation = (trpc as any).messages.unsendMessage.useMutation({
+    onSuccess: () => {
+      messagesQuery.refetch();
+      conversationsQuery.refetch();
+      setMessageContextMenu(null);
+      toast.success("Message unsent");
+    },
+    onError: (err: any) => toast.error("Failed to unsend", { description: err.message }),
+  });
+
   const sendPaymentMutation = (trpc as any).messages.sendPayment.useMutation({
     onSuccess: (data: any) => {
       setShowPaymentModal(false);
@@ -123,6 +134,15 @@ export default function Messages() {
         data.type === "payment_sent" ? `$${data.amount.toFixed(2)} sent` : `$${data.amount.toFixed(2)} requested`,
         { description: data.type === "payment_sent" ? "Payment sent via Stripe" : "Payment request sent" }
       );
+    },
+    onError: (err: any) => toast.error("Payment failed", { description: err.message }),
+  });
+
+  const acceptPaymentMutation = (trpc as any).messages.acceptPaymentRequest.useMutation({
+    onSuccess: (data: any) => {
+      messagesQuery.refetch();
+      conversationsQuery.refetch();
+      toast.success(`$${data.amount.toFixed(2)} paid successfully`);
     },
     onError: (err: any) => toast.error("Payment failed", { description: err.message }),
   });
@@ -274,7 +294,7 @@ export default function Messages() {
                   <div
                     key={conv.id}
                     className={cn(
-                      "relative flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all",
+                      "group relative flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-all",
                       selectedConversation === conv.id
                         ? "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-l-2 border-l-purple-500"
                         : "hover:bg-slate-700/30 border-l-2 border-l-transparent"
@@ -423,8 +443,10 @@ export default function Messages() {
                     const prevMsg = idx > 0 ? (messagesQuery.data as any)[idx - 1] : null;
                     const showName = !message.isOwn && (!prevMsg || prevMsg.senderId !== message.senderId);
 
+                    const isUnsent = message.metadata?.unsent === true;
+
                     return (
-                      <div key={message.id} className={cn("flex gap-2", message.isOwn ? "justify-end" : "justify-start")}>
+                      <div key={message.id} className={cn("flex gap-2 relative", message.isOwn ? "justify-end" : "justify-start")}>
                         {!message.isOwn && showName && (
                           <div className="flex-shrink-0 mt-5">
                             {message.senderAvatar ? (
@@ -438,13 +460,25 @@ export default function Messages() {
                         )}
                         {!message.isOwn && !showName && <div className="w-8 flex-shrink-0" />}
 
-                        <div className="max-w-[70%]">
+                        <div
+                          className="max-w-[70%]"
+                          onContextMenu={(e) => {
+                            if (message.isOwn && !isUnsent) {
+                              e.preventDefault();
+                              setMessageContextMenu({ id: message.id, x: e.clientX, y: e.clientY });
+                            }
+                          }}
+                        >
                           {showName && !message.isOwn && (
                             <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
                           )}
 
-                          {/* Payment message card */}
-                          {(message.type === "payment_sent" || message.type === "payment_request") ? (
+                          {/* Unsent message */}
+                          {isUnsent ? (
+                            <div className="px-4 py-2.5 rounded-[20px] border border-white/[0.06] bg-white/[0.03]">
+                              <p className="text-[13px] italic text-slate-500">This message was unsent</p>
+                            </div>
+                          ) : (message.type === "payment_sent" || message.type === "payment_request") ? (
                             <div className={cn(
                               "rounded-2xl p-4 border",
                               message.type === "payment_sent"
@@ -474,17 +508,29 @@ export default function Messages() {
                               {message.metadata?.note && (
                                 <p className="text-slate-400 text-xs mt-1.5 italic">"{message.metadata.note}"</p>
                               )}
-                              <div className="flex items-center gap-1.5 mt-2">
-                                <div className={cn(
-                                  "w-1.5 h-1.5 rounded-full",
-                                  message.metadata?.status === "completed" ? "bg-emerald-400" : "bg-amber-400"
-                                )} />
-                                <span className={cn(
-                                  "text-[10px] font-medium",
-                                  message.metadata?.status === "completed" ? "text-emerald-400" : "text-amber-400"
-                                )}>
-                                  {message.metadata?.status === "completed" ? "Completed" : "Pending"}
-                                </span>
+                              <div className="flex items-center justify-between mt-2">
+                                <div className="flex items-center gap-1.5">
+                                  <div className={cn(
+                                    "w-1.5 h-1.5 rounded-full",
+                                    message.metadata?.status === "completed" ? "bg-emerald-400" : "bg-amber-400"
+                                  )} />
+                                  <span className={cn(
+                                    "text-[10px] font-medium",
+                                    message.metadata?.status === "completed" ? "text-emerald-400" : "text-amber-400"
+                                  )}>
+                                    {message.metadata?.status === "completed" ? "Completed" : "Pending"}
+                                  </span>
+                                </div>
+                                {/* Pay button — only shows for received payment requests that are still pending */}
+                                {message.type === "payment_request" && !message.isOwn && message.metadata?.status !== "completed" && (
+                                  <button
+                                    onClick={() => acceptPaymentMutation.mutate({ messageId: message.id })}
+                                    disabled={acceptPaymentMutation.isPending}
+                                    className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                                  >
+                                    {acceptPaymentMutation.isPending ? "Paying..." : `Pay $${(message.metadata?.amount || 0).toFixed(2)}`}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ) : (
@@ -515,6 +561,30 @@ export default function Messages() {
                   })
                 )}
                 <div ref={messagesEndRef} />
+
+                {/* Unsend context menu (floating) */}
+                {messageContextMenu && (
+                  <div
+                    className="fixed inset-0 z-[9998]"
+                    onClick={() => setMessageContextMenu(null)}
+                    onContextMenu={(e) => { e.preventDefault(); setMessageContextMenu(null); }}
+                  >
+                    <div
+                      className="absolute z-[9999] bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl py-1 min-w-[150px]"
+                      style={{ top: messageContextMenu.y, left: messageContextMenu.x, transform: "translate(-50%, -100%)" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
+                        onClick={() => {
+                          unsendMessageMutation.mutate({ messageId: messageContextMenu.id });
+                        }}
+                      >
+                        <X className="w-4 h-4" /> Unsend Message
+                      </button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
 
               {/* Message Input */}
@@ -659,7 +729,7 @@ export default function Messages() {
                     value={paymentAmount}
                     onChange={(e) => setPaymentAmount(e.target.value)}
                     placeholder="0.00"
-                    className="text-4xl font-bold text-white bg-transparent border-none outline-none text-center w-40 placeholder:text-slate-600"
+                    className="text-4xl font-bold text-white bg-transparent border-none outline-none text-center w-40 placeholder:text-slate-600 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     autoFocus
                   />
                 </div>
