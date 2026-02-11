@@ -23,6 +23,48 @@ import { encryptField, decryptField, encryptJSON, decryptJSON } from "../_core/e
 // Encryption version tag for forward compatibility
 const ENC_VERSION = "v1";
 
+/** Resolve ctx.user (string openId) → numeric DB user id */
+async function resolveUserId(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const email = ctxUser?.email || "";
+  const name = ctxUser?.name || "User";
+  const role = (ctxUser?.role || "SHIPPER") as any;
+  if (email) {
+    try {
+      const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (row) return row.id;
+    } catch {}
+  }
+  try {
+    const insertData: Record<string, any> = { email: email || `user-${Date.now()}@eusotrip.com`, name, role, isActive: true, isVerified: false };
+    try {
+      insertData.openId = String(ctxUser?.id || `auto-${Date.now()}`);
+      const result = await db.insert(users).values(insertData as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      if (insertedId) return insertedId;
+    } catch {
+      delete insertData.openId;
+      const result = await db.insert(users).values(insertData as any);
+      const insertedId = (result as any).insertId || (result as any)[0]?.insertId;
+      if (insertedId) return insertedId;
+    }
+    if (email) {
+      const [newRow] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      return newRow?.id || 0;
+    }
+    return 0;
+  } catch {
+    if (email) {
+      try {
+        const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+        return row?.id || 0;
+      } catch {}
+    }
+    return 0;
+  }
+}
+
 // Fields that get encrypted at rest in the agreements table
 const AGREEMENT_ENCRYPTED_STRING_FIELDS = ["generatedContent", "notes"] as const;
 const AGREEMENT_ENCRYPTED_JSON_FIELDS = ["clauses", "strategicInputs", "lanes", "accessorialSchedule"] as const;
@@ -310,7 +352,7 @@ export const agreementsRouter = router({
       const db = await getDb();
       if (!db) return { agreements: [], total: 0 };
       try {
-        const userId = ctx.user?.id;
+        const userId = await resolveUserId(ctx.user);
         const conditions: any[] = [];
 
         // User can see agreements where they are party A or party B
@@ -395,7 +437,7 @@ export const agreementsRouter = router({
       const db = await getDb();
       if (!db) return { total: 0, active: 0, draft: 0, negotiating: 0, pendingSignature: 0, expired: 0, totalValue: 0 };
       try {
-        const userId = ctx.user?.id;
+        const userId = await resolveUserId(ctx.user);
         const userFilter = userId
           ? or(eq(agreements.partyAUserId, userId), eq(agreements.partyBUserId, userId))
           : undefined;
@@ -516,12 +558,15 @@ export const agreementsRouter = router({
         templateClauses
       );
 
+      const numericUserId = await resolveUserId(ctx.user);
+      if (!numericUserId) throw new Error("Could not resolve user ID");
+
       const result = await db.insert(agreements).values({
         agreementNumber,
         templateId: input.templateId,
         agreementType: input.agreementType as any,
         contractDuration: input.contractDuration,
-        partyAUserId: ctx.user!.id,
+        partyAUserId: numericUserId,
         partyACompanyId: ctx.user?.companyId || null,
         partyARole: ctx.user?.role || "SHIPPER",
         partyBUserId: input.partyBUserId,
@@ -652,9 +697,12 @@ export const agreementsRouter = router({
       const signatureHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
       // Store Gradient Ink signature with full audit trail
+      const sigUserId = await resolveUserId(ctx.user);
+      if (!sigUserId) throw new Error("Could not resolve user ID");
+
       await db.insert(agreementSignatures).values({
         agreementId: input.agreementId,
-        userId: ctx.user!.id,
+        userId: sigUserId,
         companyId: ctx.user?.companyId || null,
         signatureRole: input.signatureRole,
         signatureData: input.signatureData,
@@ -752,7 +800,7 @@ export const agreementsRouter = router({
         title: input.title,
         description: input.description,
         changes: input.changes,
-        proposedBy: ctx.user!.id,
+        proposedBy: await resolveUserId(ctx.user) || 0,
         status: "proposed",
       }).$returningId();
 
@@ -777,7 +825,7 @@ export const agreementsRouter = router({
       if (input.action === "accept") {
         await db.update(agreementAmendments).set({
           status: "accepted",
-          acceptedBy: ctx.user!.id,
+          acceptedBy: await resolveUserId(ctx.user) || 0,
           acceptedAt: new Date(),
         }).where(eq(agreementAmendments.id, input.amendmentId));
       } else {
@@ -796,7 +844,7 @@ export const agreementsRouter = router({
       const db = await getDb();
       if (!db) return [];
       try {
-        const userId = ctx.user?.id;
+        const userId = await resolveUserId(ctx.user);
         const futureDate = new Date();
         futureDate.setDate(futureDate.getDate() + input.daysAhead);
 
