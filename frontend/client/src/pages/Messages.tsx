@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -840,13 +841,13 @@ export default function Messages() {
         </div>
       )}
 
-      {/* ═══════════ Message Unsend/Delete Context Menu (fixed portal) ═══════════ */}
-      {messageContextMenu && (
+      {/* ═══════════ Message Unsend/Delete Context Menu (portaled to body) ═══════════ */}
+      {messageContextMenu && createPortal(
         <>
-          <div className="fixed inset-0 z-[9998]" onClick={() => setMessageContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMessageContextMenu(null); }} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 99998 }} onClick={() => setMessageContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMessageContextMenu(null); }} />
           <div
-            className="fixed z-[9999] bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl py-1 min-w-[160px]"
-            style={{ top: Math.max(8, messageContextMenu.y - 80), left: Math.min(messageContextMenu.x, window.innerWidth - 180) }}
+            style={{ position: 'fixed', zIndex: 99999, top: Math.max(8, messageContextMenu.y - 80), left: Math.min(messageContextMenu.x, window.innerWidth - 180) }}
+            className="bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl py-1 min-w-[160px]"
           >
             <button
               className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
@@ -861,7 +862,8 @@ export default function Messages() {
               <Trash2 className="w-4 h-4" /> Delete Message
             </button>
           </div>
-        </>
+        </>,
+        document.body
       )}
 
       {/* ═══════════ Conversation Context Menu (fixed portal — not clipped by overflow) ═══════════ */}
