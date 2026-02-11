@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   MessageSquare, Send, Search, Phone, MoreVertical, Plus, X,
-  User, Users, Paperclip, Check, CheckCheck,
+  User, Users, Paperclip, Check, CheckCheck, DollarSign,
   AlertTriangle, Loader2, Archive, Trash2, Pin, ArrowLeft,
   Shield, Truck
 } from "lucide-react";
@@ -27,8 +27,15 @@ export default function MessagingCenter() {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [showContextMenu, setShowContextMenu] = useState<string | null>(null);
+  const [messageContextMenu, setMessageContextMenu] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentNote, setPaymentNote] = useState("");
+  const [paymentType, setPaymentType] = useState<"send" | "request">("request");
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const typingTimeoutRef = useRef<any>(null);
 
   // ── Queries (all DB-backed) ──
   const conversationsQuery = (trpc as any).messages.getConversations.useQuery(
@@ -73,6 +80,22 @@ export default function MessagingCenter() {
   });
   const archiveConversationMutation = (trpc as any).messages.archiveConversation.useMutation({
     onSuccess: () => { setShowContextMenu(null); conversationsQuery.refetch(); toast.success("Conversation archived"); },
+  });
+  const unsendMessageMutation = (trpc as any).messages.unsendMessage.useMutation({
+    onSuccess: () => { messagesQuery.refetch(); conversationsQuery.refetch(); setMessageContextMenu(null); toast.success("Message unsent"); },
+    onError: (err: any) => toast.error("Failed to unsend", { description: err.message }),
+  });
+  const sendPaymentMutation = (trpc as any).messages.sendPayment.useMutation({
+    onSuccess: (data: any) => {
+      setShowPaymentModal(false); setPaymentAmount(""); setPaymentNote("");
+      messagesQuery.refetch(); conversationsQuery.refetch();
+      toast.success(data.type === "payment_sent" ? `$${data.amount.toFixed(2)} sent` : `$${data.amount.toFixed(2)} requested`);
+    },
+    onError: (err: any) => toast.error("Payment failed", { description: err.message }),
+  });
+  const acceptPaymentMutation = (trpc as any).messages.acceptPaymentRequest.useMutation({
+    onSuccess: (data: any) => { messagesQuery.refetch(); conversationsQuery.refetch(); toast.success(`$${data.amount.toFixed(2)} paid successfully`); },
+    onError: (err: any) => toast.error("Payment failed", { description: err.message }),
   });
 
   // ── Effects ──
@@ -350,16 +373,58 @@ export default function MessagingCenter() {
                         {showSenderName && !message.isOwn && (
                           <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
                         )}
-                        <div className={cn(
-                          "px-4 py-2.5 transition-all",
-                          message.isOwn
-                            ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
-                            : "bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.08]"
-                        )}>
-                          <p className={cn(
-                            "text-[13.5px] leading-[1.55] whitespace-pre-wrap tracking-[-0.01em]",
-                            message.isOwn ? "text-white" : "text-slate-200"
-                          )}>{message.content}</p>
+                        <div
+                          className={cn(
+                            "px-4 py-2.5 transition-all relative group/msg",
+                            message.messageType === "payment_request" || message.messageType === "payment_sent"
+                              ? "bg-gradient-to-br from-emerald-600/90 to-emerald-800/90 text-white rounded-[20px] shadow-lg"
+                              : message.isOwn
+                                ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
+                                : "bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.08]"
+                          )}
+                          onContextMenu={(e) => { e.preventDefault(); if (message.isOwn) setMessageContextMenu(message); }}
+                        >
+                          {/* Payment request card */}
+                          {(message.messageType === "payment_request" || message.messageType === "payment_sent") ? (
+                            <div className="text-center py-2">
+                              <p className="text-xs text-emerald-200 font-medium mb-1">
+                                {message.messageType === "payment_request" ? "Payment Request" : "Payment Sent"}
+                                {message.metadata?.via && <span className="ml-1 opacity-70">via {message.metadata.via}</span>}
+                              </p>
+                              <p className="text-2xl font-bold text-white">${(message.metadata?.amount || 0).toFixed(2)} <span className="text-sm font-normal">USD</span></p>
+                              {message.metadata?.status && (
+                                <p className={cn("text-xs mt-1 font-medium", message.metadata.status === "completed" ? "text-emerald-200" : "text-yellow-300")}>
+                                  {message.metadata.status === "completed" ? "✓ Completed" : "● Pending"}
+                                </p>
+                              )}
+                              {message.messageType === "payment_request" && !message.isOwn && message.metadata?.status !== "completed" && (
+                                <Button
+                                  size="sm"
+                                  className="mt-2 bg-white text-emerald-700 hover:bg-emerald-50 rounded-xl text-xs font-bold"
+                                  onClick={() => acceptPaymentMutation.mutate({ messageId: message.id })}
+                                  disabled={acceptPaymentMutation.isPending}
+                                >
+                                  {acceptPaymentMutation.isPending ? "Paying..." : `Pay $${(message.metadata?.amount || 0).toFixed(2)}`}
+                                </Button>
+                              )}
+                            </div>
+                          ) : (
+                            <p className={cn(
+                              "text-[13.5px] leading-[1.55] whitespace-pre-wrap tracking-[-0.01em]",
+                              message.isOwn ? "text-white" : "text-slate-200"
+                            )}>{message.content}</p>
+                          )}
+                          {/* Unsend option on long-press/right-click for own messages */}
+                          {message.isOwn && messageContextMenu?.id === message.id && (
+                            <div className="absolute -top-8 right-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 px-1 z-50">
+                              <button
+                                className="text-xs text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded flex items-center gap-1.5"
+                                onClick={() => unsendMessageMutation.mutate({ messageId: messageContextMenu.id })}
+                              >
+                                <Trash2 className="w-3 h-3" /> Unsend
+                              </button>
+                            </div>
+                          )}
                         </div>
                         <div className={cn("flex items-center gap-1.5 mt-1 px-1", message.isOwn ? "justify-end" : "justify-start")}>
                           <span className="text-[10px] text-slate-500 font-medium">{formatTime(message.timestamp)}</span>
@@ -374,6 +439,19 @@ export default function MessagingCenter() {
                   );
                 })
               )}
+              {/* ── Typing Indicator ── */}
+              {isTyping && (
+                <div className="flex gap-2 justify-start">
+                  <div className="w-8 flex-shrink-0" />
+                  <div className="bg-white/[0.06] backdrop-blur-md rounded-[20px] rounded-bl-[6px] border border-white/[0.08] px-4 py-3">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="w-2 h-2 rounded-full bg-slate-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
@@ -382,6 +460,9 @@ export default function MessagingCenter() {
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-300 rounded-xl p-2">
                   <Paperclip className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm" className="text-slate-500 hover:text-emerald-400 rounded-xl p-2" onClick={() => setShowPaymentModal(true)}>
+                  <DollarSign className="w-4 h-4" />
                 </Button>
                 <Input
                   ref={inputRef}

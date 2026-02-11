@@ -23,6 +23,7 @@ import { useLocation } from "wouter";
 import LoadVisualization from "@/components/LoadVisualization";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
 import AddressAutocomplete, { type ParsedAddress } from "@/components/AddressAutocomplete";
+import DatePicker from "@/components/DatePicker";
 
 // Products that qualify for SPECTRA-MATCH™ oil identification
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
@@ -310,7 +311,7 @@ export default function LoadWizard() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Pickup Date</Label>
-              <Input type="date" value={formData.pickupDate} onChange={(e: any) => setFormData({ ...formData, pickupDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <DatePicker value={formData.pickupDate} onChange={(v) => setFormData({ ...formData, pickupDate: v })} placeholder="Select pickup date" />
             </div>
           </div>
         );
@@ -333,7 +334,7 @@ export default function LoadWizard() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Delivery Date</Label>
-              <Input type="date" value={formData.deliveryDate} onChange={(e: any) => setFormData({ ...formData, deliveryDate: e.target.value })} className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <DatePicker value={formData.deliveryDate} onChange={(v) => setFormData({ ...formData, deliveryDate: v })} placeholder="Select delivery date" />
             </div>
           </div>
         );

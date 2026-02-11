@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useParams, useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
+import DatePicker from "@/components/DatePicker";
 
 const STEPS = ["Load Review", "Your Bid", "Equipment & Driver", "Schedule & Notes", "Review & Submit"];
 
@@ -508,22 +509,22 @@ export default function CarrierBidSubmission() {
                   <label className={cn("text-sm font-medium mb-2 block flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-300")}>
                     <Calendar className="w-4 h-4 text-green-500" />Estimated Pickup
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={estimatedPickup}
-                    onChange={(e: any) => setEstimatedPickup(e.target.value)}
-                    className={cn("rounded-xl h-12 border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
+                    onChange={setEstimatedPickup}
+                    placeholder="Select pickup date"
+                    className={cn("rounded-xl h-12", isLight ? "" : "")}
                   />
                 </div>
                 <div>
                   <label className={cn("text-sm font-medium mb-2 block flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-300")}>
                     <Calendar className="w-4 h-4 text-red-500" />Estimated Delivery
                   </label>
-                  <Input
-                    type="date"
+                  <DatePicker
                     value={estimatedDelivery}
-                    onChange={(e: any) => setEstimatedDelivery(e.target.value)}
-                    className={cn("rounded-xl h-12 border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/50 border-slate-600/50")}
+                    onChange={setEstimatedDelivery}
+                    placeholder="Select delivery date"
+                    className={cn("rounded-xl h-12", isLight ? "" : "")}
                   />
                 </div>
               </div>

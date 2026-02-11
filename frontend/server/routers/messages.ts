@@ -686,13 +686,32 @@ export const messagesRouter = router({
       const convId = parseInt(input.conversationId.replace("conv_", ""), 10) || parseInt(input.conversationId, 10);
       if (!userId || !convId) return { success: false, conversationId: input.conversationId };
 
-      // Mark user as having left the conversation
+      // 1) Mark user as having left in conversationParticipants table
       await db.update(conversationParticipants)
         .set({ leftAt: new Date() })
         .where(and(
           eq(conversationParticipants.conversationId, convId),
           eq(conversationParticipants.userId, userId),
         )).catch(() => {});
+
+      // 2) Also remove user from legacy conversations.participants JSON array
+      try {
+        const [conv] = await db.select({ id: conversations.id, participants: conversations.participants })
+          .from(conversations).where(eq(conversations.id, convId)).limit(1);
+        if (conv?.participants) {
+          const remaining = (conv.participants as number[]).filter(id => id !== userId);
+          if (remaining.length === 0) {
+            // No participants left — hard delete conversation + messages
+            await db.delete(messages).where(eq(messages.conversationId, convId)).catch(() => {});
+            await db.delete(conversationParticipants).where(eq(conversationParticipants.conversationId, convId)).catch(() => {});
+            await db.delete(conversations).where(eq(conversations.id, convId)).catch(() => {});
+          } else {
+            await db.update(conversations)
+              .set({ participants: remaining })
+              .where(eq(conversations.id, convId));
+          }
+        }
+      } catch {}
 
       return { success: true, conversationId: input.conversationId };
     }),

@@ -589,14 +589,18 @@ export const loadsRouter = router({
       const ergProduct = notes.match(/^Product: (.+)$/m)?.[1] || null;
       const ergGuideMatch = notes.match(/ERG Guide: (\d+)/)?.[1];
       const ergGuide = ergGuideMatch ? parseInt(ergGuideMatch) : null;
+      // Serialize ALL Date fields to ISO strings to prevent React "Objects are not valid as React child" crash
+      const safeDate = (d: any) => d instanceof Date ? d.toISOString() : (typeof d === 'string' ? d : null);
       return {
         ...load,
         id: String(load.id),
-        // Serialize all Date fields to ISO strings to prevent React "Objects are not valid as React child" crash
-        pickupDate: load.pickupDate instanceof Date ? load.pickupDate.toISOString() : (load.pickupDate || null),
-        deliveryDate: load.deliveryDate instanceof Date ? load.deliveryDate.toISOString() : (load.deliveryDate || null),
-        createdAt: load.createdAt instanceof Date ? load.createdAt.toISOString() : (load.createdAt || null),
-        updatedAt: (load as any).updatedAt instanceof Date ? (load as any).updatedAt.toISOString() : ((load as any).updatedAt || null),
+        pickupDate: safeDate(load.pickupDate),
+        deliveryDate: safeDate(load.deliveryDate),
+        estimatedDeliveryDate: safeDate((load as any).estimatedDeliveryDate),
+        actualDeliveryDate: safeDate((load as any).actualDeliveryDate),
+        deletedAt: safeDate((load as any).deletedAt),
+        createdAt: safeDate(load.createdAt),
+        updatedAt: safeDate((load as any).updatedAt),
         origin: { address: pickup.address || "", city: pickup.city || "", state: pickup.state || "", zip: pickup.zipCode || "" },
         destination: { address: delivery.address || "", city: delivery.city || "", state: delivery.state || "", zip: delivery.zipCode || "" },
         pickupLocation: { city: pickup.city || "", state: pickup.state || "" },
@@ -844,9 +848,12 @@ export const bidsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
+      const carrierId = await resolveUserId(ctx.user);
+      if (!carrierId) throw new Error("Could not resolve user");
+
       const result = await db.insert(bids).values({
         loadId: input.loadId,
-        carrierId: ctx.user.id,
+        carrierId,
         amount: input.amount.toString(),
         notes: input.notes,
         status: "pending",
@@ -862,7 +869,7 @@ export const bidsRouter = router({
         bidId: String(bidId),
         loadId: String(input.loadId),
         loadNumber: load?.loadNumber || '',
-        carrierId: String(ctx.user.id),
+        carrierId: String(carrierId),
         carrierName: ctx.user.name || 'Carrier',
         amount: input.amount,
         status: 'pending',
@@ -1166,16 +1173,19 @@ export const bidsRouter = router({
   }),
   getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
   submit: protectedProcedure
-    .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() }))
+    .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional(), estimatedPickup: z.string().optional(), estimatedDelivery: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
       const loadIdNum = parseInt(input.loadId, 10);
       if (!loadIdNum) throw new Error("Invalid load ID");
 
+      const carrierId = await resolveUserId(ctx.user);
+      if (!carrierId) throw new Error("Could not resolve user");
+
       const result = await db.insert(bids).values({
         loadId: loadIdNum,
-        carrierId: ctx.user.id,
+        carrierId,
         amount: input.amount.toString(),
         notes: input.notes || '',
         status: 'pending',
@@ -1188,7 +1198,7 @@ export const bidsRouter = router({
         bidId: String(bidId),
         loadId: input.loadId,
         loadNumber: load?.loadNumber || '',
-        carrierId: String(ctx.user.id),
+        carrierId: String(carrierId),
         carrierName: ctx.user.name || 'Carrier',
         amount: input.amount,
         status: 'pending',
@@ -1270,9 +1280,12 @@ export const bidsRouter = router({
       if (!db) throw new Error("Database not available");
 
       try {
+        const carrierId = await resolveUserId(ctx.user);
+        if (!carrierId) throw new Error("Could not resolve user");
+
         await db.insert(bids).values({
           loadId: input.loadId,
-          carrierId: ctx.user.id,
+          carrierId,
           amount: input.amount.toString(),
           status: 'pending',
           notes: input.message || '',
