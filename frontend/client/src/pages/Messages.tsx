@@ -340,9 +340,9 @@ export default function Messages() {
                     {/* Context menu trigger */}
                     <button
                       className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 rounded-lg hover:bg-slate-700/50 transition-all"
-                      onClick={(e) => { e.stopPropagation(); const rect = (e.target as HTMLElement).getBoundingClientRect(); setShowContextMenu(showContextMenu?.id === conv.id ? null : { id: conv.id, x: rect.right, y: rect.bottom + 4 }); }}
+                      onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setShowContextMenu(showContextMenu?.id === conv.id ? null : { id: conv.id, x: rect.right, y: rect.bottom + 4 }); }}
                     >
-                      <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
+                      <MoreVertical className="w-3.5 h-3.5 text-slate-500 pointer-events-none" />
                     </button>
 
                   </div>
