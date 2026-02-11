@@ -79,6 +79,6 @@ stages:
                   inputs:
                     azureSubscription: 'EusoTrip-Production'
                     appType: 'webAppLinux'
-                    appName: 'eusotrip-platform'
+                    appName: 'eusotrip-app'
                     package: '$(Pipeline.Workspace)/eusotrip-build'
                     runtimeStack: 'NODE|20-lts'
