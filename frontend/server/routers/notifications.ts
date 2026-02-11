@@ -280,7 +280,17 @@ export const notificationsRouter = router({
   // Additional notification procedures
   getSettings: protectedProcedure.query(async () => ({ email: true, push: true, sms: false, quiet: { start: "22:00", end: "07:00" } })),
   updateSetting: protectedProcedure.input(z.object({ key: z.string().optional(), value: z.any(), setting: z.string().optional() })).mutation(async ({ input }) => ({ success: true, key: input.key || input.setting })),
-  getUnreadCount: protectedProcedure.query(async () => 0),
+  getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return 0;
+    try {
+      const userId = ctx.user?.id || 0;
+      const [result] = await db.select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+      return result?.count || 0;
+    } catch { return 0; }
+  }),
   markRead: protectedProcedure.input(z.object({ notificationId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, notificationId: input.notificationId || input.id })),
   markAllRead: protectedProcedure.mutation(async () => ({ success: true, markedCount: 0 })),
 

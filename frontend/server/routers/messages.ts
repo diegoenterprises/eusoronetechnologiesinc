@@ -19,6 +19,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { messages, users, conversations, conversationParticipants, wallets, walletTransactions } from "../../drizzle/schema";
 import { emitMessage } from "../_core/websocket";
+import { createNotification } from "../_core/createNotification";
 
 // Resolve ctx.user to a numeric DB user ID (same pattern as loads.ts)
 async function resolveUserId(ctxUser: any): Promise<number> {
@@ -339,6 +340,26 @@ export const messagesRouter = router({
         } as any);
       } catch {}
 
+      // Create notifications for all OTHER participants
+      try {
+        const otherParticipants = await db.select({ userId: conversationParticipants.userId })
+          .from(conversationParticipants)
+          .where(and(
+            eq(conversationParticipants.conversationId, convId),
+            sql`${conversationParticipants.userId} != ${userId}`,
+            isNull(conversationParticipants.leftAt),
+          ));
+        for (const p of otherParticipants) {
+          await createNotification({
+            userId: p.userId,
+            type: "message",
+            title: `New message from ${sender?.name || "User"}`,
+            message: input.content.substring(0, 100),
+            data: { category: "system", conversationId: String(convId), senderId: String(userId), actionUrl: "/messages" },
+          });
+        }
+      } catch {}
+
       return {
         id: String(msgId),
         conversationId: String(convId),
@@ -394,6 +415,23 @@ export const messagesRouter = router({
         .set({ unreadCount: sql`${conversationParticipants.unreadCount} + 1` })
         .where(and(eq(conversationParticipants.conversationId, convId), sql`${conversationParticipants.userId} != ${userId}`))
         .catch(() => {});
+
+      // Create notifications for other participants
+      try {
+        const [sender] = await db.select({ name: users.name }).from(users).where(eq(users.id, userId)).limit(1);
+        const others = await db.select({ userId: conversationParticipants.userId })
+          .from(conversationParticipants)
+          .where(and(eq(conversationParticipants.conversationId, convId), sql`${conversationParticipants.userId} != ${userId}`, isNull(conversationParticipants.leftAt)));
+        for (const p of others) {
+          await createNotification({
+            userId: p.userId,
+            type: "message",
+            title: `New message from ${sender?.name || "User"}`,
+            message: input.content.substring(0, 100),
+            data: { category: "system", conversationId: String(convId), actionUrl: "/messages" },
+          });
+        }
+      } catch {}
 
       return { success: true, messageId: String(msgId) };
     }),
@@ -993,6 +1031,24 @@ export const messagesRouter = router({
         } as any);
       } catch {}
 
+      // Create notification for recipient
+      await createNotification({
+        userId: recipientId,
+        type: "payment_received",
+        title: input.type === "send"
+          ? `${sender?.name || "User"} sent you $${input.amount.toFixed(2)}`
+          : `${sender?.name || "User"} requested $${input.amount.toFixed(2)}`,
+        message: input.note || (input.type === "send" ? "Payment received" : "Tap to review the request"),
+        data: {
+          category: "billing",
+          amount: input.amount,
+          currency: input.currency,
+          conversationId: String(convId),
+          actionUrl: "/messages",
+          actionLabel: input.type === "send" ? "View" : "Pay",
+        },
+      }).catch(() => {});
+
       return {
         id: String(msgId),
         type: messageType,
@@ -1195,6 +1251,35 @@ export const messagesRouter = router({
           timestamp: new Date().toISOString(),
         } as any);
       } catch {}
+
+      // Notify the requester that their payment request was fulfilled
+      await createNotification({
+        userId: requesterId,
+        type: "payment_received",
+        title: `${payer?.name || "User"} paid your $${amount.toFixed(2)} request`,
+        message: meta.note || "Payment request fulfilled",
+        data: {
+          category: "billing",
+          amount,
+          currency: meta.currency || "USD",
+          conversationId: String(msg.conversationId),
+          actionUrl: "/messages",
+        },
+      }).catch(() => {});
+
+      // Notify the payer with confirmation
+      await createNotification({
+        userId,
+        type: "payment_received",
+        title: `You paid $${amount.toFixed(2)} to ${requesterUser?.name || "user"}`,
+        message: "Payment completed successfully",
+        data: {
+          category: "billing",
+          amount,
+          conversationId: String(msg.conversationId),
+          actionUrl: "/wallet",
+        },
+      }).catch(() => {});
 
       return { success: true, amount, messageId: input.messageId };
     }),
