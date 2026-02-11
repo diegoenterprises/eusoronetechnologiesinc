@@ -106,10 +106,14 @@ function SignaturePad({ onSave, onClose }: { onSave: (d: string) => void; onClos
   }, []);
 
   const pos = (e: React.MouseEvent | React.TouchEvent) => {
-    const r = canvasRef.current!.getBoundingClientRect();
+    const c = canvasRef.current!;
+    const r = c.getBoundingClientRect();
     const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
     const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
-    return { x: cx - r.left, y: cy - r.top };
+    // Scale from CSS display size to canvas logical coordinate space
+    const scaleX = c.offsetWidth / r.width;
+    const scaleY = c.offsetHeight / r.height;
+    return { x: (cx - r.left) * scaleX, y: (cy - r.top) * scaleY };
   };
   const start = (e: React.MouseEvent | React.TouchEvent) => { setDrawing(true); setHasDrawn(true); currentStroke.current = [pos(e)]; };
   const move = (e: React.MouseEvent | React.TouchEvent) => {
@@ -347,6 +351,22 @@ export default function DocumentCenter() {
   const [savedSig, setSavedSig] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
+  // Signature persistence — load from DB
+  const sigQuery = (trpc as any).documents.getSignature.useQuery();
+  const saveSignatureMut = (trpc as any).documents.saveSignature.useMutation({
+    onSuccess: () => { sigQuery.refetch(); toast.success("Signature saved to your account"); },
+    onError: (e: any) => toast.error("Failed to save signature", { description: e.message }),
+  });
+  const deleteSignatureMut = (trpc as any).documents.deleteSignature.useMutation({
+    onSuccess: () => { setSavedSig(null); sigQuery.refetch(); toast.success("Signature deleted"); },
+    onError: (e: any) => toast.error("Failed to delete signature", { description: e.message }),
+  });
+
+  // Sync DB signature into local state
+  useEffect(() => {
+    if (sigQuery.data?.signatureData) setSavedSig(sigQuery.data.signatureData);
+  }, [sigQuery.data]);
+
   const docsQuery = (trpc as any).documents.getAll.useQuery({ search, category: activeTab === "all" ? undefined : activeTab });
   const statsQuery = (trpc as any).documents.getStats.useQuery();
   const uploadMut = (trpc as any).documents.upload.useMutation({
@@ -419,6 +439,9 @@ export default function DocumentCenter() {
             <div className="flex items-center gap-3">
               <img src={savedSig} alt="Signature" className="h-10 rounded border border-slate-700/30" />
               <Button size="sm" variant="outline" onClick={() => setShowSign(true)} className={cn("rounded-lg text-xs", isLight ? "border-slate-300" : "border-slate-600")}>Update</Button>
+              <Button size="sm" variant="outline" onClick={() => deleteSignatureMut.mutate({})} disabled={deleteSignatureMut.isPending} className={cn("rounded-lg text-xs text-red-400 hover:text-red-300", isLight ? "border-red-300 hover:bg-red-50" : "border-red-500/30 hover:bg-red-500/10")}>
+                <Trash2 className="w-3.5 h-3.5 mr-1" />{deleteSignatureMut.isPending ? "..." : "Delete"}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -510,7 +533,7 @@ export default function DocumentCenter() {
 
       {/* ── Modals ── */}
       {showUpload && <UploadModal onClose={() => setShowUpload(false)} onUpload={(d) => uploadMut.mutate(d)} uploading={uploadMut.isPending} />}
-      {showSign && <SignaturePad onSave={(d) => { setSavedSig(d); toast.success("Signature saved"); setShowSign(false); }} onClose={() => setShowSign(false)} />}
+      {showSign && <SignaturePad onSave={(d) => { setSavedSig(d); saveSignatureMut.mutate({ signatureData: d }); setShowSign(false); }} onClose={() => setShowSign(false)} />}
       {showDigitize && <DigitizeModal onClose={() => setShowDigitize(false)} onDigitized={() => { docsQuery.refetch(); statsQuery.refetch(); }} />}
     </div>
   );

@@ -101,15 +101,21 @@ export default function GradientSignaturePad({
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
 
+    // Scale factor: canvas logical size vs CSS display size
+    // On mobile, CSS maxWidth:100% shrinks the canvas display but the
+    // drawing coordinate space stays at width×height. We must scale.
+    const scaleX = width / rect.width;
+    const scaleY = height / rect.height;
+
     if ("touches" in e) {
       return {
-        x: e.touches[0].clientX - rect.left,
-        y: e.touches[0].clientY - rect.top,
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY,
       };
     }
     return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
     };
   };
 

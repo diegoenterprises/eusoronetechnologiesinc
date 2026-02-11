@@ -409,4 +409,73 @@ export const documentsRouter = router({
     .mutation(async ({ input }) => {
       return { success: true, documentId: input.documentId, status: 'verified' };
     }),
+
+  /**
+   * Save user's digital signature to DB (one per user, upsert)
+   */
+  saveSignature: protectedProcedure
+    .input(z.object({ signatureData: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = ctx.user?.id || 0;
+      if (!userId) throw new Error("Not authenticated");
+
+      // Check if signature doc already exists
+      const [existing] = await db.select({ id: documents.id })
+        .from(documents)
+        .where(and(eq(documents.userId, userId), eq(documents.type, "__signature__")))
+        .limit(1);
+
+      if (existing) {
+        await db.update(documents)
+          .set({ fileUrl: input.signatureData, status: "active" })
+          .where(eq(documents.id, existing.id));
+      } else {
+        await db.insert(documents).values({
+          userId,
+          name: "Digital Signature",
+          type: "__signature__",
+          fileUrl: input.signatureData,
+          status: "active",
+        });
+      }
+      return { success: true };
+    }),
+
+  /**
+   * Get user's saved signature
+   */
+  getSignature: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { signatureData: null };
+      const userId = ctx.user?.id || 0;
+      if (!userId) return { signatureData: null };
+
+      try {
+        const [sig] = await db.select({ fileUrl: documents.fileUrl })
+          .from(documents)
+          .where(and(eq(documents.userId, userId), eq(documents.type, "__signature__")))
+          .limit(1);
+        return { signatureData: sig?.fileUrl || null };
+      } catch {
+        return { signatureData: null };
+      }
+    }),
+
+  /**
+   * Delete user's saved signature
+   */
+  deleteSignature: protectedProcedure
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = ctx.user?.id || 0;
+      if (!userId) throw new Error("Not authenticated");
+
+      await db.delete(documents)
+        .where(and(eq(documents.userId, userId), eq(documents.type, "__signature__")));
+      return { success: true };
+    }),
 });
