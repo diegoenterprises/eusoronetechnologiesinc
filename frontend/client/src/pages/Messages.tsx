@@ -866,13 +866,13 @@ export default function Messages() {
         document.body
       )}
 
-      {/* ═══════════ Conversation Context Menu (fixed portal — not clipped by overflow) ═══════════ */}
-      {showContextMenu && (
+      {/* ═══════════ Conversation Context Menu (portaled to body) ═══════════ */}
+      {showContextMenu && createPortal(
         <>
-          <div className="fixed inset-0 z-[999]" onClick={() => setShowContextMenu(null)} />
+          <div style={{ position: 'fixed', inset: 0, zIndex: 99996 }} onClick={() => setShowContextMenu(null)} />
           <div
-            className="fixed z-[1000] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 min-w-[140px]"
-            style={{ top: showContextMenu.y, left: Math.min(showContextMenu.x, window.innerWidth - 160), }}
+            style={{ position: 'fixed', zIndex: 99997, top: showContextMenu.y, left: Math.min(showContextMenu.x, window.innerWidth - 160) }}
+            className="bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 min-w-[140px]"
           >
             <button
               className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 flex items-center gap-2"
@@ -887,7 +887,8 @@ export default function Messages() {
               <Trash2 className="w-3.5 h-3.5" /> Delete
             </button>
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

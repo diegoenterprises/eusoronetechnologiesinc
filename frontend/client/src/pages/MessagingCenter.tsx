@@ -5,6 +5,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -369,6 +370,21 @@ export default function MessagingCenter() {
                       )}
                       {!message.isOwn && !showSenderName && <div className="w-8 flex-shrink-0" />}
 
+                      {/* Unsend button for own messages */}
+                      {message.isOwn && !message.metadata?.unsent && (
+                        <button
+                          className="self-center p-1.5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-slate-700/80 transition-all flex-shrink-0"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            setMessageContextMenu({ id: String(message.id), x: rect.left, y: rect.top });
+                          }}
+                        >
+                          <MoreVertical className="w-3.5 h-3.5 pointer-events-none" />
+                        </button>
+                      )}
+
                       <div className={cn("max-w-[70%]")}>
                         {showSenderName && !message.isOwn && (
                           <p className="text-[10px] text-slate-500 mb-0.5 ml-1 font-medium">{message.senderName}</p>
@@ -382,7 +398,7 @@ export default function MessagingCenter() {
                                 ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
                                 : "bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.08]"
                           )}
-                          onContextMenu={(e) => { e.preventDefault(); if (message.isOwn) setMessageContextMenu(message); }}
+                          onContextMenu={(e) => { e.preventDefault(); if (message.isOwn) setMessageContextMenu({ id: String(message.id), x: e.clientX, y: e.clientY }); }}
                         >
                           {/* Payment request card */}
                           {(message.messageType === "payment_request" || message.messageType === "payment_sent") ? (
@@ -413,17 +429,6 @@ export default function MessagingCenter() {
                               "text-[13.5px] leading-[1.55] whitespace-pre-wrap tracking-[-0.01em]",
                               message.isOwn ? "text-white" : "text-slate-200"
                             )}>{message.content}</p>
-                          )}
-                          {/* Unsend option on long-press/right-click for own messages */}
-                          {message.isOwn && messageContextMenu?.id === message.id && (
-                            <div className="absolute -top-8 right-0 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 px-1 z-50">
-                              <button
-                                className="text-xs text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded flex items-center gap-1.5"
-                                onClick={() => unsendMessageMutation.mutate({ messageId: messageContextMenu.id })}
-                              >
-                                <Trash2 className="w-3 h-3" /> Unsend
-                              </button>
-                            </div>
                           )}
                         </div>
                         <div className={cn("flex items-center gap-1.5 mt-1 px-1", message.isOwn ? "justify-end" : "justify-start")}>
@@ -495,9 +500,34 @@ export default function MessagingCenter() {
         )}
       </div>
 
-      {/* ═══════════ New Conversation Modal ═══════════ */}
-      {showNewConversation && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowNewConversation(false)}>
+      {/* ═══════════ Unsend Context Menu (portaled to body) ═══════════ */}
+      {messageContextMenu && createPortal(
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 99998 }} onClick={() => setMessageContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMessageContextMenu(null); }} />
+          <div
+            style={{ position: 'fixed', zIndex: 99999, top: Math.max(8, messageContextMenu.y - 80), left: Math.min(messageContextMenu.x, window.innerWidth - 180) }}
+            className="bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl py-1 min-w-[160px]"
+          >
+            <button
+              className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
+              onClick={() => { unsendMessageMutation.mutate({ messageId: messageContextMenu.id }); setMessageContextMenu(null); }}
+            >
+              <X className="w-4 h-4" /> Unsend Message
+            </button>
+            <button
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors"
+              onClick={() => { unsendMessageMutation.mutate({ messageId: messageContextMenu.id }); setMessageContextMenu(null); }}
+            >
+              <Trash2 className="w-4 h-4" /> Delete Message
+            </button>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {/* ═══════════ New Conversation Modal (portaled to body) ═══════════ */}
+      {showNewConversation && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/60 backdrop-blur-sm flex items-center justify-center" onClick={() => setShowNewConversation(false)}>
           <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-slate-700/50">
               <h2 className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">New Conversation</h2>
@@ -562,7 +592,8 @@ export default function MessagingCenter() {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

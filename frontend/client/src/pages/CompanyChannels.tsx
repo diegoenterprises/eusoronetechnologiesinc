@@ -7,6 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useEusoDialog } from "@/components/EusoDialog";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useDisplayUser } from "@/hooks/useDisplayUser";
@@ -539,9 +540,9 @@ export default function CompanyChannels() {
       </div>
     </div>
 
-    {/* Create Channel Modal */}
-    {showCreateChannel && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    {/* Create Channel Modal (portaled to body) */}
+    {showCreateChannel && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/50 flex items-center justify-center">
           <Card className="bg-slate-800 border-slate-700 p-6 w-96">
             <h2 className="text-xl font-bold text-white mb-4">
               Create New Channel
@@ -623,12 +624,13 @@ export default function CompanyChannels() {
               </div>
             </div>
           </Card>
-        </div>
+        </div>,
+        document.body
       )}
 
-    {/* Channel Settings Modal */}
-    {showSettings && activeChannel && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    {/* Channel Settings Modal (portaled to body) */}
+    {showSettings && activeChannel && createPortal(
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/50 flex items-center justify-center">
         <Card className="bg-slate-800 border-slate-700 p-6 w-[420px]">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">Channel Settings</h2>
@@ -700,12 +702,13 @@ export default function CompanyChannels() {
             </div>
           </div>
         </Card>
-      </div>
+      </div>,
+      document.body
     )}
 
-    {/* Members Modal */}
-    {showMembers && activeChannel && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    {/* Members Modal (portaled to body) */}
+    {showMembers && activeChannel && createPortal(
+      <div style={{ position: 'fixed', inset: 0, zIndex: 99990 }} className="bg-black/50 flex items-center justify-center">
         <Card className="bg-slate-800 border-slate-700 p-6 w-[420px] max-h-[80vh] flex flex-col">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-white">
@@ -745,7 +748,8 @@ export default function CompanyChannels() {
             </Button>
           </div>
         </Card>
-      </div>
+      </div>,
+      document.body
     )}
     </div>
   );
