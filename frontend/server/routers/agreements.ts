@@ -527,6 +527,12 @@ export const agreementsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
+      // Validate agreement type is within freight/logistics business scope
+      const validTypes = ["carrier_shipper","broker_carrier","broker_shipper","carrier_driver","escort_service","catalyst_dispatch","terminal_access","master_service","lane_commitment","fuel_surcharge","accessorial_schedule","nda","custom"];
+      if (!validTypes.includes(input.agreementType)) {
+        throw new Error(`Invalid agreement type: ${input.agreementType}. Must be a valid freight/logistics agreement type.`);
+      }
+
       const agreementNumber = generateAgreementNumber(input.agreementType);
 
       // Load template clauses if templateId provided
@@ -561,6 +567,39 @@ export const agreementsRouter = router({
       const numericUserId = await resolveUserId(ctx.user);
       if (!numericUserId) throw new Error("Could not resolve user ID");
 
+      // Resolve Party B — if partyBUserId is 0 or missing, create/find a placeholder
+      // from the strategic inputs so multi-user accounts work properly
+      let partyBId = input.partyBUserId;
+      if (!partyBId || partyBId === 0) {
+        const bName = (input.strategicInputs?.partyBName as string) || "Counterparty";
+        const bCompany = (input.strategicInputs?.partyBCompany as string) || "";
+        // Try to find by name first, otherwise create a placeholder user
+        try {
+          const [existing] = await db.select({ id: users.id }).from(users)
+            .where(eq(users.name, bName)).limit(1);
+          if (existing) {
+            partyBId = existing.id;
+          } else {
+            const placeholderEmail = `${bName.toLowerCase().replace(/\s+/g, ".")}@pending.eusotrip.com`;
+            const result = await db.insert(users).values({
+              name: bName,
+              email: placeholderEmail,
+              role: (input.partyBRole as any) || "CARRIER",
+              isActive: true,
+              isVerified: false,
+            } as any);
+            partyBId = (result as any).insertId || (result as any)[0]?.insertId || 0;
+            if (!partyBId) {
+              const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, placeholderEmail)).limit(1);
+              partyBId = row?.id || 0;
+            }
+          }
+        } catch {
+          // If all else fails, use numericUserId as placeholder (self-agreement draft)
+          partyBId = numericUserId;
+        }
+      }
+
       const result = await db.insert(agreements).values({
         agreementNumber,
         templateId: input.templateId,
@@ -569,7 +608,7 @@ export const agreementsRouter = router({
         partyAUserId: numericUserId,
         partyACompanyId: ctx.user?.companyId || null,
         partyARole: ctx.user?.role || "SHIPPER",
-        partyBUserId: input.partyBUserId,
+        partyBUserId: partyBId,
         partyBCompanyId: input.partyBCompanyId,
         partyBRole: input.partyBRole,
         rateType: (input.rateType as any) || null,

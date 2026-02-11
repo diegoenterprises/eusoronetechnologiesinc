@@ -562,29 +562,6 @@ export default function Messages() {
                 )}
                 <div ref={messagesEndRef} />
 
-                {/* Unsend context menu (floating) */}
-                {messageContextMenu && (
-                  <div
-                    className="fixed inset-0 z-[9998]"
-                    onClick={() => setMessageContextMenu(null)}
-                    onContextMenu={(e) => { e.preventDefault(); setMessageContextMenu(null); }}
-                  >
-                    <div
-                      className="absolute z-[9999] bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl py-1 min-w-[150px]"
-                      style={{ top: messageContextMenu.y, left: messageContextMenu.x, transform: "translate(-50%, -100%)" }}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <button
-                        className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
-                        onClick={() => {
-                          unsendMessageMutation.mutate({ messageId: messageContextMenu.id });
-                        }}
-                      >
-                        <X className="w-4 h-4" /> Unsend Message
-                      </button>
-                    </div>
-                  </div>
-                )}
               </CardContent>
 
               {/* Message Input */}
@@ -859,6 +836,30 @@ export default function Messages() {
           </div>
           </div>
         </div>
+      )}
+
+      {/* ═══════════ Message Unsend/Delete Context Menu (fixed portal) ═══════════ */}
+      {messageContextMenu && (
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setMessageContextMenu(null)} onContextMenu={(e) => { e.preventDefault(); setMessageContextMenu(null); }} />
+          <div
+            className="fixed z-[9999] bg-slate-800/95 backdrop-blur-md border border-white/10 rounded-xl shadow-2xl py-1 min-w-[160px]"
+            style={{ top: Math.max(8, messageContextMenu.y - 80), left: Math.min(messageContextMenu.x, window.innerWidth - 180) }}
+          >
+            <button
+              className="w-full text-left px-4 py-2.5 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2.5 transition-colors"
+              onClick={() => { unsendMessageMutation.mutate({ messageId: messageContextMenu.id }); setMessageContextMenu(null); }}
+            >
+              <X className="w-4 h-4" /> Unsend Message
+            </button>
+            <button
+              className="w-full text-left px-4 py-2.5 text-sm text-slate-400 hover:bg-slate-700/50 flex items-center gap-2.5 transition-colors"
+              onClick={() => { unsendMessageMutation.mutate({ messageId: messageContextMenu.id }); setMessageContextMenu(null); }}
+            >
+              <Trash2 className="w-4 h-4" /> Delete Message
+            </button>
+          </div>
+        </>
       )}
 
       {/* ═══════════ Conversation Context Menu (fixed portal — not clipped by overflow) ═══════════ */}
