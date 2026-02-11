@@ -30,7 +30,7 @@ export default function Messages() {
   const [showNewConversation, setShowNewConversation] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState("");
   const [showMobileChat, setShowMobileChat] = useState(false);
-  const [showContextMenu, setShowContextMenu] = useState<string | null>(null);
+  const [showContextMenu, setShowContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentNote, setPaymentNote] = useState("");
@@ -336,28 +336,11 @@ export default function Messages() {
                     {/* Context menu trigger */}
                     <button
                       className="opacity-0 group-hover:opacity-100 hover:opacity-100 p-1 rounded-lg hover:bg-slate-700/50 transition-all"
-                      onClick={(e) => { e.stopPropagation(); setShowContextMenu(showContextMenu === conv.id ? null : conv.id); }}
+                      onClick={(e) => { e.stopPropagation(); const rect = (e.target as HTMLElement).getBoundingClientRect(); setShowContextMenu(showContextMenu?.id === conv.id ? null : { id: conv.id, x: rect.right, y: rect.bottom + 4 }); }}
                     >
                       <MoreVertical className="w-3.5 h-3.5 text-slate-500" />
                     </button>
 
-                    {/* Context menu */}
-                    {showContextMenu === conv.id && (
-                      <div className="absolute right-2 top-12 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-xl py-1 min-w-[140px]">
-                        <button
-                          className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 flex items-center gap-2"
-                          onClick={(e) => { e.stopPropagation(); archiveConversationMutation.mutate({ conversationId: conv.id }); }}
-                        >
-                          <Archive className="w-3.5 h-3.5" /> Archive
-                        </button>
-                        <button
-                          className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2"
-                          onClick={(e) => { e.stopPropagation(); deleteConversationMutation.mutate({ conversationId: conv.id }); }}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" /> Delete
-                        </button>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
@@ -859,6 +842,30 @@ export default function Messages() {
           </div>
           </div>
         </div>
+      )}
+
+      {/* ═══════════ Conversation Context Menu (fixed portal — not clipped by overflow) ═══════════ */}
+      {showContextMenu && (
+        <>
+          <div className="fixed inset-0 z-[999]" onClick={() => setShowContextMenu(null)} />
+          <div
+            className="fixed z-[1000] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 min-w-[140px]"
+            style={{ top: showContextMenu.y, left: Math.min(showContextMenu.x, window.innerWidth - 160), }}
+          >
+            <button
+              className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-700/50 flex items-center gap-2"
+              onClick={() => { archiveConversationMutation.mutate({ conversationId: showContextMenu.id }); }}
+            >
+              <Archive className="w-3.5 h-3.5" /> Archive
+            </button>
+            <button
+              className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+              onClick={() => { deleteConversationMutation.mutate({ conversationId: showContextMenu.id }); }}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
