@@ -447,17 +447,18 @@ export default function Messages() {
                         )}
                         {!message.isOwn && !showName && <div className="w-8 flex-shrink-0" />}
 
-                        {/* Unsend hover button for own messages — flex sibling so clicks always work */}
+                        {/* Unsend button for own messages — always visible */}
                         {message.isOwn && !isUnsent && (
                           <button
-                            className="self-center opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-full hover:bg-slate-700/80 transition-all flex-shrink-0"
+                            className="self-center p-1.5 rounded-full text-slate-500 hover:text-slate-300 hover:bg-slate-700/80 transition-all flex-shrink-0"
                             onClick={(e) => {
+                              e.preventDefault();
                               e.stopPropagation();
                               const rect = e.currentTarget.getBoundingClientRect();
                               setMessageContextMenu({ id: String(message.id), x: rect.left, y: rect.top });
                             }}
                           >
-                            <MoreVertical className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+                            <MoreVertical className="w-3.5 h-3.5 pointer-events-none" />
                           </button>
                         )}
 
