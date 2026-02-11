@@ -160,8 +160,12 @@ export default function Messages() {
   }, [messagesQuery.data]);
 
   useEffect(() => {
-    if ((conversationsQuery.data as any)?.length && !selectedConversation) {
-      setSelectedConversation(conversationsQuery.data[0].id);
+    const convList = conversationsQuery.data as any[];
+    if (!convList) return;
+    if (selectedConversation && !convList.find((c: any) => c.id === selectedConversation)) {
+      setSelectedConversation(convList.length > 0 ? convList[0].id : null);
+    } else if (convList.length && !selectedConversation) {
+      setSelectedConversation(convList[0].id);
     }
   }, [conversationsQuery.data, selectedConversation]);
 
@@ -455,14 +459,14 @@ export default function Messages() {
                           {/* Unsend hover button for own messages */}
                           {message.isOwn && !isUnsent && (
                             <button
-                              className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/msg:opacity-100 p-1 rounded-full hover:bg-slate-700/80 transition-all z-10"
+                              className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover/msg:opacity-100 p-1.5 rounded-full hover:bg-slate-700/80 transition-all z-10"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                const rect = e.currentTarget.getBoundingClientRect();
                                 setMessageContextMenu({ id: message.id, x: rect.left, y: rect.top });
                               }}
                             >
-                              <MoreVertical className="w-3.5 h-3.5 text-slate-400" />
+                              <MoreVertical className="w-3.5 h-3.5 text-slate-400 pointer-events-none" />
                             </button>
                           )}
                           {showName && !message.isOwn && (
