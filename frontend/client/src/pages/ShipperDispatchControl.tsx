@@ -32,6 +32,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import AddressAutocomplete, { type ParsedAddress } from "@/components/AddressAutocomplete";
 
 interface Stop {
   id: string;
@@ -304,7 +305,7 @@ export default function ShipperDispatchControl() {
                   <Card className={cc}>
                     <CardHeader className="pb-2"><CardTitle className={cn("flex items-center gap-2 text-sm", tc)}><div className="w-6 h-6 rounded-full bg-green-500/15 flex items-center justify-center"><MapPin className="w-3.5 h-3.5 text-green-500" /></div>Pickup Location</CardTitle></CardHeader>
                     <CardContent className="space-y-3">
-                      <div><label className={lb}>Address</label><Input value={pickupAddr} onChange={(e: any) => setPickupAddr(e.target.value)} placeholder="Street address or facility name" className={ic} /></div>
+                      <div><label className={lb}>Address</label><AddressAutocomplete value={pickupAddr} onChange={setPickupAddr} onSelect={(p: ParsedAddress) => { setPickupAddr(p.address); setPickupCity(p.city); setPickupState(p.state); }} placeholder="Search pickup address..." className={ic} /></div>
                       <div className="grid grid-cols-3 gap-2">
                         <div><label className={lb}>City</label><Input value={pickupCity} onChange={(e: any) => setPickupCity(e.target.value)} placeholder="City" className={ic} /></div>
                         <div><label className={lb}>State</label><Input value={pickupState} onChange={(e: any) => setPickupState(e.target.value)} placeholder="ST" className={ic} /></div>
@@ -348,7 +349,7 @@ export default function ShipperDispatchControl() {
                   <Card className={cc}>
                     <CardHeader className="pb-2"><CardTitle className={cn("flex items-center gap-2 text-sm", tc)}><div className="w-6 h-6 rounded-full bg-red-500/15 flex items-center justify-center"><MapPin className="w-3.5 h-3.5 text-red-500" /></div>Delivery Location</CardTitle></CardHeader>
                     <CardContent className="space-y-3">
-                      <div><label className={lb}>Address</label><Input value={delivAddr} onChange={(e: any) => setDelivAddr(e.target.value)} placeholder="Street address or facility name" className={ic} /></div>
+                      <div><label className={lb}>Address</label><AddressAutocomplete value={delivAddr} onChange={setDelivAddr} onSelect={(p: ParsedAddress) => { setDelivAddr(p.address); setDelivCity(p.city); setDelivState(p.state); }} placeholder="Search delivery address..." className={ic} /></div>
                       <div className="grid grid-cols-3 gap-2">
                         <div><label className={lb}>City</label><Input value={delivCity} onChange={(e: any) => setDelivCity(e.target.value)} placeholder="City" className={ic} /></div>
                         <div><label className={lb}>State</label><Input value={delivState} onChange={(e: any) => setDelivState(e.target.value)} placeholder="ST" className={ic} /></div>

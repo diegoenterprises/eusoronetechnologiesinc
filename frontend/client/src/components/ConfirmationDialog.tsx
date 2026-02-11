@@ -67,32 +67,30 @@ export function ConfirmationDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900 border-purple-500/30 max-w-md">
-        <AlertDialogHeader className="text-center">
-          <AlertDialogTitle className="text-white text-lg font-semibold text-center">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
             {title}
           </AlertDialogTitle>
           {description && (
-            <AlertDialogDescription className="text-slate-400 text-center">
+            <AlertDialogDescription>
               {description}
             </AlertDialogDescription>
           )}
         </AlertDialogHeader>
-        <AlertDialogFooter className="flex justify-center gap-3 sm:justify-center mt-4">
+        <AlertDialogFooter>
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isLoading}
             className={cn(
-              "px-6 py-2 rounded-lg font-medium transition-all",
-              getConfirmButtonStyle()
+              variant === "destructive" && "!bg-gradient-to-r !from-red-600 !to-red-500",
+              variant === "warning" && "!bg-gradient-to-r !from-amber-600 !to-orange-500",
             )}
+            style={variant === "default" ? { background: "linear-gradient(135deg, #1473FF, #BE01FF)" } : undefined}
           >
             {isLoading ? "Processing..." : confirmText}
           </AlertDialogAction>
-          <AlertDialogCancel
-            onClick={handleCancel}
-            className="px-6 py-2 rounded-lg font-medium bg-slate-700/80 hover:bg-slate-600 text-white border-slate-600 transition-all"
-          >
+          <AlertDialogCancel onClick={handleCancel}>
             {cancelText}
           </AlertDialogCancel>
         </AlertDialogFooter>

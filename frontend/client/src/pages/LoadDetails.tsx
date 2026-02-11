@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
 const SPECTRA_KEYWORDS = ["crude", "oil", "petroleum", "condensate", "bitumen", "naphtha", "diesel", "gasoline", "kerosene", "fuel", "lpg", "propane", "butane", "ethanol", "methanol"];
@@ -41,8 +42,13 @@ export default function LoadDetails() {
   const isLight = theme === "light";
   const loadId = (params.loadId || params.id) as string;
 
+  const { user: authUser } = useAuth();
   const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId });
   const load = loadQuery.data;
+  // Hide Place Bid if current user is the load owner (shipper)
+  const isLoadOwner = load?.shipperId && authUser?.id && Number(load.shipperId) === Number(authUser.id);
+  const userRole = (authUser?.role || "").toUpperCase();
+  const canBid = !isLoadOwner && ["CARRIER", "BROKER", "CATALYST"].includes(userRole);
 
   const getStatusBadge = (status: string) => {
     const m: Record<string, string> = {
@@ -124,7 +130,7 @@ export default function LoadDetails() {
           <Button variant="outline" className={cn("rounded-xl text-sm", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => setLocation("/messages")}>
             <Phone className="w-4 h-4 mr-2" />Contact
           </Button>
-          {load.status === "posted" && (
+          {load.status === "posted" && canBid && (
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation(`/bids/submit/${loadId}`)}>
               <Gavel className="w-4 h-4 mr-2" />Place Bid
             </Button>
@@ -373,8 +379,8 @@ export default function LoadDetails() {
         </Card>
       </div>
 
-      {/* ── Bottom Place Bid CTA (for posted loads) ── */}
-      {load.status === "posted" && (
+      {/* ── Bottom Place Bid CTA (for posted loads — carriers only, not load owner) ── */}
+      {load.status === "posted" && canBid && (
         <div className={cn("rounded-2xl border p-6 flex flex-col sm:flex-row items-center justify-between gap-4", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
           <div>
             <p className={cn("font-bold text-lg", isLight ? "text-slate-800" : "text-white")}>Ready to haul this load?</p>

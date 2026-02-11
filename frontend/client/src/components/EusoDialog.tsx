@@ -75,45 +75,37 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
         onClick={() => onClose(false)}
       />
 
-      {/* Card — gradient border via wrapper technique */}
+      {/* Card — dark solid card, no border, subtle top glow */}
       <div
-        className="relative p-[1.5px] rounded-2xl"
+        className="relative rounded-2xl overflow-hidden min-w-[420px] max-w-[540px]"
         style={{
-          background: "linear-gradient(135deg, #1473FF, #BE01FF)",
+          background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)",
+          boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)",
           animation: "eusoDialogScaleIn 0.2s ease-out",
         }}
       >
-        <div className="relative bg-[#0f1629]/95 backdrop-blur-xl rounded-2xl px-10 py-10 min-w-[420px] max-w-[540px]">
-          {/* Close X */}
-          <button
-            onClick={() => onClose(false)}
-            className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+        {/* Subtle top gradient glow line */}
+        <div
+          className="absolute top-0 left-0 right-0 h-[2px]"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(20,115,255,0.5), rgba(190,1,255,0.5), transparent)" }}
+        />
 
-          {/* Icon */}
-          {defaults.icon && (
-            <div className="flex justify-center mb-5">
-              {defaults.icon}
-            </div>
-          )}
-
+        <div className="px-12 py-12">
           {/* Title */}
           {dialog.title && (
-            <h3 className="text-center text-white font-bold text-xl mb-3">{dialog.title}</h3>
+            <h3 className="text-center text-white font-semibold text-xl mb-4">{dialog.title}</h3>
           )}
 
           {/* Message */}
-          <p className="text-center text-white/90 text-base leading-relaxed mb-8">
+          <p className="text-center text-white text-lg leading-relaxed mb-10">
             {dialog.message}
           </p>
 
           {/* Buttons */}
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-5">
             <button
               onClick={() => onClose(true)}
-              className="px-8 py-3 rounded-xl text-base font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+              className="px-10 py-3.5 rounded-xl text-base font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
               style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
             >
               {confirmLabel}
@@ -121,7 +113,8 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
             {showCancel && (
               <button
                 onClick={() => onClose(false)}
-                className="px-8 py-3 rounded-xl text-base font-bold text-white/90 border border-[#BE01FF]/50 bg-white/5 hover:bg-white/10 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="px-10 py-3.5 rounded-xl text-base font-bold text-white/90 transition-all hover:bg-white/5 hover:scale-[1.02] active:scale-[0.98]"
+                style={{ border: "1.5px solid rgba(100, 140, 255, 0.4)" }}
               >
                 {cancelLabel}
               </button>

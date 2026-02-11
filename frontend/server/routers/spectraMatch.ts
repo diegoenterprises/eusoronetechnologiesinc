@@ -17,13 +17,14 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { esangAI, type SpectraMatchAIRequest } from "../_core/esangAI";
-import { getERGForProduct, getFullERGInfo, getUNForProduct, EMERGENCY_CONTACTS } from "../_core/ergDatabase";
+import { getERGForProduct, getFullERGInfo, EMERGENCY_CONTACTS } from "../_core/ergDatabaseDB";
+import { ASTM_METHODS, CRUDE_OIL_DB_METADATA } from "../_core/crudeOilSpecs";
 import {
-  CRUDE_OIL_SPECS, CRUDE_OIL_DB_METADATA, SPEC_TOLERANCES, ASTM_METHODS,
-  matchCrudeOil, getCrudeById, getCrudesByCountry, getCrudesByType, searchCrudes,
-  classifyAPI, classifySulfur, getCountryName,
+  SPEC_TOLERANCES,
+  matchCrudeOil, getCrudeById, getCrudesByCountry, searchCrudes,
+  classifyAPI, classifySulfur, getCountryName, getMetadata as getCrudeMetadata,
   type CrudeOilSpec, type MatchResult, type MatchInput,
-} from "../_core/crudeOilSpecs";
+} from "../_core/crudeOilSpecsDB";
 
 export const spectraMatchRouter = router({
   // Identify crude oil origin based on parameters — HYBRID: Static + ESANG AI
@@ -73,8 +74,8 @@ export const spectraMatchRouter = router({
         country: input.country,
       };
 
-      // Run static matching against 90+ global crude grades
-      const matches = matchCrudeOil(matchInput, 10);
+      // Run DB-backed matching against 130+ global crude grades
+      const matches = await matchCrudeOil(matchInput, 10);
       const topMatch = matches[0];
       const alternativeMatches = matches.slice(1, 5);
 
@@ -149,9 +150,9 @@ export const spectraMatchRouter = router({
           poweredBy: "ESANG AI™ / Gemini",
         } : null,
         // ERG 2024 Emergency Response Integration
-        ergInfo: (() => {
+        ergInfo: await (async () => {
           const productName = useAI ? aiAnalysis!.suggestedProduct : topMatch.crude.name;
-          const ergData = getERGForProduct(productName);
+          const ergData = await getERGForProduct(productName);
           if (ergData) {
             return {
               unNumber: `UN${ergData.material?.unNumber}`,
@@ -231,7 +232,9 @@ export const spectraMatchRouter = router({
 
   // Get all known crude oil types in database (90+ global grades)
   getCrudeTypes: protectedProcedure.query(async () => {
-    return CRUDE_OIL_SPECS.map((crude) => ({
+    const { searchCrudes } = await import("../_core/crudeOilSpecsDB");
+    const allCrudes = await searchCrudes("", 200);
+    return allCrudes.map((crude) => ({
       id: crude.id,
       name: crude.name,
       type: crude.type,
@@ -248,7 +251,7 @@ export const spectraMatchRouter = router({
   searchCrudes: protectedProcedure
     .input(z.object({ query: z.string(), limit: z.number().optional() }))
     .query(async ({ input }) => {
-      const results = searchCrudes(input.query, input.limit || 20);
+      const results = await searchCrudes(input.query, input.limit || 20);
       return results.map(c => ({
         id: c.id, name: c.name, type: c.type,
         country: getCountryName(c.country), region: c.region,
@@ -261,7 +264,8 @@ export const spectraMatchRouter = router({
   getCrudesByCountry: protectedProcedure
     .input(z.object({ country: z.string() }))
     .query(async ({ input }) => {
-      return getCrudesByCountry(input.country).map(c => ({
+      const crudes = await getCrudesByCountry(input.country);
+      return crudes.map(c => ({
         id: c.id, name: c.name, type: c.type,
         region: c.region, apiGravity: c.apiGravity.typical,
         sulfur: c.sulfur.typical, characteristics: c.characteristics,
@@ -270,8 +274,10 @@ export const spectraMatchRouter = router({
 
   // Get database metadata and statistics
   getDatabaseInfo: protectedProcedure.query(async () => {
+    const meta = await getCrudeMetadata();
     return {
       ...CRUDE_OIL_DB_METADATA,
+      ...meta,
       tolerances: SPEC_TOLERANCES,
       astmMethods: ASTM_METHODS,
       parameterWeights: { apiGravity: 30, sulfur: 25, bsw: 10, salt: 8, rvp: 7, viscosity: 7, tan: 5, pourPoint: 4, flashPoint: 4 },
@@ -282,7 +288,7 @@ export const spectraMatchRouter = router({
   getCrudeSpecs: protectedProcedure
     .input(z.object({ crudeId: z.string() }))
     .query(async ({ input }) => {
-      const crude = getCrudeById(input.crudeId);
+      const crude = await getCrudeById(input.crudeId);
       if (!crude) {
         throw new Error("Crude type not found");
       }
@@ -345,7 +351,7 @@ export const spectraMatchRouter = router({
       const verifiedAt = new Date().toISOString();
 
       // Look up crude name from our database if not provided
-      const crude = getCrudeById(input.crudeId);
+      const crude = await getCrudeById(input.crudeId);
       const productName = input.productName || crude?.name || input.crudeId;
 
       const spectraMatchResult = {

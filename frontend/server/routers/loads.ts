@@ -592,19 +592,25 @@ export const loadsRouter = router({
       return {
         ...load,
         id: String(load.id),
+        // Serialize all Date fields to ISO strings to prevent React "Objects are not valid as React child" crash
+        pickupDate: load.pickupDate instanceof Date ? load.pickupDate.toISOString() : (load.pickupDate || null),
+        deliveryDate: load.deliveryDate instanceof Date ? load.deliveryDate.toISOString() : (load.deliveryDate || null),
+        createdAt: load.createdAt instanceof Date ? load.createdAt.toISOString() : (load.createdAt || null),
+        updatedAt: (load as any).updatedAt instanceof Date ? (load as any).updatedAt.toISOString() : ((load as any).updatedAt || null),
         origin: { address: pickup.address || "", city: pickup.city || "", state: pickup.state || "", zip: pickup.zipCode || "" },
         destination: { address: delivery.address || "", city: delivery.city || "", state: delivery.state || "", zip: delivery.zipCode || "" },
         pickupLocation: { city: pickup.city || "", state: pickup.state || "" },
         deliveryLocation: { city: delivery.city || "", state: delivery.state || "" },
         commodity: (load as any).commodityName || ergProduct || load.cargoType || "General",
         ergGuide,
-        biddingEnds: load.pickupDate || new Date().toISOString(),
+        biddingEnds: load.pickupDate instanceof Date ? load.pickupDate.toISOString() : (load.pickupDate || new Date().toISOString()),
         suggestedRateMin: rateNum * 0.9,
         suggestedRateMax: rateNum * 1.1,
         equipmentType: load.cargoType || "general",
         spectraMatchResult: (load as any).spectraMatchResult || null,
         spectraMatchVerified: !!(load as any).spectraMatchResult,
         notes,
+        shipperId: load.shipperId,
       };
     }),
 
@@ -1159,7 +1165,38 @@ export const bidsRouter = router({
     };
   }),
   getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
-  submit: protectedProcedure.input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() })).mutation(async () => ({ success: true, bidId: "bid_123" })),
+  submit: protectedProcedure
+    .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const loadIdNum = parseInt(input.loadId, 10);
+      if (!loadIdNum) throw new Error("Invalid load ID");
+
+      const result = await db.insert(bids).values({
+        loadId: loadIdNum,
+        carrierId: ctx.user.id,
+        amount: input.amount.toString(),
+        notes: input.notes || '',
+        status: 'pending',
+      });
+      const bidId = (result as any).insertId || 0;
+
+      // Emit real-time bid received event
+      const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+      emitBidReceived({
+        bidId: String(bidId),
+        loadId: input.loadId,
+        loadNumber: load?.loadNumber || '',
+        carrierId: String(ctx.user.id),
+        carrierName: ctx.user.name || 'Carrier',
+        amount: input.amount,
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+      });
+
+      return { success: true, bidId: String(bidId) };
+    }),
   accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
 

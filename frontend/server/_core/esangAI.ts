@@ -6,9 +6,9 @@
 
 import { ENV } from "./env";
 import {
-  searchMaterials, getMaterialByUN, getGuide, getProtectiveDistance,
+  searchMaterials, getMaterialByUN, getGuide,
   getFullERGInfo, getERGForProduct, EMERGENCY_CONTACTS,
-} from "./ergDatabase";
+} from "./ergDatabaseDB";
 
 export interface ChatMessage {
   role: "user" | "assistant" | "system";
@@ -457,17 +457,17 @@ Provide:
     // Try real database first
     let ergInfo = null;
     if (request.unNumber) {
-      ergInfo = getFullERGInfo(request.unNumber);
+      ergInfo = await getFullERGInfo(request.unNumber);
     }
     if (!ergInfo && request.materialName) {
-      ergInfo = getERGForProduct(request.materialName);
+      ergInfo = await getERGForProduct(request.materialName);
       if (!ergInfo) {
-        const results = searchMaterials(request.materialName, 1);
-        if (results.length > 0) ergInfo = getFullERGInfo(results[0].unNumber);
+        const results = await searchMaterials(request.materialName, 1);
+        if (results.length > 0) ergInfo = await getFullERGInfo(results[0].unNumber);
       }
     }
     if (!ergInfo && request.guideNumber) {
-      const guide = getGuide(request.guideNumber);
+      const guide = await getGuide(request.guideNumber);
       if (guide) ergInfo = { material: null, guide, protectiveDistance: null };
     }
 

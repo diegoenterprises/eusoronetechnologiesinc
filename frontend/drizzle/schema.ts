@@ -4204,3 +4204,122 @@ export const fmcsaCarrierCache = mysqlTable(
 export type FmcsaCarrierCache = typeof fmcsaCarrierCache.$inferSelect;
 export type InsertFmcsaCarrierCache = typeof fmcsaCarrierCache.$inferInsert;
 
+// ============================================================================
+// SPECTRA-MATCH™ CRUDE OIL SPECIFICATIONS (migrated from static crudeOilSpecs.ts)
+// 130+ global crude grades with 12 parameters each
+// ============================================================================
+
+export const crudeOilSpecs = mysqlTable(
+  "crude_oil_specs",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    specId: varchar("specId", { length: 64 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    type: varchar("type", { length: 100 }).notNull(),
+    country: varchar("country", { length: 10 }).notNull(),
+    region: varchar("region", { length: 255 }).notNull(),
+    apiGravity: json("apiGravity").notNull(), // { min, max, typical }
+    sulfur: json("sulfur").notNull(),
+    bsw: json("bsw").notNull(),
+    salt: json("salt"),
+    rvp: json("rvp"),
+    pourPoint: json("pourPoint"),
+    flashPoint: json("flashPoint"),
+    viscosity: json("viscosity"),
+    tan: json("tan"),
+    characteristics: json("characteristics").notNull(), // string[]
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    specIdIdx: index("cos_specId_idx").on(table.specId),
+    countryIdx: index("cos_country_idx").on(table.country),
+    typeIdx: index("cos_type_idx").on(table.type),
+  })
+);
+
+export type CrudeOilSpec = typeof crudeOilSpecs.$inferSelect;
+export type InsertCrudeOilSpec = typeof crudeOilSpecs.$inferInsert;
+
+// ============================================================================
+// ERG 2020 EMERGENCY RESPONSE GUIDES (Orange Pages)
+// ~62 guide numbers with full hazard/response/first-aid procedures
+// ============================================================================
+
+export const ergGuides = mysqlTable(
+  "erg_guides",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    guideNumber: int("guideNumber").notNull().unique(),
+    title: varchar("title", { length: 255 }).notNull(),
+    color: varchar("color", { length: 10 }).notNull(),
+    potentialHazards: json("potentialHazards").notNull(), // { fireExplosion: string[], health: string[] }
+    publicSafety: json("publicSafety").notNull(), // { isolationDistance, fireIsolationDistance, protectiveClothing, evacuationNotes }
+    emergencyResponse: json("emergencyResponse").notNull(), // { fire: { small, large, tank }, spillLeak: { general, small, large }, firstAid }
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    guideNumIdx: index("erg_guide_num_idx").on(table.guideNumber),
+  })
+);
+
+export type ErgGuide = typeof ergGuides.$inferSelect;
+export type InsertErgGuide = typeof ergGuides.$inferInsert;
+
+// ============================================================================
+// ERG 2020 MATERIALS (Yellow Pages)
+// ~2250 hazmat materials with UN numbers, guide references, hazard classes
+// ============================================================================
+
+export const ergMaterials = mysqlTable(
+  "erg_materials",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    unNumber: varchar("unNumber", { length: 10 }).notNull(),
+    name: varchar("name", { length: 512 }).notNull(),
+    guide: int("guide").notNull(),
+    guideP: boolean("guideP").default(false),
+    hazardClass: varchar("hazardClass", { length: 20 }).notNull(),
+    packingGroup: varchar("packingGroup", { length: 10 }),
+    isTIH: boolean("isTIH").default(false).notNull(),
+    isWR: boolean("isWR").default(false),
+    alternateNames: json("alternateNames"), // string[]
+    toxicGasProduced: varchar("toxicGasProduced", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    unIdx: index("erg_mat_un_idx").on(table.unNumber),
+    guideIdx: index("erg_mat_guide_idx").on(table.guide),
+    nameIdx: index("erg_mat_name_idx").on(table.name),
+    hazClassIdx: index("erg_mat_haz_idx").on(table.hazardClass),
+  })
+);
+
+export type ErgMaterial = typeof ergMaterials.$inferSelect;
+export type InsertErgMaterial = typeof ergMaterials.$inferInsert;
+
+// ============================================================================
+// ERG 2020 PROTECTIVE DISTANCES (Green Tables 1 & 2)
+// TIH and water-reactive materials with day/night isolation distances
+// ============================================================================
+
+export const ergProtectiveDistances = mysqlTable(
+  "erg_protective_distances",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    unNumber: varchar("unNumber", { length: 10 }).notNull(),
+    name: varchar("name", { length: 512 }).notNull(),
+    smallSpill: json("smallSpill").notNull(), // { day: { isolateMeters, protectKm }, night: { isolateMeters, protectKm } }
+    largeSpill: json("largeSpill").notNull(),
+    refTable3: boolean("refTable3").default(false),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    unIdx: index("erg_pd_un_idx").on(table.unNumber),
+  })
+);
+
+export type ErgProtectiveDistance = typeof ergProtectiveDistances.$inferSelect;
+export type InsertErgProtectiveDistance = typeof ergProtectiveDistances.$inferInsert;
+

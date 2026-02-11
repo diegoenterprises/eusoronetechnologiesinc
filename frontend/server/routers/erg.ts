@@ -9,18 +9,11 @@ import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import {
   searchMaterials,
-  getMaterialByUN,
   getGuide,
-  getProtectiveDistance,
   getFullERGInfo,
-  getERGForProduct,
-  getUNForProduct,
-  ERG_MATERIALS,
-  ERG_GUIDES,
-  TIH_PROTECTIVE_DISTANCES,
-  PRODUCT_UN_MAP,
-  ERG_METADATA,
-} from "../_core/ergDatabase";
+  getMetadata as getERGMetadata,
+  EMERGENCY_CONTACTS,
+} from "../_core/ergDatabaseDB";
 
 const HAZARD_CLASS_INFO: Record<string, { name: string; placard: string; color: string }> = {
   "1": { name: "Explosives", placard: "Explosive", color: "Orange" },
@@ -50,7 +43,7 @@ export const ergRouter = router({
     .query(async ({ input }) => {
       const q = input.query.trim();
       if (!q || q.length < 2) return { results: [], count: 0 };
-      const results = searchMaterials(q, input.limit || 10);
+      const results = await searchMaterials(q, input.limit || 10);
       return {
         results: results.map(m => ({
           unNumber: m.unNumber,
@@ -72,7 +65,7 @@ export const ergRouter = router({
   searchByUN: protectedProcedure
     .input(z.object({ unNumber: z.string() }))
     .query(async ({ input }) => {
-      const info = getFullERGInfo(input.unNumber);
+      const info = await getFullERGInfo(input.unNumber);
       if (!info || !info.material) return { found: false, unNumber: input.unNumber };
       const m = info.material;
       const classInfo = HAZARD_CLASS_INFO[m.hazardClass];
@@ -102,7 +95,7 @@ export const ergRouter = router({
   searchByName: protectedProcedure
     .input(z.object({ productName: z.string() }))
     .query(async ({ input }) => {
-      const results = searchMaterials(input.productName, 20);
+      const results = await searchMaterials(input.productName, 20);
       return {
         query: input.productName,
         results: results.map(m => ({
@@ -123,7 +116,7 @@ export const ergRouter = router({
   getGuidePage: protectedProcedure
     .input(z.object({ guideNumber: z.number() }))
     .query(async ({ input }) => {
-      const guide = getGuide(input.guideNumber);
+      const guide = await getGuide(input.guideNumber);
       if (!guide) return { found: false, guideNumber: input.guideNumber };
       return { found: true, ...guide };
     }),
@@ -154,7 +147,7 @@ export const ergRouter = router({
    * Get ERG database metadata
    */
   getMetadata: protectedProcedure
-    .query(async () => ERG_METADATA),
+    .query(async () => await getERGMetadata()),
 
   /**
    * Log ERG lookup for audit

@@ -165,7 +165,7 @@ export default function FindLoads() {
                         <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>
                           {load.cargoType === "petroleum" ? "Petroleum Load" : load.cargoType === "chemicals" ? "Chemical Load" : "General Cargo"}
                         </p>
-                        <p className="text-xs text-slate-400">{load.pickupDate || load.createdAt || "Pickup TBD"}</p>
+                        <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : load.createdAt ? new Date(load.createdAt).toLocaleDateString() : "Pickup TBD"}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -204,7 +204,7 @@ export default function FindLoads() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-green-500">${(load.rate || 0).toLocaleString()}</p>
+                        <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(load.rate || 0).toLocaleString()}</p>
                         {ratePerMile && <p className="text-[11px] text-slate-400">${ratePerMile}/mi</p>}
                       </div>
                     </div>
@@ -220,9 +220,15 @@ export default function FindLoads() {
                         <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
                       </div>
                       <div className="flex-1 mx-4 flex items-center">
-                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
-                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-slate-400" />
-                        <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
+                        <svg className="flex-1 h-[3px]" preserveAspectRatio="none">
+                          <defs><linearGradient id={`routeGrad-${load.id}`} x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#1473FF" /><stop offset="100%" stopColor="#BE01FF" /></linearGradient></defs>
+                          <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke={`url(#routeGrad-${load.id})`} strokeWidth="3" strokeDasharray="8 5" />
+                        </svg>
+                        <Navigation className="w-4 h-4 mx-1 rotate-90 text-purple-400" />
+                        <svg className="flex-1 h-[3px]" preserveAspectRatio="none">
+                          <use href={`#routeGrad-${load.id}`} />
+                          <line x1="0" y1="1.5" x2="100%" y2="1.5" stroke={`url(#routeGrad-${load.id})`} strokeWidth="3" strokeDasharray="8 5" />
+                        </svg>
                       </div>
                       <div className="flex items-center gap-2">
                         <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>

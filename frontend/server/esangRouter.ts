@@ -7,10 +7,10 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { esangAI } from "./_core/esangAI";
 import {
-  searchMaterials, getMaterialByUN, getGuide, getProtectiveDistance,
+  searchMaterials, getMaterialByUN, getGuide,
   getFullERGInfo, getERGForProduct, getUNForProduct,
-  EMERGENCY_CONTACTS, HAZARD_CLASSES, ERG_MATERIALS, ERG_GUIDES, ERG_METADATA,
-} from "./_core/ergDatabase";
+  EMERGENCY_CONTACTS,
+} from "./_core/ergDatabaseDB";
 
 export const esangRouter = router({
   /**
@@ -74,26 +74,26 @@ export const esangRouter = router({
     .mutation(async ({ input }) => {
       // Try UN number first
       if (input.unNumber) {
-        const info = getFullERGInfo(input.unNumber);
+        const info = await getFullERGInfo(input.unNumber);
         if (info) return { found: true, ...info, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
       }
       // Try material name
       if (input.materialName) {
-        const info = getERGForProduct(input.materialName);
+        const info = await getERGForProduct(input.materialName);
         if (info) return { found: true, ...info, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
         // Fallback to search
-        const results = searchMaterials(input.materialName, 5);
+        const results = await searchMaterials(input.materialName, 5);
         if (results.length > 0) {
-          const first = getFullERGInfo(results[0].unNumber);
+          const first = await getFullERGInfo(results[0].unNumber);
           if (first) return { found: true, ...first, searchResults: results, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
         }
       }
       // Try guide number directly
       if (input.guideNumber) {
-        const guide = getGuide(input.guideNumber);
+        const guide = await getGuide(input.guideNumber);
         if (guide) return { found: true, material: null, guide, protectiveDistance: null, emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
       }
-      return { found: false, message: "No ERG data found. Use Guide 111 for unidentified cargo.", fallbackGuide: getGuide(111), emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
+      return { found: false, message: "No ERG data found. Use Guide 111 for unidentified cargo.", fallbackGuide: await getGuide(111), emergencyContacts: Object.values(EMERGENCY_CONTACTS).filter((c: any) => c.isPrimary) };
     }),
 
   /**
@@ -217,7 +217,7 @@ export const esangRouter = router({
         // For compliance queries, use ERG database directly
         const ergMatch = msg.match(/un\s?(\d{4})/i);
         if (ergMatch) {
-          const info = getFullERGInfo(ergMatch[1]);
+          const info = await getFullERGInfo(ergMatch[1]);
           if (info) {
             response = { message: `ERG data for UN${ergMatch[1]}: Guide ${(info as any).guide?.number || 'N/A'}, ${(info as any).material?.name || 'Unknown'}`, data: info, source: "erg_database" };
           }
@@ -246,9 +246,9 @@ export const esangRouter = router({
   // Additional ESANG AI procedures
   analyzeBidFairness: protectedProcedure.input(z.object({ loadId: z.string(), bidAmount: z.number() })).mutation(async ({ input }) => ({ fair: true, marketRate: input.bidAmount * 1.05, recommendation: "Competitive bid" })),
   classifyHazmat: protectedProcedure.input(z.object({ productName: z.string() })).mutation(async ({ input }) => {
-    const un = getUNForProduct(input.productName);
+    const un = await getUNForProduct(input.productName);
     if (un) {
-      const material = getMaterialByUN(un);
+      const material = await getMaterialByUN(un);
       if (material) {
         return { unNumber: `UN${material.unNumber}`, class: material.hazardClass, hazmatClass: material.hazardClass, packingGroup: material.packingGroup || "N/A", properName: material.name, isTIH: material.isTIH, guide: material.guide };
       }
@@ -258,7 +258,7 @@ export const esangRouter = router({
   getChatHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "m1", role: "user", content: "Hello", response: "Hi! How can I help you?", timestamp: "2025-01-23 10:00" }]),
   getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ input }) => {
     const num = parseInt(input.guideNumber, 10);
-    const guide = getGuide(num);
+    const guide = await getGuide(num);
     if (guide) {
       return {
         guideNumber: String(guide.number),
@@ -294,7 +294,7 @@ export const esangRouter = router({
   ]),
   getSuggestions: protectedProcedure.input(z.object({ context: z.string().optional() }).optional()).query(async () => ["Check driver HOS", "Review load details", "Contact dispatch"]),
   searchERG: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => {
-    const results = searchMaterials(input.query, 20);
+    const results = await searchMaterials(input.query, 20);
     return results.map(m => ({
       guideNumber: String(m.guide),
       product: m.name,

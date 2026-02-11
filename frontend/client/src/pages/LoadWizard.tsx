@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 import LoadVisualization from "@/components/LoadVisualization";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
+import AddressAutocomplete, { type ParsedAddress } from "@/components/AddressAutocomplete";
 
 // Products that qualify for SPECTRA-MATCH™ oil identification
 const SPECTRA_CARGO_TYPES = ["hazmat", "liquid", "gas", "chemicals", "petroleum"];
@@ -305,7 +306,7 @@ export default function LoadWizard() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Address</Label>
-              <Input value={formData.originAddress} onChange={(e: any) => setFormData({ ...formData, originAddress: e.target.value })} placeholder="Full address" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <AddressAutocomplete value={formData.originAddress} onChange={(v) => setFormData({ ...formData, originAddress: v })} onSelect={(p: ParsedAddress) => setFormData({ ...formData, originAddress: p.address, originCity: p.city, originState: p.state })} placeholder="Search origin address..." className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Pickup Date</Label>
@@ -328,7 +329,7 @@ export default function LoadWizard() {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Address</Label>
-              <Input value={formData.destinationAddress} onChange={(e: any) => setFormData({ ...formData, destinationAddress: e.target.value })} placeholder="Full address" className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
+              <AddressAutocomplete value={formData.destinationAddress} onChange={(v) => setFormData({ ...formData, destinationAddress: v })} onSelect={(p: ParsedAddress) => setFormData({ ...formData, destinationAddress: p.address, destinationCity: p.city, destinationState: p.state })} placeholder="Search destination address..." className="bg-slate-700/30 border-slate-600/50 rounded-lg" />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-400">Delivery Date</Label>

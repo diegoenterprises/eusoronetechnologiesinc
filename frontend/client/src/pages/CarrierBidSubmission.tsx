@@ -238,7 +238,7 @@ export default function CarrierBidSubmission() {
                     </div>
                     <div>
                       <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>{originCity}{originState ? `, ${originState}` : ""}</p>
-                      <p className="text-xs text-slate-400">{load.pickupDate || "Pickup TBD"}</p>
+                      <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : "Pickup TBD"}</p>
                     </div>
                   </div>
                   <div className="flex-1 mx-4 flex items-center">
@@ -251,7 +251,7 @@ export default function CarrierBidSubmission() {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>{destCity}{destState ? `, ${destState}` : ""}</p>
-                      <p className="text-xs text-slate-400">{load.deliveryDate || "Delivery TBD"}</p>
+                      <p className="text-xs text-slate-400">{load.deliveryDate ? new Date(load.deliveryDate).toLocaleDateString() : "Delivery TBD"}</p>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#BE01FF]/15 to-[#1473FF]/15 flex items-center justify-center">
                       <Building2 className="w-5 h-5 text-[#BE01FF]" />

@@ -125,8 +125,8 @@ export default function Marketplace() {
     shipperRating: load.shipperRating || 4.5,
     origin: load.originCity + ", " + load.originState,
     destination: load.destinationCity + ", " + load.destinationState,
-    pickupDate: new Date(load.pickupDate),
-    deliveryDate: new Date(load.deliveryDate),
+    pickupDate: load.pickupDate ? new Date(load.pickupDate) : new Date(),
+    deliveryDate: load.deliveryDate ? new Date(load.deliveryDate) : new Date(),
     weight: load.weight || 0,
     dimensions: load.dimensions || "Standard",
     type: load.equipmentType || "Full Truckload",
@@ -136,7 +136,7 @@ export default function Marketplace() {
     bids: load.bidCount || 0,
     status: load.status || "open",
     isFavorite: favorites.includes(String(load.id)),
-    createdAt: new Date(load.createdAt),
+    createdAt: load.createdAt ? new Date(load.createdAt) : new Date(),
   }));
 
   const sampleBids: Bid[] = selectedLoad ? [] : [];
