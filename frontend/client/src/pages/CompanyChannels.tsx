@@ -391,36 +391,52 @@ export default function CompanyChannels() {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4 bg-slate-900">
-              {channelMessages.map((message: any) => (
-                <div key={message.id} className="flex gap-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">
-                    {message.author
-                      .split(" ")
-                      .map((n: any) => n[0])
-                      .join("")}
-                  </div>
+            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-1 bg-slate-900">
+              {channelMessages.map((message: any, idx: number) => {
+                const prevMsg = idx > 0 ? channelMessages[idx - 1] : null;
+                const showAvatar = !prevMsg || (prevMsg as any).author !== message.author;
 
-                  <div className="flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="font-semibold text-white">
-                        {message.author}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {new Date(message.timestamp).toLocaleTimeString()}
+                return (
+                <div key={message.id} className={`group flex gap-3 px-2 py-1 rounded-xl hover:bg-white/[0.03] transition-colors ${showAvatar ? "mt-3" : ""}`}>
+                  {showAvatar ? (
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] flex-shrink-0 flex items-center justify-center ring-1 ring-white/10 shadow-md shadow-blue-500/10">
+                      <span className="text-[11px] font-semibold text-white tracking-tight">
+                        {message.author
+                          .split(" ")
+                          .map((n: any) => n[0])
+                          .join("")}
                       </span>
                     </div>
+                  ) : (
+                    <div className="w-9 flex-shrink-0 flex items-center justify-center">
+                      <span className="text-[9px] text-slate-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                        {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  )}
 
-                    <p className="text-slate-300 mt-1">{message.content}</p>
+                  <div className="flex-1 min-w-0">
+                    {showAvatar && (
+                      <div className="flex items-baseline gap-2 mb-0.5">
+                        <span className="text-[13px] font-semibold text-white tracking-[-0.01em]">
+                          {message.author}
+                        </span>
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          {new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                    )}
+
+                    <p className="text-[13.5px] leading-[1.55] text-slate-200 tracking-[-0.01em]">{message.content}</p>
 
                     {(message as any).attachments && (message as any).attachments.length > 0 && (
-                      <div className="mt-2 space-y-1">
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         {(message as any).attachments.map((att: { name: string }, idx: number) => (
                           <div
                             key={idx}
-                            className="inline-flex items-center gap-2 px-3 py-2 bg-gray-800 rounded border border-gray-700 text-sm text-slate-300 hover:bg-gray-700 cursor-pointer"
+                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/[0.05] rounded-lg border border-white/[0.08] text-[12px] text-slate-300 hover:bg-white/[0.08] hover:border-blue-500/30 cursor-pointer transition-all"
                           >
-                            <Paperclip size={14} />
+                            <Paperclip size={12} className="text-blue-400" />
                             {att.name}
                           </div>
                         ))}
@@ -428,14 +444,14 @@ export default function CompanyChannels() {
                     )}
 
                     {message.reactions && Object.keys(message.reactions).length > 0 && (
-                      <div className="mt-2 flex gap-2">
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
                         {Object.entries(message.reactions).map(
                           ([reaction, count]) => (
                             <button
                               key={reaction}
-                              className="px-2 py-1 bg-gray-800 rounded text-sm hover:bg-gray-700 transition-colors text-slate-300"
+                              className="px-2.5 py-1 bg-white/[0.05] rounded-full text-[12px] hover:bg-white/[0.1] border border-white/[0.06] hover:border-blue-500/30 transition-all text-slate-300"
                             >
-                              {reaction}: {String(count)}
+                              {reaction} <span className="text-slate-500 ml-0.5">{String(count)}</span>
                             </button>
                           )
                         )}
@@ -443,11 +459,12 @@ export default function CompanyChannels() {
                     )}
                   </div>
 
-                  <button className="p-1 hover:bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                    <MoreVertical size={16} className="text-slate-500" />
+                  <button className="p-1.5 hover:bg-white/[0.06] rounded-lg opacity-0 group-hover:opacity-100 transition-all self-start mt-0.5">
+                    <MoreVertical size={14} className="text-slate-500" />
                   </button>
                 </div>
-              ))}
+                );
+              })}
               <div ref={messagesEndRef} />
             </div>
 

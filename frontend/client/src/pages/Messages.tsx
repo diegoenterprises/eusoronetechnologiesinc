@@ -428,15 +428,15 @@ export default function Messages() {
                         {!message.isOwn && showName && (
                           <div className="flex-shrink-0 mt-5">
                             {message.senderAvatar ? (
-                              <img src={message.senderAvatar} alt="" className="w-7 h-7 rounded-full object-cover" />
+                              <img src={message.senderAvatar} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-white/10" />
                             ) : (
-                              <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center">
-                                <span className="text-[10px] font-bold text-slate-400">{(message.senderName || "?")[0]?.toUpperCase()}</span>
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center ring-1 ring-white/10">
+                                <span className="text-[11px] font-semibold text-slate-300">{(message.senderName || "?")[0]?.toUpperCase()}</span>
                               </div>
                             )}
                           </div>
                         )}
-                        {!message.isOwn && !showName && <div className="w-7 flex-shrink-0" />}
+                        {!message.isOwn && !showName && <div className="w-8 flex-shrink-0" />}
 
                         <div className="max-w-[70%]">
                           {showName && !message.isOwn && (
@@ -489,21 +489,24 @@ export default function Messages() {
                             </div>
                           ) : (
                             <div className={cn(
-                              "rounded-2xl px-4 py-2.5",
+                              "px-4 py-2.5 transition-all",
                               message.isOwn
-                                ? "bg-gradient-to-r from-[#1473FF] to-[#1473FF]/90 text-white rounded-br-md"
-                                : "bg-slate-700 text-white rounded-bl-md"
+                                ? "bg-gradient-to-br from-[#1473FF] via-[#3B5FFF] to-[#BE01FF] text-white rounded-[20px] rounded-br-[6px] shadow-lg shadow-blue-500/15"
+                                : "bg-white/[0.06] backdrop-blur-md text-white/90 rounded-[20px] rounded-bl-[6px] border border-white/[0.08]"
                             )}>
-                              <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                              <p className={cn(
+                                "text-[13.5px] leading-[1.55] whitespace-pre-wrap tracking-[-0.01em]",
+                                message.isOwn ? "text-white" : "text-slate-200"
+                              )}>{message.content}</p>
                             </div>
                           )}
 
-                          <div className={cn("flex items-center gap-1 mt-0.5 px-1", message.isOwn ? "justify-end" : "justify-start")}>
-                            <span className="text-[10px] text-slate-600">{formatTime(message.timestamp)}</span>
+                          <div className={cn("flex items-center gap-1.5 mt-1 px-1", message.isOwn ? "justify-end" : "justify-start")}>
+                            <span className="text-[10px] text-slate-500 font-medium">{formatTime(message.timestamp)}</span>
                             {message.isOwn && (
                               message.read
                                 ? <CheckCheck className="w-3 h-3 text-blue-400" />
-                                : <Check className="w-3 h-3 text-slate-600" />
+                                : <Check className="w-3 h-3 text-slate-500" />
                             )}
                           </div>
                         </div>
