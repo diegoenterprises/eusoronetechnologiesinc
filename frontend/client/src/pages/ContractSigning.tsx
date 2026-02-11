@@ -16,8 +16,9 @@ import { trpc } from "@/lib/trpc";
 import {
   FileText, CheckCircle, ArrowLeft, Shield, DollarSign,
   MapPin, Navigation, Truck, Clock, Package, Building2,
-  AlertTriangle, ChevronRight, Sparkles
+  AlertTriangle, ChevronRight, Sparkles, Download
 } from "lucide-react";
+import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation, useParams } from "wouter";
@@ -445,6 +446,9 @@ export default function ContractSigning() {
             <div className="mt-8 flex justify-center gap-3">
               <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setLocation("/bids")}>
                 <ArrowLeft className="w-4 h-4 mr-2" />My Bids
+              </Button>
+              <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: `RC-${load.loadNumber}`, agreementType: "carrier_shipper", contractDuration: "single_load", status: "signed", generatedContent: `Rate Confirmation for Load #${load.loadNumber}\n\nCarrier agrees to transport the specified load for the confirmed rate.\nRoute: ${load.pickupLocation || load.origin || "Origin"} → ${load.deliveryLocation || load.destination || "Destination"}\nRate: $${Number(bid?.amount || load?.rate || 0).toLocaleString()}\nPayment: Net 30 days\nEquipment: ${load.equipmentType || "Dry Van"}`, partyAName: user?.name || "Carrier", partyARole: "CARRIER", partyBName: load.shipperName || "Shipper", partyBRole: "SHIPPER", baseRate: bid?.amount || load?.rate, rateType: "flat", paymentTermDays: 30, equipmentTypes: [load.equipmentType || "dry_van"], hazmatRequired: !!load.hazmatClass })}>
+                <Download className="w-4 h-4 mr-2" />Download PDF
               </Button>
               <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation("/loads/transit")}>
                 <Truck className="w-4 h-4 mr-2" />View In Transit

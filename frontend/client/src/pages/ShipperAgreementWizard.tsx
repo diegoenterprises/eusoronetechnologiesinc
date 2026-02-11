@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { FileText, CheckCircle, ArrowLeft, Shield, DollarSign, ChevronRight, Sparkles, Clock, Building2, MapPin, Plus, Trash2, FileUp, Scan, Truck, Users, Calendar } from "lucide-react";
+import { FileText, CheckCircle, ArrowLeft, Shield, DollarSign, ChevronRight, Sparkles, Clock, Building2, MapPin, Plus, Trash2, FileUp, Scan, Truck, Users, Calendar, Download } from "lucide-react";
+import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
@@ -241,6 +242,7 @@ export default function ShipperAgreementWizard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("lanes")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
+          <Button variant="outline" className={cn("rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"draft",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CARRIER",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,payFrequency:payFreq,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat,lanes:lanes.filter(l=>l.oC&&l.dC)})}><Download className="w-4 h-4 mr-2"/>Download</Button>
           <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setStep("sign")}>Proceed to Sign <ChevronRight className="w-5 h-5 ml-2"/></Button>
         </div>
       </div>)}
@@ -277,6 +279,7 @@ export default function ShipperAgreementWizard() {
           </div>
           <div className="mt-8 flex justify-center gap-3">
             <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4 mr-2"/>Agreements</Button>
+            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"pending_signature",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CARRIER",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat})}><Download className="w-4 h-4 mr-2"/>Download PDF</Button>
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setLocation("/documents")}><FileText className="w-4 h-4 mr-2"/>View Documents</Button>
           </div>
         </div>

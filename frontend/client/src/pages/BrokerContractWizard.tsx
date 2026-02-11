@@ -28,8 +28,9 @@ import {
   FileText, CheckCircle, ArrowLeft, Shield, DollarSign,
   ChevronRight, Sparkles, Clock, Building2, MapPin,
   AlertTriangle, Truck, Users, Scale, ArrowRight,
-  Percent, CreditCard, Calendar
+  Percent, CreditCard, Calendar, Download
 } from "lucide-react";
+import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
@@ -331,6 +332,7 @@ export default function BrokerContractWizard() {
           </div>
           <div className="flex gap-3">
             <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setStep("terms")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
+            <Button variant="outline" className={cn("rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: agNum, agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_carrier", contractDuration: duration, status: "draft", generatedContent: genContent, partyAName: user?.name || "Broker", partyARole: "BROKER", partyBName: partyName, partyBCompany: partyCompany, partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CARRIER", baseRate: direction === "shipper_to_broker" ? sRate : cRate, rateType, paymentTermDays: parseInt(payDays) || 30, fuelSurchargeType: fuelSurcharge, fuelSurchargeValue: fuelValue, effectiveDate: effDate, expirationDate: expDate, equipmentTypes: eqTypes, lanes: originCity && destCity ? [{ origin: { city: originCity, state: originState }, destination: { city: destCity, state: destState } }] : undefined })}><Download className="w-4 h-4 mr-2" />Download</Button>
             <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setStep("sign")}>Sign <ChevronRight className="w-5 h-5 ml-2" /></Button>
           </div>
         </div>
@@ -361,6 +363,7 @@ export default function BrokerContractWizard() {
           </div>
           <div className="flex justify-center gap-3">
             <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setLocation("/agreements")}><ArrowLeft className="w-4 h-4 mr-2" />Agreements</Button>
+            <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: agNum, agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_carrier", contractDuration: duration, status: "pending_signature", generatedContent: genContent, partyAName: user?.name || "Broker", partyARole: "BROKER", partyBName: partyName, partyBCompany: partyCompany, partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CARRIER", baseRate: direction === "shipper_to_broker" ? sRate : cRate, rateType, paymentTermDays: parseInt(payDays) || 30, effectiveDate: effDate, expirationDate: expDate, equipmentTypes: eqTypes })}><Download className="w-4 h-4 mr-2" />Download PDF</Button>
             {direction === "shipper_to_broker" && (
               <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => { setDirection("broker_to_carrier"); setStep("parties"); setPartyName(""); setPartyCompany(""); setPartyMc(""); setPartyDot(""); setSigData(null); setAgId(null); }}>
                 <Truck className="w-4 h-4 mr-2" />Broker to Carrier

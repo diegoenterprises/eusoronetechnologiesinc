@@ -16,8 +16,9 @@ import {
   FileText, CheckCircle, Plus, Shield, DollarSign,
   Clock, Building2, Search, Filter, Sparkles,
   AlertTriangle, Eye, PenTool, Truck, Users, Repeat,
-  ChevronRight, ArrowUpRight, Calendar, Scale
+  ChevronRight, ArrowUpRight, Calendar, Scale, Download
 } from "lucide-react";
+import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
@@ -221,6 +222,9 @@ export default function AgreementsLibrary() {
                         <p className="text-[10px] text-slate-400">Fee: ${calcFee(parseFloat(ag.baseRate)).toFixed(2)}</p>
                       </div>
                     )}
+                    <Button size="sm" variant="ghost" className={cn("rounded-lg h-8 w-8 p-0", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); downloadAgreementPdf({ agreementNumber: ag.agreementNumber || `AG-${ag.id}`, agreementType: ag.agreementType || "carrier_shipper", contractDuration: ag.contractDuration, status: ag.status, generatedContent: ag.generatedContent || "Agreement content not available — open the agreement to view full details.", partyAName: ag.partyAName || user?.name, partyARole: ag.partyARole || role, partyBName: ag.partyBName || ag.partyBCompany, partyBCompany: ag.partyBCompany, partyBRole: ag.partyBRole || "CARRIER", baseRate: ag.baseRate, rateType: ag.rateType, paymentTermDays: ag.paymentTermDays, effectiveDate: ag.effectiveDate, expirationDate: ag.expirationDate, equipmentTypes: ag.equipmentTypes, hazmatRequired: ag.hazmatRequired }); }}>
+                      <Download className="w-3.5 h-3.5" />
+                    </Button>
                     {ag.status?.includes?.("pending") && isCarrier && (
                       <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg font-bold text-xs h-8" onClick={(e: React.MouseEvent) => { e.stopPropagation(); setLocation(`/contract/sign/${ag.loadId || ag.id}`); }}>
                         <Shield className="w-3 h-3 mr-1" />Sign
