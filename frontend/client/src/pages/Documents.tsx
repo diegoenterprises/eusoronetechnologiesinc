@@ -406,6 +406,19 @@ export default function Documents() {
   const deleteMutation = (trpc as any).documents.delete.useMutation({
     onSuccess: () => { docsQuery.refetch(); statsQuery.refetch(); },
   });
+
+  // Surface agreements as documents (contracts category)
+  const agreementsQuery = (trpc as any).agreements?.list?.useQuery?.({ limit: 50 }, { refetchInterval: 60000 }) || { data: null };
+  const agreementDocs = ((agreementsQuery.data as any)?.agreements || []).map((a: any) => ({
+    id: `agr_${a.id}`,
+    name: `${a.agreementType || "Agreement"} — ${a.agreementNumber || `#${a.id}`}`,
+    category: "contracts",
+    status: a.status === "signed" || a.status === "active" ? "active" : a.status === "expired" ? "expired" : a.status === "draft" ? "pending" : (a.status || "active"),
+    uploadedAt: a.createdAt || new Date().toISOString(),
+    expiryDate: a.expirationDate || null,
+    size: 0,
+    isAgreement: true,
+  }));
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [previewDoc, setPreviewDoc] = useState<{ name: string; blobUrl: string; mime: string } | null>(null);
 
@@ -492,8 +505,11 @@ export default function Documents() {
 
   const stats = statsQuery.data || { total: 0, active: 0, expiring: 0, expired: 0 };
 
+  // Merge uploaded docs + agreements into a single list
+  const allDocs = [...(docsQuery.data || []), ...agreementDocs];
+
   // Client-side filtering + sorting
-  const documents = (docsQuery.data || [])
+  const documents = allDocs
     .filter((d: any) => {
       if (statusFilter !== "all" && d.status !== statusFilter) return false;
       return true;
@@ -505,7 +521,7 @@ export default function Documents() {
     });
 
   const categoryCounts: Record<string, number> = {};
-  (docsQuery.data || []).forEach((d: any) => {
+  allDocs.forEach((d: any) => {
     categoryCounts[d.category] = (categoryCounts[d.category] || 0) + 1;
   });
 

@@ -34,7 +34,7 @@ import MyLoadsPage from "./pages/MyLoads";
 import LoadCreatePage from "./pages/LoadCreate";
 import FindLoadsPage from "./pages/FindLoads";
 // ActiveLoads merged into MyLoads
-import TrackShipmentsPage from "./pages/TrackShipments";
+// TrackShipments merged into ShipperDispatchControl
 import CarriersPage from "./pages/Carriers";
 // Payments merged into Wallet (EusoWallet)
 import AssignedLoadsPage from "./pages/AssignedLoads";
@@ -224,7 +224,7 @@ function Router() {
       <Route path={"/loads"} component={() => (<DashboardLayout><MyLoadsPage /></DashboardLayout>)} />
       <Route path={"/loads/create"} component={() => (<DashboardLayout><LoadCreationWizard /></DashboardLayout>)} />
       <Route path={"/loads/active"} component={() => (<DashboardLayout><MyLoadsPage /></DashboardLayout>)} />
-      <Route path={"/tracking"} component={() => (<DashboardLayout><LoadTracking /></DashboardLayout>)} />
+      <Route path={"/tracking"} component={() => (<DashboardLayout><ShipperDispatchControl /></DashboardLayout>)} />
       <Route path={"/carriers"} component={() => (<DashboardLayout><CarriersPage /></DashboardLayout>)} />
       <Route path={"/payments"} component={() => (<DashboardLayout><WalletPage /></DashboardLayout>)} />
       <Route path={"/company"} component={() => (<DashboardLayout><CompanyProfile /></DashboardLayout>)} />

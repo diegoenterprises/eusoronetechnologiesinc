@@ -64,14 +64,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Dispatch Control", 
       path: "/dispatch", 
       badge: 0,
-      description: "Modify routes, stops & coordinate with carriers"
-    },
-    { 
-      icon: "MapPin", 
-      label: "Track Shipments", 
-      path: "/tracking", 
-      badge: 0,
-      description: "Real-time GPS tracking"
+      description: "Routes, tracking & carrier coordination"
     },
     { 
       icon: "Users", 

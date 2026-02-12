@@ -25,7 +25,7 @@ import {
   MapPin, Truck, ArrowLeft, ChevronRight, Clock, Building2,
   Plus, Trash2, AlertTriangle, CheckCircle, Navigation,
   Send, Edit3, Package, RefreshCw, X, Search,
-  Calendar, Phone, User, FileText, Zap
+  Calendar, Phone, User, FileText, Zap, Eye
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -72,6 +72,11 @@ export default function ShipperDispatchControl() {
   const loadsQuery = (trpc as any).loads?.list?.useQuery?.({ limit: 100 }) || { data: [], isLoading: false };
   const allLoads: any[] = loadsQuery.data || [];
   const activeLoads = allLoads.filter((l: any) => ["posted", "assigned", "in_transit", "picked_up"].includes(l.status));
+
+  // Live tracking data (merged from Track Shipments)
+  const trackingQuery = (trpc as any).loads?.getTrackedLoads?.useQuery?.({ search: undefined }, { refetchInterval: 15000 }) || { data: [], isLoading: false };
+  const trackedLoads: any[] = trackingQuery.data || [];
+  const inTransitCount = allLoads.filter((l: any) => l.status === "in_transit").length;
 
   // Selected load detail
   const detailQuery = (trpc as any).loads?.getById?.useQuery?.(
@@ -165,7 +170,14 @@ export default function ShipperDispatchControl() {
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Dispatch Control</h1>
           <p className={mt}>Modify routes, stops, and coordinate with carriers in real-time</p>
         </div>
-        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => loadsQuery.refetch?.()}>
+        {inTransitCount > 0 && (
+          <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/15 border-blue-500/30")}>
+            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span className={cn("text-sm font-medium", isLight ? "text-blue-600" : "text-blue-400")}>In Transit</span>
+            <span className={cn("font-bold", isLight ? "text-blue-700" : "text-blue-400")}>{inTransitCount}</span>
+          </div>
+        )}
+        <Button variant="outline" size="sm" className={cn("rounded-xl", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => { loadsQuery.refetch?.(); trackingQuery.refetch?.(); }}>
           <RefreshCw className="w-4 h-4 mr-1" />Refresh
         </Button>
       </div>
@@ -289,6 +301,86 @@ export default function ShipperDispatchControl() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* ── Live Tracking (merged from Track Shipments) ── */}
+              {!editMode && ["in_transit", "picked_up", "assigned", "en_route_pickup"].includes(load.status) && (() => {
+                const tracked = trackedLoads.find((t: any) => t.id === load.id || t.loadNumber === load.loadNumber);
+                return (
+                  <Card className={cc}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className={cn("flex items-center gap-2 text-sm", tc)}>
+                        <div className="w-6 h-6 rounded-full bg-blue-500/15 flex items-center justify-center"><Navigation className="w-3.5 h-3.5 text-blue-500" /></div>
+                        Live Tracking
+                        <div className="ml-auto flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                          <span className="text-xs text-blue-400 font-medium">Live</span>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {/* Route Visualization */}
+                      <div className={cl}>
+                        <div className="flex items-center gap-4">
+                          <div className="flex flex-col items-center">
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF]" />
+                            <div className={cn("w-0.5 h-8", isLight ? "bg-slate-200" : "bg-slate-600")} />
+                            {tracked?.currentLocation && (
+                              <>
+                                <div className="w-3 h-3 rounded-full bg-cyan-400" />
+                                <div className={cn("w-0.5 h-8", isLight ? "bg-slate-200" : "bg-slate-600")} />
+                              </>
+                            )}
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#BE01FF] to-[#1473FF]" />
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className={vl}>{load.origin?.city || load.pickupLocation?.city}{load.origin?.state ? `, ${load.origin.state}` : ""}</p>
+                                <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : "Pickup"}</p>
+                              </div>
+                              {load.status !== "posted" && <CheckCircle className="w-4 h-4 text-green-400" />}
+                            </div>
+                            {tracked?.currentLocation && (
+                              <div>
+                                <p className="text-cyan-400 text-sm font-medium">Current: {tracked.currentLocation.city}{tracked.currentLocation.state ? `, ${tracked.currentLocation.state}` : ""}</p>
+                                {tracked.lastUpdate && <p className="text-xs text-slate-400">Updated: {tracked.lastUpdate}</p>}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className={vl}>{load.destination?.city || load.deliveryLocation?.city}{load.destination?.state ? `, ${load.destination.state}` : ""}</p>
+                                <p className="text-xs text-slate-400">{load.deliveryDate ? new Date(load.deliveryDate).toLocaleDateString() : "Delivery"}</p>
+                              </div>
+                              {load.status === "delivered" && <CheckCircle className="w-4 h-4 text-green-400" />}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Progress Bar */}
+                      {tracked?.progress !== undefined && (
+                        <div>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className={mt}>Progress</span>
+                            <span className={cn("font-bold", vl)}>{tracked.progress}%</span>
+                          </div>
+                          <div className={cn("h-2 rounded-full overflow-hidden", isLight ? "bg-slate-100" : "bg-slate-700")}>
+                            <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all rounded-full" style={{ width: `${tracked.progress}%` }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ETA */}
+                      {tracked?.eta && (
+                        <div className="flex items-center justify-between">
+                          <span className={cn("text-xs font-medium", mt)}>Estimated Arrival</span>
+                          <span className={cn("text-sm font-bold", vl)}>{tracked.eta}</span>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Special Instructions */}
               {!editMode && load.notes && (
