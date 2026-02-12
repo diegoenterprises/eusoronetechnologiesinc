@@ -409,7 +409,9 @@ export default function Documents() {
 
   // Surface agreements as documents (contracts category)
   const agreementsQuery = (trpc as any).agreements?.list?.useQuery?.({ limit: 50 }, { refetchInterval: 60000 }) || { data: null };
-  const agreementDocs = ((agreementsQuery.data as any)?.agreements || []).map((a: any) => ({
+  const agRaw = agreementsQuery.data;
+  const agList: any[] = Array.isArray(agRaw) ? agRaw : Array.isArray(agRaw?.agreements) ? agRaw.agreements : [];
+  const agreementDocs = agList.map((a: any) => ({
     id: `agr_${a.id}`,
     name: `${a.agreementType || "Agreement"} — ${a.agreementNumber || `#${a.id}`}`,
     category: "contracts",

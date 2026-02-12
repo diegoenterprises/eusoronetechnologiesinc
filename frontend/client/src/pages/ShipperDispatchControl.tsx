@@ -302,19 +302,25 @@ export default function ShipperDispatchControl() {
                 </Card>
               )}
 
-              {/* ── Live Tracking (merged from Track Shipments) ── */}
-              {!editMode && ["in_transit", "picked_up", "assigned", "en_route_pickup"].includes(load.status) && (() => {
+              {/* ── Shipment Tracking (merged from Track Shipments) ── */}
+              {!editMode && (() => {
                 const tracked = trackedLoads.find((t: any) => t.id === load.id || t.loadNumber === load.loadNumber);
+                const isLive = ["in_transit", "picked_up", "en_route_pickup"].includes(load.status);
                 return (
                   <Card className={cc}>
                     <CardHeader className="pb-2">
                       <CardTitle className={cn("flex items-center gap-2 text-sm", tc)}>
                         <div className="w-6 h-6 rounded-full bg-blue-500/15 flex items-center justify-center"><Navigation className="w-3.5 h-3.5 text-blue-500" /></div>
-                        Live Tracking
-                        <div className="ml-auto flex items-center gap-1.5">
-                          <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-                          <span className="text-xs text-blue-400 font-medium">Live</span>
-                        </div>
+                        Shipment Tracking
+                        {isLive && (
+                          <div className="ml-auto flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                            <span className="text-xs text-blue-400 font-medium">Live</span>
+                          </div>
+                        )}
+                        {!isLive && (
+                          <Badge className={cn("ml-auto border text-[10px]", statusColor(load.status))}>{load.status === "posted" ? "Awaiting Carrier" : load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
+                        )}
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -338,7 +344,7 @@ export default function ShipperDispatchControl() {
                                 <p className={vl}>{load.origin?.city || load.pickupLocation?.city}{load.origin?.state ? `, ${load.origin.state}` : ""}</p>
                                 <p className="text-xs text-slate-400">{load.pickupDate ? new Date(load.pickupDate).toLocaleDateString() : "Pickup"}</p>
                               </div>
-                              {load.status !== "posted" && <CheckCircle className="w-4 h-4 text-green-400" />}
+                              {["in_transit", "picked_up", "delivered", "assigned"].includes(load.status) && <CheckCircle className="w-4 h-4 text-green-400" />}
                             </div>
                             {tracked?.currentLocation && (
                               <div>
@@ -358,7 +364,7 @@ export default function ShipperDispatchControl() {
                       </div>
 
                       {/* Progress Bar */}
-                      {tracked?.progress !== undefined && (
+                      {tracked?.progress !== undefined ? (
                         <div>
                           <div className="flex justify-between text-sm mb-2">
                             <span className={mt}>Progress</span>
@@ -366,6 +372,16 @@ export default function ShipperDispatchControl() {
                           </div>
                           <div className={cn("h-2 rounded-full overflow-hidden", isLight ? "bg-slate-100" : "bg-slate-700")}>
                             <div className="h-full bg-gradient-to-r from-cyan-500 to-emerald-500 transition-all rounded-full" style={{ width: `${tracked.progress}%` }} />
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex justify-between text-sm mb-2">
+                            <span className={mt}>Progress</span>
+                            <span className={cn("text-xs font-medium", mt)}>{load.status === "posted" ? "Waiting for carrier assignment" : "Tracking will start when load is picked up"}</span>
+                          </div>
+                          <div className={cn("h-2 rounded-full overflow-hidden", isLight ? "bg-slate-100" : "bg-slate-700")}>
+                            <div className="h-full bg-gradient-to-r from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-500 rounded-full" style={{ width: "0%" }} />
                           </div>
                         </div>
                       )}
