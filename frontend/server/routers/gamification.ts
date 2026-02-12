@@ -569,7 +569,7 @@ export const gamificationRouter = router({
       const available = missionList
         .filter(m => {
           const progress = progressMap.get(m.id);
-          return !progress || progress.status === "not_started";
+          return !progress || progress.status === "not_started" || progress.status === "cancelled" || progress.status === "expired";
         })
         .map(m => formatMission(m));
 
@@ -603,8 +603,8 @@ export const gamificationRouter = router({
         ))
         .limit(1);
 
-      if (existing) {
-        return { success: false, message: "Mission already started" };
+      if (existing && (existing.status === "in_progress" || existing.status === "completed" || existing.status === "claimed")) {
+        return { success: false, message: existing.status === "in_progress" ? "Mission already in progress" : "Mission already completed" };
       }
 
       // Enforce active mission cap (max 10 per user)
@@ -615,16 +615,23 @@ export const gamificationRouter = router({
           eq(missionProgress.status, "in_progress")
         ));
       if ((activeCount[0]?.count || 0) >= 10) {
-        return { success: false, message: "You already have 10 active missions. Complete or let one expire before starting another." };
+        return { success: false, message: "You already have 10 active missions. Complete or cancel one before starting another." };
       }
 
-      await db.insert(missionProgress).values({
-        userId,
-        missionId: input.missionId,
-        currentProgress: "0",
-        targetProgress: mission.targetValue,
-        status: "in_progress",
-      });
+      if (existing) {
+        // Re-start a cancelled or expired mission — reset progress
+        await db.update(missionProgress)
+          .set({ currentProgress: "0", targetProgress: mission.targetValue, status: "in_progress", completedAt: null, lastProgressAt: null })
+          .where(eq(missionProgress.id, existing.id));
+      } else {
+        await db.insert(missionProgress).values({
+          userId,
+          missionId: input.missionId,
+          currentProgress: "0",
+          targetProgress: mission.targetValue,
+          status: "in_progress",
+        });
+      }
 
       return { success: true, message: "Mission started" };
     }),
@@ -739,6 +746,44 @@ export const gamificationRouter = router({
           xp: mission.xpReward || 0,
         },
       };
+    }),
+
+  /**
+   * Cancel an active mission
+   */
+  cancelMission: protectedProcedure
+    .input(z.object({ missionId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) throw new Error("Database not available");
+
+      const [progress] = await db.select()
+        .from(missionProgress)
+        .where(and(
+          eq(missionProgress.userId, userId),
+          eq(missionProgress.missionId, input.missionId),
+        ))
+        .limit(1);
+
+      if (!progress) {
+        return { success: false, message: "Mission not found in your active missions" };
+      }
+
+      if (progress.status === "completed" || progress.status === "claimed") {
+        return { success: false, message: "Cannot cancel a completed or claimed mission" };
+      }
+
+      if (progress.status === "cancelled") {
+        return { success: false, message: "Mission is already cancelled" };
+      }
+
+      await db.update(missionProgress)
+        .set({ status: "cancelled", completedAt: new Date() })
+        .where(eq(missionProgress.id, progress.id));
+
+      return { success: true, message: "Mission cancelled. You can start a new one." };
     }),
 
   /**

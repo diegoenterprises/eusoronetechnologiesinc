@@ -374,6 +374,11 @@ export async function syncGamificationSystem(): Promise<{ expired: number; orpha
   let profilesCreated = 0;
 
   try {
+    // 0. Self-healing migration: ensure 'cancelled' status exists in enum
+    try {
+      await db.execute(sql`ALTER TABLE mission_progress MODIFY COLUMN status enum('not_started','in_progress','completed','claimed','expired','cancelled') NOT NULL DEFAULT 'not_started'`);
+    } catch {}
+
     // 1. Expire in_progress missions whose parent mission has ended or been deactivated
     const expireResult = await db.execute(sql`
       UPDATE mission_progress mp

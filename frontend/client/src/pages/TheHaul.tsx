@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Trophy, Target, Gift, MessageCircle, Send, Shield, Star,
   Zap, Clock, Users, TrendingUp, Award, Flame, ChevronRight,
-  Sparkles, MapPin, Truck, CheckCircle, Crown, RefreshCw, Package,
+  Sparkles, MapPin, Truck, CheckCircle, Crown, RefreshCw, Package, XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -74,6 +74,13 @@ export default function TheHaul() {
 
   const claimMut = (trpc as any).gamification?.claimMissionReward?.useMutation?.({
     onSuccess: (d: any) => { if (d?.success) { toast.success(`+${d.reward?.xp || 0} XP earned!`); missionsQ.refetch?.(); profileQ.refetch?.(); } else { toast.error(d?.message || "Could not claim"); } },
+  }) || { mutate: () => {}, isPending: false };
+
+  const cancelMut = (trpc as any).gamification?.cancelMission?.useMutation?.({
+    onSuccess: (d: any) => {
+      if (d?.success) { toast.success(d.message || "Mission cancelled"); missionsQ.refetch?.(); profileQ.refetch?.(); }
+      else { toast.error(d?.message || "Could not cancel mission"); }
+    },
   }) || { mutate: () => {}, isPending: false };
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [lobbyQ.data?.messages]);
@@ -191,7 +198,10 @@ export default function TheHaul() {
                 <div key={m.id} className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/50")}>
                   <div className="flex items-start justify-between mb-2"><div><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{m.name}</p><p className="text-xs text-slate-400 mt-0.5">{m.description}</p></div><div className="text-right"><p className="text-sm font-bold text-yellow-400">+{m.xpReward} XP</p><Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]">{m.type}</Badge></div></div>
                   <div className="flex items-center gap-3"><Progress value={pct} className="flex-1 h-2" /><span className="text-xs text-slate-400">{Math.round(pct)}%</span></div>
-                  {m.status === "completed" && <Button size="sm" className="mt-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs h-7" onClick={() => claimMut.mutate({ missionId: m.id })}><Gift className="w-3 h-3 mr-1" />Claim</Button>}
+                  <div className="flex items-center gap-2 mt-2">
+                    {m.status === "completed" && <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs h-7" onClick={() => claimMut.mutate({ missionId: m.id })}><Gift className="w-3 h-3 mr-1" />Claim</Button>}
+                    {(m.status === "in_progress" || m.status === "not_started") && <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs h-7" onClick={() => { if (confirm("Cancel this mission? Progress will be lost.")) cancelMut.mutate({ missionId: m.id }); }}><XCircle className="w-3 h-3 mr-1" />Cancel</Button>}
+                  </div>
                 </div>); })}</CardContent></Card>)}
 
           <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Target className="w-5 h-5 text-cyan-400" />Available Missions<Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]"><Sparkles className="w-2.5 h-2.5 mr-0.5" />AI + Shipper</Badge></CardTitle></CardHeader>

@@ -1475,7 +1475,7 @@ export const missionProgress = mysqlTable(
     missionId: int("missionId").notNull(),
     currentProgress: decimal("currentProgress", { precision: 12, scale: 2 }).default("0").notNull(),
     targetProgress: decimal("targetProgress", { precision: 12, scale: 2 }).notNull(),
-    status: mysqlEnum("status", ["not_started", "in_progress", "completed", "claimed", "expired"]).default("not_started").notNull(),
+    status: mysqlEnum("status", ["not_started", "in_progress", "completed", "claimed", "expired", "cancelled"]).default("not_started").notNull(),
     completionCount: int("completionCount").default(0),
     lastProgressAt: timestamp("lastProgressAt"),
     completedAt: timestamp("completedAt"),

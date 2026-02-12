@@ -36,6 +36,13 @@
       "when": 1763460191205,
       "tag": "0004_ambitious_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1739397600000,
+      "tag": "0005_add_cancelled_status",
+      "breakpoints": true
     }
   ]
 }
