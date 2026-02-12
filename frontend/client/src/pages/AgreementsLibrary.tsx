@@ -218,7 +218,7 @@ export default function AgreementsLibrary() {
                   <div className="flex items-center gap-3 flex-shrink-0">
                     {ag.baseRate && (
                       <div className="text-right">
-                        <p className="text-lg font-bold text-emerald-500">${parseFloat(ag.baseRate).toLocaleString()}</p>
+                        <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(ag.baseRate).toLocaleString()}</p>
                         <p className="text-[10px] text-slate-400">Fee: ${calcFee(parseFloat(ag.baseRate)).toFixed(2)}</p>
                       </div>
                     )}
@@ -253,7 +253,7 @@ export default function AgreementsLibrary() {
             <p className="text-xs text-slate-400">Set up scheduled lanes with dedicated carriers</p>
           </button>
           <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
-            <FileText className="w-5 h-5 text-emerald-500 mb-2" />
+            <FileText className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2" />
             <p className={cn("font-bold text-sm", vl)}>Upload Contract</p>
             <p className="text-xs text-slate-400">Digitize an existing contract for electronic signing</p>
           </button>

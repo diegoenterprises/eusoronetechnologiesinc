@@ -9,8 +9,16 @@ import * as rssService from "../services/rssService";
 
 const feedCategorySchema = z.enum([
   "all", "chemical", "oil_gas", "bulk", "refrigerated", "logistics",
-  "supply_chain", "hazmat", "marine", "energy", "equipment",
+  "supply_chain", "hazmat", "marine", "energy", "equipment", "trucking", "government",
 ]);
+
+// In-memory bookmark store (per-user saved article IDs)
+const savedArticles: Map<string, Set<string>> = new Map();
+
+function getUserSaved(userId: string): Set<string> {
+  if (!savedArticles.has(userId)) savedArticles.set(userId, new Set());
+  return savedArticles.get(userId)!;
+}
 
 export const newsRouter = router({
   /**
@@ -133,5 +141,47 @@ export const newsRouter = router({
       generation: status.generation,
       byCategory,
     };
+  }),
+
+  /**
+   * Save/bookmark an article
+   */
+  saveArticle: protectedProcedure
+    .input(z.object({ articleId: z.string() }))
+    .mutation(({ ctx, input }) => {
+      const userId = (ctx as any).user?.id || "anonymous";
+      getUserSaved(userId).add(input.articleId);
+      return { success: true, articleId: input.articleId, savedAt: new Date().toISOString() };
+    }),
+
+  /**
+   * Unsave/unbookmark an article
+   */
+  unsaveArticle: protectedProcedure
+    .input(z.object({ articleId: z.string() }))
+    .mutation(({ ctx, input }) => {
+      const userId = (ctx as any).user?.id || "anonymous";
+      getUserSaved(userId).delete(input.articleId);
+      return { success: true, articleId: input.articleId };
+    }),
+
+  /**
+   * Get saved article IDs for current user (lightweight)
+   */
+  getSavedArticleIds: protectedProcedure.query(({ ctx }) => {
+    const userId = (ctx as any).user?.id || "anonymous";
+    return { ids: Array.from(getUserSaved(userId)) };
+  }),
+
+  /**
+   * Get full saved articles for current user
+   */
+  getSavedArticles: protectedProcedure.query(async ({ ctx }) => {
+    const userId = (ctx as any).user?.id || "anonymous";
+    const ids = getUserSaved(userId);
+    if (ids.size === 0) return { articles: [] };
+    const result = await rssService.getArticles({ limit: 1000 });
+    const saved = result.articles.filter((a) => ids.has(a.id));
+    return { articles: saved };
   }),
 });

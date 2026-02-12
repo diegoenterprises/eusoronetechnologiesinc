@@ -282,6 +282,16 @@ async function startServer() {
         preWarmCache();
       } catch {}
     }, 5000);
+
+    // Start weekly mission generator scheduler
+    setTimeout(async () => {
+      try {
+        const { startMissionScheduler } = await import("../services/missionGenerator");
+        startMissionScheduler();
+      } catch (err) {
+        console.error("[MissionGenerator] Failed to start:", err);
+      }
+    }, 8000);
   });
 }
 

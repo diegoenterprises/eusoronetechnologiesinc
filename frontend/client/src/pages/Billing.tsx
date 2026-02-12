@@ -60,7 +60,7 @@ export default function Billing() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-green-400">${(summary?.totalPaid || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.totalPaid || 0).toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Paid</p>
               </div>
@@ -200,7 +200,7 @@ export default function Billing() {
                             <p className="text-xs text-slate-500">{payment.date}</p>
                           </div>
                         </div>
-                        <p className="text-green-400 font-bold text-lg">${payment.amount?.toLocaleString()}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${payment.amount?.toLocaleString()}</p>
                       </div>
                     </div>
                   ))}

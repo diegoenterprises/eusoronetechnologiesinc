@@ -146,7 +146,7 @@ export default function OnTimePerformance() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Current: {summary?.onTimeRate}%</span>
-                <span className="text-emerald-400">Target: {summary?.targetRate}%</span>
+                <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Target: {summary?.targetRate}%</span>
               </div>
               <Progress value={((summary?.onTimeRate ?? 0) / (summary?.targetRate ?? 95)) * 100} className="h-3" />
               <p className="text-sm text-slate-500">

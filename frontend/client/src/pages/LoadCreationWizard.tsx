@@ -571,9 +571,9 @@ export default function LoadCreationWizard() {
               </div>
               {formData.spectraVerified && formData.productName && (
                 <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-3">
-                  <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                  <CheckCircle className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent flex-shrink-0" />
                   <div>
-                    <p className="text-emerald-400 text-sm font-bold">ERG Match: {formData.productName}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">ERG Match: {formData.productName}</p>
                     <p className="text-slate-400 text-[10px]">{formData.unNumber} -- Class {formData.hazmatClass} -- Guide {formData.ergGuide}</p>
                   </div>
                 </div>
@@ -861,7 +861,7 @@ export default function LoadCreationWizard() {
                     if (formData.distance && Number(val) > 0) updateField("ratePerMile", (Number(val) / formData.distance).toFixed(2));
                   }} placeholder="e.g., 2500" className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg" />
                   {formData.distance && formData.rate && (
-                    <p className="text-sm text-slate-500 mt-2">= <span className="text-emerald-400 font-bold">${(Number(formData.rate) / formData.distance).toFixed(2)}/mi</span> over {formData.distance} miles</p>
+                    <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${(Number(formData.rate) / formData.distance).toFixed(2)}/mi</span> over {formData.distance} miles</p>
                   )}
                 </div>
               ) : (
@@ -873,7 +873,7 @@ export default function LoadCreationWizard() {
                     if (formData.distance && Number(val) > 0) updateField("rate", String(Math.round(Number(val) * formData.distance)));
                   }} placeholder="e.g., 3.25" className="bg-slate-700/50 border-slate-600/50 rounded-lg text-lg" />
                   {formData.distance && formData.ratePerMile && (
-                    <p className="text-sm text-slate-500 mt-2">= <span className="text-emerald-400 font-bold">${Math.round(Number(formData.ratePerMile) * formData.distance).toLocaleString()} total</span> for {formData.distance} miles</p>
+                    <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${Math.round(Number(formData.ratePerMile) * formData.distance).toLocaleString()} total</span> for {formData.distance} miles</p>
                   )}
                   {!formData.distance && <p className="text-sm text-amber-400/70 mt-2">Set origin &amp; destination first for auto-calculation of total rate.</p>}
                 </div>
@@ -884,7 +884,7 @@ export default function LoadCreationWizard() {
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div><p className="text-slate-400 text-xs">Total Rate</p><p className="text-white text-xl font-bold">${Number(formData.rate || 0).toLocaleString()}</p></div>
                     <div><p className="text-slate-400 text-xs">Distance</p><p className="text-white text-xl font-bold">{formData.distance} mi</p></div>
-                    <div><p className="text-slate-400 text-xs">Rate/Mile</p><p className="text-emerald-400 text-xl font-bold">${formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2)}</p></div>
+                    <div><p className="text-slate-400 text-xs">Rate/Mile</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold">${formData.ratePerMile || (Number(formData.rate) / formData.distance).toFixed(2)}</p></div>
                   </div>
                 </div>
               )}
@@ -957,7 +957,7 @@ export default function LoadCreationWizard() {
                         Too Low
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
+                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Good Offer
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
@@ -973,7 +973,7 @@ export default function LoadCreationWizard() {
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Low</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketLow}/mi</p></div>
-                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:text-emerald-400 text-xs font-bold">${marketRPM}/mi</p></div>
+                        <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market Avg</p><p className="text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs font-bold">${marketRPM}/mi</p></div>
                         <div><p className="text-[10px] text-slate-400 dark:text-slate-500">Market High</p><p className="text-slate-700 dark:text-slate-300 text-xs font-bold">${marketHigh}/mi</p></div>
                       </div>
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 text-center">Suggested total: <span className="text-purple-600 dark:text-purple-300 font-bold">${marketTotal.toLocaleString()}</span> for {formData.distance} mi</p>
@@ -991,8 +991,8 @@ export default function LoadCreationWizard() {
               {formData.spectraVerified && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-500/10 to-emerald-500/10 border border-cyan-500/20">
                   <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
-                    <span className="text-emerald-400 font-bold text-sm">SPECTRA-MATCH Verified</span>
+                    <CheckCircle className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
+                    <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-sm">SPECTRA-MATCH Verified</span>
                     <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">ERG 2020</Badge>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

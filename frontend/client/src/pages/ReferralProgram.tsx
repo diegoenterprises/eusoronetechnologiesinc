@@ -116,11 +116,11 @@ export default function ReferralProgram() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {referralQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${referral?.totalEarnings || 0}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${referral?.totalEarnings || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Earned</p>
               </div>
@@ -178,7 +178,7 @@ export default function ReferralProgram() {
                   <div className="flex items-center gap-3">
                     {getStatusBadge(ref.status)}
                     {ref.status === "completed" && (
-                      <span className="text-green-400 font-bold">+${ref.reward}</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">+${ref.reward}</span>
                     )}
                   </div>
                 </div>

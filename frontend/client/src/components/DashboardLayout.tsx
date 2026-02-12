@@ -83,6 +83,7 @@ import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
 import { Button } from "./ui/button";
 import { AmbientGlow, DominoPage } from "./animations";
 import { trpc } from "@/lib/trpc";
+import EsangFloatingButton from "./EsangFloatingButton";
 
 // Icon map for rendering icons from string names
 const iconMap: Record<string, React.ReactNode> = {
@@ -599,6 +600,9 @@ export default function DashboardLayout({
               {children}
             </DominoPage>
           </AnimatePresence>
+
+          {/* ESANG AI Floating Button — all dashboard screens */}
+          <EsangFloatingButton />
 
           {/* Security Compliance Footer */}
           <footer className="border-t border-gray-800/50 bg-gray-900/40 backdrop-blur-sm px-4 py-4 mt-4">

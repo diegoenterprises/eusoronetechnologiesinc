@@ -20,10 +20,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const ACTIVE_STATUSES = ["posted", "bidding", "assigned", "in_transit", "picked_up", "at_facility", "delayed"];
 
 export default function ActiveLoadsPage() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -102,7 +106,7 @@ export default function ActiveLoadsPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Active Loads
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Real-time tracking of all your live shipments</p>
+          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Real-time tracking of all your live shipments</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -111,7 +115,7 @@ export default function ActiveLoadsPage() {
           >
             <Plus className="w-4 h-4 mr-2" />Create Load
           </Button>
-          <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg" onClick={() => refetch()}>
+          <Button variant="outline" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => refetch()}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefetching ? 'animate-spin' : ''}`} />Refresh
           </Button>
         </div>
@@ -119,50 +123,24 @@ export default function ActiveLoadsPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-blue-500/20"><Truck className="w-5 h-5 text-blue-400" /></div>
-              <div>
-                <p className="text-2xl font-bold text-blue-400 tabular-nums">{inTransitCount}</p>
-                <p className="text-[11px] text-slate-500 font-medium">In Transit</p>
+        {[
+          { count: inTransitCount, label: "In Transit", color: "blue", icon: <Truck className="w-5 h-5 text-blue-400" /> },
+          { count: assignedCount, label: "Assigned", color: "cyan", icon: <Package className="w-5 h-5 text-cyan-400" /> },
+          { count: postedCount, label: "Posted", color: "violet", icon: <Clock className="w-5 h-5 text-violet-400" /> },
+          { count: delayedCount, label: "Delayed", color: "red", icon: <AlertTriangle className="w-5 h-5 text-red-400" /> },
+        ].map((s) => (
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-lg bg-${s.color}-500/20`}>{s.icon}</div>
+                <div>
+                  <p className={`text-2xl font-bold text-${s.color}-400 tabular-nums`}>{s.count}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-cyan-500/20"><Package className="w-5 h-5 text-cyan-400" /></div>
-              <div>
-                <p className="text-2xl font-bold text-cyan-400 tabular-nums">{assignedCount}</p>
-                <p className="text-[11px] text-slate-500 font-medium">Assigned</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-violet-500/20"><Clock className="w-5 h-5 text-violet-400" /></div>
-              <div>
-                <p className="text-2xl font-bold text-violet-400 tabular-nums">{postedCount}</p>
-                <p className="text-[11px] text-slate-500 font-medium">Posted</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-red-500/20"><AlertTriangle className="w-5 h-5 text-red-400" /></div>
-              <div>
-                <p className="text-2xl font-bold text-red-400 tabular-nums">{delayedCount}</p>
-                <p className="text-[11px] text-slate-500 font-medium">Delayed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Search and Filters */}
@@ -173,11 +151,11 @@ export default function ActiveLoadsPage() {
             value={searchQuery}
             onChange={(e: any) => setSearchQuery(e.target.value)}
             placeholder="Search by load number, origin, or destination..."
-            className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
+            className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 focus:border-cyan-500/50")}
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44 bg-slate-800/50 border-slate-700/50 rounded-lg">
+          <SelectTrigger className={cn("w-44 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent>
@@ -194,18 +172,18 @@ export default function ActiveLoadsPage() {
       </div>
 
       {/* Loads List */}
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl overflow-hidden">
+      <Card className={cn("rounded-xl overflow-hidden border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="p-4 space-y-3">
-              {[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl bg-slate-700/50" />)}
+              {[1, 2, 3, 4, 5].map((i: any) => <Skeleton key={i} className={cn("h-20 w-full rounded-xl", isLight ? "bg-slate-100" : "bg-slate-700/50")} />)}
             </div>
           ) : filteredLoads.length === 0 ? (
             <div className="text-center py-20">
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-700/50 to-slate-800/50 w-24 h-24 mx-auto mb-5 flex items-center justify-center border border-slate-600/30">
+              <div className={cn("p-5 rounded-2xl w-24 h-24 mx-auto mb-5 flex items-center justify-center border", isLight ? "bg-slate-50 border-slate-200" : "bg-gradient-to-br from-slate-700/50 to-slate-800/50 border-slate-600/30")}>
                 <Package className="w-10 h-10 text-slate-500" />
               </div>
-              <p className="text-white text-lg font-semibold mb-1">No active loads</p>
+              <p className={cn("text-lg font-semibold mb-1", isLight ? "text-slate-800" : "text-white")}>No active loads</p>
               <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">
                 {searchQuery || statusFilter !== "all"
                   ? "No loads match your current filters. Try adjusting your search."
@@ -221,21 +199,21 @@ export default function ActiveLoadsPage() {
               )}
             </div>
           ) : (
-            <div className="divide-y divide-slate-700/30">
+            <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/30")}>
               {filteredLoads.map((load: any) => (
                 <div
                   key={load.id}
-                  className="p-4 hover:bg-white/[0.02] transition-all cursor-pointer group"
+                  className={cn("p-4 transition-all cursor-pointer group", isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.02]")}
                   onClick={() => setLocation(`/load/${load.id}`)}
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4 min-w-0 flex-1">
-                      <div className="p-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] group-hover:border-white/[0.12] transition-colors">
+                      <div className={cn("p-2.5 rounded-xl border transition-colors", isLight ? "bg-slate-50 border-slate-200 group-hover:border-slate-300" : "bg-white/[0.04] border-white/[0.06] group-hover:border-white/[0.12]")}>
                         {getStatusIcon(load.status)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-3 mb-1.5">
-                          <p className="text-white font-semibold text-sm tracking-wide">
+                          <p className={cn("font-semibold text-sm tracking-wide", isLight ? "text-slate-800" : "text-white")}>
                             {load.loadNumber || `#LOAD-${load.id?.slice(0, 6)}`}
                           </p>
                           {getStatusBadge(load.status)}
@@ -243,7 +221,7 @@ export default function ActiveLoadsPage() {
                             <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px]">HAZMAT {load.hazmatClass}</Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-400 mb-1.5">
+                        <div className={cn("flex items-center gap-2 text-sm mb-1.5", isLight ? "text-slate-500" : "text-slate-400")}>
                           <span className="flex items-center gap-1 min-w-0">
                             <div className="w-2 h-2 rounded-full bg-gradient-to-br from-[#1473FF] to-[#BE01FF] shrink-0" />
                             <span className="truncate">{load.origin?.city || "N/A"}{load.origin?.state ? `, ${load.origin.state}` : ""}</span>
@@ -280,7 +258,7 @@ export default function ActiveLoadsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-slate-400 hover:text-emerald-400 rounded-lg"
+                        className="text-slate-400 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent rounded-lg"
                         title={load.driverName ? `Message ${load.driverName}` : load.carrierName ? `Message ${load.carrierName}` : "No carrier assigned"}
                         onClick={(e: any) => { e.stopPropagation(); handleContact(load); }}
                       >
@@ -288,7 +266,7 @@ export default function ActiveLoadsPage() {
                       </Button>
                       <Button
                         size="sm"
-                        className="bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white rounded-lg"
+                        className={cn("rounded-lg border", isLight ? "bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700" : "bg-white/[0.06] hover:bg-white/[0.12] border-white/[0.08] text-white")}
                         onClick={(e: any) => { e.stopPropagation(); setPreviewLoad(load); }}
                       >
                         <Eye className="w-4 h-4 mr-1" />View
@@ -311,7 +289,13 @@ export default function ActiveLoadsPage() {
 
       {/* ═══ Load Preview Modal ═══ */}
       <Dialog open={!!previewLoad} onOpenChange={(open) => { if (!open) setPreviewLoad(null); }}>
-        <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-700/50 text-white rounded-2xl p-0 overflow-hidden">
+        <DialogContent
+          className={cn("sm:max-w-2xl rounded-2xl p-0 overflow-hidden", isLight ? "border border-slate-200" : "border-slate-700/50 text-white")}
+          style={isLight
+            ? { background: "#ffffff", boxShadow: "0 25px 60px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.05)" }
+            : { background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)", boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)" }
+          }
+        >
           {previewLoad && (
             <>
               {/* Modal Header */}
@@ -319,7 +303,7 @@ export default function ActiveLoadsPage() {
                 <DialogHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <DialogTitle className="text-xl font-bold text-white">
+                      <DialogTitle className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>
                         {previewLoad.loadNumber || `#LOAD-${previewLoad.id?.slice(0, 6)}`}
                       </DialogTitle>
                       {getStatusBadge(previewLoad.status)}
@@ -333,25 +317,25 @@ export default function ActiveLoadsPage() {
 
               <div className="p-5 space-y-4">
                 {/* Route */}
-                <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center">
                         <MapPin className="w-4 h-4 text-[#1473FF]" />
                       </div>
                       <div>
-                        <p className="text-white text-sm font-semibold">{previewLoad.origin?.city}{previewLoad.origin?.state ? `, ${previewLoad.origin.state}` : ""}</p>
+                        <p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{previewLoad.origin?.city}{previewLoad.origin?.state ? `, ${previewLoad.origin.state}` : ""}</p>
                         <p className="text-[11px] text-slate-500">{previewLoad.origin?.address || "Origin"}</p>
                       </div>
                     </div>
                     <div className="flex-1 mx-4 flex items-center">
-                      <div className="flex-1 border-t-2 border-dashed border-slate-600" />
+                      <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
                       <Truck className="w-5 h-5 mx-2 text-[#8B5CF6]" />
-                      <div className="flex-1 border-t-2 border-dashed border-slate-600" />
+                      <div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} />
                     </div>
                     <div className="flex items-center gap-2">
                       <div>
-                        <p className="text-white text-sm font-semibold text-right">{previewLoad.destination?.city}{previewLoad.destination?.state ? `, ${previewLoad.destination.state}` : ""}</p>
+                        <p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{previewLoad.destination?.city}{previewLoad.destination?.state ? `, ${previewLoad.destination.state}` : ""}</p>
                         <p className="text-[11px] text-slate-500 text-right">{previewLoad.destination?.address || "Destination"}</p>
                       </div>
                       <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BE01FF]/20 to-[#1473FF]/20 flex items-center justify-center">
@@ -373,11 +357,11 @@ export default function ActiveLoadsPage() {
                     { label: "Carrier", value: previewLoad.carrierName || "Unassigned" },
                     { label: "Driver", value: previewLoad.driverName || "Unassigned" },
                   ].map((item: any) => (
-                    <div key={item.label} className="p-3 rounded-xl bg-slate-800/50 border border-slate-700/30">
+                    <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                       <p className="text-[10px] text-slate-500 mb-0.5">{item.label}</p>
                       <p className={item.gradient && previewLoad.rate > 0
                         ? "font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"
-                        : "font-medium text-sm text-white"
+                        : cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")
                       }>{item.value}</p>
                     </div>
                   ))}
@@ -385,13 +369,13 @@ export default function ActiveLoadsPage() {
 
                 {/* Company Info */}
                 {(previewLoad.carrierCompanyName || previewLoad.driverPhone) && (
-                  <div className="p-4 rounded-xl bg-slate-800/60 border border-slate-700/50">
+                  <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                     <p className="text-xs text-slate-500 mb-2 font-medium">Contact Information</p>
                     <div className="flex items-center gap-4">
                       {previewLoad.carrierCompanyName && (
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-slate-400" />
-                          <span className="text-sm text-slate-300">{previewLoad.carrierCompanyName}</span>
+                          <span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.carrierCompanyName}</span>
                         </div>
                       )}
                       {previewLoad.driverPhone && (
@@ -414,7 +398,7 @@ export default function ActiveLoadsPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 bg-slate-800/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"
+                    className={cn("flex-1 rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-600/50 hover:bg-slate-700")}
                     onClick={() => { setPreviewLoad(null); handleContact(previewLoad); }}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
@@ -422,7 +406,7 @@ export default function ActiveLoadsPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    className="bg-slate-800/50 border-slate-600/50 hover:bg-slate-700 rounded-lg"
+                    className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-600/50 hover:bg-slate-700")}
                     onClick={() => { setPreviewLoad(null); setLocation("/tracking"); }}
                   >
                     <Navigation className="w-4 h-4" />

@@ -117,7 +117,7 @@ export default function ShipperLoads() {
           <CardContent className="p-4 text-center">
             <DollarSign className="w-6 h-6 mx-auto mb-2 text-green-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-20 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">${(summary?.totalSpend || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.totalSpend || 0).toLocaleString()}</p>
             )}
             <p className="text-xs text-slate-400">Total Spend</p>
           </CardContent>
@@ -180,7 +180,7 @@ export default function ShipperLoads() {
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-green-400 font-bold">${load.rate?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${load.rate?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">{load.pickupDate}</p>
                     </div>
                     <div className="flex items-center gap-1">

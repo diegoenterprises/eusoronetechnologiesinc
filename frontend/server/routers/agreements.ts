@@ -159,8 +159,11 @@ function generateContractContent(
   clauses: { id: string; title: string; body: string; isModified: boolean }[]
 ): string {
   const now = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  const partyA = (inputs.partyAName as string) || "Party A";
-  const partyB = (inputs.partyBName as string) || "Party B";
+  const partyAName = (inputs.partyASignerName as string) || (inputs.partyAName as string) || "Party A";
+  const partyACompanyName = (inputs.partyACompanyName as string) || (inputs.partyACompany as string) || "";
+  const partyBName = (inputs.partyBSignerName as string) || (inputs.partyBName as string) || "Party B";
+  const partyBCompanyName = (inputs.partyBCompanyName as string) || (inputs.partyBCompany as string) || "";
+  const jurisdiction = (inputs.jurisdiction as string) || "Texas";
 
   const typeTitle: Record<string, string> = {
     carrier_shipper: "CARRIER-SHIPPER TRANSPORTATION AGREEMENT",
@@ -181,15 +184,18 @@ function generateContractContent(
   let content = `${typeTitle[type] || "AGREEMENT"}\n\n`;
   content += `Date: ${now}\n\n`;
   content += `This Agreement ("Agreement") is entered into by and between:\n\n`;
-  content += `PARTY A: ${partyA}\n`;
-  if (inputs.partyACompany) content += `Company: ${inputs.partyACompany}\n`;
-  if (inputs.partyADot) content += `DOT#: ${inputs.partyADot}\n`;
-  if (inputs.partyAMc) content += `MC#: ${inputs.partyAMc}\n`;
-  content += `\nPARTY B: ${partyB}\n`;
-  if (inputs.partyBCompany) content += `Company: ${inputs.partyBCompany}\n`;
-  if (inputs.partyBDot) content += `DOT#: ${inputs.partyBDot}\n`;
-  if (inputs.partyBMc) content += `MC#: ${inputs.partyBMc}\n`;
-  content += `\n${"=".repeat(60)}\n\n`;
+  content += `PARTY A (${(inputs.partyARole as string)?.toUpperCase() || "SHIPPER"}):\n`;
+  if (partyACompanyName) content += `  Company: ${partyACompanyName}\n`;
+  content += `  Authorized Signatory: ${partyAName}\n`;
+  if (inputs.partyADot) content += `  DOT#: ${inputs.partyADot}\n`;
+  if (inputs.partyAMc) content += `  MC#: ${inputs.partyAMc}\n`;
+  content += `\nPARTY B (${(inputs.partyBRole as string)?.toUpperCase() || "CARRIER"}):\n`;
+  if (partyBCompanyName) content += `  Company: ${partyBCompanyName}\n`;
+  content += `  Authorized Signatory: ${partyBName}\n`;
+  if (inputs.partyBDot) content += `  DOT#: ${inputs.partyBDot}\n`;
+  if (inputs.partyBMc) content += `  MC#: ${inputs.partyBMc}\n`;
+  content += `\nGoverning Jurisdiction: State of ${jurisdiction}\n`;
+  content += `\n${"---".repeat(20)}\n\n`;
 
   // Render clauses
   clauses.forEach((clause, idx) => {
@@ -202,10 +208,10 @@ function generateContractContent(
     content += `${body}\n\n`;
   });
 
-  content += `${"=".repeat(60)}\n\n`;
+  content += `${"---".repeat(20)}\n\n`;
   content += `SIGNATURES\n\n`;
-  content += `Party A: ${partyA}\nSignature: _________________________\nDate: _______________\n\n`;
-  content += `Party B: ${partyB}\nSignature: _________________________\nDate: _______________\n\n`;
+  content += `Party A: ${partyACompanyName || partyAName}\nAuthorized Signatory: ${partyAName}\nSignature: _________________________\nDate: _______________\n\n`;
+  content += `Party B: ${partyBCompanyName || partyBName}\nAuthorized Signatory: ${partyBName}\nSignature: _________________________\nDate: _______________\n\n`;
   content += `\nThis agreement was generated on the EusoTrip platform.\n`;
   content += `Platform transaction fees apply per load as outlined in the EusoTrip Terms of Service.\n`;
 
@@ -375,7 +381,29 @@ export const agreementsRouter = router({
         const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
         const [results, countResult] = await Promise.all([
-          db.select().from(agreements)
+          db.select({
+            id: agreements.id,
+            agreementNumber: agreements.agreementNumber,
+            agreementType: agreements.agreementType,
+            contractDuration: agreements.contractDuration,
+            status: agreements.status,
+            partyAUserId: agreements.partyAUserId,
+            partyARole: agreements.partyARole,
+            partyBUserId: agreements.partyBUserId,
+            partyBRole: agreements.partyBRole,
+            partyBCompanyId: agreements.partyBCompanyId,
+            baseRate: agreements.baseRate,
+            rateType: agreements.rateType,
+            paymentTermDays: agreements.paymentTermDays,
+            effectiveDate: agreements.effectiveDate,
+            expirationDate: agreements.expirationDate,
+            equipmentTypes: agreements.equipmentTypes,
+            hazmatRequired: agreements.hazmatRequired,
+            generatedContent: agreements.generatedContent,
+            isEncrypted: agreements.isEncrypted,
+            createdAt: agreements.createdAt,
+            updatedAt: agreements.updatedAt,
+          }).from(agreements)
             .where(whereClause)
             .orderBy(desc(agreements.updatedAt))
             .limit(input.limit)
@@ -383,7 +411,7 @@ export const agreementsRouter = router({
           db.select({ count: sql<number>`count(*)` }).from(agreements).where(whereClause),
         ]);
 
-        return { agreements: results, total: countResult[0]?.count || 0 };
+        return { agreements: results.map(decryptAgreement), total: countResult[0]?.count || 0 };
       } catch (e) { return { agreements: [], total: 0 }; }
     }),
 
@@ -422,7 +450,7 @@ export const agreementsRouter = router({
         }
 
         return {
-          ...agreement,
+          ...decryptAgreement(agreement),
           partyA: partyA[0] || null,
           partyB: partyB[0] || null,
           partyACompany,
@@ -796,47 +824,122 @@ export const agreementsRouter = router({
         }
       }
 
-      const result = await db.insert(agreements).values({
-        agreementNumber,
-        templateId: input.templateId,
-        agreementType: input.agreementType as any,
-        contractDuration: input.contractDuration,
-        partyAUserId: numericUserId,
-        partyACompanyId: ctx.user?.companyId || null,
-        partyARole: ctx.user?.role || "SHIPPER",
-        partyBUserId: partyBId,
-        partyBCompanyId: input.partyBCompanyId,
-        partyBRole: input.partyBRole,
-        rateType: (input.rateType as any) || null,
-        baseRate: input.baseRate?.toString(),
-        fuelSurchargeType: (input.fuelSurchargeType as any) || "none",
-        fuelSurchargeValue: input.fuelSurchargeValue?.toString(),
-        minimumCharge: input.minimumCharge?.toString(),
-        maximumCharge: input.maximumCharge?.toString(),
-        paymentTermDays: input.paymentTermDays || 30,
-        quickPayDiscount: input.quickPayDiscount?.toString(),
-        quickPayDays: input.quickPayDays,
-        minInsuranceAmount: input.minInsuranceAmount?.toString(),
-        liabilityLimit: input.liabilityLimit?.toString(),
-        cargoInsuranceRequired: input.cargoInsuranceRequired?.toString(),
-        equipmentTypes: input.equipmentTypes || [],
-        hazmatRequired: input.hazmatRequired || false,
-        twicRequired: input.twicRequired || false,
-        tankerEndorsementRequired: input.tankerEndorsementRequired || false,
-        lanes: encryptJSON(input.lanes || []) as any,
-        accessorialSchedule: encryptJSON(input.accessorialSchedule || []) as any,
-        generatedContent: encryptField(aiResult.content),
-        clauses: encryptJSON(finalClauses) as any,
-        strategicInputs: encryptJSON(input.strategicInputs) as any,
-        status: "draft",
-        effectiveDate: input.effectiveDate ? new Date(input.effectiveDate) : null,
-        expirationDate: input.expirationDate ? new Date(input.expirationDate) : null,
-        autoRenew: input.autoRenew || false,
-        notes: input.notes ? encryptField(input.notes) : null,
-        isEncrypted: true,
-        encryptionVersion: ENC_VERSION,
-        platformFeeAcknowledged: true,
-      }).$returningId();
+      // Pre-flight: verify agreements table exists
+      try {
+        const [tableCheck] = await db.execute(sql`SELECT 1 FROM agreements LIMIT 1`);
+        console.log("[EUSOCONTRACT] agreements table accessible");
+      } catch (tableErr: any) {
+        console.error("[EUSOCONTRACT] TABLE CHECK FAILED:", tableErr?.message);
+        // Try to create the table via raw SQL as a last resort
+        try {
+          await db.execute(sql`CREATE TABLE IF NOT EXISTS agreements (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            agreementNumber VARCHAR(50) NOT NULL UNIQUE,
+            templateId INT,
+            agreementType ENUM('carrier_shipper','broker_carrier','broker_shipper','carrier_driver','escort_service','catalyst_dispatch','terminal_access','master_service','lane_commitment','fuel_surcharge','accessorial_schedule','nda','custom') NOT NULL,
+            contractDuration ENUM('spot','short_term','long_term','evergreen') NOT NULL DEFAULT 'spot',
+            partyAUserId INT NOT NULL,
+            partyACompanyId INT,
+            partyARole VARCHAR(50) NOT NULL,
+            partyBUserId INT NOT NULL,
+            partyBCompanyId INT,
+            partyBRole VARCHAR(50) NOT NULL,
+            rateType ENUM('per_mile','flat_rate','percentage','per_hour','per_ton','per_gallon','custom'),
+            baseRate DECIMAL(12,2),
+            currency VARCHAR(3) DEFAULT 'USD',
+            fuelSurchargeType ENUM('none','fixed','doe_index','percentage','custom') DEFAULT 'none',
+            fuelSurchargeValue DECIMAL(10,4),
+            minimumCharge DECIMAL(10,2),
+            maximumCharge DECIMAL(10,2),
+            paymentTermDays INT DEFAULT 30,
+            paymentMethod VARCHAR(50),
+            quickPayDiscount DECIMAL(5,2),
+            quickPayDays INT,
+            minInsuranceAmount DECIMAL(12,2),
+            liabilityLimit DECIMAL(12,2),
+            cargoInsuranceRequired DECIMAL(12,2),
+            equipmentTypes JSON,
+            hazmatRequired BOOLEAN DEFAULT FALSE,
+            twicRequired BOOLEAN DEFAULT FALSE,
+            tankerEndorsementRequired BOOLEAN DEFAULT FALSE,
+            lanes TEXT,
+            volumeCommitmentTotal INT,
+            volumeCommitmentPeriod VARCHAR(20),
+            accessorialSchedule TEXT,
+            generatedContent TEXT,
+            clauses TEXT,
+            strategicInputs TEXT,
+            originalDocumentUrl TEXT,
+            status ENUM('draft','pending_review','negotiating','pending_signature','active','expired','terminated','cancelled','suspended','renewed') NOT NULL DEFAULT 'draft',
+            effectiveDate TIMESTAMP NULL,
+            expirationDate TIMESTAMP NULL,
+            terminationDate TIMESTAMP NULL,
+            autoRenew BOOLEAN DEFAULT FALSE,
+            renewalTermDays INT,
+            renewalNoticeDays INT DEFAULT 30,
+            terminationNoticeDays INT DEFAULT 30,
+            nonCircumventionEnabled BOOLEAN DEFAULT TRUE,
+            nonCircumventionMonths INT DEFAULT 24,
+            platformFeeAcknowledged BOOLEAN DEFAULT TRUE,
+            notes TEXT,
+            tags JSON,
+            isEncrypted BOOLEAN DEFAULT FALSE,
+            encryptionVersion VARCHAR(10),
+            createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deletedAt TIMESTAMP NULL
+          )`);
+          console.log("[EUSOCONTRACT] Created agreements table via raw SQL");
+        } catch (createErr: any) {
+          console.error("[EUSOCONTRACT] CREATE TABLE also failed:", createErr?.message);
+        }
+      }
+
+      // Normalize enum values to match DB schema
+      const RATE_TYPE_MAP: Record<string, string> = { flat: "flat_rate", hourly: "per_hour", "per-mile": "per_mile", per_mile: "per_mile", flat_rate: "flat_rate", percentage: "percentage", per_hour: "per_hour", per_ton: "per_ton", per_gallon: "per_gallon", custom: "custom" };
+      const FUEL_TYPE_MAP: Record<string, string> = { none: "none", fixed: "fixed", doe_index: "doe_index", percentage: "percentage", custom: "custom", variable: "custom" };
+      const safeRateType = RATE_TYPE_MAP[input.rateType || ""] || null;
+      const safeFuelType = FUEL_TYPE_MAP[input.fuelSurchargeType || "none"] || "none";
+
+      // Use raw SQL to bypass Drizzle ORM serialization issues
+      let result: any;
+      try {
+        const [insertResult] = await db.execute(sql`INSERT INTO agreements
+          (agreementNumber, templateId, agreementType, contractDuration,
+           partyAUserId, partyACompanyId, partyARole,
+           partyBUserId, partyBCompanyId, partyBRole,
+           rateType, baseRate, currency, fuelSurchargeType, fuelSurchargeValue,
+           minimumCharge, maximumCharge, paymentTermDays,
+           quickPayDiscount, quickPayDays,
+           minInsuranceAmount, liabilityLimit, cargoInsuranceRequired,
+           equipmentTypes, hazmatRequired, twicRequired, tankerEndorsementRequired,
+           lanes, accessorialSchedule, generatedContent, clauses, strategicInputs,
+           status, effectiveDate, expirationDate,
+           autoRenew, notes, isEncrypted, encryptionVersion, platformFeeAcknowledged)
+          VALUES (
+           ${agreementNumber}, ${input.templateId ?? null}, ${input.agreementType}, ${input.contractDuration || "spot"},
+           ${numericUserId}, ${ctx.user?.companyId ?? null}, ${ctx.user?.role || "SHIPPER"},
+           ${partyBId}, ${input.partyBCompanyId ?? null}, ${input.partyBRole},
+           ${safeRateType}, ${input.baseRate?.toString() ?? null}, ${"USD"}, ${safeFuelType}, ${input.fuelSurchargeValue?.toString() ?? null},
+           ${input.minimumCharge?.toString() ?? null}, ${input.maximumCharge?.toString() ?? null}, ${input.paymentTermDays || 30},
+           ${input.quickPayDiscount?.toString() ?? null}, ${input.quickPayDays ?? null},
+           ${input.minInsuranceAmount?.toString() ?? null}, ${input.liabilityLimit?.toString() ?? null}, ${input.cargoInsuranceRequired?.toString() ?? null},
+           ${JSON.stringify(input.equipmentTypes || [])}, ${input.hazmatRequired ? 1 : 0}, ${input.twicRequired ? 1 : 0}, ${input.tankerEndorsementRequired ? 1 : 0},
+           ${encryptJSON(input.lanes || [])}, ${encryptJSON(input.accessorialSchedule || [])}, ${encryptField(aiResult.content)}, ${encryptJSON(finalClauses)}, ${encryptJSON(input.strategicInputs)},
+           ${"draft"}, ${input.effectiveDate ? new Date(input.effectiveDate) : null}, ${input.expirationDate ? new Date(input.expirationDate) : null},
+           ${input.autoRenew ? 1 : 0}, ${input.notes ? encryptField(input.notes) : null}, ${1}, ${ENC_VERSION}, ${1}
+          )`);
+        const insertId = (insertResult as any)?.insertId;
+        result = [{ id: insertId ? Number(insertId) : null }];
+        console.log("[EUSOCONTRACT] Agreement inserted successfully, id:", result[0]?.id);
+      } catch (insertErr: any) {
+        const sqlMsg = insertErr?.sqlMessage || insertErr?.cause?.sqlMessage || "";
+        const errCode = insertErr?.code || insertErr?.cause?.code || "";
+        const errNo = insertErr?.errno || insertErr?.cause?.errno || "";
+        console.error("[EUSOCONTRACT] RAW INSERT ERROR:", errCode, errNo, sqlMsg);
+        console.error("[EUSOCONTRACT] Full:", (insertErr?.message || "").slice(0, 500));
+        throw new Error(`DB ${errCode}(${errNo}): ${sqlMsg || (insertErr?.message || "").slice(-150)}`);
+      }
 
       // Merge AI compliance notes with FMCSA warnings
       const allComplianceNotes = [

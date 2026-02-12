@@ -75,7 +75,7 @@ export default function BrokerAnalytics() {
                   {((analyticsQuery.data as any)?.commissionTrend || 0) >= 0 ? (
                     <>
                       <ArrowUpRight className="w-3 h-3 text-green-400" />
-                      <span className="text-green-400">+{(analyticsQuery.data as any)?.commissionTrend}%</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">+{(analyticsQuery.data as any)?.commissionTrend}%</span>
                     </>
                   ) : (
                     <>
@@ -178,7 +178,7 @@ export default function BrokerAnalytics() {
                   <div key={i} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-300">{item.category}</span>
-                      <span className="text-sm font-bold text-green-400">${item.amount?.toLocaleString()}</span>
+                      <span className="text-sm font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${item.amount?.toLocaleString()}</span>
                     </div>
                     <Progress 
                       value={item.percentage} 
@@ -251,7 +251,7 @@ export default function BrokerAnalytics() {
                 <div key={i} className="p-4 rounded-lg bg-slate-700/30 border border-slate-600/30">
                   <div className="flex items-center justify-between mb-2">
                     <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">#{i + 1}</Badge>
-                    <span className="text-green-400 font-bold">${lane.totalCommission?.toLocaleString()}</span>
+                    <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${lane.totalCommission?.toLocaleString()}</span>
                   </div>
                   <p className="text-white font-medium text-sm mb-1">{lane.origin} → {lane.destination}</p>
                   <div className="flex items-center justify-between text-xs text-slate-500">

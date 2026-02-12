@@ -135,7 +135,7 @@ export default function DeadheadAnalysis() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Current: {summary?.deadheadPercentage}%</span>
-                <span className="text-emerald-400">Target: {summary?.targetPercentage}%</span>
+                <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Target: {summary?.targetPercentage}%</span>
               </div>
               <Progress value={100 - (((summary?.deadheadPercentage ?? 0) - (summary?.targetPercentage ?? 10)) / (summary?.targetPercentage ?? 10)) * 100} className="h-3" />
               <p className="text-sm text-slate-500">

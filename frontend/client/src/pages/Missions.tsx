@@ -122,10 +122,10 @@ export default function Missions() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <Trophy className="w-6 h-6 text-emerald-400" />
+                <Trophy className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-emerald-400">
+                <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                   {missions?.completed?.length || 0}
                 </p>
                 <p className="text-xs text-slate-400">Completed</p>
@@ -327,7 +327,7 @@ function MissionCard({
   const typeColors: Record<string, string> = {
     daily: "bg-blue-500/20 text-blue-400",
     weekly: "bg-purple-500/20 text-purple-400",
-    monthly: "bg-emerald-500/20 text-emerald-400",
+    monthly: "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent",
     epic: "bg-yellow-500/20 text-yellow-400",
     seasonal: "bg-pink-500/20 text-pink-400",
   };
@@ -404,7 +404,7 @@ function MissionCard({
           )}
 
           {completed && (
-            <Badge className="bg-emerald-500/20 text-emerald-400">
+            <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
               Claimed
             </Badge>
           )}

@@ -132,7 +132,7 @@ export default function DriverTraining() {
               <p className="text-white font-medium text-lg">Training Progress</p>
               <p className="text-slate-400 text-sm">{progress?.completed} of {progress?.totalCourses} courses completed</p>
             </div>
-            <p className="text-3xl font-bold text-emerald-400">{progress?.percentage}%</p>
+            <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{progress?.percentage}%</p>
           </div>
           <Progress value={progress?.percentage || 0} className="h-3" />
         </CardContent>

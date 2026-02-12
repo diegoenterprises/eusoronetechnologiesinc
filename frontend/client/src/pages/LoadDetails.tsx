@@ -149,7 +149,7 @@ export default function LoadDetails() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Load Rate</p>
-              <p className="text-3xl font-bold text-emerald-500">${rate.toLocaleString()}</p>
+              <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rate.toLocaleString()}</p>
               <p className="text-xs text-slate-400 mt-0.5">${ratePerMile}/mi</p>
             </div>
             <div>
@@ -256,7 +256,7 @@ export default function LoadDetails() {
                 <Shield className="w-5 h-5 text-cyan-500" />
                 ERG Hazmat Classification
                 {load.spectraMatchVerified && (
-                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400 ml-auto">
+                  <Badge variant="outline" className="text-[10px] border-emerald-500/30 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent ml-auto">
                     <CheckCircle className="w-3 h-3 mr-1" />SPECTRA-MATCH Verified
                   </Badge>
                 )}

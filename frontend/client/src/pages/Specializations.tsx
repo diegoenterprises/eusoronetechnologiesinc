@@ -112,7 +112,7 @@ export default function Specializations() {
                   </div>
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>{spec.loadsCompleted} loads completed</span>
-                    <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 text-green-400" />{spec.successRate}% success</span>
+                    <span className="flex items-center gap-1"><TrendingUp className="w-3 h-3 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />{spec.successRate}% success</span>
                   </div>
                 </div>
               ))}

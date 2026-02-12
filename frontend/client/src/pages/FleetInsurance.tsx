@@ -46,11 +46,11 @@ export default function FleetInsurance() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <Shield className="w-6 h-6 text-emerald-400" />
+                <Shield className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {coverageQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${coverage?.totalCoverage?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${coverage?.totalCoverage?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Coverage</p>
               </div>
@@ -134,7 +134,7 @@ export default function FleetInsurance() {
                       <p className="text-sm text-slate-400">Provider: {policy.provider}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold">${policy.coverageLimit?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${policy.coverageLimit?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Coverage Limit</p>
                     </div>
                   </div>
@@ -169,7 +169,7 @@ export default function FleetInsurance() {
                   <div key={item.type}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">{item.type}</span>
-                      <span className="text-emerald-400 font-bold">${item.limit?.toLocaleString()}</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${item.limit?.toLocaleString()}</span>
                     </div>
                     <Progress value={(item.limit / coverage.totalCoverage) * 100} className="h-2" />
                   </div>

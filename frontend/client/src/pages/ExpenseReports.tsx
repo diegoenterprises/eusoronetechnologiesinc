@@ -73,7 +73,7 @@ export default function ExpenseReports() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold text-green-400">${stats?.approvedAmount?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Approved</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.approvedAmount?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Approved</p></div>
             </div>
           </CardContent>
         </Card>
@@ -128,7 +128,7 @@ export default function ExpenseReports() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-green-400">${expense.amount?.toLocaleString()}</p>
+                      <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${expense.amount?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Total</p>
                     </div>
                     {expense.status === "pending" && (

@@ -78,8 +78,8 @@ export default function PlatformAnalytics() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard icon={Users} iconColor="text-blue-400" bgColor="bg-blue-500/20" title="Total Users" value={metrics?.totalUsers?.toLocaleString()} change={metrics?.usersChange} changeType={metrics?.usersChangeType} />
-        <StatCard icon={Truck} iconColor="text-green-400" bgColor="bg-green-500/20" title="Total Loads" value={metrics?.totalLoads?.toLocaleString()} change={metrics?.loadsChange} changeType={metrics?.loadsChangeType} />
-        <StatCard icon={DollarSign} iconColor="text-emerald-400" bgColor="bg-emerald-500/20" title="Revenue" value={`$${metrics?.revenue?.toLocaleString()}`} change={metrics?.revenueChange} changeType={metrics?.revenueChangeType} />
+        <StatCard icon={Truck} iconColor="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" bgColor="bg-green-500/20" title="Total Loads" value={metrics?.totalLoads?.toLocaleString()} change={metrics?.loadsChange} changeType={metrics?.loadsChangeType} />
+        <StatCard icon={DollarSign} iconColor="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" bgColor="bg-emerald-500/20" title="Revenue" value={`$${metrics?.revenue?.toLocaleString()}`} change={metrics?.revenueChange} changeType={metrics?.revenueChangeType} />
         <StatCard icon={Activity} iconColor="text-purple-400" bgColor="bg-purple-500/20" title="Active Sessions" value={metrics?.activeSessions?.toLocaleString()} change={metrics?.sessionsChange} changeType={metrics?.sessionsChangeType} />
       </div>
 
@@ -123,7 +123,7 @@ export default function PlatformAnalytics() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-400" />
+              <TrendingUp className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               Top Performers
             </CardTitle>
           </CardHeader>
@@ -142,7 +142,7 @@ export default function PlatformAnalytics() {
                       <p className="text-xs text-slate-500">{performer.type}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold">{performer.metric}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">{performer.metric}</p>
                       <p className="text-xs text-slate-500">{performer.metricLabel}</p>
                     </div>
                   </div>

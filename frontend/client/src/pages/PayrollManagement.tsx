@@ -68,7 +68,7 @@ export default function PayrollManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold text-green-400">${stats?.totalGross?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Gross Pay</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.totalGross?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Gross Pay</p></div>
             </div>
           </CardContent>
         </Card>
@@ -126,7 +126,7 @@ export default function PayrollManagement() {
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-lg font-bold text-green-400">${record.grossPay?.toLocaleString()}</p>
+                      <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${record.grossPay?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Gross</p>
                     </div>
                     <div className="text-right">

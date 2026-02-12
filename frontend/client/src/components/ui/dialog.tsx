@@ -94,6 +94,7 @@ function DialogContent({
   children,
   showCloseButton = true,
   onEscapeKeyDown,
+  style,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
@@ -118,6 +119,11 @@ function DialogContent({
     [isComposing, onEscapeKeyDown]
   );
 
+  const defaultStyle = {
+    background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)",
+    boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)",
+  };
+
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
@@ -127,10 +133,7 @@ function DialogContent({
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[540px] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-2xl border-none p-12 shadow-lg duration-200",
           className
         )}
-        style={{
-          background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)",
-          boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)",
-        }}
+        style={style ?? defaultStyle}
         onEscapeKeyDown={handleEscapeKeyDown}
         {...props}
       >

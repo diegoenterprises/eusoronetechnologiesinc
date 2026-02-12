@@ -105,7 +105,7 @@ export default function DVIR() {
                 <CheckCircle className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-green-400">{totalItems - selectedDefects.length}</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{totalItems - selectedDefects.length}</p>
                 <p className="text-xs text-slate-400">Passed</p>
               </div>
             </div>

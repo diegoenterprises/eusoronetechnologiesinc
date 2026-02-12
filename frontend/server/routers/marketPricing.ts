@@ -221,6 +221,14 @@ export const marketPricingRouter = router({
             updates["DOE"] = { price: snapshot.dieselNational.price, changePercent: snapshot.dieselNational.change, change: +(snapshot.dieselNational.price * snapshot.dieselNational.change / 100).toFixed(4) };
           }
 
+          // Overlay Yahoo Finance real-time data for all matching symbols
+          const yq = snapshot.yahooQuotes || {};
+          for (const sym of Object.keys(yq)) {
+            if (!updates[sym]) {
+              updates[sym] = { price: yq[sym].price, changePercent: yq[sym].changePercent, change: yq[sym].change };
+            }
+          }
+
           return {
             snapshot,
             liveOverrides: updates,
@@ -264,6 +272,7 @@ export const marketPricingRouter = router({
       const snap = await getLiveSnapshot();
 
       if (snap?.isLiveData) {
+        // Build overrides from FRED/EIA government data
         const overrides: Record<string, { price: number; change: number }> = {};
         if (snap.crudeOilWTI) overrides["CL"] = { price: snap.crudeOilWTI.price, change: snap.crudeOilWTI.change };
         if (snap.naturalGas) overrides["NG"] = { price: snap.naturalGas.price, change: snap.naturalGas.change };
@@ -271,20 +280,32 @@ export const marketPricingRouter = router({
           overrides["ULSD"] = { price: snap.dieselNational.price, change: snap.dieselNational.change };
           overrides["DOE"] = { price: snap.dieselNational.price, change: snap.dieselNational.change };
         }
-        // Apply overrides
+
+        // Overlay Yahoo Finance real-time quotes on ALL matching symbols
+        const yq = snap.yahooQuotes || {};
+        for (const sym of Object.keys(yq)) {
+          if (!overrides[sym]) {
+            overrides[sym] = { price: yq[sym].price, change: yq[sym].changePercent };
+          }
+        }
+
+        // Apply all overrides (gov + yahoo)
         all = all.map(c => {
           const ov = overrides[c.symbol];
           if (!ov) return c;
-          const changeAmt = +(c.price * ov.change / 100).toFixed(4);
+          // Use Yahoo quote details if available for richer data
+          const yQuote = yq[c.symbol];
+          const changeAmt = yQuote ? yQuote.change : +(ov.price * ov.change / 100).toFixed(4);
           return {
             ...c,
             price: ov.price,
-            change: changeAmt,
-            changePercent: ov.change,
-            previousClose: +(ov.price - changeAmt).toFixed(4),
-            open: +(ov.price - changeAmt * 0.5).toFixed(4),
-            high: +(ov.price * 1.005).toFixed(4),
-            low: +(ov.price * 0.995).toFixed(4),
+            change: +changeAmt.toFixed(4),
+            changePercent: +ov.change.toFixed(2),
+            previousClose: yQuote ? +yQuote.prevClose.toFixed(4) : +(ov.price - changeAmt).toFixed(4),
+            open: yQuote ? +yQuote.open.toFixed(4) : +(ov.price - changeAmt * 0.5).toFixed(4),
+            high: yQuote ? +yQuote.high.toFixed(4) : +(ov.price * 1.005).toFixed(4),
+            low: yQuote ? +yQuote.low.toFixed(4) : +(ov.price * 0.995).toFixed(4),
+            volume: yQuote ? (yQuote.volume > 1000 ? `${Math.round(yQuote.volume / 1000)}K` : String(yQuote.volume)) : c.volume,
             intraday: ov.change > 0.5 ? "BULL" as const : ov.change < -0.5 ? "BEAR" as const : "FLAT" as const,
             daily: ov.change > 0 ? "UP" as const : ov.change < 0 ? "DOWN" as const : "FLAT" as const,
             sparkline: generateSparkline(ov.price, ov.change > 0.5 ? "up" : ov.change < -0.5 ? "down" : "flat"),

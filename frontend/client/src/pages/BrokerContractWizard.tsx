@@ -195,7 +195,7 @@ export default function BrokerContractWizard() {
               <div className="flex items-center gap-2 mb-3">
                 <div className="p-2 rounded-lg bg-purple-500/15"><Scale className="w-5 h-5 text-purple-500" /></div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
-                <div className="p-2 rounded-lg bg-emerald-500/15"><Truck className="w-5 h-5 text-emerald-500" /></div>
+                <div className="p-2 rounded-lg bg-emerald-500/15"><Truck className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
               </div>
               <p className={cn("font-bold mb-1", vl)}>Broker → Carrier</p>
               <p className={cn("text-xs", mt)}>Broker a load to a carrier. You'll set the rate you pay the carrier.</p>
@@ -209,7 +209,7 @@ export default function BrokerContractWizard() {
       {step === "parties" && (
         <div className="space-y-5">
           <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2", tc)}>
-            {direction === "shipper_to_broker" ? <><Building2 className="w-5 h-5 text-blue-500" />Shipper Details</> : <><Truck className="w-5 h-5 text-emerald-500" />Carrier Details</>}
+            {direction === "shipper_to_broker" ? <><Building2 className="w-5 h-5 text-blue-500" />Shipper Details</> : <><Truck className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Carrier Details</>}
           </CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -242,7 +242,7 @@ export default function BrokerContractWizard() {
       {/* RATES — Broker margin calculator */}
       {step === "rates" && (
         <div className="space-y-5">
-          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2", tc)}><DollarSign className="w-5 h-5 text-emerald-500" />Rate & Margin</CardTitle></CardHeader>
+          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2", tc)}><DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Rate & Margin</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div><label className={lb}>Shipper Pays ($)</label><Input type="number" value={shipperRate} onChange={(e: any) => setShipperRate(e.target.value)} placeholder="0.00" className={ic} /></div>
@@ -254,10 +254,10 @@ export default function BrokerContractWizard() {
               <div className={cn("p-4 rounded-xl border", margin >= 0 ? (isLight ? "bg-emerald-50 border-emerald-200" : "bg-emerald-500/5 border-emerald-500/30") : (isLight ? "bg-red-50 border-red-200" : "bg-red-500/5 border-red-500/30"))}>
                 <p className={cn("text-xs font-bold mb-3", margin >= 0 ? "text-emerald-600" : "text-red-500")}>Broker Margin Analysis</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div><p className="text-slate-400">Gross Margin</p><p className={cn("text-lg font-bold", margin >= 0 ? "text-emerald-500" : "text-red-400")}>${margin.toFixed(2)}</p></div>
-                  <div><p className="text-slate-400">Margin %</p><p className={cn("text-lg font-bold", marginPct >= 10 ? "text-emerald-500" : marginPct >= 0 ? "text-yellow-500" : "text-red-400")}>{marginPct.toFixed(1)}%</p></div>
+                  <div><p className="text-slate-400">Gross Margin</p><p className={cn("text-lg font-bold", margin >= 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>${margin.toFixed(2)}</p></div>
+                  <div><p className="text-slate-400">Margin %</p><p className={cn("text-lg font-bold", marginPct >= 10 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : marginPct >= 0 ? "text-yellow-500" : "text-red-400")}>{marginPct.toFixed(1)}%</p></div>
                   <div><p className="text-slate-400">Platform Fee (both sides)</p><p className="text-lg font-bold text-purple-400">${totalPlatformFee.toFixed(2)}</p></div>
-                  <div><p className="text-slate-400">Net Revenue</p><p className={cn("text-lg font-bold", netBrokerRevenue >= 0 ? "text-emerald-500" : "text-red-400")}>${netBrokerRevenue.toFixed(2)}</p></div>
+                  <div><p className="text-slate-400">Net Revenue</p><p className={cn("text-lg font-bold", netBrokerRevenue >= 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>${netBrokerRevenue.toFixed(2)}</p></div>
                 </div>
                 {marginPct < 10 && marginPct >= 0 && <p className="text-[11px] text-yellow-500 mt-2">⚠ Margin below 10%. Consider negotiating better shipper rates.</p>}
                 {margin < 0 && <p className="text-[11px] text-red-400 mt-2">⚠ Negative margin — carrier rate exceeds shipper rate.</p>}

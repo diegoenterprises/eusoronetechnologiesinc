@@ -24,6 +24,7 @@ import {
   leaderboards,
   rewards,
 } from "../../drizzle/schema";
+import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions } from "../services/missionGenerator";
 
 export const gamificationRouter = router({
   // Generic CRUD for screen templates
@@ -251,14 +252,65 @@ export const gamificationRouter = router({
       category: z.enum(["points", "loads", "miles", "safety", "rating"]).default("points"),
       limit: z.number().default(20),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        category: input.category,
-        leaders: [],
-        myRank: 0,
-        totalParticipants: 0,
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+
+      if (!db) return { period: input.period, category: input.category, leaders: [], myRank: 0, totalParticipants: 0 };
+
+      try {
+        const allProfiles = await db.select({
+          userId: gamificationProfiles.userId,
+          level: gamificationProfiles.level,
+          totalXp: gamificationProfiles.totalXp,
+          totalMiles: gamificationProfiles.totalMilesEarned,
+          stats: gamificationProfiles.stats,
+        }).from(gamificationProfiles);
+
+        // Sort by XP descending
+        allProfiles.sort((a, b) => (b.totalXp || 0) - (a.totalXp || 0));
+
+        // Get user info for top N
+        const topN = allProfiles.slice(0, input.limit);
+        const userIds = topN.map(p => p.userId);
+
+        let userMap: Map<number, { name: string; role: string }> = new Map();
+        if (userIds.length > 0) {
+          const userRows = await db.select({ id: users.id, name: users.name, role: users.role })
+            .from(users)
+            .where(sql`id IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+          for (const u of userRows) {
+            userMap.set(u.id, { name: u.name || "User", role: u.role || "DRIVER" });
+          }
+        }
+
+        const leaders = topN.map((p, i) => {
+          const u = userMap.get(p.userId);
+          return {
+            rank: i + 1,
+            userId: p.userId,
+            name: u?.name || "User",
+            role: u?.role || "DRIVER",
+            level: p.level || 1,
+            totalXp: p.totalXp || 0,
+            totalMiles: p.totalMiles ? parseFloat(p.totalMiles) : 0,
+            missionsCompleted: (p.stats as any)?.totalMissionsCompleted || 0,
+          };
+        });
+
+        const myRank = allProfiles.findIndex(p => p.userId === userId) + 1;
+
+        return {
+          period: input.period,
+          category: input.category,
+          leaders,
+          myRank: myRank || allProfiles.length + 1,
+          totalParticipants: allProfiles.length,
+        };
+      } catch (err) {
+        console.error("[TheHaul] getLeaderboard error:", err);
+        return { period: input.period, category: input.category, leaders: [], myRank: 0, totalParticipants: 0 };
+      }
     }),
 
   /**
@@ -266,56 +318,24 @@ export const gamificationRouter = router({
    */
   getRewardsCatalog: protectedProcedure
     .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      const userRole = (ctx.user as any)?.role || "DRIVER";
+
+      let availablePoints = 0;
+      if (db) {
+        const [profile] = await db.select()
+          .from(gamificationProfiles)
+          .where(eq(gamificationProfiles.userId, userId))
+          .limit(1);
+        availablePoints = profile?.totalXp || 0;
+      }
+
+      const catalog = getRewardsCatalogForRole(userRole);
       return {
-        availablePoints: 4850,
-        rewards: [
-          {
-            id: "reward_001",
-            name: "EusoTrip Cap",
-            description: "Official EusoTrip branded cap",
-            category: "merchandise",
-            pointsCost: 500,
-            available: true,
-            image: null,
-          },
-          {
-            id: "reward_002",
-            name: "$25 Fuel Card",
-            description: "Gift card for fuel purchases",
-            category: "gift_cards",
-            pointsCost: 2500,
-            available: true,
-            image: null,
-          },
-          {
-            id: "reward_003",
-            name: "$50 Amazon Gift Card",
-            description: "Amazon gift card",
-            category: "gift_cards",
-            pointsCost: 5000,
-            available: true,
-            image: null,
-          },
-          {
-            id: "reward_004",
-            name: "Priority Dispatch",
-            description: "Priority access to premium loads for 1 week",
-            category: "perks",
-            pointsCost: 1000,
-            available: true,
-            image: null,
-          },
-          {
-            id: "reward_005",
-            name: "EusoTrip Jacket",
-            description: "Premium branded jacket",
-            category: "merchandise",
-            pointsCost: 3000,
-            available: true,
-            image: null,
-          },
-        ],
-        categories: ["merchandise", "gift_cards", "perks", "experiences"],
+        availablePoints,
+        rewards: catalog.rewards.map(r => ({ ...r, available: true, image: null })),
+        categories: catalog.categories,
       };
     }),
 
@@ -935,6 +955,224 @@ export const gamificationRouter = router({
       });
 
       return { success: true, id: result.insertId };
+    }),
+
+  // ============================================================
+  // THE HAUL LOBBY — Digital Truck Stop Chat Forum
+  // Strict moderation: no profanity, no solicitation, no harassment
+  // ============================================================
+
+  /**
+   * Get lobby messages
+   */
+  getLobbyMessages: protectedProcedure
+    .input(z.object({
+      limit: z.number().default(50),
+      before: z.string().optional(),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { messages: [], total: 0 };
+
+      try {
+        // Create table if not exists
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS haul_lobby_messages (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            userId INT NOT NULL,
+            userName VARCHAR(100),
+            userRole VARCHAR(50),
+            message TEXT NOT NULL,
+            messageType ENUM('chat','system','mission_alert','achievement') DEFAULT 'chat',
+            isDeleted BOOLEAN DEFAULT FALSE,
+            isPinned BOOLEAN DEFAULT FALSE,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_lobby_created (createdAt),
+            INDEX idx_lobby_user (userId)
+          )
+        `);
+
+        const rows = await db.execute(sql`
+          SELECT id, userId, userName, userRole, message, messageType, isPinned, createdAt
+          FROM haul_lobby_messages
+          WHERE isDeleted = FALSE
+          ORDER BY createdAt DESC
+          LIMIT ${input.limit}
+        `);
+
+        const messages = (Array.isArray(rows) && Array.isArray(rows[0]) ? rows[0] : []) as any[];
+
+        return {
+          messages: messages.reverse().map((m: any) => ({
+            id: m.id,
+            userId: m.userId,
+            userName: m.userName || "Anonymous",
+            userRole: m.userRole || "USER",
+            message: m.message,
+            messageType: m.messageType || "chat",
+            isPinned: !!m.isPinned,
+            createdAt: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
+          })),
+          total: messages.length,
+        };
+      } catch (err) {
+        console.error("[TheHaul] getLobbyMessages error:", err);
+        return { messages: [], total: 0 };
+      }
+    }),
+
+  /**
+   * Post lobby message — with content moderation
+   */
+  postLobbyMessage: protectedProcedure
+    .input(z.object({
+      message: z.string().min(1).max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = Number(ctx.user?.id) || 0;
+      const userName = (ctx.user as any)?.name || "Anonymous";
+      const userRole = (ctx.user as any)?.role || "USER";
+
+      // ---- CONTENT MODERATION ----
+      const msg = input.message.toLowerCase();
+
+      // Profanity / slur filter (expandable)
+      const BANNED_WORDS = [
+        "fuck", "shit", "ass", "bitch", "damn", "cunt", "dick", "nigger", "nigga",
+        "faggot", "retard", "whore", "slut", "bastard", "piss",
+      ];
+      const hasProfanity = BANNED_WORDS.some(w => msg.includes(w));
+      if (hasProfanity) {
+        return { success: false, error: "Message contains inappropriate language. The Haul Lobby enforces professional standards." };
+      }
+
+      // Solicitation / spam filter
+      const SPAM_PATTERNS = [
+        /\b(buy|sell)\s+(drugs|guns|weapons)/i,
+        /\b(click here|free money|make \$\d+)/i,
+        /\b(onlyfans|escort service|adult)/i,
+        /\b(wire me|send money|cashapp me|venmo me|zelle me)/i,
+      ];
+      const isSpam = SPAM_PATTERNS.some(p => p.test(input.message));
+      if (isSpam) {
+        return { success: false, error: "Message flagged as solicitation or spam. This is a professional networking space." };
+      }
+
+      // Harassment detection
+      const HARASSMENT_PATTERNS = [
+        /\b(i('ll|m going to) kill|death threat|bomb)\b/i,
+        /\b(stalk|harass|dox)\b/i,
+      ];
+      const isHarassment = HARASSMENT_PATTERNS.some(p => p.test(input.message));
+      if (isHarassment) {
+        return { success: false, error: "Message flagged for potential harassment. This behavior is not tolerated." };
+      }
+
+      // Rate limit: max 1 message per 3 seconds per user
+      try {
+        const recent = await db.execute(sql`
+          SELECT COUNT(*) as cnt FROM haul_lobby_messages
+          WHERE userId = ${userId} AND createdAt > DATE_SUB(NOW(), INTERVAL 3 SECOND)
+        `);
+        const cnt = ((Array.isArray(recent) && Array.isArray(recent[0]) ? recent[0][0] : {}) as any)?.cnt || 0;
+        if (Number(cnt) > 0) {
+          return { success: false, error: "Please wait a moment before posting again." };
+        }
+      } catch (_) { /* rate limit check is non-critical */ }
+
+      try {
+        await db.execute(sql`
+          INSERT INTO haul_lobby_messages (userId, userName, userRole, message, messageType)
+          VALUES (${userId}, ${userName}, ${userRole}, ${input.message}, 'chat')
+        `);
+
+        return { success: true };
+      } catch (err) {
+        console.error("[TheHaul] postLobbyMessage error:", err);
+        throw new Error("Failed to post message");
+      }
+    }),
+
+  /**
+   * Get AI-generated missions based on platform data
+   * Uses mission generator to seed weekly role-specific missions into DB.
+   * Returns current week's missions for the user's role with live platform stats.
+   */
+  getAIMissions: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      const userRole = (ctx.user as any)?.role || "DRIVER";
+
+      if (!db) return [];
+
+      try {
+        // Ensure weekly missions are seeded (idempotent — skips if already created)
+        await generateWeeklyMissions();
+
+        // Get platform stats for contextual mission descriptions
+        let availableLoads = 0;
+        let avgRate = 0;
+        try {
+          const [loadStats] = await db.execute(sql`
+            SELECT
+              COUNT(CASE WHEN status = 'available' THEN 1 END) as availableLoads,
+              AVG(CAST(rate AS DECIMAL(10,2))) as avgRate
+            FROM loads
+            WHERE createdAt > DATE_SUB(NOW(), INTERVAL 7 DAY)
+          `);
+          const stats = (Array.isArray(loadStats) ? loadStats[0] : {}) as any;
+          availableLoads = Number(stats?.availableLoads) || 0;
+          avgRate = Number(stats?.avgRate) || 0;
+        } catch (_) { /* load stats non-critical */ }
+
+        // Fetch this week's DB-seeded missions for this user's role
+        const weeklyMissions = await db.select()
+          .from(missions)
+          .where(sql`isActive = TRUE AND code LIKE 'wk_%' AND startsAt <= NOW() AND endsAt >= NOW()`);
+
+        // Filter to user's role
+        const roleMissions = weeklyMissions.filter(m => {
+          if (!m.applicableRoles || m.applicableRoles.length === 0) return true;
+          return m.applicableRoles.includes(userRole.toUpperCase());
+        });
+
+        // Get user's progress on these missions
+        const userProgress = await db.select()
+          .from(missionProgress)
+          .where(eq(missionProgress.userId, userId));
+        const progressMap = new Map(userProgress.map(p => [p.missionId, p]));
+
+        return roleMissions.map(m => {
+          const progress = progressMap.get(m.id);
+          let desc = m.description || "";
+          // Enrich with live stats
+          if (availableLoads > 0 && desc.includes("load")) {
+            desc += ` (${availableLoads} loads on board now)`;
+          }
+          return {
+            id: m.id,
+            name: m.name,
+            description: desc,
+            type: m.type,
+            category: m.category,
+            xpReward: m.xpReward || 0,
+            rewardType: m.rewardType,
+            rewardValue: m.rewardValue ? parseFloat(m.rewardValue) : 0,
+            targetValue: m.targetValue ? parseFloat(m.targetValue) : 0,
+            currentProgress: progress?.currentProgress ? parseFloat(progress.currentProgress) : 0,
+            status: progress?.status || "not_started",
+            source: "esang_ai",
+            hosCompliant: true,
+          };
+        });
+      } catch (err) {
+        console.error("[TheHaul] getAIMissions error:", err);
+        return [];
+      }
     }),
 
   /**

@@ -100,11 +100,11 @@ export default function ScaleLocations() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {scalesQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">$12-15</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">$12-15</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Price</p>
               </div>
@@ -183,7 +183,7 @@ export default function ScaleLocations() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-emerald-400 font-bold">${scale.price}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${scale.price}</p>
                         <p className="text-xs text-slate-500">per weigh</p>
                       </div>
                     </div>

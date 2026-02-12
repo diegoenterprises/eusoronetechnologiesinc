@@ -87,7 +87,7 @@ export default function Analytics() {
       {/* ── Stat Cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Revenue", value: `$${(summary?.revenue || 0).toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/15", change: summary?.revenueChange },
+          { label: "Revenue", value: `$${(summary?.revenue || 0).toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent", bg: "bg-emerald-500/15", change: summary?.revenueChange },
           { label: "Loads", value: summary?.totalLoads || 0, icon: <Package className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/15", change: summary?.loadsChange },
           { label: "Miles", value: ((summary as any)?.distanceLogged || (summary as any)?.totalMiles || 0).toLocaleString(), icon: <Truck className="w-5 h-5" />, color: "text-purple-500", bg: "bg-purple-500/15", change: undefined },
           { label: "Avg $/Mile", value: `$${summary?.avgRatePerMile?.toFixed(2) || "0.00"}`, icon: <TrendingUp className="w-5 h-5" />, color: "text-cyan-500", bg: "bg-cyan-500/15", change: undefined },
@@ -157,7 +157,7 @@ export default function Analytics() {
                           <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-white")}>{trend.period}</span>
                         </div>
                         <div className="text-right">
-                          <p className="text-emerald-500 font-bold text-sm">${trend.revenue?.toLocaleString()}</p>
+                          <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-sm">${trend.revenue?.toLocaleString()}</p>
                           <p className="text-[10px] text-slate-400">{trend.loads} loads</p>
                         </div>
                       </div>
@@ -206,15 +206,15 @@ export default function Analytics() {
         <Card className={cardCls}>
           <CardHeader className="pb-3">
             <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
-              <DollarSign className="w-5 h-5 text-emerald-500" />Revenue Breakdown
+              <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Revenue Breakdown
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-center py-12">
               <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <DollarSign className="w-8 h-8 text-emerald-500" />
+                <DollarSign className="w-8 h-8 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
-              <p className="text-3xl font-bold text-emerald-500 mb-2">${(summary?.revenue || 0).toLocaleString()}</p>
+              <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2">${(summary?.revenue || 0).toLocaleString()}</p>
               <p className="text-slate-400 text-sm">Total Revenue This {period.charAt(0).toUpperCase() + period.slice(1)}</p>
             </div>
           </CardContent>

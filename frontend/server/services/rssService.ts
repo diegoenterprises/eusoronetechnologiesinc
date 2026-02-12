@@ -43,38 +43,9 @@ export interface FeedHealth {
 // ---------------------------------------------------------------------------
 // FEED SOURCES
 // ---------------------------------------------------------------------------
-export const DEFAULT_RSS_FEEDS: RSSFeedSource[] = [
-  { id: "rss_001", name: "Chemical Industry Today", url: "https://chemicals.einnews.com/rss", category: "chemical", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_002", name: "Chemical Engineering News", url: "https://cen.acs.org/content/cen/rss.html", category: "chemical", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_003", name: "Rigzone Oil and Gas", url: "https://www.rigzone.com/rss", category: "oil_gas", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_004", name: "Oil and Gas Magazine", url: "https://www.oilandgasmagazine.com.mx/feed", category: "oil_gas", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_005", name: "EIA Energy", url: "https://www.eia.gov/rss", category: "oil_gas", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_006", name: "Oil & Gas 360", url: "https://www.oilandgas360.com/feed/", category: "oil_gas", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_007", name: "Bulk Transporter", url: "https://www.bulktransporter.com/rss", category: "bulk", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_008", name: "Bulk Solids Today", url: "https://bulksolidstoday.com/feed/", category: "bulk", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_009", name: "Dry Cargo International", url: "https://www.drycargomag.com/rss", category: "bulk", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_010", name: "Food Logistics", url: "https://www.foodlogistics.com/rss", category: "refrigerated", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_011", name: "Refrigerated & Frozen Foods", url: "https://www.refrigeratedfrozenfood.com/rss", category: "refrigerated", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_012", name: "Refrigerated Transporter", url: "https://refrigeratedtransporter.com/rss", category: "refrigerated", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_013", name: "FreightWaves", url: "https://www.freightwaves.com/feed", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_014", name: "Transport Topics", url: "https://www.ttnews.com/rss", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_015", name: "Logistics Management", url: "https://www.logisticsmgmt.com/rss", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_016", name: "TruckNews", url: "https://www.trucknews.com/rss", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_017", name: "FleetOwner", url: "https://www.fleetowner.com/rss", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_018", name: "Landline Magazine", url: "https://landline.media/feed/", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_019", name: "Truckers Report", url: "https://www.thetruckersreport.com/truckingindustryforum/forums/rss", category: "logistics", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_020", name: "Supply Chain Dive", url: "https://www.supplychaindive.com/rss", category: "supply_chain", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_021", name: "Supply Chain Brain", url: "https://www.supplychainbrain.com/rss", category: "supply_chain", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_022", name: "Logistics Viewpoints", url: "https://logisticsviewpoints.com/feed", category: "supply_chain", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_023", name: "Hazmat Magazine", url: "https://hazmatmag.com/feed/", category: "hazmat", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_024", name: "Marine Log", url: "https://www.marinelog.com/rss", category: "marine", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_025", name: "MarineLink", url: "https://www.marinelink.com/rss", category: "marine", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_026", name: "LNG World News", url: "https://www.lngworldnews.com/feed/", category: "marine", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_027", name: "Energy Industry Review", url: "https://energyindustryreview.com/rss", category: "energy", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_028", name: "Renewables Now", url: "https://renewablesnow.com/rss", category: "energy", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_029", name: "Fuels Market News", url: "https://www.fuelsmarketnews.com/feed/", category: "energy", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-  { id: "rss_030", name: "Industrial Equipment News", url: "https://www.ien.com/rss", category: "equipment", enabled: true, addedAt: "2025-01-01T00:00:00Z" },
-];
+// 200 comprehensive industry feeds imported from data file
+import { ALL_200_FEEDS } from "./rssFeedData";
+export const DEFAULT_RSS_FEEDS: RSSFeedSource[] = ALL_200_FEEDS;
 
 // ---------------------------------------------------------------------------
 // STATE
@@ -86,7 +57,7 @@ let cacheGeneration = 0;
 let isFetching = false;
 let refreshTimer: ReturnType<typeof setInterval> | null = null;
 
-const FEED_TIMEOUT_MS = 2000;
+const FEED_TIMEOUT_MS = 8000;
 const REFRESH_INTERVAL_MS = 3 * 60 * 1000; // 3 minutes
 const MAX_CONSECUTIVE_FAILURES = 5; // skip feed after this many failures in a row
 const FAILURE_COOLDOWN_MS = 10 * 60 * 1000; // retry failed feeds after 10 min
@@ -121,7 +92,8 @@ function shouldSkipFeed(feedId: string): boolean {
 function parseRSSContent(xml: string, source: RSSFeedSource): RSSArticle[] {
   const articles: RSSArticle[] = [];
   try {
-    const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+    // Support both RSS <item> and Atom <entry> formats
+    const itemRegex = /<item>([\s\S]*?)<\/item>|<entry>([\s\S]*?)<\/entry>/gi;
     const items = xml.match(itemRegex) || [];
     for (const item of items.slice(0, 10)) {
       const getTag = (tag: string): string => {
@@ -133,8 +105,10 @@ function parseRSSContent(xml: string, source: RSSFeedSource): RSSArticle[] {
         return (m?.[1] || m?.[2] || "").trim().replace(/<[^>]+>/g, "");
       };
       const title = getTag("title");
-      const description = getTag("description") || getTag("summary");
-      const link = getTag("link") || getTag("guid");
+      const description = getTag("description") || getTag("summary") || getTag("content");
+      // Atom <link> uses href attribute (self-closing), RSS uses text content
+      const atomLinkMatch = item.match(/<link[^>]*\bhref=["']([^"']+)["'][^>]*\/?>/i);
+      const link = getTag("link") || (atomLinkMatch?.[1]?.trim() || "") || getTag("guid") || getTag("id");
       const pubDate = getTag("pubDate") || getTag("published") || getTag("dc:date");
       let imageUrl: string | undefined;
       const enc = item.match(/enclosure[^>]*url=["']([^"']+)["']/i);
@@ -217,8 +191,14 @@ export async function fetchAllFeeds(): Promise<RSSArticle[]> {
       (f) => f.enabled && shouldSkipFeed(f.id)
     ).length;
 
-    // Fire ALL feeds simultaneously — no batching
-    const results = await Promise.allSettled(enabledFeeds.map(fetchRSSFeed));
+    // Batch feeds in groups of 25 to avoid overwhelming outbound connections
+    const BATCH_SIZE = 25;
+    const results: PromiseSettledResult<RSSArticle[]>[] = [];
+    for (let i = 0; i < enabledFeeds.length; i += BATCH_SIZE) {
+      const batch = enabledFeeds.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(batch.map(fetchRSSFeed));
+      results.push(...batchResults);
+    }
 
     const freshArticles: RSSArticle[] = [];
     let successCount = 0;
@@ -274,9 +254,17 @@ export async function getArticles(options?: {
   lastUpdated: string | null;
   generation: number;
 }> {
-  // If empty cache, trigger fetch but don't await — return empty immediately
-  if (cachedArticles.length === 0 && !isFetching) {
-    fetchAllFeeds().catch(() => {});
+  // First load: await fetch with timeout so frontend gets data immediately
+  if (cachedArticles.length === 0) {
+    if (!isFetching) {
+      await Promise.race([
+        fetchAllFeeds().catch(() => {}),
+        new Promise(resolve => setTimeout(resolve, 20000)),
+      ]);
+    } else {
+      // Another fetch is in progress (e.g. pre-warm), wait briefly for it
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
   }
 
   let filtered = cachedArticles;

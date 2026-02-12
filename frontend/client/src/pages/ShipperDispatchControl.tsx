@@ -205,7 +205,7 @@ export default function ShipperDispatchControl() {
                     <ChevronRight className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{l.destination?.city || l.deliveryLocation?.city || "Dest"}, {l.destination?.state || l.deliveryLocation?.state || ""}</span>
                   </div>
-                  {l.rate && <p className="text-xs font-bold text-emerald-500 mt-1">${parseFloat(l.rate).toLocaleString()}</p>}
+                  {l.rate && <p className="text-xs font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">${parseFloat(l.rate).toLocaleString()}</p>}
                 </button>
               ))
             )}

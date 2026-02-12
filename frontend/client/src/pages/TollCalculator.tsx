@@ -102,7 +102,7 @@ export default function TollCalculator() {
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <p className="text-slate-400 text-sm">Total Toll Cost</p>
-                      <p className="text-3xl font-bold text-emerald-400">${result.totalTolls?.toFixed(2)}</p>
+                      <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${result.totalTolls?.toFixed(2)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-slate-400 text-sm">Distance</p>
@@ -124,7 +124,7 @@ export default function TollCalculator() {
                         <p className="text-white font-medium">{toll.name}</p>
                         <p className="text-xs text-slate-500">{toll.location}</p>
                       </div>
-                      <p className="text-emerald-400 font-bold">${toll.cost?.toFixed(2)}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${toll.cost?.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -159,7 +159,7 @@ export default function TollCalculator() {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500">{route.distance} mi</span>
-                      <span className="text-emerald-400 font-medium">${route.totalTolls?.toFixed(2)}</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${route.totalTolls?.toFixed(2)}</span>
                     </div>
                   </div>
                 ))}
@@ -185,7 +185,7 @@ export default function TollCalculator() {
             </div>
             <div className="p-4 rounded-xl bg-slate-700/30">
               <div className="p-2 rounded-lg bg-emerald-500/20 w-fit mb-3">
-                <Clock className="w-5 h-5 text-emerald-400" />
+                <Clock className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <p className="text-white font-medium mb-1">Off-Peak Travel</p>
               <p className="text-sm text-slate-400">Some toll roads offer lower rates during off-peak hours.</p>

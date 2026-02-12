@@ -77,7 +77,7 @@ export default function AchievementsBadges() {
               </div>
               <div>
                 {statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-green-400">{stats?.totalPoints?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{stats?.totalPoints?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Points Earned</p>
               </div>

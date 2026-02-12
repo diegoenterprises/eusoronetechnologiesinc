@@ -120,7 +120,7 @@ export default function InsuranceManagement() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-green-400">${policy.coverage?.toLocaleString()}</p>
+                      <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${policy.coverage?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Premium: ${policy.premium}/mo</p>
                     </div>
                     <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg"><FileText className="w-4 h-4" /></Button>

@@ -92,7 +92,7 @@ export default function MyLoads() {
       en_route_pickup: { label: "En Route", bg: "bg-blue-500/20", text: "text-blue-500" },
       in_transit: { label: "In Progress", bg: "bg-green-500/20", text: "text-green-600" },
       at_delivery: { label: "At Delivery", bg: "bg-green-500/20", text: "text-green-600" },
-      delivered: { label: "Delivered", bg: "bg-emerald-500/20", text: "text-emerald-500" },
+      delivered: { label: "Delivered", bg: "bg-emerald-500/20", text: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" },
       cancelled: { label: "Cancelled", bg: "bg-red-500/20", text: "text-red-500" },
       pending: { label: "Pending", bg: "bg-red-500/20", text: "text-red-500" },
     };

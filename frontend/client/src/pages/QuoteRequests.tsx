@@ -195,7 +195,7 @@ export default function QuoteRequests() {
                         <div className="flex items-center gap-4">
                           {quote.quotedRate && (
                             <div className="text-right">
-                              <p className="text-emerald-400 font-bold">${quote.quotedRate.toLocaleString()}</p>
+                              <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${quote.quotedRate.toLocaleString()}</p>
                               <p className="text-xs text-slate-500">Quoted Rate</p>
                             </div>
                           )}

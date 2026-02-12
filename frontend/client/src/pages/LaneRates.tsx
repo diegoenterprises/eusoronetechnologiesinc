@@ -67,11 +67,11 @@ export default function LaneRates() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${summary?.avgRate?.toFixed(2)}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${summary?.avgRate?.toFixed(2)}</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Rate/Mile</p>
               </div>
@@ -146,7 +146,7 @@ export default function LaneRates() {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-slate-500">{lane.loads} loads</span>
-                      <span className="text-emerald-400 font-bold">${lane.avgRate?.toFixed(2)}/mi</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${lane.avgRate?.toFixed(2)}/mi</span>
                     </div>
                   </div>
                 ))}
@@ -187,7 +187,7 @@ export default function LaneRates() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-emerald-400 font-bold">${lane.currentRate?.toFixed(2)}/mi</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${lane.currentRate?.toFixed(2)}/mi</p>
                         <div className={cn("flex items-center gap-1 text-xs", lane.rateChange > 0 ? "text-green-400" : "text-red-400")}>
                           {lane.rateChange > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                           {lane.rateChange > 0 ? "+" : ""}{lane.rateChange}%

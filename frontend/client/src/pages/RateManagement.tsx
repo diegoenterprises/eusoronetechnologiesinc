@@ -60,7 +60,7 @@ export default function RateManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><TrendingUp className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.avgRate}</p>}<p className="text-xs text-slate-400">Avg Rate/Mi</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.avgRate}</p>}<p className="text-xs text-slate-400">Avg Rate/Mi</p></div>
             </div>
           </CardContent>
         </Card>
@@ -115,7 +115,7 @@ export default function RateManagement() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-white font-bold">{rate.origin} → {rate.destination}</p>
-                        <Badge className={cn("border-0", rate.type === "contract" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400")}>{rate.type}</Badge>
+                        <Badge className={cn("border-0", rate.type === "contract" ? "bg-green-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "bg-yellow-500/20 text-yellow-400")}>{rate.type}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-slate-400">
                         <span>{rate.distance} mi</span>
@@ -129,7 +129,7 @@ export default function RateManagement() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-green-400">${rate.ratePerMile}/mi</p>
+                      <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rate.ratePerMile}/mi</p>
                       <p className="text-sm text-slate-500">Total: ${rate.totalRate?.toLocaleString()}</p>
                     </div>
                     <div className="flex items-center gap-2">

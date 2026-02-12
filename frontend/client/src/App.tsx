@@ -113,6 +113,7 @@ import BidDetails from "./pages/BidDetails";
 import ContractSigning from "./pages/ContractSigning";
 import ShipperAgreementWizard from "./pages/ShipperAgreementWizard";
 import AgreementsLibrary from "./pages/AgreementsLibrary";
+import AgreementDetail from "./pages/AgreementDetail";
 import RecurringLoadScheduler from "./pages/RecurringLoadScheduler";
 import BrokerContractWizard from "./pages/BrokerContractWizard";
 import ShipperDispatchControl from "./pages/ShipperDispatchControl";
@@ -167,6 +168,7 @@ import MarketPricing from "./pages/MarketPricing";
 import CarrierCompliance from "./pages/CarrierCompliance";
 import FuelPrices from "./pages/FuelPrices";
 import WeatherAlerts from "./pages/WeatherAlerts";
+import TheHaul from "./pages/TheHaul";
 
 function Router() {
   // CLEAN ROUTING - NO DUPLICATES
@@ -229,6 +231,7 @@ function Router() {
       <Route path={"/agreements"} component={() => (<DashboardLayout><AgreementsLibrary /></DashboardLayout>)} />
       <Route path={"/agreements/create"} component={() => (<DashboardLayout><ShipperAgreementWizard /></DashboardLayout>)} />
       <Route path={"/agreements/broker"} component={() => (<DashboardLayout><BrokerContractWizard /></DashboardLayout>)} />
+      <Route path={"/agreements/:id"} component={() => (<DashboardLayout><AgreementDetail /></DashboardLayout>)} />
       <Route path={"/loads/recurring"} component={() => (<DashboardLayout><RecurringLoadScheduler /></DashboardLayout>)} />
       <Route path={"/dispatch"} component={() => (<DashboardLayout><ShipperDispatchControl /></DashboardLayout>)} />
 
@@ -397,6 +400,7 @@ function Router() {
       <Route path={"/carrier-compliance"} component={() => (<DashboardLayout><CarrierCompliance /></DashboardLayout>)} />
       <Route path={"/fuel-prices"} component={() => (<DashboardLayout><FuelPrices /></DashboardLayout>)} />
       <Route path={"/weather-alerts"} component={() => (<DashboardLayout><WeatherAlerts /></DashboardLayout>)} />
+      <Route path={"/the-haul"} component={() => (<DashboardLayout><TheHaul /></DashboardLayout>)} />
       <Route path={"/audit-log"} component={() => (<DashboardLayout><AuditLog /></DashboardLayout>)} />
       <Route path={"/procedures"} component={() => (<DashboardLayout><ProceduresPage /></DashboardLayout>)} />
       <Route path={"/shipments"} component={() => (<DashboardLayout><ShipmentPage /></DashboardLayout>)} />

@@ -34,9 +34,17 @@ export default function ShipperAgreementWizard() {
   const [isDigitizing, setIsDigitizing] = useState(false);
   const [agType, setAgType] = useState("carrier_shipper");
   const [dur, setDur] = useState<string>("short_term");
+  const [aDisplayName, setADisplayName] = useState("");
+  const [aName, setAName] = useState(user?.name || ""); const [aComp, setAComp] = useState("");
+  const [aMc, setAMc] = useState(""); const [aDot, setADot] = useState("");
+  const [bDisplayName, setBDisplayName] = useState("");
   const [bName, setBName] = useState(""); const [bComp, setBComp] = useState("");
   const [bMc, setBMc] = useState(""); const [bDot, setBDot] = useState("");
-  const [rateType, setRateType] = useState("flat"); const [baseRate, setBaseRate] = useState("");
+  const [jurisdiction, setJurisdiction] = useState("Texas");
+  const [terminationNoticeDays, setTerminationNoticeDays] = useState("30");
+  const [nonCircumventMonths, setNonCircumventMonths] = useState("12");
+  const [noticePeriodDays, setNoticePeriodDays] = useState("3");
+  const [rateType, setRateType] = useState("flat_rate"); const [baseRate, setBaseRate] = useState("");
   const [fuelType, setFuelType] = useState("none"); const [fuelVal, setFuelVal] = useState("");
   const [minChg, setMinChg] = useState(""); const [maxChg, setMaxChg] = useState("");
   const [payDays, setPayDays] = useState("30"); const [qpDisc, setQpDisc] = useState("");
@@ -81,7 +89,7 @@ export default function ShipperAgreementWizard() {
   const doGen = () => {
     const ld = lanes.filter(l=>l.oC&&l.dC).map(l=>({ origin:{city:l.oC,state:l.oS,radius:50}, destination:{city:l.dC,state:l.dS,radius:50}, rate:parseFloat(l.rate)||0, rateType:l.rt||"flat", volumeCommitment:parseInt(l.vol)||undefined, volumePeriod:l.vp||undefined }));
     genMut.mutate({ agreementType:agType, contractDuration:dur, partyBUserId:0, partyBRole:"CARRIER",
-      strategicInputs:{ partyAName:user?.name||"Shipper", partyBName:bName, partyBCompany:bComp, partyBMc:bMc, partyBDot:bDot, payFrequency:payFreq, nonCircumventionMonths:"12", terminationNoticeDays:"30" },
+      strategicInputs:{ partyASignerName:aName||user?.name||"Shipper", partyACompanyName:aComp, partyAName:aDisplayName||aComp||aName||user?.name||"Shipper", partyAMc:aMc, partyADot:aDot, partyARole:user?.role||"SHIPPER", partyBSignerName:bName, partyBCompanyName:bComp, partyBName:bDisplayName||bComp||bName||"Party B", partyBCompany:bComp, partyBMc:bMc, partyBDot:bDot, partyBRole:"CARRIER", jurisdiction, payFrequency:payFreq, nonCircumventionMonths:nonCircumventMonths, terminationNoticeDays:terminationNoticeDays, noticePeriodDays:noticePeriodDays },
       rateType, baseRate:parseFloat(baseRate)||0, fuelSurchargeType:fuelType, fuelSurchargeValue:parseFloat(fuelVal)||undefined,
       minimumCharge:parseFloat(minChg)||undefined, maximumCharge:parseFloat(maxChg)||undefined,
       paymentTermDays:parseInt(payDays)||30, quickPayDiscount:parseFloat(qpDisc)||undefined, quickPayDays:parseInt(qpDays)||undefined,
@@ -130,16 +138,39 @@ export default function ShipperAgreementWizard() {
 
       {/* PLACEHOLDER FOR REMAINING STEPS */}
       {step==="parties"&&(<div className="space-y-5">
-        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Building2 className="w-5 h-5 text-blue-500"/>Carrier (Party B)</CardTitle></CardHeader>
+        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Users className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"/>Party A (Shipper)</CardTitle></CardHeader>
           <CardContent className="space-y-3">
+            <div><label className={lb}>Party A Name (as shown on agreement)</label><Input value={aDisplayName} onChange={(e:any)=>setADisplayName(e.target.value)} placeholder="e.g. Acme Logistics LLC" className={cn(ic,"font-semibold")}/><p className={cn("text-[10px] mt-1",mt)}>This name appears as "PARTY A" in the generated contract</p></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={lb}>Contact Name</label><Input value={bName} onChange={(e:any)=>setBName(e.target.value)} placeholder="Full name" className={ic}/></div>
-              <div><label className={lb}>Company</label><Input value={bComp} onChange={(e:any)=>setBComp(e.target.value)} placeholder="Company name" className={ic}/></div>
+              <div><label className={lb}>Signer Name</label><Input value={aName} onChange={(e:any)=>setAName(e.target.value)} placeholder="Authorized signatory" className={ic}/></div>
+              <div><label className={lb}>Company Name</label><Input value={aComp} onChange={(e:any)=>setAComp(e.target.value)} placeholder="Your company name" className={ic}/></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lb}>MC Number</label><Input value={aMc} onChange={(e:any)=>setAMc(e.target.value)} placeholder="MC-XXXXXX" className={ic}/></div>
+              <div><label className={lb}>DOT Number</label><Input value={aDot} onChange={(e:any)=>setADot(e.target.value)} placeholder="DOT XXXXXXX" className={ic}/></div>
+            </div>
+          </CardContent></Card>
+        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Building2 className="w-5 h-5 text-blue-500"/>Party B (Carrier)</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div><label className={lb}>Party B Name (as shown on agreement)</label><Input value={bDisplayName} onChange={(e:any)=>setBDisplayName(e.target.value)} placeholder="e.g. Swift Transport Inc" className={cn(ic,"font-semibold")}/><p className={cn("text-[10px] mt-1",mt)}>This name appears as "PARTY B" in the generated contract</p></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className={lb}>Signer Name</label><Input value={bName} onChange={(e:any)=>setBName(e.target.value)} placeholder="Authorized signatory" className={ic}/></div>
+              <div><label className={lb}>Company Name</label><Input value={bComp} onChange={(e:any)=>setBComp(e.target.value)} placeholder="Company name" className={ic}/></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className={lb}>MC Number</label><Input value={bMc} onChange={(e:any)=>setBMc(e.target.value)} placeholder="MC-XXXXXX" className={ic}/></div>
               <div><label className={lb}>DOT Number</label><Input value={bDot} onChange={(e:any)=>setBDot(e.target.value)} placeholder="DOT XXXXXXX" className={ic}/></div>
             </div>
+          </CardContent></Card>
+        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Shield className="w-5 h-5 text-purple-500"/>Jurisdiction & Clause Terms</CardTitle></CardHeader>
+          <CardContent className="space-y-3">
+            <div><label className={lb}>Governing Jurisdiction (State)</label><Select value={jurisdiction} onValueChange={setJurisdiction}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent>{["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"].map(s=>(<SelectItem key={s} value={s}>{s}</SelectItem>))}</SelectContent></Select></div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label className={lb}>Termination Notice (days)</label><Input type="number" value={terminationNoticeDays} onChange={(e:any)=>setTerminationNoticeDays(e.target.value)} placeholder="30" className={ic}/></div>
+              <div><label className={lb}>Non-Circumvention (months)</label><Input type="number" value={nonCircumventMonths} onChange={(e:any)=>setNonCircumventMonths(e.target.value)} placeholder="12" className={ic}/></div>
+              <div><label className={lb}>Notice Effective (business days)</label><Input type="number" value={noticePeriodDays} onChange={(e:any)=>setNoticePeriodDays(e.target.value)} placeholder="3" className={ic}/></div>
+            </div>
+            <p className={cn("text-[10px]",mt)}>These values populate the corresponding articles in the generated agreement (termination, non-circumvention, notices).</p>
           </CardContent></Card>
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Truck className="w-5 h-5 text-purple-500"/>Equipment & Operations</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -157,10 +188,10 @@ export default function ShipperAgreementWizard() {
         </div>
       </div>)}
       {step==="financial"&&(<div className="space-y-5">
-        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><DollarSign className="w-5 h-5 text-emerald-500"/>Rate & Compensation</CardTitle></CardHeader>
+        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"/>Rate & Compensation</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><label className={lb}>Rate Type</label><Select value={rateType} onValueChange={setRateType}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="flat">Flat Rate</SelectItem><SelectItem value="per_mile">Per Mile</SelectItem><SelectItem value="percentage">Percentage</SelectItem><SelectItem value="hourly">Hourly</SelectItem></SelectContent></Select></div>
+              <div><label className={lb}>Rate Type</label><Select value={rateType} onValueChange={setRateType}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="flat_rate">Flat Rate</SelectItem><SelectItem value="per_mile">Per Mile</SelectItem><SelectItem value="percentage">Percentage</SelectItem><SelectItem value="per_hour">Hourly</SelectItem></SelectContent></Select></div>
               <div><label className={lb}>Base Rate ($)</label><Input type="number" value={baseRate} onChange={(e:any)=>setBaseRate(e.target.value)} placeholder="0.00" className={ic}/></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -272,7 +303,7 @@ export default function ShipperAgreementWizard() {
             <div className="space-y-3">
               <div className="flex justify-between"><span className="text-xs text-slate-400">Agreement</span><span className={vl}>#{agNum}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Carrier</span><span className={vl}>{bComp||bName||"TBD"}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-slate-400">Rate</span><span className="font-bold text-sm text-emerald-500">${parseFloat(baseRate||"0").toLocaleString()}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-slate-400">Rate</span><span className="font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(baseRate||"0").toLocaleString()}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Payment</span><span className={vl}>Net {payDays} · {payFreq.replace(/_/g," ")}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Status</span><Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30 border text-[10px]">Pending Counter-Signature</Badge></div>
             </div>

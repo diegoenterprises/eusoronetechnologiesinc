@@ -132,7 +132,7 @@ export default function RateCalculator() {
                 {/* Recommended Rate */}
                 <div className="p-6 rounded-xl bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 text-center">
                   <p className="text-slate-400 text-sm mb-1">Recommended Rate</p>
-                  <p className="text-4xl font-bold text-emerald-400">${result.recommendedRate?.toLocaleString()}</p>
+                  <p className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${result.recommendedRate?.toLocaleString()}</p>
                   <p className="text-sm text-slate-400 mt-1">${result.ratePerMile?.toFixed(2)}/mile</p>
                 </div>
 
@@ -165,7 +165,7 @@ export default function RateCalculator() {
                   </div>
                   <div className="p-3 rounded-xl bg-slate-700/30">
                     <p className="text-xs text-slate-500">Est. Profit</p>
-                    <p className="text-green-400 font-medium">${result.estimatedProfit?.toLocaleString()}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${result.estimatedProfit?.toLocaleString()}</p>
                   </div>
                 </div>
 
@@ -181,7 +181,7 @@ export default function RateCalculator() {
                       <div className="absolute w-3 h-3 bg-slate-800 rounded-full top-1/2 -translate-y-1/2" style={{ left: `${((result.recommendedRate - result.lowRate) / (result.highRate - result.lowRate)) * 100}%` }} />
                     </div>
                     <div className="text-center">
-                      <p className="text-green-400 font-medium">${result.highRate?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${result.highRate?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">High</p>
                     </div>
                   </div>
@@ -211,7 +211,7 @@ export default function RateCalculator() {
                 {(marketRatesQuery.data as any)?.history?.map((rate: any) => (
                   <div key={rate.lane} className="p-4 rounded-xl bg-slate-700/30">
                     <p className="text-white font-medium mb-1">{rate.lane}</p>
-                    <p className="text-2xl font-bold text-emerald-400">${rate.avgRate?.toFixed(2)}</p>
+                    <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rate.avgRate?.toFixed(2)}</p>
                     <p className="text-xs text-slate-500">/mile</p>
                     <div className={cn("flex items-center gap-1 mt-2 text-xs", rate.change > 0 ? "text-green-400" : "text-red-400")}>
                       <TrendingUp className={cn("w-3 h-3", rate.change < 0 && "rotate-180")} />

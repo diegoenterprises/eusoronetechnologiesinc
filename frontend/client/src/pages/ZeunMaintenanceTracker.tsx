@@ -206,7 +206,7 @@ export default function ZeunMaintenanceTracker() {
                 <div className="space-y-3">
                   <div className="flex justify-between"><span className="text-slate-400">Vehicles Inspected</span><span className="text-white">{summary?.inspectedThisWeek || 0} / {summary?.totalVehicles || 0}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Avg Days Since Service</span><span className="text-white">{summary?.avgDaysSinceService || 0} days</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Compliance Rate</span><span className="text-green-400">{summary?.complianceRate || 0}%</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Compliance Rate</span><span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{summary?.complianceRate || 0}%</span></div>
                 </div>
               </CardContent>
             </Card>
@@ -325,7 +325,7 @@ export default function ZeunMaintenanceTracker() {
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-right">
-                          <p className="text-green-400 font-bold">${item.actualCost?.toLocaleString()}</p>
+                          <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${item.actualCost?.toLocaleString()}</p>
                           <p className="text-xs text-slate-500">{item.completedDate}</p>
                         </div>
                         <Button variant="ghost" size="sm"><Eye className="w-4 h-4" /></Button>

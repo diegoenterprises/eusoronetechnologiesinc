@@ -113,7 +113,7 @@ export default function ActiveConvoys() {
                       </div>
                       <p className="text-sm text-slate-400">{convoy.loadDescription}</p>
                     </div>
-                    <p className="text-green-400 font-bold text-lg">${convoy.pay?.toLocaleString()}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${convoy.pay?.toLocaleString()}</p>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">

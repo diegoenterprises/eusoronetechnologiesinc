@@ -247,7 +247,7 @@ export default function CarrierVettingDetails() {
                   <CardContent className="space-y-3">
                     <div><p className="text-xs text-slate-500">Carrier</p><p className="text-white">{insurance.carrier}</p></div>
                     <div><p className="text-xs text-slate-500">Policy Number</p><p className="text-white">{insurance.policyNumber}</p></div>
-                    {insurance.coverage && <div><p className="text-xs text-slate-500">Coverage</p><p className="text-green-400 font-bold">${(insurance.coverage / 1000000).toFixed(1)}M</p></div>}
+                    {insurance.coverage && <div><p className="text-xs text-slate-500">Coverage</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${(insurance.coverage / 1000000).toFixed(1)}M</p></div>}
                     <div>
                       <p className="text-xs text-slate-500">Expires</p>
                       <p className="text-white">{insurance.expirationDate}</p>
@@ -285,7 +285,7 @@ export default function CarrierVettingDetails() {
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-right">
-                          <p className="text-green-400 font-bold">${load.rate?.toLocaleString()}</p>
+                          <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${load.rate?.toLocaleString()}</p>
                           <p className="text-xs text-slate-500">{load.date}</p>
                         </div>
                         <Badge className={load.status === "delivered" ? "bg-green-500/20 text-green-400" : "bg-blue-500/20 text-blue-400"}>

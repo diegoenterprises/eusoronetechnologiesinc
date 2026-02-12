@@ -635,7 +635,7 @@ export default function LoadCreatePage() {
                     <DollarSign className="w-5 h-5 text-green-400" />
                     Pricing
                   </h3>
-                  <p className="text-3xl font-bold text-green-400">${formData.rate}</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${formData.rate}</p>
                   {formData.specialInstructions && (
                     <div className="mt-4">
                       <p className="text-slate-500 text-sm mb-1">Special Instructions</p>

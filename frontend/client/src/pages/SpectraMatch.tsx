@@ -127,7 +127,7 @@ export default function SpectraMatch() {
   const getAccuracyColor = (accuracy: string) => {
     switch (accuracy) {
       case "Very High": return "bg-green-500/20 text-green-400";
-      case "High": return "bg-emerald-500/20 text-emerald-400";
+      case "High": return "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent";
       case "Good": return "bg-yellow-500/20 text-yellow-400";
       default: return "bg-orange-500/20 text-orange-400";
     }
@@ -646,7 +646,7 @@ export default function SpectraMatch() {
                       <p className="text-[10px] text-slate-500">Identifications</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/50 text-center">
-                      <p className="text-2xl font-bold text-green-400">{learningStatsQuery.data?.avgConfidence || 0}%</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{learningStatsQuery.data?.avgConfidence || 0}%</p>
                       <p className="text-[10px] text-slate-500">Avg Confidence</p>
                     </div>
                     <div className="p-3 rounded-lg bg-slate-800/50 text-center">

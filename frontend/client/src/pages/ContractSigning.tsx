@@ -220,11 +220,11 @@ export default function ContractSigning() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Accepted Rate</p>
-                  <p className="text-4xl font-bold text-emerald-500 mt-1">${Number(rate).toLocaleString()}</p>
+                  <p className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">${Number(rate).toLocaleString()}</p>
                   {load.distance && <p className="text-sm text-slate-400 mt-1">${(Number(rate) / (Number(load.distance) || 1)).toFixed(2)}/mile · {load.distance} miles</p>}
                 </div>
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15">
-                  <DollarSign className="w-10 h-10 text-emerald-500" />
+                  <DollarSign className="w-10 h-10 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
                 </div>
               </div>
             </div>
@@ -363,7 +363,7 @@ export default function ContractSigning() {
                 <p className="text-xs text-slate-400">{originCity} → {destCity}</p>
               </div>
             </div>
-            <p className="text-xl font-bold text-emerald-500">${Number(rate).toLocaleString()}</p>
+            <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${Number(rate).toLocaleString()}</p>
           </div>
 
           {/* Signature Pad */}
@@ -434,7 +434,7 @@ export default function ContractSigning() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-slate-400">Rate</span>
-                  <span className="font-bold text-sm text-emerald-500">${Number(rate).toLocaleString()}</span>
+                  <span className="font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${Number(rate).toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs text-slate-400">Status</span>

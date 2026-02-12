@@ -95,7 +95,7 @@ export default function CustomerFeedback() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{summary?.positiveRate}%</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{summary?.positiveRate}%</p>
                 )}
                 <p className="text-xs text-slate-400">Positive</p>
               </div>

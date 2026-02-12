@@ -189,13 +189,14 @@ export function validateEncryption(): boolean {
 // Encrypt/decrypt JSON payloads, financial data, contract content.
 // Used by agreements, negotiations, bids, payments routers.
 
-const ENCRYPTED_PREFIX = "🔐enc:";
+const ENCRYPTED_PREFIX = "[ENC]:";
+const LEGACY_PREFIX = "\u{1F510}enc:"; // 🔐enc: — old emoji prefix for backward compat
 
 /**
  * Check if a value is already encrypted by our system.
  */
 export function isEncrypted(value: string | null | undefined): boolean {
-  return typeof value === "string" && value.startsWith(ENCRYPTED_PREFIX);
+  return typeof value === "string" && (value.startsWith(ENCRYPTED_PREFIX) || value.startsWith(LEGACY_PREFIX));
 }
 
 /**
@@ -216,7 +217,8 @@ export function decryptJSON<T = unknown>(encrypted: string): T | null {
     try { return JSON.parse(encrypted); } catch { return null; }
   }
   try {
-    const ciphertext = encrypted.slice(ENCRYPTED_PREFIX.length);
+    const prefix = encrypted.startsWith(LEGACY_PREFIX) ? LEGACY_PREFIX : ENCRYPTED_PREFIX;
+    const ciphertext = encrypted.slice(prefix.length);
     const json = decrypt(ciphertext);
     return JSON.parse(json);
   } catch (error) {
@@ -241,7 +243,8 @@ export function decryptField(value: string | null | undefined): string {
   if (!value) return "";
   if (!isEncrypted(value)) return value; // Not encrypted — return as-is
   try {
-    return decrypt(value.slice(ENCRYPTED_PREFIX.length));
+    const prefix = value.startsWith(LEGACY_PREFIX) ? LEGACY_PREFIX : ENCRYPTED_PREFIX;
+    return decrypt(value.slice(prefix.length));
   } catch {
     return "[Encrypted — unable to decrypt]";
   }

@@ -86,7 +86,7 @@ export default function LoadAcceptance() {
                       <p className="text-sm text-slate-400">{load.product} - {load.weight}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-green-400">${load.rate?.toLocaleString()}</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${load.rate?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">${load.ratePerMile}/mi</p>
                     </div>
                   </div>

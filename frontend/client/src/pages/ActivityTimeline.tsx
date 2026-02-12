@@ -31,7 +31,7 @@ export default function ActivityTimeline() {
       case "load": return <Truck className="w-4 h-4 text-blue-400" />;
       case "user": return <User className="w-4 h-4 text-green-400" />;
       case "document": return <FileText className="w-4 h-4 text-purple-400" />;
-      case "payment": return <DollarSign className="w-4 h-4 text-emerald-400" />;
+      case "payment": return <DollarSign className="w-4 h-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />;
       default: return <Activity className="w-4 h-4 text-slate-400" />;
     }
   };
@@ -115,11 +115,11 @@ export default function ActivityTimeline() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">{summary?.paymentActivities || 0}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{summary?.paymentActivities || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Payment Activities</p>
               </div>

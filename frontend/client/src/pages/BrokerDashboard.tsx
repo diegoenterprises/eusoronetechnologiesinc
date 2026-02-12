@@ -72,8 +72,8 @@ export default function BrokerDashboard() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-emerald-500/20"><TrendingUp className="w-6 h-6 text-emerald-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-emerald-400">{stats?.marginAverage}%</p>}<p className="text-xs text-slate-400">Avg Margin</p></div>
+              <div className="p-3 rounded-full bg-emerald-500/20"><TrendingUp className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{stats?.marginAverage}%</p>}<p className="text-xs text-slate-400">Avg Margin</p></div>
             </div>
           </CardContent>
         </Card>
@@ -142,7 +142,7 @@ export default function BrokerDashboard() {
                       <Badge className={cn("border-0 text-xs", load.status === "in_transit" ? "bg-cyan-500/20 text-cyan-400" : "bg-yellow-500/20 text-yellow-400")}>{load.status?.replace("_", " ")}</Badge>
                     </div>
                     <p className="text-xs text-slate-500">{load.shipper} → {load.carrier}</p>
-                    <p className="text-xs text-green-400">Commission: ${load.commission}</p>
+                    <p className="text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Commission: ${load.commission}</p>
                   </div>
                 ))}
               </div>

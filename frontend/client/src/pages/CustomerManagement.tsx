@@ -112,7 +112,7 @@ export default function CustomerManagement() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-slate-500">Revenue</p>
-                      <p className="text-green-400 font-bold">${customer.revenue?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${customer.revenue?.toLocaleString()}</p>
                     </div>
                     <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg"><Edit className="w-4 h-4" /></Button>
                   </div>

@@ -166,7 +166,7 @@ export default function PermitRequirements() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold">${permit.fee}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${permit.fee}</p>
                       <p className="text-xs text-slate-500">{permit.validity}</p>
                     </div>
                   </div>

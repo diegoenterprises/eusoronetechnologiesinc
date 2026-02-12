@@ -75,7 +75,7 @@ export default function DriverEarnings() {
           <CardContent className="p-4 text-center">
             <DollarSign className="w-6 h-6 mx-auto mb-2 text-green-400" />
             {summaryQuery.isLoading ? <Skeleton className="h-8 w-20 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">${(summary?.totalEarnings || 0).toLocaleString()}</p>
+              <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.totalEarnings || 0).toLocaleString()}</p>
             )}
             <p className="text-xs text-slate-400">Total Earnings</p>
           </CardContent>
@@ -139,7 +139,7 @@ export default function DriverEarnings() {
             ) : (
               <>
                 <div>
-                  <p className="text-3xl font-bold text-green-400">${(weekly?.totalEarnings || 0).toLocaleString()}</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(weekly?.totalEarnings || 0).toLocaleString()}</p>
                   <p className="text-xs text-slate-400">Week Total</p>
                 </div>
                 <div>
@@ -167,7 +167,7 @@ export default function DriverEarnings() {
       {/* Earnings List */}
       <Card className="bg-slate-800/50 border-slate-700">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2"><Wallet className="w-5 h-5 text-green-400" />Earnings Breakdown</CardTitle>
+          <CardTitle className="text-white flex items-center gap-2"><Wallet className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Earnings Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
           {earningsQuery.isLoading ? (
@@ -183,7 +183,7 @@ export default function DriverEarnings() {
                 <div key={earning.id} className="flex items-center justify-between p-4 rounded-lg bg-slate-700/30">
                   <div className="flex items-center gap-4">
                     <div className={cn("p-2 rounded-lg", earning.status === "paid" ? "bg-green-500/20" : earning.status === "approved" ? "bg-blue-500/20" : "bg-yellow-500/20")}>
-                      <Package className={cn("w-5 h-5", earning.status === "paid" ? "text-green-400" : earning.status === "approved" ? "text-blue-400" : "text-yellow-400")} />
+                      <Package className={cn("w-5 h-5", earning.status === "paid" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : earning.status === "approved" ? "text-blue-400" : "text-yellow-400")} />
                     </div>
                     <div>
                       <p className="text-white font-medium">{earning.loadNumber}</p>
@@ -192,7 +192,7 @@ export default function DriverEarnings() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-green-400">${earning.totalPay?.toLocaleString()}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${earning.totalPay?.toLocaleString()}</p>
                     <div className="flex items-center gap-2 justify-end mt-1">
                       {earning.hazmatPremium > 0 && <Badge className="bg-red-500/20 text-red-400 text-xs">+${earning.hazmatPremium} Hazmat</Badge>}
                       {earning.fuelBonus > 0 && <Badge className="bg-blue-500/20 text-blue-400 text-xs">+${earning.fuelBonus} Fuel</Badge>}

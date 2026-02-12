@@ -63,11 +63,11 @@ export default function PaymentHistory() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <ArrowDownLeft className="w-6 h-6 text-emerald-400" />
+                <ArrowDownLeft className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${summary?.received?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${summary?.received?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Received</p>
               </div>
@@ -191,7 +191,7 @@ export default function PaymentHistory() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={cn("font-bold text-lg", payment.type === "received" ? "text-emerald-400" : "text-red-400")}>
+                      <p className={cn("font-bold text-lg", payment.type === "received" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>
                         {payment.type === "received" ? "+" : "-"}${payment.amount?.toLocaleString()}
                       </p>
                       <p className="text-xs text-slate-500">{payment.method}</p>

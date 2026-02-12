@@ -61,7 +61,7 @@ export default function EscortEarnings() {
                 <p className="text-4xl font-bold text-white">${(earningsQuery.data as any)?.total?.toLocaleString()}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {(earningsQuery.data as any)?.trend === "up" ? (
-                    <Badge className="bg-green-500/20 text-green-400 border-0"><TrendingUp className="w-3 h-3 mr-1" />+{(earningsQuery.data as any)?.trendPercent}%</Badge>
+                    <Badge className="bg-green-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0"><TrendingUp className="w-3 h-3 mr-1" />+{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   ) : (
                     <Badge className="bg-red-500/20 text-red-400 border-0"><TrendingDown className="w-3 h-3 mr-1" />{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   )}
@@ -134,7 +134,7 @@ export default function EscortEarnings() {
               </div>
               <div>
                 {statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-green-400">${stats?.avgHourlyRate || 0}/hr</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.avgHourlyRate || 0}/hr</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Rate</p>
               </div>
@@ -177,7 +177,7 @@ export default function EscortEarnings() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-green-400">${job.earnings?.toLocaleString()}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${job.earnings?.toLocaleString()}</p>
                     <p className="text-xs text-slate-500">${job.rate}/hr</p>
                   </div>
                 </div>

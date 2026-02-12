@@ -209,7 +209,7 @@ export default function BidManagement() {
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-4">
                       <div className="text-right">
-                        <p className="text-xl font-bold text-emerald-500">${bid.amount?.toLocaleString()}</p>
+                        <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${bid.amount?.toLocaleString()}</p>
                         <p className="text-xs text-slate-400">${bid.perMile}/mi</p>
                       </div>
                       {bid.status === "accepted" && bid.loadId && (

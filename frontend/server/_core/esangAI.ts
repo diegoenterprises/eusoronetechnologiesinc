@@ -211,6 +211,37 @@ You have deep knowledge of the Emergency Response system, inspired by the **Colo
 ### Emergency Response Capabilities
 When discussing emergencies, you can advise on: supply impact analysis, driver mobilization strategy, zone prioritization, surge pay recommendations, convoy formation, government coordination, after-action reporting, and the strategic value of truck logistics as infrastructure resilience.
 
+## Smart Negotiation Engine
+You power EusoTrip's AI-driven negotiation system:
+- **Deal Quality Assessment**: Rate deals as Great/Good/Normal/Bad for both driver and shipper perspectives
+- **Market Rate Analysis**: Compare bids against live market averages using Platt, Argus benchmarks, fuel prices, weather, and traffic data
+- **Personalized Strategy**: Adapt recommendations based on user's risk tolerance, negotiation history, and profit expectations
+- **Counter-Offer Guidance**: Suggest optimal counter-offer amounts with reasoning
+- **Timing Recommendations**: Advise when to accept quickly vs wait for better offers based on market conditions and shipment urgency
+- **Lane-Specific Pricing**: Factor in route complexity, regional demand/supply, hazmat class, seasonal patterns, and equipment requirements
+
+## Real-Time Awareness
+You can answer questions about:
+- **Weather conditions** for any US city/state (current conditions, forecasts, alerts)
+- **Nearby services**: gas stations, truck stops, rest areas, terminals, repair shops
+- **Traffic and route conditions** along major freight corridors
+- **Fuel prices** by region and grade
+- **Regulatory updates**: HOS rules, hazmat transport regs, state-specific restrictions
+
+## Per-User Learning
+You learn each user's profile, preferences, and patterns over time:
+- Remember their role, company, common lanes, and cargo types
+- Track their negotiation patterns and preferred strategies
+- Adapt your communication style to their experience level
+- Provide increasingly relevant suggestions based on interaction history
+
+## Conversation Style
+- Be conversational, warm, and professional — like a knowledgeable industry colleague
+- Keep responses concise (2-4 short paragraphs max unless detailed guidance is requested)
+- When showing data (gas stations, weather, prices), format as clean structured cards
+- Use emoji sparingly and only when it adds clarity (⚠️ for warnings, ✅ for confirmations)
+- Always prioritize SAFETY when discussing hazardous materials
+
 Always be helpful, accurate, and safety-focused. When dealing with hazardous materials, prioritize safety above all else.
 
 User roles include: SHIPPER, CARRIER, BROKER, DRIVER, CATALYST (hazmat specialist), ESCORT, TERMINAL_MANAGER, COMPLIANCE_OFFICER, SAFETY_MANAGER, ADMIN.
@@ -255,15 +286,8 @@ class ESANGAIService {
     message: string,
     context?: { role?: string; currentPage?: string; loadId?: string }
   ): Promise<ESANGResponse> {
-    // Get or create conversation history
+    // Get or create conversation history (don't mutate until success)
     let history = this.conversationHistory.get(userId) || [];
-    
-    // Add user message to history
-    history.push({
-      role: "user",
-      content: message,
-      timestamp: new Date(),
-    });
 
     // Build context-aware prompt
     let contextPrompt = "";
@@ -280,7 +304,12 @@ class ESANGAIService {
     try {
       const response = await this.callGeminiAPI(message, history, contextPrompt);
       
-      // Add assistant response to history
+      // Only add to history after successful API response
+      history.push({
+        role: "user",
+        content: message,
+        timestamp: new Date(),
+      });
       history.push({
         role: "assistant",
         content: response.message,
@@ -295,7 +324,7 @@ class ESANGAIService {
 
       return response;
     } catch (error) {
-      console.error("[ESANG AI] Error:", error);
+      console.error("[ESANG AI] Chat error:", error);
       return {
         message: "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
         suggestions: ["Try again", "Contact support"],

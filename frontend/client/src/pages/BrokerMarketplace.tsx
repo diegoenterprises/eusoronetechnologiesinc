@@ -216,7 +216,7 @@ export default function BrokerMarketplace() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-green-400 font-bold text-lg">${load.potentialMargin}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${load.potentialMargin}</p>
                       <p className="text-xs text-slate-500 mb-2">Potential Margin</p>
                       <Button
                         size="sm"

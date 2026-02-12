@@ -227,7 +227,7 @@ export default function AssignedLoadsPage() {
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
                       <p className="text-slate-500 text-xs mb-1">Your Rate</p>
-                      <p className="font-medium text-green-400">${load.rate ? Number(load.rate).toLocaleString() : "N/A"}</p>
+                      <p className="font-medium bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${load.rate ? Number(load.rate).toLocaleString() : "N/A"}</p>
                     </div>
                     <div className="bg-gray-800/30 rounded-lg p-3">
                       <p className="text-slate-500 text-xs mb-1">Driver</p>

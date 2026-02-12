@@ -52,7 +52,7 @@ export default function BOLGeneration() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "generated":
-        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Generated</Badge>;
+        return <Badge className="bg-green-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-green-500/30">Generated</Badge>;
       case "pending":
         return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pending</Badge>;
       case "signed":
@@ -177,7 +177,7 @@ export default function BOLGeneration() {
         <CardHeader className="pb-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <CardTitle className="text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-emerald-400" />
+              <FileText className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               BOL Records
             </CardTitle>
             <div className="flex items-center gap-2">

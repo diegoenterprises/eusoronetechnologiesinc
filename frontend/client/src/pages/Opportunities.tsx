@@ -70,7 +70,7 @@ export default function Opportunities() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.totalValue?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Total Value</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.totalValue?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Total Value</p></div>
             </div>
           </CardContent>
         </Card>
@@ -115,7 +115,7 @@ export default function Opportunities() {
                       </div>
                       <p className="text-sm text-slate-400">{opp.description}</p>
                     </div>
-                    <p className="text-green-400 font-bold text-xl">${opp.rate?.toLocaleString()}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-xl">${opp.rate?.toLocaleString()}</p>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">

@@ -204,7 +204,7 @@ export default function SafetyMetrics() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-emerald-400" />
+              <Activity className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               Safety Trends
             </CardTitle>
           </CardHeader>

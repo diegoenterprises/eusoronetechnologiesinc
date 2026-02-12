@@ -146,13 +146,10 @@ export default function GradientSignaturePad({
     ctx.lineJoin = "round";
     ctx.globalCompositeOperation = "source-over";
 
+    // Draw continuous line from last point to current point
     ctx.beginPath();
     ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-
-    // Smooth curve using quadratic bezier
-    const midX = (lastPointRef.current.x + pos.x) / 2;
-    const midY = (lastPointRef.current.y + pos.y) / 2;
-    ctx.quadraticCurveTo(lastPointRef.current.x, lastPointRef.current.y, midX, midY);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
 
     lastPointRef.current = pos;

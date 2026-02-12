@@ -282,7 +282,7 @@ export default function Settings() {
                     <p className="text-slate-500 dark:text-slate-400 text-sm">{profileForm.email}</p>
                     <Badge className="mt-2 bg-gradient-to-r from-purple-500/15 to-blue-500/15 text-purple-600 dark:text-cyan-400 border-0">{profile?.role || "SHIPPER"}</Badge>
                     {profile?.verified && (
-                      <div className="flex items-center justify-center gap-1 mt-2 text-emerald-500 dark:text-emerald-400 text-xs">
+                      <div className="flex items-center justify-center gap-1 mt-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xs">
                         <CheckCircle className="w-3 h-3" />Verified Account
                       </div>
                     )}
@@ -438,10 +438,10 @@ export default function Settings() {
                   </div>
                   <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
                     <div className="flex items-start gap-3">
-                      <Shield className="w-5 h-5 text-emerald-500 mt-0.5 flex-shrink-0" />
+                      <Shield className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Account Security Status</p>
-                        <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">Your account is protected with enterprise-grade encryption. All data in transit uses TLS 1.3.</p>
+                        <p className="text-sm font-medium text-emerald-700 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Account Security Status</p>
+                        <p className="text-xs text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">Your account is protected with enterprise-grade encryption. All data in transit uses TLS 1.3.</p>
                       </div>
                     </div>
                   </div>

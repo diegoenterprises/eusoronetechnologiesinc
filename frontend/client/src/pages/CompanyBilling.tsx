@@ -75,11 +75,11 @@ export default function CompanyBilling() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {billingQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${billing?.currentBalance?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${billing?.currentBalance?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Current Balance</p>
               </div>
@@ -184,7 +184,7 @@ export default function CompanyBilling() {
                     <Badge className={cn(invoice.status === "paid" ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400", "border-0")}>
                       {invoice.status === "paid" ? <CheckCircle className="w-3 h-3 mr-1" /> : null}{invoice.status}
                     </Badge>
-                    <p className="text-emerald-400 font-bold">${invoice.amount?.toLocaleString()}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${invoice.amount?.toLocaleString()}</p>
                     <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white">
                       <Download className="w-4 h-4" />
                     </Button>

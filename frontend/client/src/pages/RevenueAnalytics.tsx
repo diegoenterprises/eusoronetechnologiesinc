@@ -64,11 +64,11 @@ export default function RevenueAnalytics() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {revenueQuery.isLoading ? <Skeleton className="h-8 w-24" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${revenue?.total?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${revenue?.total?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Revenue</p>
               </div>
@@ -150,7 +150,7 @@ export default function RevenueAnalytics() {
                 </div>
                 <div className="text-right">
                   <p className="text-slate-400">Goal</p>
-                  <p className="text-2xl font-bold text-emerald-400">${goals?.target?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${goals?.target?.toLocaleString()}</p>
                 </div>
               </div>
               <Progress value={goals?.percentage || 0} className="h-4" />
@@ -178,7 +178,7 @@ export default function RevenueAnalytics() {
                   <div key={cat.name}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">{cat.name}</span>
-                      <span className="text-emerald-400 font-bold">${cat.amount?.toLocaleString()}</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${cat.amount?.toLocaleString()}</span>
                     </div>
                     <Progress value={cat.percentage} className="h-2" />
                     <p className="text-xs text-slate-500 mt-1">{cat.percentage}% of total</p>
@@ -208,7 +208,7 @@ export default function RevenueAnalytics() {
                       <span className="text-white font-medium">{source.name}</span>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold">${source.revenue?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${source.revenue?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">{source.loads} loads</p>
                     </div>
                   </div>
@@ -235,7 +235,7 @@ export default function RevenueAnalytics() {
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-emerald-500 to-cyan-500" style={{ height: `${month.percentage}%` }} />
                   </div>
                   <p className="text-xs text-slate-400 mt-2">{month.month}</p>
-                  <p className="text-xs text-emerald-400 font-medium">${(month.revenue / 1000).toFixed(0)}k</p>
+                  <p className="text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${(month.revenue / 1000).toFixed(0)}k</p>
                 </div>
               ))}
             </div>

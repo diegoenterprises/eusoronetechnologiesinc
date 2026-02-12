@@ -116,7 +116,7 @@ export default function BenefitsManagement() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-lg font-bold text-green-400">${benefit.employeeCost}/mo</p>
+                      <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${benefit.employeeCost}/mo</p>
                       <p className="text-xs text-slate-500">Employee Cost</p>
                     </div>
                     <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">View</Button>

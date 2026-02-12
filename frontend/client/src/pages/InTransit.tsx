@@ -261,7 +261,7 @@ export default function InTransitPage() {
                     {[
                       { label: "Weight", value: load.weight ? `${load.weight} ${load.weightUnit || "lbs"}` : "N/A" },
                       { label: "Distance", value: load.distance ? `${load.distance} ${load.distanceUnit || "mi"}` : "TBD" },
-                      { label: "Rate", value: load.rate ? `$${Number(load.rate).toLocaleString()}` : "N/A", color: "text-emerald-500" },
+                      { label: "Rate", value: load.rate ? `$${Number(load.rate).toLocaleString()}` : "N/A", color: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" },
                       { label: "Shipper", value: `#${load.shipperId || "—"}` },
                     ].map((s) => (
                       <div key={s.label} className={cellCls}>

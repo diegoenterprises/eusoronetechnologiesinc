@@ -77,7 +77,8 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
 
       {/* Card — dark solid card, no border, subtle top glow */}
       <div
-        className="relative rounded-2xl overflow-hidden min-w-[420px] max-w-[540px]"
+        className="relative rounded-2xl overflow-hidden min-w-[420px] max-w-[540px] outline-none"
+        tabIndex={-1}
         style={{
           background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)",
           boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)",
@@ -90,7 +91,7 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
           style={{ background: "linear-gradient(90deg, transparent, rgba(20,115,255,0.5), rgba(190,1,255,0.5), transparent)" }}
         />
 
-        <div className="px-12 py-12">
+        <div className="px-12 py-12 select-none">
           {/* Title */}
           {dialog.title && (
             <h3 className="text-center text-white font-semibold text-xl mb-4">{dialog.title}</h3>
@@ -105,7 +106,7 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
           <div className="flex items-center justify-center gap-5">
             <button
               onClick={() => onClose(true)}
-              className="px-10 py-3.5 rounded-xl text-base font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]"
+              className="px-10 py-3.5 rounded-xl text-base font-bold text-white transition-all hover:opacity-90 hover:scale-[1.02] active:scale-[0.98] outline-none focus:outline-none focus:ring-0"
               style={{ background: "linear-gradient(135deg, #1473FF, #BE01FF)" }}
             >
               {confirmLabel}
@@ -113,7 +114,7 @@ function DialogCard({ dialog, onClose }: { dialog: DialogState; onClose: (result
             {showCancel && (
               <button
                 onClick={() => onClose(false)}
-                className="px-10 py-3.5 rounded-xl text-base font-bold text-white/90 transition-all hover:bg-white/5 hover:scale-[1.02] active:scale-[0.98]"
+                className="px-10 py-3.5 rounded-xl text-base font-bold text-white/90 transition-all hover:bg-white/5 hover:scale-[1.02] active:scale-[0.98] outline-none focus:outline-none focus:ring-0"
                 style={{ border: "1.5px solid rgba(100, 140, 255, 0.4)" }}
               >
                 {cancelLabel}

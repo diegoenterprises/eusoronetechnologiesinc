@@ -139,9 +139,9 @@ export default function SAFERLookup() {
             <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
               <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-yellow-400" />Safety Rating</CardTitle></CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex justify-between"><span className="text-slate-400">Rating</span><span className={cn("font-medium", result.safetyRating === "Satisfactory" ? "text-green-400" : result.safetyRating === "Conditional" ? "text-yellow-400" : "text-red-400")}>{result.safetyRating || "Not Rated"}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">Rating</span><span className={cn("font-medium", result.safetyRating === "Satisfactory" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : result.safetyRating === "Conditional" ? "text-yellow-400" : "text-red-400")}>{result.safetyRating || "Not Rated"}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400">Rating Date</span><span className="text-white">{result.safetyRatingDate || "N/A"}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">OOS Rate</span><span className={cn("font-medium", result.oosRate < 20 ? "text-green-400" : result.oosRate < 30 ? "text-yellow-400" : "text-red-400")}>{result.oosRate}%</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">OOS Rate</span><span className={cn("font-medium", result.oosRate < 20 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : result.oosRate < 30 ? "text-yellow-400" : "text-red-400")}>{result.oosRate}%</span></div>
               </CardContent>
             </Card>
           </div>

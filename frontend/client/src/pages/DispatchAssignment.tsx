@@ -90,7 +90,7 @@ export default function DispatchAssignment() {
               </div>
             </div>
             <div className="text-right">
-              <p className="text-emerald-400 font-bold text-xl">${(load?.rate || 0).toLocaleString()}</p>
+              <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-xl">${(load?.rate || 0).toLocaleString()}</p>
               <p className="text-xs text-slate-500">{load?.distance} miles • {load?.equipmentType}</p>
             </div>
           </div>

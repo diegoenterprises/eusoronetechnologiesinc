@@ -82,10 +82,10 @@ export default function CompetitorAnalysis() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <DollarSign className="w-4 h-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               <span className="text-slate-400 text-sm">Avg Rate/Mile</span>
             </div>
-            <p className="text-2xl font-bold text-emerald-400">${(data as any)?.avgRate || "3.25"}</p>
+            <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(data as any)?.avgRate || "3.25"}</p>
           </CardContent>
         </Card>
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
@@ -146,7 +146,7 @@ export default function CompetitorAnalysis() {
             <div className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-emerald-400" />
+                  <Activity className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
                 </div>
                 <div>
                   <p className="font-medium text-white">Terminal Operations</p>

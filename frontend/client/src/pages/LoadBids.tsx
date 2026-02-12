@@ -120,7 +120,7 @@ export default function LoadBids() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">Target Rate</p>
-                <p className="text-green-400 font-bold text-xl">${load?.rate?.toLocaleString()}</p>
+                <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-xl">${load?.rate?.toLocaleString()}</p>
                 {load?.suggestedRateMin && load?.suggestedRateMax && (
                   <p className="text-xs text-slate-500">Suggested: ${load.suggestedRateMin.toLocaleString()} - ${load.suggestedRateMax.toLocaleString()}</p>
                 )}
@@ -202,7 +202,7 @@ export default function LoadBids() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-green-400 font-bold text-lg">${bid.amount?.toLocaleString()}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${bid.amount?.toLocaleString()}</p>
                         <p className="text-xs text-slate-500">${bid.ratePerMile?.toFixed(2)}/mi</p>
                       </div>
                       <Badge className={getStatusColor(bid.status)}>{bid.status}</Badge>

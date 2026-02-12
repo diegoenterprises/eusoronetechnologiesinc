@@ -72,11 +72,11 @@ export default function AdminPlatformFees() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {revenueSummaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                     ${(revenue?.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </p>
                 )}
@@ -196,12 +196,12 @@ export default function AdminPlatformFees() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-slate-400">{config.transactionType}</TableCell>
-                        <TableCell className="text-emerald-400">
+                        <TableCell className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                           {config.feeType === "percentage" ? `${config.baseRate}%` : 
                            config.feeType === "flat" ? `$${config.flatAmount}` : "Tiered"}
                         </TableCell>
                         <TableCell>
-                          <Badge className={config.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}>
+                          <Badge className={config.isActive ? "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "bg-red-500/20 text-red-400"}>
                             {config.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -257,10 +257,10 @@ export default function AdminPlatformFees() {
                         <TableCell className="text-slate-200">{discount.name}</TableCell>
                         <TableCell className="text-slate-400">{discount.discountType}</TableCell>
                         <TableCell className="text-cyan-400">{discount.thresholdValue}</TableCell>
-                        <TableCell className="text-emerald-400">{discount.discountPercent}%</TableCell>
+                        <TableCell className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{discount.discountPercent}%</TableCell>
                         <TableCell className="text-slate-400">{discount.periodType}</TableCell>
                         <TableCell>
-                          <Badge className={discount.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}>
+                          <Badge className={discount.isActive ? "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "bg-red-500/20 text-red-400"}>
                             {discount.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -310,7 +310,7 @@ export default function AdminPlatformFees() {
                         <TableCell className="font-mono text-yellow-400">{promo.code}</TableCell>
                         <TableCell className="text-slate-200">{promo.name}</TableCell>
                         <TableCell className="text-slate-400">{promo.discountType}</TableCell>
-                        <TableCell className="text-emerald-400">
+                        <TableCell className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                           {promo.discountType === "percentage" ? `${promo.discountValue}%` : `$${promo.discountValue}`}
                         </TableCell>
                         <TableCell className="text-slate-400">
@@ -320,7 +320,7 @@ export default function AdminPlatformFees() {
                           {promo.validTo ? new Date(promo.validTo).toLocaleDateString() : "No expiry"}
                         </TableCell>
                         <TableCell>
-                          <Badge className={promo.isActive ? "bg-emerald-500/20 text-emerald-400" : "bg-red-500/20 text-red-400"}>
+                          <Badge className={promo.isActive ? "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "bg-red-500/20 text-red-400"}>
                             {promo.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
@@ -357,7 +357,7 @@ export default function AdminPlatformFees() {
                     <div key={item.type} className="flex items-center justify-between p-4 bg-slate-700/30 rounded-lg">
                       <div className="flex items-center gap-4">
                         <div className="p-2 rounded-lg bg-slate-600/50">
-                          <DollarSign className="w-5 h-5 text-emerald-400" />
+                          <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
                         </div>
                         <div>
                           <p className="text-slate-200 font-medium capitalize">{item.type.replace(/_/g, " ")}</p>
@@ -365,7 +365,7 @@ export default function AdminPlatformFees() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-emerald-400 font-bold">
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">
                           ${item.revenue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                         <p className="text-slate-500 text-sm">

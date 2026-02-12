@@ -98,11 +98,11 @@ export default function FuelCardManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${summary?.monthlySpend?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${summary?.monthlySpend?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Monthly Spend</p>
               </div>
@@ -164,10 +164,10 @@ export default function FuelCardManagement() {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="text-right">
-                          <p className="text-emerald-400 font-bold">${card.monthlySpend?.toLocaleString()}</p>
+                          <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${card.monthlySpend?.toLocaleString()}</p>
                           <p className="text-xs text-slate-500">This month</p>
                         </div>
-                        <Button size="sm" variant="ghost" className={cn(card.status === "active" ? "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10" : "text-green-400 hover:text-green-300 hover:bg-green-500/10")} onClick={() => toggleMutation.mutate({ cardId: card.id, status: card.status === "active" ? "suspended" : "active" })}>
+                        <Button size="sm" variant="ghost" className={cn(card.status === "active" ? "text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/10" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:text-green-300 hover:bg-green-500/10")} onClick={() => toggleMutation.mutate({ cardId: card.id, status: card.status === "active" ? "suspended" : "active" })}>
                           {card.status === "active" ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                         </Button>
                       </div>
@@ -195,7 +195,7 @@ export default function FuelCardManagement() {
                   <div key={tx.id} className="p-4">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-white font-medium">{tx.merchantName}</p>
-                      <p className="text-emerald-400 font-bold">${tx.amount?.toFixed(2)}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${tx.amount?.toFixed(2)}</p>
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>•••• {tx.cardLastFour}</span>

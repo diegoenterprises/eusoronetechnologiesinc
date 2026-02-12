@@ -56,7 +56,7 @@ export default function SettlementStatements() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold text-green-400">${stats?.totalRevenue?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Revenue</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.totalRevenue?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Revenue</p></div>
             </div>
           </CardContent>
         </Card>
@@ -114,7 +114,7 @@ export default function SettlementStatements() {
                   </div>
                   <div className="flex items-center gap-6">
                     <div className="text-right">
-                      <p className="text-lg font-bold text-green-400">${settlement.revenue?.toLocaleString()}</p>
+                      <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${settlement.revenue?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Revenue</p>
                     </div>
                     <div className="text-right">

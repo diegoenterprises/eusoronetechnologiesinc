@@ -66,7 +66,7 @@ export default function Commission() {
               )}
             </div>
             <div className="p-4 rounded-full bg-emerald-500/20">
-              <DollarSign className="w-10 h-10 text-emerald-400" />
+              <DollarSign className="w-10 h-10 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
             </div>
           </div>
         </CardContent>
@@ -82,7 +82,7 @@ export default function Commission() {
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-green-400">${(summary?.paid || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.paid || 0).toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Paid</p>
               </div>
@@ -171,7 +171,7 @@ export default function Commission() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold text-lg">${commission.amount?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${commission.amount?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">{commission.margin}% margin</p>
                       {getStatusBadge(commission.status)}
                     </div>

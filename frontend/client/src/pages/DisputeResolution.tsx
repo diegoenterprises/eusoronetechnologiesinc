@@ -43,7 +43,7 @@ export default function DisputeResolution() {
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case "payment": return <DollarSign className="w-5 h-5 text-emerald-400" />;
+      case "payment": return <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />;
       case "service": return <AlertTriangle className="w-5 h-5 text-yellow-400" />;
       case "contract": return <FileText className="w-5 h-5 text-blue-400" />;
       default: return <Scale className="w-5 h-5 text-purple-400" />;
@@ -114,11 +114,11 @@ export default function DisputeResolution() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${summary?.totalAmount?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${summary?.totalAmount?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Disputed</p>
               </div>
@@ -173,7 +173,7 @@ export default function DisputeResolution() {
                           <span>#{dispute.caseNumber}</span>
                           <span className="capitalize">{dispute.category}</span>
                           <span>Filed: {dispute.filedAt}</span>
-                          <span className="text-emerald-400">${dispute.amount?.toLocaleString()}</span>
+                          <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${dispute.amount?.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>

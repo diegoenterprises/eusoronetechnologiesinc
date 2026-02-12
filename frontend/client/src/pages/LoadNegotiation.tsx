@@ -301,7 +301,7 @@ export default function LoadNegotiation() {
                   )}
                   <div className="flex justify-between items-center pt-3 border-t border-slate-600">
                     <span className="text-slate-400">Rate/Mile</span>
-                    <span className="text-emerald-400">${calculateRatePerMile(selectedNegotiation.currentOffer, selectedNegotiation.distance)}</span>
+                    <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${calculateRatePerMile(selectedNegotiation.currentOffer, selectedNegotiation.distance)}</span>
                   </div>
                 </div>
 

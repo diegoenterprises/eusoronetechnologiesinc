@@ -77,7 +77,7 @@ export default function Support() {
     { title: "Getting Started with EusoTrip", desc: "Learn the basics of creating loads and finding carriers", icon: <BookOpen className="w-5 h-5 text-blue-500" />, category: "Onboarding" },
     { title: "HazMat Compliance Guide", desc: "DOT/FMCSA requirements for hazardous materials transport", icon: <Shield className="w-5 h-5 text-orange-500" />, category: "Compliance" },
     { title: "Understanding Platform Fees", desc: "How the dynamic commission engine calculates fees (5-15%)", icon: <TrendingUp className="w-5 h-5 text-purple-500" />, category: "Billing" },
-    { title: "Spectra-Match Product ID", desc: "How crude oil identification works with spectral analysis", icon: <Sparkles className="w-5 h-5 text-emerald-500" />, category: "Technology" },
+    { title: "Spectra-Match Product ID", desc: "How crude oil identification works with spectral analysis", icon: <Sparkles className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />, category: "Technology" },
     { title: "Agreements & Smart Contracts", desc: "Creating, signing, and managing carrier agreements", icon: <FileText className="w-5 h-5 text-blue-400" />, category: "Contracts" },
     { title: "Emergency Response (ERG 2024)", desc: "Using ESANG AI for real-time emergency guidance", icon: <AlertTriangle className="w-5 h-5 text-red-400" />, category: "Safety" },
   ];
@@ -110,8 +110,8 @@ export default function Support() {
             <p className={cn("font-bold", vl)}>Need instant help? Ask ESANG AI</p>
             <p className="text-xs text-slate-400">Our AI assistant can answer compliance questions, look up ERG data, explain platform features, and help troubleshoot issues — 24/7.</p>
           </div>
-          <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold flex-shrink-0 h-10" onClick={() => { /* ESANG AI panel would open */ toast.info("ESANG AI is available via the chat icon in the bottom-right corner"); }}>
-            <Sparkles className="w-4 h-4 mr-2" />Chat with AI
+          <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold flex-shrink-0 h-10" onClick={() => { toast.info("ESANG AI is available via the chat icon in the bottom-right corner"); }}>
+            <Sparkles className="w-4 h-4 mr-2" />Chat with ESANG AI
           </Button>
         </div>
       </div>
@@ -286,7 +286,7 @@ export default function Support() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
             { icon: <Phone className="w-6 h-6 text-blue-500" />, title: "Phone Support", sub: "Available 24/7 for urgent issues", value: "1-800-EUSOTRIP", note: "Average wait: < 2 minutes", bg: "bg-blue-500/15" },
-            { icon: <Mail className="w-6 h-6 text-emerald-500" />, title: "Email Support", sub: "Response within 24 hours", value: "support@eusotrip.com", note: "Include your account ID for faster service", bg: "bg-emerald-500/15" },
+            { icon: <Mail className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />, title: "Email Support", sub: "Response within 24 hours", value: "support@eusotrip.com", note: "Include your account ID for faster service", bg: "bg-emerald-500/15" },
             { icon: <Bot className="w-6 h-6 text-purple-500" />, title: "ESANG AI Assistant", sub: "Instant answers, always available", value: "Chat now →", note: "Compliance, ERG, loads, billing & more", bg: "bg-purple-500/15" },
             { icon: <Shield className="w-6 h-6 text-orange-500" />, title: "Emergency / Safety", sub: "CHEMTREC & emergency response", value: "1-800-424-9300", note: "For hazmat spills and transport emergencies", bg: "bg-orange-500/15" },
           ].map((c, i) => (

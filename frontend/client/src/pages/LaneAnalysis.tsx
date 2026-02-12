@@ -48,7 +48,7 @@ export default function LaneAnalysis() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.avgRate}</p>}<p className="text-xs text-slate-400">Avg Rate/Mi</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.avgRate}</p>}<p className="text-xs text-slate-400">Avg Rate/Mi</p></div>
             </div>
           </CardContent>
         </Card>
@@ -113,7 +113,7 @@ export default function LaneAnalysis() {
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-slate-500">Avg Rate</p>
-                      <p className="text-green-400 font-bold">${lane.avgRate}/mi</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${lane.avgRate}/mi</p>
                     </div>
                     <div className="text-center">
                       <p className="text-xs text-slate-500">Trend</p>

@@ -104,7 +104,7 @@ export default function SettlementDetails() {
               <TrendingUp className="w-8 h-8 text-green-400" />
               <div>
                 {settlementQuery.isLoading ? <Skeleton className="h-8 w-24" /> : (
-                  <p className="text-2xl font-bold text-green-400">${settlement?.grossRevenue?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${settlement?.grossRevenue?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Gross Revenue</p>
               </div>
@@ -205,13 +205,13 @@ export default function SettlementDetails() {
                           <p className="text-white">{item.description}</p>
                           <p className="text-xs text-slate-500">{item.category} - {item.date}</p>
                         </div>
-                        <p className="text-green-400 font-medium">+${item.amount.toLocaleString()}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">+${item.amount.toLocaleString()}</p>
                       </div>
                     ))}
                     <Separator className="my-4 bg-slate-700" />
                     <div className="flex justify-between">
                       <span className="text-slate-400">Total Revenue</span>
-                      <span className="text-green-400 font-bold">${settlement?.grossRevenue?.toLocaleString()}</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${settlement?.grossRevenue?.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
@@ -287,7 +287,7 @@ export default function SettlementDetails() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-green-400 font-bold">${load.amount.toLocaleString()}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${load.amount.toLocaleString()}</p>
                         <p className="text-xs text-slate-500">Driver: ${load.driverPay.toLocaleString()}</p>
                       </div>
                     </div>
@@ -321,7 +321,7 @@ export default function SettlementDetails() {
                       </div>
                       <div className="flex items-center gap-6">
                         <div className="text-right">
-                          <p className="text-green-400 font-bold">${stl.netPay.toLocaleString()}</p>
+                          <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${stl.netPay.toLocaleString()}</p>
                           <p className="text-xs text-slate-500">Paid {stl.paidDate}</p>
                         </div>
                         <Badge className={getStatusColor(stl.status)}>{stl.status}</Badge>

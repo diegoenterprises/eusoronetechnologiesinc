@@ -234,7 +234,7 @@ const PRIVACY_SECTIONS: Section[] = [
   {
     id: "data-security",
     title: "7. Data Security",
-    icon: <Lock className="w-5 h-5 text-emerald-400" />,
+    icon: <Lock className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />,
     content: (
       <div className="space-y-3">
         <p>We implement comprehensive technical and organizational security measures to protect your personal information, including:</p>
@@ -474,7 +474,7 @@ export default function PrivacyPolicy() {
         <Card className={`rounded-xl mb-6 ${isLight ? 'bg-emerald-50 border-emerald-200' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <Lock className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isLight ? 'text-emerald-600' : 'text-emerald-400'}`} />
+              <Lock className={`w-5 h-5 mt-0.5 flex-shrink-0 ${isLight ? 'text-emerald-600' : 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent'}`} />
               <div>
                 <p className={`font-semibold text-sm ${isLight ? 'text-emerald-700' : 'text-emerald-300'}`}>YOUR PRIVACY MATTERS</p>
                 <p className={`text-sm mt-1 ${isLight ? 'text-emerald-600/80' : 'text-emerald-200/80'}`}>
@@ -518,7 +518,7 @@ export default function PrivacyPolicy() {
                     {section.title}
                   </span>
                   {section.highlight && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 mr-2">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border border-emerald-500/30 mr-2">
                       KEY
                     </span>
                   )}

@@ -14,7 +14,8 @@ export type FeedCategory =
   | "hazmat"
   | "marine"
   | "supply_chain"
-  | "energy";
+  | "energy"
+  | "government";
 
 export interface RSSFeed {
   id: string;
@@ -37,6 +38,7 @@ export const FEED_CATEGORY_LABELS: Record<FeedCategory, string> = {
   marine: "Marine & Shipping",
   supply_chain: "Supply Chain",
   energy: "Energy",
+  government: "Government & Regulatory",
 };
 
 export const FEED_CATEGORY_COLORS: Record<FeedCategory, string> = {
@@ -50,6 +52,7 @@ export const FEED_CATEGORY_COLORS: Record<FeedCategory, string> = {
   marine: "bg-indigo-500/20 text-indigo-400",
   supply_chain: "bg-pink-500/20 text-pink-400",
   energy: "bg-amber-500/20 text-amber-400",
+  government: "bg-rose-500/20 text-rose-400",
 };
 
 // ============================================================================
@@ -548,6 +551,33 @@ export const ENERGY_FEEDS: RSSFeed[] = [
 ];
 
 // ============================================================================
+// GOVERNMENT & REGULATORY FEEDS
+// ============================================================================
+
+export const GOVERNMENT_FEEDS: RSSFeed[] = [
+  { id: "fmcsa-news", name: "FMCSA News", url: "https://www.fmcsa.dot.gov/newsroom/rss", category: "government", description: "Federal Motor Carrier Safety Administration", priority: 5, enabled: true },
+  { id: "dot-news", name: "DOT News", url: "https://www.transportation.gov/rss", category: "government", description: "Department of Transportation", priority: 5, enabled: true },
+  { id: "nhtsa-news", name: "NHTSA News", url: "https://www.nhtsa.gov/rss", category: "government", description: "National Highway Traffic Safety", priority: 5, enabled: true },
+  { id: "ntsb-news", name: "NTSB News", url: "https://www.ntsb.gov/Pages/RSS.aspx", category: "government", description: "National Transportation Safety Board", priority: 5, enabled: true },
+  { id: "epa-news", name: "EPA News", url: "https://www.epa.gov/rss", category: "government", description: "Environmental Protection Agency", priority: 4, enabled: true },
+  { id: "osha-news", name: "OSHA News", url: "https://www.osha.gov/rss", category: "government", description: "Occupational Safety & Health", priority: 4, enabled: true },
+  { id: "fra-news", name: "FRA News", url: "https://railroads.dot.gov/rss", category: "government", description: "Federal Railroad Administration", priority: 4, enabled: true },
+  { id: "stb-news", name: "STB News", url: "https://www.stb.gov/rss", category: "government", description: "Surface Transportation Board", priority: 4, enabled: true },
+  { id: "ferc-news", name: "FERC News", url: "https://www.ferc.gov/rss", category: "government", description: "Federal Energy Regulatory Commission", priority: 4, enabled: true },
+  { id: "phmsa-news", name: "PHMSA News", url: "https://www.phmsa.dot.gov/rss", category: "government", description: "Pipeline & Hazmat Safety", priority: 5, enabled: true },
+  { id: "gao-reports", name: "GAO Reports", url: "https://www.gao.gov/rss/reports.rss", category: "government", description: "Government Accountability Office", priority: 3, enabled: true },
+  { id: "bls-transport", name: "BLS Transportation", url: "https://www.bls.gov/feed/ces_transportation.rss", category: "government", description: "Bureau of Labor Statistics", priority: 3, enabled: true },
+  { id: "doe-news", name: "DOE News", url: "https://www.energy.gov/rss", category: "government", description: "Department of Energy", priority: 4, enabled: true },
+  { id: "cvsa-news", name: "CVSA News", url: "https://www.cvsa.org/news/feed", category: "government", description: "Commercial Vehicle Safety Alliance", priority: 4, enabled: true },
+  { id: "atri-research", name: "ATRI Research", url: "https://truckingresearch.org/feed", category: "government", description: "American Transportation Research Institute", priority: 4, enabled: true },
+  { id: "fhwa-news", name: "FHWA News", url: "https://highways.dot.gov/rss", category: "government", description: "Federal Highway Administration", priority: 4, enabled: true },
+  { id: "marad-news", name: "MARAD News", url: "https://www.maritime.dot.gov/rss", category: "government", description: "Maritime Administration", priority: 3, enabled: true },
+  { id: "carb-news", name: "CARB News", url: "https://ww2.arb.ca.gov/rss", category: "government", description: "California Air Resources Board", priority: 3, enabled: true },
+  { id: "nrc-news", name: "NRC News", url: "https://www.nrc.gov/rss", category: "government", description: "Nuclear Regulatory Commission", priority: 3, enabled: true },
+  { id: "census-trade", name: "Census Trade Data", url: "https://www.census.gov/economic-indicators/rss", category: "government", description: "US Census Bureau trade indicators", priority: 3, enabled: true },
+];
+
+// ============================================================================
 // COMBINED EXPORTS
 // ============================================================================
 
@@ -561,6 +591,7 @@ export const ALL_FEEDS: RSSFeed[] = [
   ...HAZMAT_FEEDS,
   ...MARINE_FEEDS,
   ...ENERGY_FEEDS,
+  ...GOVERNMENT_FEEDS,
 ];
 
 export const FEEDS_BY_CATEGORY: Record<FeedCategory, RSSFeed[]> = {
@@ -574,6 +605,7 @@ export const FEEDS_BY_CATEGORY: Record<FeedCategory, RSSFeed[]> = {
   marine: MARINE_FEEDS,
   supply_chain: LOGISTICS_FEEDS, // Alias
   energy: ENERGY_FEEDS,
+  government: GOVERNMENT_FEEDS,
 };
 
 export const ENABLED_FEEDS = ALL_FEEDS.filter(f => f.enabled);

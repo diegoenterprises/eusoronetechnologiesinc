@@ -13,16 +13,17 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  Newspaper, Clock, Share2, Bookmark, Search, ExternalLink,
+  Newspaper, Clock, Share2, Bookmark, BookmarkCheck, Search, ExternalLink,
   TrendingUp, AlertTriangle, Truck, DollarSign, Shield, Fuel,
   Snowflake, FlaskConical, Ship, Zap, RefreshCw, Radio, Wifi,
-  WifiOff, Activity
+  WifiOff, Activity, Landmark, BookOpen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 const CATEGORIES = [
   { value: "all", label: "All News", icon: Newspaper },
+  { value: "trucking", label: "Trucking", icon: Truck },
   { value: "logistics", label: "Logistics", icon: Truck },
   { value: "oil_gas", label: "Oil & Gas", icon: Fuel },
   { value: "chemical", label: "Chemical", icon: FlaskConical },
@@ -32,10 +33,13 @@ const CATEGORIES = [
   { value: "marine", label: "Marine", icon: Ship },
   { value: "energy", label: "Energy", icon: Zap },
   { value: "supply_chain", label: "Supply Chain", icon: TrendingUp },
+  { value: "government", label: "Government", icon: Landmark },
+  { value: "saved", label: "Saved", icon: BookOpen },
 ];
 
 const getCategoryColor = (category: string) => {
   const map: Record<string, string> = {
+    trucking: "bg-indigo-500/20 text-indigo-400",
     logistics: "bg-blue-500/20 text-blue-400",
     oil_gas: "bg-orange-500/20 text-orange-400",
     chemical: "bg-purple-500/20 text-purple-400",
@@ -46,6 +50,7 @@ const getCategoryColor = (category: string) => {
     supply_chain: "bg-green-500/20 text-green-400",
     energy: "bg-yellow-500/20 text-yellow-400",
     equipment: "bg-slate-500/20 text-slate-400",
+    government: "bg-rose-500/20 text-rose-400",
   };
   return map[category] || "bg-slate-500/20 text-slate-400";
 };
@@ -84,6 +89,21 @@ export default function NewsFeed() {
   const [searchTerm, setSearchTerm] = useState("");
   const lastGenRef = useRef(0);
   const [newArticlesBanner, setNewArticlesBanner] = useState(false);
+
+  // ---- Bookmark state ----
+  const savedIdsQuery = (trpc as any).news.getSavedArticleIds.useQuery(undefined, { staleTime: 10_000 });
+  const savedArticlesQuery = (trpc as any).news.getSavedArticles.useQuery(undefined, { enabled: activeTab === "saved", staleTime: 10_000 });
+  const saveMutation = (trpc as any).news.saveArticle.useMutation({
+    onSuccess: () => { savedIdsQuery.refetch(); savedArticlesQuery.refetch(); },
+  });
+  const unsaveMutation = (trpc as any).news.unsaveArticle.useMutation({
+    onSuccess: () => { savedIdsQuery.refetch(); savedArticlesQuery.refetch(); },
+  });
+  const savedIds = new Set<string>((savedIdsQuery.data as any)?.ids || []);
+  const toggleBookmark = (articleId: string) => {
+    if (savedIds.has(articleId)) unsaveMutation.mutate({ articleId });
+    else saveMutation.mutate({ articleId });
+  };
 
   // ---- Cheap poll: cacheStatus every 15s (tiny payload) ----
   const statusQuery = (trpc as any).news.cacheStatus.useQuery(undefined, {
@@ -131,9 +151,11 @@ export default function NewsFeed() {
   });
 
   const status = statusQuery.data;
-  const articles = (newsQuery.data as any)?.articles || newsQuery.data || [];
-  const articlesArray = Array.isArray(articles) ? articles : [];
-  const total = (newsQuery.data as any)?.total ?? articlesArray.length;
+  const rawArticles = activeTab === "saved"
+    ? (savedArticlesQuery.data as any)?.articles || []
+    : (newsQuery.data as any)?.articles || newsQuery.data || [];
+  const articlesArray = Array.isArray(rawArticles) ? rawArticles : [];
+  const total = activeTab === "saved" ? articlesArray.length : (newsQuery.data as any)?.total ?? articlesArray.length;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -149,7 +171,7 @@ export default function NewsFeed() {
           </h1>
           <p className="text-slate-400 text-sm flex items-center gap-2 mt-0.5">
             <Radio className="w-3 h-3" />
-            Real-time feeds from 30+ sources
+            Real-time feeds from 200+ sources
             {status && (
               <>
                 <span className="text-slate-600">|</span>
@@ -162,7 +184,7 @@ export default function NewsFeed() {
                 ) : null}
                 <span className="text-slate-600">|</span>
                 <span className="flex items-center gap-1">
-                  <Wifi className="w-3 h-3 text-green-400" />{status.healthyFeeds}
+                  <Wifi className="w-3 h-3 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />{status.healthyFeeds}
                   {status.unhealthyFeeds > 0 && (
                     <><WifiOff className="w-3 h-3 text-red-400 ml-1" />{status.unhealthyFeeds}</>
                   )}
@@ -266,7 +288,9 @@ export default function NewsFeed() {
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" asChild>
                                 <a href={article.link} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-3.5 h-3.5" /></a>
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Bookmark className="w-3.5 h-3.5" /></Button>
+                              <Button variant="ghost" size="sm" className={cn("h-7 w-7 p-0", savedIds.has(article.id) && "text-yellow-400")} onClick={() => toggleBookmark(article.id)}>
+                                {savedIds.has(article.id) ? <BookmarkCheck className="w-3.5 h-3.5" /> : <Bookmark className="w-3.5 h-3.5" />}
+                              </Button>
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0"><Share2 className="w-3.5 h-3.5" /></Button>
                             </div>
                           </div>

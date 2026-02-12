@@ -62,7 +62,7 @@ export default function PerformanceReports() {
           <CardContent className="p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               {trends?.revenue !== 0 && (
                 <div className={cn("flex items-center gap-1 text-sm", (trends?.revenue ?? 0) > 0 ? "text-green-400" : "text-red-400")}>
@@ -212,7 +212,7 @@ export default function PerformanceReports() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold">{performer.score}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">{performer.score}</p>
                       <p className="text-xs text-slate-500">{performer.loads} loads</p>
                     </div>
                   </div>

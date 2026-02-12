@@ -183,7 +183,7 @@ export default function ActivityFeed() {
                   </div>
                   {activity.metadata && (
                     <div className="text-right text-sm">
-                      {activity.metadata.amount && <p className="text-green-400 font-bold">${activity.metadata.amount}</p>}
+                      {activity.metadata.amount && <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${activity.metadata.amount}</p>}
                       {activity.metadata.status && <Badge className="bg-slate-700/50 text-slate-300 border-0">{activity.metadata.status}</Badge>}
                     </div>
                   )}

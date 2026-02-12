@@ -354,7 +354,7 @@ export default function CompanyChannels() {
                     {activeChannel.description}
                   </p>
                   {e2eReady && (
-                    <span className="flex items-center gap-0.5 text-[10px] text-emerald-400/80 ml-2">
+                    <span className="flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/80 ml-2">
                       <Lock size={10} /> E2E Encrypted
                     </span>
                   )}
@@ -480,7 +480,7 @@ export default function CompanyChannels() {
             {/* Message Input */}
             <div className="bg-slate-800 border-t border-slate-700 px-6 py-4">
               {e2eReady && (
-                <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] text-emerald-500/60">
+                <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/60">
                   <Lock size={10} />
                   <span>Channel messages are end-to-end encrypted. Only company members can read them.</span>
                 </div>

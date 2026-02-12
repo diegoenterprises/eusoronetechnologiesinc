@@ -74,11 +74,11 @@ export default function MarketIntelligence() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {marketQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${market?.avgSpotRate?.toFixed(2)}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${market?.avgSpotRate?.toFixed(2)}</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Spot Rate</p>
               </div>
@@ -165,7 +165,7 @@ export default function MarketIntelligence() {
                     </div>
                     <div className="flex items-center justify-between text-xs text-slate-500">
                       <span>{lane.loads} loads available</span>
-                      <span className="text-emerald-400 font-bold">${lane.avgRate?.toFixed(2)}/mi</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${lane.avgRate?.toFixed(2)}/mi</span>
                     </div>
                   </div>
                 ))}

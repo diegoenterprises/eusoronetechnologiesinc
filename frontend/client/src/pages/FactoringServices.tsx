@@ -40,7 +40,7 @@ export default function FactoringServices() {
       case "pending": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Pending</Badge>;
       case "approved": return <Badge className="bg-green-500/20 text-green-400 border-0">Approved</Badge>;
       case "funded": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Funded</Badge>;
-      case "collected": return <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Collected</Badge>;
+      case "collected": return <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0">Collected</Badge>;
       case "rejected": return <Badge className="bg-red-500/20 text-red-400 border-0">Rejected</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
@@ -71,11 +71,11 @@ export default function FactoringServices() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${summary?.totalFunded?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${summary?.totalFunded?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total Funded</p>
               </div>
@@ -142,7 +142,7 @@ export default function FactoringServices() {
             </div>
             <div className="flex items-center gap-4">
               <div className="text-center">
-                <p className="text-3xl font-bold text-emerald-400">{rates?.advanceRate}%</p>
+                <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{rates?.advanceRate}%</p>
                 <p className="text-xs text-slate-500">Advance Rate</p>
               </div>
               <ArrowRight className="w-6 h-6 text-slate-500" />
@@ -213,7 +213,7 @@ export default function FactoringServices() {
                       {invoice.fundedDate && <span>Funded: {invoice.fundedDate}</span>}
                     </div>
                     {invoice.status === "funded" && (
-                      <span className="text-emerald-400">Funded: ${invoice.fundedAmount?.toLocaleString()}</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Funded: ${invoice.fundedAmount?.toLocaleString()}</span>
                     )}
                   </div>
                 </div>

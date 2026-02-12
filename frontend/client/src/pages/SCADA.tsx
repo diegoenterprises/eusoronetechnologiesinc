@@ -145,7 +145,7 @@ export default function SCADA() {
           <CardContent className="p-4 text-center">
             <Droplets className="w-6 h-6 mx-auto mb-2 text-green-400" />
             {overviewQuery.isLoading ? <Skeleton className="h-8 w-12 mx-auto" /> : (
-              <p className="text-2xl font-bold text-green-400">{overview?.totalTanks || 0}</p>
+              <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{overview?.totalTanks || 0}</p>
             )}
             <p className="text-xs text-slate-400">Active Tanks</p>
           </CardContent>

@@ -11,6 +11,7 @@ import { getDb } from "../db";
 import { users, companies, documents } from "../../drizzle/schema";
 import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
+import { initNewUserGamification } from "../services/missionGenerator";
 
 const hazmatClassSchema = z.enum(["2", "3", "4", "5", "6", "7", "8", "9"]);
 
@@ -144,6 +145,7 @@ export const registrationRouter = router({
 
       const userId = userResult[0]?.id;
       await storeComplianceIds(db, Number(userId), input.complianceIds);
+      initNewUserGamification(Number(userId)).catch(() => {});
 
       return {
         success: true,
@@ -238,6 +240,7 @@ export const registrationRouter = router({
       }).$returningId();
 
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
 
       return {
         success: true,
@@ -314,6 +317,7 @@ export const registrationRouter = router({
       }).$returningId();
 
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
 
       return {
         success: true,
@@ -381,6 +385,7 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
       return { success: true, userId: userResult[0]?.id, companyId: companyResult[0]?.id, verificationRequired: true };
     }),
 
@@ -419,6 +424,7 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 
@@ -459,6 +465,7 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 
@@ -511,6 +518,7 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
       return { success: true, userId: userResult[0]?.id, companyId: companyResult[0]?.id, verificationRequired: true };
     }),
 
@@ -548,6 +556,7 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 
@@ -586,6 +595,7 @@ export const registrationRouter = router({
         isActive: true,
       }).$returningId();
       await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
+      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
       return { success: true, userId: userResult[0]?.id, verificationRequired: true };
     }),
 

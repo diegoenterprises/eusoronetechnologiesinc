@@ -78,7 +78,7 @@ export default function CommissionTracking() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.paid?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Paid</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.paid?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Paid</p></div>
             </div>
           </CardContent>
         </Card>
@@ -109,7 +109,7 @@ export default function CommissionTracking() {
       </div>
 
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-        <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-green-400" />Commission History</CardTitle></CardHeader>
+        <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Commission History</CardTitle></CardHeader>
         <CardContent className="p-0">
           {commissionsQuery.isLoading ? (
             <div className="p-4 space-y-3">{[1, 2, 3, 4].map((i: any) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
@@ -135,7 +135,7 @@ export default function CommissionTracking() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-green-400">${commission.amount?.toLocaleString()}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${commission.amount?.toLocaleString()}</p>
                     <p className="text-xs text-slate-500">{commission.marginPercent}% margin</p>
                   </div>
                 </div>

@@ -198,7 +198,7 @@ export default function CarrierBidSubmission() {
                 i === step
                   ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg"
                   : i < step
-                    ? isLight ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    ? isLight ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-emerald-500/15 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border border-emerald-500/30"
                     : isLight ? "bg-slate-100 text-slate-400 border border-slate-200" : "bg-slate-800 text-slate-500 border border-slate-700/50"
               )}
             >
@@ -273,7 +273,7 @@ export default function CarrierBidSubmission() {
                     <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center mb-2",
                       stat.color === "blue" ? "bg-blue-500/15 text-blue-500" :
                       stat.color === "purple" ? "bg-purple-500/15 text-purple-500" :
-                      stat.color === "green" ? "bg-emerald-500/15 text-emerald-500" : "bg-cyan-500/15 text-cyan-500"
+                      stat.color === "green" ? "bg-emerald-500/15 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "bg-cyan-500/15 text-cyan-500"
                     )}>
                       {stat.icon}
                     </div>
@@ -332,7 +332,7 @@ export default function CarrierBidSubmission() {
                     />
                   </div>
                   {distance > 0 && bidAmount && (
-                    <p className="text-sm text-slate-500 mt-2">= <span className="text-emerald-500 font-bold">${ratePerMile}/mi</span> over {distance} miles</p>
+                    <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${ratePerMile}/mi</span> over {distance} miles</p>
                   )}
                 </div>
               ) : (
@@ -353,7 +353,7 @@ export default function CarrierBidSubmission() {
                     />
                   </div>
                   {distance > 0 && ratePerMileInput && (
-                    <p className="text-sm text-slate-500 mt-2">= <span className="text-emerald-500 font-bold">${Number(bidAmount).toLocaleString()} total</span> for {distance} miles</p>
+                    <p className="text-sm text-slate-500 mt-2">= <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${Number(bidAmount).toLocaleString()} total</span> for {distance} miles</p>
                   )}
                 </div>
               )}
@@ -364,7 +364,7 @@ export default function CarrierBidSubmission() {
                   <div className="grid grid-cols-3 gap-4 text-center">
                     <div><p className="text-[10px] text-slate-400 uppercase">Your Bid</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>${Number(bidAmount).toLocaleString()}</p></div>
                     <div><p className="text-[10px] text-slate-400 uppercase">Distance</p><p className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>{distance} mi</p></div>
-                    <div><p className="text-[10px] text-slate-400 uppercase">Rate/Mile</p><p className="text-xl font-bold text-emerald-500">${ratePerMile}</p></div>
+                    <div><p className="text-[10px] text-slate-400 uppercase">Rate/Mile</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${ratePerMile}</p></div>
                   </div>
                 </div>
               )}
@@ -405,7 +405,7 @@ export default function CarrierBidSubmission() {
                     {["Below Market", "Sweet Spot", "Premium"].map((label) => (
                       <span key={label} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
                         rateIntel.ratingLabel === label
-                          ? label === "Sweet Spot" ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          ? label === "Sweet Spot" ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"
                             : "border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
                           : isLight ? "border-slate-200 bg-slate-50 text-slate-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500"
                       )}>
@@ -420,7 +420,7 @@ export default function CarrierBidSubmission() {
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div><p className="text-[10px] text-slate-400">Market Low</p><p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-300")}>${rateIntel.marketLow}/mi</p></div>
-                      <div><p className="text-[10px] text-slate-400">Market Avg</p><p className="text-xs font-bold text-emerald-500">${rateIntel.marketRPM}/mi</p></div>
+                      <div><p className="text-[10px] text-slate-400">Market Avg</p><p className="text-xs font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${rateIntel.marketRPM}/mi</p></div>
                       <div><p className="text-[10px] text-slate-400">Market High</p><p className={cn("text-xs font-bold", isLight ? "text-slate-700" : "text-slate-300")}>${rateIntel.marketHigh}/mi</p></div>
                     </div>
                     <p className="text-[10px] text-slate-400 mt-2 text-center">Suggested total: <span className="text-purple-500 font-bold">${rateIntel.marketTotal.toLocaleString()}</span> for {distance} mi</p>
@@ -568,7 +568,7 @@ export default function CarrierBidSubmission() {
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase">Rate/Mile</p>
-                    <p className="text-2xl font-bold text-emerald-500">${ratePerMile}</p>
+                    <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${ratePerMile}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-slate-400 uppercase">Distance</p>

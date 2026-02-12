@@ -69,7 +69,7 @@ export default function ReportingDashboard() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
-              <div>{isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.revenue?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Revenue</p></div>
+              <div>{isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.revenue?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Revenue</p></div>
             </div>
           </CardContent>
         </Card>

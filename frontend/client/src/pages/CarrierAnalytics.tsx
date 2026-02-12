@@ -204,7 +204,7 @@ export default function CarrierAnalyticsPage() {
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-slate-400">Cancellation Rate</span>
-                  <span className="font-medium text-green-400">{analytics.performance.cancellationRate}%</span>
+                  <span className="font-medium bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{analytics.performance.cancellationRate}%</span>
                 </div>
                 <div className="w-full bg-gray-800 rounded-full h-2">
                   <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style={{ width: "97.9%" }}></div>

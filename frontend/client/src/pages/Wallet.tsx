@@ -184,7 +184,7 @@ export default function Wallet() {
           <div className="mb-6">
             <p className={`text-sm mb-1 ${isLight ? 'text-slate-500' : 'text-white/60'}`}>Available Balance</p>
             {balanceQuery.isLoading ? <Skeleton className={`h-12 w-48 rounded-2xl ${isLight ? 'bg-slate-200' : 'bg-white/20'}`} /> : (
-              <p className={`text-4xl md:text-5xl font-bold tracking-tight ${isLight ? 'text-emerald-500' : 'text-white'}`}>
+              <p className={`text-4xl md:text-5xl font-bold tracking-tight ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent' : 'text-white'}`}>
                 {showBalance ? `$${(balance?.available || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}` : '••••••'}
               </p>
             )}
@@ -238,7 +238,7 @@ export default function Wallet() {
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Total Received", value: balance?.totalReceived || 0, icon: <ArrowDownLeft className="w-5 h-5" />, color: "text-green-400", bg: "bg-green-500/20" },
+              { label: "Total Received", value: balance?.totalReceived || 0, icon: <ArrowDownLeft className="w-5 h-5" />, color: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent", bg: "bg-purple-500/20" },
               { label: "Total Sent", value: balance?.totalSpent || 0, icon: <ArrowUpRight className="w-5 h-5" />, color: "text-red-400", bg: "bg-red-500/20" },
               { label: "Active Cards", value: cards.length || 0, icon: <CreditCard className="w-5 h-5" />, color: "text-purple-400", bg: "bg-purple-500/20", isCurrency: false },
               { label: "Bank Accounts", value: bankAccounts.length || 0, icon: <Landmark className="w-5 h-5" />, color: "text-cyan-400", bg: "bg-cyan-500/20", isCurrency: false },
@@ -313,7 +313,7 @@ export default function Wallet() {
                           <p className={`text-xs ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>{t.date}</p>
                         </div>
                       </div>
-                      <p className={cn("font-bold", t.type === 'credit' ? 'text-green-400' : 'text-red-400')}>
+                      <p className={cn("font-bold", t.type === 'credit' ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent' : 'text-red-400')}>
                         {t.type === 'credit' ? '+' : '-'}${Math.abs(t.amount).toLocaleString()}
                       </p>
                     </div>

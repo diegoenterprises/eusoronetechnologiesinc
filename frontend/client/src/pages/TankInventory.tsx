@@ -106,7 +106,7 @@ export default function TankInventory() {
               </div>
               <div>
                 {statsQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-green-400">{stats?.totalVolume?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{stats?.totalVolume?.toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Total BBL</p>
               </div>

@@ -177,7 +177,7 @@ export default function DriverDetails() {
                 <p className="text-xs text-slate-400">Loads Completed</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-700/30 text-center">
-                <p className="text-2xl font-bold text-green-400">{driver.onTimeRate || 0}%</p>
+                <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{driver.onTimeRate || 0}%</p>
                 <p className="text-xs text-slate-400">On-Time Rate</p>
               </div>
               <div className="p-4 rounded-xl bg-slate-700/30 text-center">
@@ -228,7 +228,7 @@ export default function DriverDetails() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-emerald-400 font-bold">${load.rate?.toLocaleString()}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${load.rate?.toLocaleString()}</p>
                         <p className="text-xs text-slate-500">{load.date}</p>
                       </div>
                     </div>

@@ -127,11 +127,11 @@ export default function EscortJobs() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${(summary?.weeklyEarnings || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.weeklyEarnings || 0).toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">This Week</p>
               </div>
@@ -205,7 +205,7 @@ export default function EscortJobs() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-right">
-                            <p className="text-emerald-400 font-bold text-lg">${(job.rate || 0).toLocaleString()}</p>
+                            <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">${(job.rate || 0).toLocaleString()}</p>
                             <p className="text-xs text-slate-500">${job.ratePerMile?.toFixed(2)}/mi</p>
                           </div>
                           {job.status === "available" ? (

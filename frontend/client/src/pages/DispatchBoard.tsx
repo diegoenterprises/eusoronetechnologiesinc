@@ -108,7 +108,7 @@ export default function DispatchBoard() {
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><User className="w-6 h-6 text-green-400" /></div>
               <div>
-                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.total || 0}</p>}
+                {boardQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{stats?.total || 0}</p>}
                 <p className="text-xs text-slate-400">Total</p>
               </div>
             </div>

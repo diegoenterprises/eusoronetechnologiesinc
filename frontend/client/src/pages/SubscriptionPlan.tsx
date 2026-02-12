@@ -156,7 +156,7 @@ export default function SubscriptionPlan() {
                 <div key={plan.id} className={cn("p-6 rounded-xl border transition-all", plan.id === subscription?.planId ? "bg-cyan-500/10 border-cyan-500/30" : "bg-slate-700/30 border-slate-600/50 hover:border-slate-500/50")}>
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-white text-xl font-bold">{plan.name}</p>
-                    {plan.popular && <Badge className="bg-emerald-500/20 text-emerald-400 border-0">Popular</Badge>}
+                    {plan.popular && <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0">Popular</Badge>}
                   </div>
                   <p className="text-3xl font-bold text-white mb-1">${plan.price}<span className="text-sm text-slate-400">/mo</span></p>
                   <p className="text-slate-400 text-sm mb-4">{plan.description}</p>

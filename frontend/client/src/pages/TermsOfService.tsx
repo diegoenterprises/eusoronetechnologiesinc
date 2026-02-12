@@ -150,7 +150,7 @@ const TERMS_SECTIONS: Section[] = [
   {
     id: "fees-payments",
     title: "5. Fees, Payments & Financial Terms",
-    icon: <DollarSign className="w-5 h-5 text-emerald-400" />,
+    icon: <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />,
     content: (
       <div className="space-y-3">
         <p><strong className="text-white">5.1 Platform Fees.</strong> {COMPANY_NAME} charges fees for use of the Platform, which may include transaction fees, subscription fees, listing fees, premium feature fees, factoring fees, and/or commissions on loads booked through the Platform. Current fee schedules are available in the Platform and may be updated from time to time with 30 days' notice.</p>

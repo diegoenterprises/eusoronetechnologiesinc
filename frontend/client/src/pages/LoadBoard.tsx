@@ -95,7 +95,7 @@ export default function LoadBoard() {
       bidding: { label: "Bidding", bg: "bg-orange-500/20", text: "text-orange-500" },
       assigned: { label: "Assigned", bg: "bg-blue-500/20", text: "text-blue-500" },
       in_transit: { label: "In Transit", bg: "bg-green-500/20", text: "text-green-600" },
-      delivered: { label: "Delivered", bg: "bg-emerald-500/20", text: "text-emerald-500" },
+      delivered: { label: "Delivered", bg: "bg-emerald-500/20", text: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" },
     };
     return map[status] || { label: status, bg: "bg-slate-500/20", text: "text-slate-400" };
   };

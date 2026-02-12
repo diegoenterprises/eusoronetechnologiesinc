@@ -162,7 +162,7 @@ export default function InsuranceCertificates() {
                       <p className="text-sm text-slate-400">Policy: {cert.policyNumber}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-emerald-400 font-bold">${cert.coverageAmount?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${cert.coverageAmount?.toLocaleString()}</p>
                       <p className="text-xs text-slate-500">Coverage</p>
                     </div>
                   </div>

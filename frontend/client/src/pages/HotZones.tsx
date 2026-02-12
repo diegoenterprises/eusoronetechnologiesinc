@@ -400,14 +400,14 @@ export default function HotZones() {
           <p className="text-slate-400 text-sm mt-1">
             {roleContext?.description || "Geographic demand intelligence & surge pricing heatmap"}
             {platformDataAvailable && (
-              <span className="ml-2 text-emerald-400 text-[10px] font-bold">● PLATFORM DATA ACTIVE</span>
+              <span className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-[10px] font-bold">● PLATFORM DATA ACTIVE</span>
             )}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[10px] font-bold text-emerald-400">LIVE FEED</span>
+            <span className="text-[10px] font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">LIVE FEED</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => feedQuery.refetch()} disabled={feedQuery.isRefetching}
             className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
@@ -423,7 +423,7 @@ export default function HotZones() {
           {[
             { label: "Active Hot Zones", value: zones.length, icon: Flame, color: "text-orange-400", bg: "from-orange-500/10 to-red-500/10" },
             { label: "Critical Zones", value: pulse.criticalZones, icon: AlertTriangle, color: "text-red-400", bg: "from-red-500/10 to-rose-500/10" },
-            { label: roleContext?.secondaryMetric || "Avg Rate/mi", value: `$${pulse.avgRate}`, icon: TrendingUp, color: "text-emerald-400", bg: "from-emerald-500/10 to-green-500/10" },
+            { label: roleContext?.secondaryMetric || "Avg Rate/mi", value: `$${pulse.avgRate}`, icon: TrendingUp, color: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent", bg: "from-emerald-500/10 to-green-500/10" },
             { label: roleContext?.primaryMetric || "Open Loads", value: pulse.totalLoads.toLocaleString(), icon: Truck, color: "text-blue-400", bg: "from-blue-500/10 to-cyan-500/10" },
             { label: roleContext?.perspective === "carrier_availability" ? "Available Trucks" : roleContext?.perspective === "spread_opportunity" ? "Load:Truck Spread" : "Demand Score", value: roleContext?.perspective === "carrier_availability" ? pulse.totalTrucks.toLocaleString() : roleContext?.perspective === "spread_opportunity" ? `${(pulse.totalLoads / Math.max(pulse.totalTrucks, 1)).toFixed(1)}x` : `${Math.round((pulse.totalLoads / Math.max(pulse.totalTrucks, 1)) * 33)}`, icon: Navigation, color: "text-purple-400", bg: "from-purple-500/10 to-violet-500/10" },
           ].map((stat) => (
@@ -601,7 +601,7 @@ export default function HotZones() {
                   <div className="grid grid-cols-3 gap-2 mt-3">
                     <div>
                       <p className="text-[10px] text-slate-500">Surge</p>
-                      <p className="text-sm font-bold text-emerald-400">{zone.surgeMultiplier}x</p>
+                      <p className="text-sm font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{zone.surgeMultiplier}x</p>
                     </div>
                     <div>
                       <p className="text-[10px] text-slate-500">{roleContext?.secondaryMetric || 'Rate/mi'}</p>
@@ -649,7 +649,7 @@ export default function HotZones() {
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
                     <p className="text-[10px] text-slate-500 uppercase">Surge</p>
-                    <p className="text-2xl font-bold text-emerald-400">{detail.zone.surgeMultiplier}x</p>
+                    <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{detail.zone.surgeMultiplier}x</p>
                   </div>
                   <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/20">
                     <p className="text-[10px] text-slate-500 uppercase">Avg Rate</p>
@@ -716,7 +716,7 @@ export default function HotZones() {
                           <p className="text-[10px] text-slate-500">{load.miles} mi · {load.equipment.replace("_", " ")}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs font-bold text-emerald-400">${load.rate}/mi</p>
+                          <p className="text-xs font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${load.rate}/mi</p>
                           {load.urgency === "HOT" && (
                             <Badge className="text-[9px] px-1 py-0 bg-red-500/20 text-red-400 border-red-500/30">HOT</Badge>
                           )}

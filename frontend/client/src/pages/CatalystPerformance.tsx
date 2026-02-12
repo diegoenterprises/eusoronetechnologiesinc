@@ -45,7 +45,7 @@ export default function CatalystPerformance() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><CheckCircle className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-green-400">{stats?.successRate}%</p>}<p className="text-xs text-slate-400">Success</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{stats?.successRate}%</p>}<p className="text-xs text-slate-400">Success</p></div>
             </div>
           </CardContent>
         </Card>
@@ -68,8 +68,8 @@ export default function CatalystPerformance() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-emerald-500/20"><DollarSign className="w-6 h-6 text-emerald-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-emerald-400">${stats?.totalEarnings?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Earnings</p></div>
+              <div className="p-3 rounded-full bg-emerald-500/20"><DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.totalEarnings?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Earnings</p></div>
             </div>
           </CardContent>
         </Card>
@@ -143,7 +143,7 @@ export default function CatalystPerformance() {
                       <Star className="w-4 h-4 text-yellow-400" />
                       <span className="text-white font-bold">{item.rating}</span>
                     </div>
-                    <p className="text-xs text-green-400">${item.earnings?.toLocaleString()}</p>
+                    <p className="text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${item.earnings?.toLocaleString()}</p>
                   </div>
                 </div>
               ))}

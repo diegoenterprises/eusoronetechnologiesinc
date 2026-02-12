@@ -164,7 +164,7 @@ export default function MarketPricing() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent flex items-center gap-3">
-            <DollarSign className="w-8 h-8 text-emerald-500" />
+            <DollarSign className="w-8 h-8 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
             Market Pricing
           </h1>
           <p className="text-slate-400 text-sm mt-1">Commodity & freight rate intelligence — real-time market data</p>
@@ -190,7 +190,7 @@ export default function MarketPricing() {
       {/* Data Source Indicator */}
       <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border ${intel?.isLive ? "bg-emerald-500/5 border-emerald-500/20" : "bg-amber-500/5 border-amber-500/20"}`}>
         <div className={`w-2 h-2 rounded-full ${intel?.isLive ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
-        <span className={`text-[10px] font-bold ${intel?.isLive ? "text-emerald-400" : "text-amber-400"}`}>
+        <span className={`text-[10px] font-bold ${intel?.isLive ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-amber-400"}`}>
           {intel?.isLive ? "LIVE" : "SEED"}
         </span>
         <span className="text-[10px] text-slate-500 truncate">{intel?.source || "Loading..."}</span>
@@ -214,7 +214,7 @@ export default function MarketPricing() {
             <div className="h-full bg-red-500 rounded-r-full transition-all" style={{ width: `${(breadth.declining / (breadth.advancing + breadth.declining + breadth.unchanged)) * 100}%` }} />
           </div>
           <div className="flex items-center gap-3 text-xs">
-            <span className="text-emerald-400 font-bold flex items-center gap-1"><ArrowUp className="w-3 h-3" />{breadth.advancing}</span>
+            <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold flex items-center gap-1"><ArrowUp className="w-3 h-3" />{breadth.advancing}</span>
             <span className="text-slate-400 font-bold flex items-center gap-1"><Minus className="w-3 h-3" />{breadth.unchanged}</span>
             <span className="text-red-400 font-bold flex items-center gap-1"><ArrowDown className="w-3 h-3" />{breadth.declining}</span>
           </div>
@@ -276,7 +276,7 @@ export default function MarketPricing() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold text-white">{formatPrice(c.price)}</span>
-                    <span className={`text-xs font-bold ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+                    <span className={`text-xs font-bold ${isUp ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400"}`}>
                       {isUp ? "+" : ""}{Number(c.changePercent || 0).toFixed(2)}%
                     </span>
                   </div>
@@ -343,7 +343,7 @@ export default function MarketPricing() {
                     <td className="px-4 py-3 text-xs font-bold text-cyan-400">{c.symbol}</td>
                     <td className="px-4 py-3 text-xs font-semibold text-white">{c.name}</td>
                     <td className="px-4 py-3 text-sm font-bold text-white text-right">{formatPrice(c.price)} <span className="text-[10px] text-slate-500">{c.unit}</span></td>
-                    <td className={`px-4 py-3 text-sm font-bold text-right ${isUp ? "text-emerald-400" : "text-red-400"}`}>
+                    <td className={`px-4 py-3 text-sm font-bold text-right ${isUp ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400"}`}>
                       {isUp ? "+" : ""}{Number(c.changePercent || 0).toFixed(2)}%
                     </td>
                     <td className="px-4 py-3 text-center"><DirectionBadge dir={c.intraday} /></td>
@@ -368,7 +368,7 @@ export default function MarketPricing() {
                 <CardTitle className="text-white text-xl flex items-center gap-3">
                   {selected.name}
                   <Badge className="text-[10px] bg-slate-700 text-cyan-400 border-slate-600">{selected.symbol}</Badge>
-                  <Badge className={`text-[10px] border ${selected.changePercent > 0 ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
+                  <Badge className={`text-[10px] border ${selected.changePercent > 0 ? "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-emerald-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}`}>
                     {selected.changePercent > 0 ? "+" : ""}{Number(selected.changePercent || 0).toFixed(2)}%
                   </Badge>
                 </CardTitle>
@@ -376,7 +376,7 @@ export default function MarketPricing() {
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-white">{formatPrice(selected.price)}</p>
-                <p className={`text-sm font-bold ${selected.change > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                <p className={`text-sm font-bold ${selected.change > 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400"}`}>
                   {selected.change > 0 ? "+" : ""}{Number(selected.change || 0).toFixed(selected.price > 100 ? 2 : 4)}
                 </p>
               </div>
@@ -386,7 +386,7 @@ export default function MarketPricing() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
               {[
                 { label: "Open", value: formatPrice(selected.open) },
-                { label: "High", value: formatPrice(selected.high), color: "text-emerald-400" },
+                { label: "High", value: formatPrice(selected.high), color: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" },
                 { label: "Low", value: formatPrice(selected.low), color: "text-red-400" },
                 { label: "Prev Close", value: formatPrice(selected.previousClose) },
                 { label: "Intraday", badge: selected.intraday },
@@ -413,7 +413,7 @@ export default function MarketPricing() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-2xl">
           <CardHeader className="pb-2">
             <CardTitle className="text-white text-sm flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-400" />
+              <TrendingUp className="w-4 h-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               Top Gainers
             </CardTitle>
           </CardHeader>
@@ -427,7 +427,7 @@ export default function MarketPricing() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-white">{formatPrice(c.price)}</span>
-                  <span className="text-xs font-bold text-emerald-400 w-16 text-right">+{Number(c.changePercent || 0).toFixed(2)}%</span>
+                  <span className="text-xs font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent w-16 text-right">+{Number(c.changePercent || 0).toFixed(2)}%</span>
                 </div>
               </div>
             ))}

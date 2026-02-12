@@ -102,7 +102,7 @@ export default function FeedbackSurveys() {
               </div>
               <div>
                 {completedQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{(completedQuery.data as any)?.total || 0}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{(completedQuery.data as any)?.total || 0}</p>
                 )}
                 <p className="text-xs text-slate-400">Completed</p>
               </div>

@@ -57,7 +57,7 @@ export default function FuelPrices() {
             {geo.status === "loading" ? (
               <span className="flex items-center gap-1.5 text-xs text-yellow-400"><Loader2 className="w-3 h-3 animate-spin" />Getting your location...</span>
             ) : geo.status === "tracking" ? (
-              <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <span className="flex items-center gap-1.5 text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
                 <LocateFixed className="w-3 h-3" />
                 Live tracking{geo.accuracy ? ` · ±${Math.round(geo.accuracy)}m accuracy` : ""}
               </span>
@@ -89,11 +89,11 @@ export default function FuelPrices() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {averagesQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${averages?.national?.toFixed(3)}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${averages?.national?.toFixed(3)}</p>
                 )}
                 <p className="text-xs text-slate-400">National Avg</p>
               </div>
@@ -109,7 +109,7 @@ export default function FuelPrices() {
               </div>
               <div>
                 {averagesQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-green-400">${averages?.lowest?.toFixed(3)}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${averages?.lowest?.toFixed(3)}</p>
                 )}
                 <p className="text-xs text-slate-400">Lowest Price</p>
               </div>
@@ -185,7 +185,7 @@ export default function FuelPrices() {
                       <div>
                         <div className="flex items-center gap-2 mb-1">
                           <p className="text-white font-medium">{station.name}</p>
-                          {idx === 0 && <Badge className="bg-green-500/20 text-green-400 border-0">Best Price</Badge>}
+                          {idx === 0 && <Badge className="bg-green-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0">Best Price</Badge>}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-400">
                           <MapPin className="w-3 h-3" />
@@ -194,7 +194,7 @@ export default function FuelPrices() {
                         <p className="text-xs text-slate-500 mt-1">{station.distance} miles away</p>
                       </div>
                       <div className="text-right">
-                        <p className={cn("text-2xl font-bold", idx === 0 ? "text-green-400" : "text-white")}>${station.price?.toFixed(3)}</p>
+                        <p className={cn("text-2xl font-bold", idx === 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-white")}>${station.price?.toFixed(3)}</p>
                         <p className="text-xs text-slate-500">per gallon</p>
                       </div>
                     </div>
@@ -224,7 +224,7 @@ export default function FuelPrices() {
                         {region.change > 0 ? "+" : ""}{region.change?.toFixed(1)}% this week
                       </div>
                     </div>
-                    <p className="text-xl font-bold text-emerald-400">${region.avgPrice?.toFixed(3)}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${region.avgPrice?.toFixed(3)}</p>
                   </div>
                 ))}
               </div>

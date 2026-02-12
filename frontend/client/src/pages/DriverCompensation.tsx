@@ -52,7 +52,7 @@ export default function DriverCompensation() {
                 <p className="text-4xl font-bold text-white">${(earningsQuery.data as any)?.total?.toLocaleString()}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {(earningsQuery.data as any)?.trend === "up" ? (
-                    <Badge className="bg-green-500/20 text-green-400 border-0"><TrendingUp className="w-3 h-3 mr-1" />+{(earningsQuery.data as any)?.trendPercent}%</Badge>
+                    <Badge className="bg-green-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0"><TrendingUp className="w-3 h-3 mr-1" />+{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   ) : (
                     <Badge className="bg-red-500/20 text-red-400 border-0">{(earningsQuery.data as any)?.trendPercent}%</Badge>
                   )}
@@ -123,7 +123,7 @@ export default function DriverCompensation() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-green-400">${trip.earnings?.toLocaleString()}</p>
+                    <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${trip.earnings?.toLocaleString()}</p>
                     <p className="text-xs text-slate-500">${trip.perMile}/mi</p>
                   </div>
                 </div>

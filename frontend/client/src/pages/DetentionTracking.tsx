@@ -71,7 +71,7 @@ export default function DetentionTracking() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-green-500/20"><DollarSign className="w-6 h-6 text-green-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold text-green-400">${stats?.collected?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Collected</p></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.collected?.toLocaleString()}</p>}<p className="text-xs text-slate-400">Collected</p></div>
             </div>
           </CardContent>
         </Card>
@@ -129,7 +129,7 @@ export default function DetentionTracking() {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-xl font-bold text-cyan-400">{detention.hours}h</p>
-                      <p className="text-green-400 font-medium">${detention.amount}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${detention.amount}</p>
                     </div>
                     {detention.status === "pending" && (
                       <Button size="sm" className="bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-lg" onClick={() => claimMutation.mutate({ detentionId: detention.id })}>

@@ -46,7 +46,7 @@ export default function CatalystFleetMap() {
       case "unloading":
         return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">Unloading</Badge>;
       case "available":
-        return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Available</Badge>;
+        return <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-emerald-500/30">Available</Badge>;
       case "off_duty":
         return <Badge className="bg-slate-500/20 text-slate-400 border-slate-500/30">Off Duty</Badge>;
       default:

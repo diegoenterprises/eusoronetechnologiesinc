@@ -256,6 +256,98 @@ export async function fetchFMCSACarrier(dotNumber: string): Promise<FMCSACarrier
   }
 }
 
+// ===== Yahoo Finance API (Free, no key required) =====
+// Real-time commodity futures prices via v7 quote endpoint
+
+export interface YahooQuote {
+  symbol: string;
+  shortName: string;
+  regularMarketPrice: number;
+  regularMarketChange: number;
+  regularMarketChangePercent: number;
+  regularMarketPreviousClose: number;
+  regularMarketOpen: number;
+  regularMarketDayHigh: number;
+  regularMarketDayLow: number;
+  regularMarketVolume: number;
+}
+
+// Commodity futures symbols on Yahoo Finance
+export const YAHOO_COMMODITY_SYMBOLS: Record<string, string> = {
+  "CL=F": "CL",     // WTI Crude Oil
+  "BZ=F": "BZ",     // Brent Crude
+  "NG=F": "NG",     // Natural Gas
+  "RB=F": "RB",     // RBOB Gasoline
+  "HO=F": "HO",     // Heating Oil
+  "GC=F": "GC",     // Gold
+  "SI=F": "SI",     // Silver
+  "HG=F": "HG",     // Copper
+  "ZC=F": "ZC",     // Corn
+  "ZS=F": "ZS",     // Soybeans
+  "ZW=F": "ZW",     // Wheat
+  "CT=F": "CT",     // Cotton
+  "SB=F": "SB",     // Sugar
+  "KC=F": "KC",     // Coffee
+  "LE=F": "LE",     // Live Cattle
+  "LBS=F": "LB",    // Lumber
+  "ALI=F": "ALI",   // Aluminum
+  "PA=F": "NI",     // Palladium (proxy for Nickel)
+};
+
+export async function fetchYahooFinanceQuotes(symbols: string[]): Promise<Map<string, YahooQuote>> {
+  const cacheKey = `yahoo_${symbols.sort().join(",")}`;
+  const cached = getCached<Map<string, YahooQuote>>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const symbolStr = symbols.join(",");
+    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,regularMarketOpen,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,shortName`;
+
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; EusoTrip/1.0)",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      console.error(`Yahoo Finance API error: ${res.status}`);
+      return new Map();
+    }
+
+    const json = await res.json();
+    const quotes = new Map<string, YahooQuote>();
+
+    for (const q of json.quoteResponse?.result || []) {
+      const mappedSymbol = YAHOO_COMMODITY_SYMBOLS[q.symbol] || q.symbol;
+      quotes.set(mappedSymbol, {
+        symbol: mappedSymbol,
+        shortName: q.shortName || q.symbol,
+        regularMarketPrice: q.regularMarketPrice || 0,
+        regularMarketChange: q.regularMarketChange || 0,
+        regularMarketChangePercent: q.regularMarketChangePercent || 0,
+        regularMarketPreviousClose: q.regularMarketPreviousClose || 0,
+        regularMarketOpen: q.regularMarketOpen || 0,
+        regularMarketDayHigh: q.regularMarketDayHigh || 0,
+        regularMarketDayLow: q.regularMarketDayLow || 0,
+        regularMarketVolume: q.regularMarketVolume || 0,
+      });
+    }
+
+    // Cache for 5 minutes (Yahoo Finance updates in real-time during market hours)
+    setCache(cacheKey, quotes, 5 * 60 * 1000);
+    return quotes;
+  } catch (err) {
+    console.error("Yahoo Finance fetch failed:", err);
+    return new Map();
+  }
+}
+
+// Convenience: fetch all tracked commodity futures
+export async function fetchAllCommodityQuotes(): Promise<Map<string, YahooQuote>> {
+  return fetchYahooFinanceQuotes(Object.keys(YAHOO_COMMODITY_SYMBOLS));
+}
+
 // ===== Aggregated Market Intelligence =====
 // Combines all sources into a unified market snapshot
 
@@ -267,6 +359,7 @@ export interface MarketSnapshot {
   truckingPPI: { value: number; change: number; history: FREDObservation[] } | null;
   ltlPPI: { value: number; change: number } | null;
   freightTSI: { value: number; change: number } | null;
+  yahooQuotes: Record<string, { price: number; change: number; changePercent: number; prevClose: number; open: number; high: number; low: number; volume: number }>;
   source: string;
   fetchedAt: string;
   isLiveData: boolean;
@@ -282,7 +375,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
   const cached = getCached<MarketSnapshot>(cacheKey);
   if (cached) return cached;
 
-  // Fetch all sources in parallel
+  // Fetch all sources in parallel (including Yahoo Finance — no key required)
   const [
     crudeRaw,
     natGasRaw,
@@ -293,6 +386,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     dieselMidwest,
     dieselGulf,
     dieselWest,
+    yahooRaw,
   ] = await Promise.all([
     fetchFRED("DCOILWTICO", 5),
     fetchFRED("DHHNGSP", 5),
@@ -303,9 +397,31 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     fetchEIADiesel("R20", 1),
     fetchEIADiesel("R30", 1),
     fetchEIADiesel("R50", 1),
+    fetchAllCommodityQuotes(),
   ]);
 
-  const hasAnyData = crudeRaw.length > 0 || dieselNational.length > 0 || tlPPIRaw.length > 0;
+  const hasGovData = crudeRaw.length > 0 || dieselNational.length > 0 || tlPPIRaw.length > 0;
+  const hasYahoo = yahooRaw.size > 0;
+  const hasAnyData = hasGovData || hasYahoo;
+
+  // Build yahooQuotes record for the snapshot
+  const yahooQuotes: MarketSnapshot["yahooQuotes"] = {};
+  for (const [sym, q] of Array.from(yahooRaw.entries())) {
+    yahooQuotes[sym] = {
+      price: q.regularMarketPrice,
+      change: q.regularMarketChange,
+      changePercent: q.regularMarketChangePercent,
+      prevClose: q.regularMarketPreviousClose,
+      open: q.regularMarketOpen,
+      high: q.regularMarketDayHigh,
+      low: q.regularMarketDayLow,
+      volume: q.regularMarketVolume,
+    };
+  }
+
+  // Prefer FRED for crude/natgas, fallback to Yahoo Finance
+  const yCL = yahooRaw.get("CL");
+  const yNG = yahooRaw.get("NG");
 
   const snapshot: MarketSnapshot = {
     dieselNational: dieselNational.length >= 1
@@ -327,19 +443,23 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
           change: crudeRaw.length >= 2 ? calcPctChange(crudeRaw[0].value, crudeRaw[1].value) : 0,
           date: crudeRaw[0].date,
         }
-      : null,
+      : yCL
+        ? { price: yCL.regularMarketPrice, change: yCL.regularMarketChangePercent, date: new Date().toISOString().split("T")[0] }
+        : null,
     naturalGas: natGasRaw.length >= 1
       ? {
           price: natGasRaw[0].value,
           change: natGasRaw.length >= 2 ? calcPctChange(natGasRaw[0].value, natGasRaw[1].value) : 0,
           date: natGasRaw[0].date,
         }
-      : null,
+      : yNG
+        ? { price: yNG.regularMarketPrice, change: yNG.regularMarketChangePercent, date: new Date().toISOString().split("T")[0] }
+        : null,
     truckingPPI: tlPPIRaw.length >= 1
       ? {
           value: tlPPIRaw[0].value,
           change: tlPPIRaw.length >= 2 ? calcPctChange(tlPPIRaw[0].value, tlPPIRaw[1].value) : 0,
-          history: tlPPIRaw.slice(0, 24).reverse(), // last 24 observations for chart
+          history: tlPPIRaw.slice(0, 24).reverse(),
         }
       : null,
     ltlPPI: ltlPPIRaw.length >= 1
@@ -354,7 +474,14 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
           change: freightTSIRaw.length >= 2 ? calcPctChange(freightTSIRaw[0].value, freightTSIRaw[1].value) : 0,
         }
       : null,
-    source: hasAnyData ? "FRED + EIA + BLS (Live)" : "EusoTrip Seed Data (Configure API keys for live)",
+    yahooQuotes,
+    source: hasGovData && hasYahoo
+      ? "FRED + EIA + BLS + Yahoo Finance (Live)"
+      : hasYahoo
+        ? "Yahoo Finance (Live) — Configure FRED_API_KEY, EIA_API_KEY for government data"
+        : hasGovData
+          ? "FRED + EIA + BLS (Live)"
+          : "EusoTrip Seed Data (Configure API keys for live)",
     fetchedAt: new Date().toISOString(),
     isLiveData: hasAnyData,
   };

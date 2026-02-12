@@ -217,7 +217,7 @@ export default function Messages() {
 
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
-      DRIVER: "bg-emerald-500/20 text-emerald-400",
+      DRIVER: "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent",
       CARRIER: "bg-blue-500/20 text-blue-400",
       SHIPPER: "bg-purple-500/20 text-purple-400",
       BROKER: "bg-amber-500/20 text-amber-400",
@@ -388,7 +388,7 @@ export default function Messages() {
                       <p className="text-white font-semibold text-sm">{selectedConv?.name || selectedConv?.participantName}</p>
                       <div className="flex items-center gap-2">
                         {selectedConv?.online ? (
-                          <span className="text-emerald-400 text-[11px] font-medium">Online</span>
+                          <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-[11px] font-medium">Online</span>
                         ) : (
                           <span className="text-slate-500 text-[11px]">Offline</span>
                         )}
@@ -398,7 +398,7 @@ export default function Messages() {
                           </Badge>
                         )}
                         {e2eReady && (
-                          <span className="flex items-center gap-0.5 text-[10px] text-emerald-400/80">
+                          <span className="flex items-center gap-0.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/80">
                             <Lock className="w-2.5 h-2.5" /> E2E
                           </span>
                         )}
@@ -406,10 +406,10 @@ export default function Messages() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Button variant="ghost" size="sm" onClick={() => setShowPaymentModal(true)} className="text-slate-400 hover:text-emerald-400 rounded-xl" title="Send / Request Money">
+                    <Button variant="ghost" size="sm" onClick={() => setShowPaymentModal(true)} className="text-slate-400 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent rounded-xl" title="Send / Request Money">
                       <DollarSign className="w-4 h-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={handlePhoneCall} className="text-slate-400 hover:text-emerald-400 rounded-xl">
+                    <Button variant="ghost" size="sm" onClick={handlePhoneCall} className="text-slate-400 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent rounded-xl">
                       <Phone className="w-4 h-4" />
                     </Button>
                   </div>
@@ -494,11 +494,11 @@ export default function Messages() {
                                   message.type === "payment_sent" ? "bg-emerald-500/20" : "bg-amber-500/20"
                                 )}>
                                   {message.type === "payment_sent"
-                                    ? <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                                    ? <ArrowUpRight className="w-4 h-4 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
                                     : <ArrowDownLeft className="w-4 h-4 text-amber-400" />}
                                 </div>
                                 <div>
-                                  <p className={cn("text-xs font-semibold", message.type === "payment_sent" ? "text-emerald-400" : "text-amber-400")}>
+                                  <p className={cn("text-xs font-semibold", message.type === "payment_sent" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-amber-400")}>
                                     {message.type === "payment_sent" ? "Payment Sent" : "Payment Request"}
                                   </p>
                                   <p className="text-[10px] text-slate-500">via Stripe</p>
@@ -519,7 +519,7 @@ export default function Messages() {
                                   )} />
                                   <span className={cn(
                                     "text-[10px] font-medium",
-                                    message.metadata?.status === "completed" ? "text-emerald-400" : "text-amber-400"
+                                    message.metadata?.status === "completed" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-amber-400"
                                   )}>
                                     {message.metadata?.status === "completed" ? "Completed" : "Pending"}
                                   </span>
@@ -570,7 +570,7 @@ export default function Messages() {
               {/* Message Input */}
               <div className="p-4 border-t border-slate-700/50">
                 {e2eReady && (
-                  <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] text-emerald-500/60">
+                  <div className="mb-2 flex items-center justify-center gap-1.5 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent/60">
                     <Lock className="w-2.5 h-2.5" />
                     <span>Messages are end-to-end encrypted. Only you and the recipient can read them.</span>
                   </div>
@@ -624,7 +624,7 @@ export default function Messages() {
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowPaymentModal(true)}
-                    className="rounded-xl h-10 w-10 p-0 text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 flex-shrink-0"
+                    className="rounded-xl h-10 w-10 p-0 text-slate-400 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:bg-emerald-500/10 flex-shrink-0"
                     title="Send or Request Money"
                   >
                     <DollarSign className="w-5 h-5" />

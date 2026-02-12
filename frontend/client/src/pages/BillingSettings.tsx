@@ -143,7 +143,7 @@ export default function BillingSettings() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-400" />
+              <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               Recent Invoices
             </CardTitle>
           </CardHeader>
@@ -164,7 +164,7 @@ export default function BillingSettings() {
                     </div>
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <p className="text-emerald-400 font-medium">${invoice.amount?.toLocaleString()}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${invoice.amount?.toLocaleString()}</p>
                         {invoice.status === "paid" ? (
                           <span className="text-xs text-green-400 flex items-center gap-1"><CheckCircle className="w-3 h-3" />Paid</span>
                         ) : (

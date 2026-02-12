@@ -165,6 +165,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Demand heatmap & surge pricing"
     },
     { 
+      icon: "Truck", 
+      label: "The Haul", 
+      path: "/the-haul", 
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -316,6 +323,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Demand heatmap & surge pricing"
     },
     { 
+      icon: "Truck", 
+      label: "The Haul", 
+      path: "/the-haul", 
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -451,6 +465,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/hot-zones", 
       badge: 0,
       description: "Demand heatmap & surge pricing"
+    },
+    { 
+      icon: "Truck", 
+      label: "The Haul", 
+      path: "/the-haul", 
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
     },
     { 
       icon: "Settings", 
@@ -611,6 +632,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Demand heatmap & surge pricing"
     },
     { 
+      icon: "Truck", 
+      label: "The Haul", 
+      path: "/the-haul", 
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -720,6 +748,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Preferences"
     },
     { 
+      icon: "Truck", 
+      label: "The Haul", 
+      path: "/the-haul", 
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
+    },
+    { 
       icon: "Newspaper", 
       label: "News", 
       path: "/news", 
@@ -820,6 +855,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/settings", 
       badge: 0,
       description: "Preferences"
+    },
+    { 
+      icon: "Truck", 
+      label: "The Haul", 
+      path: "/the-haul", 
+      badge: 0,
+      description: "Digital truck stop — lobby, missions, rewards"
     },
     { 
       icon: "Newspaper", 

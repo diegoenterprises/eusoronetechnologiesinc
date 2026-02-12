@@ -167,7 +167,7 @@ export default function MessagingCenter() {
   };
 
   const getRoleBadgeColor = (role: string) => {
-    if (role === "DRIVER") return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+    if (role === "DRIVER") return "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-emerald-500/30";
     if (role === "CARRIER") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     if (role === "SHIPPER") return "bg-purple-500/20 text-purple-400 border-purple-500/30";
     return "bg-slate-500/20 text-slate-400 border-slate-500/30";
@@ -313,7 +313,7 @@ export default function MessagingCenter() {
                   <p className="text-white font-semibold text-sm">{selectedConv?.name}</p>
                   <div className="flex items-center gap-2">
                     {selectedConv?.online ? (
-                      <span className="text-emerald-400 text-[11px] font-medium">Online</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-[11px] font-medium">Online</span>
                     ) : (
                       <span className="text-slate-500 text-[11px]">Offline</span>
                     )}
@@ -328,7 +328,7 @@ export default function MessagingCenter() {
               </div>
               <div className="flex items-center gap-1">
                 {/* Phone call via mobile network (no Twilio) */}
-                <Button variant="ghost" size="sm" onClick={handlePhoneCall} className="text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl">
+                <Button variant="ghost" size="sm" onClick={handlePhoneCall} className="text-slate-400 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent hover:bg-emerald-500/10 rounded-xl">
                   <Phone className="w-4 h-4" />
                 </Button>
                 <Button variant="ghost" size="sm" className="text-slate-400 hover:text-slate-300 rounded-xl">
@@ -466,7 +466,7 @@ export default function MessagingCenter() {
                 <Button variant="ghost" size="sm" className="text-slate-500 hover:text-slate-300 rounded-xl p-2">
                   <Paperclip className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="sm" className="text-slate-500 hover:text-emerald-400 rounded-xl p-2" onClick={() => setShowPaymentModal(true)}>
+                <Button variant="ghost" size="sm" className="text-slate-500 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent rounded-xl p-2" onClick={() => setShowPaymentModal(true)}>
                   <DollarSign className="w-4 h-4" />
                 </Button>
                 <Input

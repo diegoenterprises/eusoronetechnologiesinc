@@ -67,11 +67,11 @@ export default function FuelManagement() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {summaryQuery.isLoading ? <Skeleton className="h-8 w-20" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${(summary?.totalSpent || 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(summary?.totalSpent || 0).toLocaleString()}</p>
                 )}
                 <p className="text-xs text-slate-400">Spent MTD</p>
               </div>
@@ -128,7 +128,7 @@ export default function FuelManagement() {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-white font-medium">{price.region}</span>
                       <div className="flex items-center gap-2">
-                        <span className="text-emerald-400 font-bold">${price.price.toFixed(2)}</span>
+                        <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${price.price.toFixed(2)}</span>
                         {price.change !== 0 && (
                           <span className={cn("flex items-center text-xs", price.change > 0 ? "text-red-400" : "text-green-400")}>
                             {price.change > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -196,7 +196,7 @@ export default function FuelManagement() {
                       </div>
                       <div className="text-right">
                         <p className="text-white font-bold">{tx.gallons.toFixed(1)} gal</p>
-                        <p className="text-emerald-400 font-medium">${tx.amount.toFixed(2)}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">${tx.amount.toFixed(2)}</p>
                         <p className="text-xs text-slate-500">${tx.pricePerGallon.toFixed(2)}/gal</p>
                       </div>
                     </div>

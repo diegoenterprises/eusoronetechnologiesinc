@@ -105,7 +105,7 @@ export default function NotificationSettings() {
       <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
         <CardHeader className="pb-3">
           <CardTitle className="text-white text-lg flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-emerald-400" />
+            <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
             Financial Notifications
           </CardTitle>
         </CardHeader>
@@ -114,7 +114,7 @@ export default function NotificationSettings() {
             [1, 2].map((i: any) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
           ) : (
             <>
-              <NotificationRow icon={DollarSign} iconColor="text-emerald-400" title="Payment Received" description="When payments are processed" emailKey="paymentEmail" pushKey="paymentPush" />
+              <NotificationRow icon={DollarSign} iconColor="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" title="Payment Received" description="When payments are processed" emailKey="paymentEmail" pushKey="paymentPush" />
               <NotificationRow icon={FileText} iconColor="text-purple-400" title="Invoice Generated" description="When new invoices are created" emailKey="invoiceEmail" pushKey="invoicePush" />
             </>
           )}

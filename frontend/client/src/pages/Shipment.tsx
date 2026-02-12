@@ -160,7 +160,7 @@ export default function ShipmentPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-sm">Total Revenue</p>
-              <p className="text-3xl font-bold text-green-400 mt-1">${(analytics.totalRevenue / 1000).toFixed(1)}K</p>
+              <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">${(analytics.totalRevenue / 1000).toFixed(1)}K</p>
             </div>
             <DollarSign size={24} className="text-green-400 opacity-50" />
           </div>
@@ -284,7 +284,7 @@ export default function ShipmentPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Rate</p>
-                  <p className="text-green-400 font-semibold">{shipment.rate}</p>
+                  <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-semibold">{shipment.rate}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 mb-1">Distance</p>

@@ -66,7 +66,7 @@ function getCategoryMeta(id: string) {
 function colorClasses(color: string) {
   const map: Record<string, { bg: string; text: string; ring: string }> = {
     blue:    { bg: "bg-blue-500/15",    text: "text-blue-400",    ring: "ring-blue-500/30" },
-    emerald: { bg: "bg-emerald-500/15", text: "text-emerald-400", ring: "ring-emerald-500/30" },
+    emerald: { bg: "bg-emerald-500/15", text: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent", ring: "ring-emerald-500/30" },
     purple:  { bg: "bg-purple-500/15",  text: "text-purple-400",  ring: "ring-purple-500/30" },
     cyan:    { bg: "bg-cyan-500/15",    text: "text-cyan-400",    ring: "ring-cyan-500/30" },
     orange:  { bg: "bg-orange-500/15",  text: "text-orange-400",  ring: "ring-orange-500/30" },

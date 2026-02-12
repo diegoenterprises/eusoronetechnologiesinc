@@ -33,7 +33,7 @@ export default function GlobalSearch() {
       case "driver": return <Users className="w-5 h-5 text-green-400" />;
       case "carrier": return <Users className="w-5 h-5 text-purple-400" />;
       case "invoice": return <FileText className="w-5 h-5 text-orange-400" />;
-      case "payment": return <DollarSign className="w-5 h-5 text-emerald-400" />;
+      case "payment": return <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />;
       default: return <Search className="w-5 h-5 text-slate-400" />;
     }
   };

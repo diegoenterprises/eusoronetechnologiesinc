@@ -146,7 +146,7 @@ export default function DriverMobileApp() {
                   <p className="text-xs text-slate-500">Miles</p>
                 </div>
                 <div className="p-3 rounded-xl bg-slate-700/30 text-center">
-                  <p className="text-2xl font-bold text-emerald-400">${assignment.rate?.toLocaleString()}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${assignment.rate?.toLocaleString()}</p>
                   <p className="text-xs text-slate-500">Rate</p>
                 </div>
               </div>

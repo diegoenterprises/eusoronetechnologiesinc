@@ -66,7 +66,7 @@ export default function Earnings() {
             <div>
               <p className="text-[10px] text-slate-400 uppercase tracking-wider font-medium">Total Earnings ({period})</p>
               {summaryQuery.isLoading ? <Skeleton className={cn("h-12 w-48 rounded-xl mt-1", isLight ? "bg-slate-200" : "")} /> : (
-                <p className="text-4xl font-bold text-emerald-500 mt-1">${(summary?.total || 0).toLocaleString()}</p>
+                <p className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mt-1">${(summary?.total || 0).toLocaleString()}</p>
               )}
               {summary?.change && (
                 <p className={cn("text-sm mt-2 flex items-center gap-1", summary.change >= 0 ? "text-green-500" : "text-red-500")}>
@@ -76,7 +76,7 @@ export default function Earnings() {
               )}
             </div>
             <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15">
-              <DollarSign className="w-10 h-10 text-emerald-500" />
+              <DollarSign className="w-10 h-10 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
             </div>
           </div>
         </div>
@@ -132,7 +132,7 @@ export default function Earnings() {
       <Card className={cardCls}>
         <CardHeader className="pb-3">
           <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
-            <DollarSign className="w-5 h-5 text-emerald-500" />Earnings History
+            <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Earnings History
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -162,7 +162,7 @@ export default function Earnings() {
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-4">
-                      <p className="text-emerald-500 font-bold text-xl">${earning.amount?.toLocaleString()}</p>
+                      <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-xl">${earning.amount?.toLocaleString()}</p>
                       {statusBadge(earning.status)}
                     </div>
                   </div>

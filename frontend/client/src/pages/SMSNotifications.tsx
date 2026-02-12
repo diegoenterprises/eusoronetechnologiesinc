@@ -75,7 +75,7 @@ export default function SMSNotifications() {
               </div>
               <div>
                 {usageQuery.isLoading ? <Skeleton className="h-8 w-12" /> : (
-                  <p className="text-2xl font-bold text-green-400">{usage?.deliveryRate}%</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{usage?.deliveryRate}%</p>
                 )}
                 <p className="text-xs text-slate-400">Delivery Rate</p>
               </div>
@@ -103,11 +103,11 @@ export default function SMSNotifications() {
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
               <div className="p-3 rounded-full bg-emerald-500/20">
-                <DollarSign className="w-6 h-6 text-emerald-400" />
+                <DollarSign className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
               </div>
               <div>
                 {usageQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-emerald-400">${usage?.costThisMonth?.toFixed(2)}</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${usage?.costThisMonth?.toFixed(2)}</p>
                 )}
                 <p className="text-xs text-slate-400">Cost This Month</p>
               </div>

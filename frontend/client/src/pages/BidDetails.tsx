@@ -112,11 +112,11 @@ export default function BidDetails() {
               <p className="text-slate-400 text-sm mb-1">Bid Amount</p>
               <p className="text-4xl font-bold text-white">${(bid.amount || 0).toLocaleString()}</p>
               {bid.ratePerMile && (
-                <p className="text-emerald-400 text-sm mt-1">${bid.ratePerMile.toFixed(2)}/mile</p>
+                <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm mt-1">${bid.ratePerMile.toFixed(2)}/mile</p>
               )}
             </div>
             <div className="p-4 rounded-full bg-emerald-500/20">
-              <DollarSign className="w-10 h-10 text-emerald-400" />
+              <DollarSign className="w-10 h-10 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
             </div>
           </div>
         </CardContent>
@@ -198,7 +198,7 @@ export default function BidDetails() {
               </div>
               <div className="p-3 rounded-xl bg-slate-700/30">
                 <p className="text-xs text-slate-500">On-Time Rate</p>
-                <p className="text-green-400 font-medium">{bid.onTimeRate || 0}%</p>
+                <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-medium">{bid.onTimeRate || 0}%</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-700/30">
                 <p className="text-xs text-slate-500">Safety Score</p>

@@ -146,7 +146,7 @@ export default function UtilizationReport() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Current: {summary?.fleetUtilization}%</span>
-                <span className="text-emerald-400">Target: {summary?.targetUtilization}%</span>
+                <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Target: {summary?.targetUtilization}%</span>
               </div>
               <Progress value={((summary?.fleetUtilization ?? 0) / (summary?.targetUtilization ?? 1)) * 100} className="h-3" />
               <p className="text-sm text-slate-500">

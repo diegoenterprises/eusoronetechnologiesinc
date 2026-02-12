@@ -72,8 +72,8 @@ export default function EscortDashboard() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-5">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-full bg-emerald-500/20"><Star className="w-6 h-6 text-emerald-400" /></div>
-              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold text-emerald-400">{stats?.rating}</p>}<p className="text-xs text-slate-400">Rating</p></div>
+              <div className="p-3 rounded-full bg-emerald-500/20"><Star className="w-6 h-6 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
+              <div>{statsQuery.isLoading ? <Skeleton className="h-8 w-12" /> : <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{stats?.rating}</p>}<p className="text-xs text-slate-400">Rating</p></div>
             </div>
           </CardContent>
         </Card>
@@ -99,7 +99,7 @@ export default function EscortDashboard() {
                   </div>
                   <div className="p-2 rounded-lg bg-slate-700/30">
                     <p className="text-xs text-slate-500">Pay</p>
-                    <p className="text-green-400 font-bold">${job.pay?.toLocaleString()}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${job.pay?.toLocaleString()}</p>
                   </div>
                 </div>
                 <Button className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">View Details</Button>
@@ -129,7 +129,7 @@ export default function EscortDashboard() {
                       <p className="text-xs text-slate-500">{job.origin} → {job.destination}</p>
                       <p className="text-xs text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" />{job.startDate} @ {job.startTime}</p>
                     </div>
-                    <p className="text-green-400 font-bold">${job.pay}</p>
+                    <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${job.pay}</p>
                   </div>
                 ))}
               </div>

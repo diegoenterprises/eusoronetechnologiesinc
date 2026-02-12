@@ -139,7 +139,7 @@ export default function EscortSchedule() {
                           <p className="text-sm text-slate-400">{job.loadDescription}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-green-400 font-bold">${job.rate}</p>
+                          <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${job.rate}</p>
                           <p className="text-xs text-slate-500">{job.rateType}</p>
                         </div>
                       </div>
@@ -210,7 +210,7 @@ export default function EscortSchedule() {
                         <p className="text-xs text-slate-400">{job.date} - {job.route}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-green-400 font-bold">${job.rate}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">${job.rate}</p>
                         <p className="text-xs text-slate-500">{job.distance} mi</p>
                       </div>
                     </div>
@@ -284,7 +284,7 @@ export default function EscortSchedule() {
                 </div>
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
                   <p className="text-xs text-slate-500">Projected Earnings</p>
-                  <p className="text-2xl font-bold text-green-400">$2,450</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">$2,450</p>
                 </div>
               </div>
             </CardContent>

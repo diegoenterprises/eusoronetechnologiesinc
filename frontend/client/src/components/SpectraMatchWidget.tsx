@@ -137,6 +137,9 @@ export default function SpectraMatchWidget({
       onIdentify?.(data);
       toast.success(`Identified: ${data.primaryMatch.name} (${data.primaryMatch.confidence}% confidence)`);
     },
+    onError: (error: any) => {
+      toast.error("Identification failed", { description: error.message });
+    },
   });
 
   const saveToRunTicketMutation = (trpc as any).spectraMatch.saveToRunTicket.useMutation({

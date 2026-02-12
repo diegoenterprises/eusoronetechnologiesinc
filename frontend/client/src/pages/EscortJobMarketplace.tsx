@@ -105,7 +105,7 @@ export default function EscortJobMarketplace() {
               </div>
               <div>
                 {statsQuery.isLoading ? <Skeleton className="h-8 w-16" /> : (
-                  <p className="text-2xl font-bold text-green-400">${stats?.avgRate || 0}/hr</p>
+                  <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${stats?.avgRate || 0}/hr</p>
                 )}
                 <p className="text-xs text-slate-400">Avg Rate</p>
               </div>
@@ -180,7 +180,7 @@ export default function EscortJobMarketplace() {
                       <p className="text-sm text-slate-400">{job.description}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-green-400">${job.rate}/hr</p>
+                      <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${job.rate}/hr</p>
                       <p className="text-xs text-slate-500">Est. {job.estimatedHours}h</p>
                     </div>
                   </div>

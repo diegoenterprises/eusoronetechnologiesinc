@@ -133,7 +133,7 @@ export default function ClaimsManagement() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-xl font-bold text-green-400">${claim.amount?.toLocaleString()}</p>
+                      <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${claim.amount?.toLocaleString()}</p>
                       {claim.paidAmount && <p className="text-xs text-slate-500">Paid: ${claim.paidAmount?.toLocaleString()}</p>}
                     </div>
                     <Button size="sm" variant="outline" className="bg-slate-700/50 border-slate-600/50 rounded-lg">View</Button>

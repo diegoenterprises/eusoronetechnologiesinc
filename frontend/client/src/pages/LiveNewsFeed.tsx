@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Newspaper, Search, RefreshCw, Clock, ExternalLink,
   Fuel, FlaskConical, Truck, Snowflake, Package, Ship,
-  AlertTriangle, Zap, TrendingUp, Filter, Rss
+  AlertTriangle, Zap, TrendingUp, Filter, Rss, Landmark
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRSSFeeds, type NewsArticle } from "@/hooks/useRSSFeeds";
@@ -34,6 +34,7 @@ const CATEGORY_ICONS: Record<FeedCategory, React.ReactNode> = {
   marine: <Ship className="w-4 h-4" />,
   supply_chain: <TrendingUp className="w-4 h-4" />,
   energy: <Zap className="w-4 h-4" />,
+  government: <Landmark className="w-4 h-4" />,
 };
 
 function formatTimeAgo(date: Date): string {

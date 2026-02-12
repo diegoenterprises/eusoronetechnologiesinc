@@ -78,7 +78,7 @@ export default function BidAnalysis() {
             <div className="space-y-2">
               <Label className="text-slate-400">Bid Amount ($)</Label>
               <div className="relative">
-                <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-emerald-400" />
+                <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
                 <Input
                   type="number"
                   value={bidAmount}

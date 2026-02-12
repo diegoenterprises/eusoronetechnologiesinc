@@ -31,6 +31,15 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
+import AddressAutocomplete, { ParsedAddress } from "@/components/AddressAutocomplete";
+
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 3959;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
 
 const PLATFORM_FEE = 3.5;
 const STATE_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -53,7 +62,9 @@ const HOS_LIMITS = { maxDrive: 11, maxDuty: 14, maxWeekly: 70, resetHours: 34 };
 interface SchedulePattern {
   id: string;
   originCity: string; originState: string;
+  originAddress: string; originLat: number; originLng: number;
   destCity: string; destState: string;
+  destAddress: string; destLat: number; destLng: number;
   days: string[];
   pickupTime: string;
   loadsPerDay: number;
@@ -104,8 +115,12 @@ export default function RecurringLoadScheduler() {
       const maxLoads = 30;
 
       for (const pattern of patterns) {
-        const originCoords = STATE_COORDS[pattern.originState.toUpperCase()] || { lat: 32.0, lng: -96.0 };
-        const destCoords = STATE_COORDS[pattern.destState.toUpperCase()] || { lat: 30.0, lng: -95.0 };
+        const originCoords = pattern.originLat && pattern.originLng
+          ? { lat: pattern.originLat, lng: pattern.originLng }
+          : STATE_COORDS[pattern.originState.toUpperCase()] || { lat: 32.0, lng: -96.0 };
+        const destCoords = pattern.destLat && pattern.destLng
+          ? { lat: pattern.destLat, lng: pattern.destLng }
+          : STATE_COORDS[pattern.destState.toUpperCase()] || { lat: 30.0, lng: -95.0 };
 
         let current = new Date(start);
         while (current <= end && created + failed < maxLoads) {
@@ -177,8 +192,17 @@ export default function RecurringLoadScheduler() {
   const lb = cn("text-xs font-medium mb-1.5 block", isLight ? "text-slate-600" : "text-slate-400");
   const tc = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
 
+  // Fetch user's agreements for the Link Agreement step
+  const agQuery = (trpc as any).agreements?.list?.useQuery?.({ limit: 50 }) || { data: null, isLoading: false };
+  const existingAgreements: any[] = (() => {
+    const d = agQuery.data;
+    return Array.isArray(d) ? d : Array.isArray(d?.agreements) ? d.agreements : [];
+  })();
+  const [selectedAgreementId, setSelectedAgreementId] = useState<number | null>(null);
+
   const addPattern = () => setPatterns([...patterns, {
-    id: `p-${Date.now()}`, originCity: "", originState: "", destCity: "", destState: "",
+    id: `p-${Date.now()}`, originCity: "", originState: "", originAddress: "", originLat: 0, originLng: 0,
+    destCity: "", destState: "", destAddress: "", destLat: 0, destLng: 0,
     days: ["Mon", "Tue", "Wed", "Thu", "Fri"], pickupTime: "08:00", loadsPerDay: 1,
     equipmentType: "dry_van", ratePerLoad: "", estimatedMiles: "", estimatedDriveHours: "", notes: "",
   }]);
@@ -260,7 +284,7 @@ export default function RecurringLoadScheduler() {
                 {([
                   { id: "dedicated_lane", label: "Dedicated Lane", desc: "Same origin → same destination, recurring", icon: <MapPin className="w-5 h-5 text-blue-500" /> },
                   { id: "multi_stop", label: "Multi-Stop Route", desc: "Multiple pickups/drops on a fixed route", icon: <Route className="w-5 h-5 text-purple-500" /> },
-                  { id: "area_coverage", label: "Area Coverage", desc: "Multiple origins in same area → one dest", icon: <Truck className="w-5 h-5 text-emerald-500" /> },
+                  { id: "area_coverage", label: "Area Coverage", desc: "Multiple origins in same area → one dest", icon: <Truck className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /> },
                   { id: "scheduled_route", label: "Scheduled Route", desc: "Specific days & times, custom pattern", icon: <Calendar className="w-5 h-5 text-orange-500" /> },
                 ] as const).map(t => (
                   <button key={t.id} onClick={() => setContractType(t.id)} className={cn("p-4 rounded-xl border text-left transition-all",
@@ -301,12 +325,46 @@ export default function RecurringLoadScheduler() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Origin & Dest */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div><label className={lb}>Origin City</label><Input value={p.originCity} onChange={(e: any) => updatePattern(p.id, "originCity", e.target.value)} placeholder="City" className={ic} /></div>
-                  <div><label className={lb}>State</label><Input value={p.originState} onChange={(e: any) => updatePattern(p.id, "originState", e.target.value)} placeholder="ST" className={ic} /></div>
-                  <div><label className={lb}>Dest City</label><Input value={p.destCity} onChange={(e: any) => updatePattern(p.id, "destCity", e.target.value)} placeholder="City" className={ic} /></div>
-                  <div><label className={lb}>State</label><Input value={p.destState} onChange={(e: any) => updatePattern(p.id, "destState", e.target.value)} placeholder="ST" className={ic} /></div>
+                {/* Origin & Dest — Google Maps Autocomplete */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <label className={lb}>Origin</label>
+                    <AddressAutocomplete
+                      value={p.originAddress || `${p.originCity}${p.originState ? ", " + p.originState : ""}`}
+                      onChange={(v) => updatePattern(p.id, "originAddress", v)}
+                      onSelect={(parsed: ParsedAddress) => {
+                        const updated = { ...p, originCity: parsed.city, originState: parsed.state, originAddress: parsed.address, originLat: parsed.lat, originLng: parsed.lng };
+                        if (updated.destLat && updated.destLng && parsed.lat && parsed.lng) {
+                          const miles = haversineDistance(parsed.lat, parsed.lng, updated.destLat, updated.destLng);
+                          updated.estimatedMiles = String(miles);
+                          updated.estimatedDriveHours = String(Math.round(miles / 55 * 10) / 10);
+                        }
+                        setPatterns(patterns.map(x => x.id === p.id ? updated : x));
+                      }}
+                      placeholder="Search origin address..."
+                      className={ic}
+                    />
+                    {p.originCity && <p className="text-[10px] text-slate-400 mt-1">{p.originCity}, {p.originState}</p>}
+                  </div>
+                  <div>
+                    <label className={lb}>Destination</label>
+                    <AddressAutocomplete
+                      value={p.destAddress || `${p.destCity}${p.destState ? ", " + p.destState : ""}`}
+                      onChange={(v) => updatePattern(p.id, "destAddress", v)}
+                      onSelect={(parsed: ParsedAddress) => {
+                        const updated = { ...p, destCity: parsed.city, destState: parsed.state, destAddress: parsed.address, destLat: parsed.lat, destLng: parsed.lng };
+                        if (updated.originLat && updated.originLng && parsed.lat && parsed.lng) {
+                          const miles = haversineDistance(updated.originLat, updated.originLng, parsed.lat, parsed.lng);
+                          updated.estimatedMiles = String(miles);
+                          updated.estimatedDriveHours = String(Math.round(miles / 55 * 10) / 10);
+                        }
+                        setPatterns(patterns.map(x => x.id === p.id ? updated : x));
+                      }}
+                      placeholder="Search destination address..."
+                      className={ic}
+                    />
+                    {p.destCity && <p className="text-[10px] text-slate-400 mt-1">{p.destCity}, {p.destState}</p>}
+                  </div>
                 </div>
 
                 {/* Days */}
@@ -338,7 +396,7 @@ export default function RecurringLoadScheduler() {
                 {/* Weekly Summary for this lane */}
                 <div className={cn("grid grid-cols-3 gap-2 p-3 rounded-xl", isLight ? "bg-blue-50" : "bg-blue-500/5")}>
                   <div><p className="text-[10px] text-slate-400 uppercase">Loads/Week</p><p className={cn("font-bold", vl)}>{p.loadsPerDay * p.days.length}</p></div>
-                  <div><p className="text-[10px] text-slate-400 uppercase">Rev/Week</p><p className="font-bold text-emerald-500">${((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length).toLocaleString()}</p></div>
+                  <div><p className="text-[10px] text-slate-400 uppercase">Rev/Week</p><p className="font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length).toLocaleString()}</p></div>
                   <div><p className="text-[10px] text-slate-400 uppercase">Platform Fee</p><p className="font-bold text-purple-400">${(((parseFloat(p.ratePerLoad) || 0) * p.loadsPerDay * p.days.length) * PLATFORM_FEE / 100).toFixed(2)}</p></div>
                 </div>
               </CardContent>
@@ -350,7 +408,7 @@ export default function RecurringLoadScheduler() {
           {/* Totals */}
           <div className={cn("grid grid-cols-3 gap-3")}>
             <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Total Loads/Week</p><p className={cn("text-xl font-bold", vl)}>{totalLoadsPerWeek}</p></div>
-            <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Total Revenue/Week</p><p className="text-xl font-bold text-emerald-500">${totalRevPerWeek.toLocaleString()}</p></div>
+            <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Total Revenue/Week</p><p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${totalRevPerWeek.toLocaleString()}</p></div>
             <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Platform Fee/Week</p><p className="text-xl font-bold text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
           </div>
 
@@ -422,6 +480,36 @@ export default function RecurringLoadScheduler() {
                   <p className="text-[11px] text-slate-400">Generate an agreement for this schedule</p>
                 </button>
               </div>
+              {linkedAgreement === "existing" && (
+                <div className="space-y-3">
+                  <label className={lb}>Select Agreement</label>
+                  {agQuery.isLoading ? (
+                    <div className={cn("h-10 rounded-xl animate-pulse", isLight ? "bg-slate-100" : "bg-slate-800")} />
+                  ) : existingAgreements.length === 0 ? (
+                    <p className={cn("text-xs p-3 rounded-xl border", cl)}>No agreements found. Create one first.</p>
+                  ) : (
+                    <Select value={selectedAgreementId ? String(selectedAgreementId) : ""} onValueChange={v => setSelectedAgreementId(parseInt(v) || null)}>
+                      <SelectTrigger className={ic}><SelectValue placeholder="Choose an agreement..." /></SelectTrigger>
+                      <SelectContent>
+                        {existingAgreements.map((ag: any) => (
+                          <SelectItem key={ag.id} value={String(ag.id)}>
+                            #{ag.agreementNumber || `AG-${ag.id}`} — {ag.agreementType?.replace(/_/g, " ")} — ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "0"} — {ag.status || "draft"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {selectedAgreementId && (() => {
+                    const sel = existingAgreements.find((a: any) => a.id === selectedAgreementId);
+                    return sel ? (
+                      <div className={cn("p-3 rounded-xl border", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
+                        <div className="flex items-center gap-2 mb-1"><CheckCircle className="w-4 h-4 text-green-500" /><p className={cn("font-bold text-xs", vl)}>Linked: #{sel.agreementNumber}</p></div>
+                        <p className="text-[10px] text-slate-400">Rate: ${sel.baseRate ? parseFloat(sel.baseRate).toLocaleString() : "—"} · {sel.rateType?.replace(/_/g, " ") || "—"} · Net {sel.paymentTermDays || 30} days</p>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              )}
               {linkedAgreement === "new" && (
                 <Button className="w-full rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-bold" onClick={() => setLocation("/agreements/create")}>
                   <Sparkles className="w-4 h-4 mr-2" />Open Agreement Wizard
@@ -470,16 +558,16 @@ export default function RecurringLoadScheduler() {
                   <div><p className="text-slate-400">Days</p><p className={vl}>{p.days.join(", ")}</p></div>
                   <div><p className="text-slate-400">Time</p><p className={vl}>{p.pickupTime}</p></div>
                   <div><p className="text-slate-400">Loads/Day</p><p className={vl}>{p.loadsPerDay}</p></div>
-                  <div><p className="text-slate-400">Rate</p><p className="font-bold text-emerald-500">${parseFloat(p.ratePerLoad || "0").toLocaleString()}</p></div>
+                  <div><p className="text-slate-400">Rate</p><p className="font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(p.ratePerLoad || "0").toLocaleString()}</p></div>
                   <div><p className="text-slate-400">Equipment</p><p className={vl}>{p.equipmentType.replace(/_/g, " ")}</p></div>
                 </div>
               </div>
             ))}
             <div className={cn("grid grid-cols-4 gap-3 mt-4")}>
               <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Loads/Week</p><p className={cn("text-lg font-bold", vl)}>{totalLoadsPerWeek}</p></div>
-              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Rev/Week</p><p className="text-lg font-bold text-emerald-500">${totalRevPerWeek.toLocaleString()}</p></div>
+              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Rev/Week</p><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${totalRevPerWeek.toLocaleString()}</p></div>
               <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Fee/Week</p><p className="text-lg font-bold text-purple-400">${totalFeePerWeek.toFixed(2)}</p></div>
-              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Monthly Est.</p><p className="text-lg font-bold text-emerald-500">${(totalRevPerWeek * 4.33).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+              <div className={cl}><p className="text-[10px] text-slate-400 uppercase">Monthly Est.</p><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(totalRevPerWeek * 4.33).toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
             </div>
           </CardContent></Card>
           <div className="flex gap-3">
