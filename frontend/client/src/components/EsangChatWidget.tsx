@@ -197,6 +197,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
             panelBg
           )}
           style={{ transformOrigin: 'bottom right' }}
+          onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className={cn("px-4 py-3 flex items-center justify-between flex-shrink-0", headerBg)}>

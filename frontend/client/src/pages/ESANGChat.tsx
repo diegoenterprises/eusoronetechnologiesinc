@@ -310,7 +310,9 @@ export default function ESANGChat() {
               width: p.size,
               height: p.size,
               background: p.color,
-              boxShadow: `0 0 ${p.size * 2}px ${p.color}`,
+              boxShadow: isLight
+                ? `0 0 ${p.size * 3}px ${p.color}, 0 0 ${p.size * 6}px ${p.color}40`
+                : `0 0 ${p.size * 2}px ${p.color}`,
             }}
             initial={{ left: p.startX, top: p.startY, opacity: 1, scale: 1 }}
             animate={{
