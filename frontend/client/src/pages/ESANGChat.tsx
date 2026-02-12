@@ -33,6 +33,7 @@ export default function ESANGChat() {
   const [dissolving, setDissolving] = useState(false);
   const [dissolveParticles, setDissolveParticles] = useState<Array<{startX: number; startY: number; delay: number; size: number; color: string; dur: number}>>([]);
 
+  const utils = trpc.useUtils();
   const historyQuery = (trpc as any).esang.getChatHistory.useQuery();
   const suggestionsQuery = (trpc as any).esang.getSuggestions.useQuery();
   const learningStatsQuery = (trpc as any).spectraMatch.getLearningStats.useQuery();
@@ -44,6 +45,7 @@ export default function ESANGChat() {
       if (data.suggestions?.length > 0) {
         // Suggestions are handled via the sidebar
       }
+      (utils as any).esang.getChatHistory.invalidate();
     },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
@@ -71,7 +73,7 @@ export default function ESANGChat() {
   };
 
   const clearMutation = (trpc as any).esang.clearHistory.useMutation({
-    onSuccess: () => { setMessages([]); toast.success("Chat cleared"); },
+    onSuccess: () => { setMessages([]); toast.success("Chat cleared"); (utils as any).esang.getChatHistory.invalidate(); },
   });
 
   useEffect(() => {

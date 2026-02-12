@@ -46,6 +46,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
 
+  const utils = trpc.useUtils();
   const historyQuery = (trpc as any).esang.getChatHistory.useQuery(undefined, { enabled: open });
 
   const sendMutation = (trpc as any).esang.chat.useMutation({
@@ -56,6 +57,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       }]);
       if (data.actions?.length > 0) setLastActions(data.actions);
+      (utils as any).esang.getChatHistory.invalidate();
     },
     onError: (error: any) => {
       toast.error("ESANG AI Error", { description: error.message });
@@ -68,7 +70,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
   });
 
   const clearMutation = (trpc as any).esang.clearHistory.useMutation({
-    onSuccess: () => { setMessages([]); setLastActions([]); toast.success("Chat cleared"); },
+    onSuccess: () => { setMessages([]); setLastActions([]); toast.success("Chat cleared"); (utils as any).esang.getChatHistory.invalidate(); },
   });
 
   useEffect(() => {
