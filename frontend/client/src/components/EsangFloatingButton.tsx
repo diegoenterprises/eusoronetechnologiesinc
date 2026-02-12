@@ -39,6 +39,8 @@ export default function EsangFloatingButton() {
   const animRef = useRef<number>(0);
   const timeRef = useRef(0);
   const particlesRef = useRef<Particle[]>([]);
+  const isLightRef = useRef(isLight);
+  isLightRef.current = isLight;
   const [hovered, setHovered] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -93,13 +95,20 @@ export default function EsangFloatingButton() {
     const animate = () => {
       timeRef.current += 0.016;
       const t = timeRef.current;
+      const lt = isLightRef.current;
       ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
 
-      // Outer glow ring
+      // Outer glow ring — stronger in light mode for visibility
       const glowGrad = ctx.createRadialGradient(cx, cy, radius - 4, cx, cy, radius + 12);
-      glowGrad.addColorStop(0, hexAlpha(PURPLE, 0.15 + Math.sin(t * 1.5) * 0.05));
-      glowGrad.addColorStop(0.5, hexAlpha(BLUE, 0.08));
-      glowGrad.addColorStop(1, hexAlpha(PURPLE, 0));
+      if (lt) {
+        glowGrad.addColorStop(0, hexAlpha(PURPLE, 0.35 + Math.sin(t * 1.5) * 0.1));
+        glowGrad.addColorStop(0.5, hexAlpha(BLUE, 0.2));
+        glowGrad.addColorStop(1, hexAlpha(PURPLE, 0));
+      } else {
+        glowGrad.addColorStop(0, hexAlpha(PURPLE, 0.15 + Math.sin(t * 1.5) * 0.05));
+        glowGrad.addColorStop(0.5, hexAlpha(BLUE, 0.08));
+        glowGrad.addColorStop(1, hexAlpha(PURPLE, 0));
+      }
       ctx.beginPath();
       ctx.arc(cx, cy, radius + 12, 0, Math.PI * 2);
       ctx.fillStyle = glowGrad;
@@ -204,12 +213,12 @@ export default function EsangFloatingButton() {
         ctx.stroke();
       }
 
-      // Pulsing outer ring
+      // Pulsing outer ring — white in dark mode, colored in light mode
       const ringAlpha = 0.2 + Math.sin(t * 2) * 0.1;
       ctx.beginPath();
       ctx.arc(cx, cy, radius - 1, 0, Math.PI * 2);
-      ctx.strokeStyle = hexAlpha("#ffffff", ringAlpha);
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = lt ? hexAlpha(PURPLE, ringAlpha + 0.15) : hexAlpha("#ffffff", ringAlpha);
+      ctx.lineWidth = lt ? 1.5 : 1;
       ctx.stroke();
 
       animRef.current = requestAnimationFrame(animate);
@@ -218,7 +227,7 @@ export default function EsangFloatingButton() {
     animRef.current = requestAnimationFrame(animate);
 
     return () => cancelAnimationFrame(animRef.current);
-  }, [initParticles]);
+  }, [initParticles, isLight]);
 
   // Auto-expand label briefly on mount
   useEffect(() => {

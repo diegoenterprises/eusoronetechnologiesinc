@@ -1119,6 +1119,13 @@ Enhance each clause with specific, legally-precise language incorporating all th
   }
 
   /**
+   * Get conversation history for a user
+   */
+  getHistory(userId: string): ChatMessage[] {
+    return this.conversationHistory.get(userId) || [];
+  }
+
+  /**
    * Clear conversation history for a user
    */
   clearHistory(userId: string): void {

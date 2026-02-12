@@ -255,7 +255,15 @@ export const esangRouter = router({
     }
     return { unNumber: "UNKNOWN", class: "N/A", hazmatClass: "N/A", packingGroup: "N/A", properName: input.productName, isTIH: false, guide: 111 };
   }),
-  getChatHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => [{ id: "m1", role: "user", content: "Hello", response: "Hi! How can I help you?", timestamp: "2025-01-23 10:00" }]),
+  getChatHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx }) => {
+    const history = esangAI.getHistory(String(ctx.user.id));
+    return history.map((msg, i) => ({
+      id: `m${i}`,
+      role: msg.role,
+      content: msg.content,
+      timestamp: msg.timestamp ? new Date(msg.timestamp).toISOString() : undefined,
+    }));
+  }),
   getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ input }) => {
     const num = parseInt(input.guideNumber, 10);
     const guide = await getGuide(num);
