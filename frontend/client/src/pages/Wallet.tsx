@@ -199,7 +199,7 @@ export default function Wallet() {
         <div
           className="p-6 md:p-8"
           style={{ background: isLight
-            ? "linear-gradient(135deg, #ffffff 0%, #f8f0ff 40%, #f0d6ff 70%, #e8bfff 100%)"
+            ? "linear-gradient(135deg, #ffffff 0%, #f5f7ff 30%, #f0f0ff 55%, #f4eaff 80%, #f0e4ff 100%)"
             : "linear-gradient(135deg, rgba(20,115,255,0.08) 0%, rgba(108,71,255,0.1) 40%, rgba(190,1,255,0.12) 100%)"
           }}
         >
