@@ -14,12 +14,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
+import { toast } from "sonner";
 import {
   Package, Plus, Search, MapPin, Truck, ChevronLeft, ChevronRight,
-  AlertTriangle, Navigation, Building2, Droplets, FlaskConical
+  AlertTriangle, Navigation, Building2, Droplets, FlaskConical,
+  Eye, MessageSquare, Phone, ExternalLink, ArrowRight, Clock,
+  DollarSign, Weight, Route, RefreshCw, User, X
 } from "lucide-react";
 import { useLocation } from "wouter";
 import LoadCargoAnimation from "@/components/LoadCargoAnimation";
@@ -60,10 +64,24 @@ export default function MyLoads() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekBase, setWeekBase] = useState(new Date());
 
+  const [previewLoad, setPreviewLoad] = useState<any>(null);
+
   // Format selected date as YYYY-MM-DD for DB query
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
   // Pass date to backend so the calendar is wired to the DB
   const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, date: dateStr });
+
+  // Message carrier/driver
+  const createConversation = (trpc as any).messages?.createConversation?.useMutation?.({
+    onSuccess: (data: any) => { toast.success(data?.existing ? "Opened conversation" : "Conversation started"); setLocation("/messages"); },
+    onError: () => { toast.error("Could not start conversation"); setLocation("/messages"); },
+  }) || { mutate: () => {} };
+
+  const handleContact = (load: any) => {
+    const contactId = load.driverId || load.carrierId;
+    if (contactId) { createConversation.mutate({ participantIds: [contactId], type: "direct" }); }
+    else { toast.info("No carrier or driver assigned yet"); }
+  };
 
   const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
 
@@ -110,6 +128,13 @@ export default function MyLoads() {
     });
   }, [loadsQuery.data, searchTerm, activeFilter]);
 
+  // Active load stats
+  const allLoads = (loadsQuery.data as any[]) || [];
+  const inTransitCount = allLoads.filter((l: any) => l.status === "in_transit").length;
+  const assignedCount = allLoads.filter((l: any) => ["assigned", "picked_up", "en_route_pickup"].includes(l.status)).length;
+  const postedCount = allLoads.filter((l: any) => ["posted", "bidding"].includes(l.status)).length;
+  const delayedCount = allLoads.filter((l: any) => l.status === "delayed").length;
+
   const filterTabs: { id: LoadFilter; label: string }[] = [
     { id: "all", label: "All" },
     { id: "pending", label: "Pending" },
@@ -138,14 +163,41 @@ export default function MyLoads() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
           {isCarrier ? "Assigned Loads" : "My Loads"}
         </h1>
-        {canCreateLoads && (
-          <Button
-            className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl px-5"
-            onClick={() => setLocation("/loads/create")}
-          >
-            <Plus className="w-4 h-4 mr-2" /> Create New Load
+        <div className="flex items-center gap-2">
+          {canCreateLoads && (
+            <Button
+              className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl px-5"
+              onClick={() => setLocation("/loads/create")}
+            >
+              <Plus className="w-4 h-4 mr-2" /> Create New Load
+            </Button>
+          )}
+          <Button variant="outline" size="sm" className={cn("rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-700/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => loadsQuery.refetch()}>
+            <RefreshCw className={cn("w-4 h-4", loadsQuery.isRefetching && "animate-spin")} />
           </Button>
-        )}
+        </div>
+      </div>
+
+      {/* ── Stats Row ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { count: inTransitCount, label: "In Transit", icon: <Truck className="w-5 h-5 text-blue-400" />, bg: "bg-blue-500/15", color: "text-blue-400" },
+          { count: assignedCount, label: "Assigned", icon: <Package className="w-5 h-5 text-cyan-400" />, bg: "bg-cyan-500/15", color: "text-cyan-400" },
+          { count: postedCount, label: "Posted", icon: <Clock className="w-5 h-5 text-violet-400" />, bg: "bg-violet-500/15", color: "text-violet-400" },
+          { count: delayedCount, label: "Delayed", icon: <AlertTriangle className="w-5 h-5 text-red-400" />, bg: "bg-red-500/15", color: "text-red-400" },
+        ].map((s) => (
+          <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={cn("p-2.5 rounded-lg", s.bg)}>{s.icon}</div>
+                <div>
+                  <p className={cn("text-2xl font-bold tabular-nums", s.color)}>{s.count}</p>
+                  <p className="text-[11px] text-slate-500 font-medium">{s.label}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* ── Search ── */}
@@ -420,18 +472,18 @@ export default function MyLoads() {
                     </div>
                   </div>
 
-                  {/* ── Action Button ── */}
-                  <div className="px-5 pb-4 flex justify-center">
+                  {/* ── Action Buttons ── */}
+                  <div className="px-5 pb-4 flex items-center gap-2">
                     {isActive ? (
                       <Button
-                        className="w-full max-w-xs bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white border-0 rounded-xl font-bold text-sm h-10"
+                        className="flex-1 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-600 hover:to-cyan-600 text-white border-0 rounded-xl font-bold text-sm h-10"
                         onClick={() => setLocation(`/loads/${load.id}`)}
                       >
-                        Track
+                        <Navigation className="w-4 h-4 mr-1.5" />Track
                       </Button>
                     ) : isPending ? (
                       <Button
-                        className="w-full max-w-xs bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white border-0 rounded-xl font-bold text-sm h-10"
+                        className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white border-0 rounded-xl font-bold text-sm h-10"
                         onClick={() => setLocation(`/loads/${load.id}`)}
                       >
                         Post a Job
@@ -439,12 +491,27 @@ export default function MyLoads() {
                     ) : (
                       <Button
                         variant="outline"
-                        className={cn("w-full max-w-xs rounded-xl font-bold text-sm h-10", isLight ? "border-slate-200" : "border-slate-600")}
+                        className={cn("flex-1 rounded-xl font-bold text-sm h-10", isLight ? "border-slate-200" : "border-slate-600")}
                         onClick={() => setLocation(`/loads/${load.id}`)}
                       >
                         View Details
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      className={cn("rounded-xl h-10 px-3", isLight ? "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700" : "bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white")}
+                      onClick={() => setPreviewLoad(load)}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      className={cn("rounded-xl h-10 px-3", isLight ? "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700" : "bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white")}
+                      onClick={() => handleContact(load)}
+                      title={load.driverName ? `Message ${load.driverName}` : load.carrierName ? `Message ${load.carrierName}` : "Message"}
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -452,6 +519,88 @@ export default function MyLoads() {
           })}
         </div>
       )}
+
+      {/* ═══ Load Preview Modal ═══ */}
+      <Dialog open={!!previewLoad} onOpenChange={(open) => { if (!open) setPreviewLoad(null); }}>
+        <DialogContent
+          className={cn("sm:max-w-2xl rounded-2xl p-0 overflow-hidden", isLight ? "border border-slate-200" : "border-slate-700/50 text-white")}
+          style={isLight
+            ? { background: "#ffffff", boxShadow: "0 25px 60px rgba(0,0,0,0.12)" }
+            : { background: "linear-gradient(180deg, #161d35 0%, #0d1224 100%)", boxShadow: "0 25px 60px rgba(0,0,0,0.6), 0 0 80px rgba(20, 115, 255, 0.08)" }
+          }
+        >
+          {previewLoad && (
+            <>
+              <div className="p-5 pb-0">
+                <DialogHeader>
+                  <div className="flex items-center gap-3">
+                    <DialogTitle className={cn("text-xl font-bold", isLight ? "text-slate-800" : "text-white")}>
+                      {previewLoad.loadNumber || `#LOAD-${String(previewLoad.id).slice(0, 6)}`}
+                    </DialogTitle>
+                    <Badge className={cn("border-0 text-xs font-bold", getStatusConfig(previewLoad.status).bg, getStatusConfig(previewLoad.status).text)}>
+                      {getStatusConfig(previewLoad.status).label}
+                    </Badge>
+                    {previewLoad.hazmatClass && <Badge className="bg-orange-500/20 text-orange-400 border-0 text-[10px]">HAZMAT</Badge>}
+                  </div>
+                </DialogHeader>
+              </div>
+              <div className="p-5 space-y-4">
+                {/* Route */}
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center"><MapPin className="w-4 h-4 text-[#1473FF]" /></div>
+                      <div><p className={cn("text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>{previewLoad.origin?.city}{previewLoad.origin?.state ? `, ${previewLoad.origin.state}` : ""}</p><p className="text-[11px] text-slate-500">{previewLoad.origin?.address || "Origin"}</p></div>
+                    </div>
+                    <div className="flex-1 mx-4 flex items-center"><div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} /><Truck className="w-5 h-5 mx-2 text-[#8B5CF6]" /><div className={cn("flex-1 border-t-2 border-dashed", isLight ? "border-slate-300" : "border-slate-600")} /></div>
+                    <div className="flex items-center gap-2">
+                      <div><p className={cn("text-sm font-semibold text-right", isLight ? "text-slate-800" : "text-white")}>{previewLoad.destination?.city}{previewLoad.destination?.state ? `, ${previewLoad.destination.state}` : ""}</p><p className="text-[11px] text-slate-500 text-right">{previewLoad.destination?.address || "Destination"}</p></div>
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#BE01FF]/20 to-[#1473FF]/20 flex items-center justify-center"><Building2 className="w-4 h-4 text-[#BE01FF]" /></div>
+                    </div>
+                  </div>
+                </div>
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {[
+                    { label: "Rate", value: previewLoad.rate > 0 ? `$${previewLoad.rate.toLocaleString()}` : "N/A", gradient: true },
+                    { label: "Weight", value: previewLoad.weight > 0 ? `${Number(previewLoad.weight).toLocaleString()} lbs` : "N/A" },
+                    { label: "Distance", value: previewLoad.distance > 0 ? `${previewLoad.distance.toLocaleString()} mi` : "N/A" },
+                    { label: "Commodity", value: previewLoad.commodity || "General" },
+                    { label: "Pickup", value: previewLoad.pickupDate ? new Date(previewLoad.pickupDate).toLocaleDateString() : "TBD" },
+                    { label: "Delivery", value: previewLoad.deliveryDate ? new Date(previewLoad.deliveryDate).toLocaleDateString() : "TBD" },
+                    { label: "Carrier", value: previewLoad.carrierName || "Unassigned" },
+                    { label: "Driver", value: previewLoad.driverName || "Unassigned" },
+                  ].map((item: any) => (
+                    <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <p className="text-[10px] text-slate-500 mb-0.5">{item.label}</p>
+                      <p className={item.gradient && previewLoad.rate > 0 ? "font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white")}>{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+                {/* Contact Info */}
+                {(previewLoad.carrierCompanyName || previewLoad.driverPhone) && (
+                  <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
+                    <p className="text-xs text-slate-500 mb-2 font-medium">Contact Information</p>
+                    <div className="flex items-center gap-4">
+                      {previewLoad.carrierCompanyName && <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-slate-400" /><span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.carrierCompanyName}</span></div>}
+                      {previewLoad.driverPhone && <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" /><a href={`tel:${previewLoad.driverPhone}`} className="text-sm text-cyan-400 hover:underline">{previewLoad.driverPhone}</a></div>}
+                    </div>
+                  </div>
+                )}
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:opacity-90 rounded-lg" onClick={() => { setPreviewLoad(null); setLocation(`/loads/${previewLoad.id}`); }}>
+                    <ExternalLink className="w-4 h-4 mr-2" />Full Details
+                  </Button>
+                  <Button variant="outline" className={cn("flex-1 rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => { setPreviewLoad(null); handleContact(previewLoad); }}>
+                    <MessageSquare className="w-4 h-4 mr-2" />{previewLoad.driverName ? `Message ${previewLoad.driverName}` : previewLoad.carrierName ? `Message ${previewLoad.carrierName}` : "Message"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

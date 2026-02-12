@@ -57,14 +57,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "My Loads", 
       path: "/loads", 
       badge: 0,
-      description: "Manage your shipments"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Active Loads", 
-      path: "/loads/active", 
-      badge: 0,
-      description: "In-transit shipments"
+      description: "All loads, tracking & status"
     },
     { 
       icon: "Navigation", 
@@ -367,13 +360,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/marketplace", 
       badge: 0,
       description: "All available loads"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Active Loads", 
-      path: "/loads/active", 
-      badge: 0,
-      description: "In-market loads"
     },
     { 
       icon: "MapPin", 

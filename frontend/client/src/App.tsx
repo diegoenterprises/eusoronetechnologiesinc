@@ -33,7 +33,7 @@ import ZeunProviderNetwork from "./pages/ZeunProviderNetwork";
 import MyLoadsPage from "./pages/MyLoads";
 import LoadCreatePage from "./pages/LoadCreate";
 import FindLoadsPage from "./pages/FindLoads";
-import ActiveLoadsPage from "./pages/ActiveLoads";
+// ActiveLoads merged into MyLoads
 import TrackShipmentsPage from "./pages/TrackShipments";
 import CarriersPage from "./pages/Carriers";
 // Payments merged into Wallet (EusoWallet)
@@ -223,7 +223,7 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/loads"} component={() => (<DashboardLayout><MyLoadsPage /></DashboardLayout>)} />
       <Route path={"/loads/create"} component={() => (<DashboardLayout><LoadCreationWizard /></DashboardLayout>)} />
-      <Route path={"/loads/active"} component={() => (<DashboardLayout><ActiveLoadsPage /></DashboardLayout>)} />
+      <Route path={"/loads/active"} component={() => (<DashboardLayout><MyLoadsPage /></DashboardLayout>)} />
       <Route path={"/tracking"} component={() => (<DashboardLayout><LoadTracking /></DashboardLayout>)} />
       <Route path={"/carriers"} component={() => (<DashboardLayout><CarriersPage /></DashboardLayout>)} />
       <Route path={"/payments"} component={() => (<DashboardLayout><WalletPage /></DashboardLayout>)} />
