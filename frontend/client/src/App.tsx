@@ -36,7 +36,7 @@ import FindLoadsPage from "./pages/FindLoads";
 import ActiveLoadsPage from "./pages/ActiveLoads";
 import TrackShipmentsPage from "./pages/TrackShipments";
 import CarriersPage from "./pages/Carriers";
-import PaymentsPage from "./pages/Payments";
+// Payments merged into Wallet (EusoWallet)
 import AssignedLoadsPage from "./pages/AssignedLoads";
 import InTransitPage from "./pages/InTransit";
 import CarrierAnalyticsPage from "./pages/CarrierAnalytics";
@@ -226,7 +226,7 @@ function Router() {
       <Route path={"/loads/active"} component={() => (<DashboardLayout><ActiveLoadsPage /></DashboardLayout>)} />
       <Route path={"/tracking"} component={() => (<DashboardLayout><LoadTracking /></DashboardLayout>)} />
       <Route path={"/carriers"} component={() => (<DashboardLayout><CarriersPage /></DashboardLayout>)} />
-      <Route path={"/payments"} component={() => (<DashboardLayout><PaymentsPage /></DashboardLayout>)} />
+      <Route path={"/payments"} component={() => (<DashboardLayout><WalletPage /></DashboardLayout>)} />
       <Route path={"/company"} component={() => (<DashboardLayout><CompanyProfile /></DashboardLayout>)} />
       <Route path={"/agreements"} component={() => (<DashboardLayout><AgreementsLibrary /></DashboardLayout>)} />
       <Route path={"/agreements/create"} component={() => (<DashboardLayout><ShipperAgreementWizard /></DashboardLayout>)} />

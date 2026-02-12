@@ -95,13 +95,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Communication with carriers"
     },
     { 
-      icon: "DollarSign", 
-      label: "Payments", 
-      path: "/payments", 
-      badge: 0,
-      description: "Invoices and payments"
-    },
-    { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
@@ -127,7 +120,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Digital wallet, payments & cards"
+      description: "Wallet, invoices, payments, cards & escrow"
     },
     { 
       icon: "Building2", 

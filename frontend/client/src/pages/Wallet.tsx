@@ -19,24 +19,23 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
+import { toast } from "sonner";
 import {
   Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, Plus,
   CreditCard, DollarSign, Clock, Send, Landmark, Shield,
   Lock, ChevronRight, AlertTriangle, CheckCircle2, Ban,
   Building2, Users, Copy, Eye, EyeOff, RefreshCw,
-  Smartphone, X, ArrowRight, Banknote
+  Smartphone, X, ArrowRight, Banknote, FileText, Receipt,
+  Download, Search, Calendar, Filter, CheckCircle,
+  CircleDollarSign, MailCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type WalletTab = "overview" | "send" | "cards" | "bank" | "escrow" | "history";
+type WalletTab = "overview" | "invoices" | "send" | "cards" | "bank" | "escrow" | "history";
 
 export default function Wallet() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  // Simple toast replacement (no external hook needed)
-  const toast = ({ title, description, variant }: { title: string; description?: string; variant?: string }) => {
-    console.log(`[${variant || 'info'}] ${title}: ${description || ''}`);
-  };
   const [activeTab, setActiveTab] = useState<WalletTab>("overview");
   const [historyFilter, setHistoryFilter] = useState("all");
   const [showBalance, setShowBalance] = useState(true);
@@ -46,11 +45,23 @@ export default function Wallet() {
   const [sendLoading, setSendLoading] = useState(false);
   const [cardOrderLoading, setCardOrderLoading] = useState(false);
 
+  const [invoiceFilter, setInvoiceFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
+
   const balanceQuery = (trpc as any).wallet.getBalance.useQuery();
   const transactionsQuery = (trpc as any).wallet.getTransactions.useQuery({ limit: 50 });
   const cardsQuery = (trpc as any).wallet.getCards.useQuery();
   const bankQuery = (trpc as any).wallet.getBankAccounts.useQuery();
   const escrowQuery = (trpc as any).wallet.getEscrowHolds.useQuery();
+
+  // Payments / Invoicing queries
+  const paySummaryQuery = (trpc as any).payments?.getSummary?.useQuery?.() || { data: null, isLoading: false, refetch: () => {} };
+  const invoicesQuery = (trpc as any).payments?.getInvoices?.useQuery?.({ status: invoiceFilter === "all" ? undefined : invoiceFilter }) || { data: null, isLoading: false };
+  const receivablesQuery = (trpc as any).payments?.getReceivables?.useQuery?.() || { data: null, isLoading: false };
+  const receiptsQuery = (trpc as any).payments?.getReceipts?.useQuery?.() || { data: null, isLoading: false };
+  const payInvoiceMutation = (trpc as any).payments?.pay?.useMutation?.({ onSuccess: () => { setPayingInvoice(null); invoicesQuery.refetch?.(); paySummaryQuery.refetch?.(); balanceQuery.refetch(); } }) || { mutate: () => {} };
+  const paySummary = paySummaryQuery.data;
 
   const balance = balanceQuery.data;
   const transactions = transactionsQuery.data || [];
@@ -65,7 +76,7 @@ export default function Wallet() {
 
   const handleSendMoney = async () => {
     if (!sendAmount || !sendRecipient) {
-      toast({ title: "Missing info", description: "Enter recipient and amount", variant: "destructive" });
+      toast.error("Enter recipient and amount");
       return;
     }
     setSendLoading(true);
@@ -75,12 +86,12 @@ export default function Wallet() {
         amount: parseFloat(sendAmount),
         note: sendNote,
       });
-      toast({ title: "Money sent!", description: `$${sendAmount} sent to ${sendRecipient}` });
+      toast.success(`$${sendAmount} sent to ${sendRecipient}`);
       setSendAmount(""); setSendRecipient(""); setSendNote("");
       balanceQuery.refetch();
       transactionsQuery.refetch();
     } catch (err: any) {
-      toast({ title: "Transfer failed", description: err?.message || "Please try again", variant: "destructive" });
+      toast.error(err?.message || "Transfer failed. Please try again.");
     } finally {
       setSendLoading(false);
     }
@@ -90,11 +101,11 @@ export default function Wallet() {
     setCardOrderLoading(true);
     try {
       await (trpc as any).wallet.orderPhysicalCard.mutate({});
-      toast({ title: "Card ordered!", description: "Your EusoWallet debit card will arrive in 5-7 business days. $5.00 has been charged." });
+      toast.success("Card ordered! Your EusoWallet debit card will arrive in 5-7 business days.");
       cardsQuery.refetch();
       balanceQuery.refetch();
     } catch (err: any) {
-      toast({ title: "Order failed", description: err?.message || "Please try again", variant: "destructive" });
+      toast.error(err?.message || "Card order failed. Please try again.");
     } finally {
       setCardOrderLoading(false);
     }
@@ -103,27 +114,49 @@ export default function Wallet() {
   const handleConnectBank = async () => {
     try {
       await (trpc as any).wallet.initBankConnection.mutate({});
-      toast({ title: "Bank connection initiated", description: "Follow the secure link to connect your bank account." });
+      toast.success("Bank connection initiated. Follow the secure link to connect your account.");
       bankQuery.refetch();
     } catch (err: any) {
-      toast({ title: "Connection failed", description: err?.message || "Please try again", variant: "destructive" });
+      toast.error(err?.message || "Bank connection failed. Please try again.");
     }
   };
 
   const handleReleaseEscrow = async (escrowId: string) => {
     try {
       await (trpc as any).wallet.releaseEscrow.mutate({ escrowId });
-      toast({ title: "Escrow released!", description: "Payment has been released to the driver." });
+      toast.success("Escrow released! Payment sent to driver.");
       escrowQuery.refetch();
       balanceQuery.refetch();
     } catch (err: any) {
-      toast({ title: "Release failed", description: err?.message || "Please try again", variant: "destructive" });
+      toast.error(err?.message || "Escrow release failed. Please try again.");
     }
   };
 
-  const TABS: { id: WalletTab; label: string; icon: React.ReactNode }[] = [
+  const handlePayInvoice = (invoiceId: string) => {
+    setPayingInvoice(invoiceId);
+    payInvoiceMutation.mutate({ invoiceId, method: "card" });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const map: Record<string, { bg: string; text: string; label: string }> = {
+      paid: { bg: "bg-green-500/20", text: "text-green-500", label: "Paid" },
+      succeeded: { bg: "bg-green-500/20", text: "text-green-500", label: "Paid" },
+      completed: { bg: "bg-green-500/20", text: "text-green-500", label: "Completed" },
+      outstanding: { bg: "bg-yellow-500/20", text: "text-yellow-500", label: "Outstanding" },
+      pending: { bg: "bg-yellow-500/20", text: "text-yellow-500", label: "Pending" },
+      overdue: { bg: "bg-red-500/20", text: "text-red-500", label: "Overdue" },
+      draft: { bg: "bg-slate-500/20", text: "text-slate-400", label: "Draft" },
+      void: { bg: "bg-slate-500/20", text: "text-slate-400", label: "Void" },
+      refunded: { bg: "bg-blue-500/20", text: "text-blue-400", label: "Refunded" },
+    };
+    const s = map[status] || { bg: "bg-slate-500/20", text: "text-slate-400", label: status };
+    return <Badge className={`${s.bg} ${s.text} border-0 text-xs font-semibold`}>{s.label}</Badge>;
+  };
+
+  const TABS: { id: WalletTab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: "overview", label: "Overview", icon: <WalletIcon className="w-4 h-4" /> },
-    { id: "send", label: "Send Money", icon: <Send className="w-4 h-4" /> },
+    { id: "invoices", label: "Invoices", icon: <FileText className="w-4 h-4" />, count: paySummary?.outstandingCount || 0 },
+    { id: "send", label: "Send", icon: <Send className="w-4 h-4" /> },
     { id: "cards", label: "Cards", icon: <CreditCard className="w-4 h-4" /> },
     { id: "bank", label: "Bank", icon: <Landmark className="w-4 h-4" /> },
     { id: "escrow", label: "Escrow", icon: <Shield className="w-4 h-4" /> },
@@ -226,6 +259,11 @@ export default function Wallet() {
           >
             {tab.icon}
             {tab.label}
+            {tab.count !== undefined && tab.count > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                activeTab === tab.id ? "bg-white/20 text-white" : isLight ? "bg-slate-200 text-slate-600" : "bg-slate-600 text-slate-300"
+              }`}>{tab.count}</span>
+            )}
           </button>
         ))}
       </div>
@@ -322,6 +360,125 @@ export default function Wallet() {
               )}
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* INVOICES TAB (merged from Payments page)                    */}
+      {/* ============================================================ */}
+      {activeTab === "invoices" && (
+        <div className="space-y-4">
+          {/* Invoice stat cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { label: "Outstanding", value: paySummary?.outstandingTotal || 0, count: paySummary?.outstandingCount || 0, icon: Clock, color: "text-yellow-500", bg: "bg-yellow-500/15" },
+              { label: "Paid This Month", value: paySummary?.paidThisMonth || 0, count: paySummary?.paidThisMonthCount || 0, icon: CheckCircle, color: "text-green-500", bg: "bg-green-500/15" },
+              { label: "Receivables", value: paySummary?.receivablesTotal || 0, count: paySummary?.receivablesCount || 0, icon: ArrowDownLeft, color: "text-blue-500", bg: "bg-blue-500/15" },
+              { label: "Overdue", value: paySummary?.overdueTotal || 0, count: paySummary?.overdueCount || 0, icon: AlertTriangle, color: "text-red-500", bg: "bg-red-500/15" },
+            ].map((s) => (
+              <Card key={s.label} className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("p-2.5 rounded-xl", s.bg)}><s.icon className={cn("w-5 h-5", s.color)} /></div>
+                    <div className="min-w-0">
+                      <p className={cn("text-xl font-bold", s.color)}>${s.value.toLocaleString()}</p>
+                      <p className={cn("text-xs truncate", isLight ? "text-slate-500" : "text-slate-400")}>{s.count} {s.label.toLowerCase()}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Search + filters */}
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Input value={searchTerm} onChange={(e: any) => setSearchTerm(e.target.value)} placeholder="Search invoices..." className={cn("pl-9 rounded-lg", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50")} />
+            </div>
+            <div className="flex items-center gap-1">
+              {["all", "outstanding", "paid", "overdue"].map((f) => (
+                <button key={f} onClick={() => setInvoiceFilter(f)} className={cn("px-3 py-2 rounded-lg text-xs font-medium transition-colors capitalize", invoiceFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-600 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700")}>{f}</button>
+              ))}
+            </div>
+          </div>
+
+          {/* Invoices table */}
+          <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+            <CardContent className="p-0">
+              {invoicesQuery.isLoading ? (
+                <div className="p-4 space-y-3">{[1,2,3,4].map((i: number) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+              ) : !invoicesQuery.data?.length ? (
+                <div className="text-center py-16">
+                  <div className={cn("p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center", isLight ? "bg-slate-100" : "bg-slate-700/50")}><FileText className="w-10 h-10 text-slate-400" /></div>
+                  <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No invoices found</p>
+                  <p className="text-sm text-slate-400 mt-1">Invoices will appear here when created</p>
+                </div>
+              ) : (
+                <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/40")}>
+                  <div className={cn("grid grid-cols-12 gap-4 px-5 py-3 text-xs font-semibold uppercase tracking-wider", isLight ? "text-slate-400 bg-slate-50" : "text-slate-500 bg-slate-800/40")}>
+                    <div className="col-span-3">Invoice</div><div className="col-span-3">Details</div><div className="col-span-2 text-right">Amount</div><div className="col-span-2 text-center">Status</div><div className="col-span-2 text-right">Actions</div>
+                  </div>
+                  {(invoicesQuery.data as any[]).map((inv: any) => (
+                    <div key={inv.id} className={cn("grid grid-cols-12 gap-4 items-center px-5 py-4 transition-colors", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                      <div className="col-span-3"><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{inv.invoiceNumber}</p><p className="text-xs text-slate-400 mt-0.5">{inv.loadRef || "—"}</p></div>
+                      <div className="col-span-3"><p className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{inv.customerName || inv.description}</p><div className="flex items-center gap-2 mt-0.5"><Calendar className="w-3 h-3 text-slate-400" /><span className="text-xs text-slate-400">Due {inv.dueDate}</span>{inv.daysOverdue > 0 && <span className="text-xs text-red-400 font-medium">{inv.daysOverdue}d overdue</span>}</div></div>
+                      <div className="col-span-2 text-right"><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${Number(inv.amount).toLocaleString()}</p></div>
+                      <div className="col-span-2 text-center">{getStatusBadge(inv.status)}</div>
+                      <div className="col-span-2 flex items-center justify-end gap-1">
+                        {(inv.status === "outstanding" || inv.status === "overdue") && (
+                          <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 text-xs rounded-lg h-8" onClick={() => handlePayInvoice(inv.id)} disabled={payingInvoice === inv.id}>
+                            {payingInvoice === inv.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <CreditCard className="w-3 h-3 mr-1" />}Pay
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" title="Download"><Download className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Receivables */}
+          {receivablesQuery.data?.length > 0 && (
+            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+              <CardHeader className="pb-2 px-5 pt-5"><CardTitle className={cn("text-base font-semibold", isLight ? "text-slate-800" : "text-white")}>Outstanding Receivables</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/40")}>
+                  {(receivablesQuery.data as any[]).map((r: any) => (
+                    <div key={r.id} className={cn("flex items-center justify-between px-5 py-4", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                      <div className="flex items-center gap-3">
+                        <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", r.status === "overdue" ? "bg-red-500/15" : "bg-blue-500/15")}><Banknote className={cn("w-5 h-5", r.status === "overdue" ? "text-red-500" : "text-blue-500")} /></div>
+                        <div><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{r.invoiceNumber}</p><p className="text-xs text-slate-400">{r.customerName} · Due {r.dueDate}</p></div>
+                      </div>
+                      <div className="flex items-center gap-3"><div className="text-right"><p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>${Number(r.amount).toLocaleString()}</p>{getStatusBadge(r.status)}</div></div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Receipts */}
+          {receiptsQuery.data?.length > 0 && (
+            <Card className={cn("rounded-xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+              <CardHeader className="pb-2 px-5 pt-5"><CardTitle className={cn("text-base font-semibold", isLight ? "text-slate-800" : "text-white")}>Payment Receipts</CardTitle></CardHeader>
+              <CardContent className="p-0">
+                <div className={cn("divide-y", isLight ? "divide-slate-100" : "divide-slate-700/40")}>
+                  {(receiptsQuery.data as any[]).map((receipt: any) => (
+                    <div key={receipt.id} className={cn("flex items-center justify-between px-5 py-4", isLight ? "hover:bg-slate-50" : "hover:bg-slate-700/20")}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-green-500/15 flex items-center justify-center"><CheckCircle className="w-5 h-5 text-green-500" /></div>
+                        <div><p className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>{receipt.invoiceNumber}</p><p className="text-xs text-slate-400">{receipt.description} · Paid {receipt.paidDate}</p></div>
+                      </div>
+                      <div className="flex items-center gap-3"><div className="text-right"><p className="font-bold text-green-500">${Number(receipt.amount).toLocaleString()}</p><p className="text-xs text-slate-400">{receipt.paymentMethod}</p></div><Button variant="ghost" size="sm" className="text-slate-400 h-8 w-8 p-0"><Download className="w-4 h-4" /></Button></div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       )}
 
