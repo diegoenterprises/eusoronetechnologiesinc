@@ -153,12 +153,42 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
     e.target.value = "";
   }, [sendMutation]);
 
-  const quickPrompts = [
-    { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
-    { icon: <MapPin className="w-3.5 h-3.5" />, text: "Nearby gas stations" },
-    { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
-    { icon: <FileText className="w-3.5 h-3.5" />, text: "Compliance help" },
-  ];
+  const role = (user?.role || "SHIPPER").toUpperCase();
+  const quickPrompts = (() => {
+    const shared = [
+      { icon: <FileText className="w-3.5 h-3.5" />, text: "Compliance help" },
+    ];
+    switch (role) {
+      case "DRIVER":
+        return [
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Nearby gas stations" },
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
+          ...shared,
+        ];
+      case "CARRIER":
+        return [
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find available loads" },
+          ...shared,
+        ];
+      case "BROKER":
+        return [
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find carriers" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Rate a lane" },
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "Market pricing" },
+          ...shared,
+        ];
+      default: // SHIPPER
+        return [
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Track my shipments" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
+          ...shared,
+        ];
+    }
+  })();
 
   // Shared styles
   const panelBg = isLight
@@ -249,8 +279,8 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
           <div className={cn("flex-1 overflow-y-auto px-4 py-3 space-y-3", isLight ? "bg-slate-50/50" : "bg-transparent")}>
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center px-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center mb-3">
-                  <Sparkles className={cn("w-8 h-8", isLight ? "text-purple-500" : "text-purple-400")} />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex items-center justify-center mb-3 overflow-hidden">
+                  <img src="/esang-ai-logo.svg" alt="ESANG AI" className="w-10 h-10 object-contain" />
                 </div>
                 <p className={cn("font-bold text-base mb-1", isLight ? "text-slate-800" : "text-white")}>
                   Hello{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!

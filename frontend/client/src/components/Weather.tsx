@@ -284,7 +284,7 @@ export default function Weather({ location: locationProp, compact = false, expan
 
   return (
     <div ref={setContainerRef} className="h-full">
-      <Card className="border-gray-800 bg-gradient-to-br from-blue-900/20 to-cyan-900/20 backdrop-blur-sm p-6 h-full">
+      <Card className="border-transparent bg-transparent p-6 h-full">
         <div className="space-y-4 h-full flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between">

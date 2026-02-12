@@ -183,7 +183,7 @@ export default function SpectraMatchWidget({
   const result = identifyMutation.data as SpectraMatchResult | undefined;
 
   return (
-    <Card className={cn("bg-slate-900/50 border-slate-700/50 overflow-hidden", className)}>
+    <Card className={cn("bg-transparent border-transparent overflow-hidden", className)}>
       {/* Gradient top bar */}
       <div className="h-1 bg-gradient-to-r from-cyan-500 to-purple-500" />
 

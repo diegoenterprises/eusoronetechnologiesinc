@@ -196,13 +196,8 @@ export default function Wallet() {
 
       {/* Balance Hero Card — Matte cotton gradient (matches Earnings) */}
       <div className={`rounded-3xl overflow-hidden border ${isLight ? 'bg-white border-slate-200 shadow-xl shadow-purple-500/5' : 'bg-slate-800/60 border-slate-700/50'}`}>
-        <div
-          className="p-6 md:p-8"
-          style={{ background: isLight
-            ? "linear-gradient(135deg, #ffffff 0%, #f5f7ff 30%, #f0f0ff 55%, #f4eaff 80%, #f0e4ff 100%)"
-            : "linear-gradient(135deg, rgba(20,115,255,0.08) 0%, rgba(108,71,255,0.1) 40%, rgba(190,1,255,0.12) 100%)"
-          }}
-        >
+        <div className="bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 p-6 md:p-8">
+
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isLight ? 'bg-gradient-to-br from-purple-100 to-pink-100' : 'bg-white/10 backdrop-blur'}`}>

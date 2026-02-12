@@ -526,7 +526,11 @@ export function getAvailableActionsForRole(role: string): string {
   const entries = Object.entries(ACTION_REGISTRY)
     .filter(([, def]) => def.allowedRoles.includes(role))
     .map(([name, def]) => {
-      const schemaKeys = Object.keys((def.schema as any)?._def?.shape?.() || {});
+      let schemaKeys: string[] = [];
+      try {
+        const shape = (def.schema as any)?._def?.shape;
+        schemaKeys = Object.keys(typeof shape === "function" ? shape() : (shape || {}));
+      } catch { /* schema doesn't support shape introspection */ }
       return `- ${name}: ${def.description} (params: ${schemaKeys.join(", ") || "none"})`;
     });
   return entries.join("\n");
