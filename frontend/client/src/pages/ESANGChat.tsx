@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
+import { renderChatMarkdown } from "@/lib/renderChatMarkdown";
 import {
   Sparkles, Send, User, Bot, Trash2,
   MessageSquare, Lightbulb, HelpCircle, Beaker,
@@ -164,7 +165,7 @@ export default function ESANGChat() {
                       </div>
                     )}
                     <div className={cn("max-w-[70%] p-4 rounded-2xl", msg.role === "user" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white" : isLight ? "bg-slate-100 text-slate-700 border border-slate-200" : "bg-slate-700/50 text-slate-200")}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      <div className="text-sm whitespace-pre-wrap">{msg.role === "assistant" ? renderChatMarkdown(msg.content) : msg.content}</div>
                       {msg.role === "assistant" && lastActions.length > 0 && i === messages.length - 1 && (
                         <div className="flex flex-wrap gap-1.5 mt-2 pt-2 border-t border-slate-600/30">
                           {lastActions.map((action: any, ai: number) => (

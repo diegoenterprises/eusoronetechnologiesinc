@@ -14,6 +14,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { renderChatMarkdown } from "@/lib/renderChatMarkdown";
 import {
   Send, Mic, MicOff, Paperclip, X, Sparkles, Maximize2,
   ChevronDown, Trash2, Bot, User, Image as ImageIcon,
@@ -306,7 +307,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
                             : "bg-slate-800/70 border border-slate-700/30 text-slate-200 rounded-bl-md"
                       )}
                     >
-                      <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+                      <div className="whitespace-pre-wrap break-words">{msg.role === "assistant" ? renderChatMarkdown(msg.content) : msg.content}</div>
                     </div>
                     {msg.timestamp && (
                       <span className="text-[9px] text-slate-500 mt-0.5 mx-2">{msg.timestamp}</span>

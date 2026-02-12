@@ -36,6 +36,12 @@ export const esangRouter = router({
           role: ctx.user.role,
           currentPage: input.context?.currentPage,
           loadId: input.context?.loadId,
+        },
+        {
+          userId: typeof ctx.user.id === "number" ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0,
+          userEmail: ctx.user.email || "",
+          userName: ctx.user.name || "User",
+          role: ctx.user.role || "SHIPPER",
         }
       );
 
@@ -224,12 +230,12 @@ export const esangRouter = router({
         }
         if (!response) {
           // Fall through to Gemini for complex compliance queries
-          response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId });
+          response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
           response = { ...response, source: "gemini_logic" };
         }
       } else {
         // All other intents go to Gemini (both logic and creative for now)
-        response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId });
+        response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
         response = { ...response, source: modelTarget === "logic" ? "gemini_logic" : "gemini_creative" };
       }
 
