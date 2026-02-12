@@ -25,6 +25,7 @@ import {
   rewards,
 } from "../../drizzle/schema";
 import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions } from "../services/missionGenerator";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 export const gamificationRouter = router({
   // Generic CRUD for screen templates
@@ -1088,6 +1089,10 @@ export const gamificationRouter = router({
           INSERT INTO haul_lobby_messages (userId, userName, userRole, message, messageType)
           VALUES (${userId}, ${userName}, ${userRole}, ${input.message}, 'chat')
         `);
+
+        // Fire gamification events for lobby message
+        fireGamificationEvent({ userId, type: "message_sent", value: 1 });
+        fireGamificationEvent({ userId, type: "platform_action", value: 1 });
 
         return { success: true };
       } catch (err) {

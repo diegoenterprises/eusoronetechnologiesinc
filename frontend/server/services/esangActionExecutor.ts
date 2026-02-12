@@ -27,6 +27,7 @@ import {
   getERGForProduct,
   searchMaterials,
 } from "../_core/ergDatabaseDB";
+import { fireGamificationEvent } from "./gamificationDispatcher";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,6 +133,10 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
         timestamp: new Date().toISOString(),
         updatedBy: String(dbUserId),
       });
+
+      // Fire gamification events
+      fireGamificationEvent({ userId: dbUserId, type: "load_created", value: 1 });
+      fireGamificationEvent({ userId: dbUserId, type: "platform_action", value: 1 });
 
       return {
         success: true,
@@ -321,6 +326,10 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
         status: "pending",
         timestamp: new Date().toISOString(),
       });
+
+      // Fire gamification events
+      fireGamificationEvent({ userId: dbUserId, type: "bid_submitted", value: 1 });
+      fireGamificationEvent({ userId: dbUserId, type: "platform_action", value: 1 });
 
       return {
         success: true,

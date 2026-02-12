@@ -64,15 +64,26 @@ export default function TheHaul() {
   }) || { mutate: () => {}, isPending: false };
 
   const startMut = (trpc as any).gamification?.startMission?.useMutation?.({
-    onSuccess: () => { toast.success("Mission started!"); missionsQ.refetch?.(); },
+    onSuccess: (d: any, vars: any) => {
+      if (d?.success === false) { toast.error(d.message || "Could not start mission"); return; }
+      toast.success("Mission accepted! Complete the objective to earn rewards.", { duration: 4000 });
+      missionsQ.refetch?.();
+      profileQ.refetch?.();
+    },
   }) || { mutate: () => {}, isPending: false };
 
   const claimMut = (trpc as any).gamification?.claimMissionReward?.useMutation?.({
-    onSuccess: (d: any) => { if (d?.success) { toast.success(`+${d.reward?.xp || 0} XP`); missionsQ.refetch?.(); profileQ.refetch?.(); } },
+    onSuccess: (d: any) => { if (d?.success) { toast.success(`+${d.reward?.xp || 0} XP earned!`); missionsQ.refetch?.(); profileQ.refetch?.(); } else { toast.error(d?.message || "Could not claim"); } },
   }) || { mutate: () => {}, isPending: false };
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [lobbyQ.data?.messages]);
   useEffect(() => { const iv = setInterval(() => lobbyQ.refetch?.(), 10000); return () => clearInterval(iv); }, []);
+  // Auto-refetch missions & profile when on the missions tab to show progress updates
+  useEffect(() => {
+    if (activeTab !== "missions") return;
+    const iv = setInterval(() => { missionsQ.refetch?.(); profileQ.refetch?.(); }, 15000);
+    return () => clearInterval(iv);
+  }, [activeTab]);
 
   const profile = profileQ.data;
   const msgs = lobbyQ.data?.messages || [];

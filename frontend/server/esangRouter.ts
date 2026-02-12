@@ -11,6 +11,7 @@ import {
   getFullERGInfo, getERGForProduct, getUNForProduct,
   EMERGENCY_CONTACTS,
 } from "./_core/ergDatabaseDB";
+import { fireGamificationEvent } from "./services/gamificationDispatcher";
 
 export const esangRouter = router({
   /**
@@ -29,6 +30,7 @@ export const esangRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
+      const numericUserId = typeof ctx.user.id === "number" ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0;
       const response = await esangAI.chat(
         String(ctx.user.id),
         input.message,
@@ -38,12 +40,18 @@ export const esangRouter = router({
           loadId: input.context?.loadId,
         },
         {
-          userId: typeof ctx.user.id === "number" ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0,
+          userId: numericUserId,
           userEmail: ctx.user.email || "",
           userName: ctx.user.name || "User",
           role: ctx.user.role || "SHIPPER",
         }
       );
+
+      // Fire gamification events for ESANG interaction
+      if (numericUserId) {
+        fireGamificationEvent({ userId: numericUserId, type: "esang_question", value: 1 });
+        fireGamificationEvent({ userId: numericUserId, type: "platform_action", value: 1 });
+      }
 
       return response;
     }),

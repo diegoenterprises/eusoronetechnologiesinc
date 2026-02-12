@@ -17,6 +17,7 @@ import {
 } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 import { emailService } from "../_core/email";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -237,6 +238,11 @@ export const loadsRouter = router({
           text: `Your load ${loadNumber} has been posted to the EusoTrip marketplace.`,
         }).catch(err => console.warn("[loads.create] Email failed:", err));
       }
+
+      // Fire gamification event for load creation
+      const dbCreatorId = await resolveUserId(ctx.user);
+      if (dbCreatorId) fireGamificationEvent({ userId: dbCreatorId, type: "load_created", value: 1 });
+      fireGamificationEvent({ userId: dbCreatorId, type: "platform_action", value: 1 });
 
       return { success: true, id: String(insertedId), loadNumber };
     }),
@@ -695,6 +701,10 @@ export const loadsRouter = router({
         updatedBy: String(ctx.user.id),
       });
 
+      // Fire gamification event for load creation
+      fireGamificationEvent({ userId: dbUserId, type: "load_created", value: 1 });
+      fireGamificationEvent({ userId: dbUserId, type: "platform_action", value: 1 });
+
       return { success: true, loadId: Number(insertedId), id: Number(insertedId) };
     }),
 
@@ -921,6 +931,10 @@ export const bidsRouter = router({
           }
         } catch {}
       }
+
+      // Fire gamification event for bid submission
+      fireGamificationEvent({ userId: carrierId, type: "bid_submitted", value: 1 });
+      fireGamificationEvent({ userId: carrierId, type: "platform_action", value: 1 });
 
       return { success: true, bidId };
     }),
@@ -1204,6 +1218,10 @@ export const bidsRouter = router({
         status: 'pending',
         timestamp: new Date().toISOString(),
       });
+
+      // Fire gamification event for bid submission
+      fireGamificationEvent({ userId: carrierId, type: "bid_submitted", value: 1 });
+      fireGamificationEvent({ userId: carrierId, type: "platform_action", value: 1 });
 
       return { success: true, bidId: String(bidId) };
     }),
