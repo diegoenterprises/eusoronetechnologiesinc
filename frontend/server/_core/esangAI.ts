@@ -361,6 +361,11 @@ class ESANGAIService {
         role: msg.role === "assistant" ? "model" : "user",
         parts: [{ text: msg.content }],
       })),
+      // Add current user message
+      {
+        role: "user",
+        parts: [{ text: message }],
+      },
     ];
 
     const response = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
