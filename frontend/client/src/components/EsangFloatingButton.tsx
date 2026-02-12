@@ -233,88 +233,91 @@ export default function EsangFloatingButton() {
   }, [isOnEsang]);
 
   return (
-    <motion.div
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-0 cursor-pointer"
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
-      onMouseEnter={() => { setHovered(true); if (!chatOpen) setExpanded(true); }}
-      onMouseLeave={() => { setHovered(false); if (!chatOpen) setExpanded(false); }}
-      onClick={() => {
-        if (isOnEsang) {
-          window.dispatchEvent(new Event('esang-dissolve'));
-          const prevPage = sessionStorage.getItem('esang-prev-page') || '/dashboard';
-          setTimeout(() => {
-            navigate(prevPage);
-            setChatOpen(true);
-          }, 700);
-        } else if (chatOpen && !chatDissolving) {
-          // Dissolve the mini chatbox with particles
-          const colors = isLight
-            ? ['#0D5FE3', '#9B00D4', '#7C3AED', '#4F46E5', '#9333EA']
-            : ['#1473FF', '#BE01FF', '#8B5CF6', '#6366F1', '#A855F7'];
-          const btnRect = { x: window.innerWidth - 46, y: window.innerHeight - 46 };
-          setChatParticles(
-            Array.from({ length: 30 }, () => ({
-              startX: window.innerWidth - 390 + Math.random() * 360,
-              startY: window.innerHeight - 560 + Math.random() * 480,
-              delay: Math.random() * 0.25,
-              size: 3 + Math.random() * 7,
-              color: colors[Math.floor(Math.random() * colors.length)],
-              dur: 0.35 + Math.random() * 0.35,
-            }))
-          );
-          setChatDissolving(true);
-          setTimeout(() => {
-            setChatOpen(false);
-            setChatDissolving(false);
-            setChatParticles([]);
-          }, 650);
-        } else {
-          setChatOpen(true);
-        }
-      }}
-    >
-      {/* Expanded label */}
-      <AnimatePresence>
-        {expanded && (
-          <motion.div
-            initial={{ opacity: 0, x: 20, width: 0 }}
-            animate={{ opacity: 1, x: 0, width: "auto" }}
-            exit={{ opacity: 0, x: 20, width: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="overflow-hidden"
-          >
-            <div className={`${isLight ? "bg-white text-slate-800 shadow-lg shadow-slate-300/50 border border-slate-200" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"} text-sm font-bold px-4 py-2.5 rounded-l-full whitespace-nowrap mr-[-12px] pr-5`}>
-              Ask Esang AI
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Animated circle button */}
+    <>
+      {/* Floating button — transformed motion.div (creates containing block) */}
       <motion.div
-        className="relative flex-shrink-0"
-        animate={{
-          scale: hovered ? 1.1 : 1,
-          filter: hovered ? "drop-shadow(0 0 20px rgba(190, 1, 255, 0.5))" : "drop-shadow(0 4px 12px rgba(20, 115, 255, 0.3))",
+        className="fixed bottom-6 right-6 z-50 flex items-center gap-0 cursor-pointer"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.5 }}
+        onMouseEnter={() => { setHovered(true); if (!chatOpen) setExpanded(true); }}
+        onMouseLeave={() => { setHovered(false); if (!chatOpen) setExpanded(false); }}
+        onClick={() => {
+          if (isOnEsang) {
+            window.dispatchEvent(new Event('esang-dissolve'));
+            const prevPage = sessionStorage.getItem('esang-prev-page') || '/dashboard';
+            setTimeout(() => {
+              navigate(prevPage);
+              setChatOpen(true);
+            }, 700);
+          } else if (chatOpen && !chatDissolving) {
+            // Dissolve the mini chatbox with particles
+            const colors = isLight
+              ? ['#0D5FE3', '#9B00D4', '#7C3AED', '#4F46E5', '#9333EA']
+              : ['#1473FF', '#BE01FF', '#8B5CF6', '#6366F1', '#A855F7'];
+            setChatParticles(
+              Array.from({ length: 30 }, () => ({
+                startX: window.innerWidth - 390 + Math.random() * 360,
+                startY: window.innerHeight - 560 + Math.random() * 480,
+                delay: Math.random() * 0.25,
+                size: 3 + Math.random() * 7,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                dur: 0.35 + Math.random() * 0.35,
+              }))
+            );
+            setChatDissolving(true);
+            setTimeout(() => {
+              setChatOpen(false);
+              setChatDissolving(false);
+              setChatParticles([]);
+            }, 650);
+          } else {
+            setChatOpen(true);
+          }
         }}
-        transition={{ type: "spring", stiffness: 300, damping: 20 }}
-        style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
       >
-        <canvas
-          ref={canvasRef}
-          style={{
-            width: CANVAS_SIZE,
-            height: CANVAS_SIZE,
-            display: "block",
+        {/* Expanded label */}
+        <AnimatePresence>
+          {expanded && (
+            <motion.div
+              initial={{ opacity: 0, x: 20, width: 0 }}
+              animate={{ opacity: 1, x: 0, width: "auto" }}
+              exit={{ opacity: 0, x: 20, width: 0 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="overflow-hidden"
+            >
+              <div className={`${isLight ? "bg-white text-slate-800 shadow-lg shadow-slate-300/50 border border-slate-200" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"} text-sm font-bold px-4 py-2.5 rounded-l-full whitespace-nowrap mr-[-12px] pr-5`}>
+                Ask Esang AI
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Animated circle button */}
+        <motion.div
+          className="relative flex-shrink-0"
+          animate={{
+            scale: hovered ? 1.1 : 1,
+            filter: hovered ? "drop-shadow(0 0 20px rgba(190, 1, 255, 0.5))" : "drop-shadow(0 4px 12px rgba(20, 115, 255, 0.3))",
           }}
-        />
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          style={{ width: CANVAS_SIZE, height: CANVAS_SIZE }}
+        >
+          <canvas
+            ref={canvasRef}
+            style={{
+              width: CANVAS_SIZE,
+              height: CANVAS_SIZE,
+              display: "block",
+            }}
+          />
+        </motion.div>
       </motion.div>
-      {/* Chat Widget */}
+
+      {/* Chat Widget — outside transformed parent so fixed positioning works */}
       <EsangChatWidget open={(chatOpen || chatDissolving) && !isOnEsang} onClose={() => setChatOpen(false)} dissolving={chatDissolving} />
 
-      {/* Mini chat dissolution particles */}
+      {/* Mini chat dissolution particles — outside transformed parent so fixed inset-0 covers viewport */}
       {chatDissolving && (
         <div className="fixed inset-0 z-[200] pointer-events-none">
           {chatParticles.map((p, i) => (
@@ -345,6 +348,6 @@ export default function EsangFloatingButton() {
           ))}
         </div>
       )}
-    </motion.div>
+    </>
   );
 }
