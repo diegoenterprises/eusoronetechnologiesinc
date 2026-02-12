@@ -200,7 +200,7 @@ export default function TheHaul() {
                   <div className="flex items-center gap-3"><Progress value={pct} className="flex-1 h-2" /><span className="text-xs text-slate-400">{Math.round(pct)}%</span></div>
                   <div className="flex items-center gap-2 mt-2">
                     {m.status === "completed" && <Button size="sm" className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs h-7" onClick={() => claimMut.mutate({ missionId: m.id })}><Gift className="w-3 h-3 mr-1" />Claim</Button>}
-                    {(m.status === "in_progress" || m.status === "not_started") && <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs h-7" onClick={() => { if (confirm("Cancel this mission? Progress will be lost.")) cancelMut.mutate({ missionId: m.id }); }}><XCircle className="w-3 h-3 mr-1" />Cancel</Button>}
+                    {(m.status === "in_progress" || m.status === "not_started") && <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-xs h-7" onClick={() => { toast("Cancel this mission?", { description: "All progress will be lost.", action: { label: "Cancel Mission", onClick: () => cancelMut.mutate({ missionId: m.id }) }, cancel: { label: "Keep", onClick: () => {} }, duration: 8000 }); }}><XCircle className="w-3 h-3 mr-1" />Cancel</Button>}
                   </div>
                 </div>); })}</CardContent></Card>)}
 

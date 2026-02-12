@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
 import {
   AlertCircle,
   MapPin,
@@ -87,7 +88,7 @@ export default function ZeunBreakdownReport() {
 
   const handleSubmitReport = async () => {
     if (!formData.vehicleVin || formData.symptoms.length === 0) {
-      alert("Please fill in all required fields");
+      toast.error("Please fill in all required fields");
       return;
     }
 
@@ -108,7 +109,7 @@ export default function ZeunBreakdownReport() {
       setDiagnosticResult(result);
     } catch (error) {
       console.error("Error reporting breakdown:", error);
-      alert("Failed to report breakdown. Please try again.");
+      toast.error("Failed to report breakdown. Please try again.");
     } finally {
       setLoading(false);
     }

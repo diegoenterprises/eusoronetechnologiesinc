@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { X, Upload, Camera, Loader2, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -60,13 +61,13 @@ export default function EditProfileModal({
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert("File size must be less than 10MB");
+      toast.error("File size must be less than 10MB");
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
@@ -113,7 +114,7 @@ export default function EditProfileModal({
       }, 2000);
     } catch (error) {
       console.error("Upload error:", error);
-      alert("Failed to upload photo");
+      toast.error("Failed to upload photo");
       setUploading(false);
     }
   };
