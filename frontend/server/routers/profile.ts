@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 async function resolveDbUser(ctxUser: any) {
   const db = await getDb();
@@ -73,6 +74,9 @@ export const profileRouter = router({
           await db.update(users).set(updates).where(eq(users.id, dbUser.id)).catch(() => {});
         }
       }
+      // Fire gamification events for profile update
+      if (dbUser) { fireGamificationEvent({ userId: dbUser.id, type: "profile_updated", value: 1 }); fireGamificationEvent({ userId: dbUser.id, type: "platform_action", value: 1 }); }
+
       return {
         success: true,
         updatedFields: Object.keys(input).filter(k => input[k as keyof typeof input] !== undefined),

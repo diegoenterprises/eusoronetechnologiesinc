@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { ensureGamificationProfile } from "./services/gamificationDispatcher";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 let _pool: ReturnType<typeof mysql2.createPool> | null = null;
@@ -208,7 +209,22 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   } catch (error) {
     console.error("[Database] Failed to upsert user:", error);
     // Don't throw — failing to upsert shouldn't crash the app
+    return;
   }
+
+  // Ensure gamification profile exists for this user (non-blocking)
+  try {
+    if (user.email || user.openId) {
+      const lookup = user.email
+        ? await db.select({ id: users.id }).from(users).where(eq(users.email, user.email)).limit(1)
+        : user.openId
+          ? await db.select({ id: users.id }).from(users).where(eq(users.openId, user.openId)).limit(1)
+          : [];
+      if (lookup.length > 0) {
+        ensureGamificationProfile(lookup[0].id).catch(() => {});
+      }
+    }
+  } catch {}
 }
 
 export async function getUserByOpenId(openId: string) {

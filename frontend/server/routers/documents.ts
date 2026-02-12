@@ -10,6 +10,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
 import { digitizeDocument } from "../services/documentOCR";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 const documentCategorySchema = z.enum(["compliance", "insurance", "permits", "contracts", "invoices", "bols", "receipts", "run_tickets", "agreements", "freight", "operations", "financial", "company", "vehicle", "other"]);
 const documentStatusSchema = z.enum(["active", "expired", "expiring_soon", "pending_review"]);
@@ -197,6 +198,8 @@ export const documentsRouter = router({
             status: "active",
           });
           console.log(`[Documents] upload SUCCESS: insertId=${(result as any).insertId} stored ${input.fileData.length} chars`);
+          const uid = typeof userId === "number" ? userId : parseInt(String(userId), 10) || 0;
+          if (uid) { fireGamificationEvent({ userId: uid, type: "document_uploaded", value: 1 }); fireGamificationEvent({ userId: uid, type: "platform_action", value: 1 }); }
           return {
             id: `d${(result as any).insertId}`,
             name: input.name,

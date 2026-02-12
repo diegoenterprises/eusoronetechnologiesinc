@@ -292,6 +292,16 @@ async function startServer() {
         console.error("[MissionGenerator] Failed to start:", err);
       }
     }, 8000);
+
+    // Start gamification sync scheduler (prune orphaned data, cap missions, backfill profiles)
+    setTimeout(async () => {
+      try {
+        const { startGamificationSync } = await import("../services/gamificationDispatcher");
+        startGamificationSync();
+      } catch (err) {
+        console.error("[GamificationSync] Failed to start:", err);
+      }
+    }, 12000);
   });
 }
 

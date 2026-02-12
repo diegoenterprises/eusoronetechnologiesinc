@@ -10,6 +10,7 @@ import { eq, and, desc, sql, like, or, gte } from "drizzle-orm";
 import { router, auditedAdminProcedure, auditedSuperAdminProcedure, sensitiveData } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, auditLogs } from "../../drizzle/schema";
+import { cleanupDeletedUser } from "../services/gamificationDispatcher";
 
 const userStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "needs_info"]);
@@ -842,7 +843,17 @@ export const adminRouter = router({
 
   // Missing procedures for frontend pages
   resetPassword: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
-  deleteUser: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
+  deleteUser: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    const uid = parseInt(input.userId, 10);
+    if (db && uid) {
+      // Soft-delete the user
+      await db.update(users).set({ isActive: false, deletedAt: new Date() }).where(eq(users.id, uid));
+      // Clean up all gamification data
+      cleanupDeletedUser(uid).catch(err => console.error('[Admin] deleteUser gamification cleanup error:', err));
+    }
+    return { success: true, userId: input.userId };
+  }),
   getSystemLogs: auditedAdminProcedure.input(z.object({ level: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
   getLogStats: auditedAdminProcedure.query(async () => ({ total: 0, error: 0, warning: 0, info: 0, debug: 0 })),
   getOnboardingUsers: auditedAdminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => []),

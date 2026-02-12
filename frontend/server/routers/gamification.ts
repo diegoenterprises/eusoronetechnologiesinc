@@ -607,6 +607,17 @@ export const gamificationRouter = router({
         return { success: false, message: "Mission already started" };
       }
 
+      // Enforce active mission cap (max 10 per user)
+      const activeCount = await db.select({ count: sql<number>`count(*)` })
+        .from(missionProgress)
+        .where(and(
+          eq(missionProgress.userId, userId),
+          eq(missionProgress.status, "in_progress")
+        ));
+      if ((activeCount[0]?.count || 0) >= 10) {
+        return { success: false, message: "You already have 10 active missions. Complete or let one expire before starting another." };
+      }
+
       await db.insert(missionProgress).values({
         userId,
         missionId: input.missionId,

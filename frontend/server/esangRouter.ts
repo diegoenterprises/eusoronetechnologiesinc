@@ -278,7 +278,9 @@ export const esangRouter = router({
       timestamp: msg.timestamp ? new Date(msg.timestamp).toISOString() : undefined,
     }));
   }),
-  getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ input }) => {
+  getERGGuide: protectedProcedure.input(z.object({ guideNumber: z.string() })).query(async ({ ctx, input }) => {
+    const uid = typeof ctx.user?.id === "number" ? ctx.user.id : parseInt(String(ctx.user?.id), 10) || 0;
+    if (uid) { fireGamificationEvent({ userId: uid, type: "erg_lookup", value: 1 }); fireGamificationEvent({ userId: uid, type: "platform_action", value: 1 }); }
     const num = parseInt(input.guideNumber, 10);
     const guide = await getGuide(num);
     if (guide) {
