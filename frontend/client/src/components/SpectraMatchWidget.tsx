@@ -183,13 +183,13 @@ export default function SpectraMatchWidget({
   const result = identifyMutation.data as SpectraMatchResult | undefined;
 
   return (
-    <Card className={cn("bg-transparent border-transparent overflow-hidden", className)}>
+    <div className={cn("overflow-hidden", className)}>
       {/* Gradient top bar */}
       <div className="h-1 bg-gradient-to-r from-cyan-500 to-purple-500" />
 
-      <CardHeader className="pb-2">
+      <div className="px-4 pt-3 pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-white flex items-center gap-2 text-sm">
+          <div className="text-white flex items-center gap-2 text-sm font-semibold">
             <div className="p-1.5 rounded bg-gradient-to-r from-cyan-500/20 to-purple-500/20">
               <Activity className="w-4 h-4 text-purple-400" />
             </div>
@@ -198,7 +198,7 @@ export default function SpectraMatchWidget({
               <Sparkles className="w-2.5 h-2.5 mr-0.5" />
               AI
             </Badge>
-          </CardTitle>
+          </div>
           {compact && (
             <Button
               variant="ghost"
@@ -210,19 +210,19 @@ export default function SpectraMatchWidget({
             </Button>
           )}
         </div>
-      </CardHeader>
+      </div>
 
       {expanded && (
-        <CardContent className="space-y-4 pt-0">
+        <div className="space-y-4 px-4 pb-4">
           {/* Product Category */}
           <div className="space-y-2">
             <Label className="text-slate-400 text-xs">Product Category</Label>
             <div className="grid grid-cols-4 gap-1.5">
               {[
-                { id: "crude" as ProductCategory, label: "Crude Oil", icon: Droplets, color: "from-amber-500 to-orange-600" },
-                { id: "refined" as ProductCategory, label: "Refined Fuel", icon: Flame, color: "from-red-500 to-rose-600" },
-                { id: "lpg" as ProductCategory, label: "LPG / Gas", icon: Gauge, color: "from-blue-500 to-cyan-600" },
-                { id: "chemical" as ProductCategory, label: "Chemical", icon: Beaker, color: "from-green-500 to-emerald-600" },
+                { id: "crude" as ProductCategory, label: "Crude Oil", icon: Droplets, activeText: "text-amber-300", activeBg: "bg-amber-500/15", activeBorder: "border-amber-500/40" },
+                { id: "refined" as ProductCategory, label: "Refined Fuel", icon: Flame, activeText: "text-rose-300", activeBg: "bg-rose-500/15", activeBorder: "border-rose-500/40" },
+                { id: "lpg" as ProductCategory, label: "LPG / Gas", icon: Gauge, activeText: "text-cyan-300", activeBg: "bg-cyan-500/15", activeBorder: "border-cyan-500/40" },
+                { id: "chemical" as ProductCategory, label: "Chemical", icon: Beaker, activeText: "text-emerald-300", activeBg: "bg-emerald-500/15", activeBorder: "border-emerald-500/40" },
               ].map((cat) => (
                 <button
                   key={cat.id}
@@ -230,8 +230,8 @@ export default function SpectraMatchWidget({
                   className={cn(
                     "flex flex-col items-center gap-1 p-2 rounded-lg border text-[10px] font-medium transition-all",
                     category === cat.id
-                      ? `bg-gradient-to-br ${cat.color} border-white/30 text-white shadow-lg`
-                      : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
+                      ? `${cat.activeBg} ${cat.activeBorder} ${cat.activeText}`
+                      : "bg-white/[0.03] border-slate-700/50 text-slate-500 hover:border-slate-600 hover:text-slate-400"
                   )}
                 >
                   <cat.icon className="w-3.5 h-3.5" />
@@ -243,8 +243,8 @@ export default function SpectraMatchWidget({
 
           {/* ---- CRUDE OIL FIELDS ---- */}
           {category === "crude" && (
-            <div className="space-y-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
-              <p className="text-[10px] text-amber-400 font-medium">Run Ticket / Lab Analysis Values</p>
+            <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
+              <p className="text-[10px] text-amber-400/80 font-medium">Run Ticket / Lab Analysis Values</p>
               {/* API Gravity + BS&W */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
@@ -314,8 +314,8 @@ export default function SpectraMatchWidget({
 
           {/* ---- REFINED FUEL FIELDS ---- */}
           {category === "refined" && (
-            <div className="space-y-3 p-3 rounded-lg bg-red-500/5 border border-red-500/10">
-              <p className="text-[10px] text-red-400 font-medium">Fuel Grade / BOL Details</p>
+            <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
+              <p className="text-[10px] text-rose-400/80 font-medium">Fuel Grade / BOL Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-slate-400 text-xs flex items-center gap-1">
@@ -371,8 +371,8 @@ export default function SpectraMatchWidget({
 
           {/* ---- LPG / GAS FIELDS ---- */}
           {category === "lpg" && (
-            <div className="space-y-3 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-              <p className="text-[10px] text-blue-400 font-medium">Gas Product Specifications</p>
+            <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
+              <p className="text-[10px] text-cyan-400/80 font-medium">Gas Product Specifications</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-slate-400 text-xs flex items-center gap-1">
@@ -412,8 +412,8 @@ export default function SpectraMatchWidget({
 
           {/* ---- CHEMICAL FIELDS ---- */}
           {category === "chemical" && (
-            <div className="space-y-3 p-3 rounded-lg bg-green-500/5 border border-green-500/10">
-              <p className="text-[10px] text-green-400 font-medium">Chemical Product Details</p>
+            <div className="space-y-3 p-3 rounded-lg bg-white/[0.03] border border-slate-700/40">
+              <p className="text-[10px] text-emerald-400/80 font-medium">Chemical Product Details</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -449,7 +449,7 @@ export default function SpectraMatchWidget({
           {/* Identify Button */}
           <Button
             size="sm"
-            className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600 h-8 text-xs"
+            className="w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] hover:from-[#1260dd] hover:to-[#a801dd] h-8 text-xs shadow-lg shadow-purple-500/10"
             onClick={handleIdentify}
             disabled={identifyMutation.isPending || !category}
           >
@@ -553,12 +553,12 @@ export default function SpectraMatchWidget({
               )}
             </div>
           )}
-        </CardContent>
+        </div>
       )}
 
       {/* Compact collapsed state */}
       {compact && !expanded && result && (
-        <CardContent className="pt-0 pb-3">
+        <div className="px-4 pb-3">
           <div className="flex items-center justify-between">
             <span className="text-white text-sm font-medium">{result.primaryMatch.name}</span>
             <div className="flex items-center gap-2">
@@ -566,8 +566,8 @@ export default function SpectraMatchWidget({
               <span className="text-green-400 font-bold text-sm">{result.primaryMatch.confidence}%</span>
             </div>
           </div>
-        </CardContent>
+        </div>
       )}
-    </Card>
+    </div>
   );
 }
