@@ -130,12 +130,14 @@ export default function ESANGChat() {
       transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
     >
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className={cn("text-3xl font-bold bg-gradient-to-r bg-clip-text text-transparent flex items-center gap-2", isLight ? "from-purple-600 to-pink-600" : "from-purple-400 to-pink-400")}>
-            <Sparkles className={cn("w-8 h-8", isLight ? "text-purple-600" : "text-purple-400")} />
-            ESANG AI
-          </h1>
-          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Your intelligent logistics assistant</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+            <img src="/esang-ai-logo.svg" alt="Esang AI" className="w-full h-full object-cover" />
+          </div>
+          <div>
+            <h1 className={cn("text-2xl font-semibold tracking-[0.15em] lowercase", isLight ? "text-slate-800" : "text-white")} style={{ fontFamily: "'Inter', 'Gilroy', system-ui, sans-serif", letterSpacing: '0.15em' }}>esang</h1>
+            <p className={cn("text-sm mt-0.5", isLight ? "text-slate-500" : "text-slate-400")}>Your intelligent logistics assistant</p>
+          </div>
         </div>
         <Button variant="outline" className={cn("rounded-lg", isLight ? "bg-white border-slate-200 hover:bg-slate-50 text-slate-700" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => clearMutation.mutate()}>
           <Trash2 className="w-4 h-4 mr-2" />Clear Chat
@@ -149,8 +151,8 @@ export default function ESANGChat() {
               <div className="space-y-4">{[1, 2, 3].map((i: any) => <Skeleton key={i} className={cn("h-20 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>
             ) : messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center">
-                <div className="p-4 rounded-full bg-purple-500/20 mb-4">
-                  <Sparkles className={cn("w-12 h-12", isLight ? "text-purple-600" : "text-purple-400")} />
+                <div className="w-16 h-16 rounded-full overflow-hidden mb-4">
+                  <img src="/esang-ai-logo.svg" alt="Esang AI" className="w-full h-full object-cover" />
                 </div>
                 <p className={cn("font-bold text-xl mb-2", isLight ? "text-slate-800" : "text-white")}>Hello! I'm ESANG AI</p>
                 <p className={cn("max-w-md", isLight ? "text-slate-500" : "text-slate-400")}>I can help you with load recommendations, hazmat classification, compliance questions, and more. How can I assist you today?</p>

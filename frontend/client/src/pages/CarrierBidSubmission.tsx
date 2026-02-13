@@ -405,7 +405,7 @@ export default function CarrierBidSubmission() {
                     {["Below Market", "Sweet Spot", "Premium"].map((label) => (
                       <span key={label} className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
                         rateIntel.ratingLabel === label
-                          ? label === "Sweet Spot" ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"
+                          ? label === "Sweet Spot" ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400"
                             : "border-amber-300 dark:border-amber-500/50 bg-amber-50 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400"
                           : isLight ? "border-slate-200 bg-slate-50 text-slate-400" : "border-slate-700/50 bg-slate-800/30 text-slate-500"
                       )}>

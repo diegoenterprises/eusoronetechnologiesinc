@@ -295,8 +295,8 @@ export default function EsangFloatingButton() {
               transition={{ duration: 0.3, ease: "easeOut" }}
               className="overflow-hidden"
             >
-              <div className={`${isLight ? "bg-white text-slate-800 shadow-lg shadow-slate-300/50 border border-slate-200" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"} text-sm font-bold px-4 py-2.5 rounded-l-full whitespace-nowrap mr-[-12px] pr-5`}>
-                Ask Esang AI
+              <div className={`${isLight ? "bg-white text-slate-800 shadow-lg shadow-slate-300/50 border border-slate-200" : "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-purple-500/25"} text-base font-semibold px-4 py-2.5 rounded-l-full whitespace-nowrap mr-[-12px] pr-5 lowercase tracking-[0.15em]`} style={{ fontFamily: "'Inter', 'Gilroy', system-ui, sans-serif" }}>
+                esang
               </div>
             </motion.div>
           )}

@@ -957,7 +957,7 @@ export default function LoadCreationWizard() {
                         Too Low
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",
-                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
+                        ratio >= 0.90 && ratio <= 1.15 ? "border-emerald-300 dark:border-emerald-500/50 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-purple-400" : "border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-800/30 text-slate-400 dark:text-slate-500")}>
                         Good Offer
                       </button>
                       <button className={cn("px-3 py-1.5 rounded-lg text-[11px] font-semibold border transition-all",

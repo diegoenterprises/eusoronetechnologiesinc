@@ -575,10 +575,10 @@ export default function DashboardLayout({
 
           <div className="flex items-center gap-3">
             {/* Global Search Bar */}
-            <div className="relative hidden md:block" ref={searchDropdownRef}>
+            <div className="relative hidden md:block flex-shrink-0" ref={searchDropdownRef}>
               <motion.div
                 animate={{
-                  width: searchFocused ? 320 : 200,
+                  width: searchFocused ? 280 : 200,
                   backgroundColor: searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
