@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
+import HotZoneMap from "@/components/HotZoneMap";
 import {
   Flame, TrendingUp, TrendingDown, Truck, MapPin, Fuel, CloudRain,
   AlertTriangle, Shield, ChevronRight, Layers, Activity, Zap,
@@ -181,102 +182,15 @@ export default function HotZones() {
       {/* ── INTERACTIVE HEATMAP ── */}
       {!isLoading && zones.length > 0 && (
         <div className="max-w-[1600px] mx-auto px-6 pt-6">
-          <div
-            ref={mapRef}
-            className={`relative rounded-2xl border overflow-hidden ${isLight ? "bg-slate-100/50 border-slate-200/80" : "bg-white/[0.02] border-white/[0.06]"}`}
-            style={{ height: 340 }}
-          >
-            <svg viewBox="0 0 960 340" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
-              {/* US outline hint — subtle grid lines */}
-              <defs>
-                <radialGradient id="hotGlow">
-                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
-                  <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="warmGlow">
-                  <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" />
-                  <stop offset="100%" stopColor="#F59E0B" stopOpacity="0" />
-                </radialGradient>
-                <radialGradient id="coldGlow">
-                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.2" />
-                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-
-              {/* Cold zones — subtle blue dots */}
-              {coldZones.map((cz: any) => {
-                const x = ((cz.center?.lng || -95) + 125) * (960 / 62);
-                const y = (50 - (cz.center?.lat || 40)) * (340 / 26) + 20;
-                return (
-                  <g key={cz.id}>
-                    <circle cx={x} cy={y} r={18} fill="url(#coldGlow)" />
-                    <circle cx={x} cy={y} r={4} fill={isLight ? "#93C5FD" : "#3B82F6"} opacity={0.5} />
-                  </g>
-                );
-              })}
-
-              {/* Hot zones — sized by ratio, colored by demand */}
-              {sortedZones.map((zone) => {
-                const x = ((zone.center?.lng || -95) + 125) * (960 / 62);
-                const y = (50 - (zone.center?.lat || 40)) * (340 / 26) + 20;
-                const r = Math.max(6, Math.min(18, zone.liveRatio * 5));
-                const isSel = selectedZone === zone.zoneId;
-                const demandColor = zone.demandLevel === "CRITICAL" ? "#EF4444" : zone.demandLevel === "HIGH" ? "#F97316" : "#F59E0B";
-                const glowId = zone.demandLevel === "CRITICAL" ? "hotGlow" : "warmGlow";
-                return (
-                  <g
-                    key={zone.zoneId}
-                    onClick={(e) => { e.stopPropagation(); setSelectedZone(isSel ? null : zone.zoneId); }}
-                    className="cursor-pointer"
-                  >
-                    {/* Glow */}
-                    <circle cx={x} cy={y} r={r * 3} fill={`url(#${glowId})`}>
-                      {zone.demandLevel === "CRITICAL" && (
-                        <animate attributeName="r" values={`${r * 2.5};${r * 3.5};${r * 2.5}`} dur="2s" repeatCount="indefinite" />
-                      )}
-                    </circle>
-                    {/* Ring */}
-                    {isSel && (
-                      <circle cx={x} cy={y} r={r + 4} fill="none" stroke="#1473FF" strokeWidth="1.5" opacity="0.6">
-                        <animate attributeName="r" values={`${r + 3};${r + 6};${r + 3}`} dur="1.5s" repeatCount="indefinite" />
-                      </circle>
-                    )}
-                    {/* Dot */}
-                    <circle cx={x} cy={y} r={r} fill={demandColor} opacity={0.85} stroke={isSel ? "#1473FF" : "none"} strokeWidth={isSel ? 2 : 0} />
-                    {/* Label */}
-                    <text x={x} y={y - r - 5} textAnchor="middle" className="select-none pointer-events-none" fill={isLight ? "#334155" : "#ffffff"} fontSize="8" fontWeight="600" opacity={isSel ? 1 : 0.7}>
-                      {zone.zoneName.split("/")[0].split(",")[0].trim()}
-                    </text>
-                    {/* Rate badge */}
-                    <text x={x} y={y + 3} textAnchor="middle" className="select-none pointer-events-none" fill="white" fontSize="7" fontWeight="700">
-                      ${zone.liveRate}
-                    </text>
-                  </g>
-                );
-              })}
-            </svg>
-
-            {/* Map legend */}
-            <div className={`absolute bottom-3 left-4 flex items-center gap-4 text-[10px] ${isLight ? "text-slate-500" : "text-white/40"}`}>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500" /> Critical
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-orange-500" /> High
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Elevated
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-blue-400 opacity-50" /> Cold
-              </div>
-            </div>
-
-            {/* Map subtitle */}
-            <div className={`absolute top-3 left-4 text-[10px] font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>
-              Interactive Demand Heatmap — click zones to inspect
-            </div>
-          </div>
+          <HotZoneMap
+            zones={sortedZones}
+            coldZones={coldZones}
+            roleCtx={roleCtx}
+            selectedZone={selectedZone}
+            onSelectZone={setSelectedZone}
+            isLight={isLight}
+            activeLayers={activeLayers}
+          />
         </div>
       )}
 
@@ -329,7 +243,7 @@ export default function HotZones() {
                         </div>
                         <div className={`flex items-center justify-end gap-0.5 text-xs font-medium tabular-nums ${zone.rateChange >= 0 ? "text-emerald-500" : "text-red-400"}`}>
                           {zone.rateChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {zone.rateChange >= 0 ? "+" : ""}{zone.rateChangePercent}%
+                          {Number(zone.rateChange) >= 0 ? "+" : ""}{zone.rateChangePercent || 0}%
                         </div>
                       </div>
                     </div>
@@ -354,14 +268,14 @@ export default function HotZones() {
 
                     {/* Equipment pills */}
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      {zone.topEquipment.map(eq => (
+                      {(zone.topEquipment || []).map(eq => (
                         <span key={eq} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>
                           {eq.replace("_", " ")}
                         </span>
                       ))}
-                      {zone.fuelPrice && (
+                      {zone.fuelPrice != null && (
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${isLight ? "bg-amber-50 text-amber-600" : "bg-amber-500/10 text-amber-400"}`}>
-                          Diesel ${zone.fuelPrice.toFixed(2)}
+                          Diesel ${Number(zone.fuelPrice || 0).toFixed(2)}
                         </span>
                       )}
                     </div>
@@ -379,7 +293,7 @@ export default function HotZones() {
                             <div>
                               <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Why it's hot</div>
                               <div className="space-y-1">
-                                {zone.reasons.map((r, i) => (
+                                {(zone.reasons || []).map((r, i) => (
                                   <div key={i} className={`flex items-center gap-2 text-xs ${isLight ? "text-slate-600" : "text-white/60"}`}>
                                     <div className="w-1 h-1 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
                                     {r}
@@ -388,10 +302,10 @@ export default function HotZones() {
                               </div>
                             </div>
                             {/* Weather alerts */}
-                            {zone.weatherAlerts.length > 0 && (
+                            {(zone.weatherAlerts || []).length > 0 && (
                               <div>
                                 <div className={`text-[10px] uppercase tracking-wider mb-1.5 ${isLight ? "text-slate-400" : "text-white/30"}`}>Weather Alerts</div>
-                                {zone.weatherAlerts.map((a, i) => (
+                                {(zone.weatherAlerts || []).map((a, i) => (
                                   <div key={i} className={`flex items-center gap-2 text-xs ${a.severity === "Extreme" ? "text-red-400" : "text-amber-400"}`}>
                                     <CloudRain className="w-3 h-3 flex-shrink-0" />
                                     <span className="truncate">{a.event}</span>
@@ -437,7 +351,7 @@ export default function HotZones() {
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-2xl overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] transition-all duration-500"
-                      style={{ width: `${Math.min(zone.liveSurge / 2, 1) * 100}%`, opacity: zone.liveSurge > 1.1 ? 1 : 0.3 }}
+                      style={{ width: `${Math.min((zone.liveSurge || 1) / 2, 1) * 100}%`, opacity: (zone.liveSurge || 1) > 1.1 ? 1 : 0.3 }}
                     />
                   </div>
                 </motion.div>

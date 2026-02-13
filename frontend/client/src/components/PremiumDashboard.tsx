@@ -142,21 +142,6 @@ const WidgetCard: React.FC<{
       <div className="relative h-full p-4 overflow-auto">
         {title && (
           <h3 className="text-lg font-semibold mb-3 relative">
-            {!isLight && (
-              <span
-                aria-hidden="true"
-                className="absolute inset-0"
-                style={{
-                  WebkitTextStroke: '1.5px transparent',
-                  background: 'linear-gradient(to right, #D1D5DB, #FFFFFF)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
-                }}
-              >
-                {title}
-              </span>
-            )}
             <span
               className={`relative bg-clip-text text-transparent ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF]' : 'bg-gradient-to-r from-white to-gray-300'}`}
             >
@@ -614,21 +599,6 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold relative">
-            {!isLight && (
-              <span
-                aria-hidden="true"
-                className="absolute inset-0"
-                style={{
-                  WebkitTextStroke: '2px transparent',
-                  background: 'linear-gradient(to right, #A5F3FC, #E9D5FF, #FFFFFF)',
-                  WebkitBackgroundClip: 'text',
-                  backgroundClip: 'text',
-                  color: 'transparent',
-                }}
-              >
-                Welcome back, {displayName}
-              </span>
-            )}
             <span
               className={`relative bg-clip-text text-transparent ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF]' : 'bg-gradient-to-r from-white via-purple-200 to-cyan-200'}`}
             >

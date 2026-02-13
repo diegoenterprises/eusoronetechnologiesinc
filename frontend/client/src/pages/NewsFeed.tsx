@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Newspaper, Clock, Share2, Bookmark, BookmarkCheck, Search, ExternalLink,
   TrendingUp, AlertTriangle, Truck, DollarSign, Shield, Fuel,
@@ -67,12 +68,68 @@ const formatDate = (dateStr: string) => {
 
 function QuickLinksNav() {
   const [, navigate] = useLocation();
-  const links = [
-    { label: "FMCSA Updates", icon: Shield, path: "/carrier-compliance" },
-    { label: "Fuel Prices", icon: DollarSign, path: "/fuel-prices" },
-    { label: "Weather Alerts", icon: AlertTriangle, path: "/weather-alerts" },
-    { label: "Load Board", icon: Truck, path: "/load-board" },
-  ];
+  const { user } = useAuth();
+  const role = user?.role || "SHIPPER";
+
+  const ROLE_LINKS: Record<string, { label: string; icon: typeof Shield; path: string }[]> = {
+    SHIPPER: [
+      { label: "Create Load", icon: Truck, path: "/loads/create" },
+      { label: "My Loads", icon: Truck, path: "/my-loads" },
+      { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+    ],
+    CARRIER: [
+      { label: "FMCSA Updates", icon: Shield, path: "/carrier-compliance" },
+      { label: "Load Board", icon: Truck, path: "/load-board" },
+      { label: "Fuel Prices", icon: DollarSign, path: "/market-pricing" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+    ],
+    BROKER: [
+      { label: "Load Board", icon: Truck, path: "/load-board" },
+      { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+      { label: "Carriers", icon: Truck, path: "/carriers" },
+    ],
+    DRIVER: [
+      { label: "My Jobs", icon: Truck, path: "/jobs" },
+      { label: "Fuel Prices", icon: DollarSign, path: "/market-pricing" },
+      { label: "Weather Alerts", icon: AlertTriangle, path: "/hot-zones" },
+      { label: "Documents", icon: Shield, path: "/documents" },
+    ],
+    CATALYST: [
+      { label: "Matched Loads", icon: Truck, path: "/matched-loads" },
+      { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+      { label: "Performance", icon: TrendingUp, path: "/performance" },
+    ],
+    ESCORT: [
+      { label: "Convoys", icon: Truck, path: "/convoys" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+      { label: "Weather Alerts", icon: AlertTriangle, path: "/hot-zones" },
+      { label: "Incidents", icon: Shield, path: "/incidents" },
+    ],
+    TERMINAL_MANAGER: [
+      { label: "Facility", icon: Truck, path: "/facility" },
+      { label: "Compliance", icon: Shield, path: "/compliance" },
+      { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
+      { label: "Operations", icon: TrendingUp, path: "/operations" },
+    ],
+    ADMIN: [
+      { label: "User Management", icon: Shield, path: "/admin/users" },
+      { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+      { label: "Analytics", icon: TrendingUp, path: "/admin/analytics" },
+    ],
+    SUPER_ADMIN: [
+      { label: "System Monitor", icon: Shield, path: "/super-admin/monitoring" },
+      { label: "User Management", icon: Shield, path: "/super-admin/users" },
+      { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
+      { label: "Analytics", icon: TrendingUp, path: "/admin/analytics" },
+    ],
+  };
+
+  const links = ROLE_LINKS[role] || ROLE_LINKS.SHIPPER;
+
   return (
     <div className="space-y-1">
       {links.map((link, idx) => (

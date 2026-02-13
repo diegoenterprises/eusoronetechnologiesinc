@@ -44,16 +44,18 @@ function SignalDots({ signals, isLight }: { signals: { intraday: string; daily: 
 }
 
 // ── FORMAT HELPERS ──
-function fmtPrice(price: number, unit: string): string {
-  if (price >= 1000) return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (price >= 10) return price.toFixed(2);
-  if (price >= 1) return price.toFixed(4);
-  return price.toFixed(4);
+function fmtPrice(price: number | string | undefined, unit: string): string {
+  const p = Number(price) || 0;
+  if (p >= 1000) return p.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (p >= 10) return p.toFixed(2);
+  if (p >= 1) return p.toFixed(4);
+  return p.toFixed(4);
 }
 
-function fmtChange(val: number, pct: number): { text: string; color: string; Icon: typeof TrendingUp } {
-  if (pct > 0) return { text: `+${pct.toFixed(2)}%`, color: "text-emerald-500", Icon: TrendingUp };
-  if (pct < 0) return { text: `${pct.toFixed(2)}%`, color: "text-red-400", Icon: TrendingDown };
+function fmtChange(val: number | string | undefined, pct: number | string | undefined): { text: string; color: string; Icon: typeof TrendingUp } {
+  const p = Number(pct) || 0;
+  if (p > 0) return { text: `+${p.toFixed(2)}%`, color: "text-emerald-500", Icon: TrendingUp };
+  if (p < 0) return { text: `${p.toFixed(2)}%`, color: "text-red-400", Icon: TrendingDown };
   return { text: "0.00%", color: "text-white/40", Icon: Minus };
 }
 
@@ -236,7 +238,7 @@ export default function MarketPricing() {
                                   { label: "High", value: fmtPrice(c.high, c.unit) },
                                   { label: "Low", value: fmtPrice(c.low, c.unit) },
                                   { label: "Volume", value: c.volume },
-                                  { label: "Change", value: `${c.change >= 0 ? "+" : ""}${c.change.toFixed(c.price >= 100 ? 2 : 4)}` },
+                                  { label: "Change", value: `${Number(c.change) >= 0 ? "+" : ""}${Number(c.change || 0).toFixed(Number(c.price) >= 100 ? 2 : 4)}` },
                                 ].map(row => (
                                   <div key={row.label} className="flex items-center justify-between">
                                     <span className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>{row.label}</span>
@@ -283,7 +285,7 @@ export default function MarketPricing() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{fmtPrice(g.price, g.unit)}</span>
-                          <span className="text-xs font-semibold tabular-nums text-emerald-500">+{g.changePercent.toFixed(2)}%</span>
+                          <span className="text-xs font-semibold tabular-nums text-emerald-500">+{Number(g.changePercent || 0).toFixed(2)}%</span>
                         </div>
                       </div>
                     ))}
@@ -304,7 +306,7 @@ export default function MarketPricing() {
                         </div>
                         <div className="flex items-center gap-3">
                           <span className={`text-xs font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{fmtPrice(l.price, l.unit)}</span>
-                          <span className="text-xs font-semibold tabular-nums text-red-400">{l.changePercent.toFixed(2)}%</span>
+                          <span className="text-xs font-semibold tabular-nums text-red-400">{Number(l.changePercent || 0).toFixed(2)}%</span>
                         </div>
                       </div>
                     ))}
