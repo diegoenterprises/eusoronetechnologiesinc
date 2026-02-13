@@ -578,7 +578,7 @@ export default function DashboardLayout({
             <div className="relative hidden md:block flex-shrink-0" ref={searchDropdownRef}>
               <motion.div
                 animate={{
-                  width: searchFocused ? 250 : 190,
+                  width: searchFocused ? 240 : 170,
                   backgroundColor: searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
@@ -687,7 +687,7 @@ export default function DashboardLayout({
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors"
+                  className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors flex-shrink-0"
                   title={`Theme: ${mode}`}
                 >
                   {theme === "dark" ? (
