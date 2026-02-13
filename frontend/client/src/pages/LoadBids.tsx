@@ -3,11 +3,10 @@
  * 100% Dynamic - No mock data
  */
 
-import React, { useState } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
@@ -21,25 +20,19 @@ import { useParams } from "wouter";
 
 export default function LoadBids() {
   const params = useParams();
-  const loadId = params.id;
-  const [bidAmount, setBidAmount] = useState("");
+  const loadId = params.loadId || params.id;
 
   const loadQuery = (trpc as any).loads.getById.useQuery({ id: loadId! }, { enabled: !!loadId });
-  const bidsQuery = (trpc as any).bids.getByLoad.useQuery({ loadId: loadId! }, { enabled: !!loadId });
+  const bidsQuery = (trpc as any).loads.getForLoad.useQuery({ loadId: Number(loadId) }, { enabled: !!loadId });
 
-  const submitBidMutation = (trpc as any).bids.submit.useMutation({
-    onSuccess: () => { toast.success("Bid submitted"); setBidAmount(""); bidsQuery.refetch(); },
-    onError: (error: any) => toast.error("Failed", { description: error.message }),
+  const acceptBidMutation = (trpc as any).loads.updateStatus.useMutation({
+    onSuccess: () => { toast.success("Bid accepted! Load assigned to carrier."); bidsQuery.refetch(); loadQuery.refetch(); },
+    onError: (error: any) => toast.error("Failed to accept bid", { description: error.message }),
   });
 
-  const acceptBidMutation = (trpc as any).bids.accept.useMutation({
-    onSuccess: () => { toast.success("Bid accepted"); bidsQuery.refetch(); loadQuery.refetch(); },
-    onError: (error: any) => toast.error("Failed", { description: error.message }),
-  });
-
-  const rejectBidMutation = (trpc as any).bids.reject.useMutation({
+  const rejectBidMutation = (trpc as any).loads.updateStatus.useMutation({
     onSuccess: () => { toast.success("Bid rejected"); bidsQuery.refetch(); },
-    onError: (error: any) => toast.error("Failed", { description: error.message }),
+    onError: (error: any) => toast.error("Failed to reject bid", { description: error.message }),
   });
 
   if (loadQuery.error) {
@@ -64,13 +57,6 @@ export default function LoadBids() {
     }
   };
 
-  const handleSubmitBid = () => {
-    if (!bidAmount || isNaN(parseFloat(bidAmount))) {
-      toast.error("Please enter a valid bid amount");
-      return;
-    }
-    submitBidMutation.mutate({ loadId: loadId!, amount: parseFloat(bidAmount) });
-  };
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -130,47 +116,9 @@ export default function LoadBids() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Submit Bid */}
-        <Card className="bg-slate-800/50 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-green-400" />Submit Bid
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-slate-400 mb-2">Your Bid Amount</p>
-                <div className="relative">
-                  <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type="number"
-                    value={bidAmount}
-                    onChange={(e: any) => setBidAmount(e.target.value)}
-                    placeholder="Enter amount"
-                    className="pl-9 bg-slate-700/50 border-slate-600 text-lg"
-                  />
-                </div>
-              </div>
-              {bidAmount && load?.distance && (
-                <div className="p-3 rounded-lg bg-slate-700/30">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-400">Rate per mile</span>
-                    <span className="text-white">${(parseFloat(bidAmount) / (Number(load.distance) || 1)).toFixed(2)}/mi</span>
-                  </div>
-                </div>
-              )}
-              <Button className="w-full bg-green-600 hover:bg-green-700" onClick={handleSubmitBid} disabled={submitBidMutation.isPending}>
-                {submitBidMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <DollarSign className="w-4 h-4 mr-2" />}
-                Submit Bid
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="space-y-6">
         {/* Bids List */}
-        <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700">
+        <Card className="bg-slate-800/50 border-slate-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-white">All Bids ({(bidsQuery.data as any)?.length || 0})</CardTitle>
@@ -208,10 +156,10 @@ export default function LoadBids() {
                       <Badge className={getStatusColor(bid.status)}>{bid.status}</Badge>
                       {bid.status === "pending" && (
                         <div className="flex gap-1">
-                          <Button size="sm" variant="outline" className="border-red-500/50 text-red-400" onClick={() => rejectBidMutation.mutate({ bidId: bid.id })} disabled={rejectBidMutation.isPending}>
+                          <Button size="sm" variant="outline" className="border-red-500/50 text-red-400" onClick={() => rejectBidMutation.mutate({ bidId: bid.id, status: "rejected" })} disabled={rejectBidMutation.isPending}>
                             {rejectBidMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                           </Button>
-                          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => acceptBidMutation.mutate({ bidId: bid.id })} disabled={acceptBidMutation.isPending}>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => acceptBidMutation.mutate({ bidId: bid.id, status: "accepted" })} disabled={acceptBidMutation.isPending}>
                             {acceptBidMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
                           </Button>
                         </div>

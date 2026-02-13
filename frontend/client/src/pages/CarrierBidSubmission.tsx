@@ -66,7 +66,7 @@ export default function CarrierBidSubmission() {
   const driversQuery = (trpc as any).drivers.getAvailable.useQuery();
   const fleetQuery = (trpc as any).fleet?.getVehicles?.useQuery?.() || { data: [], isLoading: false };
 
-  const submitBidMutation = (trpc as any).bids.submit.useMutation({
+  const submitBidMutation = (trpc as any).loads.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully!", { description: "You'll be notified when the shipper responds." });
       setLocation("/bids");
@@ -127,12 +127,9 @@ export default function CarrierBidSubmission() {
       return;
     }
     submitBidMutation.mutate({
-      loadId: loadId!,
+      loadId: Number(loadId),
       amount: parseFloat(bidAmount),
-      driverId: selectedDriver || undefined,
-      notes,
-      estimatedPickup: estimatedPickup || undefined,
-      estimatedDelivery: estimatedDelivery || undefined,
+      notes: [notes, selectedDriver ? `Driver: ${selectedDriver}` : '', estimatedPickup ? `Pickup: ${estimatedPickup}` : '', estimatedDelivery ? `Delivery: ${estimatedDelivery}` : ''].filter(Boolean).join(' | ') || undefined,
     });
   };
 

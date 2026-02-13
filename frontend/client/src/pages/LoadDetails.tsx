@@ -130,6 +130,11 @@ export default function LoadDetails() {
           <Button variant="outline" className={cn("rounded-xl text-sm", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-700/50 hover:bg-slate-700")} onClick={() => setLocation("/messages")}>
             <Phone className="w-4 h-4 mr-2" />Contact
           </Button>
+          {load.status === "posted" && isLoadOwner && (
+            <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation(`/loads/${loadId}/bids`)}>
+              <Gavel className="w-4 h-4 mr-2" />Review Bids
+            </Button>
+          )}
           {load.status === "posted" && canBid && (
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-sm" onClick={() => setLocation(`/bids/submit/${loadId}`)}>
               <Gavel className="w-4 h-4 mr-2" />Place Bid
