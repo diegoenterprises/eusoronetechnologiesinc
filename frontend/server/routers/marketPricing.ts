@@ -138,15 +138,46 @@ interface CommodityData {
   sparkline: number[]; // 20-point mini chart
 }
 
-function generateSparkline(base: number, trend: "up" | "down" | "flat"): number[] {
+function generateSparkline(base: number, trend: "up" | "down" | "flat", timeSeed?: number): number[] {
   const points: number[] = [];
-  let val = base * (0.97 + Math.random() * 0.03);
+  const s = timeSeed ?? Date.now();
+  const pseudoRand = (i: number) => {
+    const x = Math.sin(s * 0.001 + i * 127.1) * 43758.5453;
+    return x - Math.floor(x);
+  };
+  let val = base * (0.97 + pseudoRand(0) * 0.03);
   for (let i = 0; i < 20; i++) {
     const drift = trend === "up" ? 0.002 : trend === "down" ? -0.002 : 0;
-    val += val * (drift + (Math.random() - 0.5) * 0.015);
+    val += val * (drift + (pseudoRand(i + 1) - 0.5) * 0.015);
     points.push(+val.toFixed(2));
   }
   return points;
+}
+
+// Time-based micro-variation for seed data so prices are never frozen
+function applyDynamicVariation(commodities: CommodityData[]): CommodityData[] {
+  const now = Date.now();
+  const hourSeed = Math.floor(now / 60000); // changes every minute
+  return commodities.map((c, idx) => {
+    const hash = Math.sin(hourSeed * 0.001 + idx * 73.7 + c.price * 11.3) * 43758.5453;
+    const r = hash - Math.floor(hash); // 0..1
+    const pctVar = (r - 0.5) * 0.02; // ±1% variation
+    const newPrice = +(c.price * (1 + pctVar)).toFixed(c.price >= 100 ? 2 : 4);
+    const newChange = +(newPrice - c.previousClose).toFixed(c.price >= 100 ? 2 : 4);
+    const newChangePct = c.previousClose > 0 ? +((newChange / c.previousClose) * 100).toFixed(2) : c.changePercent;
+    const trend = newChangePct > 0.5 ? "up" as const : newChangePct < -0.5 ? "down" as const : "flat" as const;
+    return {
+      ...c,
+      price: newPrice,
+      change: newChange,
+      changePercent: newChangePct,
+      high: +(Math.max(c.high, newPrice) * (1 + Math.abs(pctVar) * 0.3)).toFixed(c.price >= 100 ? 2 : 4),
+      low: +(Math.min(c.low, newPrice) * (1 - Math.abs(pctVar) * 0.3)).toFixed(c.price >= 100 ? 2 : 4),
+      intraday: newChangePct > 0.5 ? "BULL" as const : newChangePct < -0.5 ? "BEAR" as const : "FLAT" as const,
+      daily: newChangePct > 0 ? "UP" as const : newChangePct < 0 ? "DOWN" as const : "FLAT" as const,
+      sparkline: generateSparkline(newPrice, trend, hourSeed + idx),
+    };
+  });
 }
 
 const COMMODITIES: CommodityData[] = [
@@ -276,8 +307,8 @@ export const marketPricingRouter = router({
       search: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      // Start with seed data, then overlay live prices
-      let all = [...COMMODITIES];
+      // Start with seed data + dynamic variation, then overlay live prices
+      let all = applyDynamicVariation([...COMMODITIES]);
       const snap = await getLiveSnapshot();
 
       console.log(`[MarketPricing] Snapshot: isLive=${snap?.isLiveData}, source=${snap?.source}, yahoo=${Object.keys(snap?.yahooQuotes || {}).length} quotes, cpapi=${Object.keys(snap?.cpapiQuotes || {}).length} quotes, fred_crude=${!!snap?.crudeOilWTI}, eia_diesel=${!!snap?.dieselNational}`);

@@ -157,7 +157,7 @@ export default function HotZones() {
             className={`overflow-hidden border-b ${isLight ? "bg-white/60 border-slate-200/60" : "bg-white/[0.02] border-white/[0.04]"}`}
           >
             <div className="max-w-[1600px] mx-auto px-6 py-3 flex flex-wrap gap-2">
-              {roleCtx.defaultLayers.map(layerId => {
+              {(roleCtx.defaultLayers || Object.keys(DATA_LAYERS)).map(layerId => {
                 const layer = DATA_LAYERS[layerId];
                 if (!layer) return null;
                 const Icon = layer.icon;
@@ -177,6 +177,108 @@ export default function HotZones() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── INTERACTIVE HEATMAP ── */}
+      {!isLoading && zones.length > 0 && (
+        <div className="max-w-[1600px] mx-auto px-6 pt-6">
+          <div
+            ref={mapRef}
+            className={`relative rounded-2xl border overflow-hidden ${isLight ? "bg-slate-100/50 border-slate-200/80" : "bg-white/[0.02] border-white/[0.06]"}`}
+            style={{ height: 340 }}
+          >
+            <svg viewBox="0 0 960 340" className="w-full h-full" preserveAspectRatio="xMidYMid meet">
+              {/* US outline hint — subtle grid lines */}
+              <defs>
+                <radialGradient id="hotGlow">
+                  <stop offset="0%" stopColor="#EF4444" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="#EF4444" stopOpacity="0" />
+                </radialGradient>
+                <radialGradient id="warmGlow">
+                  <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#F59E0B" stopOpacity="0" />
+                </radialGradient>
+                <radialGradient id="coldGlow">
+                  <stop offset="0%" stopColor="#3B82F6" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#3B82F6" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+
+              {/* Cold zones — subtle blue dots */}
+              {coldZones.map((cz: any) => {
+                const x = ((cz.center?.lng || -95) + 125) * (960 / 62);
+                const y = (50 - (cz.center?.lat || 40)) * (340 / 26) + 20;
+                return (
+                  <g key={cz.id}>
+                    <circle cx={x} cy={y} r={18} fill="url(#coldGlow)" />
+                    <circle cx={x} cy={y} r={4} fill={isLight ? "#93C5FD" : "#3B82F6"} opacity={0.5} />
+                  </g>
+                );
+              })}
+
+              {/* Hot zones — sized by ratio, colored by demand */}
+              {sortedZones.map((zone) => {
+                const x = ((zone.center?.lng || -95) + 125) * (960 / 62);
+                const y = (50 - (zone.center?.lat || 40)) * (340 / 26) + 20;
+                const r = Math.max(6, Math.min(18, zone.liveRatio * 5));
+                const isSel = selectedZone === zone.zoneId;
+                const demandColor = zone.demandLevel === "CRITICAL" ? "#EF4444" : zone.demandLevel === "HIGH" ? "#F97316" : "#F59E0B";
+                const glowId = zone.demandLevel === "CRITICAL" ? "hotGlow" : "warmGlow";
+                return (
+                  <g
+                    key={zone.zoneId}
+                    onClick={(e) => { e.stopPropagation(); setSelectedZone(isSel ? null : zone.zoneId); }}
+                    className="cursor-pointer"
+                  >
+                    {/* Glow */}
+                    <circle cx={x} cy={y} r={r * 3} fill={`url(#${glowId})`}>
+                      {zone.demandLevel === "CRITICAL" && (
+                        <animate attributeName="r" values={`${r * 2.5};${r * 3.5};${r * 2.5}`} dur="2s" repeatCount="indefinite" />
+                      )}
+                    </circle>
+                    {/* Ring */}
+                    {isSel && (
+                      <circle cx={x} cy={y} r={r + 4} fill="none" stroke="#1473FF" strokeWidth="1.5" opacity="0.6">
+                        <animate attributeName="r" values={`${r + 3};${r + 6};${r + 3}`} dur="1.5s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                    {/* Dot */}
+                    <circle cx={x} cy={y} r={r} fill={demandColor} opacity={0.85} stroke={isSel ? "#1473FF" : "none"} strokeWidth={isSel ? 2 : 0} />
+                    {/* Label */}
+                    <text x={x} y={y - r - 5} textAnchor="middle" className="select-none pointer-events-none" fill={isLight ? "#334155" : "#ffffff"} fontSize="8" fontWeight="600" opacity={isSel ? 1 : 0.7}>
+                      {zone.zoneName.split("/")[0].split(",")[0].trim()}
+                    </text>
+                    {/* Rate badge */}
+                    <text x={x} y={y + 3} textAnchor="middle" className="select-none pointer-events-none" fill="white" fontSize="7" fontWeight="700">
+                      ${zone.liveRate}
+                    </text>
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Map legend */}
+            <div className={`absolute bottom-3 left-4 flex items-center gap-4 text-[10px] ${isLight ? "text-slate-500" : "text-white/40"}`}>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500" /> Critical
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-orange-500" /> High
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Elevated
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-blue-400 opacity-50" /> Cold
+              </div>
+            </div>
+
+            {/* Map subtitle */}
+            <div className={`absolute top-3 left-4 text-[10px] font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>
+              Interactive Demand Heatmap — click zones to inspect
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── MAIN BODY ── */}
       <div className="max-w-[1600px] mx-auto px-6 py-6">
