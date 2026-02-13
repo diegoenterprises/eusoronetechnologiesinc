@@ -48,7 +48,23 @@ export default function LoadDetails() {
   // Hide Place Bid if current user is the load owner (shipper)
   const isLoadOwner = load?.shipperId && authUser?.id && Number(load.shipperId) === Number(authUser.id);
   const userRole = (authUser?.role || "").toUpperCase();
+  const isShipper = isLoadOwner || userRole === "SHIPPER";
   const canBid = !isLoadOwner && ["CARRIER", "BROKER", "CATALYST"].includes(userRole);
+
+  // Fetch bids for this load (shipper view)
+  const bidsQuery = (trpc as any).loads.getForLoad.useQuery(
+    { loadId: Number(loadId) },
+    { enabled: !!loadId && isShipper }
+  );
+  const bids = (bidsQuery.data as any[]) || [];
+  const pendingBids = bids.filter((b: any) => b.status === "pending");
+
+  const acceptBidMutation = (trpc as any).loads.updateStatus.useMutation({
+    onSuccess: () => { bidsQuery.refetch(); loadQuery.refetch(); },
+  });
+  const rejectBidMutation = (trpc as any).loads.updateStatus.useMutation({
+    onSuccess: () => { bidsQuery.refetch(); },
+  });
 
   const getStatusBadge = (status: string) => {
     const m: Record<string, string> = {
@@ -383,6 +399,91 @@ export default function LoadDetails() {
           </CardContent>
         </Card>
       </div>
+
+      {/* ── Incoming Bids Section (Shipper View) ── */}
+      {isShipper && (
+        <Card className={cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
+          <CardHeader>
+            <CardTitle className={cn("flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
+              <Gavel className="w-5 h-5 text-purple-400" />
+              Incoming Bids
+              {pendingBids.length > 0 && (
+                <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-xs ml-2">
+                  {pendingBids.length} pending
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {bidsQuery.isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+              </div>
+            ) : bids.length === 0 ? (
+              <div className="text-center py-8">
+                <DollarSign className={cn("w-12 h-12 mx-auto mb-3", isLight ? "text-slate-300" : "text-slate-600")} />
+                <p className={cn("font-medium", isLight ? "text-slate-500" : "text-slate-400")}>No bids yet</p>
+                <p className="text-sm text-slate-500 mt-1">Carriers will bid on your load once it's visible in the marketplace.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {bids.map((bid: any) => (
+                  <div key={bid.id} className={cn(
+                    "flex items-center justify-between p-4 rounded-xl border",
+                    bid.status === "accepted" ? (isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30") :
+                    bid.status === "rejected" ? (isLight ? "bg-red-50 border-red-200" : "bg-red-500/10 border-red-500/30") :
+                    isLight ? "bg-slate-50 border-slate-200" : "bg-slate-700/30 border-slate-700"
+                  )}>
+                    <div className="flex items-center gap-4">
+                      <div className={cn("w-10 h-10 rounded-full flex items-center justify-center", isLight ? "bg-slate-200" : "bg-slate-700")}>
+                        <Building2 className={cn("w-5 h-5", isLight ? "text-slate-500" : "text-slate-400")} />
+                      </div>
+                      <div>
+                        <p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>
+                          {bid.carrierName || `Carrier #${bid.carrierId}`}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString() : ""}
+                          {bid.notes ? ` · ${bid.notes}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-lg">
+                          ${Number(bid.amount).toLocaleString()}
+                        </p>
+                      </div>
+                      <Badge className={cn(
+                        "text-xs font-bold border",
+                        bid.status === "accepted" ? "bg-green-500/15 text-green-500 border-green-500/30" :
+                        bid.status === "rejected" ? "bg-red-500/15 text-red-500 border-red-500/30" :
+                        bid.status === "pending" ? "bg-yellow-500/15 text-yellow-500 border-yellow-500/30" :
+                        "bg-slate-500/15 text-slate-400 border-slate-500/30"
+                      )}>{bid.status}</Badge>
+                      {bid.status === "pending" && (
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                            onClick={() => rejectBidMutation.mutate({ bidId: bid.id, status: "rejected" })}
+                            disabled={rejectBidMutation.isPending}>
+                            Reject
+                          </Button>
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => acceptBidMutation.mutate({ bidId: bid.id, status: "accepted" })}
+                            disabled={acceptBidMutation.isPending}>
+                            Accept
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Bottom Place Bid CTA (for posted loads — carriers only, not load owner) ── */}
       {load.status === "posted" && canBid && (
