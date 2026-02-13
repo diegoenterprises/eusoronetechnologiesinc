@@ -87,6 +87,29 @@ function shouldSkipFeed(feedId: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// HTML ENTITY DECODER
+// ---------------------------------------------------------------------------
+const HTML_ENTITIES: Record<string, string> = {
+  "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&apos;": "'",
+  "&#39;": "'", "&nbsp;": " ", "&mdash;": "—", "&ndash;": "–",
+  "&lsquo;": "\u2018", "&rsquo;": "\u2019", "&ldquo;": "\u201C", "&rdquo;": "\u201D",
+  "&bull;": "•", "&hellip;": "…", "&trade;": "™", "&copy;": "©", "&reg;": "®",
+};
+
+function decodeHTMLEntities(text: string): string {
+  if (!text) return text;
+  let decoded = text;
+  // Named entities
+  for (const [entity, char] of Object.entries(HTML_ENTITIES)) {
+    decoded = decoded.split(entity).join(char);
+  }
+  // Numeric entities: &#8217; &#x2019; etc.
+  decoded = decoded.replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)));
+  decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+  return decoded;
+}
+
+// ---------------------------------------------------------------------------
 // XML PARSER
 // ---------------------------------------------------------------------------
 function parseRSSContent(xml: string, source: RSSFeedSource): RSSArticle[] {
@@ -118,8 +141,8 @@ function parseRSSContent(xml: string, source: RSSFeedSource): RSSArticle[] {
       if (title && link) {
         articles.push({
           id: `rss_${source.id}_${Buffer.from(link).toString("base64").slice(0, 20)}`,
-          title: title.slice(0, 200),
-          summary: description.slice(0, 500),
+          title: decodeHTMLEntities(title).slice(0, 200),
+          summary: decodeHTMLEntities(description).slice(0, 500),
           link,
           publishedAt: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
           source: source.name,

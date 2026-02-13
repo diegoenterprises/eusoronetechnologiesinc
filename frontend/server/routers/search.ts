@@ -1,15 +1,17 @@
 /**
  * SEARCH ROUTER
  * tRPC procedures for global search
- * ALL data from database — real queries against loads, users, documents
+ * ALL data from database — real queries against loads, users, documents, companies
  * Scoped per-user: results filtered by user's company, role, and ownership
+ * Searches: loadNumber, commodityName, cargoType, status, specialInstructions,
+ *           pickup/delivery city+state+address, user name/email/phone, company name, document name
  */
 
 import { z } from "zod";
 import { eq, like, sql, or, and } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, drivers, users, documents } from "../../drizzle/schema";
+import { loads, drivers, users, documents, companies } from "../../drizzle/schema";
 
 export const searchRouter = router({
   global: protectedProcedure.input(z.object({ query: z.string(), type: z.string().optional(), filters: z.any().optional() }).optional()).query(async ({ ctx, input }) => {
@@ -23,31 +25,83 @@ export const searchRouter = router({
     const companyId = ctx.user?.companyId;
 
     try {
-      // Build load scope: shipper sees own loads, carrier sees assigned loads, others see company loads
+      const results: any[] = [];
+
+      // ── LOADS ──────────────────────────────────────────────────────────
+      // Scope: shipper sees own loads, carrier sees assigned, driver sees assigned
       const loadScope = userRole === "SHIPPER" ? eq(loads.shipperId, userId)
         : userRole === "CARRIER" ? eq(loads.carrierId, userId)
         : userRole === "DRIVER" ? eq(loads.driverId, userId)
         : undefined; // admin/broker see all
 
-      const loadWhere = loadScope
-        ? and(loadScope, or(like(loads.loadNumber, q), sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city')) LIKE ${q}`, sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city')) LIKE ${q}`))
-        : or(like(loads.loadNumber, q), sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city')) LIKE ${q}`, sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city')) LIKE ${q}`);
+      const loadMatch = or(
+        like(loads.loadNumber, q),
+        like(loads.status, q),
+        like(loads.cargoType, q),
+        like(loads.commodityName, q),
+        like(loads.specialInstructions, q),
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.city')) LIKE ${q}`,
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) LIKE ${q}`,
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.address')) LIKE ${q}`,
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.city')) LIKE ${q}`,
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) LIKE ${q}`,
+        sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.address')) LIKE ${q}`,
+      );
 
-      // Search loads
-      const loadResults = await db.select({
-        id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
-        pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation
-      }).from(loads).where(loadWhere!).limit(8);
+      const loadWhere = loadScope ? and(loadScope, loadMatch) : loadMatch;
 
-      // Search users (drivers/carriers) — scoped to same company or all for brokers/admin
+      let loadResults: any[] = [];
+      try {
+        loadResults = await db.select({
+          id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+          cargoType: loads.cargoType, commodityName: loads.commodityName,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+        }).from(loads).where(loadWhere!).limit(10);
+      } catch (e) { console.error("[search.global] loads query error:", e); }
+
+      for (const l of loadResults) {
+        const origin = (l.pickupLocation as any)?.city || "";
+        const dest = (l.deliveryLocation as any)?.city || "";
+        const commodity = l.commodityName ? ` · ${l.commodityName}` : "";
+        results.push({
+          id: String(l.id), type: "load",
+          title: l.loadNumber || `LOAD-${l.id}`,
+          subtitle: `${origin}${origin && dest ? " → " : ""}${dest}${l.status ? ` · ${l.status}` : ""}${commodity}`,
+          match: 95,
+        });
+      }
+
+      // ── USERS (drivers, carriers, etc.) ───────────────────────────────
+      const userMatch = or(like(users.name, q), like(users.email, q), like(users.phone, q));
       const userWhere = companyId
-        ? and(eq(users.companyId, companyId), or(like(users.name, q), like(users.email, q)))
-        : or(like(users.name, q), like(users.email, q));
+        ? and(eq(users.companyId, companyId), userMatch)
+        : userMatch;
 
-      const userResults = await db.select({ id: users.id, name: users.name, role: users.role, email: users.email })
-        .from(users).where(userWhere!).limit(8);
+      let userResults: any[] = [];
+      try {
+        userResults = await db.select({ id: users.id, name: users.name, role: users.role, email: users.email })
+          .from(users).where(userWhere!).limit(8);
+      } catch (e) { console.error("[search.global] users query error:", e); }
 
-      // Search documents — scoped to user or company
+      for (const u of userResults) {
+        const type = u.role === "DRIVER" ? "driver" : u.role === "CARRIER" ? "carrier" : "user";
+        results.push({ id: String(u.id), type, title: u.name || "Unknown", subtitle: `${u.role || ""} · ${u.email || ""}`, match: 85 });
+      }
+
+      // ── COMPANIES ─────────────────────────────────────────────────────
+      let companyResults: any[] = [];
+      try {
+        const companyMatch = or(like(companies.name, q), like(companies.legalName, q), like(companies.dotNumber, q), like(companies.mcNumber, q), like(companies.city, q), like(companies.state, q));
+        const companyWhere = companyId ? and(eq(companies.id, companyId), companyMatch) : companyMatch;
+        companyResults = await db.select({ id: companies.id, name: companies.name, legalName: companies.legalName })
+          .from(companies).where(companyWhere!).limit(5);
+      } catch { /* companies table may not exist yet */ }
+
+      for (const c of companyResults) {
+        results.push({ id: String(c.id), type: "carrier", title: c.name || c.legalName || "Company", subtitle: c.legalName && c.legalName !== c.name ? c.legalName : "Company", match: 80 });
+      }
+
+      // ── DOCUMENTS ─────────────────────────────────────────────────────
       let docResults: any[] = [];
       try {
         const docWhere = companyId
@@ -57,17 +111,6 @@ export const searchRouter = router({
           .from(documents).where(docWhere!).limit(5);
       } catch { /* documents table may not exist yet */ }
 
-      // Build unified results
-      const results: any[] = [];
-      for (const l of loadResults) {
-        const origin = (l.pickupLocation as any)?.city || "";
-        const dest = (l.deliveryLocation as any)?.city || "";
-        results.push({ id: String(l.id), type: "load", title: l.loadNumber || `LOAD-${l.id}`, subtitle: `${origin}${origin && dest ? " → " : ""}${dest}${l.status ? ` · ${l.status}` : ""}`, match: 95 });
-      }
-      for (const u of userResults) {
-        const type = u.role === "DRIVER" ? "driver" : u.role === "CARRIER" ? "carrier" : "user";
-        results.push({ id: String(u.id), type, title: u.name || "Unknown", subtitle: `${u.role || ""} · ${u.email || ""}`, match: 85 });
-      }
       for (const d of docResults) {
         results.push({ id: String(d.id), type: "document", title: d.name || "Document", subtitle: d.type || "file", match: 75 });
       }
@@ -76,17 +119,18 @@ export const searchRouter = router({
       results.sort((a, b) => b.match - a.match);
 
       return {
-        loads: loadResults.map(l => ({ id: String(l.id), loadNumber: l.loadNumber, match: 95 })),
-        drivers: userResults.filter(u => u.role === "DRIVER").map(u => ({ id: String(u.id), name: u.name, match: 85 })),
-        carriers: userResults.filter(u => u.role === "CARRIER").map(u => ({ id: String(u.id), name: u.name, match: 85 })),
+        loads: loadResults.map((l: any) => ({ id: String(l.id), loadNumber: l.loadNumber, match: 95 })),
+        drivers: userResults.filter((u: any) => u.role === "DRIVER").map((u: any) => ({ id: String(u.id), name: u.name, match: 85 })),
+        carriers: userResults.filter((u: any) => u.role === "CARRIER").map((u: any) => ({ id: String(u.id), name: u.name, match: 85 })),
         invoices: [],
         total: results.length,
         counts: {
           loads: loadResults.length,
-          drivers: userResults.filter(u => u.role === "DRIVER").length,
-          carriers: userResults.filter(u => u.role === "CARRIER").length,
+          drivers: userResults.filter((u: any) => u.role === "DRIVER").length,
+          carriers: userResults.filter((u: any) => u.role === "CARRIER").length,
           invoices: 0,
           documents: docResults.length,
+          companies: companyResults.length,
         },
         results,
       };
