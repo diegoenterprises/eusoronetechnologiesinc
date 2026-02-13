@@ -76,7 +76,7 @@ import {
   X,
   Percent,
 } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardLayoutSkeleton } from "./DashboardLayoutSkeleton";
@@ -224,7 +224,85 @@ export default function DashboardLayout({
   const [location, navigate] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchDropdownRef = useRef<HTMLDivElement>(null);
   const prevLocation = useRef(location);
+
+  // Debounce search query (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  // tRPC global search query
+  const searchResults = (trpc as any).search?.global?.useQuery(
+    { query: debouncedQuery },
+    { enabled: debouncedQuery.length >= 2, staleTime: 10000, retry: false }
+  );
+  const results: { id: string; type: string; title: string; subtitle: string; match: number }[] = searchResults?.data?.results || [];
+  const isSearching = searchResults?.isLoading && debouncedQuery.length >= 2;
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Close search on route change
+  useEffect(() => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  }, [location]);
+
+  // Navigate to search result
+  const navigateToResult = useCallback((result: { id: string; type: string; title: string }) => {
+    setSearchOpen(false);
+    setSearchQuery("");
+    searchInputRef.current?.blur();
+    switch (result.type) {
+      case "load": navigate(`/loads/${result.id}`); break;
+      case "driver": navigate(`/carriers`); break;
+      case "carrier": navigate(`/carriers`); break;
+      case "invoice": navigate(`/documents`); break;
+      case "document": navigate(`/documents`); break;
+      case "user": navigate(`/profile`); break;
+      default: navigate(`/`);
+    }
+  }, [navigate]);
+
+  // Keyboard navigation for search results
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Escape") { setSearchOpen(false); searchInputRef.current?.blur(); return; }
+    if (!results.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setSelectedIdx(i => Math.min(i + 1, results.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setSelectedIdx(i => Math.max(i - 1, 0)); }
+    else if (e.key === "Enter" && selectedIdx >= 0 && results[selectedIdx]) { e.preventDefault(); navigateToResult(results[selectedIdx]); }
+  }, [results, selectedIdx, navigateToResult]);
+
+  // Reset selection when results change
+  useEffect(() => { setSelectedIdx(-1); }, [results]);
+
+  // ⌘K keyboard shortcut to focus search
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        setSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   // Centralized display user — real DB profile name, not stale auth fallback
   const { displayName, displayInitials, displayRole, displayAvatar } = useDisplayUser();
@@ -496,27 +574,112 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Search Bar */}
-            <motion.div
-              animate={{
-                width: searchFocused ? 280 : 200,
-                backgroundColor: searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
-              }}
-              transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="hidden md:flex items-center rounded-xl px-3 py-2 gap-2 border border-transparent"
-              style={{
-                borderColor: searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(255,255,255,0.06)",
-              }}
-            >
-              <Search size={16} className={`transition-colors duration-200 ${searchFocused ? "text-blue-400" : "text-gray-500"}`} />
-              <input
-                type="text"
-                placeholder="Search..."
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                className="bg-transparent text-sm outline-none flex-1 text-white placeholder-gray-500"
-              />
-            </motion.div>
+            {/* Global Search Bar */}
+            <div className="relative hidden md:block" ref={searchDropdownRef}>
+              <motion.div
+                animate={{
+                  width: searchFocused ? 320 : 200,
+                  backgroundColor: searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+                }}
+                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                className="flex items-center rounded-xl px-3 py-2 gap-2 border border-transparent"
+                style={{
+                  borderColor: searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(255,255,255,0.06)",
+                }}
+              >
+                <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${searchFocused ? "text-blue-400" : "text-gray-500"}`} />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search loads, carriers, drivers..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
+                  onFocus={() => { setSearchFocused(true); if (searchQuery.length >= 2) setSearchOpen(true); }}
+                  onBlur={() => setSearchFocused(false)}
+                  onKeyDown={handleSearchKeyDown}
+                  className="bg-transparent text-sm outline-none flex-1 text-white placeholder-gray-500"
+                />
+                {searchQuery && (
+                  <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} className="text-gray-500 hover:text-white p-0.5">
+                    <X size={14} />
+                  </button>
+                )}
+                {!searchFocused && (
+                  <kbd className="hidden lg:inline-flex text-[10px] text-gray-500 border border-gray-700 rounded px-1.5 py-0.5 font-mono">⌘K</kbd>
+                )}
+              </motion.div>
+
+              {/* Search Results Dropdown */}
+              <AnimatePresence>
+                {searchOpen && searchQuery.length >= 2 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 backdrop-blur-xl border border-gray-700/60 rounded-2xl shadow-2xl shadow-black/40 overflow-hidden z-50"
+                  >
+                    <div className="h-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
+                    <div className="p-2 max-h-[360px] overflow-y-auto">
+                      {isSearching ? (
+                        <div className="flex items-center justify-center gap-2 py-6 text-gray-400 text-sm">
+                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          Searching...
+                        </div>
+                      ) : results.length === 0 ? (
+                        <div className="py-6 text-center">
+                          <Search size={24} className="mx-auto text-gray-600 mb-2" />
+                          <p className="text-gray-400 text-sm">No results for "{searchQuery}"</p>
+                          <p className="text-gray-600 text-xs mt-1">Try loads, cities, carriers, or driver names</p>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider px-2 py-1">
+                            {results.length} result{results.length !== 1 ? "s" : ""}
+                          </p>
+                          {results.map((r, i) => (
+                            <button
+                              key={`${r.type}-${r.id}`}
+                              onMouseDown={(e) => { e.preventDefault(); navigateToResult(r); }}
+                              onMouseEnter={() => setSelectedIdx(i)}
+                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+                                i === selectedIdx
+                                  ? "bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 border border-[#1473FF]/20"
+                                  : "hover:bg-white/5 border border-transparent"
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                r.type === "load" ? "bg-blue-500/15 text-blue-400" :
+                                r.type === "driver" ? "bg-cyan-500/15 text-cyan-400" :
+                                r.type === "carrier" ? "bg-purple-500/15 text-purple-400" :
+                                "bg-gray-500/15 text-gray-400"
+                              }`}>
+                                {r.type === "load" ? <Package size={16} /> :
+                                 r.type === "driver" ? <User size={16} /> :
+                                 r.type === "carrier" ? <Truck size={16} /> :
+                                 <FileText size={16} />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-white truncate">{r.title}</p>
+                                <p className="text-xs text-gray-500 truncate">{r.subtitle}</p>
+                              </div>
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+                                r.type === "load" ? "bg-blue-500/10 text-blue-400" :
+                                r.type === "driver" ? "bg-cyan-500/10 text-cyan-400" :
+                                r.type === "carrier" ? "bg-purple-500/10 text-purple-400" :
+                                "bg-gray-500/10 text-gray-400"
+                              }`}>
+                                {r.type.toUpperCase()}
+                              </span>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Theme Toggle */}
             <DropdownMenu>

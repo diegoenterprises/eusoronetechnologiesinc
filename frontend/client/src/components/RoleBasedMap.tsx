@@ -265,9 +265,10 @@ export default function RoleBasedMap({
                     {/* Marker */}
                     <div
                       className={`w-10 h-10 rounded-full ${getMarkerColor(location.type, location.status)} 
-                        flex items-center justify-center shadow-lg transform transition-all duration-200
-                        ${isSelected ? 'scale-125 ring-2 ring-white' : 'group-hover:scale-110'} 
-                        border-2 border-white/50`}
+                        flex items-center justify-center shadow-lg shadow-black/30 transform transition-all duration-200
+                        ${isSelected ? 'scale-125 ring-2 ring-[#BE01FF]' : 'group-hover:scale-110'} 
+                        border-2 border-white/30`}
+                      style={{ boxShadow: isSelected ? '0 0 16px rgba(190,1,255,0.4)' : undefined }}
                     >
                       {getMarkerIcon(location.type)}
                     </div>
@@ -280,14 +281,16 @@ export default function RoleBasedMap({
                     )}
 
                     {/* Tooltip */}
-                    <div className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-3 ${isDark ? 'bg-slate-900 border-slate-600 text-white' : 'bg-white border-gray-200 text-gray-900'} border
-                      rounded-lg p-3 whitespace-nowrap text-xs shadow-xl z-20
+                    <div className={`absolute left-1/2 -translate-x-1/2 bottom-full mb-3 backdrop-blur-md
+                      ${isDark ? 'bg-slate-900/95 border-[#1473FF]/30 text-white' : 'bg-white/95 border-[#BE01FF]/20 text-gray-900'} border
+                      rounded-2xl p-3 whitespace-nowrap text-xs shadow-xl z-20
                       ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity pointer-events-none`}
                     >
+                      <div className="h-0.5 w-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] rounded-full mb-2" />
                       <p className="font-semibold text-sm">{location.title}</p>
                       {location.details && <p className={`${isDark ? 'text-gray-400' : 'text-gray-500'} mt-1`}>{location.details}</p>}
                       {location.loadNumber && (
-                        <p className="text-blue-400 mt-1">Load: {location.loadNumber}</p>
+                        <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-semibold mt-1">Load: {location.loadNumber}</p>
                       )}
                       {location.speed !== undefined && (
                         <p className="text-cyan-400 mt-1">Speed: {Math.round(location.speed)} mph</p>
@@ -296,7 +299,7 @@ export default function RoleBasedMap({
                         Updated: {formatLastUpdate(location.updatedAt)}
                       </p>
                       {/* Tooltip arrow */}
-                      <div className={`absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent ${isDark ? 'border-t-slate-900' : 'border-t-white'}`} />
+                      <div className={`absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent ${isDark ? 'border-t-slate-900/95' : 'border-t-white/95'}`} />
                     </div>
                   </div>
                 );
@@ -305,35 +308,37 @@ export default function RoleBasedMap({
           )}
 
           {/* Legend */}
-          <div className={`absolute bottom-4 left-4 backdrop-blur border rounded-lg p-3 text-xs space-y-1.5 ${isDark ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-gray-200 shadow-lg'}`}>
+          <div className={`absolute bottom-4 left-4 backdrop-blur-md rounded-2xl p-3 text-xs space-y-1.5 overflow-hidden ${isDark ? 'bg-slate-900/90 border border-slate-700/60' : 'bg-white/90 border border-gray-200 shadow-lg'}`}>
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
             <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold mb-2 flex items-center gap-2`}>
-              <MapPin className="w-3 h-3" />
+              <MapPin className="w-3 h-3 text-[#BE01FF]" />
               Legend
             </p>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+              <div className="w-3 h-3 rounded-full bg-blue-500 ring-2 ring-blue-500/30"></div>
               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Trucks</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
+              <div className="w-3 h-3 rounded-full bg-green-500 ring-2 ring-green-500/30"></div>
               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Jobs/Loads</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+              <div className="w-3 h-3 rounded-full bg-purple-500 ring-2 ring-purple-500/30"></div>
               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Terminals</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+              <div className="w-3 h-3 rounded-full bg-yellow-500 ring-2 ring-yellow-500/30"></div>
               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Pending</span>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+              <div className="w-3 h-3 rounded-full bg-orange-500 ring-2 ring-orange-500/30"></div>
               <span className={isDark ? 'text-gray-400' : 'text-gray-600'}>Idle</span>
             </div>
           </div>
 
           {/* Stats overlay */}
-          <div className={`absolute top-4 left-4 backdrop-blur border rounded-lg p-3 text-xs ${isDark ? 'bg-slate-900/90 border-slate-700' : 'bg-white/90 border-gray-200 shadow-lg'}`}>
+          <div className={`absolute top-4 left-4 backdrop-blur-md rounded-2xl p-3 text-xs overflow-hidden ${isDark ? 'bg-slate-900/90 border border-slate-700/60' : 'bg-white/90 border border-gray-200 shadow-lg'}`}>
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" />
             <p className={`${isDark ? 'text-white' : 'text-gray-900'} font-semibold mb-1`}>{userRole} View</p>
             <p className={isDark ? 'text-gray-400' : 'text-gray-500'}>{locations.length} locations</p>
             {mapData?.lastUpdated && (

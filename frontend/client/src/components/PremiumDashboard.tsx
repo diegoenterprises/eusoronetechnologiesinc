@@ -85,6 +85,7 @@ import {
 import WidgetStore from "./widgets/WidgetStore";
 import Weather from "./Weather";
 import RoleBasedMap from "./RoleBasedMap";
+import { useTheme } from "@/contexts/ThemeContext";
 import ReactGridLayout from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 
@@ -109,13 +110,15 @@ const WidgetCard: React.FC<{
   widgetId?: string;
 }> = ({ children, title, onRemove, isEditMode, className = "", widgetId }) => {
   const [showSettings, setShowSettings] = useState(false);
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   return (
     <div className={`h-full w-full relative overflow-hidden rounded-2xl group/widget ${className}`}>
       {/* Gradient outline to indicate draggability */}
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1473FF]/40 via-[#BE01FF]/30 to-[#1473FF]/40 opacity-60 group-hover/widget:opacity-100 transition-opacity duration-300" />
-      <div className="absolute inset-0 rounded-2xl bg-slate-900/95" />
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl" />
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-cyan-500/10" />
+      <div className={`absolute inset-0 rounded-2xl ${isLight ? 'bg-white/95' : 'bg-slate-900/95'}`} />
+      <div className={`absolute inset-0 rounded-2xl backdrop-blur-xl ${isLight ? 'bg-gradient-to-br from-[#1473FF]/5 via-[#BE01FF]/3 to-transparent' : 'bg-gradient-to-br from-white/10 via-white/5 to-transparent'}`} />
+      <div className={`absolute inset-0 rounded-2xl ${isLight ? 'bg-gradient-to-br from-[#1473FF]/5 via-[#BE01FF]/3 to-[#1473FF]/5' : 'bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-cyan-500/10'}`} />
       
       {isEditMode && onRemove && (
         <button
@@ -144,7 +147,9 @@ const WidgetCard: React.FC<{
               className="absolute inset-0"
               style={{
                 WebkitTextStroke: '1.5px transparent',
-                background: 'linear-gradient(to right, #D1D5DB, #FFFFFF)',
+                background: isLight
+                  ? 'linear-gradient(to right, #1473FF, #BE01FF)'
+                  : 'linear-gradient(to right, #D1D5DB, #FFFFFF)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent',
@@ -153,7 +158,7 @@ const WidgetCard: React.FC<{
               {title}
             </span>
             <span
-              className="relative bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent"
+              className={`relative bg-clip-text text-transparent ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF]' : 'bg-gradient-to-r from-white to-gray-300'}`}
             >
               {title}
             </span>

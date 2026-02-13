@@ -583,12 +583,13 @@ export default function HotZones() {
                 <div
                   key={zone.id}
                   onClick={() => setSelectedZone(selectedZone === zone.id ? null : zone.id)}
-                  className={`rounded-xl p-4 border cursor-pointer transition-all duration-200 hover:scale-[1.02] animate-fade-in-up
+                  className={`relative rounded-2xl p-4 border cursor-pointer transition-all duration-200 hover:scale-[1.02] animate-fade-in-up overflow-hidden
                     ${selectedZone === zone.id 
-                      ? "bg-gradient-to-br from-orange-500/20 to-red-500/20 border-orange-500/50 ring-1 ring-orange-500/30" 
-                      : "bg-slate-800/50 border-slate-700/50 hover:border-slate-600"}`}
+                      ? "bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 border-[#BE01FF]/40 ring-1 ring-[#BE01FF]/20" 
+                      : "bg-slate-800/60 border-slate-700/40 hover:border-[#1473FF]/30"}`}
                   style={{ animationDelay: `${idx * 50}ms` }}
                 >
+                  <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] opacity-60" />
                   <div className="flex items-start justify-between mb-2">
                     <div>
                       <p className="font-bold text-white text-sm">{zone.name}</p>
@@ -604,21 +605,21 @@ export default function HotZones() {
                       <p className="text-sm font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{zone.surgeMultiplier}x</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-500">{roleContext?.secondaryMetric || 'Rate/mi'}</p>
+                      <p className="text-[10px] text-slate-500">{roleContext?.secondaryMetric || 'Avg Carrier'}</p>
                       <p className="text-sm font-bold text-white">${zone.avgRate}</p>
                     </div>
                     <div>
-                      <p className="text-[10px] text-slate-500">{roleContext?.perspective === 'carrier_availability' ? 'Trucks' : roleContext?.primaryMetric || 'Loads'}</p>
+                      <p className="text-[10px] text-slate-500">{roleContext?.perspective === 'carrier_availability' ? 'Trucks' : roleContext?.primaryMetric || 'Trucks'}</p>
                       <p className="text-sm font-bold text-blue-400">{roleContext?.perspective === 'carrier_availability' ? zone.truckCount : zone.loadCount}</p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-1 mt-3">
                     {zone.topEquipment.map((eq: string) => (
-                      <span key={eq} className="text-[9px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{eq.replace("_", " ")}</span>
+                      <span key={eq} className="text-[9px] px-1.5 py-0.5 rounded-md bg-[#1473FF]/10 text-[#1473FF] border border-[#1473FF]/20 font-medium">{eq.replace("_", " ")}</span>
                     ))}
                   </div>
                   {zone.reasons && (
-                    <p className="text-[10px] text-slate-500 mt-2 truncate">{zone.reasons[0]}</p>
+                    <p className="text-[10px] text-slate-500 mt-2 truncate italic">{zone.reasons[0]}</p>
                   )}
                 </div>
               ))}
