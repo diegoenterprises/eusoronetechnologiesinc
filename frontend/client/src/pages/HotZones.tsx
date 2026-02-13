@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,6 +9,58 @@ import {
   AlertTriangle, Shield, ChevronRight, Layers, Activity, Zap,
   BarChart3, RefreshCw, Clock, Navigation, Eye, Filter,
 } from "lucide-react";
+
+// ── ZONE ACTION → ROUTE MAPPING (all 12 user types) ──
+const ACTION_ROUTES: Record<string, string> = {
+  // SHIPPER
+  post_load: "/loads/create",
+  view_carriers: "/carriers",
+  set_rate_alert: "/market-pricing",
+  // BROKER
+  find_carriers: "/carrier-vetting",
+  post_counter: "/loads/create",
+  calc_margin: "/tools/rate-calculator",
+  // DRIVER
+  accept_load: "/marketplace",
+  navigate_zone: "/navigation",
+  find_fuel: "/fuel",
+  // ESCORT
+  bid_escort: "/escort/marketplace",
+  view_requirements: "/escort/permits",
+  check_clearances: "/escort/permits",
+  // CATALYST
+  assign_driver: "/dispatch/board",
+  reposition_fleet: "/catalyst/fleet-map",
+  view_hos: "/driver/hos",
+  // TERMINAL_MANAGER
+  manage_appointments: "/terminal/appointments",
+  alert_carriers: "/messages",
+  view_docks: "/loading-bays",
+  // FACTORING
+  view_invoices: "/wallet",
+  assess_credit: "/carrier-vetting",
+  adjust_rate: "/tools/rate-calculator",
+  // COMPLIANCE_OFFICER
+  view_non_compliant: "/violations",
+  generate_audit: "/audits",
+  send_cap: "/messages",
+  // SAFETY_MANAGER
+  issue_alert: "/notifications",
+  schedule_meeting: "/messages",
+  investigate: "/safety/incidents",
+  // ADMIN
+  view_users: "/admin/users",
+  manage_zones: "/hot-zones",
+  generate_report: "/admin/analytics",
+  // SUPER_ADMIN
+  platform_overview: "/super-admin",
+  adjust_pricing: "/admin/platform-fees",
+  export_data: "/admin/analytics",
+  // DEFAULT (CARRIER)
+  view_loads: "/marketplace",
+  route_fleet: "/fleet",
+  set_demand_alert: "/market-pricing",
+};
 
 // ── DATA LAYER DEFINITIONS ──
 const DATA_LAYERS: Record<string, { label: string; icon: typeof Flame; color: string }> = {
@@ -40,6 +93,7 @@ const DEMAND_COLORS_LIGHT: Record<string, { bg: string; text: string; ring: stri
 };
 
 export default function HotZones() {
+  const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [activeLayers, setActiveLayers] = useState<string[]>([]);
@@ -335,6 +389,19 @@ export default function HotZones() {
                               <div className="flex flex-wrap gap-2 pt-1">
                                 {roleCtx.zoneActions.map(action => (
                                   <button key={action}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const route = ACTION_ROUTES[action];
+                                      if (route) {
+                                        const q = new URLSearchParams();
+                                        if (zone.zoneName) q.set("zone", zone.zoneName);
+                                        if (zone.state) q.set("state", zone.state);
+                                        if (zone.center?.lat) q.set("lat", String(zone.center.lat));
+                                        if (zone.center?.lng) q.set("lng", String(zone.center.lng));
+                                        const qs = q.toString();
+                                        navigate(qs ? `${route}?${qs}` : route);
+                                      }
+                                    }}
                                     className="px-3 py-1.5 rounded-xl text-[11px] font-medium bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-sm shadow-[#1473FF]/20 hover:shadow-md hover:shadow-[#1473FF]/30 transition-all">
                                     {action.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                                   </button>
