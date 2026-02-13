@@ -150,32 +150,32 @@ function generateSparkline(base: number, trend: "up" | "down" | "flat"): number[
 }
 
 const COMMODITIES: CommodityData[] = [
-  // === ENERGY ===
-  { symbol: "CL", name: "WTI Crude Oil", category: "Energy", price: 78.42, change: 1.23, changePercent: 1.59, previousClose: 77.19, open: 77.35, high: 78.90, low: 76.80, volume: "412K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(78, "up") },
-  { symbol: "BZ", name: "Brent Crude", category: "Energy", price: 82.15, change: 0.97, changePercent: 1.19, previousClose: 81.18, open: 81.40, high: 82.50, low: 80.95, volume: "285K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(82, "up") },
-  { symbol: "NG", name: "Natural Gas", category: "Energy", price: 2.847, change: -0.065, changePercent: -2.23, previousClose: 2.912, open: 2.900, high: 2.935, low: 2.810, volume: "198K", unit: "$/MMBtu", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "UP", sparkline: generateSparkline(2.85, "down") },
-  { symbol: "RB", name: "RBOB Gasoline", category: "Energy", price: 2.4850, change: 0.0340, changePercent: 1.39, previousClose: 2.4510, open: 2.4600, high: 2.5010, low: 2.4400, volume: "87K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2.48, "up") },
-  { symbol: "HO", name: "Heating Oil", category: "Energy", price: 2.6120, change: 0.0280, changePercent: 1.08, previousClose: 2.5840, open: 2.5900, high: 2.6250, low: 2.5780, volume: "62K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(2.61, "up") },
-  { symbol: "ULSD", name: "Ultra-Low Sulfur Diesel", category: "Energy", price: 2.7350, change: -0.0150, changePercent: -0.55, previousClose: 2.7500, open: 2.7480, high: 2.7600, low: 2.7200, volume: "54K", unit: "$/gal", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(2.73, "flat") },
+  // === ENERGY === (Feb 2026 baseline estimates)
+  { symbol: "CL", name: "WTI Crude Oil", category: "Energy", price: 71.25, change: 0.85, changePercent: 1.21, previousClose: 70.40, open: 70.50, high: 71.60, low: 70.10, volume: "412K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(71, "up") },
+  { symbol: "BZ", name: "Brent Crude", category: "Energy", price: 74.90, change: 0.72, changePercent: 0.97, previousClose: 74.18, open: 74.30, high: 75.20, low: 73.90, volume: "285K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(75, "up") },
+  { symbol: "NG", name: "Natural Gas", category: "Energy", price: 3.680, change: -0.045, changePercent: -1.21, previousClose: 3.725, open: 3.710, high: 3.750, low: 3.660, volume: "198K", unit: "$/MMBtu", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(3.68, "down") },
+  { symbol: "RB", name: "RBOB Gasoline", category: "Energy", price: 2.1850, change: 0.0280, changePercent: 1.30, previousClose: 2.1570, open: 2.1600, high: 2.2010, low: 2.1500, volume: "87K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2.18, "up") },
+  { symbol: "HO", name: "Heating Oil", category: "Energy", price: 2.4120, change: 0.0180, changePercent: 0.75, previousClose: 2.3940, open: 2.3960, high: 2.4250, low: 2.3880, volume: "62K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(2.41, "up") },
+  { symbol: "ULSD", name: "Ultra-Low Sulfur Diesel", category: "Energy", price: 3.6880, change: -0.0260, changePercent: -0.70, previousClose: 3.7140, open: 3.7100, high: 3.7200, low: 3.6750, volume: "54K", unit: "$/gal", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(3.69, "flat") },
   { symbol: "ETH", name: "Ethanol", category: "Energy", price: 1.7200, change: 0.0100, changePercent: 0.58, previousClose: 1.7100, open: 1.7150, high: 1.7280, low: 1.7050, volume: "18K", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(1.72, "up") },
   { symbol: "PROP", name: "Propane", category: "Energy", price: 0.8450, change: -0.0120, changePercent: -1.40, previousClose: 0.8570, open: 0.8540, high: 0.8580, low: 0.8400, volume: "22K", unit: "$/gal", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.84, "down") },
 
-  // === METALS ===
-  { symbol: "GC", name: "Gold", category: "Metals", price: 2342.50, change: 12.80, changePercent: 0.55, previousClose: 2329.70, open: 2331.00, high: 2348.00, low: 2325.50, volume: "145K", unit: "$/oz", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2342, "up") },
-  { symbol: "SI", name: "Silver", category: "Metals", price: 27.45, change: -0.32, changePercent: -1.15, previousClose: 27.77, open: 27.70, high: 27.85, low: 27.20, volume: "78K", unit: "$/oz", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(27.4, "down") },
-  { symbol: "HG", name: "Copper", category: "Metals", price: 4.2850, change: 0.0650, changePercent: 1.54, previousClose: 4.2200, open: 4.2300, high: 4.3000, low: 4.2100, volume: "92K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(4.28, "up") },
-  { symbol: "ALI", name: "Aluminum", category: "Metals", price: 2485.00, change: -18.50, changePercent: -0.74, previousClose: 2503.50, open: 2500.00, high: 2510.00, low: 2478.00, volume: "55K", unit: "$/ton", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "FLAT", sparkline: generateSparkline(2485, "down") },
+  // === METALS === (Feb 2026 baseline estimates)
+  { symbol: "GC", name: "Gold", category: "Metals", price: 2905.00, change: 18.50, changePercent: 0.64, previousClose: 2886.50, open: 2888.00, high: 2912.00, low: 2880.00, volume: "178K", unit: "$/oz", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2905, "up") },
+  { symbol: "SI", name: "Silver", category: "Metals", price: 33.25, change: -0.42, changePercent: -1.25, previousClose: 33.67, open: 33.55, high: 33.80, low: 33.10, volume: "92K", unit: "$/oz", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(33.2, "down") },
+  { symbol: "HG", name: "Copper", category: "Metals", price: 4.4150, change: 0.0550, changePercent: 1.26, previousClose: 4.3600, open: 4.3650, high: 4.4300, low: 4.3500, volume: "102K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(4.41, "up") },
+  { symbol: "ALI", name: "Aluminum", category: "Metals", price: 2615.00, change: -22.00, changePercent: -0.83, previousClose: 2637.00, open: 2630.00, high: 2645.00, low: 2608.00, volume: "58K", unit: "$/ton", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "FLAT", sparkline: generateSparkline(2615, "down") },
   { symbol: "STEEL", name: "Steel HRC", category: "Metals", price: 825.00, change: 5.00, changePercent: 0.61, previousClose: 820.00, open: 822.00, high: 830.00, low: 818.00, volume: "8K", unit: "$/ton", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "DOWN", sparkline: generateSparkline(825, "up") },
   { symbol: "NI", name: "Nickel LME", category: "Metals", price: 16850.00, change: -120.00, changePercent: -0.71, previousClose: 16970.00, open: 16920.00, high: 16980.00, low: 16780.00, volume: "12K", unit: "$/ton", intraday: "BEAR", daily: "DOWN", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(16850, "down") },
 
-  // === AGRICULTURE ===
-  { symbol: "ZC", name: "Corn", category: "Agriculture", price: 4.5250, change: 0.0375, changePercent: 0.84, previousClose: 4.4875, open: 4.4900, high: 4.5400, low: 4.4800, volume: "210K", unit: "$/bu", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "DOWN", sparkline: generateSparkline(4.52, "flat") },
-  { symbol: "ZS", name: "Soybeans", category: "Agriculture", price: 11.8750, change: -0.1250, changePercent: -1.04, previousClose: 12.0000, open: 11.9800, high: 12.0200, low: 11.8500, volume: "165K", unit: "$/bu", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(11.87, "down") },
-  { symbol: "ZW", name: "Wheat", category: "Agriculture", price: 5.7500, change: 0.0625, changePercent: 1.10, previousClose: 5.6875, open: 5.7000, high: 5.7800, low: 5.6750, volume: "112K", unit: "$/bu", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(5.75, "up") },
-  { symbol: "CT", name: "Cotton", category: "Agriculture", price: 0.8235, change: -0.0085, changePercent: -1.02, previousClose: 0.8320, open: 0.8300, high: 0.8340, low: 0.8200, volume: "42K", unit: "$/lb", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.82, "down") },
-  { symbol: "SB", name: "Sugar #11", category: "Agriculture", price: 0.2185, change: 0.0025, changePercent: 1.16, previousClose: 0.2160, open: 0.2165, high: 0.2200, low: 0.2150, volume: "88K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(0.218, "up") },
-  { symbol: "KC", name: "Coffee", category: "Agriculture", price: 1.8950, change: 0.0320, changePercent: 1.72, previousClose: 1.8630, open: 1.8700, high: 1.9050, low: 1.8600, volume: "56K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(1.89, "up") },
-  { symbol: "LE", name: "Live Cattle", category: "Agriculture", price: 1.8725, change: 0.0050, changePercent: 0.27, previousClose: 1.8675, open: 1.8690, high: 1.8780, low: 1.8650, volume: "35K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(1.87, "flat") },
+  // === AGRICULTURE === (Feb 2026 baseline estimates)
+  { symbol: "ZC", name: "Corn", category: "Agriculture", price: 4.1500, change: 0.0325, changePercent: 0.79, previousClose: 4.1175, open: 4.1200, high: 4.1650, low: 4.1100, volume: "210K", unit: "$/bu", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "DOWN", sparkline: generateSparkline(4.15, "flat") },
+  { symbol: "ZS", name: "Soybeans", category: "Agriculture", price: 10.2500, change: -0.0875, changePercent: -0.85, previousClose: 10.3375, open: 10.3200, high: 10.3600, low: 10.2200, volume: "165K", unit: "$/bu", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(10.25, "down") },
+  { symbol: "ZW", name: "Wheat", category: "Agriculture", price: 5.6200, change: 0.0475, changePercent: 0.85, previousClose: 5.5725, open: 5.5800, high: 5.6500, low: 5.5600, volume: "112K", unit: "$/bu", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(5.62, "up") },
+  { symbol: "CT", name: "Cotton", category: "Agriculture", price: 0.6750, change: -0.0065, changePercent: -0.95, previousClose: 0.6815, open: 0.6800, high: 0.6830, low: 0.6720, volume: "42K", unit: "$/lb", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.675, "down") },
+  { symbol: "SB", name: "Sugar #11", category: "Agriculture", price: 0.1950, change: 0.0018, changePercent: 0.93, previousClose: 0.1932, open: 0.1935, high: 0.1965, low: 0.1925, volume: "88K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(0.195, "up") },
+  { symbol: "KC", name: "Coffee", category: "Agriculture", price: 3.8500, change: 0.0680, changePercent: 1.80, previousClose: 3.7820, open: 3.7900, high: 3.8700, low: 3.7750, volume: "68K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.85, "up") },
+  { symbol: "LE", name: "Live Cattle", category: "Agriculture", price: 2.0250, change: 0.0075, changePercent: 0.37, previousClose: 2.0175, open: 2.0190, high: 2.0300, low: 2.0150, volume: "38K", unit: "$/lb", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(2.02, "flat") },
   { symbol: "LB", name: "Lumber", category: "Agriculture", price: 548.00, change: -8.50, changePercent: -1.53, previousClose: 556.50, open: 554.00, high: 558.00, low: 545.00, volume: "6K", unit: "$/MBF", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "UP", sparkline: generateSparkline(548, "down") },
 
   // === FREIGHT INDICES ===
@@ -187,9 +187,9 @@ const COMMODITIES: CommodityData[] = [
   { symbol: "OVER", name: "Oversize National", category: "Freight", price: 6.50, change: 0.15, changePercent: 2.36, previousClose: 6.35, open: 6.36, high: 6.55, low: 6.33, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(6.50, "up") },
 
   // === FUEL INDEX ===
-  { symbol: "DOE", name: "DOE Diesel Avg", category: "Fuel", price: 3.89, change: 0.07, changePercent: 1.83, previousClose: 3.82, open: 3.83, high: 3.91, low: 3.81, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.89, "up") },
-  { symbol: "DEF", name: "DEF Fluid", category: "Fuel", price: 2.95, change: 0.03, changePercent: 1.03, previousClose: 2.92, open: 2.93, high: 2.97, low: 2.91, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(2.95, "flat") },
-  { symbol: "FSC", name: "Fuel Surcharge/Mi", category: "Fuel", price: 0.58, change: 0.01, changePercent: 1.75, previousClose: 0.57, open: 0.57, high: 0.59, low: 0.57, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(0.58, "up") },
+  { symbol: "DOE", name: "DOE Diesel Avg", category: "Fuel", price: 3.6880, change: 0.07, changePercent: 0.19, previousClose: 3.6810, open: 3.6830, high: 3.7000, low: 3.6750, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.69, "up") },
+  { symbol: "DEF", name: "DEF Fluid", category: "Fuel", price: 3.2950, change: 0.035, changePercent: 1.07, previousClose: 3.2600, open: 3.2650, high: 3.3100, low: 3.2550, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(3.29, "flat") },
+  { symbol: "FSC", name: "Fuel Surcharge/Mi", category: "Fuel", price: 0.4060, change: -0.015, changePercent: -3.57, previousClose: 0.4210, open: 0.4200, high: 0.4220, low: 0.4040, volume: "N/A", unit: "$/mi", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.41, "down") },
 ];
 
 export const marketPricingRouter = router({
@@ -280,6 +280,8 @@ export const marketPricingRouter = router({
       let all = [...COMMODITIES];
       const snap = await getLiveSnapshot();
 
+      console.log(`[MarketPricing] Snapshot: isLive=${snap?.isLiveData}, source=${snap?.source}, yahoo=${Object.keys(snap?.yahooQuotes || {}).length} quotes, cpapi=${Object.keys(snap?.cpapiQuotes || {}).length} quotes, fred_crude=${!!snap?.crudeOilWTI}, eia_diesel=${!!snap?.dieselNational}`);
+
       if (snap?.isLiveData) {
         // === CROSS-REFERENCING ENGINE ===
         // Priority: CommodityPriceAPI (60s updates) > Yahoo Finance (real-time) > FRED/EIA (daily/weekly)
@@ -341,7 +343,8 @@ export const marketPricingRouter = router({
         const liveFuel = await getLiveFuelIndex();
         all = all.map(c => {
           if (c.symbol === "FSC" && liveFuel.isLive) {
-            return { ...c, price: liveFuel.surchargePerMile, change: +(liveFuel.surchargePerMile - 0.57).toFixed(4), changePercent: +((liveFuel.surchargePerMile - 0.57) / 0.57 * 100).toFixed(2) };
+            const fscBase = 0.406;
+            return { ...c, price: liveFuel.surchargePerMile, change: +(liveFuel.surchargePerMile - fscBase).toFixed(4), changePercent: +((liveFuel.surchargePerMile - fscBase) / fscBase * 100).toFixed(2) };
           }
           if (c.symbol === "DEF" && liveFuel.isLive) {
             return { ...c, price: liveFuel.def.current };

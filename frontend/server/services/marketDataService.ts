@@ -299,48 +299,60 @@ export async function fetchYahooFinanceQuotes(symbols: string[]): Promise<Map<st
   const cached = getCached<Map<string, YahooQuote>>(cacheKey);
   if (cached) return cached;
 
-  try {
-    const symbolStr = symbols.join(",");
-    const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,regularMarketOpen,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,shortName`;
+  // Try multiple Yahoo Finance endpoints (v7 is blocked server-side, try v6 and query2)
+  const endpoints = [
+    `https://query2.finance.yahoo.com/v6/finance/quote?symbols=${encodeURIComponent(symbols.join(","))}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,regularMarketOpen,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,shortName`,
+    `https://query1.finance.yahoo.com/v8/finance/chart/${symbols[0]}?interval=1d&range=2d`,
+  ];
 
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; EusoTrip/1.0)",
-      },
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!res.ok) {
-      console.error(`Yahoo Finance API error: ${res.status}`);
-      return new Map();
-    }
-
-    const json = await res.json();
-    const quotes = new Map<string, YahooQuote>();
-
-    for (const q of json.quoteResponse?.result || []) {
-      const mappedSymbol = YAHOO_COMMODITY_SYMBOLS[q.symbol] || q.symbol;
-      quotes.set(mappedSymbol, {
-        symbol: mappedSymbol,
-        shortName: q.shortName || q.symbol,
-        regularMarketPrice: q.regularMarketPrice || 0,
-        regularMarketChange: q.regularMarketChange || 0,
-        regularMarketChangePercent: q.regularMarketChangePercent || 0,
-        regularMarketPreviousClose: q.regularMarketPreviousClose || 0,
-        regularMarketOpen: q.regularMarketOpen || 0,
-        regularMarketDayHigh: q.regularMarketDayHigh || 0,
-        regularMarketDayLow: q.regularMarketDayLow || 0,
-        regularMarketVolume: q.regularMarketVolume || 0,
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
       });
-    }
 
-    // Cache for 5 minutes (Yahoo Finance updates in real-time during market hours)
-    setCache(cacheKey, quotes, 5 * 60 * 1000);
-    return quotes;
-  } catch (err) {
-    console.error("Yahoo Finance fetch failed:", err);
-    return new Map();
+      if (!res.ok) {
+        console.warn(`[MarketData] Yahoo endpoint returned ${res.status}: ${url.substring(0, 80)}...`);
+        continue;
+      }
+
+      const json = await res.json();
+      const quotes = new Map<string, YahooQuote>();
+
+      // v6/v7 format
+      const results = json.quoteResponse?.result || json.finance?.result || [];
+      for (const q of results) {
+        const mappedSymbol = YAHOO_COMMODITY_SYMBOLS[q.symbol] || q.symbol;
+        quotes.set(mappedSymbol, {
+          symbol: mappedSymbol,
+          shortName: q.shortName || q.symbol,
+          regularMarketPrice: q.regularMarketPrice || 0,
+          regularMarketChange: q.regularMarketChange || 0,
+          regularMarketChangePercent: q.regularMarketChangePercent || 0,
+          regularMarketPreviousClose: q.regularMarketPreviousClose || 0,
+          regularMarketOpen: q.regularMarketOpen || 0,
+          regularMarketDayHigh: q.regularMarketDayHigh || 0,
+          regularMarketDayLow: q.regularMarketDayLow || 0,
+          regularMarketVolume: q.regularMarketVolume || 0,
+        });
+      }
+
+      if (quotes.size > 0) {
+        console.log(`[MarketData] Yahoo Finance returned ${quotes.size} quotes`);
+        setCache(cacheKey, quotes, 5 * 60 * 1000);
+        return quotes;
+      }
+    } catch (err) {
+      console.warn(`[MarketData] Yahoo endpoint failed: ${(err as Error).message}`);
+    }
   }
+
+  console.warn("[MarketData] All Yahoo Finance endpoints failed — will rely on CommodityPriceAPI + FRED/EIA");
+  return new Map();
 }
 
 // Convenience: fetch all tracked commodity futures
