@@ -584,7 +584,7 @@ export default function DashboardLayout({
                     : (searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"),
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                className="flex items-center rounded-xl px-3 py-2 gap-2 border border-transparent"
+                className="flex items-center rounded-xl px-3 py-2 gap-2 border border-transparent overflow-hidden"
                 style={{
                   borderColor: theme === "light"
                     ? (searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(0,0,0,0.08)")
@@ -595,13 +595,13 @@ export default function DashboardLayout({
                 <input
                   ref={searchInputRef}
                   type="text"
-                  placeholder="Search loads, carriers, drivers..."
+                  placeholder="Search..."
                   value={searchQuery}
                   onChange={(e) => { setSearchQuery(e.target.value); setSearchOpen(true); }}
                   onFocus={() => { setSearchFocused(true); if (searchQuery.length >= 2) setSearchOpen(true); }}
                   onBlur={() => setSearchFocused(false)}
                   onKeyDown={handleSearchKeyDown}
-                  className={`bg-transparent text-sm outline-none flex-1 ${theme === "light" ? "text-slate-800 placeholder-slate-400" : "text-white placeholder-gray-500"}`}
+                  className={`bg-transparent text-sm outline-none flex-1 min-w-0 truncate ${theme === "light" ? "text-slate-800 placeholder-slate-400" : "text-white placeholder-gray-500"}`}
                 />
                 {searchQuery && (
                   <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} className="text-gray-500 hover:text-white p-0.5">
