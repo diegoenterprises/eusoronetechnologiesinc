@@ -22,6 +22,123 @@ function proj(lng: number, lat: number): [number, number] {
   return [x, y];
 }
 
+// ── ROLE-ADAPTIVE VISUAL CONFIG ──
+// Each role sees the map differently: different colors, sizing, primary metric, emphasis
+interface RoleViz {
+  dotLabel: (z: any) => string;       // what shows inside the dot
+  sizeMetric: (z: any) => number;     // what drives dot size
+  critColor: string; highColor: string; elevColor: string;
+  glowColor: string;                  // dominant glow tint
+  subtitle: string;                   // map subtitle
+  emphasis: string;                   // what aspect matters most
+}
+
+function getRoleViz(perspective: string | undefined): RoleViz {
+  // sizeMetric MUST return values in 6-14 range (clamped downstream)
+  switch (perspective) {
+    case "carrier_availability": // SHIPPER — sees truck availability, green tones
+      return {
+        dotLabel: z => `${z.liveTrucks || 0}T`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveTrucks || 80) / 60),
+        critColor: "#4ADE80", highColor: "#60A5FA", elevColor: "#C084FC",
+        glowColor: "#4ADE80",
+        subtitle: "Where carriers are available for your loads",
+        emphasis: "carrier_count",
+      };
+    case "spread_opportunity": // BROKER — sees margin, emerald tones
+      return {
+        dotLabel: z => `+${((z.liveRate || 2) * (z.liveRatio || 1) * 0.15).toFixed(1)}`,
+        sizeMetric: z => 7 + Math.min(7, ((z.liveRate || 2) * (z.liveRatio || 1) * 0.15) * 2),
+        critColor: "#34D399", highColor: "#FBBF24", elevColor: "#818CF8",
+        glowColor: "#34D399",
+        subtitle: "Best arbitrage & margin zones",
+        emphasis: "margin",
+      };
+    case "driver_opportunity": // DRIVER — sees earnings, amber/orange tones
+      return {
+        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(1)}`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveRate || 2) * 1.8),
+        critColor: "#FBBF24", highColor: "#FB923C", elevColor: "#60A5FA",
+        glowColor: "#FBBF24",
+        subtitle: "Best loads and earning opportunities near you",
+        emphasis: "earnings",
+      };
+    case "oversized_demand": // ESCORT — sees oversized corridors, purple tones
+      return {
+        dotLabel: z => z.oversizedFrequency === "VERY_HIGH" ? "OVS!" : z.oversizedFrequency === "HIGH" ? "OVS" : `$${Number(z.liveRate || 0).toFixed(1)}`,
+        sizeMetric: z => z.oversizedFrequency === "VERY_HIGH" ? 14 : z.oversizedFrequency === "HIGH" ? 11 : 8,
+        critColor: "#A78BFA", highColor: "#818CF8", elevColor: "#C4B5FD",
+        glowColor: "#A78BFA",
+        subtitle: "Oversized/overweight escort demand corridors",
+        emphasis: "oversized",
+      };
+    case "dispatch_intelligence": // CATALYST — sees L:T ratio, red/orange tones
+      return {
+        dotLabel: z => `${z.liveLoads || 0}/${z.liveTrucks || 0}`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveRatio || 1) * 2.5),
+        critColor: "#F87171", highColor: "#FB923C", elevColor: "#22D3EE",
+        glowColor: "#FB923C",
+        subtitle: "Fleet positions + demand for optimal dispatch",
+        emphasis: "ratio",
+      };
+    case "facility_throughput": // TERMINAL_MANAGER — sees volume, cyan tones
+      return {
+        dotLabel: z => `${z.liveLoads || 0}L`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveLoads || 100) / 100),
+        critColor: "#22D3EE", highColor: "#60A5FA", elevColor: "#A78BFA",
+        glowColor: "#22D3EE",
+        subtitle: "Freight throughput near your facilities",
+        emphasis: "volume",
+      };
+    case "invoice_intelligence": // FACTORING — sees invoice volume, orange tones
+      return {
+        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(1)}`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveLoads || 100) / 80),
+        critColor: "#FB923C", highColor: "#FBBF24", elevColor: "#4ADE80",
+        glowColor: "#FB923C",
+        subtitle: "Invoice volume & credit risk by geography",
+        emphasis: "invoice_volume",
+      };
+    case "compliance_risk": // COMPLIANCE_OFFICER — sees risk scores, red tones
+      return {
+        dotLabel: z => { const sc = z.complianceRiskScore ?? Math.round(((z.weatherAlerts?.length || 0) * 20) + ((z.hazmatClasses?.length || 0) * 15)); return `R${sc}`; },
+        sizeMetric: z => 7 + Math.min(7, (z.complianceRiskScore ?? 30) / 15),
+        critColor: "#F87171", highColor: "#FBBF24", elevColor: "#4ADE80",
+        glowColor: "#F87171",
+        subtitle: "Regulatory compliance risk zones",
+        emphasis: "compliance",
+      };
+    case "safety_risk": // SAFETY_MANAGER — sees safety scores, red/cyan tones
+      return {
+        dotLabel: z => { const ss = Math.max(0, 100 - Math.round(((z.weatherAlerts?.length || 0) * 15) + ((z.hazmatClasses?.length || 0) * 10))); return `S${ss}`; },
+        sizeMetric: z => 7 + Math.min(7, ((z.hazmatClasses?.length || 0) + (z.weatherAlerts?.length || 0)) * 1.5),
+        critColor: "#F87171", highColor: "#FBBF24", elevColor: "#22D3EE",
+        glowColor: "#F87171",
+        subtitle: "Safety risk zones & incident hotspots",
+        emphasis: "safety",
+      };
+    case "platform_health": // ADMIN
+    case "executive_intelligence": // SUPER_ADMIN
+      return {
+        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(2)}`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveRatio || 1) * 2.5),
+        critColor: "#F87171", highColor: "#FB923C", elevColor: "#FBBF24",
+        glowColor: "#1473FF",
+        subtitle: "Platform-wide operational intelligence",
+        emphasis: "overview",
+      };
+    default: // CARRIER / default freight view
+      return {
+        dotLabel: z => `$${Number(z.liveRate || 0).toFixed(2)}`,
+        sizeMetric: z => 7 + Math.min(7, (z.liveRatio || 1) * 2.5),
+        critColor: "#F87171", highColor: "#FB923C", elevColor: "#FBBF24",
+        glowColor: "#EF4444",
+        subtitle: "Where freight demand is highest",
+        emphasis: "demand",
+      };
+  }
+}
+
 // ── US STATE OUTLINES (simplified SVG paths for contiguous 48) ──
 const STATES: { id: string; d: string }[] = [
   { id:"WA", d:"M108,22L152,28L156,58L118,56L105,42Z" },
@@ -136,6 +253,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
 
   const zoomPct = useMemo(() => Math.round((800 / vb.w) * 100), [vb.w]);
   const detail = vb.w <= 250 ? "hi" : vb.w <= 450 ? "med" : "lo";
+  const rv = useMemo(() => getRoleViz(roleCtx?.perspective), [roleCtx?.perspective]);
 
   // clamp helper
   const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -243,9 +361,9 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
       >
         <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <radialGradient id="gz-crit"><stop offset="0%" stopColor="#EF4444" stopOpacity="0.55" /><stop offset="100%" stopColor="#EF4444" stopOpacity="0" /></radialGradient>
-            <radialGradient id="gz-high"><stop offset="0%" stopColor="#F97316" stopOpacity="0.4" /><stop offset="100%" stopColor="#F97316" stopOpacity="0" /></radialGradient>
-            <radialGradient id="gz-elev"><stop offset="0%" stopColor="#F59E0B" stopOpacity="0.3" /><stop offset="100%" stopColor="#F59E0B" stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-crit"><stop offset="0%" stopColor={rv.critColor} stopOpacity="0.55" /><stop offset="100%" stopColor={rv.critColor} stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-high"><stop offset="0%" stopColor={rv.highColor} stopOpacity="0.4" /><stop offset="100%" stopColor={rv.highColor} stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-elev"><stop offset="0%" stopColor={rv.elevColor} stopOpacity="0.3" /><stop offset="100%" stopColor={rv.elevColor} stopOpacity="0" /></radialGradient>
             <radialGradient id="gz-cold"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" /><stop offset="100%" stopColor="#3B82F6" stopOpacity="0" /></radialGradient>
             <radialGradient id="gz-sel"><stop offset="0%" stopColor="#1473FF" stopOpacity="0.5" /><stop offset="100%" stopColor="#BE01FF" stopOpacity="0" /></radialGradient>
             <filter id="mapGlow"><feGaussianBlur stdDeviation="2.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -324,10 +442,10 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           {zones.map((z: any) => {
             const [zx, zy] = proj(z.center?.lng || -95, z.center?.lat || 38);
             const ratio = Number(z.liveRatio) || 2;
-            const r = s(Math.max(6, Math.min(14, ratio * 3.5)));
+            const r = s(Math.max(6, Math.min(14, rv.sizeMetric(z))));
             const isSel = selectedZone === z.zoneId;
             const isHov = hovered === z.zoneId;
-            const dCol = z.demandLevel === "CRITICAL" ? "#EF4444" : z.demandLevel === "HIGH" ? "#F97316" : "#F59E0B";
+            const dCol = z.demandLevel === "CRITICAL" ? rv.critColor : z.demandLevel === "HIGH" ? rv.highColor : rv.elevColor;
             const gId = z.demandLevel === "CRITICAL" ? "gz-crit" : z.demandLevel === "HIGH" ? "gz-high" : "gz-elev";
             return (
               <g
@@ -353,9 +471,9 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 )}
                 {/* Main dot */}
                 <circle cx={zx} cy={zy} r={r} fill={dCol} opacity={isHov || isSel ? 1 : 0.85} stroke={isSel ? "#1473FF" : isHov ? "#fff" : "none"} strokeWidth={isSel ? s(1.5) : s(0.8)} filter={z.demandLevel === "CRITICAL" ? "url(#mapGlow)" : undefined} />
-                {/* Rate label inside dot */}
-                <text x={zx} y={zy + s(2.2)} textAnchor="middle" fontSize={s(5.5)} fill="white" fontWeight="700" className="select-none pointer-events-none">
-                  ${Number(z.liveRate || 0).toFixed(2)}
+                {/* Primary metric label inside dot — role-adaptive */}
+                <text x={zx} y={zy + s(2.2)} textAnchor="middle" fontSize={s(5)} fill="white" fontWeight="700" className="select-none pointer-events-none">
+                  {rv.dotLabel(z)}
                 </text>
                 {/* Zone name above */}
                 <text x={zx} y={zy - r - s(3)} textAnchor="middle" fontSize={s(detail === "hi" ? 6 : 5)} fill={isLight ? "#1e293b" : "#e2e8f0"} fontWeight="600" opacity={isSel || isHov ? 1 : 0.7} className="select-none pointer-events-none">
@@ -560,20 +678,25 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           ))}
         </div>
 
-        {/* ── ROLE BADGE ── */}
-        <div className={`absolute top-3 left-3 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold backdrop-blur-md ${
-          isLight ? "bg-white/90 text-slate-600 border border-slate-200/60" : "bg-white/[0.08] text-white/50 border border-white/[0.06]"
+        {/* ── ROLE BADGE + SUBTITLE ── */}
+        <div className={`absolute top-3 left-3 px-2.5 py-1.5 rounded-lg backdrop-blur-md ${
+          isLight ? "bg-white/90 border border-slate-200/60" : "bg-white/[0.08] border border-white/[0.06]"
         }`}>
-          {roleCtx?.perspective?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Demand View"}
+          <div className={`text-[10px] font-semibold ${isLight ? "text-slate-600" : "text-white/50"}`}>
+            {roleCtx?.perspective?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Demand View"}
+          </div>
+          <div className={`text-[8px] mt-0.5 ${isLight ? "text-slate-400" : "text-white/25"}`}>
+            {rv.subtitle}
+          </div>
         </div>
 
         {/* ── LEGEND ── */}
         <div className={`absolute bottom-3 left-3 flex items-center gap-3 px-2.5 py-1.5 rounded-lg backdrop-blur-md text-[9px] font-medium ${
           isLight ? "bg-white/90 text-slate-500 border border-slate-200/60" : "bg-white/[0.08] text-white/40 border border-white/[0.06]"
         }`}>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500" />Critical</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-orange-500" />High</div>
-          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-amber-500" />Elevated</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: rv.critColor }} />Critical</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: rv.highColor }} />High</div>
+          <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{ background: rv.elevColor }} />Elevated</div>
           <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-blue-400 opacity-50" />Cold</div>
         </div>
 
@@ -584,7 +707,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
           }`}>
             <svg viewBox="0 0 800 380" className="w-full h-full">
               {STATES.map(st => <path key={st.id} d={st.d} fill={isLight ? "#e0e5eb" : "#1a1a2e"} stroke={isLight ? "#d0d5dd" : "#222238"} strokeWidth="1" />)}
-              {zones.map((z: any) => { const [zx,zy] = proj(z.center?.lng||-95, z.center?.lat||38); return <circle key={z.zoneId} cx={zx} cy={zy} r={4} fill={z.demandLevel==="CRITICAL"?"#EF4444":z.demandLevel==="HIGH"?"#F97316":"#F59E0B"} opacity={0.7} />; })}
+              {zones.map((z: any) => { const [zx,zy] = proj(z.center?.lng||-95, z.center?.lat||38); return <circle key={z.zoneId} cx={zx} cy={zy} r={4} fill={z.demandLevel==="CRITICAL"?rv.critColor:z.demandLevel==="HIGH"?rv.highColor:rv.elevColor} opacity={0.7} />; })}
               <rect x={vb.x} y={vb.y} width={vb.w} height={vb.h} fill="none" stroke="#1473FF" strokeWidth="3" rx="2" opacity={0.8} />
             </svg>
           </div>
