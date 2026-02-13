@@ -233,17 +233,18 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className={cn("px-4 py-3 flex items-center justify-between flex-shrink-0", headerBg)}>
+          <div className={cn("px-4 py-3 flex items-center justify-between flex-shrink-0 relative", headerBg)}>
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                 <img src="/esang-ai-logo.svg" alt="Esang AI" className="w-full h-full object-cover" />
               </div>
-              <div>
-                <p className={cn("text-sm font-bold", isLight ? "text-slate-800" : "text-white")} style={{ fontFamily: "'Gilroy', sans-serif" }}>Esang</p>
-                <p className="text-[10px] text-green-400 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />Online
-                </p>
-              </div>
+            </div>
+            {/* Centered title */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+              <p className={cn("text-base font-semibold tracking-[0.15em] lowercase", isLight ? "text-slate-800" : "text-white")} style={{ fontFamily: "'Inter', 'Gilroy', system-ui, sans-serif", letterSpacing: '0.15em' }}>esang</p>
+              <p className="text-[9px] text-green-400 flex items-center gap-1 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />Online
+              </p>
             </div>
             <div className="flex items-center gap-1">
               <button

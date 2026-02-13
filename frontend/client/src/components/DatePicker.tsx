@@ -58,51 +58,17 @@ export default function DatePicker({ value, onChange, placeholder = "Pick a date
       <PopoverContent
         className={cn(
           "w-auto p-0 rounded-2xl border-0 shadow-xl",
-          "bg-white dark:bg-slate-900",
-          "ring-1 ring-slate-200 dark:ring-purple-500/20"
+          "bg-[#f3e8ff] dark:bg-[#1e1535]",
+          "ring-1 ring-purple-200/60 dark:ring-purple-500/20"
         )}
         align="start"
         sideOffset={8}
       >
-        <div className="p-1">
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleSelect}
-            className={cn(
-              "rounded-xl",
-              "[&_.rdp-day_button]:rounded-xl",
-              "[&_.rdp-day_button]:transition-all",
-              "[&_.rdp-day_button]:text-slate-700 dark:[&_.rdp-day_button]:text-slate-300",
-              "[&_.rdp-day_button:hover]:bg-purple-50 dark:[&_.rdp-day_button:hover]:bg-purple-500/10",
-              "[&_.rdp-day_button:hover]:text-purple-700 dark:[&_.rdp-day_button:hover]:text-purple-300",
-            )}
-            classNames={{
-              today: "bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 rounded-xl text-purple-700 dark:text-purple-300 font-bold",
-              day: "relative w-full h-full p-0 text-center group/day aspect-square select-none",
-            }}
-            components={{
-              DayButton: ({ day, modifiers, className: btnClass, ...props }) => {
-                const isSelected = modifiers.selected;
-                return (
-                  <button
-                    type="button"
-                    className={cn(
-                      "inline-flex items-center justify-center w-9 h-9 rounded-xl text-sm font-normal transition-all",
-                      isSelected
-                        ? "bg-gradient-to-br from-[#BE01FF] to-[#1473FF] text-white font-semibold shadow-lg shadow-purple-500/25 dark:shadow-purple-500/30"
-                        : "",
-                      modifiers.outside && "text-slate-300 dark:text-slate-600",
-                      modifiers.disabled && "opacity-40 cursor-not-allowed",
-                      btnClass
-                    )}
-                    {...props}
-                  />
-                );
-              },
-            }}
-          />
-        </div>
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={handleSelect}
+        />
       </PopoverContent>
     </Popover>
   );
