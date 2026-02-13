@@ -112,10 +112,10 @@ const WidgetCard: React.FC<{
   return (
     <div className={`h-full w-full relative overflow-hidden rounded-2xl group/widget ${className}`}>
       {/* Gradient outline to indicate draggability */}
-      <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-br from-[#1473FF]/40 via-[#BE01FF]/30 to-[#1473FF]/40 opacity-60 group-hover/widget:opacity-100 transition-opacity duration-300" />
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#1473FF]/40 via-[#BE01FF]/30 to-[#1473FF]/40 opacity-60 group-hover/widget:opacity-100 transition-opacity duration-300" />
       <div className="absolute inset-0 rounded-2xl bg-slate-900/95" />
-      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl" />
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-cyan-500/10" />
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl" />
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-cyan-500/10" />
       
       {isEditMode && onRemove && (
         <button
