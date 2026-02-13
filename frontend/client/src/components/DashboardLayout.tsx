@@ -543,7 +543,7 @@ export default function DashboardLayout({
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="bg-gray-900/60 backdrop-blur-xl border-b border-gray-800/50 px-3 sm:px-6 py-3 flex items-center justify-between relative z-20"
+          className={`backdrop-blur-xl px-3 sm:px-6 py-3 flex items-center justify-between relative z-20 ${theme === "light" ? "bg-white/80 border-b border-slate-200/80" : "bg-gray-900/60 border-b border-gray-800/50"}`}
         >
           <div className="flex items-center gap-4">
             {/* Mobile menu toggle */}
@@ -551,7 +551,7 @@ export default function DashboardLayout({
               onClick={() => setSidebarOpen(!sidebarOpen)}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-800/50"
+              className={`p-1.5 rounded-lg ${theme === "light" ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100" : "text-gray-400 hover:text-white hover:bg-gray-800/50"}`}
             >
               <Menu size={20} />
             </motion.button>
@@ -566,7 +566,7 @@ export default function DashboardLayout({
                 transition={{ duration: 0.25 }}
                 className="hidden md:flex items-center gap-2"
               >
-                <span className="text-sm font-medium text-white">
+                <span className={`text-sm font-medium ${theme === "light" ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-white"}`}>
                   {activeMenuItem?.label || "Dashboard"}
                 </span>
               </motion.div>
@@ -579,15 +579,19 @@ export default function DashboardLayout({
               <motion.div
                 animate={{
                   width: searchFocused ? 240 : 170,
-                  backgroundColor: searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)",
+                  backgroundColor: theme === "light"
+                    ? (searchFocused ? "rgba(0,0,0,0.04)" : "rgba(0,0,0,0.02)")
+                    : (searchFocused ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"),
                 }}
                 transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
                 className="flex items-center rounded-xl px-3 py-2 gap-2 border border-transparent"
                 style={{
-                  borderColor: searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(255,255,255,0.06)",
+                  borderColor: theme === "light"
+                    ? (searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(0,0,0,0.08)")
+                    : (searchFocused ? "rgba(20, 115, 255, 0.3)" : "rgba(255,255,255,0.06)"),
                 }}
               >
-                <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${searchFocused ? "text-blue-400" : "text-gray-500"}`} />
+                <Search size={16} className={`flex-shrink-0 transition-colors duration-200 ${searchFocused ? "text-blue-400" : theme === "light" ? "text-slate-400" : "text-gray-500"}`} />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -597,7 +601,7 @@ export default function DashboardLayout({
                   onFocus={() => { setSearchFocused(true); if (searchQuery.length >= 2) setSearchOpen(true); }}
                   onBlur={() => setSearchFocused(false)}
                   onKeyDown={handleSearchKeyDown}
-                  className="bg-transparent text-sm outline-none flex-1 text-white placeholder-gray-500"
+                  className={`bg-transparent text-sm outline-none flex-1 ${theme === "light" ? "text-slate-800 placeholder-slate-400" : "text-white placeholder-gray-500"}`}
                 />
                 {searchQuery && (
                   <button onClick={() => { setSearchQuery(""); setSearchOpen(false); }} className="text-gray-500 hover:text-white p-0.5">
@@ -605,7 +609,7 @@ export default function DashboardLayout({
                   </button>
                 )}
                 {!searchFocused && (
-                  <kbd className="hidden lg:inline-flex text-[10px] text-gray-500 border border-gray-700 rounded px-1.5 py-0.5 font-mono">⌘K</kbd>
+                  <kbd className={`hidden lg:inline-flex text-[10px] rounded px-1.5 py-0.5 font-mono ${theme === "light" ? "text-slate-400 border border-slate-300 bg-slate-50" : "text-gray-500 border border-gray-700"}`}>⌘K</kbd>
                 )}
               </motion.div>
 
@@ -687,13 +691,13 @@ export default function DashboardLayout({
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="relative p-2 hover:bg-gray-800/50 rounded-xl transition-colors flex-shrink-0"
+                  className={`relative p-2 rounded-xl transition-colors flex-shrink-0 ${theme === "light" ? "hover:bg-slate-100" : "hover:bg-gray-800/50"}`}
                   title={`Theme: ${mode}`}
                 >
                   {theme === "dark" ? (
                     <Moon size={18} className="text-gray-400" />
                   ) : (
-                    <Sun size={18} className="text-yellow-500" />
+                    <Sun size={18} className="text-amber-500" />
                   )}
                 </motion.button>
               </DropdownMenuTrigger>

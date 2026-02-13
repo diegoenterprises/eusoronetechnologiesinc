@@ -514,6 +514,8 @@ interface PremiumDashboardProps {
 export default function PremiumDashboard({ role: propRole }: PremiumDashboardProps) {
   const { user } = useAuth();
   const role = propRole || (user?.role as UserRole) || 'SHIPPER';
+  const { theme } = useTheme();
+  const isLight = theme === "light";
 
   const { displayName } = useDisplayUser();
 
@@ -617,7 +619,9 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
               className="absolute inset-0"
               style={{
                 WebkitTextStroke: '2px transparent',
-                background: 'linear-gradient(to right, #A5F3FC, #E9D5FF, #FFFFFF)',
+                background: isLight
+                  ? 'linear-gradient(to right, #1473FF, #BE01FF)'
+                  : 'linear-gradient(to right, #A5F3FC, #E9D5FF, #FFFFFF)',
                 WebkitBackgroundClip: 'text',
                 backgroundClip: 'text',
                 color: 'transparent',
@@ -626,13 +630,13 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
               Welcome back, {displayName}
             </span>
             <span
-              className="relative bg-gradient-to-r from-white via-purple-200 to-cyan-200 bg-clip-text text-transparent"
+              className={`relative bg-clip-text text-transparent ${isLight ? 'bg-gradient-to-r from-[#1473FF] to-[#BE01FF]' : 'bg-gradient-to-r from-white via-purple-200 to-cyan-200'}`}
             >
               Welcome back, {displayName}
             </span>
           </h1>
-          <p className="text-gray-400 mt-1 flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 text-sm">
+          <p className={`mt-1 flex items-center gap-2 ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-sm ${isLight ? 'bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 text-[#1473FF]' : 'bg-purple-500/20 text-purple-300'}`}>
               {getRoleDisplayName(role)}
             </span>
             <span>•</span>
@@ -646,7 +650,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
               <Button
                 variant="outline"
                 onClick={() => setShowAddWidget(true)}
-                className="bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 border-purple-500/50 text-purple-300 hover:from-[#1473FF]/30 hover:to-[#BE01FF]/30"
+                className={`bg-gradient-to-r from-[#1473FF]/20 to-[#BE01FF]/20 border-purple-500/50 hover:from-[#1473FF]/30 hover:to-[#BE01FF]/30 ${isLight ? 'text-[#1473FF]' : 'text-purple-300'}`}
               >
                 <Store className="w-4 h-4 mr-2" />
                 Widget Store ({availableWidgets.length})
@@ -654,7 +658,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
               <Button
                 variant="outline"
                 onClick={resetLayout}
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                className={isLight ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Reset
@@ -664,7 +668,7 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
           <Button
             variant={isEditMode ? "default" : "outline"}
             onClick={() => { setIsEditMode(!isEditMode); setShowAddWidget(false); }}
-            className={isEditMode ? "bg-purple-500 hover:bg-purple-600" : "bg-white/10 border-white/20 text-white hover:bg-white/20"}
+            className={isEditMode ? 'bg-purple-500 hover:bg-purple-600 text-white' : isLight ? 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200' : 'bg-white/10 border-white/20 text-white hover:bg-white/20'}
           >
             {isEditMode ? <LayoutGrid className="w-4 h-4 mr-2" /> : <Edit3 className="w-4 h-4 mr-2" />}
             {isEditMode ? 'Done' : 'Customize'}
@@ -691,12 +695,12 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
           { label: 'Premium Widgets', value: availableWidgets.filter(w => w.premium).length, color: 'from-yellow-500 to-yellow-600' },
         ].map((stat) => (
           <div key={stat.label} className="relative overflow-hidden rounded-xl p-4">
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl" />
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-10`} />
-            <div className="absolute inset-0 rounded-xl border border-white/20" />
+            <div className={`absolute inset-0 backdrop-blur-xl ${isLight ? 'bg-white/80' : 'bg-gradient-to-br from-white/10 via-white/5 to-transparent'}`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} ${isLight ? 'opacity-[0.07]' : 'opacity-10'}`} />
+            <div className={`absolute inset-0 rounded-xl border ${isLight ? 'border-slate-200' : 'border-white/20'}`} />
             <div className="relative">
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
-              <p className="text-sm text-gray-400">{stat.label}</p>
+              <p className={`text-2xl font-bold ${isLight ? 'text-slate-800' : 'text-white'}`}>{stat.value}</p>
+              <p className={`text-sm ${isLight ? 'text-slate-500' : 'text-gray-400'}`}>{stat.label}</p>
             </div>
           </div>
         ))}
