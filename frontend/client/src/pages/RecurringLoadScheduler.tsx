@@ -449,7 +449,7 @@ export default function RecurringLoadScheduler() {
                       <div><p className="text-slate-400">Daily Duty (est.)</p><p className={cn("font-bold", hos.dailyDutyOk ? "text-green-500" : "text-red-400")}>{hos.dailyDuty}hr / {HOS_LIMITS.maxDuty}hr {hos.dailyDutyOk ? "✓" : "✗"}</p></div>
                       <div><p className="text-slate-400">Weekly ({p.days.length} days)</p><p className={cn("font-bold", hos.weeklyOk ? "text-green-500" : "text-red-400")}>{hos.weeklyHours}hr / {HOS_LIMITS.maxWeekly}hr {hos.weeklyOk ? "✓" : "✗"}</p></div>
                     </div>
-                    {!allOk && <p className="text-[11px] text-red-400 mt-2">⚠ This schedule may require team drivers or schedule adjustment to maintain HOS compliance.</p>}
+                    {!allOk && <p className="text-[11px] text-red-400 mt-2">This schedule may require team drivers or schedule adjustment to maintain HOS compliance.</p>}
                   </div>
                 );
               })}

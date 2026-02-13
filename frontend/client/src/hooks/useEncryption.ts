@@ -138,7 +138,7 @@ export function useEncryption({ userId, enabled = true }: UseEncryptionOptions) 
         return await decryptMessage(sharedKey, ciphertext);
       } catch (error) {
         console.error("[E2E] Decryption failed:", error);
-        return "🔒 Encrypted message (unable to decrypt)";
+        return "[Encrypted message - unable to decrypt]";
       }
     },
     [myPrivateKey]
@@ -190,13 +190,13 @@ export function useEncryption({ userId, enabled = true }: UseEncryptionOptions) 
           }
         }
 
-        if (!groupKey) return "🔒 Encrypted (missing channel key)";
+        if (!groupKey) return "[Encrypted - missing channel key]";
 
         const ciphertext = unwrapEncrypted(content);
         return await decryptMessage(groupKey, ciphertext);
       } catch (error) {
         console.error("[E2E] Channel decryption failed:", error);
-        return "🔒 Encrypted message (unable to decrypt)";
+        return "[Encrypted message - unable to decrypt]";
       }
     },
     []
@@ -274,7 +274,7 @@ export function useEncryption({ userId, enabled = true }: UseEncryptionOptions) 
                 : await decryptFromChannel(contextKey, msg.content);
             return { ...msg, content: decrypted, _encrypted: true };
           } catch {
-            return { ...msg, content: "🔒 Encrypted message", _encrypted: true };
+            return { ...msg, content: "[Encrypted message]", _encrypted: true };
           }
         })
       );

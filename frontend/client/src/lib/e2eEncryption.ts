@@ -279,10 +279,11 @@ function base64ToArrayBuffer(base64: string): Uint8Array<ArrayBuffer> {
 // ─── ENCRYPTION PREFIX ───────────────────────────────────────────────────────
 // Encrypted messages are prefixed so the system knows to decrypt them.
 
-export const E2E_PREFIX = "🔒e2e:";
+export const E2E_PREFIX = "[e2e]:";
+const E2E_PREFIX_LEGACY = "\u{1F512}e2e:";
 
 export function isEncryptedMessage(content: string): boolean {
-  return content.startsWith(E2E_PREFIX);
+  return content.startsWith(E2E_PREFIX) || content.startsWith(E2E_PREFIX_LEGACY);
 }
 
 export function wrapEncrypted(ciphertext: string): string {
@@ -290,5 +291,6 @@ export function wrapEncrypted(ciphertext: string): string {
 }
 
 export function unwrapEncrypted(content: string): string {
+  if (content.startsWith(E2E_PREFIX_LEGACY)) return content.replace(E2E_PREFIX_LEGACY, "");
   return content.replace(E2E_PREFIX, "");
 }

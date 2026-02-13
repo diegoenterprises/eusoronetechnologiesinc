@@ -289,7 +289,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
       const r = el.getBoundingClientRect();
       const mx = ((e.clientX - r.left) / r.width) * vb.w + vb.x;
       const my = ((e.clientY - r.top) / r.height) * vb.h + vb.y;
-      doZoom(e.deltaY < 0 ? 1.12 : 0.89, mx, my);
+      doZoom(e.deltaY < 0 ? 1.05 : 0.95, mx, my);
     };
     el.addEventListener("wheel", h, { passive: false });
     return () => el.removeEventListener("wheel", h);
@@ -363,12 +363,13 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
       >
         <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} className="w-full h-full" preserveAspectRatio="xMidYMid meet">
           <defs>
-            <radialGradient id="gz-crit"><stop offset="0%" stopColor={rv.critColor} stopOpacity="0.55" /><stop offset="100%" stopColor={rv.critColor} stopOpacity="0" /></radialGradient>
-            <radialGradient id="gz-high"><stop offset="0%" stopColor={rv.highColor} stopOpacity="0.4" /><stop offset="100%" stopColor={rv.highColor} stopOpacity="0" /></radialGradient>
-            <radialGradient id="gz-elev"><stop offset="0%" stopColor={rv.elevColor} stopOpacity="0.3" /><stop offset="100%" stopColor={rv.elevColor} stopOpacity="0" /></radialGradient>
-            <radialGradient id="gz-cold"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.25" /><stop offset="100%" stopColor="#3B82F6" stopOpacity="0" /></radialGradient>
-            <radialGradient id="gz-sel"><stop offset="0%" stopColor="#1473FF" stopOpacity="0.5" /><stop offset="100%" stopColor="#BE01FF" stopOpacity="0" /></radialGradient>
-            <filter id="mapGlow"><feGaussianBlur stdDeviation="2.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <radialGradient id="gz-crit"><stop offset="0%" stopColor={rv.critColor} stopOpacity="0.7" /><stop offset="35%" stopColor={rv.critColor} stopOpacity="0.35" /><stop offset="100%" stopColor={rv.critColor} stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-high"><stop offset="0%" stopColor={rv.highColor} stopOpacity="0.55" /><stop offset="40%" stopColor={rv.highColor} stopOpacity="0.22" /><stop offset="100%" stopColor={rv.highColor} stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-elev"><stop offset="0%" stopColor={rv.elevColor} stopOpacity="0.4" /><stop offset="45%" stopColor={rv.elevColor} stopOpacity="0.15" /><stop offset="100%" stopColor={rv.elevColor} stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-cold"><stop offset="0%" stopColor="#3B82F6" stopOpacity="0.35" /><stop offset="50%" stopColor="#3B82F6" stopOpacity="0.12" /><stop offset="100%" stopColor="#3B82F6" stopOpacity="0" /></radialGradient>
+            <radialGradient id="gz-sel"><stop offset="0%" stopColor="#1473FF" stopOpacity="0.6" /><stop offset="40%" stopColor="#BE01FF" stopOpacity="0.25" /><stop offset="100%" stopColor="#BE01FF" stopOpacity="0" /></radialGradient>
+            <filter id="mapGlow"><feGaussianBlur stdDeviation="3.5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <filter id="heatGlow"><feGaussianBlur stdDeviation="6" result="b" /><feColorMatrix in="b" type="saturate" values="1.8" result="s" /><feMerge><feMergeNode in="s" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
           </defs>
 
           {/* State outlines */}
@@ -458,9 +459,12 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 onMouseLeave={() => { setTip(null); setHovered(null); }}
               >
                 {/* Outer glow */}
-                <circle cx={zx} cy={zy} r={r * 3.5} fill={isSel ? "url(#gz-sel)" : `url(#${gId})`}>
-                  {z.demandLevel === "CRITICAL" && <animate attributeName="r" values={`${r*3};${r*4};${r*3}`} dur="2.5s" repeatCount="indefinite" />}
+                <circle cx={zx} cy={zy} r={r * 5} fill={isSel ? "url(#gz-sel)" : `url(#${gId})`} filter={z.demandLevel === "CRITICAL" ? "url(#heatGlow)" : undefined}>
+                  {z.demandLevel === "CRITICAL" && <animate attributeName="r" values={`${r*4.5};${r*5.5};${r*4.5}`} dur="3s" repeatCount="indefinite" />}
+                  {z.demandLevel === "HIGH" && <animate attributeName="opacity" values="0.8;1;0.8" dur="4s" repeatCount="indefinite" />}
                 </circle>
+                {/* Secondary heat ring for depth */}
+                <circle cx={zx} cy={zy} r={r * 2.5} fill={isSel ? "url(#gz-sel)" : `url(#${gId})`} opacity={0.5} />
                 {/* Selection ring */}
                 {isSel && (
                   <circle cx={zx} cy={zy} r={r + s(5)} fill="none" stroke="#1473FF" strokeWidth={s(1.2)} opacity={0.7}>
@@ -500,7 +504,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                   <g className="select-none pointer-events-none">
                     <rect x={zx + r + s(2)} y={zy - s(8)} width={s(28)} height={s(10)} rx={s(3)} fill={isLight ? "#FEF3C7" : "#78350F"} opacity={0.9} stroke="#A16207" strokeWidth={s(0.4)} />
                     <text x={zx + r + s(16)} y={zy - s(1.5)} textAnchor="middle" fontSize={s(5)} fill={isLight ? "#92400E" : "#FCD34D"} fontWeight="700">
-                      ⛽ ${Number(z.fuelPrice).toFixed(2)}
+                      F ${Number(z.fuelPrice).toFixed(2)}
                     </text>
                   </g>
                 )}
@@ -508,7 +512,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 {activeLayers.includes("weather_risk") && (z.weatherAlerts?.length > 0 || z.weatherRiskLevel === "HIGH") && (
                   <g className="select-none pointer-events-none">
                     <circle cx={zx - r - s(5)} cy={zy - r - s(2)} r={s(5)} fill={z.weatherRiskLevel === "HIGH" ? "#DC2626" : "#F59E0B"} opacity={0.85} />
-                    <text x={zx - r - s(5)} y={zy - r + s(1.5)} textAnchor="middle" fontSize={s(5)} fill="white" fontWeight="700">⚡</text>
+                    <text x={zx - r - s(5)} y={zy - r + s(1.5)} textAnchor="middle" fontSize={s(5)} fill="white" fontWeight="700">W</text>
                     {detail !== "lo" && (
                       <text x={zx - r - s(5)} y={zy - r - s(9)} textAnchor="middle" fontSize={s(3.5)} fill={z.weatherRiskLevel === "HIGH" ? "#FCA5A5" : "#FCD34D"} fontWeight="600">
                         {z.weatherAlerts?.length || 0} alert{(z.weatherAlerts?.length || 0) !== 1 ? "s" : ""}
@@ -522,7 +526,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     <circle cx={zx} cy={zy} r={r + s(6)} fill="none" stroke="#22C55E" strokeWidth={s(0.8)} strokeDasharray={`${s(3)} ${s(2)}`} opacity={0.6} />
                     <rect x={zx + r + s(2)} y={zy + s(2)} width={s(24)} height={s(9)} rx={s(3)} fill={isLight ? "#DCFCE7" : "#14532D"} opacity={0.9} stroke="#22C55E" strokeWidth={s(0.4)} />
                     <text x={zx + r + s(14)} y={zy + s(8.5)} textAnchor="middle" fontSize={s(4.5)} fill={isLight ? "#166534" : "#86EFAC"} fontWeight="700">
-                      🚛 {z.liveTrucks || 0}
+                      T {z.liveTrucks || 0}
                     </text>
                   </g>
                 )}
@@ -536,7 +540,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                         <>
                           <rect x={zx - r - s(28)} y={zy + s(2)} width={s(24)} height={s(9)} rx={s(3)} fill={isLight ? "#FFF7ED" : "#431407"} opacity={0.9} stroke={cCol} strokeWidth={s(0.4)} />
                           <text x={zx - r - s(16)} y={zy + s(8.5)} textAnchor="middle" fontSize={s(4.5)} fill={cCol} fontWeight="700">
-                            ⚠ {score}
+                            C {score}
                           </text>
                         </>
                       );
@@ -555,7 +559,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                       const ssCol = ss > 70 ? "#22D3EE" : ss > 40 ? "#F59E0B" : "#EF4444";
                       return detail !== "lo" ? (
                         <text x={zx + r + s(3)} y={zy - r + s(2)} fontSize={s(4.5)} fill={ssCol} fontWeight="700" className="select-none pointer-events-none">
-                          🛡{ss}
+                          S{ss}
                         </text>
                       ) : null;
                     })()}
@@ -573,7 +577,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 {/* Freight Demand layer — load count badge */}
                 {activeLayers.includes("freight_demand") && detail !== "lo" && (
                   <text x={zx} y={zy + r + s(detail === "hi" ? 20 : 14)} textAnchor="middle" fontSize={s(4)} fill="#EF4444" fontWeight="600" opacity={0.7} className="select-none pointer-events-none">
-                    📦 {z.liveLoads || 0} loads
+                    {z.liveLoads || 0} loads
                   </text>
                 )}
                 {/* Spread/Margin Opportunity layer */}
@@ -620,19 +624,19 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               {activeLayers.length > 0 && (
                 <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
                   {activeLayers.includes("fuel_prices") && tip.z.fuelPrice != null && (
-                    <div className="flex justify-between"><span className="text-amber-500">⛽ Diesel</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.fuelPrice).toFixed(2)}/gal</span></div>
+                    <div className="flex justify-between"><span className="text-amber-500">Fuel</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.fuelPrice).toFixed(2)}/gal</span></div>
                   )}
                   {activeLayers.includes("weather_risk") && (tip.z.weatherAlerts?.length || 0) > 0 && (
-                    <div className="flex justify-between"><span className="text-blue-400">🌧 Weather</span><span className="font-bold text-amber-400">{tip.z.weatherAlerts.length} alert{tip.z.weatherAlerts.length !== 1 ? "s" : ""}</span></div>
+                    <div className="flex justify-between"><span className="text-blue-400">Weather</span><span className="font-bold text-amber-400">{tip.z.weatherAlerts.length} alert{tip.z.weatherAlerts.length !== 1 ? "s" : ""}</span></div>
                   )}
                   {activeLayers.includes("carrier_capacity") && (
-                    <div className="flex justify-between"><span className="text-emerald-400">🚛 Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveTrucks || 0} available</span></div>
+                    <div className="flex justify-between"><span className="text-emerald-400">Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveTrucks || 0} available</span></div>
                   )}
                   {activeLayers.includes("compliance_risk") && (
-                    <div className="flex justify-between"><span className="text-orange-400">⚠ Compliance</span><span className={`font-bold ${(tip.z.complianceRiskScore || 0) > 50 ? "text-red-400" : "text-emerald-400"}`}>{tip.z.complianceRiskScore ?? "N/A"}</span></div>
+                    <div className="flex justify-between"><span className="text-orange-400">Compliance</span><span className={`font-bold ${(tip.z.complianceRiskScore || 0) > 50 ? "text-red-400" : "text-emerald-400"}`}>{tip.z.complianceRiskScore ?? "N/A"}</span></div>
                   )}
                   {activeLayers.includes("freight_demand") && (
-                    <div className="flex justify-between"><span className="text-red-400">📦 Demand</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveLoads || 0} loads</span></div>
+                    <div className="flex justify-between"><span className="text-red-400">Demand</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveLoads || 0} loads</span></div>
                   )}
                 </div>
               )}
@@ -644,8 +648,8 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         {/* ── ZOOM CONTROLS ── */}
         <div className={`absolute top-3 right-3 flex flex-col gap-1 ${isLight ? "" : ""}`}>
           {[
-            { icon: ZoomIn, action: () => doZoom(1.25), tip: "Zoom in" },
-            { icon: ZoomOut, action: () => doZoom(0.8), tip: "Zoom out" },
+            { icon: ZoomIn, action: () => doZoom(1.12), tip: "Zoom in" },
+            { icon: ZoomOut, action: () => doZoom(0.9), tip: "Zoom out" },
             { icon: Maximize2, action: resetView, tip: "Reset view" },
           ].map(({ icon: Ic, action, tip: t }) => (
             <button key={t} onClick={action} title={t}

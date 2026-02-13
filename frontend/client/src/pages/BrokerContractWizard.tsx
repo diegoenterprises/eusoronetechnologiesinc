@@ -259,8 +259,8 @@ export default function BrokerContractWizard() {
                   <div><p className="text-slate-400">Platform Fee (both sides)</p><p className="text-lg font-bold text-purple-400">${totalPlatformFee.toFixed(2)}</p></div>
                   <div><p className="text-slate-400">Net Revenue</p><p className={cn("text-lg font-bold", netBrokerRevenue >= 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>${netBrokerRevenue.toFixed(2)}</p></div>
                 </div>
-                {marginPct < 10 && marginPct >= 0 && <p className="text-[11px] text-yellow-500 mt-2">⚠ Margin below 10%. Consider negotiating better shipper rates.</p>}
-                {margin < 0 && <p className="text-[11px] text-red-400 mt-2">⚠ Negative margin — carrier rate exceeds shipper rate.</p>}
+                {marginPct < 10 && marginPct >= 0 && <p className="text-[11px] text-yellow-500 mt-2">Margin below 10%. Consider negotiating better shipper rates.</p>}
+                {margin < 0 && <p className="text-[11px] text-red-400 mt-2">Negative margin — carrier rate exceeds shipper rate.</p>}
               </div>
 
               {/* Platform Fee Breakdown */}
