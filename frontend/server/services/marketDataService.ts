@@ -348,8 +348,155 @@ export async function fetchAllCommodityQuotes(): Promise<Map<string, YahooQuote>
   return fetchYahooFinanceQuotes(Object.keys(YAHOO_COMMODITY_SYMBOLS));
 }
 
+// ===== CommodityPriceAPI (Primary Source — 130+ commodities, 60-sec updates) =====
+
+const COMMODITY_PRICE_API_KEY = process.env.COMMODITY_PRICE_API_KEY || "20d6ed40-a652-472d-937f-5ff4cef11c8f";
+const COMMODITY_PRICE_API_BASE = "https://api.commoditypriceapi.com/v2";
+
+// Map our internal symbols to CommodityPriceAPI symbols
+export const CPAPI_SYMBOL_MAP: Record<string, string> = {
+  CL: "WTI", BZ: "BRENT", NG: "NG", HO: "HO",
+  GC: "XAU", SI: "XAG", HG: "XCU", ALI: "ALU", STEEL: "STEEL",
+  ZC: "CORN", ZS: "SOYBEAN", ZW: "WHEAT", CT: "COTTON", SB: "SUGAR",
+  KC: "COFFEE", LE: "CATTLE", LB: "LUMBER",
+};
+
+// Reverse map for lookups
+const CPAPI_REVERSE: Record<string, string> = {};
+for (const [internal, cpapi] of Object.entries(CPAPI_SYMBOL_MAP)) {
+  CPAPI_REVERSE[cpapi] = internal;
+}
+
+export interface CPAPIRate {
+  symbol: string;
+  price: number;
+  timestamp: number;
+}
+
+export async function fetchCommodityPriceAPI(symbols: string[]): Promise<Record<string, number>> {
+  const cacheKey = `cpapi_${symbols.sort().join(",")}`;
+  const cached = getCached<Record<string, number>>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const symbolStr = symbols.join(",");
+    const url = `${COMMODITY_PRICE_API_BASE}/latest?symbols=${encodeURIComponent(symbolStr)}&apiKey=${COMMODITY_PRICE_API_KEY}`;
+
+    const res = await fetch(url, {
+      headers: { "x-api-key": COMMODITY_PRICE_API_KEY },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      console.error(`CommodityPriceAPI error: ${res.status}`);
+      return {};
+    }
+
+    const json = await res.json();
+    if (!json.success && !json.rates) return {};
+
+    const rates: Record<string, number> = json.rates || json.data?.rates || {};
+
+    // Cache for 2 minutes (API updates every 60 sec)
+    setCache(cacheKey, rates, 2 * 60 * 1000);
+    return rates;
+  } catch (err) {
+    console.error("CommodityPriceAPI fetch failed:", err);
+    return {};
+  }
+}
+
+// Fetch historical rate for change calculation
+export async function fetchCPAPIHistorical(symbols: string[], date: string): Promise<Record<string, number>> {
+  const cacheKey = `cpapi_hist_${symbols.sort().join(",")}_${date}`;
+  const cached = getCached<Record<string, number>>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const symbolStr = symbols.join(",");
+    const url = `${COMMODITY_PRICE_API_BASE}/historical?symbols=${encodeURIComponent(symbolStr)}&date=${date}&apiKey=${COMMODITY_PRICE_API_KEY}`;
+
+    const res = await fetch(url, {
+      headers: { "x-api-key": COMMODITY_PRICE_API_KEY },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) return {};
+
+    const json = await res.json();
+    const rates: Record<string, number> = {};
+    const rawRates = json.rates || json.data?.rates || {};
+    for (const [sym, val] of Object.entries(rawRates)) {
+      rates[sym] = typeof val === "object" ? (val as any).close ?? (val as any).value ?? 0 : Number(val);
+    }
+
+    // Cache for 24 hours (historical data doesn't change)
+    setCache(cacheKey, rates, 24 * 60 * 60 * 1000);
+    return rates;
+  } catch (err) {
+    console.error("CommodityPriceAPI historical fetch failed:", err);
+    return {};
+  }
+}
+
+// Search/lookup any symbol via CommodityPriceAPI
+export async function searchCommodityPriceAPI(query: string): Promise<Array<{ symbol: string; name: string; price: number }>> {
+  try {
+    // First get all supported symbols
+    const cacheKey = "cpapi_symbols";
+    let allSymbols = getCached<any[]>(cacheKey);
+
+    if (!allSymbols) {
+      const url = `${COMMODITY_PRICE_API_BASE}/symbols?apiKey=${COMMODITY_PRICE_API_KEY}`;
+      const res = await fetch(url, {
+        headers: { "x-api-key": COMMODITY_PRICE_API_KEY },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        allSymbols = json.symbols || json.data?.symbols || [];
+        setCache(cacheKey, allSymbols, 24 * 60 * 60 * 1000);
+      } else {
+        allSymbols = [];
+      }
+    }
+
+    const q = query.toLowerCase();
+    const matches = (allSymbols || [])
+      .filter((s: any) => {
+        const sym = (typeof s === "string" ? s : s.symbol || s.code || "").toLowerCase();
+        const name = (typeof s === "string" ? s : s.name || s.description || "").toLowerCase();
+        return sym.includes(q) || name.includes(q);
+      })
+      .slice(0, 20);
+
+    // Get prices for matched symbols
+    const symbolKeys = matches.map((s: any) => typeof s === "string" ? s : s.symbol || s.code || s);
+    if (symbolKeys.length === 0) return [];
+
+    const prices = await fetchCommodityPriceAPI(symbolKeys);
+
+    return matches.map((s: any) => {
+      const sym = typeof s === "string" ? s : s.symbol || s.code || s;
+      const name = typeof s === "string" ? s : s.name || s.description || sym;
+      return { symbol: sym, name, price: prices[sym] || 0 };
+    });
+  } catch (err) {
+    console.error("CommodityPriceAPI search failed:", err);
+    return [];
+  }
+}
+
+// Fetch all tracked commodities from CommodityPriceAPI in one batch
+export async function fetchAllCPAPIQuotes(): Promise<Record<string, number>> {
+  const cpapiSymbols = Object.values(CPAPI_SYMBOL_MAP);
+  return fetchCommodityPriceAPI(cpapiSymbols);
+}
+
 // ===== Aggregated Market Intelligence =====
 // Combines all sources into a unified market snapshot
+// Priority: CommodityPriceAPI > Yahoo Finance > FRED/EIA (cross-referenced)
 
 export interface MarketSnapshot {
   dieselNational: { price: number; change: number; date: string } | null;
@@ -360,6 +507,7 @@ export interface MarketSnapshot {
   ltlPPI: { value: number; change: number } | null;
   freightTSI: { value: number; change: number } | null;
   yahooQuotes: Record<string, { price: number; change: number; changePercent: number; prevClose: number; open: number; high: number; low: number; volume: number }>;
+  cpapiQuotes: Record<string, number>;
   source: string;
   fetchedAt: string;
   isLiveData: boolean;
@@ -375,7 +523,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
   const cached = getCached<MarketSnapshot>(cacheKey);
   if (cached) return cached;
 
-  // Fetch all sources in parallel (including Yahoo Finance — no key required)
+  // Fetch ALL sources in parallel — CommodityPriceAPI + Yahoo Finance + FRED + EIA
   const [
     crudeRaw,
     natGasRaw,
@@ -387,6 +535,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     dieselGulf,
     dieselWest,
     yahooRaw,
+    cpapiRaw,
   ] = await Promise.all([
     fetchFRED("DCOILWTICO", 5),
     fetchFRED("DHHNGSP", 5),
@@ -398,11 +547,13 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     fetchEIADiesel("R30", 1),
     fetchEIADiesel("R50", 1),
     fetchAllCommodityQuotes(),
+    fetchAllCPAPIQuotes(),
   ]);
 
   const hasGovData = crudeRaw.length > 0 || dieselNational.length > 0 || tlPPIRaw.length > 0;
   const hasYahoo = yahooRaw.size > 0;
-  const hasAnyData = hasGovData || hasYahoo;
+  const hasCPAPI = Object.keys(cpapiRaw).length > 0;
+  const hasAnyData = hasGovData || hasYahoo || hasCPAPI;
 
   // Build yahooQuotes record for the snapshot
   const yahooQuotes: MarketSnapshot["yahooQuotes"] = {};
@@ -419,7 +570,15 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     };
   }
 
-  // Prefer FRED for crude/natgas, fallback to Yahoo Finance
+  // Map CommodityPriceAPI quotes to our internal symbol keys
+  const cpapiQuotes: Record<string, number> = {};
+  for (const [cpapiSym, price] of Object.entries(cpapiRaw)) {
+    const internalSym = CPAPI_REVERSE[cpapiSym];
+    if (internalSym) cpapiQuotes[internalSym] = price;
+    cpapiQuotes[cpapiSym] = price; // also keep the raw symbol
+  }
+
+  // Prefer FRED for crude/natgas, fallback to CommodityPriceAPI, then Yahoo Finance
   const yCL = yahooRaw.get("CL");
   const yNG = yahooRaw.get("NG");
 
@@ -443,18 +602,22 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
           change: crudeRaw.length >= 2 ? calcPctChange(crudeRaw[0].value, crudeRaw[1].value) : 0,
           date: crudeRaw[0].date,
         }
-      : yCL
-        ? { price: yCL.regularMarketPrice, change: yCL.regularMarketChangePercent, date: new Date().toISOString().split("T")[0] }
-        : null,
+      : cpapiQuotes["CL"]
+        ? { price: cpapiQuotes["CL"], change: 0, date: new Date().toISOString().split("T")[0] }
+        : yCL
+          ? { price: yCL.regularMarketPrice, change: yCL.regularMarketChangePercent, date: new Date().toISOString().split("T")[0] }
+          : null,
     naturalGas: natGasRaw.length >= 1
       ? {
           price: natGasRaw[0].value,
           change: natGasRaw.length >= 2 ? calcPctChange(natGasRaw[0].value, natGasRaw[1].value) : 0,
           date: natGasRaw[0].date,
         }
-      : yNG
-        ? { price: yNG.regularMarketPrice, change: yNG.regularMarketChangePercent, date: new Date().toISOString().split("T")[0] }
-        : null,
+      : cpapiQuotes["NG"]
+        ? { price: cpapiQuotes["NG"], change: 0, date: new Date().toISOString().split("T")[0] }
+        : yNG
+          ? { price: yNG.regularMarketPrice, change: yNG.regularMarketChangePercent, date: new Date().toISOString().split("T")[0] }
+          : null,
     truckingPPI: tlPPIRaw.length >= 1
       ? {
           value: tlPPIRaw[0].value,
@@ -475,18 +638,17 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
         }
       : null,
     yahooQuotes,
-    source: hasGovData && hasYahoo
-      ? "FRED + EIA + BLS + Yahoo Finance (Live)"
-      : hasYahoo
-        ? "Yahoo Finance (Live) — Configure FRED_API_KEY, EIA_API_KEY for government data"
-        : hasGovData
-          ? "FRED + EIA + BLS (Live)"
-          : "EusoTrip Seed Data (Configure API keys for live)",
+    cpapiQuotes,
+    source: [
+      hasCPAPI ? "CommodityPriceAPI" : "",
+      hasGovData ? "FRED + EIA + BLS" : "",
+      hasYahoo ? "Yahoo Finance" : "",
+    ].filter(Boolean).join(" + ") + (hasAnyData ? " (Live)" : "") || "EusoTrip Seed Data",
     fetchedAt: new Date().toISOString(),
     isLiveData: hasAnyData,
   };
 
-  // Cache for 30 min
-  setCache(cacheKey, snapshot, 30 * 60 * 1000);
+  // Cache for 5 min (was 30 — shorter now since CommodityPriceAPI updates every 60 sec)
+  setCache(cacheKey, snapshot, 5 * 60 * 1000);
   return snapshot;
 }

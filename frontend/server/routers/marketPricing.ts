@@ -16,13 +16,13 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
-import { fetchMarketSnapshot, type MarketSnapshot } from "../services/marketDataService";
+import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, fetchCommodityPriceAPI, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
 
 // Cached live snapshot (shared across endpoints)
 let _liveSnapshot: MarketSnapshot | null = null;
 let _liveSnapshotAt = 0;
 async function getLiveSnapshot(): Promise<MarketSnapshot | null> {
-  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 30 * 60 * 1000) return _liveSnapshot;
+  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 5 * 60 * 1000) return _liveSnapshot;
   try {
     _liveSnapshot = await fetchMarketSnapshot();
     _liveSnapshotAt = Date.now();
@@ -229,6 +229,15 @@ export const marketPricingRouter = router({
             }
           }
 
+          // Overlay CommodityPriceAPI (highest priority — 60s updates)
+          const cpapi = snapshot.cpapiQuotes || {};
+          for (const sym of Object.keys(cpapi)) {
+            if (cpapi[sym] > 0) {
+              const existing = updates[sym];
+              updates[sym] = { price: cpapi[sym], changePercent: existing?.changePercent || 0, change: existing?.change || 0 };
+            }
+          }
+
           return {
             snapshot,
             liveOverrides: updates,
@@ -272,28 +281,44 @@ export const marketPricingRouter = router({
       const snap = await getLiveSnapshot();
 
       if (snap?.isLiveData) {
-        // Build overrides from FRED/EIA government data
-        const overrides: Record<string, { price: number; change: number }> = {};
-        if (snap.crudeOilWTI) overrides["CL"] = { price: snap.crudeOilWTI.price, change: snap.crudeOilWTI.change };
-        if (snap.naturalGas) overrides["NG"] = { price: snap.naturalGas.price, change: snap.naturalGas.change };
+        // === CROSS-REFERENCING ENGINE ===
+        // Priority: CommodityPriceAPI (60s updates) > Yahoo Finance (real-time) > FRED/EIA (daily/weekly)
+        // For each commodity, pick the best available price from the highest-priority source
+
+        const cpapi = snap.cpapiQuotes || {};
+        const yq = snap.yahooQuotes || {};
+
+        // Build overrides from ALL sources, highest priority wins
+        const overrides: Record<string, { price: number; change: number; source: string }> = {};
+
+        // Layer 1: FRED/EIA government data (lowest priority, but most authoritative for certain series)
+        if (snap.crudeOilWTI) overrides["CL"] = { price: snap.crudeOilWTI.price, change: snap.crudeOilWTI.change, source: "FRED" };
+        if (snap.naturalGas) overrides["NG"] = { price: snap.naturalGas.price, change: snap.naturalGas.change, source: "FRED" };
         if (snap.dieselNational) {
-          overrides["ULSD"] = { price: snap.dieselNational.price, change: snap.dieselNational.change };
-          overrides["DOE"] = { price: snap.dieselNational.price, change: snap.dieselNational.change };
+          overrides["ULSD"] = { price: snap.dieselNational.price, change: snap.dieselNational.change, source: "EIA" };
+          overrides["DOE"] = { price: snap.dieselNational.price, change: snap.dieselNational.change, source: "EIA" };
         }
 
-        // Overlay Yahoo Finance real-time quotes on ALL matching symbols
-        const yq = snap.yahooQuotes || {};
+        // Layer 2: Yahoo Finance (higher priority — real-time during market hours)
         for (const sym of Object.keys(yq)) {
-          if (!overrides[sym]) {
-            overrides[sym] = { price: yq[sym].price, change: yq[sym].changePercent };
+          overrides[sym] = { price: yq[sym].price, change: yq[sym].changePercent, source: "Yahoo" };
+        }
+
+        // Layer 3: CommodityPriceAPI (highest priority — 60-second updates, 130+ commodities)
+        for (const sym of Object.keys(cpapi)) {
+          if (cpapi[sym] > 0) {
+            // Cross-reference: only override if price is realistic (within 50% of existing)
+            const existing = overrides[sym];
+            if (!existing || Math.abs(cpapi[sym] - existing.price) / existing.price < 0.5) {
+              overrides[sym] = { price: cpapi[sym], change: existing?.change || 0, source: "CommodityPriceAPI" };
+            }
           }
         }
 
-        // Apply all overrides (gov + yahoo)
+        // Apply all overrides to seed data
         all = all.map(c => {
           const ov = overrides[c.symbol];
           if (!ov) return c;
-          // Use Yahoo quote details if available for richer data
           const yQuote = yq[c.symbol];
           const changeAmt = yQuote ? yQuote.change : +(ov.price * ov.change / 100).toFixed(4);
           return {
@@ -561,6 +586,96 @@ export const marketPricingRouter = router({
   getFuelIndex: protectedProcedure.query(async () => {
     return getLiveFuelIndex();
   }),
+
+  // Search/lookup any commodity or ticker — queries CommodityPriceAPI + local seed data
+  searchCommodity: protectedProcedure
+    .input(z.object({ query: z.string().min(1) }))
+    .query(async ({ input }) => {
+      const q = input.query.toLowerCase();
+
+      // Search local seed data first
+      const localMatches = COMMODITIES
+        .filter(c => c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q) || c.category.toLowerCase().includes(q))
+        .map(c => ({ symbol: c.symbol, name: c.name, price: c.price, category: c.category, unit: c.unit, changePercent: c.changePercent, source: "local" as const }));
+
+      // Also search CommodityPriceAPI for symbols not in our seed data
+      let apiMatches: Array<{ symbol: string; name: string; price: number; category: string; unit: string; changePercent: number; source: "api" }> = [];
+      try {
+        const apiResults = await searchCommodityPriceAPI(input.query);
+        apiMatches = apiResults
+          .filter(r => !localMatches.find(l => l.symbol === r.symbol))
+          .map(r => ({
+            symbol: r.symbol,
+            name: r.name || r.symbol,
+            price: r.price,
+            category: "External",
+            unit: "USD",
+            changePercent: 0,
+            source: "api" as const,
+          }));
+      } catch { /* CommodityPriceAPI search failed, use local only */ }
+
+      return {
+        results: [...localMatches, ...apiMatches].slice(0, 25),
+        totalLocal: localMatches.length,
+        totalApi: apiMatches.length,
+      };
+    }),
+
+  // Get a single commodity quote from all sources (cross-referenced)
+  getQuote: protectedProcedure
+    .input(z.object({ symbol: z.string() }))
+    .query(async ({ input }) => {
+      const sym = input.symbol.toUpperCase();
+
+      // Check seed data
+      const seed = COMMODITIES.find(c => c.symbol === sym);
+
+      // Check live snapshot
+      const snap = await getLiveSnapshot();
+      const yq = snap?.yahooQuotes?.[sym];
+      const cpapi = snap?.cpapiQuotes?.[sym];
+      const cpapiMapped = CPAPI_SYMBOL_MAP[sym];
+
+      // Also try direct CommodityPriceAPI fetch for the specific symbol
+      let directPrice: number | null = null;
+      if (cpapiMapped) {
+        try {
+          const rates = await fetchCommodityPriceAPI([cpapiMapped]);
+          directPrice = rates[cpapiMapped] || null;
+        } catch { /* ignore */ }
+      }
+
+      // Cross-reference: pick best price
+      const bestPrice = directPrice || cpapi || (yq ? yq.price : null) || (seed ? seed.price : null);
+
+      return {
+        symbol: sym,
+        name: seed?.name || sym,
+        price: bestPrice,
+        change: yq?.change || seed?.change || 0,
+        changePercent: yq?.changePercent || seed?.changePercent || 0,
+        high: yq?.high || seed?.high || 0,
+        low: yq?.low || seed?.low || 0,
+        open: yq?.open || seed?.open || 0,
+        previousClose: yq?.prevClose || seed?.previousClose || 0,
+        volume: yq ? (yq.volume > 1000 ? `${Math.round(yq.volume / 1000)}K` : String(yq.volume)) : seed?.volume || "N/A",
+        category: seed?.category || "External",
+        unit: seed?.unit || "USD",
+        sparkline: seed?.sparkline || [],
+        intraday: seed?.intraday || "FLAT",
+        daily: seed?.daily || "FLAT",
+        weekly: seed?.weekly || "FLAT",
+        monthly: seed?.monthly || "FLAT",
+        sources: {
+          commodityPriceAPI: directPrice || cpapi || null,
+          yahooFinance: yq ? yq.price : null,
+          fredEia: snap?.crudeOilWTI && sym === "CL" ? snap.crudeOilWTI.price : snap?.naturalGas && sym === "NG" ? snap.naturalGas.price : null,
+          seed: seed?.price || null,
+        },
+        bestSource: directPrice || cpapi ? "CommodityPriceAPI" : yq ? "Yahoo Finance" : "Seed Data",
+      };
+    }),
 
   // Get market summary for dashboard widgets — live data
   getMarketSummary: protectedProcedure.query(async () => {
