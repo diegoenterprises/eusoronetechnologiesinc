@@ -573,8 +573,8 @@ export default function DashboardLayout({
             </AnimatePresence>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Global Search Bar */}
+          <div className="flex items-center flex-1 justify-end gap-6">
+            {/* Global Search Bar — left group */}
             <div className="relative hidden md:block flex-shrink-0" ref={searchDropdownRef}>
               <motion.div
                 animate={{
@@ -685,6 +685,12 @@ export default function DashboardLayout({
               </AnimatePresence>
             </div>
 
+            {/* Spacer between search and action icons */}
+            <div className={`hidden md:block w-px h-5 ${theme === "light" ? "bg-slate-200" : "bg-gray-700/50"}`} />
+
+            {/* Right action icons group */}
+            <div className="flex items-center gap-3">
+
             {/* Theme Toggle */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -757,6 +763,7 @@ export default function DashboardLayout({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>{/* end right action icons group */}
           </div>
         </motion.header>
 
