@@ -17,15 +17,74 @@ import { renderChatMarkdown } from "@/lib/renderChatMarkdown";
 import {
   Sparkles, Send, User, Bot, Trash2,
   MessageSquare, Lightbulb, HelpCircle, Beaker,
-  Target, Brain, Shield, Flame, TrendingUp
+  Target, Brain, Shield, Flame, TrendingUp,
+  Truck, Package, Route, BarChart3, Gauge, FileCheck,
+  ShieldCheck, Activity, Zap, Building2, ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/_core/hooks/useAuth";
+
+// Role-specific capabilities
+const ROLE_CAPABILITIES: Record<string, Array<{ icon: any; label: string }>> = {
+  SHIPPER: [
+    { icon: BarChart3, label: "Rate benchmarking" },
+    { icon: Package, label: "Load recommendations" },
+    { icon: Route, label: "Route optimization" },
+    { icon: ShieldCheck, label: "Compliance guidance" },
+    { icon: Target, label: "Carrier matching" },
+    { icon: Gauge, label: "Market intelligence" },
+  ],
+  CARRIER: [
+    { icon: Package, label: "Load matching" },
+    { icon: BarChart3, label: "Bid fairness analysis" },
+    { icon: Truck, label: "Fleet optimization" },
+    { icon: Gauge, label: "Fuel surcharge rates" },
+    { icon: ShieldCheck, label: "Compliance check" },
+    { icon: Route, label: "Route planning" },
+  ],
+  DRIVER: [
+    { icon: Activity, label: "HOS management" },
+    { icon: Shield, label: "Hazmat classification" },
+    { icon: Flame, label: "ERG 2024 lookup" },
+    { icon: Route, label: "Route guidance" },
+    { icon: Gauge, label: "Fuel stop finder" },
+    { icon: FileCheck, label: "Incident reporting" },
+  ],
+  BROKER: [
+    { icon: BarChart3, label: "Lane pricing analysis" },
+    { icon: Target, label: "Carrier-load matching" },
+    { icon: TrendingUp, label: "Margin optimization" },
+    { icon: Gauge, label: "Market rate intel" },
+    { icon: ShieldCheck, label: "Carrier verification" },
+    { icon: Route, label: "Multi-stop planning" },
+  ],
+  TERMINAL_MANAGER: [
+    { icon: Building2, label: "Throughput monitoring" },
+    { icon: ClipboardList, label: "Run ticket review" },
+    { icon: Gauge, label: "Tank inventory" },
+    { icon: Shield, label: "Safety compliance" },
+    { icon: Flame, label: "Hazmat protocols" },
+    { icon: Activity, label: "Terminal analytics" },
+  ],
+  ADMIN: [
+    { icon: Activity, label: "System health" },
+    { icon: BarChart3, label: "Revenue analytics" },
+    { icon: ShieldCheck, label: "Compliance dashboard" },
+    { icon: Zap, label: "Platform diagnostics" },
+    { icon: Target, label: "User management" },
+    { icon: Gauge, label: "Performance metrics" },
+  ],
+};
 
 export default function ESANGChat() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const { user } = useAuth();
+  const userRole = ((user as any)?.role || "SHIPPER").toUpperCase();
+  const capabilities = ROLE_CAPABILITIES[userRole] || ROLE_CAPABILITIES["SHIPPER"];
+  const showSpectraMatch = ["SHIPPER", "TERMINAL_MANAGER", "CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
   const [lastActions, setLastActions] = useState<any[]>([]);
@@ -242,64 +301,78 @@ export default function ESANGChat() {
           </Card>
 
           <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
-            <CardHeader className="pb-3"><CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><HelpCircle className="w-4 h-4 text-cyan-400" />Capabilities</CardTitle></CardHeader>
-            <CardContent className={cn("space-y-2 text-xs", isLight ? "text-slate-500" : "text-slate-400")}>
-              <p>- Load recommendations</p>
-              <p>- Hazmat classification</p>
-              <p>- ERG 2024 lookup</p>
-              <p>- Bid fairness analysis</p>
-              <p>- Compliance guidance</p>
-              <p>- Route optimization</p>
-              <div className={cn("pt-2 border-t mt-2", isLight ? "border-slate-200" : "border-slate-700/50")}>
-                <p className={cn("font-medium flex items-center gap-1", isLight ? "text-purple-600" : "text-purple-400")}><Beaker className="w-3 h-3" /> SPECTRA-MATCH™</p>
-                <p>- Product identification</p>
-                <p>- Crude oil analysis</p>
-                <p>- Safety info</p>
-                <p>- Market context</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* SPECTRA-MATCH Learning Stats */}
-          <Card className={cn("bg-gradient-to-br rounded-xl", isLight ? "from-purple-50 to-cyan-50 border-purple-200 shadow-sm" : "from-purple-500/5 to-cyan-500/5 border-purple-500/30")}>
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-3">
               <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
-                <Brain className={cn("w-4 h-4", isLight ? "text-purple-600" : "text-purple-400")} />
-                Learning
-                <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-purple-100 text-purple-600" : "bg-purple-500/20 text-purple-400")}>AI</Badge>
+                <Zap className="w-4 h-4 text-cyan-400" />
+                Capabilities
+                <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-blue-50 text-blue-600" : "bg-blue-500/10 text-blue-400")}>{userRole.replace("_", " ")}</Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {learningStatsQuery.isLoading ? (
-                <Skeleton className="h-12 w-full" />
-              ) : (
-                <>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={isLight ? "text-slate-500" : "text-slate-400"}>Identifications</span>
-                    <span className={cn("font-bold", isLight ? "text-cyan-600" : "text-cyan-400")}>{learningStatsQuery.data?.totalIdentifications || 0}</span>
+            <CardContent className="space-y-1.5">
+              {capabilities.map((cap, i) => {
+                const Icon = cap.icon;
+                return (
+                  <div key={i} className={cn("flex items-center gap-2.5 py-1.5 px-2 rounded-lg text-xs", isLight ? "text-slate-600" : "text-slate-400")}>
+                    <Icon className={cn("w-3.5 h-3.5 flex-shrink-0", isLight ? "text-slate-400" : "text-slate-500")} />
+                    <span>{cap.label}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={isLight ? "text-slate-500" : "text-slate-400"}>Avg Confidence</span>
-                    <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">{learningStatsQuery.data?.avgConfidence || 0}%</span>
+                );
+              })}
+              {showSpectraMatch && (
+                <div className={cn("pt-2 border-t mt-2", isLight ? "border-slate-200" : "border-slate-700/50")}>
+                  <p className={cn("font-medium flex items-center gap-1.5 text-xs px-2", isLight ? "text-purple-600" : "text-purple-400")}><Beaker className="w-3.5 h-3.5" /> SPECTRA-MATCH™</p>
+                  <div className={cn("mt-1 space-y-0.5 text-xs", isLight ? "text-slate-500" : "text-slate-500")}>
+                    <div className="flex items-center gap-2.5 py-1 px-2"><Target className="w-3 h-3 flex-shrink-0 text-purple-400/60" /><span>Product identification</span></div>
+                    <div className="flex items-center gap-2.5 py-1 px-2"><Flame className="w-3 h-3 flex-shrink-0 text-purple-400/60" /><span>Crude oil analysis</span></div>
+                    <div className="flex items-center gap-2.5 py-1 px-2"><Shield className="w-3 h-3 flex-shrink-0 text-purple-400/60" /><span>Safety info</span></div>
                   </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className={isLight ? "text-slate-500" : "text-slate-400"}>Trend</span>
-                    <span className={cn("font-bold text-xs",
-                      learningStatsQuery.data?.recentTrend === "Improving" ? "text-green-400" : "text-yellow-400"
-                    )}>{learningStatsQuery.data?.recentTrend || "--"}</span>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10 text-xs h-7 mt-1"
-                    onClick={() => navigate("/spectra-match")}
-                  >
-                    <Target className="w-3 h-3 mr-1" />Open SPECTRA-MATCH
-                  </Button>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>
+
+          {/* SPECTRA-MATCH Learning Stats — shown for roles that use product identification */}
+          {showSpectraMatch && (
+            <Card className={cn("bg-gradient-to-br rounded-xl", isLight ? "from-purple-50 to-cyan-50 border-purple-200 shadow-sm" : "from-purple-500/5 to-cyan-500/5 border-purple-500/30")}>
+              <CardHeader className="pb-2">
+                <CardTitle className={cn("text-sm flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
+                  <Brain className={cn("w-4 h-4", isLight ? "text-purple-600" : "text-purple-400")} />
+                  Learning
+                  <Badge className={cn("border-0 text-[9px] ml-auto", isLight ? "bg-purple-100 text-purple-600" : "bg-purple-500/20 text-purple-400")}>AI</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {learningStatsQuery.isLoading ? (
+                  <Skeleton className="h-12 w-full" />
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={isLight ? "text-slate-500" : "text-slate-400"}>Identifications</span>
+                      <span className={cn("font-bold", isLight ? "text-cyan-600" : "text-cyan-400")}>{learningStatsQuery.data?.totalIdentifications || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={isLight ? "text-slate-500" : "text-slate-400"}>Avg Confidence</span>
+                      <span className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold">{learningStatsQuery.data?.avgConfidence || 0}%</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className={isLight ? "text-slate-500" : "text-slate-400"}>Trend</span>
+                      <span className={cn("font-bold text-xs",
+                        learningStatsQuery.data?.recentTrend === "Improving" ? "text-green-400" : "text-yellow-400"
+                      )}>{learningStatsQuery.data?.recentTrend || "No data"}</span>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn("w-full text-xs h-7 mt-1", isLight ? "border-purple-300 text-purple-600 hover:bg-purple-50" : "border-purple-500/30 text-purple-400 hover:bg-purple-500/10")}
+                      onClick={() => navigate("/spectra-match")}
+                    >
+                      <Target className="w-3 h-3 mr-1" />Open SPECTRA-MATCH
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </motion.div>

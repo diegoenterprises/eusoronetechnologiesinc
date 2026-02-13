@@ -126,18 +126,59 @@ export default function RoleBasedMap({
     }
   };
 
+  // Minimal, geometric SVG marker icons — Jony Ive style (thin strokes, clean forms)
   const getMarkerIcon = (type: string) => {
+    const s = "w-4 h-4";
     switch (type) {
       case "truck":
-        return <Truck className="w-4 h-4 text-white" />;
+        return (
+          <svg className={s} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1.5" y="6" width="10" height="7" rx="1.5" stroke="white" strokeWidth="1.5"/>
+            <path d="M11.5 8.5H15.5L18 11V13H11.5V8.5Z" stroke="white" strokeWidth="1.5" strokeLinejoin="round"/>
+            <circle cx="5.5" cy="15" r="1.5" stroke="white" strokeWidth="1.5"/>
+            <circle cx="15" cy="15" r="1.5" stroke="white" strokeWidth="1.5"/>
+          </svg>
+        );
       case "job":
-        return <Package className="w-4 h-4 text-white" />;
+        return (
+          <svg className={s} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="14" height="14" rx="2" stroke="white" strokeWidth="1.5"/>
+            <path d="M3 8H17" stroke="white" strokeWidth="1.5"/>
+            <path d="M8 3V8" stroke="white" strokeWidth="1.5"/>
+            <path d="M12 3V8" stroke="white" strokeWidth="1.5"/>
+          </svg>
+        );
       case "terminal":
-        return <Building2 className="w-4 h-4 text-white" />;
+        return (
+          <svg className={s} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="4" y="3" width="12" height="14" rx="1.5" stroke="white" strokeWidth="1.5"/>
+            <line x1="4" y1="7" x2="16" y2="7" stroke="white" strokeWidth="1.5"/>
+            <line x1="10" y1="7" x2="10" y2="17" stroke="white" strokeWidth="1.5"/>
+            <circle cx="10" cy="5" r="1" fill="white"/>
+          </svg>
+        );
       case "warehouse":
-        return <Warehouse className="w-4 h-4 text-white" />;
+        return (
+          <svg className={s} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 10L10 4L18 10" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <rect x="4" y="10" width="12" height="7" rx="1" stroke="white" strokeWidth="1.5"/>
+            <rect x="8" y="12" width="4" height="5" rx="0.5" stroke="white" strokeWidth="1.2"/>
+          </svg>
+        );
+      case "driver":
+        return (
+          <svg className={s} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="10" cy="7" r="3" stroke="white" strokeWidth="1.5"/>
+            <path d="M4 17C4 13.6863 6.68629 11 10 11C13.3137 11 16 13.6863 16 17" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+          </svg>
+        );
       default:
-        return <MapPin className="w-4 h-4 text-white" />;
+        return (
+          <svg className={s} viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2C6.68629 2 4 4.68629 4 8C4 12 10 18 10 18C10 18 16 12 16 8C16 4.68629 13.3137 2 10 2Z" stroke="white" strokeWidth="1.5"/>
+            <circle cx="10" cy="8" r="2" fill="white"/>
+          </svg>
+        );
     }
   };
 
