@@ -364,14 +364,110 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 {/* Demand badge below at high zoom */}
                 {detail !== "lo" && (
                   <text x={zx} y={zy + r + s(8)} textAnchor="middle" fontSize={s(4)} fill={dCol} fontWeight="600" opacity={0.8} className="select-none pointer-events-none">
-                    {z.demandLevel} {z.loads}L/{z.trucks}T
+                    {z.demandLevel} {z.liveLoads}L/{z.liveTrucks}T
                   </text>
                 )}
                 {/* Equipment tags at highest zoom */}
-                {detail === "hi" && z.equipment && (
+                {detail === "hi" && (z.topEquipment?.length > 0) && (
                   <text x={zx} y={zy + r + s(14)} textAnchor="middle" fontSize={s(3.5)} fill={isLight ? "#64748b" : "#6a6a8a"} opacity={0.6} className="select-none pointer-events-none">
-                    {(z.equipment || []).slice(0, 3).join(" · ")}
+                    {(z.topEquipment || []).slice(0, 3).join(" · ")}
                   </text>
+                )}
+
+                {/* ── LAYER OVERLAYS ── */}
+                {/* Fuel Prices layer */}
+                {activeLayers.includes("fuel_prices") && z.fuelPrice != null && (
+                  <g className="select-none pointer-events-none">
+                    <rect x={zx + r + s(2)} y={zy - s(8)} width={s(28)} height={s(10)} rx={s(3)} fill={isLight ? "#FEF3C7" : "#78350F"} opacity={0.9} stroke="#A16207" strokeWidth={s(0.4)} />
+                    <text x={zx + r + s(16)} y={zy - s(1.5)} textAnchor="middle" fontSize={s(5)} fill={isLight ? "#92400E" : "#FCD34D"} fontWeight="700">
+                      ⛽ ${Number(z.fuelPrice).toFixed(2)}
+                    </text>
+                  </g>
+                )}
+                {/* Weather Risk layer */}
+                {activeLayers.includes("weather_risk") && (z.weatherAlerts?.length > 0 || z.weatherRiskLevel === "HIGH") && (
+                  <g className="select-none pointer-events-none">
+                    <circle cx={zx - r - s(5)} cy={zy - r - s(2)} r={s(5)} fill={z.weatherRiskLevel === "HIGH" ? "#DC2626" : "#F59E0B"} opacity={0.85} />
+                    <text x={zx - r - s(5)} y={zy - r + s(1.5)} textAnchor="middle" fontSize={s(5)} fill="white" fontWeight="700">⚡</text>
+                    {detail !== "lo" && (
+                      <text x={zx - r - s(5)} y={zy - r - s(9)} textAnchor="middle" fontSize={s(3.5)} fill={z.weatherRiskLevel === "HIGH" ? "#FCA5A5" : "#FCD34D"} fontWeight="600">
+                        {z.weatherAlerts?.length || 0} alert{(z.weatherAlerts?.length || 0) !== 1 ? "s" : ""}
+                      </text>
+                    )}
+                  </g>
+                )}
+                {/* Carrier Capacity layer */}
+                {activeLayers.includes("carrier_capacity") && (
+                  <g className="select-none pointer-events-none">
+                    <circle cx={zx} cy={zy} r={r + s(6)} fill="none" stroke="#22C55E" strokeWidth={s(0.8)} strokeDasharray={`${s(3)} ${s(2)}`} opacity={0.6} />
+                    <rect x={zx + r + s(2)} y={zy + s(2)} width={s(24)} height={s(9)} rx={s(3)} fill={isLight ? "#DCFCE7" : "#14532D"} opacity={0.9} stroke="#22C55E" strokeWidth={s(0.4)} />
+                    <text x={zx + r + s(14)} y={zy + s(8.5)} textAnchor="middle" fontSize={s(4.5)} fill={isLight ? "#166534" : "#86EFAC"} fontWeight="700">
+                      🚛 {z.liveTrucks || 0}
+                    </text>
+                  </g>
+                )}
+                {/* Compliance Risk layer */}
+                {activeLayers.includes("compliance_risk") && (
+                  <g className="select-none pointer-events-none">
+                    {(() => {
+                      const score = z.complianceRiskScore ?? Math.round(((z.weatherAlerts?.length || 0) * 20) + ((z.hazmatClasses?.length || 0) * 15) + (ratio > 2.5 ? 20 : 0));
+                      const cCol = score > 50 ? "#EF4444" : score > 25 ? "#F59E0B" : "#22C55E";
+                      return (
+                        <>
+                          <rect x={zx - r - s(28)} y={zy + s(2)} width={s(24)} height={s(9)} rx={s(3)} fill={isLight ? "#FFF7ED" : "#431407"} opacity={0.9} stroke={cCol} strokeWidth={s(0.4)} />
+                          <text x={zx - r - s(16)} y={zy + s(8.5)} textAnchor="middle" fontSize={s(4.5)} fill={cCol} fontWeight="700">
+                            ⚠ {score}
+                          </text>
+                        </>
+                      );
+                    })()}
+                  </g>
+                )}
+                {/* Rate Intelligence layer — color intensity ring */}
+                {activeLayers.includes("rate_heat") && (
+                  <circle cx={zx} cy={zy} r={r + s(8)} fill="none" stroke="#F59E0B" strokeWidth={s(Math.min(2, (z.liveRate || 2) / 2))} opacity={0.3} className="pointer-events-none" />
+                )}
+                {/* Safety Score layer */}
+                {activeLayers.includes("safety_score") && (
+                  <g className="select-none pointer-events-none">
+                    {(() => {
+                      const ss = Math.max(0, 100 - Math.round(((z.weatherAlerts?.length || 0) * 15) + ((z.hazmatClasses?.length || 0) * 10)));
+                      const ssCol = ss > 70 ? "#22D3EE" : ss > 40 ? "#F59E0B" : "#EF4444";
+                      return detail !== "lo" ? (
+                        <text x={zx + r + s(3)} y={zy - r + s(2)} fontSize={s(4.5)} fill={ssCol} fontWeight="700" className="select-none pointer-events-none">
+                          🛡{ss}
+                        </text>
+                      ) : null;
+                    })()}
+                  </g>
+                )}
+                {/* Incident History layer */}
+                {activeLayers.includes("incident_history") && (z.hazmatClasses?.length || 0) > 0 && (
+                  <g className="select-none pointer-events-none">
+                    <circle cx={zx + r + s(3)} cy={zy + r + s(3)} r={s(4)} fill="#7C3AED" opacity={0.7} />
+                    <text x={zx + r + s(3)} y={zy + r + s(5.2)} textAnchor="middle" fontSize={s(4)} fill="white" fontWeight="700">
+                      {z.hazmatClasses?.length || 0}
+                    </text>
+                  </g>
+                )}
+                {/* Freight Demand layer — load count badge */}
+                {activeLayers.includes("freight_demand") && detail !== "lo" && (
+                  <text x={zx} y={zy + r + s(detail === "hi" ? 20 : 14)} textAnchor="middle" fontSize={s(4)} fill="#EF4444" fontWeight="600" opacity={0.7} className="select-none pointer-events-none">
+                    📦 {z.liveLoads || 0} loads
+                  </text>
+                )}
+                {/* Spread/Margin Opportunity layer */}
+                {activeLayers.includes("spread_opportunity") && (
+                  <g className="select-none pointer-events-none">
+                    {(() => {
+                      const margin = Number(((z.liveRate || 2) * (z.liveRatio || 1) * 0.15).toFixed(2));
+                      return detail !== "lo" ? (
+                        <text x={zx - r - s(3)} y={zy + r + s(8)} textAnchor="end" fontSize={s(4.5)} fill="#10B981" fontWeight="700">
+                          +${margin}/mi
+                        </text>
+                      ) : null;
+                    })()}
+                  </g>
                 )}
               </g>
             );
@@ -394,13 +490,33 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
               </div>
               <div className={`grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] ${isLight ? "text-slate-500" : "text-white/50"}`}>
                 <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Rate</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.liveRate || 0).toFixed(2)}/mi</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Loads</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.loads}</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.trucks}</span></div>
+                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Loads</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveLoads}</span></div>
+                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveTrucks}</span></div>
                 <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">L:T Ratio</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.liveRatio || 0).toFixed(2)}x</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Surge</span><span className={`font-bold ${tip.z.surge > 1.2 ? "text-red-400" : isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.surge || 1).toFixed(2)}x</span></div>
+                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Surge</span><span className={`font-bold ${(tip.z.liveSurge || 1) > 1.2 ? "text-red-400" : isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.liveSurge || 1).toFixed(2)}x</span></div>
                 <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Demand</span><span className={`font-bold ${tip.z.demandLevel === "CRITICAL" ? "text-red-400" : tip.z.demandLevel === "HIGH" ? "text-orange-400" : "text-amber-400"}`}>{tip.z.demandLevel}</span></div>
               </div>
-              {tip.z.hours && <div className={`mt-1.5 pt-1 border-t text-[9px] ${isLight ? "border-slate-100 text-slate-400" : "border-white/5 text-white/30"}`}>{tip.z.hours}</div>}
+              {/* Layer-specific tooltip rows */}
+              {activeLayers.length > 0 && (
+                <div className={`mt-1.5 pt-1.5 border-t space-y-0.5 text-[10px] ${isLight ? "border-slate-100" : "border-white/5"}`}>
+                  {activeLayers.includes("fuel_prices") && tip.z.fuelPrice != null && (
+                    <div className="flex justify-between"><span className="text-amber-500">⛽ Diesel</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.fuelPrice).toFixed(2)}/gal</span></div>
+                  )}
+                  {activeLayers.includes("weather_risk") && (tip.z.weatherAlerts?.length || 0) > 0 && (
+                    <div className="flex justify-between"><span className="text-blue-400">🌧 Weather</span><span className="font-bold text-amber-400">{tip.z.weatherAlerts.length} alert{tip.z.weatherAlerts.length !== 1 ? "s" : ""}</span></div>
+                  )}
+                  {activeLayers.includes("carrier_capacity") && (
+                    <div className="flex justify-between"><span className="text-emerald-400">🚛 Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveTrucks || 0} available</span></div>
+                  )}
+                  {activeLayers.includes("compliance_risk") && (
+                    <div className="flex justify-between"><span className="text-orange-400">⚠ Compliance</span><span className={`font-bold ${(tip.z.complianceRiskScore || 0) > 50 ? "text-red-400" : "text-emerald-400"}`}>{tip.z.complianceRiskScore ?? "N/A"}</span></div>
+                  )}
+                  {activeLayers.includes("freight_demand") && (
+                    <div className="flex justify-between"><span className="text-red-400">📦 Demand</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveLoads || 0} loads</span></div>
+                  )}
+                </div>
+              )}
+              {tip.z.peakHours && <div className={`mt-1.5 pt-1 border-t text-[9px] ${isLight ? "border-slate-100 text-slate-400" : "border-white/5 text-white/30"}`}>Peak: {tip.z.peakHours}</div>}
             </motion.div>
           )}
         </AnimatePresence>
