@@ -233,6 +233,7 @@ function Router() {
       <Route path={"/agreements/broker"} component={() => (<DashboardLayout><BrokerContractWizard /></DashboardLayout>)} />
       <Route path={"/agreements/:id"} component={() => (<DashboardLayout><AgreementDetail /></DashboardLayout>)} />
       <Route path={"/loads/recurring"} component={() => (<DashboardLayout><RecurringLoadScheduler /></DashboardLayout>)} />
+      <Route path={"/loads/:id"} component={() => (<DashboardLayout><LoadDetails /></DashboardLayout>)} />
       <Route path={"/dispatch"} component={() => (<DashboardLayout><ShipperDispatchControl /></DashboardLayout>)} />
 
       {/* ============================================ */}

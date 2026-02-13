@@ -15,10 +15,10 @@ interface HotZoneMapProps {
   activeLayers: string[];
 }
 
-// Mercator projection: lng/lat → SVG coordinates on 800×380 canvas
+// Projection: lng/lat → SVG coordinates aligned with state outline paths
 function proj(lng: number, lat: number): [number, number] {
-  const x = ((lng + 125) / 60) * 800;
-  const y = ((50 - lat) / 27) * 380;
+  const x = ((lng + 124.5) / 57.6) * 656 + 72;
+  const y = ((49 - lat) / 24.5) * 296 + 2;
   return [x, y];
 }
 
@@ -273,7 +273,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
 
   const zoomToZone = useCallback((zone: any) => {
     const [zx, zy] = proj(zone.center?.lng || -95, zone.center?.lat || 38);
-    const nw = 160, nh = nw * (380 / 800);
+    const nw = 250, nh = nw * (380 / 800);
     setVb({ x: clamp(zx - nw / 2, -60, 640), y: clamp(zy - nh / 2, -30, 310), w: nw, h: nh });
     onSelectZone(zone.zoneId);
   }, [onSelectZone]);
@@ -287,7 +287,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
       const r = el.getBoundingClientRect();
       const mx = ((e.clientX - r.left) / r.width) * vb.w + vb.x;
       const my = ((e.clientY - r.top) / r.height) * vb.h + vb.y;
-      doZoom(e.deltaY < 0 ? 1.3 : 0.77, mx, my);
+      doZoom(e.deltaY < 0 ? 1.12 : 0.89, mx, my);
     };
     el.addEventListener("wheel", h, { passive: false });
     return () => el.removeEventListener("wheel", h);
@@ -642,8 +642,8 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         {/* ── ZOOM CONTROLS ── */}
         <div className={`absolute top-3 right-3 flex flex-col gap-1 ${isLight ? "" : ""}`}>
           {[
-            { icon: ZoomIn, action: () => doZoom(1.5), tip: "Zoom in" },
-            { icon: ZoomOut, action: () => doZoom(0.67), tip: "Zoom out" },
+            { icon: ZoomIn, action: () => doZoom(1.25), tip: "Zoom in" },
+            { icon: ZoomOut, action: () => doZoom(0.8), tip: "Zoom out" },
             { icon: Maximize2, action: resetView, tip: "Reset view" },
           ].map(({ icon: Ic, action, tip: t }) => (
             <button key={t} onClick={action} title={t}
