@@ -4,13 +4,13 @@
  *
  * Brokers operate in two directions:
  * 1. Shipper → Broker: Securing loads/lanes from shippers
- * 2. Broker → Carrier: Brokering loads to carriers
+ * 2. Broker → Catalyst: Brokering loads to catalysts
  *
  * This wizard handles BOTH sides:
  * - Broker can secure a load from a shipper and create shipper↔broker agreement
- * - Broker can then broker it to a carrier with broker↔carrier agreement
+ * - Broker can then broker it to a catalyst with broker↔catalyst agreement
  * - Broker can also post their own loads
- * - Margin/markup is calculated between shipper rate and carrier rate
+ * - Margin/markup is calculated between shipper rate and catalyst rate
  * - Platform fee is applied to BOTH sides of every transaction
  *
  * Cross-referenced with ShipperAgreementWizard + ContractSigning
@@ -43,7 +43,7 @@ const PLATFORM_FEE = 3.5;
 const PLATFORM_FEE_MIN = 15;
 
 type Step = "direction" | "parties" | "rates" | "terms" | "review" | "sign" | "complete";
-type Direction = "shipper_to_broker" | "broker_to_carrier" | null;
+type Direction = "shipper_to_broker" | "broker_to_catalyst" | null;
 
 export default function BrokerContractWizard() {
   const { theme } = useTheme();
@@ -62,13 +62,13 @@ export default function BrokerContractWizard() {
 
   // Rates — broker sees both sides
   const [shipperRate, setShipperRate] = useState(""); // what shipper pays
-  const [carrierRate, setCarrierRate] = useState(""); // what carrier gets
+  const [catalystRate, setCatalystRate] = useState(""); // what catalyst gets
   const [rateType, setRateType] = useState("flat");
   const [fuelSurcharge, setFuelSurcharge] = useState("none");
   const [fuelValue, setFuelValue] = useState("");
 
   // Terms
-  const [agType, setAgType] = useState("broker_carrier");
+  const [agType, setAgType] = useState("broker_catalyst");
   const [duration, setDuration] = useState("spot");
   const [payDays, setPayDays] = useState("30");
   const [payFreq, setPayFreq] = useState("per_load");
@@ -90,12 +90,12 @@ export default function BrokerContractWizard() {
 
   // Computed
   const sRate = parseFloat(shipperRate) || 0;
-  const cRate = parseFloat(carrierRate) || 0;
+  const cRate = parseFloat(catalystRate) || 0;
   const margin = sRate - cRate;
   const marginPct = sRate > 0 ? ((margin / sRate) * 100) : 0;
   const platformFeeShipper = Math.max(sRate * (PLATFORM_FEE / 100), PLATFORM_FEE_MIN);
-  const platformFeeCarrier = Math.max(cRate * (PLATFORM_FEE / 100), PLATFORM_FEE_MIN);
-  const totalPlatformFee = platformFeeShipper + platformFeeCarrier;
+  const platformFeeCatalyst = Math.max(cRate * (PLATFORM_FEE / 100), PLATFORM_FEE_MIN);
+  const totalPlatformFee = platformFeeShipper + platformFeeCatalyst;
   const netBrokerRevenue = margin - totalPlatformFee;
 
   const genMut = (trpc as any).agreements?.generate?.useMutation?.({
@@ -126,9 +126,9 @@ export default function BrokerContractWizard() {
   const doGen = () => {
     const baseRate = direction === "shipper_to_broker" ? sRate : cRate;
     genMut.mutate({
-      agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_carrier",
+      agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_catalyst",
       contractDuration: duration, partyBUserId: 0,
-      partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CARRIER",
+      partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CATALYST",
       strategicInputs: {
         partyAName: user?.name || "Broker", partyBName: partyName,
         partyBCompany: partyCompany, partyBMc: partyMc, partyBDot: partyDot,
@@ -162,7 +162,7 @@ export default function BrokerContractWizard() {
         <Button variant="ghost" size="sm" className={cn("rounded-xl", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={() => setLocation("/agreements")}><ArrowLeft className="w-4 h-4" /></Button>
         <div>
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Broker Contract Wizard</h1>
-          <p className={mt}>Create shipper↔broker or broker↔carrier agreements</p>
+          <p className={mt}>Create shipper↔broker or broker↔catalyst agreements</p>
         </div>
       </div>
 
@@ -192,14 +192,14 @@ export default function BrokerContractWizard() {
               <p className={cn("font-bold mb-1", vl)}>Shipper → Broker</p>
               <p className={cn("text-xs", mt)}>Secure a load or lane from a shipper. You'll set the rate the shipper pays you.</p>
             </button>
-            <button onClick={() => { setDirection("broker_to_carrier"); setAgType("broker_carrier"); }} className={cn("p-6 rounded-2xl border-2 text-left transition-all", direction === "broker_to_carrier" ? "border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-slate-800/60")}>
+            <button onClick={() => { setDirection("broker_to_catalyst"); setAgType("broker_catalyst"); }} className={cn("p-6 rounded-2xl border-2 text-left transition-all", direction === "broker_to_catalyst" ? "border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg" : isLight ? "border-slate-200 bg-white" : "border-slate-700 bg-slate-800/60")}>
               <div className="flex items-center gap-2 mb-3">
                 <div className="p-2 rounded-lg bg-purple-500/15"><Scale className="w-5 h-5 text-purple-500" /></div>
                 <ArrowRight className="w-4 h-4 text-slate-400" />
                 <div className="p-2 rounded-lg bg-emerald-500/15"><Truck className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" /></div>
               </div>
-              <p className={cn("font-bold mb-1", vl)}>Broker → Carrier</p>
-              <p className={cn("text-xs", mt)}>Broker a load to a carrier. You'll set the rate you pay the carrier.</p>
+              <p className={cn("font-bold mb-1", vl)}>Broker → Catalyst</p>
+              <p className={cn("text-xs", mt)}>Broker a load to a catalyst. You'll set the rate you pay the catalyst.</p>
             </button>
           </div>
           <Button className="w-full h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={!direction} onClick={() => setStep("parties")}>Continue <ChevronRight className="w-5 h-5 ml-2" /></Button>
@@ -210,7 +210,7 @@ export default function BrokerContractWizard() {
       {step === "parties" && (
         <div className="space-y-5">
           <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2", tc)}>
-            {direction === "shipper_to_broker" ? <><Building2 className="w-5 h-5 text-blue-500" />Shipper Details</> : <><Truck className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Carrier Details</>}
+            {direction === "shipper_to_broker" ? <><Building2 className="w-5 h-5 text-blue-500" />Shipper Details</> : <><Truck className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Catalyst Details</>}
           </CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -247,7 +247,7 @@ export default function BrokerContractWizard() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div><label className={lb}>Shipper Pays ($)</label><Input type="number" value={shipperRate} onChange={(e: any) => setShipperRate(e.target.value)} placeholder="0.00" className={ic} /></div>
-                <div><label className={lb}>Carrier Gets ($)</label><Input type="number" value={carrierRate} onChange={(e: any) => setCarrierRate(e.target.value)} placeholder="0.00" className={ic} /></div>
+                <div><label className={lb}>Catalyst Gets ($)</label><Input type="number" value={catalystRate} onChange={(e: any) => setCatalystRate(e.target.value)} placeholder="0.00" className={ic} /></div>
                 <div><label className={lb}>Rate Type</label><Select value={rateType} onValueChange={setRateType}><SelectTrigger className={ic}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="flat">Flat</SelectItem><SelectItem value="per_mile">Per Mile</SelectItem></SelectContent></Select></div>
               </div>
 
@@ -261,7 +261,7 @@ export default function BrokerContractWizard() {
                   <div><p className="text-slate-400">Net Revenue</p><p className={cn("text-lg font-bold", netBrokerRevenue >= 0 ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" : "text-red-400")}>${netBrokerRevenue.toFixed(2)}</p></div>
                 </div>
                 {marginPct < 10 && marginPct >= 0 && <p className="text-[11px] text-yellow-500 mt-2">Margin below 10%. Consider negotiating better shipper rates.</p>}
-                {margin < 0 && <p className="text-[11px] text-red-400 mt-2">Negative margin — carrier rate exceeds shipper rate.</p>}
+                {margin < 0 && <p className="text-[11px] text-red-400 mt-2">Negative margin — catalyst rate exceeds shipper rate.</p>}
               </div>
 
               {/* Platform Fee Breakdown */}
@@ -269,7 +269,7 @@ export default function BrokerContractWizard() {
                 <p className={cn("font-bold text-xs mb-2", isLight ? "text-purple-700" : "text-purple-400")}>Platform Fee Breakdown ({PLATFORM_FEE}%)</p>
                 <div className="grid grid-cols-3 gap-3">
                   <div><p className="text-slate-400">Shipper Side</p><p className={vl}>${platformFeeShipper.toFixed(2)}</p></div>
-                  <div><p className="text-slate-400">Carrier Side</p><p className={vl}>${platformFeeCarrier.toFixed(2)}</p></div>
+                  <div><p className="text-slate-400">Catalyst Side</p><p className={vl}>${platformFeeCatalyst.toFixed(2)}</p></div>
                   <div><p className="text-slate-400">Total Fee</p><p className="font-bold text-purple-400">${totalPlatformFee.toFixed(2)}</p></div>
                 </div>
               </div>
@@ -319,21 +319,21 @@ export default function BrokerContractWizard() {
       {step === "review" && (
         <div className="space-y-5">
           <div className={cn("flex items-center justify-between p-4 rounded-xl border", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
-            <div className="flex items-center gap-3"><EsangIcon className="w-5 h-5 text-green-500" /><div><p className={cn("font-bold text-sm", vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{direction === "shipper_to_broker" ? "Shipper → Broker" : "Broker → Carrier"}</p></div></div>
+            <div className="flex items-center gap-3"><EsangIcon className="w-5 h-5 text-green-500" /><div><p className={cn("font-bold text-sm", vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{direction === "shipper_to_broker" ? "Shipper → Broker" : "Broker → Catalyst"}</p></div></div>
             <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">Draft</Badge>
           </div>
           <Card className={cc}><CardContent className="p-4"><pre className={cn("text-xs whitespace-pre-wrap leading-relaxed p-4 rounded-xl max-h-[300px] overflow-y-auto font-mono", cl)}>{genContent || "Agreement content..."}</pre></CardContent></Card>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
               { l: "Shipper Rate", v: `$${sRate.toLocaleString()}` },
-              { l: "Carrier Rate", v: `$${cRate.toLocaleString()}` },
+              { l: "Catalyst Rate", v: `$${cRate.toLocaleString()}` },
               { l: "Your Margin", v: `$${margin.toFixed(2)} (${marginPct.toFixed(1)}%)` },
               { l: "Platform Fee", v: `$${totalPlatformFee.toFixed(2)}` },
             ].map(x => (<div key={x.l} className={cl}><p className="text-[10px] text-slate-400 uppercase">{x.l}</p><p className={vl}>{x.v}</p></div>))}
           </div>
           <div className="flex gap-3">
             <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setStep("terms")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
-            <Button variant="outline" className={cn("rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: agNum, agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_carrier", contractDuration: duration, status: "draft", generatedContent: genContent, partyAName: user?.name || "Broker", partyARole: "BROKER", partyBName: partyName, partyBCompany: partyCompany, partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CARRIER", baseRate: direction === "shipper_to_broker" ? sRate : cRate, rateType, paymentTermDays: parseInt(payDays) || 30, fuelSurchargeType: fuelSurcharge, fuelSurchargeValue: fuelValue, effectiveDate: effDate, expirationDate: expDate, equipmentTypes: eqTypes, lanes: originCity && destCity ? [{ origin: { city: originCity, state: originState }, destination: { city: destCity, state: destState } }] : undefined })}><Download className="w-4 h-4 mr-2" />Download</Button>
+            <Button variant="outline" className={cn("rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: agNum, agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_catalyst", contractDuration: duration, status: "draft", generatedContent: genContent, partyAName: user?.name || "Broker", partyARole: "BROKER", partyBName: partyName, partyBCompany: partyCompany, partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CATALYST", baseRate: direction === "shipper_to_broker" ? sRate : cRate, rateType, paymentTermDays: parseInt(payDays) || 30, fuelSurchargeType: fuelSurcharge, fuelSurchargeValue: fuelValue, effectiveDate: effDate, expirationDate: expDate, equipmentTypes: eqTypes, lanes: originCity && destCity ? [{ origin: { city: originCity, state: originState }, destination: { city: destCity, state: destState } }] : undefined })}><Download className="w-4 h-4 mr-2" />Download</Button>
             <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setStep("sign")}>Sign <ChevronRight className="w-5 h-5 ml-2" /></Button>
           </div>
         </div>
@@ -343,7 +343,7 @@ export default function BrokerContractWizard() {
       {step === "sign" && (
         <div className="space-y-5">
           <Card className={cc}><CardContent className="p-5">
-            <GradientSignaturePad documentTitle={direction === "shipper_to_broker" ? "Shipper-Broker Agreement" : "Broker-Carrier Agreement"} signerName={user?.name || "Broker Representative"} onSign={(d: string) => setSigData(d)} onClear={() => setSigData(null)} legalText="By electronically signing, I confirm this agreement and acknowledge the platform fee structure. Pursuant to ESIGN Act (15 U.S.C. ch. 96)." />
+            <GradientSignaturePad documentTitle={direction === "shipper_to_broker" ? "Shipper-Broker Agreement" : "Broker-Catalyst Agreement"} signerName={user?.name || "Broker Representative"} onSign={(d: string) => setSigData(d)} onClear={() => setSigData(null)} legalText="By electronically signing, I confirm this agreement and acknowledge the platform fee structure. Pursuant to ESIGN Act (15 U.S.C. ch. 96)." />
           </CardContent></Card>
           <div className="flex gap-3">
             <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setStep("review")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
@@ -357,17 +357,17 @@ export default function BrokerContractWizard() {
         <div className={cn("text-center py-12 rounded-2xl border", cc)}>
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-10 h-10 text-green-500" /></div>
           <h2 className={cn("text-2xl font-bold mb-2", isLight ? "text-slate-800" : "text-white")}>Agreement Signed</h2>
-          <p className={cn("text-sm max-w-md mx-auto mb-6", mt)}>Your signature has been recorded for agreement #{agNum}. {direction === "shipper_to_broker" ? "Now broker this load to a carrier." : "Awaiting counter-signature."}</p>
+          <p className={cn("text-sm max-w-md mx-auto mb-6", mt)}>Your signature has been recorded for agreement #{agNum}. {direction === "shipper_to_broker" ? "Now broker this load to a catalyst." : "Awaiting counter-signature."}</p>
           <div className="flex items-center justify-center gap-3 mb-6">
             <Badge className="bg-green-500/15 text-green-500 border border-green-500/30 text-xs font-bold"><Shield className="w-3 h-3 mr-1" />ESIGN Compliant</Badge>
             <Badge className="bg-purple-500/15 text-purple-400 border border-purple-500/30 text-xs font-bold"><Scale className="w-3 h-3 mr-1" />Fee: ${totalPlatformFee.toFixed(2)}</Badge>
           </div>
           <div className="flex justify-center gap-3">
             <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setLocation("/agreements")}><ArrowLeft className="w-4 h-4 mr-2" />Agreements</Button>
-            <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: agNum, agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_carrier", contractDuration: duration, status: "pending_signature", generatedContent: genContent, partyAName: user?.name || "Broker", partyARole: "BROKER", partyBName: partyName, partyBCompany: partyCompany, partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CARRIER", baseRate: direction === "shipper_to_broker" ? sRate : cRate, rateType, paymentTermDays: parseInt(payDays) || 30, effectiveDate: effDate, expirationDate: expDate, equipmentTypes: eqTypes })}><Download className="w-4 h-4 mr-2" />Download PDF</Button>
+            <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: agNum, agreementType: direction === "shipper_to_broker" ? "broker_shipper" : "broker_catalyst", contractDuration: duration, status: "pending_signature", generatedContent: genContent, partyAName: user?.name || "Broker", partyARole: "BROKER", partyBName: partyName, partyBCompany: partyCompany, partyBRole: direction === "shipper_to_broker" ? "SHIPPER" : "CATALYST", baseRate: direction === "shipper_to_broker" ? sRate : cRate, rateType, paymentTermDays: parseInt(payDays) || 30, effectiveDate: effDate, expirationDate: expDate, equipmentTypes: eqTypes })}><Download className="w-4 h-4 mr-2" />Download PDF</Button>
             {direction === "shipper_to_broker" && (
-              <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => { setDirection("broker_to_carrier"); setStep("parties"); setPartyName(""); setPartyCompany(""); setPartyMc(""); setPartyDot(""); setSigData(null); setAgId(null); }}>
-                <Truck className="w-4 h-4 mr-2" />Broker to Carrier
+              <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => { setDirection("broker_to_catalyst"); setStep("parties"); setPartyName(""); setPartyCompany(""); setPartyMc(""); setPartyDot(""); setSigData(null); setAgId(null); }}>
+                <Truck className="w-4 h-4 mr-2" />Broker to Catalyst
               </Button>
             )}
           </div>

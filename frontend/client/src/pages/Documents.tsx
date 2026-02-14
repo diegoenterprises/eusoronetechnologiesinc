@@ -47,7 +47,7 @@ const AUTO_DETECT_RULES: { pattern: RegExp; category: CategoryId }[] = [
   { pattern: /permit|authority|mc\s*auth|dot\s*auth|oversize|hazmat\s*perm|operating\s*auth/i, category: "permits" },
   { pattern: /cdl|medical\s*card|drug\s*test|training|dot\s*physical|ifta|safety\s*cert|hazmat\s*end/i, category: "compliance" },
   { pattern: /invoice|receipt|payment|factoring|settlement|remittance/i, category: "financial" },
-  { pattern: /contract|agreement|lease|broker.*carrier|shipper.*carrier|terms/i, category: "contracts" },
+  { pattern: /contract|agreement|lease|broker.*catalyst|shipper.*catalyst|terms/i, category: "contracts" },
   { pattern: /w-?9|ein|articles?\s*of\s*inc|business\s*lic|tax\s*id|corp/i, category: "company" },
   { pattern: /registration|inspection|maintenance|tire|vin|title|vehicle/i, category: "vehicle" },
 ];

@@ -38,7 +38,7 @@ export interface ESANGResponse {
 }
 
 export interface ESANGAction {
-  type: "navigate" | "create_load" | "find_carrier" | "get_quote" | "check_compliance" | "erg_lookup" | "spectra_match" | "verify_product";
+  type: "navigate" | "create_load" | "find_catalyst" | "get_quote" | "check_compliance" | "erg_lookup" | "spectra_match" | "verify_product";
   label: string;
   data?: Record<string, unknown>;
 }
@@ -108,8 +108,8 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
 const SYSTEM_PROMPT = `You are ESANG AI™, the intelligent assistant for EusoTrip - a hazardous materials logistics and petroleum transportation platform. You are deeply knowledgeable about:
 
 ## Core Platform Capabilities
-1. **Load Posting & Management**: Help shippers create loads, set requirements, and find carriers
-2. **Carrier Matching**: Match loads with qualified, certified carriers based on equipment, certifications, and performance
+1. **Load Posting & Management**: Help shippers create loads, set requirements, and find catalysts
+2. **Catalyst Matching**: Match loads with qualified, certified catalysts based on equipment, certifications, and performance
 3. **Route Optimization**: Provide optimal routes considering HazMat restrictions, weather, and traffic
 4. **Compliance Assistance**: Help with DOT/FMCSA compliance, HOS tracking, and regulatory requirements
 5. **ERG 2024 Emergency Response**: You have COMPLETE access to the ERG 2024 database with 100+ materials, 35+ response guides (111-175), TIH protective distances, and all 9 DOT hazard classes. You can look up any UN number, material name, or guide number instantly. Key petroleum ERG data you know:
@@ -251,7 +251,7 @@ You learn each user's profile, preferences, and patterns over time:
 
 Always be helpful, accurate, and safety-focused. When dealing with hazardous materials, prioritize safety above all else.
 
-User roles include: SHIPPER, CARRIER, BROKER, DRIVER, CATALYST (hazmat specialist), ESCORT, TERMINAL_MANAGER, COMPLIANCE_OFFICER, SAFETY_MANAGER, ADMIN.
+User roles include: SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH (hazmat specialist), ESCORT, TERMINAL_MANAGER, COMPLIANCE_OFFICER, SAFETY_MANAGER, ADMIN.
 
 ## Action Execution — CRITICAL
 You have the ability to ACTUALLY PERFORM real operations in the EusoTrip platform. When a user asks you to do something (create a load, submit a bid, look up ERG data, etc.), you MUST execute it by including an action block in your response.
@@ -522,8 +522,8 @@ class ESANGAIService {
     if (text.toLowerCase().includes("create a load") || text.toLowerCase().includes("post a load")) {
       actions.push({ type: "create_load", label: "Create New Load" });
     }
-    if (text.toLowerCase().includes("find carrier") || text.toLowerCase().includes("search carrier")) {
-      actions.push({ type: "find_carrier", label: "Find Carriers" });
+    if (text.toLowerCase().includes("find catalyst") || text.toLowerCase().includes("search catalyst")) {
+      actions.push({ type: "find_catalyst", label: "Find Catalysts" });
     }
     if (text.toLowerCase().includes("erg guide") || text.toLowerCase().includes("emergency response")) {
       actions.push({ type: "erg_lookup", label: "Open ERG Guide" });
@@ -570,7 +570,7 @@ class ESANGAIService {
    * Get load matching recommendations
    */
   async getLoadRecommendations(request: LoadMatchRequest): Promise<ESANGResponse> {
-    const prompt = `Analyze this load and provide carrier matching recommendations:
+    const prompt = `Analyze this load and provide catalyst matching recommendations:
 Origin: ${request.origin}
 Destination: ${request.destination}
 Cargo Type: ${request.cargoType}
@@ -670,7 +670,7 @@ Provide:
    * Compliance check
    */
   async checkCompliance(
-    entityType: "driver" | "carrier" | "vehicle",
+    entityType: "driver" | "catalyst" | "vehicle",
     entityId: string
   ): Promise<ESANGResponse> {
     const prompt = `Perform a compliance check for ${entityType} ${entityId}.
@@ -961,8 +961,8 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
     const AGREEMENT_AI_PROMPT = `You are ESANG AI™ acting as EusoContract™, an expert freight/logistics contract attorney AI for the EusoTrip platform. You specialize in:
 
 ## Legal Knowledge Base
-- **FMCSA Regulations** (49 CFR Parts 371-399): Broker/carrier relationships, operating authority, financial responsibility
-- **Carmack Amendment** (49 USC §14706): Carrier liability for loss/damage to cargo in interstate commerce
+- **FMCSA Regulations** (49 CFR Parts 371-399): Broker/catalyst relationships, operating authority, financial responsibility
+- **Carmack Amendment** (49 USC §14706): Catalyst liability for loss/damage to cargo in interstate commerce
 - **TILA/Regulation Z**: Truth in Lending for any financing terms
 - **UETA & E-SIGN Act** (15 U.S.C. ch. 96): Electronic signature compliance
 - **MAP-21 & FAST Act**: Freight transportation reform requirements
@@ -973,8 +973,8 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
 - **Coercion Rule** (49 CFR §390.6): Prohibition against coercing drivers
 
 ## Contract Types You Generate
-- Carrier-Shipper Transportation Agreements (49 CFR §371.3)
-- Broker-Carrier Agreements (49 CFR §371.7) with anti-double-brokering
+- Catalyst-Shipper Transportation Agreements (49 CFR §371.3)
+- Broker-Catalyst Agreements (49 CFR §371.7) with anti-double-brokering
 - Broker-Shipper Agreements with fiduciary duty clauses
 - Independent Contractor (Owner-Operator) Agreements per IRS 20-factor test
 - Escort/Pilot Car Service Agreements per state permit requirements
@@ -988,7 +988,7 @@ Every agreement MUST include:
 1. Proper legal recitals identifying parties with MC#/DOT# where applicable
 2. FMCSA operating authority verification clause
 3. Insurance requirements meeting FMCSA minimums ($750K auto liability, $5K cargo for household goods or $100K+ for general freight)
-4. Indemnification with Carmack Amendment reference for carrier liability
+4. Indemnification with Carmack Amendment reference for catalyst liability
 5. Force majeure covering Acts of God, government action, pandemics, infrastructure failures
 6. Dispute resolution (mediation → arbitration → litigation with venue)
 7. Governing law clause
@@ -1150,12 +1150,12 @@ Enhance each clause with specific, legally-precise language incorporating all th
   /** Get human-readable agreement type label */
   private getAgreementTypeLabel(type: string): string {
     const labels: Record<string, string> = {
-      carrier_shipper: "Carrier-Shipper Transportation Agreement",
-      broker_carrier: "Broker-Carrier Agreement",
+      catalyst_shipper: "Catalyst-Shipper Transportation Agreement",
+      broker_catalyst: "Broker-Catalyst Agreement",
       broker_shipper: "Broker-Shipper Agreement",
-      carrier_driver: "Independent Contractor (Owner-Operator) Agreement",
+      catalyst_driver: "Independent Contractor (Owner-Operator) Agreement",
       escort_service: "Escort/Pilot Car Service Agreement",
-      catalyst_dispatch: "Dispatch Service Agreement",
+      dispatch_dispatch: "Dispatch Service Agreement",
       terminal_access: "Terminal Access & Services Agreement",
       master_service: "Master Service Agreement",
       lane_commitment: "Lane Commitment Agreement",

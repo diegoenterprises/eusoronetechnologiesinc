@@ -36,7 +36,7 @@ export const laneContractsRouter = router({
           conditions.push(
             or(
               eq(laneContracts.shipperId, userId),
-              eq(laneContracts.carrierId, userId),
+              eq(laneContracts.catalystId, userId),
               eq(laneContracts.brokerId, userId)
             )
           );
@@ -72,16 +72,16 @@ export const laneContractsRouter = router({
         if (!lane) return null;
 
         // Get party details
-        let shipper = null, carrier = null, broker = null;
-        let shipperCompany = null, carrierCompany = null, brokerCompany = null;
+        let shipper = null, catalyst = null, broker = null;
+        let shipperCompany = null, catalystCompany = null, brokerCompany = null;
 
         if (lane.shipperId) {
           const [u] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, lane.shipperId));
           shipper = u || null;
         }
-        if (lane.carrierId) {
-          const [u] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, lane.carrierId));
-          carrier = u || null;
+        if (lane.catalystId) {
+          const [u] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, lane.catalystId));
+          catalyst = u || null;
         }
         if (lane.brokerId) {
           const [u] = await db.select({ id: users.id, name: users.name }).from(users).where(eq(users.id, lane.brokerId));
@@ -91,9 +91,9 @@ export const laneContractsRouter = router({
           const [c] = await db.select({ id: companies.id, name: companies.name }).from(companies).where(eq(companies.id, lane.shipperCompanyId));
           shipperCompany = c || null;
         }
-        if (lane.carrierCompanyId) {
-          const [c] = await db.select({ id: companies.id, name: companies.name }).from(companies).where(eq(companies.id, lane.carrierCompanyId));
-          carrierCompany = c || null;
+        if (lane.catalystCompanyId) {
+          const [c] = await db.select({ id: companies.id, name: companies.name }).from(companies).where(eq(companies.id, lane.catalystCompanyId));
+          catalystCompany = c || null;
         }
         if (lane.brokerCompanyId) {
           const [c] = await db.select({ id: companies.id, name: companies.name }).from(companies).where(eq(companies.id, lane.brokerCompanyId));
@@ -103,10 +103,10 @@ export const laneContractsRouter = router({
         return {
           ...lane,
           shipper,
-          carrier,
+          catalyst,
           broker,
           shipperCompany,
-          carrierCompany,
+          catalystCompany,
           brokerCompany,
         };
       } catch (e) { return null; }
@@ -120,7 +120,7 @@ export const laneContractsRouter = router({
       try {
         const userId = ctx.user?.id;
         const userFilter = userId
-          ? or(eq(laneContracts.shipperId, userId), eq(laneContracts.carrierId, userId), eq(laneContracts.brokerId, userId))
+          ? or(eq(laneContracts.shipperId, userId), eq(laneContracts.catalystId, userId), eq(laneContracts.brokerId, userId))
           : undefined;
 
         const [total, active, expired] = await Promise.all([
@@ -145,8 +145,8 @@ export const laneContractsRouter = router({
   create: protectedProcedure
     .input(z.object({
       agreementId: z.number().optional(),
-      carrierId: z.number().optional(),
-      carrierCompanyId: z.number().optional(),
+      catalystId: z.number().optional(),
+      catalystCompanyId: z.number().optional(),
       brokerId: z.number().optional(),
       brokerCompanyId: z.number().optional(),
       originCity: z.string(),
@@ -177,8 +177,8 @@ export const laneContractsRouter = router({
         agreementId: input.agreementId,
         shipperId: ctx.user!.id,
         shipperCompanyId: ctx.user?.companyId || null,
-        carrierId: input.carrierId,
-        carrierCompanyId: input.carrierCompanyId,
+        catalystId: input.catalystId,
+        catalystCompanyId: input.catalystCompanyId,
         brokerId: input.brokerId,
         brokerCompanyId: input.brokerCompanyId,
         originCity: input.originCity,
@@ -268,7 +268,7 @@ export const laneContractsRouter = router({
         if (userId) {
           conditions.push(or(
             eq(laneContracts.shipperId, userId),
-            eq(laneContracts.carrierId, userId),
+            eq(laneContracts.catalystId, userId),
             eq(laneContracts.brokerId, userId)
           ));
         }

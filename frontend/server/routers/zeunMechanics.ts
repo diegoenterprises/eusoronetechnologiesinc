@@ -963,7 +963,7 @@ export const zeunMechanicsRouter = router({
           "Exchange insurance information with other parties",
           "Take photos of damage, scene, and positions",
           "Do NOT admit fault at the scene",
-          "Report to your carrier/dispatcher",
+          "Report to your catalyst/dispatcher",
           "File police report if required by law",
         ],
         emergencyContacts: [
@@ -1027,7 +1027,7 @@ export const zeunMechanicsRouter = router({
           "Call 911 immediately and report location",
           "Note suspect description and direction of travel",
           "Do NOT attempt to follow or confront",
-          "Call your dispatcher/carrier",
+          "Call your dispatcher/catalyst",
           "Document vehicle details: VIN, plate, load info",
           "File police report",
           "Contact insurance company",

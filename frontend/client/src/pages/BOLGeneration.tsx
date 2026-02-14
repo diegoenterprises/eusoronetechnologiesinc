@@ -235,8 +235,8 @@ export default function BOLGeneration() {
                       
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-2">
                         <div>
-                          <p className="text-xs text-slate-500">Carrier</p>
-                          <p className="text-sm text-white">{bol.carrier}</p>
+                          <p className="text-xs text-slate-500">Catalyst</p>
+                          <p className="text-sm text-white">{bol.catalyst}</p>
                         </div>
                         <div>
                           <p className="text-xs text-slate-500">Driver</p>

@@ -124,12 +124,12 @@ interface LoadFormData {
   requiresEscort: boolean;
   specialEquipment: string[];
   
-  // Step 5: Carrier Requirements
+  // Step 5: Catalyst Requirements
   minInsuranceCoverage: string;
   minSafetyRating: string;
   hazmatAuthRequired: boolean;
-  preferredCarriers: string[];
-  blockedCarriers: string[];
+  preferredCatalysts: string[];
+  blockedCatalysts: string[];
   contractOnly: boolean;
   
   // Step 6: Pricing & Bidding
@@ -192,8 +192,8 @@ const initialFormData: LoadFormData = {
   minInsuranceCoverage: "1000000",
   minSafetyRating: "satisfactory",
   hazmatAuthRequired: true,
-  preferredCarriers: [],
-  blockedCarriers: [],
+  preferredCatalysts: [],
+  blockedCatalysts: [],
   contractOnly: false,
   pricingStrategy: "auction",
   bookNowRate: "",
@@ -225,7 +225,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
     { id: "quantity", title: "Quantity & Packaging", icon: <Package className="w-4 h-4" /> },
     { id: "locations", title: "Origin & Destination", icon: <MapPin className="w-4 h-4" /> },
     { id: "equipment", title: "Equipment Requirements", icon: <Truck className="w-4 h-4" /> },
-    { id: "carrier", title: "Carrier Requirements", icon: <Shield className="w-4 h-4" /> },
+    { id: "catalyst", title: "Catalyst Requirements", icon: <Shield className="w-4 h-4" /> },
     { id: "pricing", title: "Pricing & Bidding", icon: <DollarSign className="w-4 h-4" /> },
     { id: "review", title: "Review & Post", icon: <FileText className="w-4 h-4" /> },
   ];
@@ -807,7 +807,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
           </div>
         );
 
-      case 4: // Carrier Requirements
+      case 4: // Catalyst Requirements
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -858,7 +858,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                 onCheckedChange={(c) => updateFormData({ contractOnly: c as boolean })}
               />
               <Label htmlFor="contractOnly" className="text-sm text-slate-300 cursor-pointer">
-                Only tender to contracted carriers
+                Only tender to contracted catalysts
               </Label>
             </div>
           </div>
@@ -874,7 +874,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
                   { value: "book_now", label: "Book Now", desc: "Fixed price, instant award" },
                   { value: "first_bid", label: "Accept First", desc: "First qualifying bid wins" },
                   { value: "auction", label: "Auction", desc: "Competitive bidding" },
-                  { value: "tender", label: "Contract Tender", desc: "Tender to carriers" },
+                  { value: "tender", label: "Contract Tender", desc: "Tender to catalysts" },
                 ].map((strategy) => (
                   <div
                     key={strategy.value}
@@ -1011,7 +1011,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
               <Textarea
                 value={formData.specialInstructions}
                 onChange={(e) => updateFormData({ specialInstructions: e.target.value })}
-                placeholder="Any additional instructions for the carrier..."
+                placeholder="Any additional instructions for the catalyst..."
                 className="bg-slate-700/50 border-slate-600 text-white"
                 rows={3}
               />

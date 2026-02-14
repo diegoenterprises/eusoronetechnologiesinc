@@ -43,7 +43,7 @@ const STEPS = [
   { id: 3, title: "Origin", icon: MapPin },
   { id: 4, title: "Destination", icon: MapPin },
   { id: 5, title: "Equipment", icon: Truck },
-  { id: 6, title: "Carrier Requirements", icon: CheckCircle },
+  { id: 6, title: "Catalyst Requirements", icon: CheckCircle },
   { id: 7, title: "Pricing", icon: DollarSign },
 ];
 

@@ -181,7 +181,7 @@ export const onboardingRouter = router({
           { id: "hazmat_cert", name: "Hazmat Endorsement", required: false },
           { id: "twic", name: "TWIC Card", required: false },
         ],
-        CARRIER: [
+        CATALYST: [
           { id: "usdot", name: "USDOT Registration", required: true },
           { id: "mc_authority", name: "MC Authority", required: true },
           { id: "insurance", name: "Insurance Certificate", required: true },
@@ -318,9 +318,9 @@ export const onboardingRouter = router({
           { type: "hazmat_endorsement", name: "Hazmat Endorsement", description: "TSA-approved hazmat endorsement", required: false },
           { type: "twic", name: "TWIC Card", description: "Transportation Worker Identification Credential", required: false },
         ],
-        CARRIER: [
+        CATALYST: [
           { type: "usdot", name: "USDOT Registration", description: "FMCSA USDOT Certificate", required: true },
-          { type: "mc_authority", name: "MC Authority", description: "Motor Carrier Operating Authority", required: true },
+          { type: "mc_authority", name: "MC Authority", description: "Motor Catalyst Operating Authority", required: true },
           { type: "insurance", name: "Insurance Certificate", description: "Liability and cargo insurance", required: true },
           { type: "boc3", name: "BOC-3 Filing", description: "Designation of Process Agent", required: true },
         ],

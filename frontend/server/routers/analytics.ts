@@ -139,9 +139,9 @@ export const analyticsRouter = router({
     }),
 
   /**
-   * Get carrier analytics summary
+   * Get catalyst analytics summary
    */
-  getCarrierAnalytics: protectedProcedure
+  getCatalystAnalytics: protectedProcedure
     .input(z.object({ period: periodSchema.default("month") }))
     .query(async ({ input }) => ({
       period: input.period,
@@ -177,12 +177,12 @@ export const analyticsRouter = router({
           vsMarketRate: 0,
           percentSavings: 0,
         },
-        carrierPerformance: {
+        catalystPerformance: {
           avgDeliveryTime: 0,
           onTimeRate: 0,
           avgRating: 0,
         },
-        topCarriers: [],
+        topCatalysts: [],
       };
     }),
 
@@ -209,7 +209,7 @@ export const analyticsRouter = router({
         performance: {
           matchRate: 0,
           avgTimeToMatch: 0,
-          carrierRetention: 0,
+          catalystRetention: 0,
         },
         topShippers: [],
       };
@@ -275,7 +275,7 @@ export const analyticsRouter = router({
    */
   exportReport: protectedProcedure
     .input(z.object({
-      reportType: z.enum(["carrier", "shipper", "broker", "platform", "safety", "compliance"]),
+      reportType: z.enum(["catalyst", "shipper", "broker", "platform", "safety", "compliance"]),
       period: periodSchema,
       format: z.enum(["pdf", "csv", "xlsx"]),
     }))

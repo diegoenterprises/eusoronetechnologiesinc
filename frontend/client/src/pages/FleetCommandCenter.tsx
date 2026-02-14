@@ -1,6 +1,6 @@
 /**
  * FLEET & WORKFORCE COMMAND CENTER
- * Unified vehicles + drivers hub for carriers.
+ * Unified vehicles + drivers hub for catalysts.
  */
 import React, { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";

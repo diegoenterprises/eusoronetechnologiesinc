@@ -346,7 +346,7 @@ class WebSocketService {
       case "DRIVER":
         channels.push("drivers:alerts");
         break;
-      case "CATALYST":
+      case "DISPATCH":
         channels.push("dispatch:updates");
         channels.push("exceptions:alerts");
         break;
@@ -729,9 +729,9 @@ export function emitDriverStatusChange(
  * Emit bid awarded event
  */
 export function emitBidAwarded(payload: BidPayload): void {
-  // Notify the winning carrier
+  // Notify the winning catalyst
   wsService.broadcastToChannel(
-    WS_CHANNELS.COMPANY(payload.carrierId),
+    WS_CHANNELS.COMPANY(payload.catalystId),
     {
       type: WS_EVENTS.BID_AWARDED,
       data: payload,

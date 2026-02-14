@@ -220,7 +220,7 @@ export default function Messages() {
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
       DRIVER: "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent",
-      CARRIER: "bg-blue-500/20 text-blue-400",
+      CATALYST: "bg-blue-500/20 text-blue-400",
       SHIPPER: "bg-purple-500/20 text-purple-400",
       BROKER: "bg-amber-500/20 text-amber-400",
       ADMIN: "bg-red-500/20 text-red-400",
@@ -247,7 +247,7 @@ export default function Messages() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Messages
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Communicate with carriers, shippers, and drivers</p>
+          <p className="text-slate-400 text-sm mt-1">Communicate with catalysts, shippers, and drivers</p>
         </div>
         <div className="flex items-center gap-3">
           {totalUnread > 0 && (

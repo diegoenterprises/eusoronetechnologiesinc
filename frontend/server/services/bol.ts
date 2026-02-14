@@ -72,7 +72,7 @@ export interface BOLDocument {
   // Parties
   shipper: BOLParty;
   consignee: BOLParty;
-  carrier: BOLParty;
+  catalyst: BOLParty;
   thirdParty?: BOLParty;
   
   // Shipment details
@@ -99,7 +99,7 @@ export interface BOLDocument {
   
   // Signatures
   shipperSignature?: SignatureInfo;
-  carrierSignature?: SignatureInfo;
+  catalystSignature?: SignatureInfo;
   consigneeSignature?: SignatureInfo;
   
   // Tracking
@@ -122,7 +122,7 @@ export interface BOLGenerationInput {
   
   shipper: BOLParty;
   consignee: BOLParty;
-  carrier: BOLParty;
+  catalyst: BOLParty;
   
   items: BOLItem[];
   hazmat?: HazmatInfo[];
@@ -176,7 +176,7 @@ class BOLService {
       shipDate: input.shipDate,
       shipper: input.shipper,
       consignee: input.consignee,
-      carrier: input.carrier,
+      catalyst: input.catalyst,
       items: input.items,
       totalWeight,
       totalPieces,
@@ -219,7 +219,7 @@ class BOLService {
    */
   async addSignature(
     bol: BOLDocument,
-    party: "shipper" | "carrier" | "consignee",
+    party: "shipper" | "catalyst" | "consignee",
     signature: SignatureInfo
   ): Promise<BOLDocument> {
     const updatedBOL = { ...bol };
@@ -228,8 +228,8 @@ class BOLService {
       case "shipper":
         updatedBOL.shipperSignature = signature;
         break;
-      case "carrier":
-        updatedBOL.carrierSignature = signature;
+      case "catalyst":
+        updatedBOL.catalystSignature = signature;
         break;
       case "consignee":
         updatedBOL.consigneeSignature = signature;
@@ -239,7 +239,7 @@ class BOLService {
     }
 
     // Update status based on signatures
-    if (updatedBOL.shipperSignature && updatedBOL.carrierSignature) {
+    if (updatedBOL.shipperSignature && updatedBOL.catalystSignature) {
       updatedBOL.status = "signed";
       updatedBOL.pickupConfirmed = true;
     }
@@ -310,12 +310,12 @@ class BOLService {
   </div>
 
   <div class="section">
-    <div class="section-title">CARRIER</div>
+    <div class="section-title">CATALYST</div>
     <div class="row">
-      <div class="col"><span class="label">Name:</span> ${bol.carrier.name}</div>
-      <div class="col"><span class="label">Phone:</span> ${bol.carrier.phone || "N/A"}</div>
+      <div class="col"><span class="label">Name:</span> ${bol.catalyst.name}</div>
+      <div class="col"><span class="label">Phone:</span> ${bol.catalyst.phone || "N/A"}</div>
     </div>
-    <div>${bol.carrier.address}, ${bol.carrier.city}, ${bol.carrier.state} ${bol.carrier.zipCode}</div>
+    <div>${bol.catalyst.address}, ${bol.catalyst.city}, ${bol.catalyst.state} ${bol.catalyst.zipCode}</div>
   </div>
 
   <div class="section">
@@ -384,9 +384,9 @@ class BOLService {
       <div>Date: ${bol.shipperSignature?.signedAt ? new Date(bol.shipperSignature.signedAt).toLocaleDateString() : "____________"}</div>
     </div>
     <div class="col section">
-      <div class="section-title">CARRIER SIGNATURE</div>
-      <div class="signature-box">${bol.carrierSignature?.name || ""}</div>
-      <div>Date: ${bol.carrierSignature?.signedAt ? new Date(bol.carrierSignature.signedAt).toLocaleDateString() : "____________"}</div>
+      <div class="section-title">CATALYST SIGNATURE</div>
+      <div class="signature-box">${bol.catalystSignature?.name || ""}</div>
+      <div>Date: ${bol.catalystSignature?.signedAt ? new Date(bol.catalystSignature.signedAt).toLocaleDateString() : "____________"}</div>
     </div>
     <div class="col section">
       <div class="section-title">CONSIGNEE SIGNATURE</div>
@@ -460,7 +460,7 @@ class BOLService {
     unNumber?: string;
     specialInstructions?: string;
     pickupDate?: Date;
-  }, carrier: BOLParty, shipper: BOLParty): Promise<BOLDocument> {
+  }, catalyst: BOLParty, shipper: BOLParty): Promise<BOLDocument> {
     const items: BOLItem[] = [{
       quantity: 1,
       quantityUnit: "load",
@@ -507,7 +507,7 @@ class BOLService {
         state: delivery.state || "",
         zipCode: delivery.zipCode || "",
       },
-      carrier,
+      catalyst,
       items,
       hazmat: hasHazmat ? hazmat : undefined,
       shipDate: load.pickupDate?.toISOString() || new Date().toISOString(),

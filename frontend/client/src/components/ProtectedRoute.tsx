@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ALL_ROLES: UserRole[] = [
-  "SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST",
+  "SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH",
   "ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN",
 ];
 

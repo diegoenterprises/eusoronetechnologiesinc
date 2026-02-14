@@ -41,7 +41,7 @@ export default function UserVerification() {
   const getRoleBadge = (role: string) => {
     const colors: Record<string, string> = {
       shipper: "bg-blue-500/20 text-blue-400",
-      carrier: "bg-green-500/20 text-green-400",
+      catalyst: "bg-green-500/20 text-green-400",
       broker: "bg-purple-500/20 text-purple-400",
       driver: "bg-cyan-500/20 text-cyan-400",
     };

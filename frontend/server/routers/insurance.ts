@@ -16,7 +16,7 @@ import {
   insuranceVerifications,
   insuranceQuotes,
   loadInsurance,
-  carrierRiskScores,
+  catalystRiskScores,
   insuranceAlerts
 } from "../../drizzle/schema";
 
@@ -544,7 +544,7 @@ export const insuranceRouter = router({
   // ============================================================================
 
   /**
-   * Get carrier risk score
+   * Get catalyst risk score
    */
   getRiskScore: protectedProcedure
     .query(async ({ ctx }) => {
@@ -553,8 +553,8 @@ export const insuranceRouter = router({
         const companyId = ctx.user?.companyId;
         if (!companyId) return null;
         
-        const [score] = await db.select().from(carrierRiskScores)
-          .where(eq(carrierRiskScores.companyId, companyId));
+        const [score] = await db.select().from(catalystRiskScores)
+          .where(eq(catalystRiskScores.companyId, companyId));
         
         return score || null;
       } catch (error) {

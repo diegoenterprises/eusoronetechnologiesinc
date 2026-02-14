@@ -111,15 +111,15 @@ export const ShipperPipelineWidget: React.FC = () => {
   );
 };
 
-export const CarrierScorecardsWidget: React.FC = () => {
-  const { data, isLoading } = (trpc as any).dashboard.getCarrierScorecards.useQuery(undefined, { refetchInterval: 300000 });
-  const carriers = Array.isArray(data) ? data : data?.carriers || [];
+export const CatalystScorecardsWidget: React.FC = () => {
+  const { data, isLoading } = (trpc as any).dashboard.getCatalystScorecards.useQuery(undefined, { refetchInterval: 300000 });
+  const catalysts = Array.isArray(data) ? data : data?.catalysts || [];
   return (
     <ResponsiveWidget>{(exp) => isLoading ? <WidgetLoader /> : (
-      <WidgetList items={carriers.slice(0, exp ? 5 : 3)} renderItem={(c: any, i: number) => (
+      <WidgetList items={catalysts.slice(0, exp ? 5 : 3)} renderItem={(c: any, i: number) => (
         <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
           <Award className="w-3 h-3 text-yellow-400 flex-shrink-0" />
-          <span className="text-xs text-white flex-1 truncate">{c.name || `Carrier ${i+1}`}</span>
+          <span className="text-xs text-white flex-1 truncate">{c.name || `Catalyst ${i+1}`}</span>
           <Badge className={`border-0 text-[10px] ${(c.score||0)>=90?"bg-green-500/20 text-green-400":(c.score||0)>=70?"bg-yellow-500/20 text-yellow-400":"bg-red-500/20 text-red-400"}`}>
             {c.score || 0}%
           </Badge>

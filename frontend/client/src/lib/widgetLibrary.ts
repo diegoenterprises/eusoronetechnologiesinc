@@ -58,7 +58,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Live weather with 5-day forecast',
     icon: Sun,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 6, h: 6 },
     minSize: { w: 4, h: 3 }
   },
@@ -68,7 +68,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Schedule and appointments',
     icon: Calendar,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 8 }
   },
   {
@@ -77,7 +77,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Sticky notes and reminders',
     icon: FileText,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 8, h: 6 }
   },
   {
@@ -86,7 +86,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'To-do list and task management',
     icon: CheckCircle,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 8, h: 8 }
   },
   {
@@ -95,7 +95,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Real-time alerts and updates',
     icon: Bell,
     category: 'communication',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 8, h: 6 }
   },
   {
@@ -104,7 +104,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Direct messaging and chat',
     icon: MessageSquare,
     category: 'communication',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 10 }
   },
   {
@@ -113,7 +113,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Frequently used actions',
     icon: Zap,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 5 }
   },
   {
@@ -122,7 +122,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Search across all data',
     icon: Search,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 4 }
   },
   {
@@ -131,7 +131,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Latest actions and updates',
     icon: Activity,
     category: 'productivity',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 8 }
   },
   {
@@ -140,7 +140,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Key performance indicators',
     icon: TrendingUp,
     category: 'analytics',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 6 }
   },
   {
@@ -149,7 +149,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'Real-time location tracking with GPS updates',
     icon: Map,
     category: 'tracking',
-    roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER', 'CATALYST', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER', 'DISPATCH', 'ESCORT', 'TERMINAL_MANAGER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'],
     defaultSize: { w: 12, h: 8 },
     minSize: { w: 6, h: 6 }
   },
@@ -159,7 +159,7 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
     description: 'AI-powered crude oil & fuel product identification',
     icon: Flask,
     category: 'operations',
-    roles: ['SHIPPER', 'CARRIER', 'DRIVER', 'CATALYST', 'TERMINAL_MANAGER'],
+    roles: ['SHIPPER', 'CATALYST', 'DRIVER', 'DISPATCH', 'TERMINAL_MANAGER'],
     defaultSize: { w: 12, h: 10 },
     minSize: { w: 8, h: 8 },
     premium: true
@@ -170,44 +170,44 @@ export const UNIVERSAL_WIDGETS: WidgetDefinition[] = [
 export const SHIPPER_WIDGETS: WidgetDefinition[] = [
   { id: 'active_shipments', name: 'Active Shipments', description: 'Current shipments in progress', icon: Package, category: 'operations', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
   { id: 'shipment_costs', name: 'Shipment Costs', description: 'Cost breakdown and analysis', icon: DollarSign, category: 'financial', roles: ['SHIPPER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'carrier_ratings', name: 'Carrier Ratings', description: 'Carrier performance scores', icon: Star, category: 'analytics', roles: ['SHIPPER'], defaultSize: { w: 10, h: 6 } },
+  { id: 'catalyst_ratings', name: 'Catalyst Ratings', description: 'Catalyst performance scores', icon: Star, category: 'analytics', roles: ['SHIPPER'], defaultSize: { w: 10, h: 6 } },
   { id: 'delivery_timeline', name: 'Delivery Timeline', description: 'Expected delivery dates', icon: Clock, category: 'planning', roles: ['SHIPPER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'freight_quotes', name: 'Freight Quotes', description: 'Compare carrier quotes', icon: FileText, category: 'financial', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
+  { id: 'freight_quotes', name: 'Freight Quotes', description: 'Compare catalyst quotes', icon: FileText, category: 'financial', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
   { id: 'shipment_tracking', name: 'Live Tracking', description: 'Real-time shipment locations', icon: MapPin, category: 'tracking', roles: ['SHIPPER'], defaultSize: { w: 12, h: 10 } },
   { id: 'delivery_exceptions', name: 'Delivery Exceptions', description: 'Delays and issues', icon: AlertCircle, category: 'operations', roles: ['SHIPPER'], defaultSize: { w: 10, h: 6 } },
   { id: 'shipping_volume', name: 'Shipping Volume', description: 'Monthly shipment trends', icon: BarChart3, category: 'analytics', roles: ['SHIPPER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'carrier_network', name: 'Carrier Network', description: 'Available carriers map', icon: Map, category: 'planning', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
+  { id: 'catalyst_network', name: 'Catalyst Network', description: 'Available catalysts map', icon: Map, category: 'planning', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
   { id: 'cost_savings', name: 'Cost Savings', description: 'Savings opportunities', icon: TrendingDown, category: 'financial', roles: ['SHIPPER'], defaultSize: { w: 10, h: 6 } },
   { id: 'shipping_calendar', name: 'Shipping Calendar', description: 'Scheduled pickups and deliveries', icon: Calendar, category: 'planning', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
   { id: 'pod_documents', name: 'POD Documents', description: 'Proof of delivery files', icon: File, category: 'operations', roles: ['SHIPPER'], defaultSize: { w: 10, h: 8 } },
   { id: 'freight_audit', name: 'Freight Audit', description: 'Invoice verification', icon: CheckCircle, category: 'financial', roles: ['SHIPPER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'carrier_capacity', name: 'Carrier Capacity', description: 'Available carrier capacity', icon: Gauge, category: 'planning', roles: ['SHIPPER'], defaultSize: { w: 10, h: 6 } },
+  { id: 'catalyst_capacity', name: 'Catalyst Capacity', description: 'Available catalyst capacity', icon: Gauge, category: 'planning', roles: ['SHIPPER'], defaultSize: { w: 10, h: 6 } },
   { id: 'shipment_analytics', name: 'Shipment Analytics', description: 'Deep dive into shipping data', icon: PieChart, category: 'analytics', roles: ['SHIPPER'], defaultSize: { w: 12, h: 8 } },
 ];
 
-// CARRIER-specific widgets (15 widgets)
-export const CARRIER_WIDGETS: WidgetDefinition[] = [
-  { id: 'available_loads', name: 'Available Loads', description: 'Load board with available freight', icon: Package, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 12, h: 10 } },
-  { id: 'fleet_status', name: 'Fleet Status', description: 'Real-time fleet overview', icon: Truck, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 12, h: 8 } },
-  { id: 'driver_availability', name: 'Driver Availability', description: 'Available drivers and schedules', icon: Users, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 10, h: 6 } },
-  { id: 'revenue_dashboard', name: 'Revenue Dashboard', description: 'Earnings and profitability', icon: DollarSign, category: 'financial', roles: ['CARRIER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'fuel_costs', name: 'Fuel Costs', description: 'Fuel expenses and trends', icon: Droplets, category: 'financial', roles: ['CARRIER'], defaultSize: { w: 10, h: 6 } },
-  { id: 'maintenance_schedule', name: 'Maintenance Schedule', description: 'Vehicle maintenance tracker', icon: Settings, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 12, h: 8 } },
-  { id: 'route_optimization', name: 'Route Optimization', description: 'Optimal routing suggestions', icon: Route, category: 'planning', roles: ['CARRIER'], defaultSize: { w: 12, h: 8 } },
-  { id: 'load_matching', name: 'Load Matching', description: 'AI-powered load recommendations', icon: Target, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 12, h: 8 } },
-  { id: 'driver_performance', name: 'Driver Performance', description: 'Driver metrics and scores', icon: Award, category: 'analytics', roles: ['CARRIER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'detention_time', name: 'Detention Time', description: 'Loading/unloading delays', icon: Clock, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 10, h: 6 } },
-  { id: 'insurance_tracker', name: 'Insurance Tracker', description: 'Insurance and compliance docs', icon: Shield, category: 'compliance', roles: ['CARRIER'], defaultSize: { w: 10, h: 6 } },
-  { id: 'profit_margin', name: 'Profit Margin', description: 'Per-load profitability', icon: TrendingUp, category: 'financial', roles: ['CARRIER'], defaultSize: { w: 10, h: 6 } },
-  { id: 'dispatch_board', name: 'Dispatch Board', description: 'Active dispatches and assignments', icon: LayoutGrid, category: 'operations', roles: ['CARRIER'], defaultSize: { w: 12, h: 10 } },
-  { id: 'equipment_utilization', name: 'Equipment Utilization', description: 'Asset usage metrics', icon: Boxes, category: 'analytics', roles: ['CARRIER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'broker_relationships', name: 'Broker Relationships', description: 'Top brokers and partnerships', icon: Handshake, category: 'analytics', roles: ['CARRIER'], defaultSize: { w: 10, h: 6 } },
+// CATALYST-specific widgets (15 widgets)
+export const CATALYST_WIDGETS: WidgetDefinition[] = [
+  { id: 'available_loads', name: 'Available Loads', description: 'Load board with available freight', icon: Package, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 10 } },
+  { id: 'fleet_status', name: 'Fleet Status', description: 'Real-time fleet overview', icon: Truck, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
+  { id: 'driver_availability', name: 'Driver Availability', description: 'Available drivers and schedules', icon: Users, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
+  { id: 'revenue_dashboard', name: 'Revenue Dashboard', description: 'Earnings and profitability', icon: DollarSign, category: 'financial', roles: ['CATALYST'], defaultSize: { w: 12, h: 6 } },
+  { id: 'fuel_costs', name: 'Fuel Costs', description: 'Fuel expenses and trends', icon: Droplets, category: 'financial', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
+  { id: 'maintenance_schedule', name: 'Maintenance Schedule', description: 'Vehicle maintenance tracker', icon: Settings, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
+  { id: 'route_optimization', name: 'Route Optimization', description: 'Optimal routing suggestions', icon: Route, category: 'planning', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
+  { id: 'load_matching', name: 'Load Matching', description: 'AI-powered load recommendations', icon: Target, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
+  { id: 'driver_performance', name: 'Driver Performance', description: 'Driver metrics and scores', icon: Award, category: 'analytics', roles: ['CATALYST'], defaultSize: { w: 12, h: 6 } },
+  { id: 'detention_time', name: 'Detention Time', description: 'Loading/unloading delays', icon: Clock, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
+  { id: 'insurance_tracker', name: 'Insurance Tracker', description: 'Insurance and compliance docs', icon: Shield, category: 'compliance', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
+  { id: 'profit_margin', name: 'Profit Margin', description: 'Per-load profitability', icon: TrendingUp, category: 'financial', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
+  { id: 'dispatch_board', name: 'Dispatch Board', description: 'Active dispatches and assignments', icon: LayoutGrid, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 10 } },
+  { id: 'equipment_utilization', name: 'Equipment Utilization', description: 'Asset usage metrics', icon: Boxes, category: 'analytics', roles: ['CATALYST'], defaultSize: { w: 12, h: 6 } },
+  { id: 'broker_relationships', name: 'Broker Relationships', description: 'Top brokers and partnerships', icon: Handshake, category: 'analytics', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
 ];
 
 // BROKER-specific widgets (15 widgets)
 export const BROKER_WIDGETS: WidgetDefinition[] = [
   { id: 'load_board', name: 'Load Board', description: 'Posted and available loads', icon: Package, category: 'operations', roles: ['BROKER'], defaultSize: { w: 12, h: 10 } },
-  { id: 'carrier_sourcing', name: 'Carrier Sourcing', description: 'Find and vet carriers', icon: Search, category: 'operations', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
+  { id: 'catalyst_sourcing', name: 'Catalyst Sourcing', description: 'Find and vet catalysts', icon: Search, category: 'operations', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
   { id: 'margin_calculator', name: 'Margin Calculator', description: 'Profit margin analysis', icon: Calculator, category: 'financial', roles: ['BROKER'], defaultSize: { w: 10, h: 6 } },
   { id: 'customer_accounts', name: 'Customer Accounts', description: 'Shipper relationships', icon: Users, category: 'management', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
   { id: 'rate_trends', name: 'Rate Trends', description: 'Market rate analysis', icon: LineChart, category: 'analytics', roles: ['BROKER'], defaultSize: { w: 12, h: 6 } },
@@ -215,8 +215,8 @@ export const BROKER_WIDGETS: WidgetDefinition[] = [
   { id: 'coverage_map', name: 'Coverage Map', description: 'Service area and lanes', icon: Map, category: 'planning', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
   { id: 'commission_tracker', name: 'Commission Tracker', description: 'Earnings and commissions', icon: DollarSign, category: 'financial', roles: ['BROKER'], defaultSize: { w: 10, h: 6 } },
   { id: 'shipper_pipeline', name: 'Shipper Pipeline', description: 'Sales opportunities', icon: TrendingUp, category: 'management', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
-  { id: 'carrier_scorecards', name: 'Carrier Scorecards', description: 'Carrier performance ratings', icon: Star, category: 'analytics', roles: ['BROKER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'load_matching_ai', name: 'AI Load Matching', description: 'Smart carrier recommendations', icon: Zap, category: 'operations', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
+  { id: 'catalyst_scorecards', name: 'Catalyst Scorecards', description: 'Catalyst performance ratings', icon: Star, category: 'analytics', roles: ['BROKER'], defaultSize: { w: 12, h: 6 } },
+  { id: 'load_matching_ai', name: 'AI Load Matching', description: 'Smart catalyst recommendations', icon: Zap, category: 'operations', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
   { id: 'payment_status', name: 'Payment Status', description: 'Invoicing and payments', icon: CreditCard, category: 'financial', roles: ['BROKER'], defaultSize: { w: 10, h: 6 } },
   { id: 'lane_analysis', name: 'Lane Analysis', description: 'Profitable shipping lanes', icon: Route, category: 'analytics', roles: ['BROKER'], defaultSize: { w: 12, h: 6 } },
   { id: 'contract_management', name: 'Contract Management', description: 'Agreements and terms', icon: FileText, category: 'management', roles: ['BROKER'], defaultSize: { w: 12, h: 8 } },
@@ -242,18 +242,18 @@ export const DRIVER_WIDGETS: WidgetDefinition[] = [
   { id: 'performance_score', name: 'Performance Score', description: 'Driver rating and feedback', icon: Award, category: 'analytics', roles: ['DRIVER'], defaultSize: { w: 10, h: 6 } },
 ];
 
-// CATALYST-specific widgets (10 widgets)
-export const CATALYST_WIDGETS: WidgetDefinition[] = [
-  { id: 'escort_assignments', name: 'Escort Assignments', description: 'Current and upcoming escorts', icon: Shield, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
-  { id: 'route_permits', name: 'Route Permits', description: 'Permit status and requirements', icon: FileText, category: 'compliance', roles: ['CATALYST'], defaultSize: { w: 12, h: 6 } },
-  { id: 'oversized_loads', name: 'Oversized Loads', description: 'Special handling requirements', icon: Package, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
-  { id: 'coordination_map', name: 'Coordination Map', description: 'Multi-vehicle coordination', icon: Map, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 12, h: 10 } },
-  { id: 'safety_protocols', name: 'Safety Protocols', description: 'Safety checklists', icon: Shield, category: 'safety', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
-  { id: 'communication_hub', name: 'Communication Hub', description: 'Team coordination', icon: MessageSquare, category: 'communication', roles: ['CATALYST'], defaultSize: { w: 12, h: 8 } },
-  { id: 'incident_reports', name: 'Incident Reports', description: 'Safety incidents', icon: AlertCircle, category: 'safety', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
-  { id: 'equipment_checklist', name: 'Equipment Checklist', description: 'Required equipment verification', icon: CheckCircle, category: 'operations', roles: ['CATALYST'], defaultSize: { w: 10, h: 8 } },
-  { id: 'route_restrictions', name: 'Route Restrictions', description: 'Bridge heights, weight limits', icon: AlertCircle, category: 'planning', roles: ['CATALYST'], defaultSize: { w: 12, h: 6 } },
-  { id: 'escort_earnings', name: 'Escort Earnings', description: 'Compensation tracking', icon: DollarSign, category: 'financial', roles: ['CATALYST'], defaultSize: { w: 10, h: 6 } },
+// DISPATCH-specific widgets (10 widgets)
+export const DISPATCH_WIDGETS: WidgetDefinition[] = [
+  { id: 'escort_assignments', name: 'Escort Assignments', description: 'Current and upcoming escorts', icon: Shield, category: 'operations', roles: ['DISPATCH'], defaultSize: { w: 12, h: 8 } },
+  { id: 'route_permits', name: 'Route Permits', description: 'Permit status and requirements', icon: FileText, category: 'compliance', roles: ['DISPATCH'], defaultSize: { w: 12, h: 6 } },
+  { id: 'oversized_loads', name: 'Oversized Loads', description: 'Special handling requirements', icon: Package, category: 'operations', roles: ['DISPATCH'], defaultSize: { w: 12, h: 8 } },
+  { id: 'coordination_map', name: 'Coordination Map', description: 'Multi-vehicle coordination', icon: Map, category: 'operations', roles: ['DISPATCH'], defaultSize: { w: 12, h: 10 } },
+  { id: 'safety_protocols', name: 'Safety Protocols', description: 'Safety checklists', icon: Shield, category: 'safety', roles: ['DISPATCH'], defaultSize: { w: 10, h: 6 } },
+  { id: 'communication_hub', name: 'Communication Hub', description: 'Team coordination', icon: MessageSquare, category: 'communication', roles: ['DISPATCH'], defaultSize: { w: 12, h: 8 } },
+  { id: 'incident_reports', name: 'Incident Reports', description: 'Safety incidents', icon: AlertCircle, category: 'safety', roles: ['DISPATCH'], defaultSize: { w: 10, h: 6 } },
+  { id: 'equipment_checklist', name: 'Equipment Checklist', description: 'Required equipment verification', icon: CheckCircle, category: 'operations', roles: ['DISPATCH'], defaultSize: { w: 10, h: 8 } },
+  { id: 'route_restrictions', name: 'Route Restrictions', description: 'Bridge heights, weight limits', icon: AlertCircle, category: 'planning', roles: ['DISPATCH'], defaultSize: { w: 12, h: 6 } },
+  { id: 'escort_earnings', name: 'Escort Earnings', description: 'Compensation tracking', icon: DollarSign, category: 'financial', roles: ['DISPATCH'], defaultSize: { w: 10, h: 6 } },
 ];
 
 // ESCORT-specific widgets (10 widgets)
@@ -284,7 +284,7 @@ export const TERMINAL_MANAGER_WIDGETS: WidgetDefinition[] = [
   { id: 'cross_dock_operations', name: 'Cross-Dock Operations', description: 'Direct transfer tracking', icon: ArrowRight, category: 'operations', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 12, h: 6 } },
   { id: 'safety_incidents', name: 'Safety Incidents', description: 'Terminal safety tracking', icon: Shield, category: 'safety', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 10, h: 6 } },
   { id: 'gate_activity', name: 'Gate Activity', description: 'Truck check-in/out', icon: LogIn, category: 'operations', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 12, h: 6 } },
-  { id: 'detention_charges', name: 'Detention Charges', description: 'Carrier detention fees', icon: DollarSign, category: 'financial', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 10, h: 6 } },
+  { id: 'detention_charges', name: 'Detention Charges', description: 'Catalyst detention fees', icon: DollarSign, category: 'financial', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 10, h: 6 } },
   { id: 'inventory_accuracy', name: 'Inventory Accuracy', description: 'Stock accuracy metrics', icon: CheckCircle, category: 'analytics', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 10, h: 6 } },
   { id: 'terminal_kpis', name: 'Terminal KPIs', description: 'Overall performance', icon: Target, category: 'analytics', roles: ['TERMINAL_MANAGER'], defaultSize: { w: 12, h: 6 } },
 ];
@@ -329,29 +329,29 @@ export const SAFETY_MANAGER_WIDGETS: WidgetDefinition[] = [
 
 // Specialized Analytics Widgets (Advanced insights for all roles)
 export const SPECIALIZED_ANALYTICS_WIDGETS: WidgetDefinition[] = [
-  { id: 'revenue_forecasting', name: 'Revenue Forecasting', description: 'AI-powered revenue predictions', icon: TrendingUp, category: 'analytics', roles: ['SHIPPER', 'CARRIER', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
-  { id: 'route_optimization_ai', name: 'Route Optimization AI', description: 'ML-based route efficiency', icon: Route, category: 'analytics', roles: ['CARRIER', 'DRIVER', 'BROKER'], defaultSize: { w: 12, h: 8 }, premium: true },
-  { id: 'predictive_maintenance', name: 'Predictive Maintenance', description: 'Maintenance scheduling AI', icon: Wrench, category: 'analytics', roles: ['CARRIER', 'TERMINAL_MANAGER'], defaultSize: { w: 10, h: 8 }, premium: true },
-  { id: 'demand_heatmap', name: 'Demand Heatmap', description: 'Geographic demand visualization', icon: MapPin, category: 'analytics', roles: ['SHIPPER', 'CARRIER', 'BROKER'], defaultSize: { w: 12, h: 8 }, premium: true },
-  { id: 'driver_performance_analytics', name: 'Driver Performance Analytics', description: 'Comprehensive driver metrics', icon: Users, category: 'analytics', roles: ['CARRIER', 'TERMINAL_MANAGER'], defaultSize: { w: 10, h: 8 }, premium: true },
-  { id: 'fuel_efficiency_analytics', name: 'Fuel Efficiency Analytics', description: 'Fuel consumption optimization', icon: Fuel, category: 'analytics', roles: ['CARRIER', 'DRIVER'], defaultSize: { w: 10, h: 8 }, premium: true },
-  { id: 'load_utilization', name: 'Load Utilization', description: 'Weight and volume optimization', icon: Box, category: 'analytics', roles: ['CARRIER', 'SHIPPER'], defaultSize: { w: 10, h: 6 }, premium: true },
-  { id: 'compliance_score', name: 'Compliance Score', description: 'Real-time compliance metrics', icon: CheckCircle, category: 'compliance', roles: ['CARRIER', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'], defaultSize: { w: 10, h: 6 }, premium: true },
-  { id: 'advanced_market_rates', name: 'Market Rates Analysis', description: 'Real-time freight rate trends', icon: BarChart3, category: 'financial', roles: ['BROKER', 'CARRIER', 'SHIPPER'], defaultSize: { w: 10, h: 6 }, premium: true },
-  { id: 'bid_win_rate', name: 'Bid Win Rate', description: 'Bidding performance analytics', icon: Target, category: 'analytics', roles: ['CARRIER', 'BROKER'], defaultSize: { w: 10, h: 6 }, premium: true },
-  { id: 'real_time_tracking', name: 'Real-Time Tracking', description: 'Live shipment tracking', icon: Truck, category: 'tracking', roles: ['SHIPPER', 'CARRIER', 'BROKER'], defaultSize: { w: 12, h: 8 }, premium: true },
-  { id: 'cost_breakdown', name: 'Cost Breakdown', description: 'Detailed cost analysis', icon: PieChart, category: 'financial', roles: ['SHIPPER', 'CARRIER', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
-  { id: 'customer_satisfaction', name: 'Customer Satisfaction', description: 'Customer feedback analytics', icon: Star, category: 'analytics', roles: ['SHIPPER', 'CARRIER', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
+  { id: 'revenue_forecasting', name: 'Revenue Forecasting', description: 'AI-powered revenue predictions', icon: TrendingUp, category: 'analytics', roles: ['SHIPPER', 'CATALYST', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
+  { id: 'route_optimization_ai', name: 'Route Optimization AI', description: 'ML-based route efficiency', icon: Route, category: 'analytics', roles: ['CATALYST', 'DRIVER', 'BROKER'], defaultSize: { w: 12, h: 8 }, premium: true },
+  { id: 'predictive_maintenance', name: 'Predictive Maintenance', description: 'Maintenance scheduling AI', icon: Wrench, category: 'analytics', roles: ['CATALYST', 'TERMINAL_MANAGER'], defaultSize: { w: 10, h: 8 }, premium: true },
+  { id: 'demand_heatmap', name: 'Demand Heatmap', description: 'Geographic demand visualization', icon: MapPin, category: 'analytics', roles: ['SHIPPER', 'CATALYST', 'BROKER'], defaultSize: { w: 12, h: 8 }, premium: true },
+  { id: 'driver_performance_analytics', name: 'Driver Performance Analytics', description: 'Comprehensive driver metrics', icon: Users, category: 'analytics', roles: ['CATALYST', 'TERMINAL_MANAGER'], defaultSize: { w: 10, h: 8 }, premium: true },
+  { id: 'fuel_efficiency_analytics', name: 'Fuel Efficiency Analytics', description: 'Fuel consumption optimization', icon: Fuel, category: 'analytics', roles: ['CATALYST', 'DRIVER'], defaultSize: { w: 10, h: 8 }, premium: true },
+  { id: 'load_utilization', name: 'Load Utilization', description: 'Weight and volume optimization', icon: Box, category: 'analytics', roles: ['CATALYST', 'SHIPPER'], defaultSize: { w: 10, h: 6 }, premium: true },
+  { id: 'compliance_score', name: 'Compliance Score', description: 'Real-time compliance metrics', icon: CheckCircle, category: 'compliance', roles: ['CATALYST', 'COMPLIANCE_OFFICER', 'SAFETY_MANAGER'], defaultSize: { w: 10, h: 6 }, premium: true },
+  { id: 'advanced_market_rates', name: 'Market Rates Analysis', description: 'Real-time freight rate trends', icon: BarChart3, category: 'financial', roles: ['BROKER', 'CATALYST', 'SHIPPER'], defaultSize: { w: 10, h: 6 }, premium: true },
+  { id: 'bid_win_rate', name: 'Bid Win Rate', description: 'Bidding performance analytics', icon: Target, category: 'analytics', roles: ['CATALYST', 'BROKER'], defaultSize: { w: 10, h: 6 }, premium: true },
+  { id: 'real_time_tracking', name: 'Real-Time Tracking', description: 'Live shipment tracking', icon: Truck, category: 'tracking', roles: ['SHIPPER', 'CATALYST', 'BROKER'], defaultSize: { w: 12, h: 8 }, premium: true },
+  { id: 'cost_breakdown', name: 'Cost Breakdown', description: 'Detailed cost analysis', icon: PieChart, category: 'financial', roles: ['SHIPPER', 'CATALYST', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
+  { id: 'customer_satisfaction', name: 'Customer Satisfaction', description: 'Customer feedback analytics', icon: Star, category: 'analytics', roles: ['SHIPPER', 'CATALYST', 'BROKER'], defaultSize: { w: 10, h: 8 }, premium: true },
 ];
 
 // Combine all widgets
 export const ALL_WIDGETS: WidgetDefinition[] = [
   ...UNIVERSAL_WIDGETS,
   ...SHIPPER_WIDGETS,
-  ...CARRIER_WIDGETS,
+  ...CATALYST_WIDGETS,
   ...BROKER_WIDGETS,
   ...DRIVER_WIDGETS,
-  ...CATALYST_WIDGETS,
+  ...DISPATCH_WIDGETS,
   ...ESCORT_WIDGETS,
   ...TERMINAL_MANAGER_WIDGETS,
   ...COMPLIANCE_OFFICER_WIDGETS,

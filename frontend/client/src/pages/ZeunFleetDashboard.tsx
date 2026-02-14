@@ -1,5 +1,5 @@
 /**
- * Zeun Mechanics Fleet Dashboard - Carrier breakdown and maintenance overview
+ * Zeun Mechanics Fleet Dashboard - Catalyst breakdown and maintenance overview
  */
 
 import { useState } from "react";

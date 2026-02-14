@@ -180,7 +180,7 @@ export default function TerminalAppointments() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="text-white font-medium">{appointment.carrierName}</p>
+                          <p className="text-white font-medium">{appointment.catalystName}</p>
                           {getStatusBadge(appointment.status)}
                           <Badge className={cn("border-0", appointment.type === "loading" ? "bg-blue-500/20 text-blue-400" : "bg-green-500/20 text-green-400")}>
                             {appointment.type === "loading" ? "Loading" : "Unloading"}

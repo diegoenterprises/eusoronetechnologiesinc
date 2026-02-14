@@ -1,7 +1,7 @@
 /**
  * ACTIVE LOADS PAGE
  * 100% Dynamic - No mock data
- * Phone = message carrier/driver | Eye = inline load preview modal
+ * Phone = message catalyst/driver | Eye = inline load preview modal
  */
 
 import { useState } from "react";
@@ -37,7 +37,7 @@ export default function ActiveLoadsPage() {
     limit: 100,
   });
 
-  // Message carrier/driver mutation
+  // Message catalyst/driver mutation
   const createConversation = (trpc as any).messages.createConversation.useMutation({
     onSuccess: (data: any) => {
       toast.success(data.existing ? "Opened conversation" : "Conversation started");
@@ -81,11 +81,11 @@ export default function ActiveLoadsPage() {
   };
 
   const handleContact = (load: any) => {
-    const contactId = load.driverId || load.carrierId;
+    const contactId = load.driverId || load.catalystId;
     if (contactId) {
       createConversation.mutate({ participantIds: [contactId], type: "direct" });
     } else {
-      toast.info("No carrier or driver assigned yet", { description: "This load hasn't been assigned to a carrier." });
+      toast.info("No catalyst or driver assigned yet", { description: "This load hasn't been assigned to a catalyst." });
     }
   };
 
@@ -242,8 +242,8 @@ export default function ActiveLoadsPage() {
                           {load.distance > 0 && (
                             <span className="flex items-center gap-1"><Route className="w-3 h-3" />{load.distance.toLocaleString()} mi</span>
                           )}
-                          {load.carrierName && (
-                            <span className="flex items-center gap-1"><User className="w-3 h-3" />{load.carrierName}</span>
+                          {load.catalystName && (
+                            <span className="flex items-center gap-1"><User className="w-3 h-3" />{load.catalystName}</span>
                           )}
                         </div>
                       </div>
@@ -259,7 +259,7 @@ export default function ActiveLoadsPage() {
                         variant="ghost"
                         size="sm"
                         className="text-slate-400 hover:bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent rounded-lg"
-                        title={load.driverName ? `Message ${load.driverName}` : load.carrierName ? `Message ${load.carrierName}` : "No carrier assigned"}
+                        title={load.driverName ? `Message ${load.driverName}` : load.catalystName ? `Message ${load.catalystName}` : "No catalyst assigned"}
                         onClick={(e: any) => { e.stopPropagation(); handleContact(load); }}
                       >
                         <MessageSquare className="w-4 h-4" />
@@ -354,7 +354,7 @@ export default function ActiveLoadsPage() {
                     { label: "Commodity", value: previewLoad.commodity || "General" },
                     { label: "Pickup", value: previewLoad.pickupDate || "TBD" },
                     { label: "Delivery", value: previewLoad.deliveryDate || "TBD" },
-                    { label: "Carrier", value: previewLoad.carrierName || "Unassigned" },
+                    { label: "Catalyst", value: previewLoad.catalystName || "Unassigned" },
                     { label: "Driver", value: previewLoad.driverName || "Unassigned" },
                   ].map((item: any) => (
                     <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
@@ -368,14 +368,14 @@ export default function ActiveLoadsPage() {
                 </div>
 
                 {/* Company Info */}
-                {(previewLoad.carrierCompanyName || previewLoad.driverPhone) && (
+                {(previewLoad.catalystCompanyName || previewLoad.driverPhone) && (
                   <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                     <p className="text-xs text-slate-500 mb-2 font-medium">Contact Information</p>
                     <div className="flex items-center gap-4">
-                      {previewLoad.carrierCompanyName && (
+                      {previewLoad.catalystCompanyName && (
                         <div className="flex items-center gap-2">
                           <Building2 className="w-4 h-4 text-slate-400" />
-                          <span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.carrierCompanyName}</span>
+                          <span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.catalystCompanyName}</span>
                         </div>
                       )}
                       {previewLoad.driverPhone && (
@@ -402,7 +402,7 @@ export default function ActiveLoadsPage() {
                     onClick={() => { setPreviewLoad(null); handleContact(previewLoad); }}
                   >
                     <MessageSquare className="w-4 h-4 mr-2" />
-                    {previewLoad.driverName ? `Message ${previewLoad.driverName}` : previewLoad.carrierName ? `Message ${previewLoad.carrierName}` : "Message"}
+                    {previewLoad.driverName ? `Message ${previewLoad.driverName}` : previewLoad.catalystName ? `Message ${previewLoad.catalystName}` : "Message"}
                   </Button>
                   <Button
                     variant="outline"

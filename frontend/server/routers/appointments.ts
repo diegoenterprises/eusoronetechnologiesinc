@@ -30,7 +30,7 @@ export const appointmentsRouter = router({
     .input(z.object({
       date: z.string().optional(),
       facilityId: z.string().optional(),
-      carrierId: z.string().optional(),
+      catalystId: z.string().optional(),
       rackId: z.string().optional(),
       status: appointmentStatusSchema.optional(),
       type: appointmentTypeSchema.optional(),
@@ -84,7 +84,7 @@ export const appointmentsRouter = router({
         return {
           id: String(apt.id), type: apt.type, loadNumber: apt.loadId ? `LOAD-${apt.loadId}` : "",
           facility: { id: String(apt.terminalId), name: "", address: "", city: "", state: "", zip: "", contact: { name: "", phone: "" }, instructions: "" },
-          carrier: { id: "", name: "", dotNumber: "" },
+          catalyst: { id: "", name: "", dotNumber: "" },
           driver: { id: apt.driverId ? String(apt.driverId) : "", name: "", phone: "", cdl: "" },
           vehicle: { id: "", unitNumber: "", trailerNumber: "" },
           scheduledDate: apt.scheduledAt?.toISOString()?.split("T")[0] || "",
@@ -104,7 +104,7 @@ export const appointmentsRouter = router({
   create: protectedProcedure
     .input(z.object({
       type: appointmentTypeSchema, loadId: z.string(), facilityId: z.string(),
-      carrierId: z.string(), driverId: z.string().optional(), vehicleId: z.string().optional(),
+      catalystId: z.string(), driverId: z.string().optional(), vehicleId: z.string().optional(),
       scheduledDate: z.string(), scheduledTime: z.string(),
       product: z.string().optional(), quantity: z.number().optional(), notes: z.string().optional(),
     }))
@@ -235,7 +235,7 @@ export const appointmentsRouter = router({
    * Send appointment reminder
    */
   sendReminder: protectedProcedure
-    .input(z.object({ appointmentId: z.string(), recipientType: z.enum(["driver", "carrier", "facility"]) }))
+    .input(z.object({ appointmentId: z.string(), recipientType: z.enum(["driver", "catalyst", "facility"]) }))
     .mutation(async ({ input }) => {
       return { success: true, appointmentId: input.appointmentId, sentTo: input.recipientType, sentAt: new Date().toISOString() };
     }),

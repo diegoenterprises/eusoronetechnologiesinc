@@ -1,6 +1,6 @@
 /**
  * SHIPPER - CREATE LOAD PAGE
- * 7-step wizard: Hazmat → Quantity → Origin/Dest → Equipment → Carrier Req → Pricing → Review
+ * 7-step wizard: Hazmat → Quantity → Origin/Dest → Equipment → Catalyst Req → Pricing → Review
  * 100% Dynamic - No mock data
  */
 import React, { useState, useMemo } from "react";
@@ -28,7 +28,7 @@ const STEPS = [
   { id: 3, title: "Origin & Destination", icon: MapPin },
   { id: 4, title: "Equipment", icon: Truck },
   { id: 5, title: "Schedule", icon: Calendar },
-  { id: 6, title: "Carrier Requirements", icon: Shield },
+  { id: 6, title: "Catalyst Requirements", icon: Shield },
   { id: 7, title: "Pricing", icon: DollarSign },
   { id: 8, title: "Review & Submit", icon: CheckCircle },
 ];
@@ -61,9 +61,9 @@ export default function CreateLoad() {
     // Step 5: Schedule
     pickupDate: "", deliveryDate: "", scheduleType: "one_time" as "one_time" | "recurring" | "convoy",
     recurringDays: "1", convoySize: "1",
-    // Step 6: Carrier Requirements
+    // Step 6: Catalyst Requirements
     twicRequired: false, hazmatEndorsement: false, tankerEndorsement: false, minRating: "",
-    assignmentType: "open_market" as "open_market" | "direct_carrier" | "broker" | "own_fleet",
+    assignmentType: "open_market" as "open_market" | "direct_catalyst" | "broker" | "own_fleet",
     // Step 7: Pricing
     ratePerLoad: "", paymentTerms: "30", notes: "",
   });
@@ -71,7 +71,7 @@ export default function CreateLoad() {
   // Agreement query for contract integration
   const agreementsQuery = (trpc as any).agreements?.list?.useQuery?.(
     { status: "active" },
-    { enabled: formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker" }
+    { enabled: formData.assignmentType === "direct_catalyst" || formData.assignmentType === "broker" }
   ) ?? { data: [], isLoading: false };
 
   // Geofence mutation for auto-creating pickup/delivery zones
@@ -418,8 +418,8 @@ export default function CreateLoad() {
               <div><Label>Assignment Type</Label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
                   {[
-                    { v: "open_market" as const, label: "Open Market", desc: "Post to all carriers" },
-                    { v: "direct_carrier" as const, label: "Direct Carrier", desc: "Assign to specific carrier" },
+                    { v: "open_market" as const, label: "Open Market", desc: "Post to all catalysts" },
+                    { v: "direct_catalyst" as const, label: "Direct Catalyst", desc: "Assign to specific catalyst" },
                     { v: "broker" as const, label: "Via Broker", desc: "Let a broker coordinate" },
                     { v: "own_fleet" as const, label: "Own Fleet", desc: "Use your own trucks" },
                   ].map(opt => (
@@ -431,7 +431,7 @@ export default function CreateLoad() {
                 </div>
               </div>
 
-              {(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") && (
+              {(formData.assignmentType === "direct_catalyst" || formData.assignmentType === "broker") && (
                 <div className={cn("p-4 rounded-xl border", isLight ? "bg-blue-50 border-blue-200" : "bg-[#1473FF]/5 border-[#1473FF]/20")}>
                   <div className="flex items-center gap-2 mb-3">
                     <Link2 className="w-4 h-4 text-[#1473FF]" />
@@ -490,7 +490,7 @@ export default function CreateLoad() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div><p className="text-slate-400 text-xs">Rate / Load</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${parseFloat(formData.ratePerLoad).toLocaleString()}</p></div>
                     <div><p className="text-slate-400 text-xs">Total Loads</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{calc.totalLoads}</p></div>
-                    <div><p className="text-slate-400 text-xs">Carrier Payout</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${calc.totalJobCost.toLocaleString()}</p></div>
+                    <div><p className="text-slate-400 text-xs">Catalyst Payout</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${calc.totalJobCost.toLocaleString()}</p></div>
                     <div><p className="text-slate-400 text-xs">Platform Fee (8%)</p><p className="text-lg font-bold text-[#BE01FF]">${calc.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                   </div>
                   <div className={cn("mt-3 pt-3 border-t flex items-center justify-between", isLight ? "border-slate-200" : "border-slate-700/30")}>
@@ -512,7 +512,7 @@ export default function CreateLoad() {
                   <div><p className="text-slate-400 text-xs">Total Loads</p><p className="text-2xl font-bold text-[#1473FF]">{calc.totalLoads}</p></div>
                   <div><p className="text-slate-400 text-xs">Trucks</p><p className="text-2xl font-bold text-[#BE01FF]">{calc.trucksNeeded}</p></div>
                   <div><p className="text-slate-400 text-xs">Volume</p><p className={cn("text-2xl font-bold", isLight ? "text-slate-800" : "text-white")}>{calc.demandBbl.toLocaleString()} bbl</p></div>
-                  <div><p className="text-slate-400 text-xs">Carrier Payout</p><p className={cn("text-2xl font-bold", isLight ? "text-slate-800" : "text-white")}>${calc.totalJobCost.toLocaleString()}</p></div>
+                  <div><p className="text-slate-400 text-xs">Catalyst Payout</p><p className={cn("text-2xl font-bold", isLight ? "text-slate-800" : "text-white")}>${calc.totalJobCost.toLocaleString()}</p></div>
                   <div><p className="text-slate-400 text-xs">Total w/ Fee</p><p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${calc.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                 </div>
               </div>

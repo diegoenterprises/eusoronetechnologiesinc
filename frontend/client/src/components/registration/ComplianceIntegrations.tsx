@@ -2,7 +2,7 @@
  * COMPLIANCE INTEGRATIONS COMPONENT
  * Shared dropdown for Avetta, ISNetworld, Veriforce, DISA, ComplyWorks, etc.
  * If a user has an existing ID, it fast-tracks their registration verification.
- * Used across Shipper, Carrier, Broker, Driver, Terminal, Compliance, Safety registration flows.
+ * Used across Shipper, Catalyst, Broker, Driver, Terminal, Compliance, Safety registration flows.
  */
 
 import React, { useState } from "react";
@@ -56,7 +56,7 @@ const ROLE_INTEGRATIONS: Record<string, (keyof ComplianceIds)[]> = {
     "avettaId", "isnetworldId", "veriforceId", "disaId", "complyWorksId", "browzId",
     "phmsaRegNumber", "epaId", "oshaId",
   ],
-  CARRIER: [
+  CATALYST: [
     "avettaId", "isnetworldId", "veriforceId", "disaId", "complyWorksId", "browzId",
     "fmcsaUsdot", "fmcsaMcNumber", "phmsaRegNumber", "dotHazmatPermit",
     "clearinghouseId", "saferWebId",
@@ -69,7 +69,7 @@ const ROLE_INTEGRATIONS: Record<string, (keyof ComplianceIds)[]> = {
     "veriforceId", "disaId",
     "tsaTwicNumber", "clearinghouseId", "dotHazmatPermit",
   ],
-  CATALYST: [
+  DISPATCH: [
     "avettaId", "isnetworldId", "veriforceId",
   ],
   ESCORT: [
@@ -97,8 +97,8 @@ const INTEGRATION_META: Record<keyof ComplianceIds, { label: string; placeholder
   complyWorksId: { label: "ComplyWorks ID", placeholder: "CW-XXXXXXXX", category: "third_party", description: "ComplyWorks contractor management" },
   compassId: { label: "COMPASS ID", placeholder: "CMP-XXXXXXXX", category: "third_party", description: "COMPASS compliance platform" },
   browzId: { label: "BROWZ/Avetta One ID", placeholder: "BRZ-XXXXXXXX", category: "third_party", description: "BROWZ supply chain risk management" },
-  fmcsaUsdot: { label: "FMCSA USDOT Number", placeholder: "1234567", category: "federal", description: "Federal Motor Carrier Safety Administration" },
-  fmcsaMcNumber: { label: "FMCSA MC Number", placeholder: "MC-123456", category: "federal", description: "Motor Carrier operating authority" },
+  fmcsaUsdot: { label: "FMCSA USDOT Number", placeholder: "1234567", category: "federal", description: "Federal Motor Catalyst Safety Administration" },
+  fmcsaMcNumber: { label: "FMCSA MC Number", placeholder: "MC-123456", category: "federal", description: "Motor Catalyst operating authority" },
   phmsaRegNumber: { label: "PHMSA Registration Number", placeholder: "PHMSA-XXXXXX", category: "federal", description: "Pipeline and Hazardous Materials Safety Administration" },
   tsaTwicNumber: { label: "TSA TWIC Card Number", placeholder: "TWIC-XXXXXXXX", category: "federal", description: "Transportation Worker Identification Credential" },
   epaId: { label: "EPA ID Number", placeholder: "TXD123456789", category: "federal", description: "Environmental Protection Agency generator ID" },

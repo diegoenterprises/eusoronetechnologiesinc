@@ -3,7 +3,7 @@
  * 
  * Comprehensive pricing system for all user roles:
  * - Shippers: Cost benchmarking, lane rate analysis, budget forecasting
- * - Carriers: Revenue optimization, rate comparison, profitability analysis
+ * - Catalysts: Revenue optimization, rate comparison, profitability analysis
  * - Brokers: Margin analysis, market arbitrage, commission optimization
  * - Drivers: Earnings potential, best-paying lanes, rate-per-mile intelligence
  * - Terminals: Throughput pricing, storage rates, demurrage benchmarks
@@ -552,7 +552,7 @@ export const marketPricingRouter = router({
               ? `Save $${Math.round((ratePerMile - baseIndex.contract.current) * input.miles)} with contract rate`
               : null,
           },
-          carrier: {
+          catalyst: {
             revenuePerMile: ratePerMile,
             estimatedProfit: Math.round(totalRate * 0.18),
             profitMargin: "18%",

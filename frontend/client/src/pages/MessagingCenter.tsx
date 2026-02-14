@@ -162,13 +162,13 @@ export default function MessagingCenter() {
 
   const getRoleIcon = (role: string) => {
     if (role === "DRIVER") return <Truck className="w-3 h-3" />;
-    if (role === "CARRIER") return <Shield className="w-3 h-3" />;
+    if (role === "CATALYST") return <Shield className="w-3 h-3" />;
     return null;
   };
 
   const getRoleBadgeColor = (role: string) => {
     if (role === "DRIVER") return "bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-emerald-500/30";
-    if (role === "CARRIER") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+    if (role === "CATALYST") return "bg-blue-500/20 text-blue-400 border-blue-500/30";
     if (role === "SHIPPER") return "bg-purple-500/20 text-purple-400 border-purple-500/30";
     return "bg-slate-500/20 text-slate-400 border-slate-500/30";
   };
@@ -221,7 +221,7 @@ export default function MessagingCenter() {
                 <MessageSquare className="w-10 h-10 text-slate-600" />
               </div>
               <p className="text-slate-400 font-medium">No conversations yet</p>
-              <p className="text-slate-500 text-sm mt-1 text-center">Start a conversation with a carrier, driver, or shipper</p>
+              <p className="text-slate-500 text-sm mt-1 text-center">Start a conversation with a catalyst, driver, or shipper</p>
             </div>
           ) : (
             (conversationsQuery.data as any)?.map((conv: any) => (

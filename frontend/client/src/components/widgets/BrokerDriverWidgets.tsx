@@ -45,7 +45,7 @@ export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
               <span className="text-sm font-bold text-green-400">${load.rate}</span>
             </div>
             <Button size="sm" className="w-full bg-indigo-600 hover:bg-indigo-700">
-              Assign Carrier
+              Assign Catalyst
             </Button>
           </div>
         ))
@@ -54,9 +54,9 @@ export const LoadBoardWidget: React.FC<{ compact?: boolean }> = ({ compact = fal
   );
 };
 
-// Carrier Sourcing Widget
-export const CarrierSourcingWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const carriers = [
+// Catalyst Sourcing Widget
+export const CatalystSourcingWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+  const catalysts = [
     { id: 1, name: 'Swift Transport', rating: 4.8, available: 12, rate: 2400 },
     { id: 2, name: 'Prime Logistics', rating: 4.7, available: 8, rate: 2300 },
     { id: 3, name: 'Express Freight', rating: 4.6, available: 5, rate: 2500 },
@@ -64,20 +64,20 @@ export const CarrierSourcingWidget: React.FC<{ compact?: boolean }> = ({ compact
 
   return (
     <div className="space-y-2">
-      {carriers.slice(0, compact ? 2 : 3).map(carrier => (
-        <div key={carrier.id} className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 cursor-pointer">
+      {catalysts.slice(0, compact ? 2 : 3).map(catalyst => (
+        <div key={catalyst.id} className="p-3 rounded-lg bg-gray-800/50 hover:bg-gray-800 cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="text-sm font-semibold text-white">{carrier.name}</p>
-              <p className="text-xs text-gray-400">{carrier.available} trucks available</p>
+              <p className="text-sm font-semibold text-white">{catalyst.name}</p>
+              <p className="text-xs text-gray-400">{catalyst.available} trucks available</p>
             </div>
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-              <span className="text-xs text-yellow-400">{carrier.rating}</span>
+              <span className="text-xs text-yellow-400">{catalyst.rating}</span>
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-green-400">${carrier.rate}/load</span>
+            <span className="text-sm text-green-400">${catalyst.rate}/load</span>
             <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
               Contact
             </Button>
@@ -127,8 +127,8 @@ export const MarginCalculatorWidget: React.FC<{ compact?: boolean }> = ({ compac
 // Active Negotiations Widget
 export const ActiveNegotiationsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const negotiations = [
-    { id: 1, load: '#1234', carrier: 'Swift Transport', offer: 2400, asking: 2600, status: 'pending' },
-    { id: 2, load: '#5678', carrier: 'Prime Logistics', offer: 1800, asking: 1900, status: 'counter' },
+    { id: 1, load: '#1234', catalyst: 'Swift Transport', offer: 2400, asking: 2600, status: 'pending' },
+    { id: 2, load: '#5678', catalyst: 'Prime Logistics', offer: 1800, asking: 1900, status: 'counter' },
   ];
 
   return (
@@ -138,7 +138,7 @@ export const ActiveNegotiationsWidget: React.FC<{ compact?: boolean }> = ({ comp
           <div className="flex items-center justify-between mb-2">
             <div>
               <p className="text-sm font-semibold text-white">Load {neg.load}</p>
-              <p className="text-xs text-gray-400">{neg.carrier}</p>
+              <p className="text-xs text-gray-400">{neg.catalyst}</p>
             </div>
             <span className={`text-xs px-2 py-1 rounded-full ${
               neg.status === 'pending' ? 'bg-yellow-900/50 text-yellow-300' :

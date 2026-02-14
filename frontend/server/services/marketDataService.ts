@@ -5,7 +5,7 @@
  * - FRED (Federal Reserve Economic Data): Trucking PPI, crude oil, natural gas, freight TSI
  * - EIA (Energy Information Administration): Diesel fuel prices by PADD region
  * - BLS (Bureau of Labor Statistics): Producer Price Indices for trucking
- * - FMCSA: Carrier census data
+ * - FMCSA: Catalyst census data
  * 
  * All sources are 100% free with API key registration.
  * Falls back to seed data when API keys are not configured.
@@ -208,20 +208,20 @@ export async function fetchBLS(seriesIds: string[]): Promise<Record<string, BLSD
   }
 }
 
-// ===== FMCSA Carrier Lookup =====
+// ===== FMCSA Catalyst Lookup =====
 
-export interface FMCSACarrier {
+export interface FMCSACatalyst {
   dotNumber: string;
   legalName: string;
   phyState: string;
   totalDrivers: number;
   totalPowerUnits: number;
-  carrierOperation: string;
+  catalystOperation: string;
 }
 
-export async function fetchFMCSACarrier(dotNumber: string): Promise<FMCSACarrier | null> {
+export async function fetchFMCSACatalyst(dotNumber: string): Promise<FMCSACatalyst | null> {
   const cacheKey = `fmcsa_${dotNumber}`;
-  const cached = getCached<FMCSACarrier>(cacheKey);
+  const cached = getCached<FMCSACatalyst>(cacheKey);
   if (cached) return cached;
 
   const apiKey = process.env.FMCSA_API_KEY;
@@ -229,27 +229,27 @@ export async function fetchFMCSACarrier(dotNumber: string): Promise<FMCSACarrier
 
   try {
     const res = await fetch(
-      `https://mobile.fmcsa.dot.gov/qc/services/carriers/${dotNumber}?webKey=${apiKey}`,
+      `https://mobile.fmcsa.dot.gov/qc/services/catalysts/${dotNumber}?webKey=${apiKey}`,
       { signal: AbortSignal.timeout(10000) }
     );
     if (!res.ok) return null;
 
     const json = await res.json();
-    const c = json.content?.carrier;
+    const c = json.content?.catalyst;
     if (!c) return null;
 
-    const carrier: FMCSACarrier = {
+    const catalyst: FMCSACatalyst = {
       dotNumber: c.dotNumber,
       legalName: c.legalName,
       phyState: c.phyState,
       totalDrivers: c.totalDrivers || 0,
       totalPowerUnits: c.totalPowerUnits || 0,
-      carrierOperation: c.carrierOperation?.carrierOperationDesc || "Unknown",
+      catalystOperation: c.catalystOperation?.catalystOperationDesc || "Unknown",
     };
 
     // Cache for 24 hours
-    setCache(cacheKey, carrier, 24 * 60 * 60 * 1000);
-    return carrier;
+    setCache(cacheKey, catalyst, 24 * 60 * 60 * 1000);
+    return catalyst;
   } catch (err) {
     console.error(`FMCSA fetch failed for DOT ${dotNumber}:`, err);
     return null;

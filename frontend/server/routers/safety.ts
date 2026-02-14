@@ -255,7 +255,7 @@ export const safetyRouter = router({
    * Get CSA BASIC scores
    */
   getCSAScores: protectedProcedure
-    .input(z.object({ carrierId: z.string().optional() }).optional())
+    .input(z.object({ catalystId: z.string().optional() }).optional())
     .query(async ({ ctx }) => {
       return {
         lastUpdated: new Date().toISOString(),
@@ -265,7 +265,7 @@ export const safetyRouter = router({
         alerts: [],
         trend: "stable",
         trendPercent: 0,
-        carrier: { dotNumber: "", name: "", mcNumber: "" },
+        catalyst: { dotNumber: "", name: "", mcNumber: "" },
         basics: [],
         categories: [],
         map: (fn: any) => ([] as any[]).map(fn),

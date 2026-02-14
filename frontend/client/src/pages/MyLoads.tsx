@@ -71,16 +71,16 @@ export default function MyLoads() {
   // Pass date to backend so the calendar is wired to the DB
   const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, date: dateStr });
 
-  // Message carrier/driver
+  // Message catalyst/driver
   const createConversation = (trpc as any).messages?.createConversation?.useMutation?.({
     onSuccess: (data: any) => { toast.success(data?.existing ? "Opened conversation" : "Conversation started"); setLocation("/messages"); },
     onError: () => { toast.error("Could not start conversation"); setLocation("/messages"); },
   }) || { mutate: () => {} };
 
   const handleContact = (load: any) => {
-    const contactId = load.driverId || load.carrierId;
+    const contactId = load.driverId || load.catalystId;
     if (contactId) { createConversation.mutate({ participantIds: [contactId], type: "direct" }); }
-    else { toast.info("No carrier or driver assigned yet"); }
+    else { toast.info("No catalyst or driver assigned yet"); }
   };
 
   const weekDays = useMemo(() => getWeekDays(weekBase), [weekBase]);
@@ -151,9 +151,9 @@ export default function MyLoads() {
   };
 
   const { user: authUser } = useAuth();
-  const isCarrier = (authUser?.role || "").toUpperCase() === "CARRIER";
+  const isCatalyst = (authUser?.role || "").toUpperCase() === "CATALYST";
   const isDriver = (authUser?.role || "").toUpperCase() === "DRIVER";
-  const canCreateLoads = !isCarrier && !isDriver;
+  const canCreateLoads = !isCatalyst && !isDriver;
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-[1400px] mx-auto">
@@ -161,7 +161,7 @@ export default function MyLoads() {
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-          {isCarrier ? "Assigned Loads" : "My Loads"}
+          {isCatalyst ? "Assigned Loads" : "My Loads"}
         </h1>
         <div className="flex items-center gap-2">
           {canCreateLoads && (
@@ -293,7 +293,7 @@ export default function MyLoads() {
           </div>
           <p className={cn("text-lg font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No loads found</p>
           <p className="text-sm text-slate-400 mt-1">
-            {isCarrier ? "No assigned loads yet. Browse the marketplace to find and bid on loads." : "Create your first load to get started"}
+            {isCatalyst ? "No assigned loads yet. Browse the marketplace to find and bid on loads." : "Create your first load to get started"}
           </p>
           {canCreateLoads ? (
             <Button
@@ -409,7 +409,7 @@ export default function MyLoads() {
                     {/* Assignment Info */}
                     {isActive && (
                       <div className="mt-2 flex items-center gap-3">
-                        <span className="text-xs text-purple-400 font-medium">Pilot Catalyst Assigned</span>
+                        <span className="text-xs text-purple-400 font-medium">Pilot Dispatch Assigned</span>
                         <span className="text-xs text-blue-400 font-medium">Driver Assigned</span>
                       </div>
                     )}
@@ -524,7 +524,7 @@ export default function MyLoads() {
                       size="sm"
                       className={cn("rounded-xl h-10 px-3", isLight ? "bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700" : "bg-white/[0.06] hover:bg-white/[0.12] border border-white/[0.08] text-white")}
                       onClick={() => handleContact(load)}
-                      title={load.driverName ? `Message ${load.driverName}` : load.carrierName ? `Message ${load.carrierName}` : "Message"}
+                      title={load.driverName ? `Message ${load.driverName}` : load.catalystName ? `Message ${load.catalystName}` : "Message"}
                     >
                       <MessageSquare className="w-4 h-4" />
                     </Button>
@@ -584,7 +584,7 @@ export default function MyLoads() {
                     { label: "Commodity", value: previewLoad.commodity || "General" },
                     { label: "Pickup", value: previewLoad.pickupDate ? new Date(previewLoad.pickupDate).toLocaleDateString() : "TBD" },
                     { label: "Delivery", value: previewLoad.deliveryDate ? new Date(previewLoad.deliveryDate).toLocaleDateString() : "TBD" },
-                    { label: "Carrier", value: previewLoad.carrierName || "Unassigned" },
+                    { label: "Catalyst", value: previewLoad.catalystName || "Unassigned" },
                     { label: "Driver", value: previewLoad.driverName || "Unassigned" },
                   ].map((item: any) => (
                     <div key={item.label} className={cn("p-3 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
@@ -594,11 +594,11 @@ export default function MyLoads() {
                   ))}
                 </div>
                 {/* Contact Info */}
-                {(previewLoad.carrierCompanyName || previewLoad.driverPhone) && (
+                {(previewLoad.catalystCompanyName || previewLoad.driverPhone) && (
                   <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/60 border-slate-700/50")}>
                     <p className="text-xs text-slate-500 mb-2 font-medium">Contact Information</p>
                     <div className="flex items-center gap-4">
-                      {previewLoad.carrierCompanyName && <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-slate-400" /><span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.carrierCompanyName}</span></div>}
+                      {previewLoad.catalystCompanyName && <div className="flex items-center gap-2"><Building2 className="w-4 h-4 text-slate-400" /><span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{previewLoad.catalystCompanyName}</span></div>}
                       {previewLoad.driverPhone && <div className="flex items-center gap-2"><Phone className="w-4 h-4 text-slate-400" /><a href={`tel:${previewLoad.driverPhone}`} className="text-sm text-cyan-400 hover:underline">{previewLoad.driverPhone}</a></div>}
                     </div>
                   </div>
@@ -609,7 +609,7 @@ export default function MyLoads() {
                     <ExternalLink className="w-4 h-4 mr-2" />Full Details
                   </Button>
                   <Button variant="outline" className={cn("flex-1 rounded-lg", isLight ? "border-slate-200 hover:bg-slate-50" : "bg-slate-800/50 border-slate-600/50 hover:bg-slate-700")} onClick={() => { setPreviewLoad(null); handleContact(previewLoad); }}>
-                    <MessageSquare className="w-4 h-4 mr-2" />{previewLoad.driverName ? `Message ${previewLoad.driverName}` : previewLoad.carrierName ? `Message ${previewLoad.carrierName}` : "Message"}
+                    <MessageSquare className="w-4 h-4 mr-2" />{previewLoad.driverName ? `Message ${previewLoad.driverName}` : previewLoad.catalystName ? `Message ${previewLoad.catalystName}` : "Message"}
                   </Button>
                 </div>
               </div>

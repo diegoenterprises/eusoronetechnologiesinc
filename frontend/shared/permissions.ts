@@ -7,12 +7,12 @@
 
 export type UserRole =
   | "SHIPPER"
-  | "CARRIER"
+  | "CATALYST"
   | "DRIVER"
   | "BROKER"
   | "TERMINAL_MANAGER"
   | "ESCORT"
-  | "CATALYST"
+  | "DISPATCH"
   | "COMPLIANCE_OFFICER"
   | "SAFETY_MANAGER"
   | "ADMIN"
@@ -136,7 +136,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "messages:view",
   ],
 
-  CARRIER: [
+  CATALYST: [
     "loads:view",
     "bids:create",
     "bids:view",
@@ -233,7 +233,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "messages:view",
   ],
 
-  CATALYST: [
+  DISPATCH: [
     "loads:create",
     "loads:view",
     "loads:edit",

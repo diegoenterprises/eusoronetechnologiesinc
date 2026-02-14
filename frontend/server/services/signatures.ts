@@ -475,7 +475,7 @@ class SignatureService {
   async createBOLSignatureRequest(
     bolNumber: string,
     shipper: { name: string; email: string },
-    carrier: { name: string; email: string },
+    catalyst: { name: string; email: string },
     consignee: { name: string; email: string },
     createdBy: string
   ): Promise<SignatureRequest> {
@@ -485,7 +485,7 @@ class SignatureService {
       `Bill of Lading - ${bolNumber}`,
       [
         { name: shipper.name, email: shipper.email, role: "Shipper", order: 1 },
-        { name: carrier.name, email: carrier.email, role: "Carrier", order: 2 },
+        { name: catalyst.name, email: catalyst.email, role: "Catalyst", order: 2 },
         { name: consignee.name, email: consignee.email, role: "Consignee", order: 3 },
       ],
       { expiresInDays: 30, reminderEnabled: true, reminderFrequency: "daily" },
@@ -499,7 +499,7 @@ class SignatureService {
   async createRateConfirmationRequest(
     rateConfNumber: string,
     broker: { name: string; email: string },
-    carrier: { name: string; email: string },
+    catalyst: { name: string; email: string },
     createdBy: string
   ): Promise<SignatureRequest> {
     return this.createSignatureRequest(
@@ -507,7 +507,7 @@ class SignatureService {
       "rate_confirmation",
       `Rate Confirmation - ${rateConfNumber}`,
       [
-        { name: carrier.name, email: carrier.email, role: "Carrier", order: 1 },
+        { name: catalyst.name, email: catalyst.email, role: "Catalyst", order: 1 },
         { name: broker.name, email: broker.email, role: "Broker", order: 2 },
       ],
       { expiresInDays: 3, reminderEnabled: true },

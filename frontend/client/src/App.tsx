@@ -37,11 +37,11 @@ import LoadCreatePage from "./pages/LoadCreate";
 import FindLoadsPage from "./pages/FindLoads";
 // ActiveLoads merged into MyLoads
 // TrackShipments merged into ShipperDispatchControl
-import CarriersPage from "./pages/Carriers";
+import CatalystsPage from "./pages/Catalysts";
 // Payments merged into Wallet (EusoWallet)
 import AssignedLoadsPage from "./pages/AssignedLoads";
 import InTransitPage from "./pages/InTransit";
-import CarrierAnalyticsPage from "./pages/CarrierAnalytics";
+import CatalystAnalyticsPage from "./pages/CatalystAnalytics";
 import FleetPage from "./pages/Fleet";
 import DriversPage from "./pages/Drivers";
 import FleetCommandCenter from "./pages/FleetCommandCenter";
@@ -53,12 +53,12 @@ import Register from "./pages/Register";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RegisterShipper from "./pages/RegisterShipper";
-import RegisterCarrier from "./pages/RegisterCarrier";
+import RegisterCatalyst from "./pages/RegisterCatalyst";
 import RegisterDriver from "./pages/RegisterDriver";
 import LoadBids from "./pages/LoadBids";
 import RegisterEscort from "./pages/RegisterEscort";
 import RegisterBroker from "./pages/RegisterBroker";
-import RegisterCatalyst from "./pages/RegisterCatalyst";
+import RegisterDispatch from "./pages/RegisterDispatch";
 import RegisterTerminal from "./pages/RegisterTerminal";
 import RegisterCompliance from "./pages/RegisterCompliance";
 import RegisterSafety from "./pages/RegisterSafety";
@@ -81,11 +81,11 @@ import ESANGChat from "./pages/ESANGChat";
 import DriverDashboard from "./pages/DriverDashboard";
 import LoadCreationWizard from "./pages/LoadCreationWizard";
 import BidManagement from "./pages/BidManagement";
-import CarrierBidSubmission from "./pages/CarrierBidSubmission";
+import CatalystBidSubmission from "./pages/CatalystBidSubmission";
 import PreTripInspection from "./pages/PreTripInspection";
 import DVIR from "./pages/DVIR";
 import DispatchBoard from "./pages/DispatchBoard";
-import CarrierVetting from "./pages/CarrierVetting";
+import CatalystVetting from "./pages/CatalystVetting";
 import EscortJobMarketplace from "./pages/EscortJobMarketplace";
 import TerminalScheduling from "./pages/TerminalScheduling";
 import DQFileManagement from "./pages/DQFileManagement";
@@ -106,7 +106,7 @@ import TerminalSCADA from "./pages/TerminalSCADA";
 import Leaderboard from "./pages/Leaderboard";
 import DriverOnboarding from "./pages/DriverOnboarding";
 import AccidentReport from "./pages/AccidentReport";
-import CarrierVettingDetails from "./pages/CarrierVettingDetails";
+import CatalystVettingDetails from "./pages/CatalystVettingDetails";
 import MessagingCenter from "./pages/MessagingCenter";
 import LoadDetails from "./pages/LoadDetails";
 import ELDLogs from "./pages/ELDLogs";
@@ -134,7 +134,7 @@ import EscortIncidents from "./pages/EscortIncidents";
 import Specializations from "./pages/Specializations";
 import MatchedLoads from "./pages/MatchedLoads";
 import Opportunities from "./pages/Opportunities";
-import CatalystPerformance from "./pages/CatalystPerformance";
+import DispatchPerformance from "./pages/DispatchPerformance";
 import IncomingShipments from "./pages/IncomingShipments";
 import OutgoingShipments from "./pages/OutgoingShipments";
 import TerminalStaff from "./pages/TerminalStaff";
@@ -144,15 +144,15 @@ import Audits from "./pages/Audits";
 import SafetyMetrics from "./pages/SafetyMetrics";
 import SafetyIncidents from "./pages/SafetyIncidents";
 import BrokerMarketplace from "./pages/BrokerMarketplace";
-import BrokerCarriers from "./pages/BrokerCarriers";
+import BrokerCatalysts from "./pages/BrokerCatalysts";
 import BrokerAnalytics from "./pages/BrokerAnalytics";
 import LoadingBays from "./pages/LoadingBays";
 import TerminalInventory from "./pages/TerminalInventory";
 import BOLGeneration from "./pages/BOLGeneration";
 import DriverCurrentJob from "./pages/DriverCurrentJob";
 import DriverVehicle from "./pages/DriverVehicle";
-import CatalystFleetMap from "./pages/CatalystFleetMap";
-import CatalystExceptions from "./pages/CatalystExceptions";
+import DispatchFleetMap from "./pages/DispatchFleetMap";
+import DispatchExceptions from "./pages/DispatchExceptions";
 import EscortPermits from "./pages/EscortPermits";
 import EscortSchedule from "./pages/EscortSchedule";
 import SpectraMatch from "./pages/SpectraMatch";
@@ -170,13 +170,13 @@ import HotZones from "./pages/HotZones";
 import RatingsReviews from "./pages/RatingsReviews";
 import ClaimsPage from "./pages/Claims";
 import MarketPricing from "./pages/MarketPricing";
-import CarrierCompliance from "./pages/CarrierCompliance";
+import CatalystCompliance from "./pages/CatalystCompliance";
 import FuelPrices from "./pages/FuelPrices";
 import WeatherAlerts from "./pages/WeatherAlerts";
 import TheHaul from "./pages/TheHaul";
 import FactoringDashboardPage from "./pages/factoring/FactoringDashboard";
 import FactoringInvoicesPage from "./pages/factoring/FactoringInvoices";
-import FactoringCarriersPage from "./pages/factoring/FactoringCarriers";
+import FactoringCatalystsPage from "./pages/factoring/FactoringCatalysts";
 import FactoringCollectionsPage from "./pages/factoring/FactoringCollections";
 import FactoringFundingPage from "./pages/factoring/FactoringFunding";
 import FactoringRiskPage from "./pages/factoring/FactoringRisk";
@@ -187,12 +187,12 @@ import FactoringReportsPage from "./pages/factoring/FactoringReports";
 
 function Router() {
   // Role constants for route protection
-  const ALL: UserRole[] = ["SHIPPER","CARRIER","BROKER","DRIVER","CATALYST","ESCORT","TERMINAL_MANAGER","FACTORING","ADMIN","SUPER_ADMIN"];
+  const ALL: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","FACTORING","ADMIN","SUPER_ADMIN"];
   const SHIP: UserRole[] = ["SHIPPER","ADMIN","SUPER_ADMIN"];
-  const CARR: UserRole[] = ["CARRIER","ADMIN","SUPER_ADMIN"];
+  const CARR: UserRole[] = ["CATALYST","ADMIN","SUPER_ADMIN"];
   const BROK: UserRole[] = ["BROKER","ADMIN","SUPER_ADMIN"];
-  const DRIV: UserRole[] = ["DRIVER","CARRIER","ADMIN","SUPER_ADMIN"];
-  const DISP: UserRole[] = ["CATALYST","ADMIN","SUPER_ADMIN"];
+  const DRIV: UserRole[] = ["DRIVER","CATALYST","ADMIN","SUPER_ADMIN"];
+  const DISP: UserRole[] = ["DISPATCH","ADMIN","SUPER_ADMIN"];
   const ESCT: UserRole[] = ["ESCORT","ADMIN","SUPER_ADMIN"];
   const TERM: UserRole[] = ["TERMINAL_MANAGER","ADMIN","SUPER_ADMIN"];
   const FACT: UserRole[] = ["FACTORING","ADMIN","SUPER_ADMIN"];
@@ -200,7 +200,7 @@ function Router() {
   const SAFE: UserRole[] = ["ADMIN","SUPER_ADMIN"];
   const ADMN: UserRole[] = ["ADMIN","SUPER_ADMIN"];
   const SUPR: UserRole[] = ["SUPER_ADMIN"];
-  const LOAD: UserRole[] = ["SHIPPER","CARRIER","BROKER","ADMIN","SUPER_ADMIN"];
+  const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","ADMIN","SUPER_ADMIN"];
 
   // Helper: wrap page in DashboardLayout + ProtectedRoute
   const guard = (roles: UserRole[], Page: React.ReactNode) => () => (
@@ -216,11 +216,11 @@ function Router() {
       <Route path={"/login"} component={Login} />
       <Route path={"/register"} component={Register} />
       <Route path={"/register/shipper"} component={RegisterShipper} />
-      <Route path={"/register/carrier"} component={RegisterCarrier} />
+      <Route path={"/register/catalyst"} component={RegisterCatalyst} />
       <Route path={"/register/driver"} component={RegisterDriver} />
       <Route path={"/register/escort"} component={RegisterEscort} />
       <Route path={"/register/broker"} component={RegisterBroker} />
-      <Route path={"/register/catalyst"} component={RegisterCatalyst} />
+      <Route path={"/register/dispatch"} component={RegisterDispatch} />
       <Route path={"/register/terminal"} component={RegisterTerminal} />
       <Route path={"/register/compliance"} component={RegisterCompliance} />
       <Route path={"/register/safety"} component={RegisterSafety} />
@@ -261,7 +261,7 @@ function Router() {
       <Route path={"/loads/create"} component={guard([...SHIP, "BROKER"], <LoadCreationWizard />)} />
       <Route path={"/loads/active"} component={guard(LOAD, <MyLoadsPage />)} />
       <Route path={"/tracking"} component={guard(LOAD, <ShipperDispatchControl />)} />
-      <Route path={"/carriers"} component={guard([...SHIP, "BROKER"], <CarriersPage />)} />
+      <Route path={"/catalysts"} component={guard([...SHIP, "BROKER"], <CatalystsPage />)} />
       <Route path={"/payments"} component={guard(ALL, <WalletPage />)} />
       <Route path={"/company"} component={guard(LOAD, <CompanyProfile />)} />
       <Route path={"/agreements"} component={guard(LOAD, <AgreementsLibrary />)} />
@@ -273,11 +273,11 @@ function Router() {
       <Route path={"/shipper/dispatch"} component={guard(SHIP, <ShipperDispatchControl />)} />
 
       {/* ============================================ */}
-      {/* CARRIER ROUTES */}
+      {/* CATALYST ROUTES */}
       {/* ============================================ */}
       <Route path={"/marketplace"} component={guard([...CARR, "BROKER"], <FindLoadsPage />)} />
       <Route path={"/bids"} component={guard(CARR, <BidManagement />)} />
-      <Route path={"/bids/submit/:loadId"} component={guard(CARR, <CarrierBidSubmission />)} />
+      <Route path={"/bids/submit/:loadId"} component={guard(CARR, <CatalystBidSubmission />)} />
       <Route path={"/bids/:bidId"} component={guard(CARR, <BidDetails />)} />
       <Route path={"/contract/sign/:loadId"} component={guard(CARR, <ContractSigning />)} />
       <Route path={"/loads/transit"} component={guard([...CARR, "DRIVER"], <InTransitPage />)} />
@@ -287,7 +287,7 @@ function Router() {
       <Route path={"/fleet-management"} component={guard(CARR, <FleetCommandCenter />)} />
       <Route path={"/driver/management"} component={guard(CARR, <FleetCommandCenter />)} />
       <Route path={"/drivers"} component={guard(CARR, <FleetCommandCenter />)} />
-      <Route path={"/earnings"} component={guard([...CARR, "DRIVER", "CATALYST", "ESCORT"], <WalletPage />)} />
+      <Route path={"/earnings"} component={guard([...CARR, "DRIVER", "DISPATCH", "ESCORT"], <WalletPage />)} />
       <Route path={"/analytics"} component={guard([...CARR, "BROKER"], <Analytics />)} />
 
       {/* ============================================ */}
@@ -295,8 +295,8 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/shippers"} component={guard(BROK, <ShippersPage />)} />
       <Route path={"/commission"} component={guard(BROK, <CommissionPage />)} />
-      <Route path={"/carrier-vetting"} component={guard(BROK, <CarrierVetting />)} />
-      <Route path={"/carrier/:carrierId"} component={guard(BROK, <CarrierVettingDetails />)} />
+      <Route path={"/catalyst-vetting"} component={guard(BROK, <CatalystVetting />)} />
+      <Route path={"/catalyst/:catalystId"} component={guard(BROK, <CatalystVettingDetails />)} />
 
       {/* ============================================ */}
       {/* DRIVER ROUTES */}
@@ -321,16 +321,16 @@ function Router() {
       <Route path={"/fuel"} component={guard(DRIV, <FuelManagement />)} />
 
       {/* ============================================ */}
-      {/* CATALYST (DISPATCHER) ROUTES */}
+      {/* DISPATCH (DISPATCHER) ROUTES */}
       {/* ============================================ */}
       <Route path={"/dispatch"} component={guard(DISP, <DispatchDashboard />)} />
       <Route path={"/dispatch/board"} component={guard(DISP, <DispatchBoard />)} />
       <Route path={"/specializations"} component={guard(DISP, <Specializations />)} />
       <Route path={"/matched-loads"} component={guard(DISP, <MatchedLoads />)} />
       <Route path={"/opportunities"} component={guard(DISP, <Opportunities />)} />
-      <Route path={"/performance"} component={guard(DISP, <CatalystPerformance />)} />
-      <Route path={"/catalyst/fleet-map"} component={guard(DISP, <CatalystFleetMap />)} />
-      <Route path={"/catalyst/exceptions"} component={guard(DISP, <CatalystExceptions />)} />
+      <Route path={"/performance"} component={guard(DISP, <DispatchPerformance />)} />
+      <Route path={"/dispatch/fleet-map"} component={guard(DISP, <DispatchFleetMap />)} />
+      <Route path={"/dispatch/exceptions"} component={guard(DISP, <DispatchExceptions />)} />
       <Route path={"/load-board"} component={guard([...DISP, "BROKER"], <LoadBoard />)} />
 
       {/* ============================================ */}
@@ -371,7 +371,7 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/factoring"} component={guard(FACT, <FactoringDashboardPage />)} />
       <Route path={"/factoring/invoices"} component={guard(FACT, <FactoringInvoicesPage />)} />
-      <Route path={"/factoring/carriers"} component={guard(FACT, <FactoringCarriersPage />)} />
+      <Route path={"/factoring/catalysts"} component={guard(FACT, <FactoringCatalystsPage />)} />
       <Route path={"/factoring/collections"} component={guard(FACT, <FactoringCollectionsPage />)} />
       <Route path={"/factoring/funding"} component={guard(FACT, <FactoringFundingPage />)} />
       <Route path={"/factoring/risk"} component={guard(FACT, <FactoringRiskPage />)} />
@@ -451,7 +451,7 @@ function Router() {
       <Route path={"/tools/rate-calculator"} component={guard(ALL, <RateCalculator />)} />
       <Route path={"/directory"} component={guard(ALL, <IndustryDirectory />)} />
       <Route path={"/live-news"} component={guard(ALL, <LiveNewsFeed />)} />
-      <Route path={"/carrier-compliance"} component={guard(CARR, <CarrierCompliance />)} />
+      <Route path={"/catalyst-compliance"} component={guard(CARR, <CatalystCompliance />)} />
       <Route path={"/fuel-prices"} component={guard(ALL, <FuelPrices />)} />
       <Route path={"/weather-alerts"} component={guard(ALL, <WeatherAlerts />)} />
       <Route path={"/the-haul"} component={guard(ALL, <TheHaul />)} />

@@ -35,7 +35,7 @@ export const bolRouter = router({
           number: `BOL-${new Date().getFullYear()}-${String(d.id).padStart(4, '0')}`,
           loadNumber: d.loadId ? `LOAD-${d.loadId}` : 'N/A',
           shipper: 'Shipper',
-          carrier: 'Carrier',
+          catalyst: 'Catalyst',
           status: d.status || 'pending',
           createdAt: d.createdAt?.toISOString().split('T')[0] || '',
         }));
@@ -80,7 +80,7 @@ export const bolRouter = router({
     .query(async ({ input }) => {
       return {
         id: input.id, number: "", loadNumber: "",
-        shipper: null, carrier: null, consignee: null,
+        shipper: null, catalyst: null, consignee: null,
         product: "", quantity: 0, unit: "", status: "",
         createdAt: "", deliveredAt: "",
       };
@@ -93,7 +93,7 @@ export const bolRouter = router({
     .input(z.object({
       loadId: z.string(),
       shipperId: z.string(),
-      carrierId: z.string(),
+      catalystId: z.string(),
       consigneeId: z.string(),
       product: z.string(),
       quantity: z.number(),

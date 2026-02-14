@@ -1,6 +1,6 @@
 /**
  * FMCSA QCMobile API Integration Router
- * Free public REST API for carrier/broker/shipper verification
+ * Free public REST API for catalyst/broker/shipper verification
  * Auto-populates 30+ fields from a single USDOT or MC number lookup
  * 
  * Base URL: https://mobile.fmcsa.dot.gov/qc/services/
@@ -14,23 +14,23 @@ const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services";
 const FMCSA_KEY = process.env.FMCSA_WEBKEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
 
 // In-memory cache to avoid hammering FMCSA API (24h TTL)
-const carrierCache = new Map<string, { data: any; expires: number }>();
+const catalystCache = new Map<string, { data: any; expires: number }>();
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
 function getCached(key: string) {
-  const entry = carrierCache.get(key);
+  const entry = catalystCache.get(key);
   if (entry && entry.expires > Date.now()) return entry.data;
-  if (entry) carrierCache.delete(key);
+  if (entry) catalystCache.delete(key);
   return null;
 }
 
 function setCache(key: string, data: any) {
-  carrierCache.set(key, { data, expires: Date.now() + CACHE_TTL });
+  catalystCache.set(key, { data, expires: Date.now() + CACHE_TTL });
   // Evict old entries if cache grows too large
-  if (carrierCache.size > 5000) {
+  if (catalystCache.size > 5000) {
     const now = Date.now();
-    Array.from(carrierCache.entries()).forEach(([k, v]) => {
-      if (v.expires < now) carrierCache.delete(k);
+    Array.from(catalystCache.entries()).forEach(([k, v]) => {
+      if (v.expires < now) catalystCache.delete(k);
     });
   }
 }
@@ -45,7 +45,7 @@ async function fmcsaFetch(endpoint: string) {
   return res.json();
 }
 
-function parseCarrierResponse(c: any) {
+function parseCatalystResponse(c: any) {
   return {
     // Company Profile
     companyProfile: {
@@ -78,8 +78,8 @@ function parseCarrierResponse(c: any) {
       commonAuthority: c.commonAuthorityStatus || "N",
       contractAuthority: c.contractAuthorityStatus || "N",
       brokerAuthority: c.brokerAuthorityStatus || "N",
-      carrierOperation: c.carrierOperation?.carrierOperationDesc || null,
-      carrierOperationCode: c.carrierOperation?.carrierOperationCode || null,
+      catalystOperation: c.catalystOperation?.catalystOperationDesc || null,
+      catalystOperationCode: c.catalystOperation?.catalystOperationCode || null,
     },
 
     // Safety
@@ -129,7 +129,7 @@ function parseCarrierResponse(c: any) {
 
 export const fmcsaRouter = router({
   /**
-   * Primary: Lookup carrier by USDOT number
+   * Primary: Lookup catalyst by USDOT number
    * Returns full company profile, authority, safety, insurance, hazmat data
    */
   lookupByDOT: publicProcedure
@@ -144,20 +144,20 @@ export const fmcsaRouter = router({
       if (cached) return cached;
 
       try {
-        const [carrierRes, authorityRes, basicsRes, cargoRes] = await Promise.allSettled([
-          fmcsaFetch(`/carriers/${input.dotNumber}`),
-          fmcsaFetch(`/carriers/${input.dotNumber}/authority`),
-          fmcsaFetch(`/carriers/${input.dotNumber}/basics`),
-          fmcsaFetch(`/carriers/${input.dotNumber}/cargo-carried`),
+        const [catalystRes, authorityRes, basicsRes, cargoRes] = await Promise.allSettled([
+          fmcsaFetch(`/catalysts/${input.dotNumber}`),
+          fmcsaFetch(`/catalysts/${input.dotNumber}/authority`),
+          fmcsaFetch(`/catalysts/${input.dotNumber}/basics`),
+          fmcsaFetch(`/catalysts/${input.dotNumber}/cargo-carried`),
         ]);
 
-        const carrier = carrierRes.status === "fulfilled" ? carrierRes.value : null;
-        const c = carrier?.content?.[0]?.carrier || carrier?.content?.carrier;
+        const catalyst = catalystRes.status === "fulfilled" ? catalystRes.value : null;
+        const c = catalyst?.content?.[0]?.catalyst || catalyst?.content?.catalyst;
         if (!c) {
-          return { verified: false, error: "Carrier not found for this USDOT number" };
+          return { verified: false, error: "Catalyst not found for this USDOT number" };
         }
 
-        const parsed = parseCarrierResponse(c);
+        const parsed = parseCatalystResponse(c);
 
         // Attach additional data from parallel calls
         const authority = authorityRes.status === "fulfilled" ? authorityRes.value : null;
@@ -182,7 +182,7 @@ export const fmcsaRouter = router({
           // Blocking checks
           isBlocked: !parsed.authority.allowedToOperate,
           blockReason: !parsed.authority.allowedToOperate
-            ? "This carrier is NOT authorized to operate. Registration cannot proceed."
+            ? "This catalyst is NOT authorized to operate. Registration cannot proceed."
             : null,
           // Warnings
           warnings: [
@@ -210,7 +210,7 @@ export const fmcsaRouter = router({
     }),
 
   /**
-   * Lookup by MC/MX number (brokers, for-hire carriers)
+   * Lookup by MC/MX number (brokers, for-hire catalysts)
    */
   lookupByMC: publicProcedure
     .input(z.object({ mcNumber: z.string().regex(/^\d{1,8}$/, "MC number must be 1-8 digits") }))
@@ -224,10 +224,10 @@ export const fmcsaRouter = router({
       if (cached) return cached;
 
       try {
-        const res = await fmcsaFetch(`/carriers/docket/${input.mcNumber}`);
-        const carriers = res?.content || [];
+        const res = await fmcsaFetch(`/catalysts/docket/${input.mcNumber}`);
+        const catalysts = res?.content || [];
         const result = {
-          results: carriers.slice(0, 10).map((c: any) => ({
+          results: catalysts.slice(0, 10).map((c: any) => ({
             dotNumber: String(c.dotNumber || ""),
             legalName: c.legalName || "",
             dbaName: c.dbaName || null,
@@ -253,10 +253,10 @@ export const fmcsaRouter = router({
       }
 
       try {
-        const res = await fmcsaFetch(`/carriers/name/${encodeURIComponent(input.name)}`);
-        const carriers = res?.content || [];
+        const res = await fmcsaFetch(`/catalysts/name/${encodeURIComponent(input.name)}`);
+        const catalysts = res?.content || [];
         return {
-          results: carriers.slice(0, 10).map((c: any) => ({
+          results: catalysts.slice(0, 10).map((c: any) => ({
             dotNumber: String(c.dotNumber || ""),
             legalName: c.legalName || "",
             dbaName: c.dbaName || null,

@@ -56,7 +56,7 @@ export const claimsRouter = router({
             status: c.status || 'reported',
             loadNumber: 'N/A',
             shipper: 'Shipper',
-            carrier: 'Carrier',
+            catalyst: 'Catalyst',
             amount: 0,
             filedDate: c.createdAt?.toISOString().split('T')[0] || '',
             description: c.description || '',
@@ -114,7 +114,7 @@ export const claimsRouter = router({
           status: incident.status || 'reported',
           load: { loadNumber: 'N/A', product: '', quantity: 0, unit: '', origin: '', destination: '', pickupDate: '', deliveryDate: '' },
           shipper: { id: '', name: '', contact: '', email: '', phone: '' },
-          carrier: { id: '', name: '', contact: '', email: '', phone: '' },
+          catalyst: { id: '', name: '', contact: '', email: '', phone: '' },
           driver: { id: '', name: '' },
           amount: 0,
           description: incident.description || '',
@@ -228,7 +228,7 @@ export const claimsRouter = router({
     }),
 
   /**
-   * Respond to claim (carrier)
+   * Respond to claim (catalyst)
    */
   respond: protectedProcedure
     .input(z.object({

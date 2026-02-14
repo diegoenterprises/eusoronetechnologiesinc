@@ -28,7 +28,7 @@ import { MultiTruckVisualization } from "@/components/TruckVisualization";
 import RouteMap from "@/components/RouteMap";
 import DatePicker from "@/components/DatePicker";
 
-const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Carrier Requirements", "Pricing", "Review"];
+const ALL_STEPS = ["Trailer Type", "Product Classification", "SPECTRA-MATCH Verification", "Quantity & Weight", "Origin & Destination", "Catalyst Requirements", "Pricing", "Review"];
 
 const TRAILER_TYPES = [
   { id: "liquid_tank", name: "Liquid Tank Trailer", desc: "MC-306/DOT-406 for petroleum, chemicals, liquid bulk", icon: "droplets", animType: "liquid" as const, hazmat: true, equipment: "tank", maxGal: 9500 },
@@ -153,7 +153,7 @@ export default function LoadCreationWizard() {
   // Agreement query for contract integration
   const agreementsQueryRaw = (trpc as any).agreements?.list?.useQuery?.(
     { status: "active" },
-    { enabled: !!(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") }
+    { enabled: !!(formData.assignmentType === "direct_catalyst" || formData.assignmentType === "broker") }
   ) ?? { data: null, isLoading: false };
   const agreementsList: any[] = Array.isArray(agreementsQueryRaw.data) ? agreementsQueryRaw.data : (agreementsQueryRaw.data?.agreements ?? []);
 
@@ -1004,7 +1004,7 @@ export default function LoadCreationWizard() {
             </div>
           )}
 
-          {/* STEP 5: Carrier Requirements */}
+          {/* STEP 5: Catalyst Requirements */}
           {rs === 5 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div><label className="text-sm text-slate-400 mb-1 block">Minimum Safety Score</label><Input type="number" value={formData.minSafetyScore || ""} onChange={(e: any) => updateField("minSafetyScore", e.target.value)} placeholder="e.g., 80" className="bg-slate-700/50 border-slate-600/50 rounded-lg" /></div>
@@ -1012,7 +1012,7 @@ export default function LoadCreationWizard() {
               {isHazmat && (
                 <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                   <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" /><span className="text-orange-400 text-sm font-medium">Hazmat load requires HM endorsement on CDL</span></div>
-                  <p className="text-slate-400 text-xs mt-1">Carrier must have active hazmat endorsement and appropriate insurance coverage.</p>
+                  <p className="text-slate-400 text-xs mt-1">Catalyst must have active hazmat endorsement and appropriate insurance coverage.</p>
                 </div>
               )}
 
@@ -1021,8 +1021,8 @@ export default function LoadCreationWizard() {
                 <label className="text-sm text-slate-400 mb-2 block">Assignment Type</label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {[
-                    { v: "open_market", label: "Open Market", desc: "Post to all carriers" },
-                    { v: "direct_carrier", label: "Direct Carrier", desc: "Assign to specific carrier" },
+                    { v: "open_market", label: "Open Market", desc: "Post to all catalysts" },
+                    { v: "direct_catalyst", label: "Direct Catalyst", desc: "Assign to specific catalyst" },
                     { v: "broker", label: "Via Broker", desc: "Let a broker coordinate" },
                     { v: "own_fleet", label: "Own Fleet", desc: "Use your own trucks" },
                   ].map(opt => (
@@ -1036,7 +1036,7 @@ export default function LoadCreationWizard() {
               </div>
 
               {/* Agreement/Contract Linking */}
-              {(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") && (
+              {(formData.assignmentType === "direct_catalyst" || formData.assignmentType === "broker") && (
                 <div className="p-4 rounded-xl bg-[#1473FF]/5 border border-[#1473FF]/20">
                   <div className="flex items-center gap-2 mb-2">
                     <Link2 className="w-4 h-4 text-[#1473FF]" />
@@ -1233,7 +1233,7 @@ export default function LoadCreationWizard() {
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                     <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Rate / Load</p><p className="text-white text-sm font-bold">${Number(formData.rate).toLocaleString()}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Carrier Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Catalyst Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
                     <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Platform Fee (8%)</p><p className="text-[#BE01FF] text-sm font-bold">${fleet.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                     <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                   </div>
@@ -1265,7 +1265,7 @@ export default function LoadCreationWizard() {
                       {formData.isWR && <div className="flex items-center gap-1 px-2 py-1 rounded bg-blue-500/20 border border-blue-500/30"><AlertTriangle className="w-3 h-3 text-blue-400" /><span className="text-blue-400 text-[10px] font-bold">WATER-REACTIVE</span></div>}
                     </div>
                   )}
-                  <p className="text-[10px] text-slate-500 mt-2">Visible to all users: carriers, drivers, brokers, compliance officers.</p>
+                  <p className="text-[10px] text-slate-500 mt-2">Visible to all users: catalysts, drivers, brokers, compliance officers.</p>
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
@@ -1296,7 +1296,7 @@ export default function LoadCreationWizard() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
                     <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-[#1473FF] text-xl font-bold">{fleet.totalLoads}</p></div>
                     <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Trucks</p><p className="text-[#BE01FF] text-xl font-bold">{fleet.trucksNeeded}</p></div>
-                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Carrier Payout</p><p className="text-white text-xl font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Catalyst Payout</p><p className="text-white text-xl font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
                     <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                   </div>
                   {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (

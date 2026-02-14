@@ -24,7 +24,7 @@ const addressSchema = z.object({
 });
 
 const insuranceSchema = z.object({
-  carrier: z.string(),
+  catalyst: z.string(),
   policyNumber: z.string(),
   coverage: z.string(),
   expiration: z.string(),
@@ -94,11 +94,11 @@ export const registrationRouter = router({
       phmsaExpiration: z.string().optional(),
       epaId: z.string().optional(),
       hazmatClasses: z.array(hazmatClassSchema),
-      generalLiabilityCarrier: z.string(),
+      generalLiabilityCatalyst: z.string(),
       generalLiabilityPolicy: z.string(),
       generalLiabilityCoverage: z.string(),
       generalLiabilityExpiration: z.string(),
-      pollutionLiabilityCarrier: z.string().optional(),
+      pollutionLiabilityCatalyst: z.string().optional(),
       pollutionLiabilityPolicy: z.string().optional(),
       pollutionLiabilityCoverage: z.string().optional(),
       pollutionLiabilityExpiration: z.string().optional(),
@@ -157,9 +157,9 @@ export const registrationRouter = router({
     }),
 
   /**
-   * Register a new Carrier
+   * Register a new Catalyst
    */
-  registerCarrier: auditedPublicProcedure
+  registerCatalyst: auditedPublicProcedure
     .input(z.object({
       companyName: z.string().min(2),
       dba: z.string().optional(),
@@ -185,11 +185,11 @@ export const registrationRouter = router({
       hazmatEndorsed: z.boolean().default(false),
       hazmatClasses: z.array(hazmatClassSchema).optional(),
       tankerEndorsed: z.boolean().default(false),
-      liabilityCarrier: z.string(),
+      liabilityCatalyst: z.string(),
       liabilityPolicy: z.string(),
       liabilityCoverage: z.string(),
       liabilityExpiration: z.string(),
-      cargoCarrier: z.string().optional(),
+      cargoCatalyst: z.string().optional(),
       cargoPolicy: z.string().optional(),
       cargoCoverage: z.string().optional(),
       cargoExpiration: z.string().optional(),
@@ -233,7 +233,7 @@ export const registrationRouter = router({
         email: input.contactEmail,
         phone: input.contactPhone,
         passwordHash,
-        role: "CARRIER",
+        role: "CATALYST",
         companyId: Number(companyResult[0]?.id),
         isVerified: false,
         isActive: true,
@@ -347,7 +347,7 @@ export const registrationRouter = router({
       state: z.string(),
       zipCode: z.string(),
       suretyBondAmount: z.number().min(75000).default(75000),
-      suretyBondCarrier: z.string(),
+      suretyBondCatalyst: z.string(),
       suretyBondNumber: z.string(),
       brokersHazmat: z.boolean().default(false),
       complianceIds: complianceIdsSchema,
@@ -390,9 +390,9 @@ export const registrationRouter = router({
     }),
 
   /**
-   * Register Catalyst (Dispatcher)
+   * Register Dispatch (Dispatcher)
    */
-  registerCatalyst: auditedPublicProcedure
+  registerDispatch: auditedPublicProcedure
     .input(z.object({
       firstName: z.string(),
       lastName: z.string(),
@@ -418,7 +418,7 @@ export const registrationRouter = router({
         email: input.email,
         phone: input.phone,
         passwordHash,
-        role: "CATALYST",
+        role: "DISPATCH",
         companyId: input.companyId || null,
         isVerified: false,
         isActive: true,
@@ -816,7 +816,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
     }
 
     const response = await fetch(
-      `https://mobile.fmcsa.dot.gov/qc/services/carriers/${usdotNumber}?webKey=${webKey}`,
+      `https://mobile.fmcsa.dot.gov/qc/services/catalysts/${usdotNumber}?webKey=${webKey}`,
       { headers: { Accept: "application/json" } }
     );
 
@@ -825,19 +825,19 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
     }
 
     const data = await response.json();
-    const carrier = data.content?.carrier;
+    const catalyst = data.content?.catalyst;
 
-    if (!carrier) {
+    if (!catalyst) {
       return { verified: false, error: "Invalid USDOT response" };
     }
 
     return {
       verified: true,
-      legalName: carrier.legalName,
-      operatingStatus: carrier.allowedToOperate === "Y" ? "Authorized" : "Not Authorized",
-      safetyRating: carrier.safetyRating || "Not Rated",
-      hazmatAuthorized: carrier.hazmatInd === "Y",
-      outOfService: carrier.oosDate ? true : false,
+      legalName: catalyst.legalName,
+      operatingStatus: catalyst.allowedToOperate === "Y" ? "Authorized" : "Not Authorized",
+      safetyRating: catalyst.safetyRating || "Not Rated",
+      hazmatAuthorized: catalyst.hazmatInd === "Y",
+      outOfService: catalyst.oosDate ? true : false,
     };
   } catch (error) {
     console.error("FMCSA verification error:", error);

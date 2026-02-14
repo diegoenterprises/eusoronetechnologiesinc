@@ -342,7 +342,7 @@ export default function TerminalDashboard() {
                           <p className="text-white font-bold">{appt.time}</p>
                         </div>
                         <div>
-                          <p className="text-white font-medium">{appt.carrierName}</p>
+                          <p className="text-white font-medium">{appt.catalystName}</p>
                           <p className="text-sm text-slate-400">{appt.truckNumber} - {appt.driverName}</p>
                           <p className="text-xs text-slate-500">{appt.product} | {(appt as any).weight || appt.quantity} gal | Rack {appt.rackNumber}</p>
                         </div>

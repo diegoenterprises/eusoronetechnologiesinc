@@ -218,7 +218,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
           { icon: <Beaker className="w-3.5 h-3.5" />, text: "Look up a fault code" },
           ...shared,
         ];
-      case "CARRIER":
+      case "CATALYST":
         return [
           { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
           { icon: <Beaker className="w-3.5 h-3.5" />, text: "Analyze a rate" },
@@ -227,7 +227,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
         ];
       case "BROKER":
         return [
-          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find carriers" },
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find catalysts" },
           { icon: <Beaker className="w-3.5 h-3.5" />, text: "Analyze lane rate" },
           { icon: <Shield className="w-3.5 h-3.5" />, text: "Market pricing" },
           ...shared,

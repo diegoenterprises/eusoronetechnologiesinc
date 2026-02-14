@@ -49,11 +49,11 @@ export const brokersRouter = router({
   getDashboardStats: protectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
-      if (!db) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCarrierRatio: 0 };
+      if (!db) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCatalystRatio: 0 };
 
       try {
         const userId = await resolveBrokerUserId(ctx.user);
-        if (!userId) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCarrierRatio: 0 };
+        if (!userId) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCatalystRatio: 0 };
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
         const [activeLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
@@ -66,11 +66,11 @@ export const brokersRouter = router({
           weeklyVolume: weeklyVolume?.count || 0,
           commissionEarned: Math.round((revenue?.total || 0) * 0.1),
           marginAverage: 10.2,
-          loadToCarrierRatio: 3.2,
+          loadToCatalystRatio: 3.2,
         };
       } catch (error) {
         console.error('[Brokers] getDashboardStats error:', error);
-        return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCarrierRatio: 0 };
+        return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCatalystRatio: 0 };
       }
     }),
 
@@ -80,11 +80,11 @@ export const brokersRouter = router({
   getDashboardSummary: protectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
-      if (!db) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCarrierRatio: 0 };
+      if (!db) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCatalystRatio: 0 };
 
       try {
         const userId = await resolveBrokerUserId(ctx.user);
-        if (!userId) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCarrierRatio: 0 };
+        if (!userId) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCatalystRatio: 0 };
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
         const [activeLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
@@ -97,11 +97,11 @@ export const brokersRouter = router({
           weeklyVolume: weeklyVolume?.count || 0,
           commissionEarned: Math.round((revenue?.total || 0) * 0.1),
           avgMargin: 10.2,
-          loadToCarrierRatio: 3.2,
+          loadToCatalystRatio: 3.2,
         };
       } catch (error) {
         console.error('[Brokers] getDashboardSummary error:', error);
-        return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCarrierRatio: 0 };
+        return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCatalystRatio: 0 };
       }
     }),
 
@@ -144,7 +144,7 @@ export const brokersRouter = router({
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
             status: l.status === 'posted' ? 'new' : l.status === 'bidding' ? 'matching' : 'matched',
             postedAt: l.createdAt?.toISOString() || '',
-            matchingCarriers: 0,
+            matchingCatalysts: 0,
           };
         }));
       } catch (error) {
@@ -160,16 +160,16 @@ export const brokersRouter = router({
     .input(z.object({ timeframe: z.string().optional().default("30d") }))
     .query(async ({ ctx }) => {
       const db = await getDb();
-      if (!db) return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCarriers: [], avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0, topLanes: [] };
+      if (!db) return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCatalysts: [], avgMarginDollars: 0, activeCatalysts: 0, newCatalysts: 0, topLanes: [] };
 
       try {
         const userId = await resolveBrokerUserId(ctx.user);
-        if (!userId) return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCarriers: [], avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0, topLanes: [] };
+        if (!userId) return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCatalysts: [], avgMarginDollars: 0, activeCatalysts: 0, newCatalysts: 0, topLanes: [] };
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
         const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
         const [revenue] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.shipperId, userId), gte(loads.createdAt, thirtyDaysAgo)));
-        const [activeCarriers] = await db.select({ count: sql<number>`count(DISTINCT carrierId)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`carrierId IS NOT NULL`));
+        const [activeCatalysts] = await db.select({ count: sql<number>`count(DISTINCT catalystId)` }).from(loads).where(and(eq(loads.shipperId, userId), sql`catalystId IS NOT NULL`));
 
         const totalRev = revenue?.total || 0;
         const commission = Math.round(totalRev * 0.1);
@@ -184,15 +184,15 @@ export const brokersRouter = router({
           commissionTrend: 0,
           loadsTrend: 0,
           revenueTrend: 0,
-          topCarriers: [],
+          topCatalysts: [],
           avgMarginDollars: totalLoads?.count ? Math.round(commission / totalLoads.count) : 0,
-          activeCarriers: activeCarriers?.count || 0,
-          newCarriers: 0,
+          activeCatalysts: activeCatalysts?.count || 0,
+          newCatalysts: 0,
           topLanes: [],
         };
       } catch (error) {
         console.error('[Brokers] getAnalytics error:', error);
-        return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCarriers: [], avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0, topLanes: [] };
+        return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCatalysts: [], avgMarginDollars: 0, activeCatalysts: 0, newCatalysts: 0, topLanes: [] };
       }
     }),
 
@@ -250,13 +250,13 @@ export const brokersRouter = router({
 
         return await Promise.all(loadList.map(async (l) => {
           const [shipper] = await db.select({ name: users.name }).from(users).where(eq(users.id, l.shipperId)).limit(1);
-          const [carrier] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, l.carrierId || 0)).limit(1);
+          const [catalyst] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, l.catalystId || 0)).limit(1);
           const rate = l.rate ? parseFloat(String(l.rate)) : 0;
           return {
             id: `com_${l.id}`,
             loadNumber: l.loadNumber,
             shipper: shipper?.name || 'Unknown',
-            carrier: carrier?.name || 'Unknown',
+            catalyst: catalyst?.name || 'Unknown',
             amount: Math.round(rate * 0.1),
             status: 'paid',
             date: l.actualDeliveryDate?.toISOString().split('T')[0] || l.deliveryDate?.toISOString().split('T')[0] || '',
@@ -316,15 +316,15 @@ export const brokersRouter = router({
     .input(z.object({ timeframe: z.string().optional().default("30d") }))
     .query(async () => {
       return {
-        matchRate: 0, avgTimeToMatch: "", carrierRetention: 0, disputeRate: 0,
+        matchRate: 0, avgTimeToMatch: "", catalystRetention: 0, disputeRate: 0,
         metrics: [],
       };
     }),
 
   /**
-   * Get carrier capacity board
+   * Get catalyst capacity board
    */
-  getCarrierCapacity: protectedProcedure
+  getCatalystCapacity: protectedProcedure
     .input(z.object({
       origin: z.string().optional(),
       search: z.string().optional(),
@@ -338,12 +338,12 @@ export const brokersRouter = router({
 
       try {
         const { vehicles } = await import('../../drizzle/schema');
-        const carrierList = await db.select().from(companies).where(eq(companies.isActive, true)).limit(input.limit || 20);
+        const catalystList = await db.select().from(companies).where(eq(companies.isActive, true)).limit(input.limit || 20);
 
-        return await Promise.all(carrierList.map(async (c) => {
+        return await Promise.all(catalystList.map(async (c) => {
           const [availableVehicles] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(and(eq(vehicles.companyId, c.id), eq(vehicles.status, 'available')));
           return {
-            carrierId: `car_${c.id}`,
+            catalystId: `car_${c.id}`,
             name: c.name,
             dotNumber: c.dotNumber || '',
             safetyScore: 0,
@@ -357,18 +357,18 @@ export const brokersRouter = router({
           };
         }));
       } catch (error) {
-        console.error('[Brokers] getCarrierCapacity error:', error);
+        console.error('[Brokers] getCatalystCapacity error:', error);
         return [];
       }
     }),
 
   /**
-   * Match load to carrier
+   * Match load to catalyst
    */
-  matchLoadToCarrier: protectedProcedure
+  matchLoadToCatalyst: protectedProcedure
     .input(z.object({
       loadId: z.string(),
-      carrierId: z.string().optional(),
+      catalystId: z.string().optional(),
       negotiatedRate: z.number().optional(),
       notes: z.string().optional(),
     }))
@@ -379,7 +379,7 @@ export const brokersRouter = router({
         success: true,
         matchId: `match_${Date.now()}`,
         loadId: input.loadId,
-        carrierId: input.carrierId,
+        catalystId: input.catalystId,
         rate: input.negotiatedRate,
         commission,
         matchedBy: ctx.user?.id,
@@ -388,13 +388,13 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Get carrier vetting checklist
+   * Get catalyst vetting checklist
    */
-  getCarrierVettingChecklist: protectedProcedure
-    .input(z.object({ carrierId: z.string() }))
+  getCatalystVettingChecklist: protectedProcedure
+    .input(z.object({ catalystId: z.string() }))
     .query(async ({ input }) => {
       return {
-        carrierId: input.carrierId,
+        catalystId: input.catalystId,
         overallStatus: "approved",
         checks: [
           { item: "Operating Authority", status: "passed", verified: true, verifiedAt: "2025-01-15" },
@@ -436,11 +436,11 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Send carrier inquiry
+   * Send catalyst inquiry
    */
-  sendCarrierInquiry: protectedProcedure
+  sendCatalystInquiry: protectedProcedure
     .input(z.object({
-      carrierId: z.string().optional(),
+      catalystId: z.string().optional(),
       loadId: z.string(),
       message: z.string(),
       requestedRate: z.number().optional(),
@@ -466,10 +466,10 @@ export const brokersRouter = router({
         loadsMatched: 52,
         avgMatchTime: 2.5,
         matchRate: 85,
-        carrierRetention: 78,
+        catalystRetention: 78,
         shipperSatisfaction: 4.6,
         topShippers: [],
-        topCarriers: [],
+        topCatalysts: [],
       };
     }),
 
@@ -544,15 +544,15 @@ export const brokersRouter = router({
   getMarketplaceStats: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        availableLoads: 0, availableCarriers: 0, avgMargin: 0,
+        availableLoads: 0, availableCatalysts: 0, avgMargin: 0,
         matchRate: 0, pendingMatches: 0, hotLanes: [],
       };
     }),
 
   /**
-   * Get carrier network for BrokerCarriers page
+   * Get catalyst network for BrokerCatalysts page
    */
-  getCarrierNetwork: protectedProcedure
+  getCatalystNetwork: protectedProcedure
     .input(z.object({
       search: z.string().optional(),
       status: z.string().optional(),
@@ -565,12 +565,12 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Get carrier statistics for BrokerCarriers page
+   * Get catalyst statistics for BrokerCatalysts page
    */
-  getCarrierStats: protectedProcedure
+  getCatalystStats: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        totalCarriers: 0, activeCarriers: 0, preferredCarriers: 0,
+        totalCatalysts: 0, activeCatalysts: 0, preferredCatalysts: 0,
         pendingVetting: 0, avgSafetyScore: 0, avgRating: 0,
       };
     }),
@@ -585,7 +585,7 @@ export const brokersRouter = router({
     .query(async ({ ctx, input }) => {
       return {
         totalCommission: 0, commissionTrend: 0, loadsBrokered: 0, loadsTrend: 0,
-        avgMarginPercent: 0, avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0,
+        avgMarginPercent: 0, avgMarginDollars: 0, activeCatalysts: 0, newCatalysts: 0,
         topLanes: [],
       };
     }),
@@ -604,18 +604,18 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Vet a new carrier
+   * Vet a new catalyst
    */
-  vetCarrier: protectedProcedure
+  vetCatalyst: protectedProcedure
     .input(z.object({
-      carrierId: z.string().optional(),
+      catalystId: z.string().optional(),
       mcNumber: z.string(),
       dotNumber: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
       return {
         success: true,
-        carrierId: input.carrierId,
+        catalystId: input.catalystId,
         vettingStatus: "in_progress",
         estimatedCompletion: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         startedAt: new Date().toISOString(),
@@ -624,29 +624,29 @@ export const brokersRouter = router({
     }),
 
   /**
-   * Update carrier tier
+   * Update catalyst tier
    */
-  updateCarrierTier: protectedProcedure
+  updateCatalystTier: protectedProcedure
     .input(z.object({
-      carrierId: z.string().optional(),
+      catalystId: z.string().optional(),
       tier: z.enum(["platinum", "gold", "silver", "bronze"]),
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       return {
         success: true,
-        carrierId: input.carrierId,
+        catalystId: input.catalystId,
         newTier: input.tier,
         updatedAt: new Date().toISOString(),
         updatedBy: ctx.user?.id,
       };
     }),
 
-  // Carrier vetting
+  // Catalyst vetting
   getPendingVetting: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
   getVettingStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
-  approveCarrier: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
-  rejectCarrier: protectedProcedure.input(z.object({ carrierId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
+  approveCatalyst: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
+  rejectCatalyst: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
 
   // Capacity & Commission
   getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 0, available: 0, booked: 0, verified: 0, avgRating: 0 })),
@@ -656,15 +656,15 @@ export const brokersRouter = router({
   shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => []),
 
   // Network Stats
-  getNetworkStats: protectedProcedure.query(async () => ({ totalCarriers: 0, activeCarriers: 0, preferredCarriers: 0, newThisMonth: 0, avgRating: 0, totalCapacity: 0 })),
+  getNetworkStats: protectedProcedure.query(async () => ({ totalCatalysts: 0, activeCatalysts: 0, preferredCatalysts: 0, newThisMonth: 0, avgRating: 0, totalCapacity: 0 })),
 
   // Onboarding
-  getOnboardingCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
+  getOnboardingCatalysts: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
   getOnboardingStats: protectedProcedure.query(async () => ({ pending: 0, inProgress: 0, completed: 0, rejected: 0, avgCompletionDays: 0 })),
-  sendOnboardingReminder: protectedProcedure.input(z.object({ carrierId: z.string() })).mutation(async ({ input }) => ({ success: true, carrierId: input.carrierId })),
+  sendOnboardingReminder: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
 
   // Prequalification
-  getPrequalificationCarriers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
+  getPrequalificationCatalysts: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => [
   ]),
   getPrequalificationStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, avgProcessingTime: "0 days", approvedToday: 0, rejectedToday: 0, totalVerified: 0, urgent: 0 })),
 

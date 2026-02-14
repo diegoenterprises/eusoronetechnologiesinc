@@ -1,6 +1,6 @@
 /**
  * INDUSTRY DIRECTORY PAGE
- * Directory of Oil & Gas companies, carriers, terminals, and fuel resellers
+ * Directory of Oil & Gas companies, catalysts, terminals, and fuel resellers
  */
 
 import React, { useState, useMemo } from "react";
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type CompanyType = "refinery" | "shipper" | "carrier" | "terminal" | "fuel_reseller" | "logistics" | "exploration";
+type CompanyType = "refinery" | "shipper" | "catalyst" | "terminal" | "fuel_reseller" | "logistics" | "exploration";
 type State = string;
 
 interface Company {
@@ -42,14 +42,14 @@ const STATE_NAMES: Record<string, string> = {
 };
 
 const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
-  refinery: "Refinery", shipper: "Shipper", carrier: "Carrier", terminal: "Terminal",
+  refinery: "Refinery", shipper: "Shipper", catalyst: "Catalyst", terminal: "Terminal",
   fuel_reseller: "Fuel Reseller", logistics: "Logistics", exploration: "Exploration",
 };
 
 const TYPE_ICONS: Record<CompanyType, React.ReactNode> = {
   refinery: <Factory className="w-4 h-4" />,
   shipper: <Package className="w-4 h-4" />,
-  carrier: <Truck className="w-4 h-4" />,
+  catalyst: <Truck className="w-4 h-4" />,
   terminal: <Warehouse className="w-4 h-4" />,
   fuel_reseller: <Fuel className="w-4 h-4" />,
   logistics: <Users className="w-4 h-4" />,
@@ -59,7 +59,7 @@ const TYPE_ICONS: Record<CompanyType, React.ReactNode> = {
 const TYPE_COLORS: Record<CompanyType, string> = {
   refinery: "bg-orange-500/20 text-orange-400",
   shipper: "bg-blue-500/20 text-blue-400",
-  carrier: "bg-green-500/20 text-green-400",
+  catalyst: "bg-green-500/20 text-green-400",
   terminal: "bg-purple-500/20 text-purple-400",
   fuel_reseller: "bg-yellow-500/20 text-yellow-400",
   logistics: "bg-cyan-500/20 text-cyan-400",
@@ -101,7 +101,7 @@ export default function IndustryDirectory() {
   const allCompanies: Company[] = (companiesQuery.data || []).map((c: any) => ({
     id: String(c.id),
     name: c.legalName || c.name || '',
-    type: (c.type || 'carrier') as CompanyType,
+    type: (c.type || 'catalyst') as CompanyType,
     state: c.state || '',
     city: c.city || '',
     phone: c.phone || '',
@@ -138,7 +138,7 @@ export default function IndustryDirectory() {
   const stats = {
     total: allCompanies.length,
     verified: allCompanies.filter(c => c.isVerified).length,
-    carriers: allCompanies.filter(c => c.type === "carrier").length,
+    catalysts: allCompanies.filter(c => c.type === "catalyst").length,
     refineries: allCompanies.filter(c => c.type === "refinery").length,
     states: Array.from(new Set(allCompanies.map(c => c.state))).length,
   };
@@ -149,7 +149,7 @@ export default function IndustryDirectory() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Industry Directory</h1>
-          <p className="text-slate-400">Oil & Gas companies, carriers, and terminals</p>
+          <p className="text-slate-400">Oil & Gas companies, catalysts, and terminals</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">
           <Building2 className="w-4 h-4 mr-2" />
@@ -185,8 +185,8 @@ export default function IndustryDirectory() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-slate-400">Carriers</p>
-                <p className="text-2xl font-bold text-purple-400">{stats.carriers}</p>
+                <p className="text-xs text-slate-400">Catalysts</p>
+                <p className="text-2xl font-bold text-purple-400">{stats.catalysts}</p>
               </div>
               <Truck className="w-8 h-8 text-purple-400 opacity-50" />
             </div>

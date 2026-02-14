@@ -165,7 +165,7 @@ export default function RackStatus() {
                         <span className="text-cyan-400">{rack.loadProgress}%</span>
                       </div>
                       <Progress value={rack.loadProgress} className="h-2" />
-                      <p className="text-xs text-slate-500">{rack.currentCarrier}</p>
+                      <p className="text-xs text-slate-500">{rack.currentCatalyst}</p>
                     </div>
                   )}
 

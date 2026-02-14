@@ -395,8 +395,8 @@ export interface BidPayload {
   bidId: string;
   loadId: string;
   loadNumber: string;
-  carrierId: string;
-  carrierName: string;
+  catalystId: string;
+  catalystName: string;
   amount: number;
   status: string;
   timestamp: string;
@@ -466,7 +466,7 @@ export interface GamificationPayload {
 }
 
 export interface CompliancePayload {
-  entityType: 'driver' | 'carrier' | 'vehicle';
+  entityType: 'driver' | 'catalyst' | 'vehicle';
   entityId: string;
   entityName: string;
   alertType: string;

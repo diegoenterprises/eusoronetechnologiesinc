@@ -46,12 +46,12 @@ interface BrokerFormData {
   // Step 4: Authority & Bond
   brokerAuthority: string;
   suretyBondAmount: string;
-  suretyBondCarrier: string;
+  suretyBondCatalyst: string;
   bondNumber: string;
   bondExpiration: string;
   
   // Step 5: Insurance
-  insuranceCarrier: string;
+  insuranceCatalyst: string;
   policyNumber: string;
   coverageAmount: string;
   expirationDate: string;
@@ -86,10 +86,10 @@ const initialFormData: BrokerFormData = {
   zipCode: "",
   brokerAuthority: "",
   suretyBondAmount: "75000",
-  suretyBondCarrier: "",
+  suretyBondCatalyst: "",
   bondNumber: "",
   bondExpiration: "",
-  insuranceCarrier: "",
+  insuranceCatalyst: "",
   policyNumber: "",
   coverageAmount: "",
   expirationDate: "",
@@ -174,7 +174,7 @@ export default function RegisterBroker() {
       state: formData.state,
       zipCode: formData.zipCode,
       suretyBondAmount: Number(formData.suretyBondAmount) || 75000,
-      suretyBondCarrier: formData.suretyBondCarrier,
+      suretyBondCatalyst: formData.suretyBondCatalyst,
       suretyBondNumber: formData.bondNumber,
       brokersHazmat: false,
       complianceIds: Object.fromEntries(
@@ -425,11 +425,11 @@ export default function RegisterBroker() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">
-                Surety Bond Carrier <span className="text-red-400">*</span>
+                Surety Bond Catalyst <span className="text-red-400">*</span>
               </Label>
               <Input
-                value={formData.suretyBondCarrier}
-                onChange={(e: any) => updateFormData({ suretyBondCarrier: e.target.value })}
+                value={formData.suretyBondCatalyst}
+                onChange={(e: any) => updateFormData({ suretyBondCatalyst: e.target.value })}
                 placeholder="ABC Surety Company"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -478,7 +478,7 @@ export default function RegisterBroker() {
         </div>
       ),
       validate: () => {
-        if (!formData.suretyBondCarrier || !formData.bondNumber || !formData.bondExpiration) {
+        if (!formData.suretyBondCatalyst || !formData.bondNumber || !formData.bondExpiration) {
           toast.error("Please fill in all bond information");
           return false;
         }
@@ -495,11 +495,11 @@ export default function RegisterBroker() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="text-slate-300">
-                Insurance Carrier <span className="text-red-400">*</span>
+                Insurance Catalyst <span className="text-red-400">*</span>
               </Label>
               <Input
-                value={formData.insuranceCarrier}
-                onChange={(e: any) => updateFormData({ insuranceCarrier: e.target.value })}
+                value={formData.insuranceCatalyst}
+                onChange={(e: any) => updateFormData({ insuranceCatalyst: e.target.value })}
                 placeholder="ABC Insurance Co"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -549,7 +549,7 @@ export default function RegisterBroker() {
         </div>
       ),
       validate: () => {
-        if (!formData.insuranceCarrier || !formData.policyNumber || !formData.coverageAmount) {
+        if (!formData.insuranceCatalyst || !formData.policyNumber || !formData.coverageAmount) {
           toast.error("Please fill in all insurance fields");
           return false;
         }

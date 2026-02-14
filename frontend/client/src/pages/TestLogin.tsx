@@ -33,8 +33,8 @@ const TEST_ROLES = [
     features: ["Create Loads", "Track Shipments", "Manage Payments", "View Analytics"],
   },
   {
-    role: "CARRIER",
-    name: "Carrier",
+    role: "CATALYST",
+    name: "Catalyst",
     description: "Manage fleet, assign drivers, bid on loads, track vehicles",
     icon: Truck,
     color: "bg-green-500",
@@ -43,7 +43,7 @@ const TEST_ROLES = [
   {
     role: "BROKER",
     name: "Broker",
-    description: "Connect shippers with carriers, manage load board, earn commissions",
+    description: "Connect shippers with catalysts, manage load board, earn commissions",
     icon: Users,
     color: "bg-purple-500",
     features: ["Load Matching", "Commission Tracking", "Market Analytics", "Relationship Management"],
@@ -57,8 +57,8 @@ const TEST_ROLES = [
     features: ["Accept Loads", "Route Navigation", "Status Updates", "Earnings Tracking"],
   },
   {
-    role: "CATALYST",
-    name: "Catalyst",
+    role: "DISPATCH",
+    name: "Dispatch",
     description: "Independent driver with advanced features, direct load access",
     icon: Flame,
     color: "bg-red-500",

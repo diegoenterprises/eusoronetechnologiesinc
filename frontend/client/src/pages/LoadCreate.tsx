@@ -338,7 +338,7 @@ export default function LoadCreatePage() {
                 <Info className="w-5 h-5 text-blue-400 mt-0.5" />
                 <div className="text-sm text-blue-300">
                   <p className="font-semibold mb-1">Pro Tip</p>
-                  <p>Accurate weight and volume specifications help carriers provide better bids and prevent delays.</p>
+                  <p>Accurate weight and volume specifications help catalysts provide better bids and prevent delays.</p>
                 </div>
               </div>
             </div>
@@ -536,7 +536,7 @@ export default function LoadCreatePage() {
                 <Info className="w-5 h-5 text-green-400 mt-0.5" />
                 <div className="text-sm text-green-300">
                   <p className="font-semibold mb-1">Pricing Recommendations</p>
-                  <p>Competitive rates attract more qualified carriers. Consider market rates for similar routes and cargo types.</p>
+                  <p>Competitive rates attract more qualified catalysts. Consider market rates for similar routes and cargo types.</p>
                 </div>
               </div>
             </div>

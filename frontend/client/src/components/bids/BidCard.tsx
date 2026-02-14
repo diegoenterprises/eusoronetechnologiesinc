@@ -1,7 +1,7 @@
 /**
  * BID CARD COMPONENT
- * Displays carrier bid on a load with actions
- * Based on Shipper & Carrier user journeys
+ * Displays catalyst bid on a load with actions
+ * Based on Shipper & Catalyst user journeys
  */
 
 import React from "react";
@@ -16,9 +16,9 @@ import { cn } from "@/lib/utils";
 
 export interface BidData {
   id: string;
-  carrierId: string;
-  carrierName: string;
-  carrierLogo?: string;
+  catalystId: string;
+  catalystName: string;
+  catalystLogo?: string;
   safetyRating: number;
   onTimeRate: number;
   totalLoads: number;
@@ -67,13 +67,13 @@ export function BidCard({
     )}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
-          {/* Carrier Info */}
+          {/* Catalyst Info */}
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-              {bid.carrierName.charAt(0)}
+              {bid.catalystName.charAt(0)}
             </div>
             <div>
-              <h4 className="font-semibold text-white">{bid.carrierName}</h4>
+              <h4 className="font-semibold text-white">{bid.catalystName}</h4>
               <div className="flex items-center gap-2 mt-1">
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (

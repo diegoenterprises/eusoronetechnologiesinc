@@ -36,7 +36,7 @@ interface Load {
   requiredCerts: string[];
   weight: number;
   commodity: string;
-  carrierRating?: number;
+  catalystRating?: number;
   bidsCount: number;
   myBid?: {
     amount: number;

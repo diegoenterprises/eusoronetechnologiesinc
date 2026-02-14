@@ -1,7 +1,7 @@
 /**
  * SHIPPER AGREEMENT WIZARD
  * Theme-aware | Brand gradient
- * Cross-referenced with carrier ContractSigning.tsx
+ * Cross-referenced with catalyst ContractSigning.tsx
  */
 import React, { useState, useRef } from "react";
 import { useWizardHistory } from "@/hooks/useWizardHistory";
@@ -26,19 +26,19 @@ type Mode = "generate"|"upload"|null;
 interface Lane { oC:string; oS:string; dC:string; dS:string; rate:string; rt:string; vol:string; vp:string; }
 
 const ROLE_AGREEMENT_MAP: Record<string, {types:{value:string;label:string}[]; defaultType:string; partyALabel:string; partyBLabel:string; partyBRole:string}> = {
-  SHIPPER: { types:[{value:"carrier_shipper",label:"Carrier-Shipper"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge Schedule"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"carrier_shipper", partyALabel:"Shipper", partyBLabel:"Carrier", partyBRole:"CARRIER" },
-  CARRIER: { types:[{value:"carrier_shipper",label:"Carrier-Shipper"},{value:"carrier_driver",label:"Carrier-Driver (Owner-Op)"},{value:"broker_carrier",label:"Broker-Carrier"},{value:"master_service",label:"Master Service Agreement"},{value:"factoring",label:"Factoring Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"carrier_shipper", partyALabel:"Carrier", partyBLabel:"Shipper / Driver", partyBRole:"SHIPPER" },
-  BROKER: { types:[{value:"broker_carrier",label:"Broker-Carrier"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"broker_carrier", partyALabel:"Broker", partyBLabel:"Carrier / Shipper", partyBRole:"CARRIER" },
-  CATALYST: { types:[{value:"catalyst_dispatch",label:"Dispatch Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"catalyst_dispatch", partyALabel:"Catalyst (Dispatcher)", partyBLabel:"Carrier", partyBRole:"CARRIER" },
-  ESCORT: { types:[{value:"escort_service",label:"Escort Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"escort_service", partyALabel:"Escort Provider", partyBLabel:"Carrier", partyBRole:"CARRIER" },
-  TERMINAL_MANAGER: { types:[{value:"terminal_access",label:"Terminal Access & Services"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"terminal_access", partyALabel:"Terminal Operator", partyBLabel:"Carrier / Shipper", partyBRole:"CARRIER" },
-  DRIVER: { types:[{value:"carrier_driver",label:"Carrier-Driver (Owner-Op)"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"carrier_driver", partyALabel:"Driver", partyBLabel:"Carrier", partyBRole:"CARRIER" },
-  ADMIN: { types:[{value:"carrier_shipper",label:"Carrier-Shipper"},{value:"broker_carrier",label:"Broker-Carrier"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"carrier_driver",label:"Carrier-Driver"},{value:"escort_service",label:"Escort Service"},{value:"catalyst_dispatch",label:"Dispatch Service"},{value:"terminal_access",label:"Terminal Access"},{value:"master_service",label:"Master Service"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"factoring",label:"Factoring"},{value:"nda",label:"NDA"},{value:"custom",label:"Custom"}], defaultType:"carrier_shipper", partyALabel:"Party A", partyBLabel:"Party B", partyBRole:"CARRIER" },
+  SHIPPER: { types:[{value:"catalyst_shipper",label:"Catalyst-Shipper"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge Schedule"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"catalyst_shipper", partyALabel:"Shipper", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
+  CATALYST: { types:[{value:"catalyst_shipper",label:"Catalyst-Shipper"},{value:"catalyst_driver",label:"Catalyst-Driver (Owner-Op)"},{value:"broker_catalyst",label:"Broker-Catalyst"},{value:"master_service",label:"Master Service Agreement"},{value:"factoring",label:"Factoring Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"catalyst_shipper", partyALabel:"Catalyst", partyBLabel:"Shipper / Driver", partyBRole:"SHIPPER" },
+  BROKER: { types:[{value:"broker_catalyst",label:"Broker-Catalyst"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"broker_catalyst", partyALabel:"Broker", partyBLabel:"Catalyst / Shipper", partyBRole:"CATALYST" },
+  DISPATCH: { types:[{value:"dispatch_dispatch",label:"Dispatch Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"dispatch_dispatch", partyALabel:"Dispatch (Dispatcher)", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
+  ESCORT: { types:[{value:"escort_service",label:"Escort Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"escort_service", partyALabel:"Escort Provider", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
+  TERMINAL_MANAGER: { types:[{value:"terminal_access",label:"Terminal Access & Services"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"terminal_access", partyALabel:"Terminal Operator", partyBLabel:"Catalyst / Shipper", partyBRole:"CATALYST" },
+  DRIVER: { types:[{value:"catalyst_driver",label:"Catalyst-Driver (Owner-Op)"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"catalyst_driver", partyALabel:"Driver", partyBLabel:"Catalyst", partyBRole:"CATALYST" },
+  ADMIN: { types:[{value:"catalyst_shipper",label:"Catalyst-Shipper"},{value:"broker_catalyst",label:"Broker-Catalyst"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"catalyst_driver",label:"Catalyst-Driver"},{value:"escort_service",label:"Escort Service"},{value:"dispatch_dispatch",label:"Dispatch Service"},{value:"terminal_access",label:"Terminal Access"},{value:"master_service",label:"Master Service"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"factoring",label:"Factoring"},{value:"nda",label:"NDA"},{value:"custom",label:"Custom"}], defaultType:"catalyst_shipper", partyALabel:"Party A", partyBLabel:"Party B", partyBRole:"CATALYST" },
 };
 ROLE_AGREEMENT_MAP.SUPER_ADMIN = ROLE_AGREEMENT_MAP.ADMIN;
-ROLE_AGREEMENT_MAP.COMPLIANCE_OFFICER = { types:[{value:"nda",label:"Non-Disclosure Agreement"},{value:"master_service",label:"Master Service Agreement"}], defaultType:"nda", partyALabel:"Company", partyBLabel:"Counterparty", partyBRole:"CARRIER" };
+ROLE_AGREEMENT_MAP.COMPLIANCE_OFFICER = { types:[{value:"nda",label:"Non-Disclosure Agreement"},{value:"master_service",label:"Master Service Agreement"}], defaultType:"nda", partyALabel:"Company", partyBLabel:"Counterparty", partyBRole:"CATALYST" };
 ROLE_AGREEMENT_MAP.SAFETY_MANAGER = ROLE_AGREEMENT_MAP.COMPLIANCE_OFFICER;
-ROLE_AGREEMENT_MAP.FACTORING = { types:[{value:"factoring",label:"Factoring Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"factoring", partyALabel:"Factoring Company", partyBLabel:"Carrier", partyBRole:"CARRIER" };
+ROLE_AGREEMENT_MAP.FACTORING = { types:[{value:"factoring",label:"Factoring Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"factoring", partyALabel:"Factoring Company", partyBLabel:"Catalyst", partyBRole:"CATALYST" };
 
 export default function ShipperAgreementWizard() {
   const { theme } = useTheme(); const isLight = theme === "light";
@@ -84,7 +84,7 @@ export default function ShipperAgreementWizard() {
     onError: (e:any) => toast.error("Failed", { description: e.message }),
   }) || { mutate:()=>{}, isPending:false };
   const signMut = (trpc as any).agreements?.sign?.useMutation?.({
-    onSuccess: (d:any) => { setStep("complete"); toast.success(d.fullyExecuted ? "Contract fully executed!" : "Signature recorded. Awaiting carrier."); },
+    onSuccess: (d:any) => { setStep("complete"); toast.success(d.fullyExecuted ? "Contract fully executed!" : "Signature recorded. Awaiting catalyst."); },
     onError: (e:any) => toast.error("Sign failed", { description: e.message }),
   }) || { mutate:()=>{}, isPending:false };
 
@@ -106,7 +106,7 @@ export default function ShipperAgreementWizard() {
 
   const doGen = () => {
     const ld = lanes.filter(l=>l.oC&&l.dC).map(l=>({ origin:{city:l.oC,state:l.oS,radius:50}, destination:{city:l.dC,state:l.dS,radius:50}, rate:parseFloat(l.rate)||0, rateType:l.rt||"flat", volumeCommitment:parseInt(l.vol)||undefined, volumePeriod:l.vp||undefined }));
-    const resolvedPartyBRole = agType==="carrier_driver"?"DRIVER":agType==="broker_shipper"?"SHIPPER":agType==="factoring"?"CARRIER":roleConfig.partyBRole;
+    const resolvedPartyBRole = agType==="catalyst_driver"?"DRIVER":agType==="broker_shipper"?"SHIPPER":agType==="factoring"?"CATALYST":roleConfig.partyBRole;
     genMut.mutate({ agreementType:agType, contractDuration:dur, partyBUserId:0, partyBRole:resolvedPartyBRole,
       strategicInputs:{ partyASignerName:aName||user?.name||roleConfig.partyALabel, partyACompanyName:aComp, partyAName:aDisplayName||aComp||aName||user?.name||roleConfig.partyALabel, partyAMc:aMc, partyADot:aDot, partyARole:user?.role||"SHIPPER", partyBSignerName:bName, partyBCompanyName:bComp, partyBName:bDisplayName||bComp||bName||"Party B", partyBCompany:bComp, partyBMc:bMc, partyBDot:bDot, partyBRole:resolvedPartyBRole, jurisdiction, payFrequency:payFreq, nonCircumventionMonths:nonCircumventMonths, terminationNoticeDays:terminationNoticeDays, noticePeriodDays:noticePeriodDays },
       rateType, baseRate:parseFloat(baseRate)||0, fuelSurchargeType:fuelType, fuelSurchargeValue:parseFloat(fuelVal)||undefined,
@@ -198,7 +198,7 @@ export default function ShipperAgreementWizard() {
             </div>
             {eqTypes.some(e=>["liquid_tank","gas_tank","hazmat_van","cryogenic"].includes(e))&&<label className={cn("flex items-center gap-3 p-3 rounded-xl cursor-pointer",cl)}>
               <input type="checkbox" checked={hazmat} onChange={e=>setHazmat(e.target.checked)} className="w-4 h-4 accent-[#1473FF]"/>
-              <div><p className={vl}>Hazmat Required</p><p className="text-xs text-slate-400">Carrier must have hazmat endorsement</p></div>
+              <div><p className={vl}>Hazmat Required</p><p className="text-xs text-slate-400">Catalyst must have hazmat endorsement</p></div>
             </label>}
           </CardContent></Card>
         <div className="flex gap-3">
@@ -292,7 +292,7 @@ export default function ShipperAgreementWizard() {
         </div>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("lanes")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
-          <Button variant="outline" className={cn("rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"draft",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CARRIER",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,payFrequency:payFreq,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat,lanes:lanes.filter(l=>l.oC&&l.dC)})}><Download className="w-4 h-4 mr-2"/>Download</Button>
+          <Button variant="outline" className={cn("rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"draft",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CATALYST",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,payFrequency:payFreq,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat,lanes:lanes.filter(l=>l.oC&&l.dC)})}><Download className="w-4 h-4 mr-2"/>Download</Button>
           <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setStep("sign")}>Proceed to Sign <ChevronRight className="w-5 h-5 ml-2"/></Button>
         </div>
       </div>)}
@@ -302,7 +302,7 @@ export default function ShipperAgreementWizard() {
           <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">Ready to Sign</Badge>
         </div>
         <Card className={cc}><CardContent className="p-5">
-          <GradientSignaturePad documentTitle="Carrier-Shipper Agreement" signerName={user?.name||user?.firstName||"Shipper Representative"} onSign={(d:string)=>setSigData(d)} onClear={()=>setSigData(null)} legalText="By electronically signing this document, I acknowledge and agree that my electronic signature holds the same legal validity as a handwritten signature, pursuant to the U.S. Electronic Signatures in Global and National Commerce Act (ESIGN Act, 15 U.S.C. ch. 96) and the Uniform Electronic Transactions Act (UETA)."/>
+          <GradientSignaturePad documentTitle="Catalyst-Shipper Agreement" signerName={user?.name||user?.firstName||"Shipper Representative"} onSign={(d:string)=>setSigData(d)} onClear={()=>setSigData(null)} legalText="By electronically signing this document, I acknowledge and agree that my electronic signature holds the same legal validity as a handwritten signature, pursuant to the U.S. Electronic Signatures in Global and National Commerce Act (ESIGN Act, 15 U.S.C. ch. 96) and the Uniform Electronic Transactions Act (UETA)."/>
         </CardContent></Card>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("review")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
@@ -313,7 +313,7 @@ export default function ShipperAgreementWizard() {
         <div className={cn("text-center py-12 rounded-2xl border",cc)}>
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/20 flex items-center justify-center"><CheckCircle className="w-10 h-10 text-green-500"/></div>
           <h2 className={cn("text-2xl font-bold mb-2",isLight?"text-slate-800":"text-white")}>Agreement Signed</h2>
-          <p className={cn("text-sm max-w-md mx-auto",mt)}>Your Gradient Ink signature has been recorded for agreement #{agNum}. Awaiting carrier counter-signature to fully execute.</p>
+          <p className={cn("text-sm max-w-md mx-auto",mt)}>Your Gradient Ink signature has been recorded for agreement #{agNum}. Awaiting catalyst counter-signature to fully execute.</p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <Badge className="bg-green-500/15 text-green-500 border border-green-500/30 text-xs font-bold"><Shield className="w-3 h-3 mr-1"/>ESIGN Act Compliant</Badge>
             <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold"><EsangIcon className="w-3 h-3 mr-1"/>Gradient Ink Verified</Badge>
@@ -321,7 +321,7 @@ export default function ShipperAgreementWizard() {
           <div className={cn("mx-auto mt-8 max-w-sm p-5 rounded-xl border text-left",cl)}>
             <div className="space-y-3">
               <div className="flex justify-between"><span className="text-xs text-slate-400">Agreement</span><span className={vl}>#{agNum}</span></div>
-              <div className="flex justify-between"><span className="text-xs text-slate-400">Carrier</span><span className={vl}>{bComp||bName||"TBD"}</span></div>
+              <div className="flex justify-between"><span className="text-xs text-slate-400">Catalyst</span><span className={vl}>{bComp||bName||"TBD"}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Rate</span><span className="font-bold text-sm bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(baseRate||"0").toLocaleString()}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Payment</span><span className={vl}>Net {payDays} · {payFreq.replace(/_/g," ")}</span></div>
               <div className="flex justify-between"><span className="text-xs text-slate-400">Status</span><Badge className="bg-yellow-500/15 text-yellow-500 border-yellow-500/30 border text-[10px]">Pending Counter-Signature</Badge></div>
@@ -329,7 +329,7 @@ export default function ShipperAgreementWizard() {
           </div>
           <div className="mt-8 flex justify-center gap-3">
             <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4 mr-2"/>Agreements</Button>
-            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"pending_signature",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CARRIER",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat})}><Download className="w-4 h-4 mr-2"/>Download PDF</Button>
+            <Button variant="outline" className={cn("rounded-xl font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>downloadAgreementPdf({agreementNumber:agNum,agreementType:agType,contractDuration:dur,status:"pending_signature",generatedContent:genContent,partyAName:user?.name||"Shipper",partyARole:user?.role||"SHIPPER",partyBName:bName,partyBCompany:bComp,partyBRole:"CATALYST",baseRate,rateType,paymentTermDays:parseInt(payDays)||30,fuelSurchargeType:fuelType,fuelSurchargeValue:fuelVal,minInsuranceAmount:insAmt,liabilityLimit:liab,cargoInsuranceRequired:cargo,effectiveDate:effDate,expirationDate:expDate,equipmentTypes:eqTypes,hazmatRequired:hazmat})}><Download className="w-4 h-4 mr-2"/>Download PDF</Button>
             <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={()=>setLocation("/documents")}><FileText className="w-4 h-4 mr-2"/>View Documents</Button>
           </div>
         </div>

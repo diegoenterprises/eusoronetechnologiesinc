@@ -115,7 +115,7 @@ export const MarginCalculatorWidget: React.FC = () => {
     refetchInterval: 60000,
   });
 
-  const calculation = marginData || { shipperRate: 0, carrierRate: 0, margin: 0, marginPercent: 0, avgMargin: 0 };
+  const calculation = marginData || { shipperRate: 0, catalystRate: 0, margin: 0, marginPercent: 0, avgMargin: 0 };
 
   return (
     <ResponsiveWidget>
@@ -144,8 +144,8 @@ export const MarginCalculatorWidget: React.FC = () => {
                     <span className="text-sm text-white">${calculation.shipperRate}</span>
                   </div>
                   <div className="flex justify-between p-2 rounded-lg bg-white/5">
-                    <span className="text-sm text-gray-400">Carrier Rate</span>
-                    <span className="text-sm text-white">${calculation.carrierRate}</span>
+                    <span className="text-sm text-gray-400">Catalyst Rate</span>
+                    <span className="text-sm text-white">${calculation.catalystRate}</span>
                   </div>
                   <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
                     <p className="text-xs text-blue-400">Avg margin: {calculation.avgMargin}%</p>
@@ -160,12 +160,12 @@ export const MarginCalculatorWidget: React.FC = () => {
   );
 };
 
-export const CarrierSourcingWidget: React.FC = () => {
-  const { data: carriersData, isLoading } = trpc.dashboard.getCarrierSourcing.useQuery(undefined, {
+export const CatalystSourcingWidget: React.FC = () => {
+  const { data: catalystsData, isLoading } = trpc.dashboard.getCatalystSourcing.useQuery(undefined, {
     refetchInterval: 120000,
   });
 
-  const carriers = carriersData || [];
+  const catalysts = catalystsData || [];
 
   return (
     <ResponsiveWidget>
@@ -180,12 +180,12 @@ export const CarrierSourcingWidget: React.FC = () => {
               <div className="flex items-center gap-2">
                 <input 
                   type="text" 
-                  placeholder="Search carriers..." 
+                  placeholder="Search catalysts..." 
                   className="flex-1 px-3 py-2 text-sm bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-500"
                 />
               </div>
               <div className="space-y-2">
-                {carriers.slice(0, isExpanded ? 4 : 2).map((c: any) => (
+                {catalysts.slice(0, isExpanded ? 4 : 2).map((c: any) => (
                   <div key={c.name} className="flex items-center gap-3 p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
                       <Truck className="w-4 h-4 text-white" />
@@ -682,7 +682,7 @@ export const LiveTrackingWidget: React.FC = () => {
 };
 
 // ============================================================================
-// CARRIER WIDGETS
+// CATALYST WIDGETS
 // ============================================================================
 
 export const FleetStatusWidget: React.FC = () => {
@@ -1199,7 +1199,7 @@ export const YardManagementWidget: React.FC = () => {
 };
 
 // ============================================================================
-// CATALYST & ESCORT WIDGETS
+// DISPATCH & ESCORT WIDGETS
 // ============================================================================
 
 export const EscortAssignmentsWidget: React.FC = () => {
@@ -1344,12 +1344,12 @@ export const ActiveEscortWidget: React.FC = () => {
   );
 };
 
-export const CarrierRatingsWidget: React.FC = () => {
-  const { data: carriersData, isLoading } = trpc.dashboard.getCarrierSourcing.useQuery(undefined, {
+export const CatalystRatingsWidget: React.FC = () => {
+  const { data: catalystsData, isLoading } = trpc.dashboard.getCatalystSourcing.useQuery(undefined, {
     refetchInterval: 300000,
   });
 
-  const carriers = carriersData || [];
+  const catalysts = catalystsData || [];
 
   return (
     <ResponsiveWidget>
@@ -1361,9 +1361,9 @@ export const CarrierRatingsWidget: React.FC = () => {
             </div>
           ) : (
             <>
-              <span className="text-sm text-gray-400">Top Carriers</span>
+              <span className="text-sm text-gray-400">Top Catalysts</span>
               <div className="space-y-2">
-                {carriers.slice(0, isExpanded ? 4 : 2).map((c: any) => (
+                {catalysts.slice(0, isExpanded ? 4 : 2).map((c: any) => (
                   <div key={c.name} className="flex items-center gap-3 p-2 rounded-lg bg-white/5">
                     <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
                     <div className="flex-1">
@@ -1706,7 +1706,7 @@ export const DockSchedulingWidget: React.FC = () => {
                     <div className={`w-2 h-8 rounded ${d.type === 'Inbound' ? 'bg-blue-400' : 'bg-green-400'}`} />
                     <div className="flex-1">
                       <p className="text-sm text-white">{d.id} - {d.time}</p>
-                      <p className="text-xs text-gray-500">{d.carrier}</p>
+                      <p className="text-xs text-gray-500">{d.catalyst}</p>
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded ${
                       d.type === 'Inbound' ? 'bg-blue-500/20 text-blue-400' : 'bg-green-500/20 text-green-400'
@@ -1871,9 +1871,9 @@ export const FreightQuotesWidget: React.FC = () => {
               <span className="text-sm text-gray-400">Freight Quotes</span>
               <div className="space-y-2">
                 {quotes.slice(0, isExpanded ? 3 : 2).map((q: any) => (
-                  <div key={q.carrier} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer">
+                  <div key={q.catalyst} className="flex items-center justify-between p-2 rounded-lg bg-white/5 hover:bg-white/10 cursor-pointer">
                     <div>
-                      <p className="text-sm text-white">{q.carrier}</p>
+                      <p className="text-sm text-white">{q.catalyst}</p>
                       <p className="text-xs text-gray-500">{q.transit} • {q.rating}</p>
                     </div>
                     <span className="text-lg font-bold text-green-400">${q.rate}</span>
@@ -2444,7 +2444,7 @@ export const BrokerDashboardWidget: React.FC = () => {
     weeklyVolume: 0,
     commissionEarned: 0,
     marginAverage: 0,
-    carrierCapacity: [],
+    catalystCapacity: [],
   };
 
   return (
@@ -2477,13 +2477,13 @@ export const BrokerDashboardWidget: React.FC = () => {
                   <p className="text-xs text-gray-400">Pending</p>
                 </div>
               </div>
-              {isExpanded && broker.carrierCapacity.length > 0 && (
+              {isExpanded && broker.catalystCapacity.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-400">Carrier Capacity</p>
-                  {broker.carrierCapacity.slice(0, 3).map((c: any, i: number) => (
+                  <p className="text-xs text-gray-400">Catalyst Capacity</p>
+                  {broker.catalystCapacity.slice(0, 3).map((c: any, i: number) => (
                     <div key={i} className="flex justify-between p-2 rounded-lg bg-white/5">
                       <div>
-                        <p className="text-xs text-white">{c.carrier}</p>
+                        <p className="text-xs text-white">{c.catalyst}</p>
                         <p className="text-xs text-gray-500">{c.location}</p>
                       </div>
                       <div className="text-right">

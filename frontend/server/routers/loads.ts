@@ -224,7 +224,7 @@ export const loadsRouter = router({
               </div>
               <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
                 <p>Your load <strong>${loadNumber}</strong> has been posted to the EusoTrip marketplace.</p>
-                <p>Carriers can now view and bid on your load.</p>
+                <p>Catalysts can now view and bid on your load.</p>
                 ${input?.productName ? `<p><strong>Product:</strong> ${input.productName}</p>` : ""}
                 ${input?.origin ? `<p><strong>Origin:</strong> ${input.origin}</p>` : ""}
                 ${input?.destination ? `<p><strong>Destination:</strong> ${input.destination}</p>` : ""}
@@ -266,7 +266,7 @@ export const loadsRouter = router({
         if (input.data.deliveryDate) updateSet.deliveryDate = new Date(input.data.deliveryDate);
         // Additional stops / multi-drop
         if (input.data.stops) updateSet.stops = input.data.stops;
-        // Dispatch notes for carrier coordination
+        // Dispatch notes for catalyst coordination
         if (input.data.dispatchNotes) updateSet.specialInstructions = [
           updateSet.specialInstructions || input.data.specialInstructions || "",
           `[DISPATCH UPDATE ${new Date().toISOString()}] ${input.data.dispatchNotes}`
@@ -401,7 +401,7 @@ export const loadsRouter = router({
         // Build tracking history from load lifecycle
         const history: { status: string; timestamp: string; location: string; notes?: string }[] = [];
         if (load.createdAt) history.push({ status: 'Load Created', timestamp: new Date(load.createdAt).toLocaleString(), location: 'System', notes: `Load ${load.loadNumber} posted` });
-        if (load.status !== 'posted' && load.status !== 'bidding') history.push({ status: 'Carrier Assigned', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: originStr });
+        if (load.status !== 'posted' && load.status !== 'bidding') history.push({ status: 'Catalyst Assigned', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: originStr });
         if (['loading', 'at_pickup', 'in_transit', 'at_delivery', 'unloading', 'delivered'].includes(load.status)) history.push({ status: 'Picked Up', timestamp: load.pickupDate ? new Date(load.pickupDate).toLocaleString() : 'N/A', location: originStr });
         if (['in_transit', 'at_delivery', 'unloading', 'delivered'].includes(load.status)) history.push({ status: 'In Transit', timestamp: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : 'N/A', location: current.city ? `${current.city}, ${current.state}` : 'En Route' });
         if (load.status === 'delivered') history.push({ status: 'Delivered', timestamp: (load as any).actualDeliveryDate ? new Date((load as any).actualDeliveryDate).toLocaleString() : 'N/A', location: destStr });
@@ -415,7 +415,7 @@ export const loadsRouter = router({
           destination: destStr,
           currentLocation: { city: current.city || '', state: current.state || '', lat: current.lat || 0, lng: current.lng || 0 },
           driver: 'Assigned Driver',
-          carrier: 'Assigned Carrier',
+          catalyst: 'Assigned Catalyst',
           eta: load.deliveryDate ? new Date(load.deliveryDate).toLocaleDateString() : 'TBD',
           progress,
           lastUpdate: load.updatedAt ? new Date(load.updatedAt).toLocaleString() : new Date().toLocaleString(),
@@ -459,8 +459,8 @@ export const loadsRouter = router({
         const role = ctx.user?.role || 'SHIPPER';
         if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
           // Admins see all
-        } else if (role === 'CARRIER' || role === 'CATALYST') {
-          filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.carrierId} = ${dbUserId})`);
+        } else if (role === 'CATALYST' || role === 'DISPATCH') {
+          filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.catalystId} = ${dbUserId})`);
         } else if (role === 'DRIVER' || role === 'ESCORT') {
           filters.push(sql`(${loads.driverId} = ${dbUserId} OR ${loads.shipperId} = ${dbUserId})`);
         } else {
@@ -499,11 +499,11 @@ export const loadsRouter = router({
 
       console.log(`[loads.list] Returned ${results.length} rows`);
 
-      // Batch-fetch shipper, carrier, driver profiles and company logos
+      // Batch-fetch shipper, catalyst, driver profiles and company logos
       const shipperIds = Array.from(new Set(results.map((r: any) => r.shipperId).filter(Boolean)));
-      const carrierIds = Array.from(new Set(results.map((r: any) => r.carrierId).filter(Boolean)));
+      const catalystIds = Array.from(new Set(results.map((r: any) => r.catalystId).filter(Boolean)));
       const driverIds = Array.from(new Set(results.map((r: any) => r.driverId).filter(Boolean)));
-      const allUserIds = Array.from(new Set([...shipperIds, ...carrierIds, ...driverIds]));
+      const allUserIds = Array.from(new Set([...shipperIds, ...catalystIds, ...driverIds]));
       const userMap = new Map<number, { name: string | null; profilePicture: string | null; companyId: number | null; phone: string | null }>();
       const companyMap = new Map<number, { name: string; logo: string | null }>();
 
@@ -537,14 +537,14 @@ export const loadsRouter = router({
         const pickup = row.pickupLocation as any || {};
         const delivery = row.deliveryLocation as any || {};
         const shipper = userMap.get(row.shipperId);
-        const carrier = row.carrierId ? userMap.get(row.carrierId) : null;
+        const catalyst = row.catalystId ? userMap.get(row.catalystId) : null;
         const driver = row.driverId ? userMap.get(row.driverId) : null;
         const company = shipper?.companyId ? companyMap.get(shipper.companyId) : null;
-        const carrierCompany = carrier?.companyId ? companyMap.get(carrier.companyId) : null;
+        const catalystCompany = catalyst?.companyId ? companyMap.get(catalyst.companyId) : null;
         return {
           ...row,
           id: String(row.id),
-          carrierId: row.carrierId ? row.carrierId : null,
+          catalystId: row.catalystId ? row.catalystId : null,
           driverId: row.driverId ? row.driverId : null,
           origin: { city: pickup.city || "", state: pickup.state || "", address: pickup.address || "" },
           destination: { city: delivery.city || "", state: delivery.state || "", address: delivery.address || "" },
@@ -558,8 +558,8 @@ export const loadsRouter = router({
           shipperProfilePicture: shipper?.profilePicture || null,
           companyName: company?.name || null,
           companyLogo: company?.logo || null,
-          carrierName: carrier?.name || null,
-          carrierCompanyName: carrierCompany?.name || null,
+          catalystName: catalyst?.name || null,
+          catalystCompanyName: catalystCompany?.name || null,
           driverName: driver?.name || null,
           driverPhone: driver?.phone || null,
           commodity: (row as any).commodityName || row.cargoType || 'General',
@@ -772,7 +772,7 @@ export const loadsRouter = router({
     const loadId = parseInt(input.loadId, 10);
     const userId = ctx.user?.id || 0;
 
-    // Get load details to check if carrier was assigned (TONU scenario)
+    // Get load details to check if catalyst was assigned (TONU scenario)
     const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
     if (!load) throw new Error("Load not found");
 
@@ -789,10 +789,10 @@ export const loadsRouter = router({
 
     let tonuFee = 0;
     let tonuApplied = false;
-    const carrierAssigned = load.carrierId && ["assigned", "en_route_pickup", "at_pickup"].includes(load.status);
+    const catalystAssigned = load.catalystId && ["assigned", "en_route_pickup", "at_pickup"].includes(load.status);
 
-    // TONU: If a carrier was assigned and load is being cancelled by shipper
-    if (carrierAssigned && !input.waiveTonus) {
+    // TONU: If a catalyst was assigned and load is being cancelled by shipper
+    if (catalystAssigned && !input.waiveTonus) {
       // Standard TONU fee: $250 or 25% of load rate, whichever is greater
       const loadRate = parseFloat(String(load.rate)) || 0;
       tonuFee = Math.max(250, loadRate * 0.25);
@@ -818,7 +818,7 @@ export const loadsRouter = router({
       tonuApplied,
       tonuFee,
       reason: input.reason,
-      carrierNotified: !!carrierAssigned,
+      catalystNotified: !!catalystAssigned,
     };
   }),
 
@@ -910,12 +910,12 @@ export const bidsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const carrierId = await resolveUserId(ctx.user);
-      if (!carrierId) throw new Error("Could not resolve user");
+      const catalystId = await resolveUserId(ctx.user);
+      if (!catalystId) throw new Error("Could not resolve user");
 
       const result = await db.insert(bids).values({
         loadId: input.loadId,
-        carrierId,
+        catalystId,
         amount: input.amount.toString(),
         notes: input.notes,
         status: "pending",
@@ -931,8 +931,8 @@ export const bidsRouter = router({
         bidId: String(bidId),
         loadId: String(input.loadId),
         loadNumber: load?.loadNumber || '',
-        carrierId: String(carrierId),
-        carrierName: ctx.user.name || 'Carrier',
+        catalystId: String(catalystId),
+        catalystName: ctx.user.name || 'Catalyst',
         amount: input.amount,
         status: 'pending',
         timestamp: new Date().toISOString(),
@@ -965,11 +965,11 @@ export const bidsRouter = router({
                   </div>
                   <div style="background:#f9f9f9;padding:30px;border-radius:0 0 8px 8px">
                     <p>Hello ${shipper.name || "Shipper"},</p>
-                    <p>A carrier has submitted a bid on your load:</p>
+                    <p>A catalyst has submitted a bid on your load:</p>
                     <table style="width:100%;border-collapse:collapse;margin:15px 0">
                       <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Load</td><td style="padding:8px;border-bottom:1px solid #ddd;font-weight:bold">${load.loadNumber}</td></tr>
                       <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Bid Amount</td><td style="padding:8px;border-bottom:1px solid #ddd;font-weight:bold;color:#10b981">$${input.amount.toLocaleString()}</td></tr>
-                      <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Carrier</td><td style="padding:8px;border-bottom:1px solid #ddd">${ctx.user.name || "Carrier"}</td></tr>
+                      <tr><td style="padding:8px;border-bottom:1px solid #ddd;color:#666">Catalyst</td><td style="padding:8px;border-bottom:1px solid #ddd">${ctx.user.name || "Catalyst"}</td></tr>
                     </table>
                     <p style="text-align:center;margin-top:20px">
                       <a href="https://eusotrip.com/loads/${input.loadId}/bids" style="display:inline-block;background:#3b82f6;color:white;padding:12px 30px;text-decoration:none;border-radius:6px">Review Bids</a>
@@ -985,8 +985,8 @@ export const bidsRouter = router({
       }
 
       // Fire gamification event for bid submission
-      fireGamificationEvent({ userId: carrierId, type: "bid_submitted", value: 1 });
-      fireGamificationEvent({ userId: carrierId, type: "platform_action", value: 1 });
+      fireGamificationEvent({ userId: catalystId, type: "bid_submitted", value: 1 });
+      fireGamificationEvent({ userId: catalystId, type: "platform_action", value: 1 });
 
       return { success: true, bidId };
     }),
@@ -1003,7 +1003,7 @@ export const bidsRouter = router({
     const results = await db
       .select()
       .from(bids)
-      .where(eq(bids.carrierId, userId))
+      .where(eq(bids.catalystId, userId))
       .orderBy(desc(bids.createdAt));
 
     return results;
@@ -1063,8 +1063,8 @@ export const bidsRouter = router({
             bidId: String(input.bidId),
             loadId: String(bid.loadId),
             loadNumber: load?.loadNumber || '',
-            carrierId: String(bid.carrierId),
-            carrierName: 'Carrier',
+            catalystId: String(bid.catalystId),
+            catalystName: 'Catalyst',
             amount: Number(bid.amount),
             status: 'accepted',
             timestamp: new Date().toISOString(),
@@ -1073,7 +1073,7 @@ export const bidsRouter = router({
           // Update load status to assigned
           await db.update(loads).set({ 
             status: 'assigned', 
-            carrierId: bid.carrierId 
+            catalystId: bid.catalystId 
           }).where(eq(loads.id, bid.loadId));
 
           emitLoadStatusChange({
@@ -1084,8 +1084,8 @@ export const bidsRouter = router({
             timestamp: new Date().toISOString(),
           });
 
-          // Notify carrier
-          emitNotification(String(bid.carrierId), {
+          // Notify catalyst
+          emitNotification(String(bid.catalystId), {
             id: `notif_${Date.now()}`,
             type: 'bid_accepted',
             title: 'Bid Accepted!',
@@ -1117,7 +1117,7 @@ export const bidsRouter = router({
         .where(eq(bids.id, input.bidId))
         .limit(1);
 
-      if (bid.length === 0 || bid[0].carrierId !== userId) {
+      if (bid.length === 0 || bid[0].catalystId !== userId) {
         throw new Error("Cannot withdraw this bid");
       }
       if (bid[0].status !== 'pending') throw new Error("Only pending bids can be withdrawn");
@@ -1161,11 +1161,11 @@ export const bidsRouter = router({
       weight: load?.weight ? parseFloat(String(load.weight)) : 0,
       equipment: load?.cargoType || 'general',
       equipmentType: load?.cargoType || 'general',
-      carrierName: 'Carrier',
+      catalystName: 'Catalyst',
       mcNumber: '',
       notes: bid.notes || '',
-      carrierRating: 4.5,
-      carrierLoads: 0,
+      catalystRating: 4.5,
+      catalystLoads: 0,
       onTimeRate: 95,
       safetyScore: 90,
       history: [{ action: 'submitted', timestamp: bid.createdAt?.toISOString() || '', note: 'Bid submitted' }],
@@ -1179,15 +1179,15 @@ export const bidsRouter = router({
     const loadId = parseInt(input.loadId, 10);
     const results = await db.select().from(bids).where(eq(bids.loadId, loadId)).orderBy(desc(bids.createdAt));
     
-    // Batch-fetch carrier user info
-    const carrierIds = Array.from(new Set(results.map(b => b.carrierId).filter(Boolean)));
-    const carrierMap = new Map<number, { name: string | null; companyId: number | null }>();
+    // Batch-fetch catalyst user info
+    const catalystIds = Array.from(new Set(results.map(b => b.catalystId).filter(Boolean)));
+    const catalystMap = new Map<number, { name: string | null; companyId: number | null }>();
     const companyMap = new Map<number, { name: string; logo: string | null }>();
-    if (carrierIds.length > 0) {
+    if (catalystIds.length > 0) {
       try {
-        const carrierRows = await db.select({ id: users.id, name: users.name, companyId: users.companyId }).from(users).where(inArray(users.id, carrierIds));
-        for (const c of carrierRows) carrierMap.set(c.id, { name: c.name, companyId: c.companyId });
-        const compIds = Array.from(new Set(carrierRows.filter(c => c.companyId).map(c => c.companyId!)));
+        const catalystRows = await db.select({ id: users.id, name: users.name, companyId: users.companyId }).from(users).where(inArray(users.id, catalystIds));
+        for (const c of catalystRows) catalystMap.set(c.id, { name: c.name, companyId: c.companyId });
+        const compIds = Array.from(new Set(catalystRows.filter(c => c.companyId).map(c => c.companyId!)));
         if (compIds.length > 0) {
           const compRows = await db.select({ id: companies.id, name: companies.name, logo: companies.logo }).from(companies).where(inArray(companies.id, compIds));
           for (const c of compRows) companyMap.set(c.id, { name: c.name, logo: c.logo });
@@ -1198,21 +1198,21 @@ export const bidsRouter = router({
     const dist = load?.distance ? parseFloat(String(load.distance)) : 0;
     
     return results.map(b => {
-      const carrier = carrierMap.get(b.carrierId);
-      const company = carrier?.companyId ? companyMap.get(carrier.companyId) : null;
+      const catalyst = catalystMap.get(b.catalystId);
+      const company = catalyst?.companyId ? companyMap.get(catalyst.companyId) : null;
       const amt = b.amount ? parseFloat(String(b.amount)) : 0;
       return {
         id: String(b.id),
-        carrierId: String(b.carrierId),
-        carrierName: carrier?.name || 'Unknown Carrier',
+        catalystId: String(b.catalystId),
+        catalystName: catalyst?.name || 'Unknown Catalyst',
         companyName: company?.name || null,
         companyLogo: company?.logo || null,
         amount: amt,
         status: b.status,
         notes: b.notes || '',
         submittedAt: b.createdAt?.toISOString() || '',
-        carrierRating: 4.5,
-        carrierMC: '',
+        catalystRating: 4.5,
+        catalystMC: '',
         ratePerMile: dist > 0 ? Math.round((amt / dist) * 100) / 100 : 0,
       };
     });
@@ -1227,7 +1227,7 @@ export const bidsRouter = router({
     const results = await db
       .select()
       .from(bids)
-      .where(eq(bids.carrierId, userId))
+      .where(eq(bids.catalystId, userId))
       .orderBy(desc(bids.createdAt))
       .limit(input?.limit || 20);
     
@@ -1251,11 +1251,11 @@ export const bidsRouter = router({
     const userId = await resolveUserId(ctx.user);
     if (!userId) return { total: 0, accepted: 0, rejected: 0, pending: 0, winRate: 0, totalBids: 0, totalValue: 0 };
     
-    const [total] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.carrierId, userId));
-    const [accepted] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'accepted')));
-    const [rejected] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'rejected')));
-    const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'pending')));
-    const [totalValue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` }).from(bids).where(eq(bids.carrierId, userId));
+    const [total] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.catalystId, userId));
+    const [accepted] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.catalystId, userId), eq(bids.status, 'accepted')));
+    const [rejected] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.catalystId, userId), eq(bids.status, 'rejected')));
+    const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.catalystId, userId), eq(bids.status, 'pending')));
+    const [totalValue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` }).from(bids).where(eq(bids.catalystId, userId));
     
     const totalCount = total?.count || 0;
     const acceptedCount = accepted?.count || 0;
@@ -1280,12 +1280,12 @@ export const bidsRouter = router({
       const loadIdNum = parseInt(input.loadId, 10);
       if (!loadIdNum) throw new Error("Invalid load ID");
 
-      const carrierId = await resolveUserId(ctx.user);
-      if (!carrierId) throw new Error("Could not resolve user");
+      const catalystId = await resolveUserId(ctx.user);
+      if (!catalystId) throw new Error("Could not resolve user");
 
       const result = await db.insert(bids).values({
         loadId: loadIdNum,
-        carrierId,
+        catalystId,
         amount: input.amount.toString(),
         notes: input.notes || '',
         status: 'pending',
@@ -1298,16 +1298,16 @@ export const bidsRouter = router({
         bidId: String(bidId),
         loadId: input.loadId,
         loadNumber: load?.loadNumber || '',
-        carrierId: String(carrierId),
-        carrierName: ctx.user.name || 'Carrier',
+        catalystId: String(catalystId),
+        catalystName: ctx.user.name || 'Catalyst',
         amount: input.amount,
         status: 'pending',
         timestamp: new Date().toISOString(),
       });
 
       // Fire gamification event for bid submission
-      fireGamificationEvent({ userId: carrierId, type: "bid_submitted", value: 1 });
-      fireGamificationEvent({ userId: carrierId, type: "platform_action", value: 1 });
+      fireGamificationEvent({ userId: catalystId, type: "bid_submitted", value: 1 });
+      fireGamificationEvent({ userId: catalystId, type: "platform_action", value: 1 });
 
       return { success: true, bidId: String(bidId) };
     }),
@@ -1323,12 +1323,12 @@ export const bidsRouter = router({
     await db.update(bids).set({ status: 'accepted' } as any).where(eq(bids.id, bidIdNum));
     // Reject all other pending bids on this load
     await db.update(bids).set({ status: 'rejected' } as any).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
-    // Assign carrier to load
-    await db.update(loads).set({ status: 'assigned', carrierId: bid.carrierId } as any).where(eq(loads.id, bid.loadId));
-    emitBidAwarded({ bidId: input.bidId, loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', carrierId: String(bid.carrierId), carrierName: 'Carrier', amount: Number(bid.amount), status: 'accepted', timestamp: new Date().toISOString() });
+    // Assign catalyst to load
+    await db.update(loads).set({ status: 'assigned', catalystId: bid.catalystId } as any).where(eq(loads.id, bid.loadId));
+    emitBidAwarded({ bidId: input.bidId, loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', catalystId: String(bid.catalystId), catalystName: 'Catalyst', amount: Number(bid.amount), status: 'accepted', timestamp: new Date().toISOString() });
     emitLoadStatusChange({ loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', previousStatus: load?.status || '', newStatus: 'assigned', timestamp: new Date().toISOString() });
-    emitNotification(String(bid.carrierId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
-    fireGamificationEvent({ userId: bid.carrierId, type: "bid_accepted", value: 1 });
+    emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
+    fireGamificationEvent({ userId: bid.catalystId, type: "bid_accepted", value: 1 });
     return { success: true, bidId: input.bidId };
   }),
   reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
@@ -1341,7 +1341,7 @@ export const bidsRouter = router({
     const userId = await resolveUserId(ctx.user);
     if (load && load.shipperId !== userId) throw new Error("Only the load owner can reject bids");
     await db.update(bids).set({ status: 'rejected' } as any).where(eq(bids.id, bidIdNum));
-    emitNotification(String(bid.carrierId), { id: `notif_${Date.now()}`, type: 'bid_rejected', title: 'Bid Declined', message: `Your bid for load ${load?.loadNumber} was declined${input.reason ? ': ' + input.reason : ''}`, priority: 'medium', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/bids`, timestamp: new Date().toISOString() });
+    emitNotification(String(bid.catalystId), { id: `notif_${Date.now()}`, type: 'bid_rejected', title: 'Bid Declined', message: `Your bid for load ${load?.loadNumber} was declined${input.reason ? ': ' + input.reason : ''}`, priority: 'medium', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/bids`, timestamp: new Date().toISOString() });
     return { success: true, bidId: input.bidId };
   }),
 
@@ -1352,7 +1352,7 @@ export const bidsRouter = router({
     const bidIdNum = parseInt(input.bidId, 10);
     const [bid] = await db.select().from(bids).where(eq(bids.id, bidIdNum)).limit(1);
     if (!bid) throw new Error("Bid not found");
-    if (bid.carrierId !== userId) throw new Error("You can only cancel your own bids");
+    if (bid.catalystId !== userId) throw new Error("You can only cancel your own bids");
     if (bid.status !== 'pending') throw new Error("Only pending bids can be cancelled");
     await db.update(bids).set({ status: 'withdrawn' } as any).where(eq(bids.id, bidIdNum));
     return { success: true, bidId: input.bidId };
@@ -1368,13 +1368,13 @@ export const bidsRouter = router({
     if (myLoads.length === 0) return [];
     const loadIds = myLoads.map(l => l.id);
     const allBids = await db.select().from(bids).where(inArray(bids.loadId, loadIds)).orderBy(desc(bids.createdAt));
-    // Fetch carrier info
-    const carrierIds = Array.from(new Set(allBids.map(b => b.carrierId).filter(Boolean)));
-    const carrierMap = new Map<number, { name: string | null; companyId: number | null }>();
-    if (carrierIds.length > 0) {
+    // Fetch catalyst info
+    const catalystIds = Array.from(new Set(allBids.map(b => b.catalystId).filter(Boolean)));
+    const catalystMap = new Map<number, { name: string | null; companyId: number | null }>();
+    if (catalystIds.length > 0) {
       try {
-        const rows = await db.select({ id: users.id, name: users.name, companyId: users.companyId }).from(users).where(inArray(users.id, carrierIds));
-        for (const r of rows) carrierMap.set(r.id, { name: r.name, companyId: r.companyId });
+        const rows = await db.select({ id: users.id, name: users.name, companyId: users.companyId }).from(users).where(inArray(users.id, catalystIds));
+        for (const r of rows) catalystMap.set(r.id, { name: r.name, companyId: r.companyId });
       } catch {}
     }
     // Group bids by load
@@ -1392,11 +1392,11 @@ export const bidsRouter = router({
         bidCount: loadBids.length,
         pendingBids: loadBids.filter(b => b.status === 'pending').length,
         bids: loadBids.map(b => {
-          const carrier = carrierMap.get(b.carrierId);
+          const catalyst = catalystMap.get(b.catalystId);
           return {
             id: String(b.id),
-            carrierId: String(b.carrierId),
-            carrierName: carrier?.name || 'Unknown Carrier',
+            catalystId: String(b.catalystId),
+            catalystName: catalyst?.name || 'Unknown Catalyst',
             amount: b.amount ? parseFloat(String(b.amount)) : 0,
             status: b.status,
             notes: b.notes || '',
@@ -1421,11 +1421,11 @@ export const bidsRouter = router({
     if (!load) throw new Error("Load not found");
     const userId = await resolveUserId(ctx.user);
     const role = ctx.user?.role || 'SHIPPER';
-    // Auth: shipper can cancel, carrier/driver/catalyst can update transit statuses
+    // Auth: shipper can cancel, catalyst/driver/dispatch can update transit statuses
     const isOwner = load.shipperId === userId;
-    const isCarrier = load.carrierId === userId;
+    const isCatalyst = load.catalystId === userId;
     const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
-    if (!isOwner && !isCarrier && !isAdmin) throw new Error("Not authorized to update this load");
+    if (!isOwner && !isCatalyst && !isAdmin) throw new Error("Not authorized to update this load");
     const updateSet: Record<string, any> = { status: input.status, updatedAt: new Date() };
     if (input.lat && input.lng) updateSet.currentLocation = { lat: input.lat, lng: input.lng };
     if (input.status === 'delivered') updateSet.actualDeliveryDate = new Date();
@@ -1445,7 +1445,7 @@ export const bidsRouter = router({
 
   /**
    * Get marketplace loads for Marketplace page
-   * Returns all posted/bidding loads for carriers to browse and bid on
+   * Returns all posted/bidding loads for catalysts to browse and bid on
    */
   getMarketplaceLoads: protectedProcedure
     .input(z.object({
@@ -1648,10 +1648,10 @@ export const bidsRouter = router({
       await db.update(bids).set({ status: "accepted" } as any).where(eq(bids.id, winner.id));
       await db.update(bids).set({ status: "rejected" } as any)
         .where(and(eq(bids.loadId, input.loadId), eq(bids.status, "pending")));
-      await db.update(loads).set({ status: "assigned", carrierId: winner.carrierId } as any).where(eq(loads.id, input.loadId));
-      emitBidAwarded({ bidId: String(winner.id), loadId: String(input.loadId), carrierId: String(winner.carrierId), carrierName: "Carrier", amount: Number(winner.amount) || 0, status: "accepted", loadNumber: load.loadNumber || "", timestamp: new Date().toISOString() });
+      await db.update(loads).set({ status: "assigned", catalystId: winner.catalystId } as any).where(eq(loads.id, input.loadId));
+      emitBidAwarded({ bidId: String(winner.id), loadId: String(input.loadId), catalystId: String(winner.catalystId), catalystName: "Catalyst", amount: Number(winner.amount) || 0, status: "accepted", loadNumber: load.loadNumber || "", timestamp: new Date().toISOString() });
       emitLoadStatusChange({ loadId: String(input.loadId), loadNumber: load.loadNumber || "", previousStatus: load.status, newStatus: "assigned", timestamp: new Date().toISOString(), updatedBy: String(userId) });
-      return { success: true, winnerId: winner.id, winnerCarrierId: winner.carrierId, amount: winner.amount };
+      return { success: true, winnerId: winner.id, winnerCatalystId: winner.catalystId, amount: winner.amount };
     }),
 
   /**
@@ -1669,12 +1669,12 @@ export const bidsRouter = router({
       if (!db) throw new Error("Database not available");
 
       try {
-        const carrierId = await resolveUserId(ctx.user);
-        if (!carrierId) throw new Error("Could not resolve user");
+        const catalystId = await resolveUserId(ctx.user);
+        if (!catalystId) throw new Error("Could not resolve user");
 
         await db.insert(bids).values({
           loadId: input.loadId,
-          carrierId,
+          catalystId,
           amount: input.amount.toString(),
           status: 'pending',
           notes: input.message || '',

@@ -37,11 +37,11 @@ const testUsers = [
     isVerified: true,
   },
   {
-    openId: "test_carrier_001",
+    openId: "test_catalyst_001",
     name: "Mike Johnson",
     email: "mike.johnson@swiftlogistics.com",
     phone: "+1-214-555-0102",
-    role: "CARRIER" as const,
+    role: "CATALYST" as const,
     isActive: true,
     isVerified: true,
   },
@@ -64,11 +64,11 @@ const testUsers = [
     isVerified: true,
   },
   {
-    openId: "test_catalyst_001",
+    openId: "test_dispatch_001",
     name: "David Thompson",
-    email: "david.thompson@catalyst.com",
+    email: "david.thompson@dispatch.com",
     phone: "+1-281-555-0105",
-    role: "CATALYST" as const,
+    role: "DISPATCH" as const,
     isActive: true,
     isVerified: true,
   },
@@ -139,10 +139,10 @@ for (const user of testUsers) {
 console.log("\n✅ Seed process complete!\n");
 console.log("📝 Test Users Created:");
 console.log("   - Shipper: sarah.martinez@petrochemical.com");
-console.log("   - Carrier: mike.johnson@swiftlogistics.com");
+console.log("   - Catalyst: mike.johnson@swiftlogistics.com");
 console.log("   - Broker: jennifer.chen@globalbrokers.com");
 console.log("   - Driver: carlos.rodriguez@driver.com");
-console.log("   - Catalyst: david.thompson@catalyst.com");
+console.log("   - Dispatch: david.thompson@dispatch.com");
 console.log("   - Escort: amanda.williams@escort.com");
 console.log("   - Terminal Manager: robert.davis@terminal.com");
 console.log("   - Compliance Officer: lisa.anderson@compliance.com");

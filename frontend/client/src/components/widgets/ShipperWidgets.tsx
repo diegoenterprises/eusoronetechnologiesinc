@@ -29,8 +29,8 @@ export const DeliveryTimelineWidget: React.FC = () => {
   );
 };
 
-export const CarrierNetworkWidget: React.FC = () => {
-  const { data, isLoading } = (trpc as any).dashboard.getCarrierNetwork.useQuery(undefined, { refetchInterval: 300000 });
+export const CatalystNetworkWidget: React.FC = () => {
+  const { data, isLoading } = (trpc as any).dashboard.getCatalystNetwork.useQuery(undefined, { refetchInterval: 300000 });
   const s = data || { total: 0, active: 0, preferred: 0, new: 0 };
   return (
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader /> : (
@@ -120,8 +120,8 @@ export const FreightAuditWidget: React.FC = () => {
   );
 };
 
-export const CarrierCapacityWidget: React.FC = () => {
-  const { data, isLoading } = (trpc as any).dashboard.getCarrierCapacity.useQuery(undefined, { refetchInterval: 120000 });
+export const CatalystCapacityWidget: React.FC = () => {
+  const { data, isLoading } = (trpc as any).dashboard.getCatalystCapacity.useQuery(undefined, { refetchInterval: 120000 });
   const c = data || { available: 0, booked: 0, utilization: 0 };
   return (
     <ResponsiveWidget>{() => isLoading ? <WidgetLoader /> : (

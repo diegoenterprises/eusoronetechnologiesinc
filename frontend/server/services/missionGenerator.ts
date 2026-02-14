@@ -14,28 +14,28 @@ const ALL_TEMPLATES: MT[] = [
 {name:"Load Commander",desc:"Post {t} loads this week.",cat:"deliveries",tt:"count",tv:3,rt:"xp",rv:400,xp:400,roles:["SHIPPER"],tp:"weekly"},
 {name:"Freight Blitz",desc:"Post {t} loads in a single day.",cat:"deliveries",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["SHIPPER"],tp:"daily"},
 {name:"Fair Pay Champion",desc:"Post {t} load(s) at or above market avg rate.",cat:"special",tt:"count",tv:1,rt:"miles",rv:200,xp:250,roles:["SHIPPER"],tp:"weekly"},
-{name:"Quick Booker",desc:"Accept carrier bid within 2hrs on {t} load(s).",cat:"efficiency",tt:"count",tv:2,rt:"xp",rv:350,xp:350,roles:["SHIPPER"],tp:"weekly"},
+{name:"Quick Booker",desc:"Accept catalyst bid within 2hrs on {t} load(s).",cat:"efficiency",tt:"count",tv:2,rt:"xp",rv:350,xp:350,roles:["SHIPPER"],tp:"weekly"},
 {name:"Multi-Lane Shipper",desc:"Post loads across {t} different origin states.",cat:"deliveries",tt:"count",tv:3,rt:"xp",rv:400,xp:400,roles:["SHIPPER"],tp:"weekly"},
-{name:"Carrier Reviewer",desc:"Rate {t} carriers after delivery.",cat:"social",tt:"count",tv:3,rt:"miles",rv:150,xp:200,roles:["SHIPPER"],tp:"weekly"},
+{name:"Catalyst Reviewer",desc:"Rate {t} catalysts after delivery.",cat:"social",tt:"count",tv:3,rt:"miles",rv:150,xp:200,roles:["SHIPPER"],tp:"weekly"},
 {name:"Bid Negotiator",desc:"Negotiate rates on {t} loads.",cat:"earnings",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["SHIPPER"],tp:"weekly"},
-{name:"Contract Builder",desc:"Sign {t} lane agreement(s) with carriers.",cat:"special",tt:"count",tv:1,rt:"priority_perk",rv:1,xp:500,roles:["SHIPPER"],tp:"weekly"},
+{name:"Contract Builder",desc:"Sign {t} lane agreement(s) with catalysts.",cat:"special",tt:"count",tv:1,rt:"priority_perk",rv:1,xp:500,roles:["SHIPPER"],tp:"weekly"},
 {name:"Recurring Revenue",desc:"Set up {t} recurring load(s).",cat:"efficiency",tt:"count",tv:1,rt:"xp",rv:350,xp:350,roles:["SHIPPER"],tp:"weekly"},
 {name:"Hazmat Compliance",desc:"Post {t} classified hazmat load(s) with correct UN#.",cat:"safety",tt:"count",tv:1,rt:"xp",rv:400,xp:400,roles:["SHIPPER"],tp:"weekly"},
 {name:"Document Master",desc:"Upload {t} shipping docs (BOL, rate conf).",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:250,xp:250,roles:["SHIPPER"],tp:"weekly"},
 {name:"SPECTRA Verifier",desc:"Verify product via SPECTRA-MATCH on {t} shipment(s).",cat:"safety",tt:"count",tv:1,rt:"miles",rv:200,xp:300,roles:["SHIPPER"],tp:"weekly"},
-// CARRIER (12)
-{name:"Road Warrior",desc:"Complete {t} loads this week.",cat:"deliveries",tt:"count",tv:5,rt:"xp",rv:500,xp:500,roles:["CARRIER"],tp:"weekly"},
-{name:"On-Time Streak",desc:"Deliver {t} consecutive loads on time.",cat:"efficiency",tt:"streak",tv:3,rt:"miles",rv:300,xp:400,roles:["CARRIER"],tp:"weekly"},
-{name:"Safety Shield",desc:"Complete {t} loads with zero incidents.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:400,xp:400,roles:["CARRIER"],tp:"weekly"},
-{name:"Fleet Commander",desc:"Dispatch {t} loads across your fleet.",cat:"deliveries",tt:"count",tv:4,rt:"xp",rv:450,xp:450,roles:["CARRIER"],tp:"weekly"},
-{name:"Bid Hunter",desc:"Submit bids on {t} loads from load board.",cat:"earnings",tt:"count",tv:5,rt:"xp",rv:350,xp:350,roles:["CARRIER"],tp:"weekly"},
-{name:"Five-Star Service",desc:"Receive {t} five-star ratings from shippers.",cat:"social",tt:"rating",tv:2,rt:"miles",rv:250,xp:350,roles:["CARRIER"],tp:"weekly"},
-{name:"Compliance Check",desc:"Verify {t} drivers have current compliance docs.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["CARRIER"],tp:"weekly"},
-{name:"Revenue Milestone",desc:"Earn ${t}+ in load revenue this week.",cat:"earnings",tt:"amount",tv:5000,tu:"USD",rt:"xp",rv:500,xp:500,roles:["CARRIER"],tp:"weekly"},
-{name:"Hazmat Hauler",desc:"Complete {t} hazmat load(s) with DOT compliance.",cat:"safety",tt:"count",tv:1,rt:"crate",rv:1,xp:400,roles:["CARRIER"],tp:"weekly"},
-{name:"Quick Accept",desc:"Accept {t} load(s) within 30 min.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:300,xp:300,roles:["CARRIER"],tp:"weekly"},
-{name:"BOL Champion",desc:"Submit {t} BOL(s) within 1hr of delivery.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:250,xp:250,roles:["CARRIER"],tp:"weekly"},
-{name:"Insurance Guardian",desc:"Verify insurance docs for {t} vehicle(s).",cat:"safety",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["CARRIER"],tp:"weekly"},
+// CATALYST (12)
+{name:"Road Warrior",desc:"Complete {t} loads this week.",cat:"deliveries",tt:"count",tv:5,rt:"xp",rv:500,xp:500,roles:["CATALYST"],tp:"weekly"},
+{name:"On-Time Streak",desc:"Deliver {t} consecutive loads on time.",cat:"efficiency",tt:"streak",tv:3,rt:"miles",rv:300,xp:400,roles:["CATALYST"],tp:"weekly"},
+{name:"Safety Shield",desc:"Complete {t} loads with zero incidents.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:400,xp:400,roles:["CATALYST"],tp:"weekly"},
+{name:"Fleet Commander",desc:"Dispatch {t} loads across your fleet.",cat:"deliveries",tt:"count",tv:4,rt:"xp",rv:450,xp:450,roles:["CATALYST"],tp:"weekly"},
+{name:"Bid Hunter",desc:"Submit bids on {t} loads from load board.",cat:"earnings",tt:"count",tv:5,rt:"xp",rv:350,xp:350,roles:["CATALYST"],tp:"weekly"},
+{name:"Five-Star Service",desc:"Receive {t} five-star ratings from shippers.",cat:"social",tt:"rating",tv:2,rt:"miles",rv:250,xp:350,roles:["CATALYST"],tp:"weekly"},
+{name:"Compliance Check",desc:"Verify {t} drivers have current compliance docs.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["CATALYST"],tp:"weekly"},
+{name:"Revenue Milestone",desc:"Earn ${t}+ in load revenue this week.",cat:"earnings",tt:"amount",tv:5000,tu:"USD",rt:"xp",rv:500,xp:500,roles:["CATALYST"],tp:"weekly"},
+{name:"Hazmat Hauler",desc:"Complete {t} hazmat load(s) with DOT compliance.",cat:"safety",tt:"count",tv:1,rt:"crate",rv:1,xp:400,roles:["CATALYST"],tp:"weekly"},
+{name:"Quick Accept",desc:"Accept {t} load(s) within 30 min.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:300,xp:300,roles:["CATALYST"],tp:"weekly"},
+{name:"BOL Champion",desc:"Submit {t} BOL(s) within 1hr of delivery.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:250,xp:250,roles:["CATALYST"],tp:"weekly"},
+{name:"Insurance Guardian",desc:"Verify insurance docs for {t} vehicle(s).",cat:"safety",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["CATALYST"],tp:"weekly"},
 // DRIVER (12)
 {name:"Mile Eater",desc:"Drive {t} miles safely this week.",cat:"deliveries",tt:"distance",tv:500,tu:"miles",rt:"xp",rv:400,xp:400,roles:["DRIVER"],tp:"weekly"},
 {name:"Delivery Pro",desc:"Complete {t} deliveries this week.",cat:"deliveries",tt:"count",tv:4,rt:"xp",rv:450,xp:450,roles:["DRIVER"],tp:"weekly"},
@@ -50,28 +50,28 @@ const ALL_TEMPLATES: MT[] = [
 {name:"Customer Star",desc:"Receive {t} positive ratings.",cat:"social",tt:"rating",tv:2,rt:"miles",rv:200,xp:300,roles:["DRIVER"],tp:"weekly"},
 {name:"Safety Training",desc:"Complete {t} safety training module(s).",cat:"safety",tt:"count",tv:1,rt:"xp",rv:250,xp:250,roles:["DRIVER"],tp:"weekly"},
 // BROKER (11)
-{name:"Deal Closer",desc:"Match and book {t} loads with carriers.",cat:"deliveries",tt:"count",tv:5,rt:"xp",rv:500,xp:500,roles:["BROKER"],tp:"weekly"},
+{name:"Deal Closer",desc:"Match and book {t} loads with catalysts.",cat:"deliveries",tt:"count",tv:5,rt:"xp",rv:500,xp:500,roles:["BROKER"],tp:"weekly"},
 {name:"Rate Negotiator",desc:"Negotiate {t} rates both parties accept.",cat:"earnings",tt:"count",tv:3,rt:"miles",rv:250,xp:400,roles:["BROKER"],tp:"weekly"},
-{name:"Network Builder",desc:"Onboard {t} new carriers.",cat:"social",tt:"count",tv:2,rt:"xp",rv:400,xp:400,roles:["BROKER"],tp:"weekly"},
+{name:"Network Builder",desc:"Onboard {t} new catalysts.",cat:"social",tt:"count",tv:2,rt:"xp",rv:400,xp:400,roles:["BROKER"],tp:"weekly"},
 {name:"Board Scanner",desc:"Post {t} loads with complete details.",cat:"deliveries",tt:"count",tv:4,rt:"xp",rv:350,xp:350,roles:["BROKER"],tp:"weekly"},
-{name:"Carrier Vetter",desc:"Verify {t} carrier compliance packets.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:300,xp:300,roles:["BROKER"],tp:"weekly"},
-{name:"Quick Match",desc:"Match carrier to load within 1hr — {t} times.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:350,xp:350,roles:["BROKER"],tp:"weekly"},
+{name:"Catalyst Vetter",desc:"Verify {t} catalyst compliance packets.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:300,xp:300,roles:["BROKER"],tp:"weekly"},
+{name:"Quick Match",desc:"Match catalyst to load within 1hr — {t} times.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:350,xp:350,roles:["BROKER"],tp:"weekly"},
 {name:"Volume King",desc:"Process ${t}+ in freight value.",cat:"earnings",tt:"amount",tv:20000,tu:"USD",rt:"xp",rv:500,xp:500,roles:["BROKER"],tp:"weekly"},
 {name:"Rate Confirm Pro",desc:"Send {t} rate confirmations within 30min.",cat:"efficiency",tt:"count",tv:4,rt:"xp",rv:300,xp:300,roles:["BROKER"],tp:"weekly"},
 {name:"Market Analyst",desc:"Check rates on {t} lanes.",cat:"special",tt:"count",tv:5,rt:"miles",rv:200,xp:250,roles:["BROKER"],tp:"weekly"},
 {name:"Dispute Resolver",desc:"Resolve {t} load dispute(s).",cat:"special",tt:"count",tv:1,rt:"xp",rv:400,xp:400,roles:["BROKER"],tp:"weekly"},
 {name:"Lane Specialist",desc:"Book {t} loads on your top lane.",cat:"deliveries",tt:"count",tv:2,rt:"xp",rv:350,xp:350,roles:["BROKER"],tp:"weekly"},
-// CATALYST (10)
-{name:"Product Identifier",desc:"Verify product via SPECTRA-MATCH on {t} shipments.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:500,xp:500,roles:["CATALYST"],tp:"weekly"},
-{name:"ERG Expert",desc:"Look up {t} ERG guides for emergency procedures.",cat:"safety",tt:"count",tv:3,rt:"miles",rv:300,xp:400,roles:["CATALYST"],tp:"weekly"},
-{name:"Hazmat Inspector",desc:"Complete {t} hazmat load inspections.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:400,xp:400,roles:["CATALYST"],tp:"weekly"},
-{name:"Safety Auditor",desc:"Audit protocols at {t} terminal(s).",cat:"safety",tt:"count",tv:1,rt:"xp",rv:450,xp:450,roles:["CATALYST"],tp:"weekly"},
-{name:"Emergency Drill",desc:"Complete {t} emergency response drill(s).",cat:"safety",tt:"count",tv:1,rt:"crate",rv:1,xp:400,roles:["CATALYST"],tp:"weekly"},
-{name:"Compliance Enforcer",desc:"Verify placard compliance on {t} shipments.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:350,xp:350,roles:["CATALYST"],tp:"weekly"},
-{name:"Product Database",desc:"Update {t} product specs in system.",cat:"special",tt:"count",tv:2,rt:"miles",rv:200,xp:300,roles:["CATALYST"],tp:"weekly"},
-{name:"Training Mentor",desc:"Complete {t} hazmat training session(s).",cat:"social",tt:"count",tv:1,rt:"xp",rv:350,xp:350,roles:["CATALYST"],tp:"weekly"},
-{name:"Incident Reporter",desc:"Document {t} safety findings.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["CATALYST"],tp:"weekly"},
-{name:"Tank Specialist",desc:"Verify {t} tank measurements & SCADA readings.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:350,xp:350,roles:["CATALYST"],tp:"weekly"},
+// DISPATCH (10)
+{name:"Product Identifier",desc:"Verify product via SPECTRA-MATCH on {t} shipments.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:500,xp:500,roles:["DISPATCH"],tp:"weekly"},
+{name:"ERG Expert",desc:"Look up {t} ERG guides for emergency procedures.",cat:"safety",tt:"count",tv:3,rt:"miles",rv:300,xp:400,roles:["DISPATCH"],tp:"weekly"},
+{name:"Hazmat Inspector",desc:"Complete {t} hazmat load inspections.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:400,xp:400,roles:["DISPATCH"],tp:"weekly"},
+{name:"Safety Auditor",desc:"Audit protocols at {t} terminal(s).",cat:"safety",tt:"count",tv:1,rt:"xp",rv:450,xp:450,roles:["DISPATCH"],tp:"weekly"},
+{name:"Emergency Drill",desc:"Complete {t} emergency response drill(s).",cat:"safety",tt:"count",tv:1,rt:"crate",rv:1,xp:400,roles:["DISPATCH"],tp:"weekly"},
+{name:"Compliance Enforcer",desc:"Verify placard compliance on {t} shipments.",cat:"safety",tt:"count",tv:3,rt:"xp",rv:350,xp:350,roles:["DISPATCH"],tp:"weekly"},
+{name:"Product Database",desc:"Update {t} product specs in system.",cat:"special",tt:"count",tv:2,rt:"miles",rv:200,xp:300,roles:["DISPATCH"],tp:"weekly"},
+{name:"Training Mentor",desc:"Complete {t} hazmat training session(s).",cat:"social",tt:"count",tv:1,rt:"xp",rv:350,xp:350,roles:["DISPATCH"],tp:"weekly"},
+{name:"Incident Reporter",desc:"Document {t} safety findings.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:300,xp:300,roles:["DISPATCH"],tp:"weekly"},
+{name:"Tank Specialist",desc:"Verify {t} tank measurements & SCADA readings.",cat:"efficiency",tt:"count",tv:3,rt:"xp",rv:350,xp:350,roles:["DISPATCH"],tp:"weekly"},
 // ESCORT (10)
 {name:"Convoy Guardian",desc:"Complete {t} escort assignments safely.",cat:"safety",tt:"count",tv:2,rt:"xp",rv:500,xp:500,roles:["ESCORT"],tp:"weekly"},
 {name:"Route Surveyor",desc:"Complete {t} route surveys for oversize loads.",cat:"efficiency",tt:"count",tv:2,rt:"miles",rv:250,xp:400,roles:["ESCORT"],tp:"weekly"},
@@ -84,12 +84,12 @@ const ALL_TEMPLATES: MT[] = [
 {name:"Safety Reporter",desc:"Submit {t} escort safety report(s).",cat:"safety",tt:"count",tv:2,rt:"xp",rv:250,xp:250,roles:["ESCORT"],tp:"weekly"},
 {name:"Multi-Vehicle Lead",desc:"Coordinate {t} multi-vehicle convoy(s).",cat:"special",tt:"count",tv:1,rt:"miles",rv:300,xp:450,roles:["ESCORT"],tp:"weekly"},
 // UNIVERSAL (all roles, 6)
-{name:"Platform Engaged",desc:"Log in and perform {t} actions on the platform.",cat:"social",tt:"count",tv:5,rt:"xp",rv:150,xp:150,roles:["SHIPPER","CARRIER","DRIVER","BROKER","CATALYST","ESCORT"],tp:"weekly"},
-{name:"Community Voice",desc:"Send {t} messages in The Haul Lobby.",cat:"social",tt:"count",tv:3,rt:"xp",rv:100,xp:100,roles:["SHIPPER","CARRIER","DRIVER","BROKER","CATALYST","ESCORT"],tp:"weekly"},
-{name:"Profile Complete",desc:"Complete all profile fields and upload {t} document(s).",cat:"onboarding",tt:"count",tv:1,rt:"xp",rv:200,xp:200,roles:["SHIPPER","CARRIER","DRIVER","BROKER","CATALYST","ESCORT"],tp:"weekly"},
-{name:"Referral Champion",desc:"Refer {t} colleague(s) to join EusoTrip.",cat:"social",tt:"count",tv:1,rt:"miles",rv:500,xp:300,roles:["SHIPPER","CARRIER","DRIVER","BROKER","CATALYST","ESCORT"],tp:"weekly"},
-{name:"Knowledge Seeker",desc:"Complete {t} training or certification module(s).",cat:"onboarding",tt:"count",tv:1,rt:"xp",rv:200,xp:200,roles:["SHIPPER","CARRIER","DRIVER","BROKER","CATALYST","ESCORT"],tp:"weekly"},
-{name:"ESANG Explorer",desc:"Ask ESANG AI {t} question(s) about logistics.",cat:"special",tt:"count",tv:3,rt:"xp",rv:100,xp:100,roles:["SHIPPER","CARRIER","DRIVER","BROKER","CATALYST","ESCORT"],tp:"weekly"},
+{name:"Platform Engaged",desc:"Log in and perform {t} actions on the platform.",cat:"social",tt:"count",tv:5,rt:"xp",rv:150,xp:150,roles:["SHIPPER","CATALYST","DRIVER","BROKER","DISPATCH","ESCORT"],tp:"weekly"},
+{name:"Community Voice",desc:"Send {t} messages in The Haul Lobby.",cat:"social",tt:"count",tv:3,rt:"xp",rv:100,xp:100,roles:["SHIPPER","CATALYST","DRIVER","BROKER","DISPATCH","ESCORT"],tp:"weekly"},
+{name:"Profile Complete",desc:"Complete all profile fields and upload {t} document(s).",cat:"onboarding",tt:"count",tv:1,rt:"xp",rv:200,xp:200,roles:["SHIPPER","CATALYST","DRIVER","BROKER","DISPATCH","ESCORT"],tp:"weekly"},
+{name:"Referral Champion",desc:"Refer {t} colleague(s) to join EusoTrip.",cat:"social",tt:"count",tv:1,rt:"miles",rv:500,xp:300,roles:["SHIPPER","CATALYST","DRIVER","BROKER","DISPATCH","ESCORT"],tp:"weekly"},
+{name:"Knowledge Seeker",desc:"Complete {t} training or certification module(s).",cat:"onboarding",tt:"count",tv:1,rt:"xp",rv:200,xp:200,roles:["SHIPPER","CATALYST","DRIVER","BROKER","DISPATCH","ESCORT"],tp:"weekly"},
+{name:"ESANG Explorer",desc:"Ask ESANG AI {t} question(s) about logistics.",cat:"special",tt:"count",tv:3,rt:"xp",rv:100,xp:100,roles:["SHIPPER","CATALYST","DRIVER","BROKER","DISPATCH","ESCORT"],tp:"weekly"},
 ];
 
 // Deterministic shuffle based on week number
@@ -149,7 +149,7 @@ export async function generateWeeklyMissions(): Promise<number> {
 
   const { start, end } = getWeekBounds();
   const weekNum = weekSeed();
-  const roles = ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT"];
+  const roles = ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT"];
   let created = 0;
 
   try {
@@ -215,9 +215,9 @@ export function getRewardsCatalogForRole(role: string) {
     SHIPPER: [
       { id: "r_ship_vis", name: "Priority Load Visibility", description: "Your loads appear first on the board for 7 days", category: "perks", pointsCost: 1000 },
       { id: "r_ship_fee", name: "Reduced Platform Fee", description: "20% off platform fees for 30 days", category: "perks", pointsCost: 3500 },
-      { id: "r_ship_ai", name: "Premium AI Matching", description: "ESANG AI-enhanced carrier matching for 7 days", category: "perks", pointsCost: 2000 },
+      { id: "r_ship_ai", name: "Premium AI Matching", description: "ESANG AI-enhanced catalyst matching for 7 days", category: "perks", pointsCost: 2000 },
     ],
-    CARRIER: [
+    CATALYST: [
       { id: "r_carr_disp", name: "Priority Dispatch", description: "Priority access to premium loads for 7 days", category: "perks", pointsCost: 1000 },
       { id: "r_carr_fuel", name: "$25 Fuel Card", description: "Gift card for fuel purchases", category: "gift_cards", pointsCost: 2500 },
       { id: "r_carr_fact", name: "Reduced Factoring Fee", description: "0.5% off factoring for 30 days", category: "perks", pointsCost: 3000 },
@@ -233,7 +233,7 @@ export function getRewardsCatalogForRole(role: string) {
       { id: "r_brk_fee", name: "Reduced Platform Fee", description: "15% off platform fees for 30 days", category: "perks", pointsCost: 3500 },
       { id: "r_brk_data", name: "Enhanced Market Data", description: "Real-time Platts/Argus-style data for 7 days", category: "perks", pointsCost: 2500 },
     ],
-    CATALYST: [
+    DISPATCH: [
       { id: "r_cat_spec", name: "SPECTRA-MATCH Pro", description: "Advanced product identification features for 30 days", category: "perks", pointsCost: 2000 },
       { id: "r_cat_cert", name: "Certification Renewal Credit", description: "$100 toward hazmat certification renewal", category: "perks", pointsCost: 4000 },
     ],

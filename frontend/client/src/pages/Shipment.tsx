@@ -53,7 +53,7 @@ export default function ShipmentPage() {
     rate: '$0',
     eta: s.eta || 'TBD',
     type: 'standard',
-    carrier: s.driver || 'Unassigned',
+    catalyst: s.driver || 'Unassigned',
     progress: s.progress || 0,
     distance: '0 miles',
   }));
@@ -69,7 +69,7 @@ export default function ShipmentPage() {
       rate: "$0",
       eta: "TBD",
       type: "standard",
-      carrier: "No carrier assigned",
+      catalyst: "No catalyst assigned",
       progress: 0,
       distance: "0 miles",
     });
@@ -301,10 +301,10 @@ export default function ShipmentPage() {
                 </div>
               </div>
 
-              {/* Carrier Info */}
+              {/* Catalyst Info */}
               <div className="pt-4 border-t border-slate-700">
-                <p className="text-xs text-slate-500 mb-1">Carrier</p>
-                <p className="text-white font-semibold">{shipment.carrier}</p>
+                <p className="text-xs text-slate-500 mb-1">Catalyst</p>
+                <p className="text-white font-semibold">{shipment.catalyst}</p>
               </div>
             </div>
           </Card>

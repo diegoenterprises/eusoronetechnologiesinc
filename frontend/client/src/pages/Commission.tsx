@@ -166,7 +166,7 @@ export default function Commission() {
                       </div>
                       <div>
                         <p className="text-white font-medium">{commission.loadNumber}</p>
-                        <p className="text-sm text-slate-400">{commission.shipperName} → {commission.carrierName}</p>
+                        <p className="text-sm text-slate-400">{commission.shipperName} → {commission.catalystName}</p>
                         <p className="text-xs text-slate-500">{commission.date}</p>
                       </div>
                     </div>

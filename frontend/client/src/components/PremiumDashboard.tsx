@@ -17,11 +17,11 @@ import {
   FleetStatusWidget, AvailableLoadsWidget, FuelCostsWidget,
   HOSTrackerWidget, CurrentRouteWidget, SafetyDashboardWidget,
   ComplianceDashboardWidget, YardManagementWidget,
-  LoadBoardWidget, MarginCalculatorWidget, CarrierSourcingWidget,
+  LoadBoardWidget, MarginCalculatorWidget, CatalystSourcingWidget,
   EarningsSummaryWidget, FuelStationsWidget, VehicleHealthWidget,
   SystemHealthWidget, UserAnalyticsWidget, RevenueWidget,
   EscortAssignmentsWidget, RoutePermitsWidget, ActiveEscortWidget,
-  CarrierRatingsWidget, DispatchBoardWidget, DriverPerformanceWidget,
+  CatalystRatingsWidget, DispatchBoardWidget, DriverPerformanceWidget,
   HOSMonitoringWidget, AccidentTrackerWidget, DriverQualificationsWidget,
   DocumentExpirationWidget, DockSchedulingWidget, InboundShipmentsWidget,
   LaborManagementWidget, GateActivityWidget, FreightQuotesWidget,
@@ -30,18 +30,18 @@ import {
   ProfitMarginWidget, LoadMatchingWidget, DetentionTrackerWidget
 } from "./widgets/DynamicWidgets";
 import {
-  DeliveryTimelineWidget, CarrierNetworkWidget, CostSavingsWidget,
+  DeliveryTimelineWidget, CatalystNetworkWidget, CostSavingsWidget,
   ShippingCalendarWidget, PODDocumentsWidget, FreightAuditWidget,
-  CarrierCapacityWidget, ShipmentAnalyticsWidget
+  CatalystCapacityWidget, ShipmentAnalyticsWidget
 } from "./widgets/ShipperWidgets";
 import {
   DriverAvailabilityWidget, DetentionTimeWidget, InsuranceTrackerWidget,
   BrokerRelationshipsWidget
-} from "./widgets/CarrierExtWidgets";
+} from "./widgets/CatalystExtWidgets";
 import {
   CustomerAccountsWidget, RateTrendsWidget, BidManagementWidget,
   CoverageMapWidget, CommissionTrackerWidget, ShipperPipelineWidget,
-  CarrierScorecardsWidget, LoadMatchingAIWidget, PaymentStatusWidget,
+  CatalystScorecardsWidget, LoadMatchingAIWidget, PaymentStatusWidget,
   LaneAnalysisWidget, ContractManagementWidget, MarketIntelligenceWidget
 } from "./widgets/BrokerExtWidgets";
 import {
@@ -57,7 +57,7 @@ import {
   RouteNavigationWidget, LoadDimensionsWidget, ClearanceAlertsWidget,
   EscortChecklistWidget, DriverCommunicationWidget, EmergencyContactsWidget,
   TripLogWidget, PermitVerificationWidget, EscortPayWidget
-} from "./widgets/CatalystEscortWidgets";
+} from "./widgets/DispatchEscortWidgets";
 import {
   OutboundShipmentsWidget, EquipmentInventoryWidget, LoadingEfficiencyWidget,
   DamageReportsWidget, StorageCapacityWidget, CrossDockOperationsWidget,
@@ -242,7 +242,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'shipment_costs': return <ShipmentCostsWidget />;
     case 'shipment_tracking': return <LiveTrackingWidget />;
     
-    // Carrier widgets
+    // Catalyst widgets
     case 'fleet_status': return <FleetStatusWidget />;
     case 'available_loads': return <AvailableLoadsWidget />;
     case 'fuel_costs': return <FuelCostsWidget />;
@@ -263,7 +263,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     // Broker widgets
     case 'load_board': return <LoadBoardWidget />;
     case 'margin_calculator': return <MarginCalculatorWidget />;
-    case 'carrier_sourcing': return <CarrierSourcingWidget />;
+    case 'catalyst_sourcing': return <CatalystSourcingWidget />;
     
     // More Driver widgets
     case 'earnings_summary': return <EarningsSummaryWidget />;
@@ -275,15 +275,15 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'user_analytics': return <UserAnalyticsWidget />;
     case 'revenue_dashboard': return <RevenueWidget />;
     
-    // Catalyst widgets
+    // Dispatch widgets
     case 'escort_assignments': return <EscortAssignmentsWidget />;
     case 'route_permits': return <RoutePermitsWidget />;
     
     // Escort widgets
     case 'active_escort': return <ActiveEscortWidget />;
     
-    // More Shipper/Carrier widgets
-    case 'carrier_ratings': return <CarrierRatingsWidget />;
+    // More Shipper/Catalyst widgets
+    case 'catalyst_ratings': return <CatalystRatingsWidget />;
     case 'dispatch_board': return <DispatchBoardWidget />;
     case 'driver_performance': return <DriverPerformanceWidget />;
     
@@ -307,7 +307,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     // More Broker widgets
     case 'market_rates': return <MarketRatesWidget />;
     
-    // More Carrier widgets
+    // More Catalyst widgets
     case 'route_optimization': return <RouteOptimizationWidget />;
     case 'maintenance_schedule': return <MaintenanceScheduleWidget />;
     case 'equipment_utilization': return <EquipmentUtilizationWidget />;
@@ -317,15 +317,15 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
 
     // Shipper extended widgets
     case 'delivery_timeline': return <DeliveryTimelineWidget />;
-    case 'carrier_network': return <CarrierNetworkWidget />;
+    case 'catalyst_network': return <CatalystNetworkWidget />;
     case 'cost_savings': return <CostSavingsWidget />;
     case 'shipping_calendar': return <ShippingCalendarWidget />;
     case 'pod_documents': return <PODDocumentsWidget />;
     case 'freight_audit': return <FreightAuditWidget />;
-    case 'carrier_capacity': return <CarrierCapacityWidget />;
+    case 'catalyst_capacity': return <CatalystCapacityWidget />;
     case 'shipment_analytics': return <ShipmentAnalyticsWidget />;
 
-    // Carrier extended widgets
+    // Catalyst extended widgets
     case 'driver_availability': return <DriverAvailabilityWidget />;
     case 'detention_time': return <DetentionTimeWidget />;
     case 'insurance_tracker': return <InsuranceTrackerWidget />;
@@ -338,7 +338,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'coverage_map': return <CoverageMapWidget />;
     case 'commission_tracker': return <CommissionTrackerWidget />;
     case 'shipper_pipeline': return <ShipperPipelineWidget />;
-    case 'carrier_scorecards': return <CarrierScorecardsWidget />;
+    case 'catalyst_scorecards': return <CatalystScorecardsWidget />;
     case 'load_matching_ai': return <LoadMatchingAIWidget />;
     case 'payment_status': return <PaymentStatusWidget />;
     case 'lane_analysis': return <LaneAnalysisWidget />;
@@ -357,7 +357,7 @@ const renderWidgetContent = (widgetId: string, role: UserRole) => {
     case 'load_documents': return <LoadDocumentsWidget />;
     case 'performance_score': return <PerformanceScoreWidget />;
 
-    // Catalyst extended widgets
+    // Dispatch extended widgets
     case 'oversized_loads': return <OversizedLoadsWidget />;
     case 'coordination_map': return <CoordinationMapWidget />;
     case 'safety_protocols': return <SafetyProtocolsWidget />;
@@ -450,17 +450,17 @@ const getWidgetTitle = (widgetId: string): string => {
 const ROLE_DEFAULT_WIDGETS: Record<string, string[]> = {
   SHIPPER: [
     'weather', 'active_shipments', 'demand_heatmap',
-    'shipment_costs', 'delivery_timeline', 'carrier_ratings',
+    'shipment_costs', 'delivery_timeline', 'catalyst_ratings',
     'live_map', 'freight_quotes', 'cost_savings',
   ],
-  CARRIER: [
+  CATALYST: [
     'weather', 'available_loads', 'fleet_status',
     'fuel_costs', 'revenue_dashboard', 'demand_heatmap',
     'live_map', 'load_matching', 'driver_performance',
   ],
   BROKER: [
     'weather', 'load_board', 'margin_calculator',
-    'carrier_sourcing', 'market_rates', 'demand_heatmap',
+    'catalyst_sourcing', 'market_rates', 'demand_heatmap',
     'live_map', 'commission_tracker', 'bid_management',
   ],
   DRIVER: [
@@ -579,10 +579,10 @@ export default function PremiumDashboard({ role: propRole }: PremiumDashboardPro
   const getRoleDisplayName = (r: string) => {
     const names: Record<string, string> = {
       SHIPPER: 'Shipper',
-      CARRIER: 'Carrier',
+      CATALYST: 'Catalyst',
       BROKER: 'Broker',
       DRIVER: 'Driver',
-      CATALYST: 'Catalyst',
+      DISPATCH: 'Dispatch',
       ESCORT: 'Escort',
       TERMINAL_MANAGER: 'Terminal Manager',
       COMPLIANCE_OFFICER: 'Compliance Officer',

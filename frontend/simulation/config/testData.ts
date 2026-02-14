@@ -24,7 +24,7 @@ export interface DriverPersona {
   status?: string;
 }
 
-export interface CarrierPersona {
+export interface CatalystPersona {
   id: string;
   name: string;
   fleetSize: number;
@@ -93,17 +93,17 @@ export const DRIVER_PERSONAS: DriverPersona[] = [
   { id: 'D020', name: 'Semi-Retired Sam', experience: '30yr', age: 62, creditScore: 800, equipment: 'owned_single', region: 'local', hazmat: false, oversize: false, status: 'part_time' },
 ];
 
-export const CARRIER_PERSONAS: CarrierPersona[] = [
+export const CATALYST_PERSONAS: CatalystPersona[] = [
   { id: 'C001', name: 'Small Fleet Sally', fleetSize: 5, authority: 'new_6mo', insurance: 'minimum', creditLine: 50000 },
   { id: 'C002', name: 'Medium Fleet Marcus', fleetSize: 25, authority: 'established_3yr', insurance: 'comprehensive', creditLine: 500000 },
   { id: 'C003', name: 'Large Fleet Larry', fleetSize: 150, authority: 'established_10yr', insurance: 'premium', creditLine: 5000000 },
-  { id: 'C004', name: 'Specialized Carrier SC', fleetSize: 40, authority: 'established_15yr', insurance: 'premium', creditLine: 2000000, specialty: 'hazmat_only' },
-  { id: 'C005', name: 'Regional Carrier RC', fleetSize: 15, authority: 'established_5yr', insurance: 'comprehensive', creditLine: 250000, region: 'texas_only' },
-  { id: 'C006', name: 'Struggling Carrier', fleetSize: 8, authority: 'established_2yr', insurance: 'lapsed', creditLine: 10000, status: 'financial_trouble' },
-  { id: 'C007', name: 'Growing Carrier GC', fleetSize: 30, authority: 'established_4yr', insurance: 'comprehensive', creditLine: 750000, status: 'rapid_expansion' },
-  { id: 'C008', name: 'Family Carrier FC', fleetSize: 12, authority: 'established_20yr', insurance: 'comprehensive', creditLine: 300000, type: 'family_owned' },
+  { id: 'C004', name: 'Specialized Catalyst SC', fleetSize: 40, authority: 'established_15yr', insurance: 'premium', creditLine: 2000000, specialty: 'hazmat_only' },
+  { id: 'C005', name: 'Regional Catalyst RC', fleetSize: 15, authority: 'established_5yr', insurance: 'comprehensive', creditLine: 250000, region: 'texas_only' },
+  { id: 'C006', name: 'Struggling Catalyst', fleetSize: 8, authority: 'established_2yr', insurance: 'lapsed', creditLine: 10000, status: 'financial_trouble' },
+  { id: 'C007', name: 'Growing Catalyst GC', fleetSize: 30, authority: 'established_4yr', insurance: 'comprehensive', creditLine: 750000, status: 'rapid_expansion' },
+  { id: 'C008', name: 'Family Catalyst FC', fleetSize: 12, authority: 'established_20yr', insurance: 'comprehensive', creditLine: 300000, type: 'family_owned' },
   { id: 'C009', name: 'New Authority NA', fleetSize: 3, authority: 'new_1mo', insurance: 'minimum', creditLine: 25000, status: 'just_started' },
-  { id: 'C010', name: 'Intermodal Carrier IC', fleetSize: 50, authority: 'established_8yr', insurance: 'premium', creditLine: 1500000, specialty: 'intermodal' },
+  { id: 'C010', name: 'Intermodal Catalyst IC', fleetSize: 50, authority: 'established_8yr', insurance: 'premium', creditLine: 1500000, specialty: 'intermodal' },
 ];
 
 export const BROKER_PERSONAS: BrokerPersona[] = [
@@ -175,7 +175,7 @@ export const LOAD_SCENARIOS: LoadScenario[] = [
   // SPECIALIZED
   { type: 'TANKER', weight: 48000, miles: 600, rate: 3.80, urgency: 'standard', special: 'food_grade' },
   { type: 'TANKER', weight: 45000, miles: 400, rate: 5.00, urgency: 'standard', special: 'chemical_hazmat' },
-  { type: 'AUTO_CARRIER', weight: 42000, miles: 1000, rate: 2.80, urgency: 'standard', special: '9_car_load' },
+  { type: 'AUTO_CATALYST', weight: 42000, miles: 1000, rate: 2.80, urgency: 'standard', special: '9_car_load' },
   { type: 'LIVESTOCK', weight: 35000, miles: 500, rate: 4.00, urgency: 'hot', special: 'cattle_welfare_stops' },
   
   // LTL
@@ -301,8 +301,8 @@ export function getRandomDriver(): DriverPersona {
   return DRIVER_PERSONAS[Math.floor(Math.random() * DRIVER_PERSONAS.length)];
 }
 
-export function getRandomCarrier(): CarrierPersona {
-  return CARRIER_PERSONAS[Math.floor(Math.random() * CARRIER_PERSONAS.length)];
+export function getRandomCatalyst(): CatalystPersona {
+  return CATALYST_PERSONAS[Math.floor(Math.random() * CATALYST_PERSONAS.length)];
 }
 
 export function getRandomBroker(): BrokerPersona {

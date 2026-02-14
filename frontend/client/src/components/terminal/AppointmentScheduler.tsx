@@ -22,8 +22,8 @@ import { toast } from "sonner";
 export interface Appointment {
   id: string;
   loadId: string;
-  carrierId: string;
-  carrierName: string;
+  catalystId: string;
+  catalystName: string;
   driverName: string;
   truckNumber: string;
   dockNumber: string;
@@ -165,7 +165,7 @@ export function AppointmentScheduler({
               </p>
               {dock.currentAppointment && (
                 <div className="mt-2 p-2 rounded bg-slate-700/30 text-xs">
-                  <p className="text-white">{dock.currentAppointment.carrierName}</p>
+                  <p className="text-white">{dock.currentAppointment.catalystName}</p>
                   <p className="text-slate-400">{dock.currentAppointment.truckNumber}</p>
                 </div>
               )}
@@ -230,7 +230,7 @@ export function AppointmentScheduler({
                             onClick={() => {/* Open appointment details */}}
                           >
                             <div className="flex items-center justify-between">
-                              <span className="font-medium truncate">{apt.carrierName}</span>
+                              <span className="font-medium truncate">{apt.catalystName}</span>
                               <Badge variant="outline" className="text-[10px]">
                                 {apt.appointmentType === "loading" ? "L" : "U"}
                               </Badge>
@@ -278,7 +278,7 @@ export function AppointmentScheduler({
                       )}
                     </div>
                     <div>
-                      <p className="text-white font-medium">{apt.carrierName}</p>
+                      <p className="text-white font-medium">{apt.catalystName}</p>
                       <div className="flex items-center gap-2 text-sm text-slate-400">
                         <span>{apt.truckNumber}</span>
                         <span>•</span>
@@ -412,10 +412,10 @@ export function AppointmentScheduler({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-300">Carrier Name</Label>
+                <Label className="text-slate-300">Catalyst Name</Label>
                 <Input
-                  value={newAppointment.carrierName || ""}
-                  onChange={(e) => setNewAppointment({ ...newAppointment, carrierName: e.target.value })}
+                  value={newAppointment.catalystName || ""}
+                  onChange={(e) => setNewAppointment({ ...newAppointment, catalystName: e.target.value })}
                   placeholder="ABC Trucking"
                   className="bg-slate-700/50 border-slate-600 text-white"
                 />

@@ -58,7 +58,7 @@ interface EscortFormData {
   equipmentList: string[];
   
   // Step 6: Insurance
-  insuranceCarrier: string;
+  insuranceCatalyst: string;
   policyNumber: string;
   coverageAmount: string;
   expirationDate: string;
@@ -106,7 +106,7 @@ const initialFormData: EscortFormData = {
   vehicleState: "",
   hasRequiredEquipment: false,
   equipmentList: [],
-  insuranceCarrier: "",
+  insuranceCatalyst: "",
   policyNumber: "",
   coverageAmount: "",
   expirationDate: "",
@@ -590,10 +590,10 @@ export default function RegisterEscort() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-slate-300">Insurance Carrier <span className="text-red-400">*</span></Label>
+              <Label className="text-slate-300">Insurance Catalyst <span className="text-red-400">*</span></Label>
               <Input
-                value={formData.insuranceCarrier}
-                onChange={(e: any) => updateFormData({ insuranceCarrier: e.target.value })}
+                value={formData.insuranceCatalyst}
+                onChange={(e: any) => updateFormData({ insuranceCatalyst: e.target.value })}
                 placeholder="ABC Insurance"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -637,7 +637,7 @@ export default function RegisterEscort() {
         </div>
       ),
       validate: () => {
-        if (!formData.insuranceCarrier || !formData.policyNumber || !formData.coverageAmount) {
+        if (!formData.insuranceCatalyst || !formData.policyNumber || !formData.coverageAmount) {
           toast.error("Please fill in all insurance information");
           return false;
         }

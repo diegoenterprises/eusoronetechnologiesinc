@@ -14,10 +14,10 @@ export const ROLES = {
   SUPER_ADMIN: 'SUPER_ADMIN',
   ADMIN: 'ADMIN',
   SHIPPER: 'SHIPPER',
-  CARRIER: 'CARRIER',
+  CATALYST: 'CATALYST',
   BROKER: 'BROKER',
   DRIVER: 'DRIVER',
-  CATALYST: 'CATALYST',
+  DISPATCH: 'DISPATCH',
   ESCORT: 'ESCORT',
   TERMINAL_MANAGER: 'TERMINAL_MANAGER',
   COMPLIANCE_OFFICER: 'COMPLIANCE_OFFICER',
@@ -30,8 +30,8 @@ export type UserRole = typeof ROLES[keyof typeof ROLES];
 const ROLE_HIERARCHY: Record<string, string[]> = {
   SUPER_ADMIN: Object.values(ROLES),
   ADMIN: [
-    ROLES.ADMIN, ROLES.SHIPPER, ROLES.CARRIER, ROLES.BROKER,
-    ROLES.DRIVER, ROLES.CATALYST, ROLES.ESCORT, ROLES.TERMINAL_MANAGER,
+    ROLES.ADMIN, ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER,
+    ROLES.DRIVER, ROLES.DISPATCH, ROLES.ESCORT, ROLES.TERMINAL_MANAGER,
     ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER,
   ],
 };
@@ -134,18 +134,18 @@ export function roleProcedure(...allowedRoles: string[]) {
 export const adminProcedure = roleProcedure(ROLES.ADMIN, ROLES.SUPER_ADMIN);
 export const superAdminProcedure = roleProcedure(ROLES.SUPER_ADMIN);
 export const shipperProcedure = roleProcedure(ROLES.SHIPPER);
-export const carrierProcedure = roleProcedure(ROLES.CARRIER);
+export const catalystProcedure = roleProcedure(ROLES.CATALYST);
 export const brokerProcedure = roleProcedure(ROLES.BROKER);
 export const driverProcedure = roleProcedure(ROLES.DRIVER);
-export const catalystProcedure = roleProcedure(ROLES.CATALYST);
+export const dispatchProcedure = roleProcedure(ROLES.DISPATCH);
 export const escortProcedure = roleProcedure(ROLES.ESCORT);
 export const terminalProcedure = roleProcedure(ROLES.TERMINAL_MANAGER);
 export const complianceProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER);
 export const safetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER);
 
 // Multi-role procedures for shared endpoints
-export const shipperCarrierProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CARRIER);
-export const operationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CARRIER, ROLES.BROKER, ROLES.CATALYST);
+export const shipperCatalystProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST);
+export const operationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH);
 export const complianceSafetyProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER);
 
 // =============================================================================
@@ -215,15 +215,15 @@ export const auditedSuperAdminProcedure = roleProcedure(ROLES.SUPER_ADMIN).use(a
 
 // Audited role-specific procedures
 export const auditedShipperProcedure = roleProcedure(ROLES.SHIPPER).use(autoAudit);
-export const auditedCarrierProcedure = roleProcedure(ROLES.CARRIER).use(autoAudit);
+export const auditedCatalystProcedure = roleProcedure(ROLES.CATALYST).use(autoAudit);
 export const auditedBrokerProcedure = roleProcedure(ROLES.BROKER).use(autoAudit);
 export const auditedDriverProcedure = roleProcedure(ROLES.DRIVER).use(autoAudit);
-export const auditedCatalystProcedure = roleProcedure(ROLES.CATALYST).use(autoAudit);
+export const auditedDispatchProcedure = roleProcedure(ROLES.DISPATCH).use(autoAudit);
 export const auditedEscortProcedure = roleProcedure(ROLES.ESCORT).use(autoAudit);
 export const auditedTerminalProcedure = roleProcedure(ROLES.TERMINAL_MANAGER).use(autoAudit);
 export const auditedComplianceProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER).use(autoAudit);
 export const auditedSafetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER).use(autoAudit);
-export const auditedOperationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CARRIER, ROLES.BROKER, ROLES.CATALYST).use(autoAudit);
+export const auditedOperationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH).use(autoAudit);
 
 // =============================================================================
 // SENSITIVE DATA ENCRYPTION HELPERS

@@ -216,7 +216,7 @@ export default function AppointmentScheduler() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="text-white font-medium">{apt.carrierName}</p>
+                            <p className="text-white font-medium">{apt.catalystName}</p>
                             <Badge className={getStatusColor(apt.status)}>{apt.status.replace("_", " ")}</Badge>
                           </div>
                           <p className="text-sm text-slate-400">
@@ -300,7 +300,7 @@ export default function AppointmentScheduler() {
                                     <Badge variant="outline" className="text-xs">{apt.rackName}</Badge>
                                     {getStatusIcon(apt.status)}
                                   </div>
-                                  <p className="text-white font-medium text-sm">{apt.carrierName}</p>
+                                  <p className="text-white font-medium text-sm">{apt.catalystName}</p>
                                   <p className="text-xs text-slate-400">{apt.loadNumber}</p>
                                   <p className="text-xs text-slate-500 mt-1">{apt.product} - {apt.weight?.toLocaleString()} gal</p>
                                 </div>
@@ -347,7 +347,7 @@ export default function AppointmentScheduler() {
                             <RefreshCw className="w-4 h-4 text-blue-400 animate-spin" />
                             <span className="text-blue-400 text-sm font-medium">Loading Now</span>
                           </div>
-                          <p className="text-white font-medium">{currentApt.carrierName}</p>
+                          <p className="text-white font-medium">{currentApt.catalystName}</p>
                           <p className="text-xs text-slate-400">{currentApt.loadNumber}</p>
                           <p className="text-xs text-slate-500">{(currentApt as any).weight?.toLocaleString() || 0} gal</p>
                         </div>
@@ -364,7 +364,7 @@ export default function AppointmentScheduler() {
                         <div>
                           <p className="text-xs text-slate-500 mb-2">Next Up:</p>
                           <div className="p-2 rounded bg-slate-700/50">
-                            <p className="text-white text-sm">{nextApt.carrierName}</p>
+                            <p className="text-white text-sm">{nextApt.catalystName}</p>
                             <p className="text-xs text-slate-400">
                               {new Date(nextApt.scheduledTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                             </p>

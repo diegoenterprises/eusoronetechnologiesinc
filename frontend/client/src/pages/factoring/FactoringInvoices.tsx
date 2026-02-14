@@ -44,7 +44,7 @@ export default function FactoringInvoices() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
           Invoice Management
         </h1>
-        <p className="text-muted-foreground mt-1">Review, approve, and fund carrier invoices</p>
+        <p className="text-muted-foreground mt-1">Review, approve, and fund catalyst invoices</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -72,7 +72,7 @@ export default function FactoringInvoices() {
           <CardContent className="p-8 text-center">
             <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
             <p className="text-lg font-medium">No invoices found</p>
-            <p className="text-sm text-muted-foreground">Invoices submitted by carriers will appear here</p>
+            <p className="text-sm text-muted-foreground">Invoices submitted by catalysts will appear here</p>
           </CardContent>
         </Card>
       ) : (

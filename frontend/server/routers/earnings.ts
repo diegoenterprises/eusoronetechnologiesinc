@@ -1,6 +1,6 @@
 /**
  * EARNINGS ROUTER
- * tRPC procedures for driver and carrier earnings tracking
+ * tRPC procedures for driver and catalyst earnings tracking
  * PRODUCTION-READY: All data from database
  */
 

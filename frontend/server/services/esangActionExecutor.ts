@@ -148,7 +148,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   },
 
   list_my_loads: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "List the user's loads",
     schema: z.object({
       status: z.string().optional(),
@@ -168,8 +168,8 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
       const role = ctx.role;
       if (role === "ADMIN" || role === "SUPER_ADMIN") {
         // admins see all
-      } else if (role === "CARRIER" || role === "CATALYST") {
-        filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.carrierId} = ${dbUserId})`);
+      } else if (role === "CATALYST" || role === "DISPATCH") {
+        filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.catalystId} = ${dbUserId})`);
       } else if (role === "DRIVER" || role === "ESCORT") {
         filters.push(sql`(${loads.driverId} = ${dbUserId} OR ${loads.shipperId} = ${dbUserId})`);
       } else {
@@ -237,7 +237,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   },
 
   search_marketplace: {
-    allowedRoles: ["CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Search available loads on the marketplace",
     schema: z.object({
       limit: z.number().max(20).default(10),
@@ -275,7 +275,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Bid Operations ───────────────────────────────────────────────────────
 
   submit_bid: {
-    allowedRoles: ["CARRIER", "DRIVER", "CATALYST", "BROKER"],
+    allowedRoles: ["CATALYST", "DRIVER", "DISPATCH", "BROKER"],
     description: "Submit a bid on a marketplace load",
     schema: z.object({
       loadId: z.number(),
@@ -305,7 +305,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
 
       const result = await db.insert(bids).values({
         loadId: p.loadId,
-        carrierId: dbUserId,
+        catalystId: dbUserId,
         amount: String(p.amount),
         status: "pending",
         notes: p.notes || null,
@@ -320,8 +320,8 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
         bidId: String(bidId),
         loadId: String(p.loadId),
         loadNumber: (load as any).loadNumber || "",
-        carrierId: String(dbUserId),
-        carrierName: ctx.userName,
+        catalystId: String(dbUserId),
+        catalystName: ctx.userName,
         amount: p.amount,
         status: "pending",
         timestamp: new Date().toISOString(),
@@ -341,7 +341,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   },
 
   get_my_bids: {
-    allowedRoles: ["CARRIER", "DRIVER", "CATALYST", "BROKER"],
+    allowedRoles: ["CATALYST", "DRIVER", "DISPATCH", "BROKER"],
     description: "Get the user's submitted bids",
     schema: z.object({
       limit: z.number().max(20).default(10),
@@ -355,7 +355,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
 
       const p = params as { limit: number };
       const rows = await db.select().from(bids)
-        .where(eq(bids.carrierId, dbUserId))
+        .where(eq(bids.catalystId, dbUserId))
         .orderBy(desc(bids.createdAt))
         .limit(p.limit);
 
@@ -378,7 +378,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── ERG Lookup ───────────────────────────────────────────────────────────
 
   erg_lookup: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
     description: "Look up ERG emergency response data for a hazmat material",
     schema: z.object({
       unNumber: z.string().optional(),
@@ -406,7 +406,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Load Stats ───────────────────────────────────────────────────────────
 
   get_load_stats: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Get load statistics for the current user",
     schema: z.object({}),
     handler: async (ctx) => {
@@ -435,7 +435,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Wallet / Financial Actions ─────────────────────────────────────────────
 
   analyze_finances: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Get AI-powered financial insights and recommendations for your wallet",
     schema: z.object({}),
     handler: async (ctx) => {
@@ -455,7 +455,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Zeun Mechanics Actions ────────────────────────────────────────────────
 
   diagnose_issue: {
-    allowedRoles: ["DRIVER", "CARRIER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["DRIVER", "CATALYST", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Get AI-powered diagnosis for a truck issue based on symptoms and fault codes",
     schema: z.object({
       symptoms: z.array(z.string()).min(1),
@@ -480,7 +480,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   },
 
   lookup_fault_code: {
-    allowedRoles: ["DRIVER", "CARRIER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["DRIVER", "CATALYST", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Look up a truck DTC/SPN-FMI fault code and get detailed analysis",
     schema: z.object({ code: z.string().min(1) }),
     handler: async (_ctx, params) => {
@@ -498,7 +498,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Rate Analysis Actions ─────────────────────────────────────────────────
 
   analyze_rate: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ADMIN", "SUPER_ADMIN"],
     description: "Analyze a freight rate for fairness using AI market intelligence",
     schema: z.object({
       origin: z.string(), destination: z.string(), cargoType: z.string().default("general"),
@@ -520,7 +520,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Gamification Actions ──────────────────────────────────────────────────
 
   generate_missions: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Generate personalized AI-powered missions for The Haul gamification system",
     schema: z.object({
       level: z.number().default(1),
@@ -543,7 +543,7 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
   // ── Messaging Actions ─────────────────────────────────────────────────────
 
   smart_reply: {
-    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    allowedRoles: ["SHIPPER", "CATALYST", "DRIVER", "BROKER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
     description: "Generate smart reply suggestions for a conversation",
     schema: z.object({
       messages: z.array(z.object({ sender: z.string(), text: z.string() })).min(1),

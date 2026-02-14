@@ -29,14 +29,14 @@ export const LOAD_PAYMENT_PRODUCT = {
 
 /**
  * Subscription Products
- * Premium features for carriers, brokers, and shippers
+ * Premium features for catalysts, brokers, and shippers
  */
 export const SUBSCRIPTION_PRODUCTS: StripeProduct[] = [
   {
-    id: "prod_premium_carrier",
-    name: "Premium Carrier",
-    description: "Advanced features for carriers - unlimited loads, priority bidding, analytics",
-    priceId: "price_premium_carrier_monthly",
+    id: "prod_premium_catalyst",
+    name: "Premium Catalyst",
+    description: "Advanced features for catalysts - unlimited loads, priority bidding, analytics",
+    priceId: "price_premium_catalyst_monthly",
     amount: 9900, // $99/month
     currency: "usd",
     type: "recurring",
@@ -45,7 +45,7 @@ export const SUBSCRIPTION_PRODUCTS: StripeProduct[] = [
   {
     id: "prod_premium_broker",
     name: "Premium Broker",
-    description: "Advanced features for brokers - unlimited loads, carrier network, analytics",
+    description: "Advanced features for brokers - unlimited loads, catalyst network, analytics",
     priceId: "price_premium_broker_monthly",
     amount: 14900, // $149/month
     currency: "usd",
@@ -55,7 +55,7 @@ export const SUBSCRIPTION_PRODUCTS: StripeProduct[] = [
   {
     id: "prod_premium_shipper",
     name: "Premium Shipper",
-    description: "Advanced features for shippers - unlimited loads, carrier matching, analytics",
+    description: "Advanced features for shippers - unlimited loads, catalyst matching, analytics",
     priceId: "price_premium_shipper_monthly",
     amount: 19900, // $199/month
     currency: "usd",

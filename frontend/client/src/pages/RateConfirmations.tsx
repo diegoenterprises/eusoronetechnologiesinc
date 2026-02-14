@@ -46,7 +46,7 @@ export default function RateConfirmations() {
   };
 
   const filteredConfirmations = (confirmationsQuery.data as any)?.filter((conf: any) =>
-    !searchTerm || conf.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || conf.carrierName?.toLowerCase().includes(searchTerm.toLowerCase())
+    !searchTerm || conf.loadNumber?.toLowerCase().includes(searchTerm.toLowerCase()) || conf.catalystName?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -57,7 +57,7 @@ export default function RateConfirmations() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Rate Confirmations
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Manage carrier rate confirmations</p>
+          <p className="text-slate-400 text-sm mt-1">Manage catalyst rate confirmations</p>
         </div>
         <Button variant="outline" className="bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 rounded-lg">
           <Download className="w-4 h-4 mr-2" />Export
@@ -174,7 +174,7 @@ export default function RateConfirmations() {
                         {getStatusBadge(conf.status)}
                       </div>
                       <p className="text-sm text-slate-400">Load: {conf.loadNumber}</p>
-                      <p className="text-sm text-slate-400">Carrier: {conf.carrierName}</p>
+                      <p className="text-sm text-slate-400">Catalyst: {conf.catalystName}</p>
                     </div>
                     <div className="text-right">
                       <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-xl">${conf.rate?.toLocaleString()}</p>

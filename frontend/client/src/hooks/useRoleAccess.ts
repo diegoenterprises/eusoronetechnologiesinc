@@ -3,7 +3,7 @@
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
  * 
  * Provides role-based access control for all 9 user types:
- * - SHIPPER, CARRIER, BROKER, DRIVER, CATALYST, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN
+ * - SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -12,10 +12,10 @@ import { useEffect } from "react";
 
 export type UserRole = 
   | "SHIPPER" 
-  | "CARRIER" 
+  | "CATALYST" 
   | "BROKER" 
   | "DRIVER" 
-  | "CATALYST" 
+  | "DISPATCH" 
   | "ESCORT" 
   | "TERMINAL_MANAGER" 
   | "FACTORING"
@@ -30,38 +30,38 @@ interface RoleAccessConfig {
 // Comprehensive page access configuration for all 9 roles
 const PAGE_ACCESS: RoleAccessConfig = {
   // Dashboard
-  "/": ["SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Shipper-specific pages
-  "/loads": ["SHIPPER", "CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/loads": ["SHIPPER", "CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
   "/loads/create": ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
-  "/loads/active": ["SHIPPER", "CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"],
-  "/tracking": ["SHIPPER", "CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"],
-  "/carriers": ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/loads/active": ["SHIPPER", "CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/tracking": ["SHIPPER", "CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/catalysts": ["SHIPPER", "BROKER", "ADMIN", "SUPER_ADMIN"],
   
-  // Carrier-specific pages
-  "/marketplace": ["CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"],
-  "/bids": ["CARRIER", "ADMIN", "SUPER_ADMIN"],
-  "/loads/transit": ["CARRIER", "DRIVER", "ADMIN", "SUPER_ADMIN"],
-  "/fleet": ["CARRIER", "ADMIN", "SUPER_ADMIN"],
-  "/drivers": ["CARRIER", "ADMIN", "SUPER_ADMIN"],
-  "/earnings": ["CARRIER", "DRIVER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
-  "/analytics": ["CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"],
+  // Catalyst-specific pages
+  "/marketplace": ["CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
+  "/bids": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
+  "/loads/transit": ["CATALYST", "DRIVER", "ADMIN", "SUPER_ADMIN"],
+  "/fleet": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
+  "/drivers": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
+  "/earnings": ["CATALYST", "DRIVER", "DISPATCH", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/analytics": ["CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
   
   // Driver-specific pages
-  "/jobs": ["DRIVER", "CARRIER", "ADMIN", "SUPER_ADMIN"],
+  "/jobs": ["DRIVER", "CATALYST", "ADMIN", "SUPER_ADMIN"],
   "/jobs/current": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/navigation": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/vehicle": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
   "/diagnostics": ["DRIVER", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/documents": ["DRIVER", "ADMIN", "SUPER_ADMIN"],
   
-  // Catalyst-specific pages
-  "/specializations": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
-  "/matched-loads": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
-  "/opportunities": ["CATALYST", "ADMIN", "SUPER_ADMIN"],
-  "/performance": ["CATALYST", "CARRIER", "ADMIN", "SUPER_ADMIN"],
-  "/ai-assistant": ["CATALYST", "SHIPPER", "CARRIER", "DRIVER", "ADMIN", "SUPER_ADMIN"],
+  // Dispatch-specific pages
+  "/specializations": ["DISPATCH", "ADMIN", "SUPER_ADMIN"],
+  "/matched-loads": ["DISPATCH", "ADMIN", "SUPER_ADMIN"],
+  "/opportunities": ["DISPATCH", "ADMIN", "SUPER_ADMIN"],
+  "/performance": ["DISPATCH", "CATALYST", "ADMIN", "SUPER_ADMIN"],
+  "/ai-assistant": ["DISPATCH", "SHIPPER", "CATALYST", "DRIVER", "ADMIN", "SUPER_ADMIN"],
   
   // Escort-specific pages
   "/convoys": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
@@ -80,7 +80,7 @@ const PAGE_ACCESS: RoleAccessConfig = {
   // Factoring-specific pages
   "/factoring": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
   "/factoring/invoices": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/factoring/carriers": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/factoring/catalysts": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
   "/factoring/collections": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
   "/factoring/funding": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
   "/factoring/risk": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
@@ -91,13 +91,13 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/factoring/settings": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
 
   // Shared pages
-  "/messages": ["SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/payments": ["SHIPPER", "CARRIER", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/wallet": ["SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/company": ["SHIPPER", "CARRIER", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/profile": ["SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/settings": ["SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/support": ["SHIPPER", "CARRIER", "BROKER", "DRIVER", "CATALYST", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/messages": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/payments": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/wallet": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/company": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/profile": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/settings": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/support": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
   
   // Admin pages
   "/admin": ["ADMIN", "SUPER_ADMIN"],
@@ -210,11 +210,11 @@ export function getRoleHierarchy(role: UserRole): number {
     USER: 0,
     DRIVER: 1,
     ESCORT: 2,
-    CATALYST: 3,
+    DISPATCH: 3,
     TERMINAL_MANAGER: 4,
     FACTORING: 5,
     SHIPPER: 6,
-    CARRIER: 7,
+    CATALYST: 7,
     BROKER: 8,
     ADMIN: 9,
     SUPER_ADMIN: 10,

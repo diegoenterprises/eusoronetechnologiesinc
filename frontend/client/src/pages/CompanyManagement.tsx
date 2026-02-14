@@ -36,7 +36,7 @@ export default function CompanyManagement() {
   const getTypeBadge = (type: string) => {
     const colors: Record<string, string> = {
       shipper: "bg-blue-500/20 text-blue-400",
-      carrier: "bg-green-500/20 text-green-400",
+      catalyst: "bg-green-500/20 text-green-400",
       broker: "bg-purple-500/20 text-purple-400",
       terminal: "bg-cyan-500/20 text-cyan-400",
     };
@@ -109,7 +109,7 @@ export default function CompanyManagement() {
           <SelectContent>
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="shipper">Shipper</SelectItem>
-            <SelectItem value="carrier">Carrier</SelectItem>
+            <SelectItem value="catalyst">Catalyst</SelectItem>
             <SelectItem value="broker">Broker</SelectItem>
             <SelectItem value="terminal">Terminal</SelectItem>
           </SelectContent>

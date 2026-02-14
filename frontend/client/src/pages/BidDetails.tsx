@@ -168,12 +168,12 @@ export default function BidDetails() {
           </CardContent>
         </Card>
 
-        {/* Carrier Info */}
+        {/* Catalyst Info */}
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardHeader className="pb-3">
             <CardTitle className="text-white text-lg flex items-center gap-2">
               <User className="w-5 h-5 text-cyan-400" />
-              Carrier Information
+              Catalyst Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -182,7 +182,7 @@ export default function BidDetails() {
                 <Truck className="w-6 h-6 text-cyan-400" />
               </div>
               <div>
-                <p className="text-white font-medium">{bid.carrierName}</p>
+                <p className="text-white font-medium">{bid.catalystName}</p>
                 <p className="text-sm text-slate-400">MC# {bid.mcNumber}</p>
               </div>
             </div>
@@ -190,11 +190,11 @@ export default function BidDetails() {
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 rounded-xl bg-slate-700/30">
                 <p className="text-xs text-slate-500">Rating</p>
-                <p className="text-yellow-400 font-medium">{bid.carrierRating?.toFixed(1) || "N/A"} / 5.0</p>
+                <p className="text-yellow-400 font-medium">{bid.catalystRating?.toFixed(1) || "N/A"} / 5.0</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-700/30">
                 <p className="text-xs text-slate-500">Loads Completed</p>
-                <p className="text-white font-medium">{bid.carrierLoads || 0}</p>
+                <p className="text-white font-medium">{bid.catalystLoads || 0}</p>
               </div>
               <div className="p-3 rounded-xl bg-slate-700/30">
                 <p className="text-xs text-slate-500">On-Time Rate</p>
@@ -208,7 +208,7 @@ export default function BidDetails() {
 
             {bid.notes && (
               <div className="p-4 rounded-xl bg-slate-700/30">
-                <p className="text-xs text-slate-500 mb-1">Carrier Notes</p>
+                <p className="text-xs text-slate-500 mb-1">Catalyst Notes</p>
                 <p className="text-white">{bid.notes}</p>
               </div>
             )}

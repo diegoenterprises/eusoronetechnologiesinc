@@ -33,7 +33,7 @@ interface ComplianceScoreProps {
   overallScore: number;
   categories: ComplianceCategory[];
   entityName: string;
-  entityType: "driver" | "carrier" | "company";
+  entityType: "driver" | "catalyst" | "company";
   lastAudit?: string;
   nextAudit?: string;
 }
@@ -230,7 +230,7 @@ export function ComplianceScore({
 }
 
 // Default categories for different entity types
-export function getDefaultCategories(entityType: "driver" | "carrier" | "company"): ComplianceCategory[] {
+export function getDefaultCategories(entityType: "driver" | "catalyst" | "company"): ComplianceCategory[] {
   if (entityType === "driver") {
     return [
       {
@@ -291,7 +291,7 @@ export function getDefaultCategories(entityType: "driver" | "carrier" | "company
     ];
   }
   
-  // Default carrier categories
+  // Default catalyst categories
   return [
     {
       id: "authority",

@@ -1,8 +1,8 @@
 /**
  * FMCSA SAFER SYSTEM INTEGRATION
- * Federal Motor Carrier Safety Administration API Integration
+ * Federal Motor Catalyst Safety Administration API Integration
  * 
- * Provides carrier verification, safety ratings, and authority status
+ * Provides catalyst verification, safety ratings, and authority status
  * API Documentation: https://mobile.fmcsa.dot.gov/qc/services/
  */
 
@@ -16,11 +16,11 @@ const FMCSA_BASE_URL = "https://mobile.fmcsa.dot.gov/qc/services";
 // TYPE DEFINITIONS
 // ============================================================================
 
-export interface FMCSACarrierInfo {
+export interface FMCSACatalystInfo {
   dotNumber: string;
   legalName: string;
   dbaName: string | null;
-  carrierOperation: string;
+  catalystOperation: string;
   hmFlag: "Y" | "N";
   pcFlag: "Y" | "N";
   phyStreet: string;
@@ -68,16 +68,16 @@ export interface FMCSAInsurance {
   dotNumber: string;
   insuranceType: string;
   policyNumber: string;
-  insuranceCarrier: string;
+  insuranceCatalyst: string;
   coverageFrom: string;
   coverageTo: string;
   coverageValue: number;
   postedDate: string;
 }
 
-export interface CarrierVerificationResult {
+export interface CatalystVerificationResult {
   isValid: boolean;
-  carrier: FMCSACarrierInfo | null;
+  catalyst: FMCSACatalystInfo | null;
   safetyRating: FMCSASafetyRating | null;
   authorities: FMCSAAuthority[];
   insurance: FMCSAInsurance[];
@@ -107,17 +107,17 @@ class FMCSAService {
   }
 
   /**
-   * Lookup carrier by DOT number
+   * Lookup catalyst by DOT number
    */
-  async getCarrierByDOT(dotNumber: string): Promise<FMCSACarrierInfo | null> {
+  async getCatalystByDOT(dotNumber: string): Promise<FMCSACatalystInfo | null> {
     if (!this.isConfigured()) {
       console.warn("[FMCSA] API key not configured, using mock data");
-      return this.getMockCarrier(dotNumber);
+      return this.getMockCatalyst(dotNumber);
     }
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/carriers/${dotNumber}?webKey=${this.apiKey}`,
+        `${this.baseUrl}/catalysts/${dotNumber}?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -132,25 +132,25 @@ class FMCSAService {
       }
 
       const data = await response.json();
-      return data.content?.carrier || null;
+      return data.content?.catalyst || null;
     } catch (error) {
-      console.error("[FMCSA] getCarrierByDOT error:", error);
+      console.error("[FMCSA] getCatalystByDOT error:", error);
       return null;
     }
   }
 
   /**
-   * Lookup carrier by MC number
+   * Lookup catalyst by MC number
    */
-  async getCarrierByMC(mcNumber: string): Promise<FMCSACarrierInfo | null> {
+  async getCatalystByMC(mcNumber: string): Promise<FMCSACatalystInfo | null> {
     if (!this.isConfigured()) {
       console.warn("[FMCSA] API key not configured, using mock data");
-      return this.getMockCarrier(`MC-${mcNumber}`);
+      return this.getMockCatalyst(`MC-${mcNumber}`);
     }
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/carriers/docket-number/${mcNumber}?webKey=${this.apiKey}`,
+        `${this.baseUrl}/catalysts/docket-number/${mcNumber}?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -164,15 +164,15 @@ class FMCSAService {
       }
 
       const data = await response.json();
-      return data.content?.carrier || null;
+      return data.content?.catalyst || null;
     } catch (error) {
-      console.error("[FMCSA] getCarrierByMC error:", error);
+      console.error("[FMCSA] getCatalystByMC error:", error);
       return null;
     }
   }
 
   /**
-   * Get carrier safety rating
+   * Get catalyst safety rating
    */
   async getSafetyRating(dotNumber: string): Promise<FMCSASafetyRating | null> {
     if (!this.isConfigured()) {
@@ -181,7 +181,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/carriers/${dotNumber}/safetyRating?webKey=${this.apiKey}`,
+        `${this.baseUrl}/catalysts/${dotNumber}/safetyRating?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -203,7 +203,7 @@ class FMCSAService {
   }
 
   /**
-   * Get carrier authority status
+   * Get catalyst authority status
    */
   async getAuthorities(dotNumber: string): Promise<FMCSAAuthority[]> {
     if (!this.isConfigured()) {
@@ -212,7 +212,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/carriers/${dotNumber}/authority?webKey=${this.apiKey}`,
+        `${this.baseUrl}/catalysts/${dotNumber}/authority?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -234,7 +234,7 @@ class FMCSAService {
   }
 
   /**
-   * Get carrier insurance information
+   * Get catalyst insurance information
    */
   async getInsurance(dotNumber: string): Promise<FMCSAInsurance[]> {
     if (!this.isConfigured()) {
@@ -243,7 +243,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/carriers/${dotNumber}/insurance?webKey=${this.apiKey}`,
+        `${this.baseUrl}/catalysts/${dotNumber}/insurance?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -265,39 +265,39 @@ class FMCSAService {
   }
 
   /**
-   * Full carrier verification - combines all checks
+   * Full catalyst verification - combines all checks
    */
-  async verifyCarrier(dotNumber: string): Promise<CarrierVerificationResult> {
+  async verifyCatalyst(dotNumber: string): Promise<CatalystVerificationResult> {
     const warnings: string[] = [];
     const errors: string[] = [];
 
     // Fetch all data in parallel
-    const [carrier, safetyRating, authorities, insurance] = await Promise.all([
-      this.getCarrierByDOT(dotNumber),
+    const [catalyst, safetyRating, authorities, insurance] = await Promise.all([
+      this.getCatalystByDOT(dotNumber),
       this.getSafetyRating(dotNumber),
       this.getAuthorities(dotNumber),
       this.getInsurance(dotNumber),
     ]);
 
-    // Validate carrier exists
-    if (!carrier) {
+    // Validate catalyst exists
+    if (!catalyst) {
       return {
         isValid: false,
-        carrier: null,
+        catalyst: null,
         safetyRating: null,
         authorities: [],
         insurance: [],
         warnings: [],
-        errors: ["Carrier not found in FMCSA database"],
+        errors: ["Catalyst not found in FMCSA database"],
         verifiedAt: new Date().toISOString(),
       };
     }
 
     // Check safety rating
     if (safetyRating?.rating === "Unsatisfactory") {
-      errors.push("Carrier has Unsatisfactory safety rating");
+      errors.push("Catalyst has Unsatisfactory safety rating");
     } else if (safetyRating?.rating === "Conditional") {
-      warnings.push("Carrier has Conditional safety rating");
+      warnings.push("Catalyst has Conditional safety rating");
     }
 
     // Check authority status
@@ -305,7 +305,7 @@ class FMCSAService {
       (auth) => auth.authorityStatus === "Active"
     );
     if (!hasActiveAuthority && authorities.length > 0) {
-      errors.push("Carrier does not have active operating authority");
+      errors.push("Catalyst does not have active operating authority");
     }
 
     // Check insurance
@@ -316,7 +316,7 @@ class FMCSAService {
     });
 
     if (validInsurance.length === 0 && insurance.length > 0) {
-      errors.push("Carrier insurance has expired");
+      errors.push("Catalyst insurance has expired");
     }
 
     // Check for required insurance types
@@ -327,21 +327,21 @@ class FMCSAService {
       warnings.push("No valid liability insurance on file");
     }
 
-    // Check hazmat authorization if carrier hauls hazmat
-    if (carrier.hmFlag === "Y") {
+    // Check hazmat authorization if catalyst hauls hazmat
+    if (catalyst.hmFlag === "Y") {
       const hasHazmatAuth = authorities.some(
         (auth) =>
           auth.authorityType.toLowerCase().includes("hazmat") &&
           auth.authorityStatus === "Active"
       );
       if (!hasHazmatAuth) {
-        warnings.push("Carrier registered for hazmat but no active hazmat authority");
+        warnings.push("Catalyst registered for hazmat but no active hazmat authority");
       }
     }
 
     return {
       isValid: errors.length === 0,
-      carrier,
+      catalyst,
       safetyRating,
       authorities,
       insurance: validInsurance,
@@ -352,19 +352,19 @@ class FMCSAService {
   }
 
   /**
-   * Search carriers by name
+   * Search catalysts by name
    */
-  async searchCarriers(
+  async searchCatalysts(
     name: string,
     state?: string,
     limit: number = 20
-  ): Promise<FMCSACarrierInfo[]> {
+  ): Promise<FMCSACatalystInfo[]> {
     if (!this.isConfigured()) {
-      return [this.getMockCarrier("1234567")!];
+      return [this.getMockCatalyst("1234567")!];
     }
 
     try {
-      let url = `${this.baseUrl}/carriers/name/${encodeURIComponent(name)}?webKey=${this.apiKey}&size=${limit}`;
+      let url = `${this.baseUrl}/catalysts/name/${encodeURIComponent(name)}?webKey=${this.apiKey}&size=${limit}`;
       if (state) {
         url += `&state=${state}`;
       }
@@ -381,9 +381,9 @@ class FMCSAService {
       }
 
       const data = await response.json();
-      return data.content?.carriers || [];
+      return data.content?.catalysts || [];
     } catch (error) {
-      console.error("[FMCSA] searchCarriers error:", error);
+      console.error("[FMCSA] searchCatalysts error:", error);
       return [];
     }
   }
@@ -392,12 +392,12 @@ class FMCSAService {
   // MOCK DATA (for development without API key)
   // ============================================================================
 
-  private getMockCarrier(dotNumber: string): FMCSACarrierInfo {
+  private getMockCatalyst(dotNumber: string): FMCSACatalystInfo {
     return {
       dotNumber: dotNumber.replace(/\D/g, "") || "1234567",
       legalName: "ABC Transport LLC",
-      dbaName: "ABC Hazmat Carriers",
-      carrierOperation: "A",
+      dbaName: "ABC Hazmat Catalysts",
+      catalystOperation: "A",
       hmFlag: "Y",
       pcFlag: "N",
       phyStreet: "1234 Industrial Blvd",
@@ -476,7 +476,7 @@ class FMCSAService {
         dotNumber,
         insuranceType: "BIPD",
         policyNumber: "POL-2024-123456",
-        insuranceCarrier: "National Trucking Insurance",
+        insuranceCatalyst: "National Trucking Insurance",
         coverageFrom: now.toISOString().split("T")[0],
         coverageTo: oneYearFromNow.toISOString().split("T")[0],
         coverageValue: 1000000,
@@ -486,7 +486,7 @@ class FMCSAService {
         dotNumber,
         insuranceType: "Cargo",
         policyNumber: "POL-2024-789012",
-        insuranceCarrier: "National Trucking Insurance",
+        insuranceCatalyst: "National Trucking Insurance",
         coverageFrom: now.toISOString().split("T")[0],
         coverageTo: oneYearFromNow.toISOString().split("T")[0],
         coverageValue: 100000,

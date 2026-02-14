@@ -1,5 +1,5 @@
 /**
- * IN TRANSIT PAGE - CARRIER ROLE
+ * IN TRANSIT PAGE - CATALYST ROLE
  * Theme-aware | Brand gradient | Shipper design standard
  * Loads currently being transported with real-time driver tracking and delivery management
  */

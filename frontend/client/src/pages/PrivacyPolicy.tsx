@@ -61,7 +61,7 @@ const PRIVACY_SECTIONS: Section[] = [
     content: (
       <div className="space-y-3">
         <p>{COMPANY_NAME} ("Company," "we," "us," or "our") operates the {PLATFORM_NAME} freight and energy logistics platform (the "Platform"). This Privacy Policy describes how we collect, use, disclose, store, and protect your personal information when you access or use the Platform, visit our website, or interact with us in any way.</p>
-        <p>This Privacy Policy applies to all Users of the Platform, including Shippers, Carriers, Brokers, Drivers, Dispatchers (Catalysts), Escort/Pilot Vehicle Operators, Terminal Managers, Compliance Officers, Safety Managers, and all other registered and unregistered visitors.</p>
+        <p>This Privacy Policy applies to all Users of the Platform, including Shippers, Catalysts, Brokers, Drivers, Dispatchers (Dispatch), Escort/Pilot Vehicle Operators, Terminal Managers, Compliance Officers, Safety Managers, and all other registered and unregistered visitors.</p>
         <p>By using the Platform, you consent to the data practices described in this Privacy Policy. If you do not agree with this Privacy Policy, please do not use the Platform. This Privacy Policy is incorporated into and subject to our Terms of Service.</p>
         <p>We are committed to complying with applicable privacy and data protection laws, including but not limited to the California Consumer Privacy Act (CCPA/CPRA, Cal. Civ. Code 1798.100 et seq.), the Texas Data Privacy and Security Act (TDPSA), the Virginia Consumer Data Protection Act (VCDPA), the Colorado Privacy Act (CPA), the Connecticut Data Privacy Act (CTDPA), the Gramm-Leach-Bliley Act (GLBA) to the extent applicable to financial services, and applicable provisions of the European General Data Protection Regulation (GDPR) for any EU/EEA users.</p>
       </div>
@@ -94,11 +94,11 @@ const PRIVACY_SECTIONS: Section[] = [
         </ul>
         <p><strong className="text-white">2.3 Information from Third Parties:</strong></p>
         <ul className="list-disc pl-6 space-y-1">
-          <li><strong className="text-white">FMCSA/SAFER Data:</strong> Carrier safety ratings, authority status, insurance filing status, inspection and crash data from FMCSA SAFER system</li>
+          <li><strong className="text-white">FMCSA/SAFER Data:</strong> Catalyst safety ratings, authority status, insurance filing status, inspection and crash data from FMCSA SAFER system</li>
           <li><strong className="text-white">Credit & Background Checks:</strong> Credit reports (with your authorization), criminal background check results, MVR (Motor Vehicle Records) reports, employment verification</li>
           <li><strong className="text-white">Identity Verification Services:</strong> Results from third-party identity verification, document authentication, and fraud detection services</li>
           <li><strong className="text-white">Payment Processors:</strong> Transaction confirmation data, chargeback notifications, fraud alerts from payment processing partners</li>
-          <li><strong className="text-white">Insurance Verification:</strong> Insurance status updates from carrier insurance databases and verification services</li>
+          <li><strong className="text-white">Insurance Verification:</strong> Insurance status updates from catalyst insurance databases and verification services</li>
         </ul>
       </div>
     ),
@@ -179,7 +179,7 @@ const PRIVACY_SECTIONS: Section[] = [
     content: (
       <div className="space-y-3">
         <p>We do not sell your personal information. We may share your information in the following circumstances:</p>
-        <p><strong className="text-white">5.1 With Other Platform Users:</strong> When you use the Platform, certain information is shared with other Users as necessary for transactions. For example, Shippers see Carrier company names and safety ratings; Carriers see load details and pickup/delivery locations; Drivers' real-time locations are shared with dispatchers and load stakeholders during active deliveries.</p>
+        <p><strong className="text-white">5.1 With Other Platform Users:</strong> When you use the Platform, certain information is shared with other Users as necessary for transactions. For example, Shippers see Catalyst company names and safety ratings; Catalysts see load details and pickup/delivery locations; Drivers' real-time locations are shared with dispatchers and load stakeholders during active deliveries.</p>
         <p><strong className="text-white">5.2 Service Providers:</strong> We share information with trusted third-party service providers who assist us in operating the Platform, including:</p>
         <ul className="list-disc pl-6 space-y-1">
           <li>Cloud hosting and infrastructure providers (data storage, computing)</li>
@@ -300,7 +300,7 @@ const PRIVACY_SECTIONS: Section[] = [
       <div className="space-y-3">
         <p><strong className="text-white">10.1 When We Collect Location Data:</strong> We collect GPS location data from Drivers and vehicles: (a) during active load assignments (from acceptance to delivery confirmation); (b) when ELD-equipped vehicles are in operation (as required by 49 CFR Part 395); (c) when you voluntarily enable location sharing for features like nearby load search or rest stop finder.</p>
         <p><strong className="text-white">10.2 How We Use Location Data:</strong> Location data is used for: real-time load tracking and ETA updates; ELD/HOS compliance; geofence alerts for pickup/delivery; route optimization; emergency response coordination; verifying load completion and proof of delivery; detention time calculation.</p>
-        <p><strong className="text-white">10.3 Who Sees Your Location:</strong> Your real-time location during active loads is visible to: the Shipper, Broker, and/or Dispatcher associated with the active load; your carrier's fleet management team; Platform safety and compliance systems. Your location is NOT visible to other unrelated Platform Users.</p>
+        <p><strong className="text-white">10.3 Who Sees Your Location:</strong> Your real-time location during active loads is visible to: the Shipper, Broker, and/or Dispatcher associated with the active load; your catalyst's fleet management team; Platform safety and compliance systems. Your location is NOT visible to other unrelated Platform Users.</p>
         <p><strong className="text-white">10.4 Controlling Location Data:</strong> Location tracking during active ELD operation is required by federal regulation and cannot be disabled. For non-ELD location features, you may disable location permissions in your device settings. Disabling location may limit certain Platform features.</p>
       </div>
     ),

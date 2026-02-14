@@ -1,6 +1,6 @@
 /**
  * LOAD NEGOTIATION PAGE
- * Rate negotiation between brokers, carriers, and drivers
+ * Rate negotiation between brokers, catalysts, and drivers
  * Counter-offers, rate history, and deal tracking
  */
 

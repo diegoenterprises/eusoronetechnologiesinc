@@ -30,7 +30,7 @@ import { terminalsRouter } from "./routers/terminals";
 import { escortsRouter } from "./routers/escorts";
 import { driversRouter } from "./routers/drivers";
 import { analyticsRouter } from "./routers/analytics";
-import { carriersRouter } from "./routers/carriers";
+import { catalystsRouter } from "./routers/catalysts";
 import { brokersRouter } from "./routers/brokers";
 import { shippersRouter } from "./routers/shippers";
 import { incidentsRouter } from "./routers/incidents";
@@ -40,7 +40,7 @@ import { ergRouter } from "./routers/erg";
 import { appointmentsRouter } from "./routers/appointments";
 import { permitsRouter } from "./routers/permits";
 import { facilitiesRouter } from "./routers/facilities";
-import { catalystsRouter } from "./routers/catalysts";
+import { dispatchRoleRouter } from "./routers/dispatchRole";
 import { adminRouter } from "./routers/admin";
 import { supportRouter } from "./routers/support";
 import { profileRouter } from "./routers/profile";
@@ -110,7 +110,7 @@ import { helpRouter } from "./routers/help";
 import { feedbackRouter } from "./routers/feedback";
 import { rewardsRouter } from "./routers/rewards";
 import { bookmarksRouter } from "./routers/bookmarks";
-import { carrierPacketsRouter } from "./routers/carrierPackets";
+import { catalystPacketsRouter } from "./routers/catalystPackets";
 import { hazmatRouter } from "./routers/hazmat";
 import { platformFeesRouter } from "./routers/platformFees";
 import { podRouter } from "./routers/pod";
@@ -235,7 +235,7 @@ export const appRouter = router({
   // Stripe Payments (checkout, Connect, subscriptions, payment methods)
   stripe: stripeRouter,
 
-  // Driver/Carrier Earnings
+  // Driver/Catalyst Earnings
   earnings: earningsRouter,
 
   // Fleet Management
@@ -280,8 +280,8 @@ export const appRouter = router({
   // Analytics & Reporting
   analytics: analyticsRouter,
 
-  // Carrier Management
-  carriers: carriersRouter,
+  // Catalyst Management
+  catalysts: catalystsRouter,
 
   // Broker Operations
   brokers: brokersRouter,
@@ -310,8 +310,8 @@ export const appRouter = router({
   // Facility Management
   facilities: facilitiesRouter,
 
-  // Catalyst/Dispatch Operations
-  catalysts: catalystsRouter,
+  // Dispatch Role Operations
+  dispatchRole: dispatchRoleRouter,
 
   // Admin/Super Admin Operations
   admin: adminRouter,
@@ -436,7 +436,7 @@ export const appRouter = router({
   // User/Company Onboarding
   onboarding: onboardingRouter,
 
-  // User Registration (Shipper, Carrier, Driver, etc.)
+  // User Registration (Shipper, Catalyst, Driver, etc.)
   registration: registrationRouter,
 
   // Vehicle Maintenance
@@ -523,8 +523,8 @@ export const appRouter = router({
   // Bookmarks
   bookmarks: bookmarksRouter,
 
-  // Carrier Packets
-  carrierPackets: carrierPacketsRouter,
+  // Catalyst Packets
+  catalystPackets: catalystPacketsRouter,
 
   // Hazmat
   hazmat: hazmatRouter,
@@ -633,7 +633,6 @@ export const appRouter = router({
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,
-  carrier: carriersRouter,
   catalyst: catalystsRouter,
   driver: driversRouter,
   escort: escortsRouter,

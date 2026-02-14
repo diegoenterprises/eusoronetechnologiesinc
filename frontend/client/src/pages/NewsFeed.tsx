@@ -78,8 +78,8 @@ function QuickLinksNav() {
       { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
       { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
     ],
-    CARRIER: [
-      { label: "FMCSA Updates", icon: Shield, path: "/carrier-compliance" },
+    CATALYST: [
+      { label: "FMCSA Updates", icon: Shield, path: "/catalyst-compliance" },
       { label: "Load Board", icon: Truck, path: "/load-board" },
       { label: "Fuel Prices", icon: DollarSign, path: "/market-pricing" },
       { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
@@ -88,7 +88,7 @@ function QuickLinksNav() {
       { label: "Load Board", icon: Truck, path: "/load-board" },
       { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
       { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },
-      { label: "Carriers", icon: Truck, path: "/carriers" },
+      { label: "Catalysts", icon: Truck, path: "/catalysts" },
     ],
     DRIVER: [
       { label: "My Jobs", icon: Truck, path: "/jobs" },
@@ -96,7 +96,7 @@ function QuickLinksNav() {
       { label: "Weather Alerts", icon: AlertTriangle, path: "/hot-zones" },
       { label: "Documents", icon: Shield, path: "/documents" },
     ],
-    CATALYST: [
+    DISPATCH: [
       { label: "Matched Loads", icon: Truck, path: "/matched-loads" },
       { label: "Market Pricing", icon: DollarSign, path: "/market-pricing" },
       { label: "Hot Zones", icon: TrendingUp, path: "/hot-zones" },

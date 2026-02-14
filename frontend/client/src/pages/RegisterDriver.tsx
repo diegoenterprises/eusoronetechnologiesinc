@@ -41,8 +41,8 @@ interface DriverFormData {
   
   // Step 3: Employment Type
   employmentType: string;
-  carrierUsdot: string;
-  carrierName: string;
+  catalystUsdot: string;
+  catalystName: string;
   
   // Step 4: CDL Information
   cdlNumber: string;
@@ -89,8 +89,8 @@ const initialFormData: DriverFormData = {
   state: "",
   zipCode: "",
   employmentType: "",
-  carrierUsdot: "",
-  carrierName: "",
+  catalystUsdot: "",
+  catalystName: "",
   cdlNumber: "",
   cdlState: "",
   cdlClass: "",
@@ -139,11 +139,11 @@ export default function RegisterDriver() {
     setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
-  const handleCarrierVerified = (data: FMCSAData) => {
+  const handleCatalystVerified = (data: FMCSAData) => {
     setFmcsaData(data);
     if (data.verified && data.companyProfile) {
-      updateFormData({ carrierName: data.companyProfile.legalName });
-      toast.success(`Carrier verified: ${data.companyProfile.legalName}`);
+      updateFormData({ catalystName: data.companyProfile.legalName });
+      toast.success(`Catalyst verified: ${data.companyProfile.legalName}`);
     }
   };
 
@@ -367,8 +367,8 @@ export default function RegisterDriver() {
             <Label className="text-slate-300">Employment Type <span className="text-red-400">*</span></Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {[
-                { value: "company", label: "Company Driver", desc: "W-2 employee of a carrier" },
-                { value: "owner_op", label: "Owner-Operator", desc: "Leased to a carrier (1099)" },
+                { value: "company", label: "Company Driver", desc: "W-2 employee of a catalyst" },
+                { value: "owner_op", label: "Owner-Operator", desc: "Leased to a catalyst (1099)" },
                 { value: "independent", label: "Independent", desc: "Own authority/USDOT" },
               ].map((type: any) => (
                 <div
@@ -391,19 +391,19 @@ export default function RegisterDriver() {
             <div className="space-y-4 p-4 rounded-lg bg-slate-700/30">
               <FMCSALookup
                 mode="dot"
-                dotNumber={formData.carrierUsdot}
+                dotNumber={formData.catalystUsdot}
                 mcNumber=""
-                onDotChange={(v) => updateFormData({ carrierUsdot: v })}
+                onDotChange={(v) => updateFormData({ catalystUsdot: v })}
                 onMcChange={() => {}}
-                onDataLoaded={handleCarrierVerified}
+                onDataLoaded={handleCatalystVerified}
                 fmcsaData={fmcsaData}
                 compact
               />
-              {fmcsaData?.verified && formData.carrierName && (
+              {fmcsaData?.verified && formData.catalystName && (
                 <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
                   <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
                   <span className="text-sm text-green-300">
-                    Registering under <strong>{formData.carrierName}</strong>
+                    Registering under <strong>{formData.catalystName}</strong>
                   </span>
                 </div>
               )}

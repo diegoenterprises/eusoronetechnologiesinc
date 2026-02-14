@@ -154,10 +154,10 @@ export const DriverVehicleWidget: React.FC<{ compact?: boolean }> = ({ compact =
   );
 };
 
-// ============= CATALYST/DISPATCH WIDGETS =============
+// ============= DISPATCH/DISPATCH WIDGETS =============
 
-export const CatalystFleetStatusWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const { data, isLoading } = trpc.catalysts.getFleetStats.useQuery();
+export const DispatchFleetStatusWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+  const { data, isLoading } = trpc.dispatchRole.getFleetStats.useQuery();
 
   if (isLoading) {
     return <Skeleton className="h-32 w-full rounded-lg" />;
@@ -200,8 +200,8 @@ export const CatalystFleetStatusWidget: React.FC<{ compact?: boolean }> = ({ com
   );
 };
 
-export const CatalystExceptionsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
-  const { data, isLoading } = trpc.catalysts.getExceptionStats.useQuery();
+export const DispatchExceptionsWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
+  const { data, isLoading } = trpc.dispatch.getExceptionStats.useQuery();
 
   if (isLoading) {
     return <Skeleton className="h-24 w-full rounded-lg" />;

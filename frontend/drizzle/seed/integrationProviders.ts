@@ -32,7 +32,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     supportsRealtime: true,
     status: "active" as const,
     isPremium: false,
-    availableForRoles: ["CARRIER", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
     setupInstructions: "Click Connect to securely link your insurance accounts through Canopy Connect.",
   },
   {
@@ -51,7 +51,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["policies", "claims", "billing"],
     syncFrequencyMinutes: 120,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "OWNER_OPERATOR"],
   },
   {
     name: "Great West Casualty",
@@ -69,7 +69,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["policies", "cois", "claims", "loss_runs"],
     syncFrequencyMinutes: 120,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "OWNER_OPERATOR"],
   },
   {
     name: "Northland Insurance",
@@ -84,7 +84,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["policies", "filings"],
     syncFrequencyMinutes: 240,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "OWNER_OPERATOR"],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -111,7 +111,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["grades", "certifications", "safety_records", "training", "insurance_verification"],
     syncFrequencyMinutes: 240,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
     setupInstructions: "Enter your ISNetworld Company ID (found in your ISN dashboard) and authorize access.",
   },
   {
@@ -130,7 +130,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["oq_records", "drug_tests", "training", "certifications", "safety_data"],
     syncFrequencyMinutes: 240,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "OWNER_OPERATOR", "DRIVER"],
+    availableForRoles: ["CATALYST", "OWNER_OPERATOR", "DRIVER"],
     setupInstructions: "Enter your Veriforce API credentials from your Veriforce admin portal.",
   },
   {
@@ -152,7 +152,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["prequalification", "insurance_verification", "audits", "corrective_actions"],
     syncFrequencyMinutes: 360,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "SHIPPER", "BROKER"],
+    availableForRoles: ["CATALYST", "SHIPPER", "BROKER"],
     setupInstructions: "Enter your Avetta Supplier ID and authorize EusoTrip to access your profile.",
   },
   {
@@ -171,7 +171,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["training_records", "certifications", "safeland", "safeGulf"],
     syncFrequencyMinutes: 480,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "DRIVER"],
+    availableForRoles: ["CATALYST", "DRIVER"],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -196,7 +196,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     syncFrequencyMinutes: 15,
     supportsRealtime: true,
     status: "active" as const,
-    availableForRoles: ["TERMINAL_MANAGER", "CARRIER", "SHIPPER"],
+    availableForRoles: ["TERMINAL_MANAGER", "CATALYST", "SHIPPER"],
     setupInstructions: "Enter your Dearman API credentials and terminal code(s) to sync scheduling data.",
   },
   {
@@ -217,7 +217,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     syncFrequencyMinutes: 30,
     supportsRealtime: true,
     status: "active" as const,
-    availableForRoles: ["TERMINAL_MANAGER", "CARRIER", "SHIPPER"],
+    availableForRoles: ["TERMINAL_MANAGER", "CATALYST", "SHIPPER"],
   },
   {
     name: "Titan Cloud Software",
@@ -262,7 +262,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["deliveries", "inventory", "customers", "routes"],
     syncFrequencyMinutes: 30,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "TERMINAL_MANAGER"],
+    availableForRoles: ["CATALYST", "TERMINAL_MANAGER"],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -282,7 +282,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["transactions", "inventory", "consumption", "tanks", "users"],
     syncFrequencyMinutes: 30,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "TERMINAL_MANAGER"],
+    availableForRoles: ["CATALYST", "TERMINAL_MANAGER"],
   },
   {
     name: "FuelPlus",
@@ -296,7 +296,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["inventory", "consumption", "deliveries"],
     syncFrequencyMinutes: 60,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "TERMINAL_MANAGER"],
+    availableForRoles: ["CATALYST", "TERMINAL_MANAGER"],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -322,7 +322,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     syncFrequencyMinutes: 5,
     supportsRealtime: true,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "DRIVER", "SAFETY_MANAGER", "COMPLIANCE_OFFICER"],
+    availableForRoles: ["CATALYST", "DRIVER", "SAFETY_MANAGER", "COMPLIANCE_OFFICER"],
     setupInstructions: "Connect your Samsara account to automatically import HOS, GPS, safety events, and DVIRs.",
   },
   {
@@ -343,7 +343,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     syncFrequencyMinutes: 5,
     supportsRealtime: true,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "DRIVER", "SAFETY_MANAGER"],
+    availableForRoles: ["CATALYST", "DRIVER", "SAFETY_MANAGER"],
   },
   {
     name: "Omnitracs",
@@ -359,7 +359,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["vehicles", "drivers", "hos_logs", "routing", "messaging", "fuel"],
     syncFrequencyMinutes: 15,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "DRIVER"],
+    availableForRoles: ["CATALYST", "DRIVER"],
   },
   {
     name: "Geotab",
@@ -375,7 +375,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["vehicles", "trips", "fuel", "diagnostics", "driver_behavior", "zones"],
     syncFrequencyMinutes: 15,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "SAFETY_MANAGER"],
+    availableForRoles: ["CATALYST", "SAFETY_MANAGER"],
   },
   {
     name: "ELD Rider",
@@ -389,7 +389,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["hos_logs", "drivers"],
     syncFrequencyMinutes: 30,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "DRIVER"],
+    availableForRoles: ["CATALYST", "DRIVER"],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -411,7 +411,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["account_status", "payouts", "transactions", "balance"],
     syncFrequencyMinutes: 60,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
   },
   {
     name: "Plaid",
@@ -426,7 +426,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["accounts", "balances", "transactions"],
     syncFrequencyMinutes: 1440,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
+    availableForRoles: ["CATALYST", "SHIPPER", "BROKER", "OWNER_OPERATOR"],
   },
   {
     name: "Relay Payments",
@@ -441,7 +441,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["payments", "fuel_advances", "settlements"],
     syncFrequencyMinutes: 60,
     status: "beta" as const,
-    availableForRoles: ["CARRIER", "BROKER"],
+    availableForRoles: ["CATALYST", "BROKER"],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -451,7 +451,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     name: "FMCSA SAFER",
     slug: "fmcsa_safer",
     displayName: "FMCSA SAFER",
-    description: "Automatically verify carrier authority, safety ratings, and insurance filings with FMCSA.",
+    description: "Automatically verify catalyst authority, safety ratings, and insurance filings with FMCSA.",
     logoUrl: "/integrations/fmcsa.png",
     websiteUrl: "https://safer.fmcsa.dot.gov",
     category: "government" as const,
@@ -463,7 +463,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["authority", "safety_rating", "insurance_filings", "inspections", "crashes"],
     syncFrequencyMinutes: 1440,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "SHIPPER", "BROKER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER"],
+    availableForRoles: ["CATALYST", "SHIPPER", "BROKER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER"],
     setupInstructions: "Enter your FMCSA Web Services API key and USDOT number.",
   },
   {
@@ -481,7 +481,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["queries", "violations", "return_to_duty"],
     syncFrequencyMinutes: 1440,
     status: "active" as const,
-    availableForRoles: ["CARRIER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER"],
+    availableForRoles: ["CATALYST", "COMPLIANCE_OFFICER", "SAFETY_MANAGER"],
     setupInstructions: "Connect with your FMCSA Clearinghouse employer account.",
   },
   {
@@ -496,7 +496,7 @@ export const INTEGRATION_PROVIDERS_SEED = [
     dataTypesAvailable: ["fuel_purchases", "mileage", "tax_reports", "registrations"],
     syncFrequencyMinutes: 1440,
     status: "coming_soon" as const,
-    availableForRoles: ["CARRIER", "COMPLIANCE_OFFICER"],
+    availableForRoles: ["CATALYST", "COMPLIANCE_OFFICER"],
   },
 ];
 

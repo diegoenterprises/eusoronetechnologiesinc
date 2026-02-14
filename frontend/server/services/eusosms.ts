@@ -67,7 +67,7 @@ export async function sendSms(params: SendSmsParams): Promise<{ id: number; stat
     })
     .$returningId();
 
-  // TODO: Integrate with actual SMS gateway (SMPP, carrier API, etc.)
+  // TODO: Integrate with actual SMS gateway (SMPP, catalyst API, etc.)
   // For now, mark as sent immediately
   await db
     .update(smsMessages)

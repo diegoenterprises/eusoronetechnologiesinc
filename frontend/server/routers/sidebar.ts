@@ -50,34 +50,34 @@ export const sidebarRouter = router({
           if (row && Number(row.cnt) > 0) badges["/tracking"] = Number(row.cnt);
         } catch {}
 
-        // Carriers: pending bids on shipper's loads
+        // Catalysts: pending bids on shipper's loads
         try {
           const result = await db.execute(
             sql`SELECT COUNT(*) as cnt FROM bids b JOIN loads l ON b.loadId = l.id WHERE l.shipperId = ${userId} AND b.status = 'pending'`
           );
           const v = Number((result as any)?.[0]?.cnt || 0);
-          if (v > 0) badges["/carriers"] = v;
+          if (v > 0) badges["/catalysts"] = v;
         } catch {}
 
-      } else if (role === "CARRIER") {
+      } else if (role === "CATALYST") {
         // Assigned loads
         try {
           const [row] = await db.select({ cnt: count() }).from(loads)
-            .where(and(eq(loads.carrierId, companyId || 0), eq(loads.status, "assigned")));
+            .where(and(eq(loads.catalystId, companyId || 0), eq(loads.status, "assigned")));
           if (row && Number(row.cnt) > 0) badges["/loads"] = Number(row.cnt);
         } catch {}
 
         // In Transit
         try {
           const [row] = await db.select({ cnt: count() }).from(loads)
-            .where(and(eq(loads.carrierId, companyId || 0), eq(loads.status, "in_transit")));
+            .where(and(eq(loads.catalystId, companyId || 0), eq(loads.status, "in_transit")));
           if (row && Number(row.cnt) > 0) badges["/loads/transit"] = Number(row.cnt);
         } catch {}
 
         // Pending bids
         try {
           const [row] = await db.select({ cnt: count() }).from(bids)
-            .where(and(eq(bids.carrierId, companyId || 0), eq(bids.status, "pending")));
+            .where(and(eq(bids.catalystId, companyId || 0), eq(bids.status, "pending")));
           if (row && Number(row.cnt) > 0) badges["/bids"] = Number(row.cnt);
         } catch {}
 

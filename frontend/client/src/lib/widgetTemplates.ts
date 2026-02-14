@@ -30,7 +30,7 @@ export const DAILY_OPERATIONS_TEMPLATE: WidgetTemplate = {
   name: 'Daily Operations',
   description: 'Essential widgets for day-to-day work and quick decisions',
   category: 'operations',
-  roles: ['SHIPPER', 'CARRIER', 'BROKER', 'DRIVER'],
+  roles: ['SHIPPER', 'CATALYST', 'BROKER', 'DRIVER'],
   widgets: [
     'quick_actions',
     'weather',
@@ -58,7 +58,7 @@ export const PERFORMANCE_REVIEW_TEMPLATE: WidgetTemplate = {
   name: 'Performance Review',
   description: 'Analytics and KPI dashboard for performance monitoring',
   category: 'analytics',
-  roles: ['SHIPPER', 'CARRIER', 'BROKER'],
+  roles: ['SHIPPER', 'CATALYST', 'BROKER'],
   widgets: [
     'performance_summary',
     'revenue_forecasting',
@@ -113,14 +113,14 @@ export const COMPLIANCE_AUDIT_TEMPLATE: WidgetTemplate = {
 
 /**
  * Route Optimization Template
- * Specialized for carriers and drivers focused on route efficiency
+ * Specialized for catalysts and drivers focused on route efficiency
  */
 export const ROUTE_OPTIMIZATION_TEMPLATE: WidgetTemplate = {
   id: 'route_optimization',
   name: 'Route Optimization',
   description: 'Route planning and optimization focused dashboard',
   category: 'operations',
-  roles: ['CARRIER', 'DRIVER', 'BROKER'],
+  roles: ['CATALYST', 'DRIVER', 'BROKER'],
   widgets: [
     'route_optimization_ai',
     'demand_heatmap',
@@ -148,7 +148,7 @@ export const MAINTENANCE_FLEET_TEMPLATE: WidgetTemplate = {
   name: 'Maintenance & Fleet',
   description: 'Vehicle maintenance and fleet health monitoring',
   category: 'operations',
-  roles: ['CARRIER', 'TERMINAL_MANAGER'],
+  roles: ['CATALYST', 'TERMINAL_MANAGER'],
   widgets: [
     'predictive_maintenance',
     'vehicle_maintenance',
@@ -174,7 +174,7 @@ export const FINANCIAL_DASHBOARD_TEMPLATE: WidgetTemplate = {
   name: 'Financial Dashboard',
   description: 'Revenue, costs, and financial performance tracking',
   category: 'financial',
-  roles: ['SHIPPER', 'CARRIER', 'BROKER'],
+  roles: ['SHIPPER', 'CATALYST', 'BROKER'],
   widgets: [
     'revenue_forecasting',
     'cost_breakdown',

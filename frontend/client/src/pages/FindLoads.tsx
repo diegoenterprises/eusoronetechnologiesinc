@@ -1,6 +1,6 @@
 /**
  * FIND LOADS PAGE
- * Carrier-facing marketplace to discover available loads:
+ * Catalyst-facing marketplace to discover available loads:
  * - Equipment type filter pills
  * - Load cards with route visualization, tags, Place Bid
  * Theme-aware | Brand gradient | Oil & gas industry focused

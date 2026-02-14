@@ -9,9 +9,9 @@
  * - Add/remove intermediate stops (multi-drop)
  * - Change pickup/delivery windows and times
  * - Update delivery instructions & dispatch notes
- * - Send change notifications to carrier/driver
+ * - Send change notifications to catalyst/driver
  * - Cancel or redirect loads
- * - View carrier/driver assignment
+ * - View catalyst/driver assignment
  *
  * Uses loads.update tRPC mutation for all changes
  */
@@ -88,7 +88,7 @@ export default function ShipperDispatchControl() {
   // Update mutation
   const updateMut = (trpc as any).loads?.update?.useMutation?.({
     onSuccess: () => {
-      toast.success("Load updated — carrier notified");
+      toast.success("Load updated — catalyst notified");
       setEditMode(false);
       detailQuery.refetch?.();
       loadsQuery.refetch?.();
@@ -168,7 +168,7 @@ export default function ShipperDispatchControl() {
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Dispatch Control</h1>
-          <p className={mt}>Modify routes, stops, and coordinate with carriers in real-time</p>
+          <p className={mt}>Modify routes, stops, and coordinate with catalysts in real-time</p>
         </div>
         {inTransitCount > 0 && (
           <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/15 border-blue-500/30")}>
@@ -287,14 +287,14 @@ export default function ShipperDispatchControl() {
                 </div>
               )}
 
-              {/* Carrier/Driver info */}
-              {!editMode && (load.carrierName || load.driverName) && (
+              {/* Catalyst/Driver info */}
+              {!editMode && (load.catalystName || load.driverName) && (
                 <Card className={cc}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 flex items-center justify-center"><Truck className="w-5 h-5 text-blue-500" /></div>
                       <div className="flex-1">
-                        {load.carrierName && <p className={cn("font-bold text-sm", vl)}>{load.carrierName} {load.carrierCompanyName ? `· ${load.carrierCompanyName}` : ""}</p>}
+                        {load.catalystName && <p className={cn("font-bold text-sm", vl)}>{load.catalystName} {load.catalystCompanyName ? `· ${load.catalystCompanyName}` : ""}</p>}
                         {load.driverName && <p className="text-xs text-slate-400 flex items-center gap-1"><User className="w-3 h-3" />{load.driverName}{load.driverPhone ? <span className="flex items-center gap-1 ml-2"><Phone className="w-3 h-3" />{load.driverPhone}</span> : null}</p>}
                       </div>
                     </div>
@@ -319,7 +319,7 @@ export default function ShipperDispatchControl() {
                           </div>
                         )}
                         {!isLive && (
-                          <Badge className={cn("ml-auto border text-[10px]", statusColor(load.status))}>{load.status === "posted" ? "Awaiting Carrier" : load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
+                          <Badge className={cn("ml-auto border text-[10px]", statusColor(load.status))}>{load.status === "posted" ? "Awaiting Catalyst" : load.status?.replace(/_/g, " ").toUpperCase()}</Badge>
                         )}
                       </CardTitle>
                     </CardHeader>
@@ -378,7 +378,7 @@ export default function ShipperDispatchControl() {
                         <div>
                           <div className="flex justify-between text-sm mb-2">
                             <span className={mt}>Progress</span>
-                            <span className={cn("text-xs font-medium", mt)}>{load.status === "posted" ? "Waiting for carrier assignment" : "Tracking will start when load is picked up"}</span>
+                            <span className={cn("text-xs font-medium", mt)}>{load.status === "posted" ? "Waiting for catalyst assignment" : "Tracking will start when load is picked up"}</span>
                           </div>
                           <div className={cn("h-2 rounded-full overflow-hidden", isLight ? "bg-slate-100" : "bg-slate-700")}>
                             <div className="h-full bg-gradient-to-r from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-500 rounded-full" style={{ width: "0%" }} />
@@ -471,9 +471,9 @@ export default function ShipperDispatchControl() {
 
                   {/* Dispatch Notes */}
                   <Card className={cc}>
-                    <CardHeader className="pb-2"><CardTitle className={cn("flex items-center gap-2 text-sm", tc)}><Send className="w-4 h-4 text-blue-500" />Dispatch Notes to Carrier</CardTitle></CardHeader>
+                    <CardHeader className="pb-2"><CardTitle className={cn("flex items-center gap-2 text-sm", tc)}><Send className="w-4 h-4 text-blue-500" />Dispatch Notes to Catalyst</CardTitle></CardHeader>
                     <CardContent>
-                      <textarea value={dispatchNotes} onChange={e => setDispatchNotes(e.target.value)} rows={3} placeholder="Message to carrier/driver about this change (e.g. 'New delivery location per customer request — GPS coords updated')" className={cn("w-full p-3 text-sm", ic)} />
+                      <textarea value={dispatchNotes} onChange={e => setDispatchNotes(e.target.value)} rows={3} placeholder="Message to catalyst/driver about this change (e.g. 'New delivery location per customer request — GPS coords updated')" className={cn("w-full p-3 text-sm", ic)} />
                       <p className="text-[10px] text-slate-400 mt-1.5">This note will be appended to load instructions and timestamped for audit trail.</p>
                     </CardContent>
                   </Card>
@@ -482,7 +482,7 @@ export default function ShipperDispatchControl() {
                   <div className={cn("p-4 rounded-xl border flex items-center justify-between", isLight ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/5 border-yellow-500/30")}>
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4 text-yellow-500" />
-                      <p className={cn("text-xs font-medium", vl)}>Changes will be sent to the assigned carrier immediately.</p>
+                      <p className={cn("text-xs font-medium", vl)}>Changes will be sent to the assigned catalyst immediately.</p>
                     </div>
                     <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold text-xs h-9" disabled={updateMut.isPending} onClick={saveChanges}>
                       {updateMut.isPending ? <><Clock className="w-3.5 h-3.5 mr-1 animate-spin" />Saving...</> : <><Zap className="w-3.5 h-3.5 mr-1" />Save & Dispatch</>}

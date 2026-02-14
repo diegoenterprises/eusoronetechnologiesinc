@@ -57,7 +57,7 @@ interface DocumentUploaderProps {
   onDelete?: (documentId: string) => void;
   onView?: (document: DocumentData) => void;
   onDownload?: (document: DocumentData) => void;
-  entityType: "driver" | "carrier" | "vehicle" | "company";
+  entityType: "driver" | "catalyst" | "vehicle" | "company";
   entityId: string;
 }
 

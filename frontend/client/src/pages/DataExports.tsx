@@ -76,7 +76,7 @@ export default function DataExports() {
                 <SelectItem value="loads">Loads</SelectItem>
                 <SelectItem value="invoices">Invoices</SelectItem>
                 <SelectItem value="drivers">Drivers</SelectItem>
-                <SelectItem value="carriers">Carriers</SelectItem>
+                <SelectItem value="catalysts">Catalysts</SelectItem>
                 <SelectItem value="settlements">Settlements</SelectItem>
                 <SelectItem value="fuel">Fuel Transactions</SelectItem>
               </SelectContent>

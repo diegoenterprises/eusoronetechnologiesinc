@@ -31,7 +31,7 @@ export default function FactoringDashboard() {
 
   const navItems = [
     { label: "Pending Invoices", desc: "Review and approve invoices", icon: FileText, path: "/factoring/invoices", count: summary?.pending || 0 },
-    { label: "Carrier Portfolio", desc: "Manage carrier accounts", icon: Users, path: "/factoring/carriers" },
+    { label: "Catalyst Portfolio", desc: "Manage catalyst accounts", icon: Users, path: "/factoring/catalysts" },
     { label: "Collections", desc: "Outstanding collections", icon: Banknote, path: "/factoring/collections" },
     { label: "Daily Funding", desc: "Today's funding queue", icon: DollarSign, path: "/factoring/funding" },
     { label: "Risk Assessment", desc: "Credit risk analysis", icon: ShieldCheck, path: "/factoring/risk" },

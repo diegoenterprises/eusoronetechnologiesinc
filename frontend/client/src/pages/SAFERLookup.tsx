@@ -24,7 +24,7 @@ export default function SAFERLookup() {
   const [result, setResult] = useState<any>(null);
 
   const lookupMutation = (trpc as any).compliance.saferLookup.useMutation({
-    onSuccess: (data: any) => { setResult(data); toast.success("Carrier found"); },
+    onSuccess: (data: any) => { setResult(data); toast.success("Catalyst found"); },
     onError: (error: any) => { setResult(null); toast.error("Not found", { description: error.message }); },
   });
 
@@ -48,7 +48,7 @@ export default function SAFERLookup() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">SAFER Lookup</h1>
-          <p className="text-slate-400 text-sm mt-1">FMCSA carrier verification</p>
+          <p className="text-slate-400 text-sm mt-1">FMCSA catalyst verification</p>
         </div>
       </div>
 
@@ -152,7 +152,7 @@ export default function SAFERLookup() {
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
           <CardContent className="p-12 text-center">
             <Shield className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400">Enter an MC or DOT number to lookup carrier information</p>
+            <p className="text-slate-400">Enter an MC or DOT number to lookup catalyst information</p>
           </CardContent>
         </Card>
       )}

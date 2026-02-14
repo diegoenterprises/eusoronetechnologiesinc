@@ -46,9 +46,9 @@ export const YardManagementWidget: React.FC<{ compact?: boolean }> = ({ compact 
 // Dock Scheduling System
 export const DockSchedulingWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const docks = [
-    { id: 1, carrier: 'ABC Logistics', time: '08:00 AM', status: 'loading', progress: 75 },
-    { id: 2, carrier: 'XYZ Transport', time: '10:00 AM', status: 'scheduled', progress: 0 },
-    { id: 3, carrier: 'Quick Ship', time: '12:00 PM', status: 'unloading', progress: 45 },
+    { id: 1, catalyst: 'ABC Logistics', time: '08:00 AM', status: 'loading', progress: 75 },
+    { id: 2, catalyst: 'XYZ Transport', time: '10:00 AM', status: 'scheduled', progress: 0 },
+    { id: 3, catalyst: 'Quick Ship', time: '12:00 PM', status: 'unloading', progress: 45 },
   ];
 
   return (
@@ -65,7 +65,7 @@ export const DockSchedulingWidget: React.FC<{ compact?: boolean }> = ({ compact 
               {dock.status}
             </span>
           </div>
-          <p className="text-xs text-gray-400">{dock.carrier} • {dock.time}</p>
+          <p className="text-xs text-gray-400">{dock.catalyst} • {dock.time}</p>
           {dock.progress > 0 && (
             <div className="mt-2 w-full bg-gray-700 rounded-full h-1">
               <div className="bg-cyan-500 h-1 rounded-full" style={{ width: `${dock.progress}%` }} />
@@ -130,9 +130,9 @@ export const LaborManagementWidget: React.FC<{ compact?: boolean }> = ({ compact
 // Gate Activity Monitor
 export const GateActivityWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const activity = [
-    { time: '09:15 AM', carrier: 'ABC Logistics', type: 'Check-in', gate: 'Gate 1' },
-    { time: '09:30 AM', carrier: 'XYZ Transport', type: 'Check-out', gate: 'Gate 2' },
-    { time: '09:45 AM', carrier: 'Quick Ship', type: 'Check-in', gate: 'Gate 1' },
+    { time: '09:15 AM', catalyst: 'ABC Logistics', type: 'Check-in', gate: 'Gate 1' },
+    { time: '09:30 AM', catalyst: 'XYZ Transport', type: 'Check-out', gate: 'Gate 2' },
+    { time: '09:45 AM', catalyst: 'Quick Ship', type: 'Check-in', gate: 'Gate 1' },
   ];
 
   return (
@@ -141,7 +141,7 @@ export const GateActivityWidget: React.FC<{ compact?: boolean }> = ({ compact = 
         <div key={i} className="p-2 rounded-lg bg-gray-800/30 hover:bg-gray-800/50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-white">{item.carrier}</p>
+              <p className="text-sm text-white">{item.catalyst}</p>
               <p className="text-xs text-gray-400">{item.gate} • {item.time}</p>
             </div>
             <span className={`text-xs px-2 py-1 rounded-full ${

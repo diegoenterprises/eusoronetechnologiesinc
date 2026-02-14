@@ -132,23 +132,23 @@ export const terminalsRouter = router({
 
         return await Promise.all(apptList.map(async (a) => {
           let driverName = 'Unassigned';
-          let carrierName = 'Unknown';
+          let catalystName = 'Unknown';
           if (a.driverId) {
             const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, a.driverId)).limit(1);
             driverName = driver?.name || `Driver #${a.driverId}`;
           }
           if (a.loadId) {
-            const [load] = await db.select({ carrierId: loads.carrierId }).from(loads).where(eq(loads.id, a.loadId)).limit(1);
-            if (load?.carrierId) {
-              const [carrier] = await db.select({ name: users.name }).from(users).where(eq(users.id, load.carrierId)).limit(1);
-              carrierName = carrier?.name || `Carrier #${load.carrierId}`;
+            const [load] = await db.select({ catalystId: loads.catalystId }).from(loads).where(eq(loads.id, a.loadId)).limit(1);
+            if (load?.catalystId) {
+              const [catalyst] = await db.select({ name: users.name }).from(users).where(eq(users.id, load.catalystId)).limit(1);
+              catalystName = catalyst?.name || `Catalyst #${load.catalystId}`;
             }
           }
           return {
             id: `apt_${a.id}`,
             time: a.scheduledAt?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '',
-            carrier: carrierName,
-            carrierName,
+            catalyst: catalystName,
+            catalystName,
             driver: driverName,
             driverName,
             truckNumber: '',
@@ -335,7 +335,7 @@ export const terminalsRouter = router({
   createAppointment: protectedProcedure
     .input(z.object({
       terminalId: z.string(),
-      carrierId: z.string(),
+      catalystId: z.string(),
       driverId: z.string(),
       truckNumber: z.string(),
       productId: z.string(),
@@ -404,7 +404,7 @@ export const terminalsRouter = router({
           status: "in_use",
           currentLoad: {
             appointmentId: "apt_001",
-            carrier: "",
+            catalyst: "",
             product: "Unleaded Gasoline",
             startTime: "08:15",
             progress: 85,
@@ -419,7 +419,7 @@ export const terminalsRouter = router({
           status: "in_use",
           currentLoad: {
             appointmentId: "apt_002",
-            carrier: "XYZ Carriers",
+            catalyst: "XYZ Catalysts",
             product: "Diesel",
             startTime: "09:10",
             progress: 45,
@@ -878,7 +878,7 @@ export const terminalsRouter = router({
         return apptList.map(a => ({
           id: a.id,
           type: a.type === 'pickup' ? 'outgoing' : 'incoming',
-          carrier: 'Carrier',
+          catalyst: 'Catalyst',
           driver: '',
           commodity: '',
           quantity: 0,

@@ -12,7 +12,7 @@ interface CanopyPolicy {
   id: string;
   policyNumber: string;
   policyType: string;
-  carrier: {
+  catalyst: {
     name: string;
     naic?: string;
   };
@@ -244,7 +244,7 @@ export class CanopyConnectService extends BaseIntegrationService {
     return {
       policyNumber: policy.policyNumber,
       policyType: policyTypeMap[policy.policyType.toLowerCase()] || "other",
-      providerName: policy.carrier.name,
+      providerName: policy.catalyst.name,
       effectiveDate: new Date(policy.effectiveDate),
       expirationDate: new Date(policy.expirationDate),
       perOccurrenceLimit: String(policy.limits.perOccurrence || 0),

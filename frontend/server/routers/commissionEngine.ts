@@ -9,7 +9,7 @@
  * - Gamification bonus: higher driver score = lower fee (up to 3%)
  * - Commodity factor: volatile pricing (WTI, BDI) adjusts fee
  * - Driver commission: 25% of gross rate
- * - Net to carrier: gross - platform fee - driver commission
+ * - Net to catalyst: gross - platform fee - driver commission
  *
  * Every load, every transaction, every time.
  */
@@ -89,7 +89,7 @@ async function calculateSplit(
   const platformFeeRate = await calculateDynamicPlatformFee(cargoType, distanceMiles, driverScore, hazmatClass);
   const platformFeeAmount = Math.round(grossRate * platformFeeRate * 100) / 100;
   const driverCommission = Math.round(grossRate * DRIVER_COMMISSION_RATE * 100) / 100;
-  const netToCarrier = Math.round((grossRate - platformFeeAmount - driverCommission) * 100) / 100;
+  const netToCatalyst = Math.round((grossRate - platformFeeAmount - driverCommission) * 100) / 100;
   const commodityFactor = await getCommodityIndexFactor(cargoType);
 
   return {
@@ -100,7 +100,7 @@ async function calculateSplit(
     driverCommissionRate: DRIVER_COMMISSION_RATE,
     driverCommissionPercent: DRIVER_COMMISSION_RATE * 100,
     driverCommission,
-    netToCarrier,
+    netToCatalyst,
     riskFactor: calculateRiskFactor(cargoType, distanceMiles, hazmatClass),
     gamificationBonus: calculateGamificationBonus(driverScore),
     commodityFactor,
@@ -179,7 +179,7 @@ export const commissionEngineRouter = router({
       const totalGross = results.reduce((s, r) => s + r.grossRate, 0);
       const totalFees = results.reduce((s, r) => s + r.platformFeeAmount, 0);
       const totalDriverComm = results.reduce((s, r) => s + r.driverCommission, 0);
-      const totalNetCarrier = results.reduce((s, r) => s + r.netToCarrier, 0);
+      const totalNetCatalyst = results.reduce((s, r) => s + r.netToCatalyst, 0);
       return {
         loads: results,
         summary: {
@@ -187,7 +187,7 @@ export const commissionEngineRouter = router({
           totalGross: Math.round(totalGross * 100) / 100,
           totalPlatformFees: Math.round(totalFees * 100) / 100,
           totalDriverCommissions: Math.round(totalDriverComm * 100) / 100,
-          totalNetToCarrier: Math.round(totalNetCarrier * 100) / 100,
+          totalNetToCatalyst: Math.round(totalNetCatalyst * 100) / 100,
           avgFeePercent: results.length > 0 ? Math.round((results.reduce((s, r) => s + r.platformFeePercent, 0) / results.length) * 100) / 100 : 0,
         },
       };

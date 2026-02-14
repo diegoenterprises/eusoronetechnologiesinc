@@ -24,7 +24,7 @@ import { LUMPER_SCENARIOS } from './scenarios/lumper/lumperScenarios';
 import { SHIPPER_SCENARIOS } from './scenarios/shipper/shipperScenarios';
 import { AGENT_SCENARIOS } from './scenarios/agent/agentScenarios';
 import { DRIVER_SCENARIOS } from './scenarios/driver/driverScenarios';
-import { CARRIER_SCENARIOS } from './scenarios/carrier/carrierScenarios';
+import { CATALYST_SCENARIOS } from './scenarios/catalyst/catalystScenarios';
 import { BROKER_SCENARIOS } from './scenarios/broker/brokerScenarios';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -90,7 +90,7 @@ async function main() {
   runner.registerCategory('SHIPPER', SHIPPER_SCENARIOS);
   runner.registerCategory('AGENT', AGENT_SCENARIOS);
   runner.registerCategory('DRIVER', DRIVER_SCENARIOS);
-  runner.registerCategory('CARRIER', CARRIER_SCENARIOS);
+  runner.registerCategory('CATALYST', CATALYST_SCENARIOS);
   runner.registerCategory('BROKER', BROKER_SCENARIOS);
 
   // Display scenario counts
@@ -115,7 +115,7 @@ async function main() {
     SHIPPER_SCENARIOS.length +
     AGENT_SCENARIOS.length +
     DRIVER_SCENARIOS.length +
-    CARRIER_SCENARIOS.length +
+    CATALYST_SCENARIOS.length +
     BROKER_SCENARIOS.length;
 
   console.log('  Scenario Distribution:');
@@ -139,7 +139,7 @@ async function main() {
   console.log(`    Shipper:      ${SHIPPER_SCENARIOS.length} scenarios`);
   console.log(`    Agent:        ${AGENT_SCENARIOS.length} scenarios`);
   console.log(`    Driver:       ${DRIVER_SCENARIOS.length} scenarios`);
-  console.log(`    Carrier:      ${CARRIER_SCENARIOS.length} scenarios`);
+  console.log(`    Catalyst:      ${CATALYST_SCENARIOS.length} scenarios`);
   console.log(`    Broker:       ${BROKER_SCENARIOS.length} scenarios`);
   console.log(`    ─────────────────────────────`);
   console.log(`    TOTAL:        ${totalScenarios} scenarios`);

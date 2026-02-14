@@ -41,10 +41,10 @@ export const users = mysqlTable(
     loginMethod: varchar("loginMethod", { length: 64 }),
     role: mysqlEnum("role", [
       "SHIPPER",
-      "CARRIER",
+      "CATALYST",
       "BROKER",
       "DRIVER",
-      "CATALYST",
+      "DISPATCH",
       "ESCORT",
       "TERMINAL_MANAGER",
       "COMPLIANCE_OFFICER",
@@ -185,7 +185,7 @@ export const loads = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     shipperId: int("shipperId").notNull(),
-    carrierId: int("carrierId"),
+    catalystId: int("catalystId"),
     driverId: int("driverId"),
     vehicleId: int("vehicleId"),
     loadNumber: varchar("loadNumber", { length: 50 }).notNull().unique(),
@@ -270,7 +270,7 @@ export const loads = mysqlTable(
   },
   (table) => ({
     shipperIdx: index("load_shipper_idx").on(table.shipperId),
-    carrierIdx: index("load_carrier_idx").on(table.carrierId),
+    catalystIdx: index("load_catalyst_idx").on(table.catalystId),
     driverIdx: index("load_driver_idx").on(table.driverId),
     statusIdx: index("load_status_idx").on(table.status),
     loadNumberIdx: unique("load_number_unique").on(table.loadNumber),
@@ -290,7 +290,7 @@ export const bids = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     loadId: int("loadId").notNull(),
-    carrierId: int("carrierId").notNull(),
+    catalystId: int("catalystId").notNull(),
     amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
     currency: varchar("currency", { length: 3 }).default("USD"),
     estimatedPickupDate: timestamp("estimatedPickupDate"),
@@ -306,7 +306,7 @@ export const bids = mysqlTable(
   },
   (table) => ({
     loadIdx: index("bid_load_idx").on(table.loadId),
-    carrierIdx: index("bid_carrier_idx").on(table.carrierId),
+    catalystIdx: index("bid_catalyst_idx").on(table.catalystId),
     statusIdx: index("bid_status_idx").on(table.status),
   })
 );
@@ -2903,7 +2903,7 @@ export const escrowHolds = mysqlTable(
     loadId: int("loadId").notNull(),
     amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
     shipperWalletId: int("shipperWalletId").notNull(),
-    carrierWalletId: int("carrierWalletId").notNull(),
+    catalystWalletId: int("catalystWalletId").notNull(),
     status: mysqlEnum("status", ["HELD", "RELEASED", "REFUNDED", "DISPUTED", "PARTIAL_RELEASE"]).default("HELD"),
     releasedAmount: decimal("releasedAmount", { precision: 12, scale: 2 }),
     releasedAt: timestamp("releasedAt"),
@@ -2979,7 +2979,7 @@ export const integrationProviders = mysqlTable(
     entityMappings: json("entityMappings").$type<Record<string, string>>().default({}),
     status: mysqlEnum("status", ["active", "beta", "deprecated", "coming_soon"]).default("active"),
     isPremium: boolean("isPremium").default(false),
-    availableForRoles: json("availableForRoles").$type<string[]>().default(["CARRIER", "SHIPPER", "BROKER"]),
+    availableForRoles: json("availableForRoles").$type<string[]>().default(["CATALYST", "SHIPPER", "BROKER"]),
     setupInstructions: text("setupInstructions"),
     documentationUrl: varchar("documentationUrl", { length: 500 }),
     supportEmail: varchar("supportEmail", { length: 255 }),
@@ -3430,11 +3430,11 @@ export const loadInsurance = mysqlTable(
 );
 
 // ============================================================================
-// EUSOSHIELD - CARRIER RISK SCORES
+// EUSOSHIELD - CATALYST RISK SCORES
 // ============================================================================
 
-export const carrierRiskScores = mysqlTable(
-  "carrier_risk_scores",
+export const catalystRiskScores = mysqlTable(
+  "catalyst_risk_scores",
   {
     id: int("id").autoincrement().primaryKey(),
     companyId: int("companyId").notNull(),
@@ -3532,7 +3532,7 @@ export type InsuranceClaim = typeof insuranceClaims.$inferSelect;
 export type InsuranceVerification = typeof insuranceVerifications.$inferSelect;
 export type InsuranceQuote = typeof insuranceQuotes.$inferSelect;
 export type LoadInsurance = typeof loadInsurance.$inferSelect;
-export type CarrierRiskScore = typeof carrierRiskScores.$inferSelect;
+export type CatalystRiskScore = typeof catalystRiskScores.$inferSelect;
 export type InsuranceAlert = typeof insuranceAlerts.$inferSelect;
 
 // ============================================================================
@@ -3551,12 +3551,12 @@ export const agreementTemplates = mysqlTable(
     name: varchar("name", { length: 255 }).notNull(),
     description: text("description"),
     agreementType: mysqlEnum("agreementType", [
-      "carrier_shipper",
-      "broker_carrier",
+      "catalyst_shipper",
+      "broker_catalyst",
       "broker_shipper",
-      "carrier_driver",
+      "catalyst_driver",
       "escort_service",
-      "catalyst_dispatch",
+      "dispatch_dispatch",
       "terminal_access",
       "master_service",
       "lane_commitment",
@@ -3621,12 +3621,12 @@ export const agreements = mysqlTable(
     agreementNumber: varchar("agreementNumber", { length: 50 }).notNull().unique(),
     templateId: int("templateId"),
     agreementType: mysqlEnum("agreementType", [
-      "carrier_shipper",
-      "broker_carrier",
+      "catalyst_shipper",
+      "broker_catalyst",
       "broker_shipper",
-      "carrier_driver",
+      "catalyst_driver",
       "escort_service",
-      "catalyst_dispatch",
+      "dispatch_dispatch",
       "terminal_access",
       "master_service",
       "lane_commitment",
@@ -3813,7 +3813,7 @@ export const loadBids = mysqlTable(
     // Bidder info
     bidderUserId: int("bidderUserId").notNull(),
     bidderCompanyId: int("bidderCompanyId"),
-    bidderRole: mysqlEnum("bidderRole", ["carrier", "broker", "driver", "escort"]).notNull(),
+    bidderRole: mysqlEnum("bidderRole", ["catalyst", "broker", "driver", "escort"]).notNull(),
     // Bid details
     bidAmount: decimal("bidAmount", { precision: 10, scale: 2 }).notNull(),
     rateType: mysqlEnum("rateType", ["flat", "per_mile", "per_hour", "per_ton", "percentage"]).default("flat").notNull(),
@@ -3876,12 +3876,12 @@ export const bidAutoAcceptRules = mysqlTable(
     // Criteria
     maxRate: decimal("maxRate", { precision: 10, scale: 2 }),
     maxRatePerMile: decimal("maxRatePerMile", { precision: 8, scale: 2 }),
-    minCarrierRating: decimal("minCarrierRating", { precision: 3, scale: 1 }),
+    minCatalystRating: decimal("minCatalystRating", { precision: 3, scale: 1 }),
     requiredInsuranceMin: decimal("requiredInsuranceMin", { precision: 12, scale: 2 }),
     requiredEquipmentTypes: json("requiredEquipmentTypes").$type<string[]>(),
     requiredHazmat: boolean("requiredHazmat").default(false),
     maxTransitDays: int("maxTransitDays"),
-    preferredCarrierIds: json("preferredCarrierIds").$type<number[]>(),
+    preferredCatalystIds: json("preferredCatalystIds").$type<number[]>(),
     // Lane filters
     originStates: json("originStates").$type<string[]>(),
     destinationStates: json("destinationStates").$type<string[]>(),
@@ -4042,8 +4042,8 @@ export const laneContracts = mysqlTable(
     agreementId: int("agreementId"),
     shipperId: int("shipperId"),
     shipperCompanyId: int("shipperCompanyId"),
-    carrierId: int("carrierId"),
-    carrierCompanyId: int("carrierCompanyId"),
+    catalystId: int("catalystId"),
+    catalystCompanyId: int("catalystCompanyId"),
     brokerId: int("brokerId"),
     brokerCompanyId: int("brokerCompanyId"),
     // Lane definition
@@ -4083,7 +4083,7 @@ export const laneContracts = mysqlTable(
   (table) => ({
     agreementIdx: index("lane_agreement_idx").on(table.agreementId),
     shipperIdx: index("lane_shipper_idx").on(table.shipperId),
-    carrierIdx: index("lane_carrier_idx").on(table.carrierId),
+    catalystIdx: index("lane_catalyst_idx").on(table.catalystId),
     brokerIdx: index("lane_broker_idx").on(table.brokerId),
     originIdx: index("lane_origin_idx").on(table.originState, table.originCity),
     destIdx: index("lane_dest_idx").on(table.destinationState, table.destinationCity),
@@ -4159,17 +4159,17 @@ export type ComplianceNetworkMembership = typeof complianceNetworkMemberships.$i
 export type InsertComplianceNetworkMembership = typeof complianceNetworkMemberships.$inferInsert;
 
 // ============================================================================
-// FMCSA CARRIER CACHE
+// FMCSA CATALYST CACHE
 // Caches FMCSA QCMobile API responses to avoid excessive API calls
 // ============================================================================
 
-export const fmcsaCarrierCache = mysqlTable(
-  "fmcsa_carrier_cache",
+export const fmcsaCatalystCache = mysqlTable(
+  "fmcsa_catalyst_cache",
   {
     id: int("id").autoincrement().primaryKey(),
     dotNumber: varchar("dotNumber", { length: 8 }).notNull().unique(),
     mcNumber: varchar("mcNumber", { length: 10 }),
-    carrierData: json("carrierData").notNull(),
+    catalystData: json("catalystData").notNull(),
     authorityData: json("authorityData"),
     basicsData: json("basicsData"),
     cargoData: json("cargoData"),
@@ -4185,8 +4185,8 @@ export const fmcsaCarrierCache = mysqlTable(
   })
 );
 
-export type FmcsaCarrierCache = typeof fmcsaCarrierCache.$inferSelect;
-export type InsertFmcsaCarrierCache = typeof fmcsaCarrierCache.$inferInsert;
+export type FmcsaCatalystCache = typeof fmcsaCatalystCache.$inferSelect;
+export type InsertFmcsaCatalystCache = typeof fmcsaCatalystCache.$inferInsert;
 
 // ============================================================================
 // SPECTRA-MATCH™ CRUDE OIL SPECIFICATIONS (migrated from static crudeOilSpecs.ts)
@@ -4353,8 +4353,8 @@ export type DetentionClaim = typeof detentionClaims.$inferSelect;
 export type InsertDetentionClaim = typeof detentionClaims.$inferInsert;
 
 // ============================================================================
-// FACTORING INVOICES — Carrier submits invoice for same-day funding
-// Scenarios: WAL-020, WAL-021 (carrier factors invoice, factoring co collects)
+// FACTORING INVOICES — Catalyst submits invoice for same-day funding
+// Scenarios: WAL-020, WAL-021 (catalyst factors invoice, factoring co collects)
 // ============================================================================
 
 export const factoringInvoices = mysqlTable(
@@ -4362,7 +4362,7 @@ export const factoringInvoices = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     loadId: int("loadId").notNull(),
-    carrierUserId: int("carrierUserId").notNull(),
+    catalystUserId: int("catalystUserId").notNull(),
     shipperUserId: int("shipperUserId"),
     factoringCompanyId: int("factoringCompanyId"),
     invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull(),
@@ -4389,7 +4389,7 @@ export const factoringInvoices = mysqlTable(
   },
   (table) => ({
     loadIdx: index("factoring_load_idx").on(table.loadId),
-    carrierIdx: index("factoring_carrier_idx").on(table.carrierUserId),
+    catalystIdx: index("factoring_catalyst_idx").on(table.catalystUserId),
     statusIdx: index("factoring_status_idx").on(table.status),
     invoiceNumIdx: unique("factoring_invoice_num_unique").on(table.invoiceNumber),
   })

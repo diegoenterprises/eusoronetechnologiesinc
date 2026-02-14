@@ -18,7 +18,7 @@ export const ALL_200_FEEDS: RSSFeedSource[] = [
   f(3,"Trucking Dive","https://www.truckingdive.com/feeds/news/","trucking"),
   f(4,"CDL Life","https://cdllife.com/feed","trucking"),
   f(5,"Overdrive Magazine","https://www.overdriveonline.com/feed","trucking"),
-  f(6,"Commercial Carrier Journal","https://www.ccjdigital.com/feed","trucking"),
+  f(6,"Commercial Catalyst Journal","https://www.ccjdigital.com/feed","trucking"),
   f(7,"Truck News","https://www.trucknews.com/rss/","trucking"),
   f(8,"FleetOwner","https://www.fleetowner.com/rss.xml","trucking"),
   f(9,"Heavy Duty Trucking","https://www.truckinginfo.com/rss","trucking"),
@@ -26,7 +26,7 @@ export const ALL_200_FEEDS: RSSFeedSource[] = [
   f(11,"Truckers News","https://www.truckersnews.com/feed","trucking"),
   f(12,"Land Line Magazine","https://landline.media/feed/","trucking"),
   f(13,"DAT Freight & Analytics","https://www.dat.com/blog/rss.xml","trucking"),
-  f(14,"Truckload Carriers Association","https://www.truckload.org/feed","trucking"),
+  f(14,"Truckload Catalysts Association","https://www.truckload.org/feed","trucking"),
   f(15,"Women in Trucking","https://www.womenintrucking.org/blog/rss.xml","trucking"),
   f(16,"Smart Trucking","https://www.smart-trucking.com/feed","trucking"),
   f(17,"The Trucker","https://www.thetrucker.com/feed","trucking"),
@@ -144,7 +144,7 @@ export const ALL_200_FEEDS: RSSFeedSource[] = [
   f(121,"US Cold Storage","https://www.uscold.com/news/feed","refrigerated"),
   f(122,"Burris Logistics","https://www.burrislogistics.com/blog/feed","refrigerated"),
   f(123,"Preferred Freezer","https://www.preferredfreezer.com/news/feed","refrigerated"),
-  f(124,"Carrier Transicold","https://www.carrier.com/truck-trailer/en/us/news/feed","refrigerated"),
+  f(124,"Catalyst Transicold","https://www.catalyst.com/truck-trailer/en/us/news/feed","refrigerated"),
   f(125,"Thermo King","https://www.thermoking.com/na/en/news/feed","refrigerated"),
 
   // ===== BULK TRANSPORTATION (20) =====

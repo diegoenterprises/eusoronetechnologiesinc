@@ -1,7 +1,7 @@
 /**
  * RATE CALCULATOR / PROFITABILITY COMPONENT
- * For Carriers to calculate profitability on loads
- * Based on 02_CARRIER_USER_JOURNEY.md
+ * For Catalysts to calculate profitability on loads
+ * Based on 02_CATALYST_USER_JOURNEY.md
  */
 
 import React, { useState, useEffect } from "react";

@@ -141,9 +141,9 @@ export default function BrokerAnalytics() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-slate-400 mb-1">Active Carriers</p>
+                    <p className="text-xs text-slate-400 mb-1">Active Catalysts</p>
                     <p className="text-3xl font-bold text-orange-400">
-                      {(analyticsQuery.data as any)?.activeCarriers || 0}
+                      {(analyticsQuery.data as any)?.activeCatalysts || 0}
                     </p>
                   </div>
                   <div className="p-3 rounded-lg bg-orange-500/20">
@@ -151,7 +151,7 @@ export default function BrokerAnalytics() {
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 mt-2">
-                  {(analyticsQuery.data as any)?.newCarriers || 0} new this period
+                  {(analyticsQuery.data as any)?.newCatalysts || 0} new this period
                 </p>
               </CardContent>
             </Card>

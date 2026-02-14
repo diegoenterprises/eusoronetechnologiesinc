@@ -34,7 +34,7 @@ export const permitsRouter = router({
    * Apply for permit
    */
   submitApplication: protectedProcedure
-    .input(z.object({ type: permitTypeSchema, states: z.array(z.string()), carrierId: z.string(), vehicleId: z.string(), trailerId: z.string().optional(), loadDescription: z.string(), commodity: z.string(), dimensions: z.object({ length: z.number(), width: z.number(), height: z.number(), overhangFront: z.number().optional(), overhangRear: z.number().optional() }), weight: z.number(), origin: z.string(), destination: z.string(), requestedStartDate: z.string(), requestedEndDate: z.string(), notes: z.string().optional() }))
+    .input(z.object({ type: permitTypeSchema, states: z.array(z.string()), catalystId: z.string(), vehicleId: z.string(), trailerId: z.string().optional(), loadDescription: z.string(), commodity: z.string(), dimensions: z.object({ length: z.number(), width: z.number(), height: z.number(), overhangFront: z.number().optional(), overhangRear: z.number().optional() }), weight: z.number(), origin: z.string(), destination: z.string(), requestedStartDate: z.string(), requestedEndDate: z.string(), notes: z.string().optional() }))
     .mutation(async ({ ctx, input }) => ({
       id: `perm_${Date.now()}`, applicationNumber: `APP-${Date.now().toString().slice(-6)}`,
       status: "pending", submittedBy: ctx.user?.id, submittedAt: new Date().toISOString(), estimatedProcessingDays: 3,
@@ -70,7 +70,7 @@ export const permitsRouter = router({
           superloadThreshold: { length: 125, width: 16, height: 17, weight: 200000 },
           escortRequirements: { width14Plus: "Front escort required", width16Plus: "Front and rear escort required", superload: "Law enforcement escort may be required" },
           fees: { oversize: { base: 60, perMile: 0 }, overweight: { base: 75, perMile: 0 }, superload: { base: 200, perMile: 0.50 } },
-          processingTime: "2-5 business days", onlinePortal: "https://txdmv.gov/motor-carriers/oversize-overweight-permits",
+          processingTime: "2-5 business days", onlinePortal: "https://txdmv.gov/motor-catalysts/oversize-overweight-permits",
         },
       };
       return requirements[input.state] || { state: input.state, found: false };

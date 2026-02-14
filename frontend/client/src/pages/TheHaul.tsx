@@ -31,13 +31,13 @@ const LOBBY_RULES = [
 ];
 
 const ROLE_COLORS: Record<string, string> = {
-  SHIPPER: "text-blue-400", CARRIER: "text-purple-400", BROKER: "text-cyan-400",
-  DRIVER: "text-green-400", CATALYST: "text-yellow-400", ESCORT: "text-orange-400",
+  SHIPPER: "text-blue-400", CATALYST: "text-purple-400", BROKER: "text-cyan-400",
+  DRIVER: "text-green-400", DISPATCH: "text-yellow-400", ESCORT: "text-orange-400",
 };
 const ROLE_BG: Record<string, string> = {
-  SHIPPER: "bg-blue-500/20 text-blue-400", CARRIER: "bg-purple-500/20 text-purple-400",
+  SHIPPER: "bg-blue-500/20 text-blue-400", CATALYST: "bg-purple-500/20 text-purple-400",
   BROKER: "bg-cyan-500/20 text-cyan-400", DRIVER: "bg-green-500/20 text-green-400",
-  CATALYST: "bg-yellow-500/20 text-yellow-400", ESCORT: "bg-orange-500/20 text-orange-400",
+  DISPATCH: "bg-yellow-500/20 text-yellow-400", ESCORT: "bg-orange-500/20 text-orange-400",
 };
 
 export default function TheHaul() {

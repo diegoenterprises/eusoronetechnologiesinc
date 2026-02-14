@@ -45,7 +45,7 @@ export const negotiationsRouter = router({
       limit: z.number().optional().default(50),
     }))
     .query(async ({ ctx, input }) => {
-      // In production: fetch from DB filtered by user role (shipper/carrier/broker)
+      // In production: fetch from DB filtered by user role (shipper/catalyst/broker)
       return [];
     }),
 
@@ -171,7 +171,7 @@ export const negotiationsRouter = router({
       loadId: z.number(),
       finalRate: z.number().min(0),
       shipperId: z.number(),
-      carrierId: z.number(),
+      catalystId: z.number(),
       cargoType: z.string().optional(),
       currentStatus: z.string().optional(),
     }))
@@ -194,10 +194,10 @@ export const negotiationsRouter = router({
         negotiationId: input.negotiationId,
         loadId: input.loadId,
         shipperId: input.shipperId,
-        carrierId: input.carrierId,
+        catalystId: input.catalystId,
         grossAmount: input.finalRate,
         platformFee,
-        netToCarrier: Math.round((input.finalRate - platformFee) * 100) / 100,
+        netToCatalyst: Math.round((input.finalRate - platformFee) * 100) / 100,
         escrowIntentId,
         smartContractUrl: bolUrl,
         status: "ESCROW_HELD",

@@ -4,10 +4,10 @@
  * 
  * Defines role-specific navigation for all user types:
  * - SHIPPER: Load posting, tracking, payments
- * - CARRIER: Load bidding, fleet management, earnings
+ * - CATALYST: Load bidding, fleet management, earnings
  * - BROKER: Marketplace management, load distribution
  * - DRIVER: Job assignments, tracking, earnings
- * - CATALYST: Specialization matching, load optimization
+ * - DISPATCH: Specialization matching, load optimization
  * - ESCORT: Convoy management, security coordination
  * - TERMINAL_MANAGER: Facility operations, compliance
  * - ADMIN: Platform management, user administration
@@ -25,10 +25,10 @@ export interface MenuItem {
 
 export type UserRole = 
   | 'SHIPPER' 
-  | 'CARRIER' 
+  | 'CATALYST' 
   | 'BROKER' 
   | 'DRIVER' 
-  | 'CATALYST' 
+  | 'DISPATCH' 
   | 'ESCORT' 
   | 'TERMINAL_MANAGER' 
   | 'FACTORING'
@@ -65,12 +65,12 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Dispatch Control", 
       path: "/dispatch", 
       badge: 0,
-      description: "Routes, tracking & carrier coordination"
+      description: "Routes, tracking & catalyst coordination"
     },
     { 
       icon: "Users", 
-      label: "Carriers", 
-      path: "/carriers", 
+      label: "Catalysts", 
+      path: "/catalysts", 
       badge: 0,
       description: "Bid management"
     },
@@ -79,14 +79,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Messages", 
       path: "/messages", 
       badge: 0,
-      description: "Communication with carriers"
+      description: "Communication with catalysts"
     },
     { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
       badge: 0,
-      description: "Manage & sign carrier agreements"
+      description: "Manage & sign catalyst agreements"
     },
     { 
       icon: "Repeat", 
@@ -124,25 +124,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
-      badge: 0,
-      description: "Personal information"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Market Pricing", 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Platts/Argus-style freight rate intelligence"
-    },
-    { 
-      icon: "Flame", 
-      label: "Hot Zones", 
-      path: "/hot-zones", 
-      badge: 0,
-      description: "Demand heatmap & surge pricing"
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Truck", 
@@ -156,7 +142,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences and security"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Newspaper", 
@@ -174,14 +160,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
-  // CARRIER: Load bidding, fleet management, earnings
-  CARRIER: [
+  // CATALYST: Load bidding, fleet management, earnings
+  CATALYST: [
     { 
       icon: "LayoutDashboard", 
       label: "Dashboard", 
       path: "/", 
       badge: 0,
-      description: "Carrier dashboard with metrics"
+      description: "Catalyst dashboard with metrics"
     },
     { 
       icon: "Search", 
@@ -261,25 +247,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
-      badge: 0,
-      description: "Personal information"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Market Pricing", 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rate intelligence"
-    },
-    { 
-      icon: "Flame", 
-      label: "Hot Zones", 
-      path: "/hot-zones", 
-      badge: 0,
-      description: "Demand heatmap & surge pricing"
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Truck", 
@@ -293,7 +265,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Newspaper", 
@@ -343,10 +315,10 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
     { 
       icon: "Users", 
-      label: "Carriers", 
-      path: "/carriers", 
+      label: "Catalysts", 
+      path: "/catalysts", 
       badge: 0,
-      description: "Carrier network"
+      description: "Catalyst network"
     },
     { 
       icon: "Building2", 
@@ -360,7 +332,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Agreements", 
       path: "/agreements", 
       badge: 0,
-      description: "Manage shipper & carrier contracts"
+      description: "Manage shipper & catalyst contracts"
     },
     { 
       icon: "DollarSign", 
@@ -398,25 +370,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
-      badge: 0,
-      description: "Personal information"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Market Pricing", 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rate intelligence"
-    },
-    { 
-      icon: "Flame", 
-      label: "Hot Zones", 
-      path: "/hot-zones", 
-      badge: 0,
-      description: "Demand heatmap & surge pricing"
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Truck", 
@@ -430,7 +388,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Newspaper", 
@@ -563,25 +521,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
-      badge: 0,
-      description: "Personal information"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Market Pricing", 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rate intelligence"
-    },
-    { 
-      icon: "Flame", 
-      label: "Hot Zones", 
-      path: "/hot-zones", 
-      badge: 0,
-      description: "Demand heatmap & surge pricing"
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Truck", 
@@ -595,7 +539,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Newspaper", 
@@ -613,14 +557,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
-  // CATALYST: Specialization matching, load optimization
-  CATALYST: [
+  // DISPATCH: Specialization matching, load optimization
+  DISPATCH: [
     { 
       icon: "LayoutDashboard", 
       label: "Dashboard", 
       path: "/", 
       badge: 0,
-      description: "Catalyst dashboard"
+      description: "Dispatch dashboard"
     },
     { 
       icon: "Zap", 
@@ -693,18 +637,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
-      badge: 0,
-      description: "Personal information"
-    },
-    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Truck", 
@@ -809,18 +746,18 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
       badge: 0,
-      description: "Personal information"
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "Truck", 
@@ -849,7 +786,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
   FACTORING: [
     { icon: "LayoutDashboard", label: "Dashboard", path: "/factoring", badge: 0, description: "Factoring overview" },
     { icon: "FileText", label: "Invoices", path: "/factoring/invoices", badge: 0, description: "Pending and funded invoices" },
-    { icon: "Users", label: "Carriers", path: "/factoring/carriers", badge: 0, description: "Carrier portfolio" },
+    { icon: "Users", label: "Catalysts", path: "/factoring/catalysts", badge: 0, description: "Catalyst portfolio" },
     { icon: "DollarSign", label: "Funding", path: "/factoring/funding", badge: 0, description: "Daily funding queue" },
     { icon: "Banknote", label: "Collections", path: "/factoring/collections", badge: 0, description: "Outstanding collections" },
     { icon: "ShieldCheck", label: "Risk", path: "/factoring/risk", badge: 0, description: "Credit risk assessment" },
@@ -943,18 +880,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "SPECTRA-MATCH\u2122 crude oil identification"
     },
     { 
-      icon: "BarChart3", 
-      label: "Market Pricing", 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
       path: "/market-pricing", 
       badge: 0,
-      description: "Freight rate intelligence"
-    },
-    { 
-      icon: "Flame", 
-      label: "Hot Zones", 
-      path: "/hot-zones", 
-      badge: 0,
-      description: "Demand heatmap & surge pricing"
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "MessageSquare", 
@@ -968,7 +898,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Preferences"
+      description: "Profile, preferences & security"
     },
     { 
       icon: "MessageSquare", 
@@ -1422,16 +1352,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       badge: 0 
     },
     { 
-      icon: "User", 
-      label: "Profile", 
-      path: "/profile", 
-      badge: 0 
-    },
-    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
-      badge: 0 
+      badge: 0,
+      description: "Profile, preferences & security"
     },
     { 
       icon: "HelpCircle", 
@@ -1444,7 +1369,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
 
 /**
  * Get menu items based on user role
- * @param role - User role (SHIPPER, CARRIER, BROKER, DRIVER, CATALYST, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN)
+ * @param role - User role (SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN)
  * @returns Array of menu items for the given role
  */
 export function getMenuForRole(role?: string | UserRole): MenuItem[] {
@@ -1473,10 +1398,10 @@ export function hasAccessToPath(role: string | UserRole, path: string): boolean 
 export function getRoleDisplayName(role: string | UserRole): string {
   const roleMap: Record<string, string> = {
     SHIPPER: 'Shipper',
-    CARRIER: 'Carrier',
+    CATALYST: 'Catalyst',
     BROKER: 'Broker',
     DRIVER: 'Driver',
-    CATALYST: 'Catalyst',
+    DISPATCH: 'Dispatch',
     ESCORT: 'Escort',
     TERMINAL_MANAGER: 'Terminal Manager',
     FACTORING: 'Factoring Company',

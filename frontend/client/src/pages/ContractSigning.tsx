@@ -1,8 +1,8 @@
 /**
- * CONTRACT SIGNING PAGE — Carrier post-bid-acceptance flow
+ * CONTRACT SIGNING PAGE — Catalyst post-bid-acceptance flow
  * Theme-aware | Brand gradient | Shipper design standard
  * 
- * Flow: Carrier bid accepted → navigate here → review terms → sign with Gradient Ink
+ * Flow: Catalyst bid accepted → navigate here → review terms → sign with Gradient Ink
  * Uses agreements.generate + agreements.sign tRPC mutations
  */
 
@@ -49,7 +49,7 @@ export default function ContractSigning() {
   );
 
   // Fetch accepted bid for this load
-  const bidQuery = (trpc as any).carriers?.getAcceptedBid?.useQuery?.(
+  const bidQuery = (trpc as any).catalysts?.getAcceptedBid?.useQuery?.(
     { loadId: loadId! },
     { enabled: !!loadId }
   ) || { data: null, isLoading: false };
@@ -99,7 +99,7 @@ export default function ContractSigning() {
     // Auto-generate agreement when moving to terms
     if (load && !agreementId) {
       generateMutation.mutate({
-        type: "carrier_shipper",
+        type: "catalyst_shipper",
         templateId: null,
         partyBUserId: load.shipperId || null,
         partyBCompanyId: null,
@@ -118,10 +118,10 @@ export default function ContractSigning() {
           commodity: load.commodity || load.cargoType,
         },
         clauses: [
-          { id: "rate", title: "Rate Confirmation", body: `Carrier agrees to transport load #${load.loadNumber} for the agreed rate of $${(bid?.amount || load?.rate || 0).toLocaleString()}.`, isModified: false },
+          { id: "rate", title: "Rate Confirmation", body: `Catalyst agrees to transport load #${load.loadNumber} for the agreed rate of $${(bid?.amount || load?.rate || 0).toLocaleString()}.`, isModified: false },
           { id: "payment", title: "Payment Terms", body: "Payment shall be made within 30 days of delivery and submission of required documentation (BOL, POD).", isModified: false },
-          { id: "liability", title: "Liability & Insurance", body: "Carrier shall maintain minimum cargo insurance of $100,000 and general liability of $1,000,000 as required by FMCSA regulations.", isModified: false },
-          { id: "compliance", title: "Regulatory Compliance", body: "Carrier warrants compliance with all applicable DOT, FMCSA, and state transportation regulations.", isModified: false },
+          { id: "liability", title: "Liability & Insurance", body: "Catalyst shall maintain minimum cargo insurance of $100,000 and general liability of $1,000,000 as required by FMCSA regulations.", isModified: false },
+          { id: "compliance", title: "Regulatory Compliance", body: "Catalyst warrants compliance with all applicable DOT, FMCSA, and state transportation regulations.", isModified: false },
         ],
       });
     }
@@ -135,8 +135,8 @@ export default function ContractSigning() {
     signMutation.mutate({
       agreementId,
       signatureData,
-      signatureRole: "carrier",
-      signerName: user?.name || user?.firstName || "Carrier",
+      signatureRole: "catalyst",
+      signerName: user?.name || user?.firstName || "Catalyst",
       signerTitle: "Authorized Representative",
     });
   };
@@ -306,11 +306,11 @@ export default function ContractSigning() {
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { title: "1. Rate Confirmation", body: `Carrier agrees to transport Load #${load.loadNumber} from ${originCity}${originState ? `, ${originState}` : ""} to ${destCity}${destState ? `, ${destState}` : ""} for a total rate of $${Number(rate).toLocaleString()}.` },
+                { title: "1. Rate Confirmation", body: `Catalyst agrees to transport Load #${load.loadNumber} from ${originCity}${originState ? `, ${originState}` : ""} to ${destCity}${destState ? `, ${destState}` : ""} for a total rate of $${Number(rate).toLocaleString()}.` },
                 { title: "2. Payment Terms", body: "Payment shall be made within 30 calendar days of delivery and submission of required documentation including signed Bill of Lading (BOL) and Proof of Delivery (POD). Quick Pay options may be available at a reduced rate." },
-                { title: "3. Liability & Insurance", body: "Carrier shall maintain minimum cargo insurance of $100,000 and automobile liability insurance of $1,000,000 as required by FMCSA regulations (49 CFR Part 387). Carrier is liable for loss or damage to cargo from the time of pickup to delivery." },
-                { title: "4. Regulatory Compliance", body: "Carrier warrants that it holds a valid Motor Carrier operating authority issued by the FMCSA, and that all drivers and equipment comply with applicable DOT, FMCSA, and state transportation regulations." },
-                { title: "5. Service Standards", body: "Carrier shall pick up and deliver the shipment within the agreed-upon schedule. Carrier shall immediately notify Shipper of any delays, incidents, or changes affecting the shipment." },
+                { title: "3. Liability & Insurance", body: "Catalyst shall maintain minimum cargo insurance of $100,000 and automobile liability insurance of $1,000,000 as required by FMCSA regulations (49 CFR Part 387). Catalyst is liable for loss or damage to cargo from the time of pickup to delivery." },
+                { title: "4. Regulatory Compliance", body: "Catalyst warrants that it holds a valid Motor Catalyst operating authority issued by the FMCSA, and that all drivers and equipment comply with applicable DOT, FMCSA, and state transportation regulations." },
+                { title: "5. Service Standards", body: "Catalyst shall pick up and deliver the shipment within the agreed-upon schedule. Catalyst shall immediately notify Shipper of any delays, incidents, or changes affecting the shipment." },
                 { title: "6. Platform Terms", body: "This transaction is facilitated through the EusoTrip platform. Standard platform transaction fees apply per the EusoTrip Terms of Service." },
               ].map((clause) => (
                 <div key={clause.title} className={cellCls}>
@@ -372,7 +372,7 @@ export default function ContractSigning() {
             <CardContent className="p-5">
               <GradientSignaturePad
                 documentTitle="Rate Confirmation Agreement"
-                signerName={user?.name || user?.firstName || "Carrier Representative"}
+                signerName={user?.name || user?.firstName || "Catalyst Representative"}
                 onSign={(data) => setSignatureData(data)}
                 onClear={() => setSignatureData(null)}
                 legalText="By electronically signing this document, I acknowledge and agree that my electronic signature holds the same legal validity as a handwritten signature, pursuant to the U.S. Electronic Signatures in Global and National Commerce Act (ESIGN Act, 15 U.S.C. ch. 96) and the Uniform Electronic Transactions Act (UETA)."
@@ -448,7 +448,7 @@ export default function ContractSigning() {
               <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setLocation("/bids")}>
                 <ArrowLeft className="w-4 h-4 mr-2" />My Bids
               </Button>
-              <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: `RC-${load.loadNumber}`, agreementType: "carrier_shipper", contractDuration: "single_load", status: "signed", generatedContent: `Rate Confirmation for Load #${load.loadNumber}\n\nCarrier agrees to transport the specified load for the confirmed rate.\nRoute: ${load.pickupLocation || load.origin || "Origin"} → ${load.deliveryLocation || load.destination || "Destination"}\nRate: $${Number(bid?.amount || load?.rate || 0).toLocaleString()}\nPayment: Net 30 days\nEquipment: ${load.equipmentType || "Dry Van"}`, partyAName: user?.name || "Carrier", partyARole: "CARRIER", partyBName: load.shipperName || "Shipper", partyBRole: "SHIPPER", baseRate: bid?.amount || load?.rate, rateType: "flat", paymentTermDays: 30, equipmentTypes: [load.equipmentType || "dry_van"], hazmatRequired: !!load.hazmatClass })}>
+              <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => downloadAgreementPdf({ agreementNumber: `RC-${load.loadNumber}`, agreementType: "catalyst_shipper", contractDuration: "single_load", status: "signed", generatedContent: `Rate Confirmation for Load #${load.loadNumber}\n\nCatalyst agrees to transport the specified load for the confirmed rate.\nRoute: ${load.pickupLocation || load.origin || "Origin"} → ${load.deliveryLocation || load.destination || "Destination"}\nRate: $${Number(bid?.amount || load?.rate || 0).toLocaleString()}\nPayment: Net 30 days\nEquipment: ${load.equipmentType || "Dry Van"}`, partyAName: user?.name || "Catalyst", partyARole: "CATALYST", partyBName: load.shipperName || "Shipper", partyBRole: "SHIPPER", baseRate: bid?.amount || load?.rate, rateType: "flat", paymentTermDays: 30, equipmentTypes: [load.equipmentType || "dry_van"], hazmatRequired: !!load.hazmatClass })}>
                 <Download className="w-4 h-4 mr-2" />Download PDF
               </Button>
               <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation("/loads/transit")}>

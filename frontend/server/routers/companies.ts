@@ -88,7 +88,7 @@ export const companiesRouter = router({
       const db = await getDb();
       if (!db) {
         return {
-          id: 1, name: "", dotNumber: "", mcNumber: "", type: "carrier", verified: false,
+          id: 1, name: "", dotNumber: "", mcNumber: "", type: "catalyst", verified: false,
           logo: null, website: "", description: "", address: "", city: "", state: "", zip: "",
           phone: "", email: ctx.user?.email || "",
         };
@@ -106,7 +106,7 @@ export const companiesRouter = router({
 
       return {
         ...company,
-        type: "carrier",
+        type: "catalyst",
         verified: !!company.dotNumber,
         logo: company.logo || null,
         website: company.website || "",

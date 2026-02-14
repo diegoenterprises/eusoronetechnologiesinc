@@ -152,7 +152,7 @@ export const esangRouter = router({
   checkCompliance: protectedProcedure
     .input(
       z.object({
-        entityType: z.enum(["driver", "carrier", "vehicle"]),
+        entityType: z.enum(["driver", "catalyst", "vehicle"]),
         entityId: z.string(),
       })
     )
@@ -320,19 +320,19 @@ export const esangRouter = router({
     const role = (ctx.user?.role || "SHIPPER").toUpperCase();
     switch (role) {
       case "SHIPPER":
-        return ["Get rate estimate for a lane", "Track my active shipments", "Find available carriers", "Check compliance status", "Identify product with SPECTRA-MATCH"];
-      case "CARRIER":
+        return ["Get rate estimate for a lane", "Track my active shipments", "Find available catalysts", "Check compliance status", "Identify product with SPECTRA-MATCH"];
+      case "CATALYST":
         return ["Find loads matching my equipment", "Check fuel surcharge rates", "Review my bid history", "Fleet compliance check", "Optimize my routes"];
       case "DRIVER":
         return ["Check my HOS status", "View assigned loads", "Report an incident", "Find nearest fuel stop", "ERG hazmat lookup"];
       case "BROKER":
-        return ["Analyze lane pricing", "Match carrier to load", "Check margin on active loads", "Market rate intelligence", "Carrier compliance verify"];
+        return ["Analyze lane pricing", "Match catalyst to load", "Check margin on active loads", "Market rate intelligence", "Catalyst compliance verify"];
       case "TERMINAL_MANAGER":
         return ["View terminal throughput", "Identify product with SPECTRA-MATCH", "Check tank inventory", "Review pending run tickets", "Safety compliance audit"];
       case "ADMIN": case "SUPER_ADMIN":
         return ["System health overview", "User activity summary", "Compliance dashboard", "Revenue analytics", "Platform diagnostics"];
       case "COMPLIANCE_OFFICER":
-        return ["Run compliance audit", "Check carrier insurance", "Review HOS violations", "DOT inspection results", "Safety score analysis"];
+        return ["Run compliance audit", "Check catalyst insurance", "Review HOS violations", "DOT inspection results", "Safety score analysis"];
       case "SAFETY_MANAGER":
         return ["ERG 2024 hazmat lookup", "Incident report summary", "Safety training status", "Fleet safety scores", "Emergency response plan"];
       default:

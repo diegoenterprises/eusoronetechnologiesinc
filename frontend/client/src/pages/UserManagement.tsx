@@ -48,7 +48,7 @@ export default function UserManagement() {
       case "dispatcher": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Dispatcher</Badge>;
       case "driver": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">Driver</Badge>;
       case "shipper": return <Badge className="bg-green-500/20 text-green-400 border-0">Shipper</Badge>;
-      case "carrier": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Carrier</Badge>;
+      case "catalyst": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Catalyst</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{role}</Badge>;
     }
   };
@@ -113,7 +113,7 @@ export default function UserManagement() {
             <SelectItem value="dispatcher">Dispatcher</SelectItem>
             <SelectItem value="driver">Driver</SelectItem>
             <SelectItem value="shipper">Shipper</SelectItem>
-            <SelectItem value="carrier">Carrier</SelectItem>
+            <SelectItem value="catalyst">Catalyst</SelectItem>
           </SelectContent>
         </Select>
       </div>

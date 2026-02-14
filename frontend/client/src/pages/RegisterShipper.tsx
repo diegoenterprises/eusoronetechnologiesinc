@@ -54,7 +54,7 @@ interface ShipperFormData {
   hazmatTypes: string[];
   
   // Step 5: Insurance
-  insuranceCarrier: string;
+  insuranceCatalyst: string;
   policyNumber: string;
   coverageAmount: string;
   expirationDate: string;
@@ -94,7 +94,7 @@ const initialFormData: ShipperFormData = {
   epaId: "",
   statePermits: [],
   hazmatTypes: [],
-  insuranceCarrier: "",
+  insuranceCatalyst: "",
   policyNumber: "",
   coverageAmount: "",
   expirationDate: "",
@@ -177,7 +177,7 @@ export default function RegisterShipper() {
       zipCode: formData.zipCode,
       phmsaNumber: formData.phmsamRegistrationNumber || undefined,
       hazmatClasses,
-      generalLiabilityCarrier: formData.insuranceCarrier,
+      generalLiabilityCatalyst: formData.insuranceCatalyst,
       generalLiabilityPolicy: formData.policyNumber,
       generalLiabilityCoverage: formData.coverageAmount,
       generalLiabilityExpiration: formData.expirationDate,
@@ -532,13 +532,13 @@ export default function RegisterShipper() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="insuranceCarrier" className="text-slate-300">
-                Insurance Carrier <span className="text-red-400">*</span>
+              <Label htmlFor="insuranceCatalyst" className="text-slate-300">
+                Insurance Catalyst <span className="text-red-400">*</span>
               </Label>
               <Input
-                id="insuranceCarrier"
-                value={formData.insuranceCarrier}
-                onChange={(e: any) => updateFormData({ insuranceCarrier: e.target.value })}
+                id="insuranceCatalyst"
+                value={formData.insuranceCatalyst}
+                onChange={(e: any) => updateFormData({ insuranceCatalyst: e.target.value })}
                 placeholder="ABC Insurance Co"
                 className="bg-slate-700/50 border-slate-600 text-white"
               />
@@ -616,7 +616,7 @@ export default function RegisterShipper() {
         </div>
       ),
       validate: () => {
-        if (!formData.insuranceCarrier || !formData.policyNumber || !formData.coverageAmount || !formData.expirationDate) {
+        if (!formData.insuranceCatalyst || !formData.policyNumber || !formData.coverageAmount || !formData.expirationDate) {
           toast.error("Please fill in all insurance fields");
           return false;
         }

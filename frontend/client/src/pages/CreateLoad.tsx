@@ -67,7 +67,7 @@ export default function CreateLoad() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Create Load
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Post a new load for carriers to bid on</p>
+          <p className="text-slate-400 text-sm mt-1">Post a new load for catalysts to bid on</p>
         </div>
       </div>
 

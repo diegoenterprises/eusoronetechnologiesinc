@@ -28,7 +28,7 @@ export interface CSABasicScore {
 }
 
 interface CSAScoresProps {
-  carrierName: string;
+  catalystName: string;
   usdotNumber: string;
   lastUpdated: string;
   scores: CSABasicScore[];
@@ -62,7 +62,7 @@ function getProgressColor(score: number, threshold: number, alert: boolean): str
 }
 
 export function CSAScores({
-  carrierName,
+  catalystName,
   usdotNumber,
   lastUpdated,
   scores,
@@ -79,7 +79,7 @@ export function CSAScores({
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-white">{carrierName}</h2>
+              <h2 className="text-2xl font-bold text-white">{catalystName}</h2>
               <p className="text-slate-400">USDOT# {usdotNumber}</p>
               <div className="flex items-center gap-3 mt-3">
                 {overallRating && (
@@ -104,7 +104,7 @@ export function CSAScores({
               <p className="text-xs text-slate-400">Last Updated</p>
               <p className="text-white">{lastUpdated}</p>
               <a 
-                href={`https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT&query_string=${usdotNumber}`}
+                href={`https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCatalystSnapshot&query_param=USDOT&query_string=${usdotNumber}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs text-blue-400 hover:underline flex items-center gap-1 justify-end mt-2"
@@ -241,9 +241,9 @@ export function CSAScores({
               <p className="font-medium text-slate-300 mb-1">About CSA BASIC Scores</p>
               <p>
                 The FMCSA's Compliance, Safety, Accountability (CSA) program uses Behavior Analysis and 
-                Safety Improvement Categories (BASICs) to measure motor carrier safety performance. 
+                Safety Improvement Categories (BASICs) to measure motor catalyst safety performance. 
                 Scores are percentile-based (0-100), where higher percentiles indicate worse performance. 
-                Carriers with scores at or above intervention thresholds may be subject to FMCSA investigation.
+                Catalysts with scores at or above intervention thresholds may be subject to FMCSA investigation.
               </p>
             </div>
           </div>

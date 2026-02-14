@@ -288,7 +288,7 @@ export class ScenarioExecutor {
 
   private async executeLoginStep(step: string, context: ExecutionContext): Promise<StepResult> {
     // Extract user type from step
-    const actorMatch = step.match(/as\s+(driver|carrier|broker|shipper|admin|terminal|escort)/i);
+    const actorMatch = step.match(/as\s+(driver|catalyst|broker|shipper|admin|terminal|escort)/i);
     const role = actorMatch ? actorMatch[1].toLowerCase() : 'driver';
     
     // Simulate login

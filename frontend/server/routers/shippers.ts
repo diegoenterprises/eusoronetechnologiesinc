@@ -91,7 +91,7 @@ export const shippersRouter = router({
             status: l.status,
             origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
             destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
-            carrier: l.carrierId ? `Carrier ${l.carrierId}` : 'Unassigned',
+            catalyst: l.catalystId ? `Catalyst ${l.catalystId}` : 'Unassigned',
             driver: l.driverId ? `Driver ${l.driverId}` : 'Unassigned',
             eta: l.deliveryDate ? new Date(l.deliveryDate).toLocaleString() : 'TBD',
             rate: parseFloat(l.rate || '0'),
@@ -252,7 +252,7 @@ export const shippersRouter = router({
             hazmat: l.cargoType === 'hazmat',
             hazmatClass: l.hazmatClass || null,
             product: l.cargoType || '',
-            carrier: l.carrierId ? { id: `car_${l.carrierId}`, name: 'Carrier' } : null,
+            catalyst: l.catalystId ? { id: `car_${l.catalystId}`, name: 'Catalyst' } : null,
             driver: l.driverId ? { id: `d_${l.driverId}`, name: 'Driver' } : null,
             rate: l.rate ? parseFloat(String(l.rate)) : 0,
             currentLocation: current.city ? { city: current.city, state: current.state || '' } : null,
@@ -328,12 +328,12 @@ export const shippersRouter = router({
         const bidList = await db.select().from(bids).where(eq(bids.loadId, loadId)).orderBy(desc(bids.createdAt));
 
         return await Promise.all(bidList.map(async (b, idx) => {
-          const [carrier] = await db.select().from(companies).where(eq(companies.id, b.carrierId)).limit(1);
+          const [catalyst] = await db.select().from(companies).where(eq(companies.id, b.catalystId)).limit(1);
           return {
             id: `bid_${b.id}`,
-            carrierId: `car_${b.carrierId}`,
-            carrierName: carrier?.name || 'Carrier',
-            dotNumber: carrier?.dotNumber || '',
+            catalystId: `car_${b.catalystId}`,
+            catalystName: catalyst?.name || 'Catalyst',
+            dotNumber: catalyst?.dotNumber || '',
             safetyScore: 90,
             amount: b.amount ? parseFloat(String(b.amount)) : 0,
             transitTime: '8 hours',
@@ -384,9 +384,9 @@ export const shippersRouter = router({
     }),
 
   /**
-   * Get carrier performance for shipper
+   * Get catalyst performance for shipper
    */
-  getCarrierPerformance: protectedProcedure
+  getCatalystPerformance: protectedProcedure
     .input(z.object({
       period: z.enum(["month", "quarter", "year"]).default("quarter"),
     }))
@@ -410,27 +410,27 @@ export const shippersRouter = router({
         avgPerMile: 0,
         vsMarketRate: 0,
         byLane: [],
-        byCarrier: [],
+        byCatalyst: [],
       };
     }),
 
   /**
-   * Get favorite carriers
+   * Get favorite catalysts
    */
-  getFavoriteCarriers: protectedProcedure
+  getFavoriteCatalysts: protectedProcedure
     .query(async ({ ctx }) => {
       return [];
     }),
 
   /**
-   * Add favorite carrier
+   * Add favorite catalyst
    */
-  addFavoriteCarrier: protectedProcedure
-    .input(z.object({ carrierId: z.string() }))
+  addFavoriteCatalyst: protectedProcedure
+    .input(z.object({ catalystId: z.string() }))
     .mutation(async ({ ctx, input }) => {
       return {
         success: true,
-        carrierId: input.carrierId,
+        catalystId: input.catalystId,
         addedAt: new Date().toISOString(),
       };
     }),
@@ -448,12 +448,12 @@ export const shippersRouter = router({
     }),
 
   /**
-   * Rate carrier
+   * Rate catalyst
    */
-  rateCarrier: protectedProcedure
+  rateCatalyst: protectedProcedure
     .input(z.object({
       loadId: z.string(),
-      carrierId: z.string(),
+      catalystId: z.string(),
       rating: z.number().min(1).max(5),
       review: z.string().optional(),
     }))
@@ -480,6 +480,6 @@ export const shippersRouter = router({
   getStats: protectedProcedure
     .query(async () => ({
       totalLoads: 0, totalSpend: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0,
-      preferredCarriers: 0, avgPaymentTime: 0, onTimeRate: 0, monthlyVolume: [], maxMonthlyLoads: 0,
+      preferredCatalysts: 0, avgPaymentTime: 0, onTimeRate: 0, monthlyVolume: [], maxMonthlyLoads: 0,
     })),
 });

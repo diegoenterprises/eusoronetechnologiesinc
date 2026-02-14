@@ -1,5 +1,5 @@
 /**
- * SPECIALIZATIONS PAGE - CATALYST PROFILE
+ * SPECIALIZATIONS PAGE - DISPATCH PROFILE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
@@ -17,8 +17,8 @@ import {
 import { cn } from "@/lib/utils";
 
 export default function Specializations() {
-  const specializationsQuery = (trpc as any).catalysts.getSpecializations.useQuery();
-  const statsQuery = (trpc as any).catalysts.getSpecializationStats.useQuery();
+  const specializationsQuery = (trpc as any).dispatchRole.getSpecializations.useQuery();
+  const statsQuery = (trpc as any).dispatchRole.getSpecializationStats.useQuery();
 
   const stats = statsQuery.data;
 

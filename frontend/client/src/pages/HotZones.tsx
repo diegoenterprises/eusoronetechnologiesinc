@@ -14,10 +14,10 @@ import {
 const ACTION_ROUTES: Record<string, string> = {
   // SHIPPER
   post_load: "/loads/create",
-  view_carriers: "/carriers",
+  view_catalysts: "/catalysts",
   set_rate_alert: "/market-pricing",
   // BROKER
-  find_carriers: "/carrier-vetting",
+  find_catalysts: "/catalyst-vetting",
   post_counter: "/loads/create",
   calc_margin: "/tools/rate-calculator",
   // DRIVER
@@ -28,17 +28,17 @@ const ACTION_ROUTES: Record<string, string> = {
   bid_escort: "/escort/marketplace",
   view_requirements: "/escort/permits",
   check_clearances: "/escort/permits",
-  // CATALYST
+  // DISPATCH
   assign_driver: "/dispatch/board",
-  reposition_fleet: "/catalyst/fleet-map",
+  reposition_fleet: "/dispatch/fleet-map",
   view_hos: "/driver/hos",
   // TERMINAL_MANAGER
   manage_appointments: "/terminal/appointments",
-  alert_carriers: "/messages",
+  alert_catalysts: "/messages",
   view_docks: "/loading-bays",
   // FACTORING
   view_invoices: "/wallet",
-  assess_credit: "/carrier-vetting",
+  assess_credit: "/catalyst-vetting",
   adjust_rate: "/tools/rate-calculator",
   // COMPLIANCE_OFFICER
   view_non_compliant: "/violations",
@@ -56,7 +56,7 @@ const ACTION_ROUTES: Record<string, string> = {
   platform_overview: "/super-admin",
   adjust_pricing: "/admin/platform-fees",
   export_data: "/admin/analytics",
-  // DEFAULT (CARRIER)
+  // DEFAULT (CATALYST)
   view_loads: "/marketplace",
   route_fleet: "/fleet",
   set_demand_alert: "/market-pricing",
@@ -65,7 +65,7 @@ const ACTION_ROUTES: Record<string, string> = {
 // ── DATA LAYER DEFINITIONS ──
 const DATA_LAYERS: Record<string, { label: string; icon: typeof Flame; color: string }> = {
   freight_demand: { label: "Freight Demand", icon: Flame, color: "#EF4444" },
-  carrier_capacity: { label: "Carrier Availability", icon: Truck, color: "#22C55E" },
+  catalyst_capacity: { label: "Catalyst Availability", icon: Truck, color: "#22C55E" },
   rate_heat: { label: "Rate Intelligence", icon: TrendingUp, color: "#F59E0B" },
   fuel_prices: { label: "Fuel Prices", icon: Fuel, color: "#A16207" },
   fuel_stations: { label: "Fuel Stations", icon: Fuel, color: "#84CC16" },
@@ -142,7 +142,7 @@ export default function HotZones() {
               <div>
                 <h1 className={`text-xl font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
                   {roleCtx?.perspective === "freight_demand" ? "Demand Intelligence" :
-                   roleCtx?.perspective === "carrier_availability" ? "Carrier Intelligence" :
+                   roleCtx?.perspective === "catalyst_availability" ? "Catalyst Intelligence" :
                    roleCtx?.perspective === "spread_opportunity" ? "Margin Intelligence" :
                    roleCtx?.perspective === "driver_opportunity" ? "Driver Opportunities" :
                    roleCtx?.perspective === "dispatch_intelligence" ? "Dispatch Intelligence" :

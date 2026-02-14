@@ -38,7 +38,7 @@ const premiumRow = "flex items-center gap-3 p-3 rounded-xl bg-white/[0.04] backd
 export const TasksWidget: React.FC<{ compact?: boolean }> = ({ compact = false }) => {
   const [tasks, setTasks] = usePersistentState('tasks', [
     { id: 1, text: 'Review shipment quotes', done: false },
-    { id: 2, text: 'Update carrier contracts', done: true },
+    { id: 2, text: 'Update catalyst contracts', done: true },
     { id: 3, text: 'Schedule team meeting', done: false },
   ]);
   const [newTask, setNewTask] = useState('');
@@ -200,11 +200,11 @@ export const QuickActionsWidget: React.FC<{ compact?: boolean; role?: string }> 
   const roleActions: Record<string, Array<{ label: string; icon: any; color: string; gradient: string }>> = {
     SHIPPER: [
       { label: 'Create Load', icon: Package, color: 'text-blue-400', gradient: 'from-blue-500/20 to-blue-600/10' },
-      { label: 'Find Carrier', icon: Truck, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-emerald-600/10' },
+      { label: 'Find Catalyst', icon: Truck, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-emerald-600/10' },
       { label: 'Track Shipments', icon: MapPin, color: 'text-purple-400', gradient: 'from-purple-500/20 to-purple-600/10' },
       { label: 'View Reports', icon: BarChart3, color: 'text-cyan-400', gradient: 'from-cyan-500/20 to-cyan-600/10' },
     ],
-    CARRIER: [
+    CATALYST: [
       { label: 'Browse Loads', icon: Search, color: 'text-blue-400', gradient: 'from-blue-500/20 to-blue-600/10' },
       { label: 'Fleet Status', icon: Truck, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-emerald-600/10' },
       { label: 'Dispatch', icon: Zap, color: 'text-amber-400', gradient: 'from-amber-500/20 to-amber-600/10' },
@@ -212,7 +212,7 @@ export const QuickActionsWidget: React.FC<{ compact?: boolean; role?: string }> 
     ],
     BROKER: [
       { label: 'Post Load', icon: Plus, color: 'text-blue-400', gradient: 'from-blue-500/20 to-blue-600/10' },
-      { label: 'Find Carrier', icon: Search, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-emerald-600/10' },
+      { label: 'Find Catalyst', icon: Search, color: 'text-emerald-400', gradient: 'from-emerald-500/20 to-emerald-600/10' },
       { label: 'Margins', icon: DollarSign, color: 'text-amber-400', gradient: 'from-amber-500/20 to-amber-600/10' },
       { label: 'Bids', icon: TrendingUp, color: 'text-purple-400', gradient: 'from-purple-500/20 to-purple-600/10' },
     ],
@@ -345,7 +345,7 @@ export const SearchWidget: React.FC<{ compact?: boolean }> = ({ compact = false 
       <div className="relative group">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-purple-400 transition-colors" />
         <Input
-          placeholder="Search loads, carriers, documents..."
+          placeholder="Search loads, catalysts, documents..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-11 pr-16 bg-white/[0.06] border-white/[0.1] text-white placeholder:text-gray-600 rounded-xl h-11 focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/20 transition-all"
@@ -425,7 +425,7 @@ export const CalendarWidget: React.FC<{ compact?: boolean }> = ({ compact = fals
 
   const events = [
     { title: 'Load #45901 Pickup', time: '9:00 AM', endTime: '10:00 AM', color: 'blue', type: 'pickup' },
-    { title: 'Carrier Rate Review', time: '11:30 AM', endTime: '12:00 PM', color: 'purple', type: 'meeting' },
+    { title: 'Catalyst Rate Review', time: '11:30 AM', endTime: '12:00 PM', color: 'purple', type: 'meeting' },
     { title: 'Load #45905 Delivery', time: '2:00 PM', endTime: '3:00 PM', color: 'cyan', type: 'delivery' },
     { title: 'Safety Briefing', time: '4:30 PM', endTime: '5:00 PM', color: 'amber', type: 'meeting' },
   ];

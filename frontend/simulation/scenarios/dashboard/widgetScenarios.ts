@@ -32,10 +32,10 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
   {
     id: 'DASH-002',
     category: 'DASHBOARD',
-    name: 'Carrier customizes fleet overview dashboard',
-    actor: 'CARRIER_C002',
+    name: 'Catalyst customizes fleet overview dashboard',
+    actor: 'CATALYST_C002',
     steps: [
-      'Login as carrier',
+      'Login as catalyst',
       'Access dashboard settings',
       'Remove default widgets',
       'Add: Fleet Map (4x3), Driver Status (2x2), Active Loads (2x4), Revenue Chart (2x2)',
@@ -163,7 +163,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-010',
     category: 'DASHBOARD',
     name: 'Widget data refresh across multiple widgets',
-    actor: 'CARRIER_C003',
+    actor: 'CATALYST_C003',
     steps: [
       'Configure 5 widgets with different refresh intervals',
       'Monitor network requests over 5 minutes',
@@ -198,7 +198,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-012',
     category: 'DASHBOARD',
     name: 'Resize widget with constraints',
-    actor: 'CARRIER_C002',
+    actor: 'CATALYST_C002',
     steps: [
       'Open dashboard edit mode',
       'Select Fleet Map widget',
@@ -264,7 +264,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-016',
     category: 'DASHBOARD',
     name: 'Copy dashboard layout to another user',
-    actor: 'CARRIER_C002',
+    actor: 'CATALYST_C002',
     steps: [
       'Create custom dashboard layout',
       'Click "Share Layout"',
@@ -329,11 +329,11 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-020',
     category: 'DASHBOARD',
     name: 'Dashboard layout presets',
-    actor: 'CARRIER_C001',
+    actor: 'CATALYST_C001',
     steps: [
       'Open dashboard settings',
-      'View available presets (Driver, Carrier, Broker templates)',
-      'Select "Carrier Analytics" preset',
+      'View available presets (Driver, Catalyst, Broker templates)',
+      'Select "Catalyst Analytics" preset',
       'Verify preset loads with correct widgets',
       'Customize preset',
       'Save as new custom preset',
@@ -415,7 +415,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-025',
     category: 'DASHBOARD',
     name: 'Widget data export',
-    actor: 'CARRIER_C002',
+    actor: 'CATALYST_C002',
     steps: [
       'View fleet utilization widget',
       'Click export button',
@@ -448,7 +448,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-027',
     category: 'DASHBOARD',
     name: 'Widget metric comparison',
-    actor: 'CARRIER_C003',
+    actor: 'CATALYST_C003',
     steps: [
       'Add "Revenue Comparison" widget',
       'Enable period-over-period comparison',
@@ -530,7 +530,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-032',
     category: 'DASHBOARD',
     name: 'Widget alerts configuration',
-    actor: 'CARRIER_C002',
+    actor: 'CATALYST_C002',
     steps: [
       'Open fleet status widget settings',
       'Enable alert for "Driver HOS violation"',
@@ -613,16 +613,16 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
   {
     id: 'DASH-037',
     category: 'DASHBOARD',
-    name: 'Carrier default dashboard loads correctly',
-    actor: 'CARRIER_C002',
+    name: 'Catalyst default dashboard loads correctly',
+    actor: 'CATALYST_C002',
     steps: [
-      'Login as carrier for first time',
-      'Verify default carrier dashboard loads',
+      'Login as catalyst for first time',
+      'Verify default catalyst dashboard loads',
       'Verify widgets: Fleet Map, Driver List, Active Loads, Revenue, Compliance',
       'Verify fleet-wide data aggregation',
       'Verify dispatch actions available'
     ],
-    expectedOutcome: 'Carrier sees carrier-appropriate default dashboard',
+    expectedOutcome: 'Catalyst sees catalyst-appropriate default dashboard',
     validations: ['correct_widgets', 'fleet_data', 'dispatch_actions']
   },
   {
@@ -633,9 +633,9 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     steps: [
       'Login as broker for first time',
       'Verify default broker dashboard loads',
-      'Verify widgets: Load Board, Active Shipments, Carrier Network, Commissions',
+      'Verify widgets: Load Board, Active Shipments, Catalyst Network, Commissions',
       'Verify load matching suggestions',
-      'Verify carrier vetting status visible'
+      'Verify catalyst vetting status visible'
     ],
     expectedOutcome: 'Broker sees broker-appropriate default dashboard',
     validations: ['correct_widgets', 'matching_visible', 'vetting_status']
@@ -648,7 +648,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     steps: [
       'Login as shipper for first time',
       'Verify default shipper dashboard loads',
-      'Verify widgets: Shipment Tracking, Spend Analytics, Carrier Performance, Invoices',
+      'Verify widgets: Shipment Tracking, Spend Analytics, Catalyst Performance, Invoices',
       'Verify shipment visibility',
       'Verify spend metrics accurate'
     ],
@@ -736,16 +736,16 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     name: 'Multi-role user dashboard switching',
     actor: 'MULTI_ROLE_USER',
     steps: [
-      'Login as user with Driver and Carrier roles',
+      'Login as user with Driver and Catalyst roles',
       'Verify role switcher visible',
       'View dashboard in Driver mode',
       'Verify driver widgets displayed',
-      'Switch to Carrier mode',
-      'Verify carrier widgets displayed',
+      'Switch to Catalyst mode',
+      'Verify catalyst widgets displayed',
       'Verify data switches appropriately'
     ],
     expectedOutcome: 'Multi-role users can switch dashboards',
-    validations: ['switcher_visible', 'driver_mode_works', 'carrier_mode_works']
+    validations: ['switcher_visible', 'driver_mode_works', 'catalyst_mode_works']
   },
 
   // ═══════════════════════════════════════════════════════════════════════
@@ -804,7 +804,7 @@ export const DASHBOARD_WIDGET_SCENARIOS: Scenario[] = [
     id: 'DASH-049',
     category: 'DASHBOARD',
     name: 'Dashboard concurrent modification',
-    actor: 'CARRIER_C002',
+    actor: 'CATALYST_C002',
     steps: [
       'Open dashboard in two browser tabs',
       'Modify layout in tab 1',

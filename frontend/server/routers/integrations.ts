@@ -44,56 +44,56 @@ export const integrationsRouter = router({
   // ============================================================================
 
   /**
-   * Verify carrier by DOT number
+   * Verify catalyst by DOT number
    */
-  verifyCarrier: protectedProcedure
+  verifyCatalyst: protectedProcedure
     .input(z.object({
       dotNumber: z.string(),
     }))
     .mutation(async ({ input }) => {
-      const result = await fmcsaService.verifyCarrier(input.dotNumber);
+      const result = await fmcsaService.verifyCatalyst(input.dotNumber);
       return result;
     }),
 
   /**
-   * Get carrier info by DOT number
+   * Get catalyst info by DOT number
    */
-  getCarrierByDOT: protectedProcedure
+  getCatalystByDOT: protectedProcedure
     .input(z.object({
       dotNumber: z.string(),
     }))
     .query(async ({ input }) => {
-      return await fmcsaService.getCarrierByDOT(input.dotNumber);
+      return await fmcsaService.getCatalystByDOT(input.dotNumber);
     }),
 
   /**
-   * Get carrier info by MC number
+   * Get catalyst info by MC number
    */
-  getCarrierByMC: protectedProcedure
+  getCatalystByMC: protectedProcedure
     .input(z.object({
       mcNumber: z.string(),
     }))
     .query(async ({ input }) => {
-      return await fmcsaService.getCarrierByMC(input.mcNumber);
+      return await fmcsaService.getCatalystByMC(input.mcNumber);
     }),
 
   /**
-   * Search carriers by name
+   * Search catalysts by name
    */
-  searchCarriers: protectedProcedure
+  searchCatalysts: protectedProcedure
     .input(z.object({
       name: z.string(),
       state: z.string().optional(),
       limit: z.number().default(20),
     }))
     .query(async ({ input }) => {
-      return await fmcsaService.searchCarriers(input.name, input.state, input.limit);
+      return await fmcsaService.searchCatalysts(input.name, input.state, input.limit);
     }),
 
   /**
-   * Get carrier safety rating
+   * Get catalyst safety rating
    */
-  getCarrierSafetyRating: protectedProcedure
+  getCatalystSafetyRating: protectedProcedure
     .input(z.object({
       dotNumber: z.string(),
     }))
@@ -102,9 +102,9 @@ export const integrationsRouter = router({
     }),
 
   /**
-   * Get carrier authorities
+   * Get catalyst authorities
    */
-  getCarrierAuthorities: protectedProcedure
+  getCatalystAuthorities: protectedProcedure
     .input(z.object({
       dotNumber: z.string(),
     }))
@@ -113,9 +113,9 @@ export const integrationsRouter = router({
     }),
 
   /**
-   * Get carrier insurance
+   * Get catalyst insurance
    */
-  getCarrierInsurance: protectedProcedure
+  getCatalystInsurance: protectedProcedure
     .input(z.object({
       dotNumber: z.string(),
     }))
@@ -384,7 +384,7 @@ export const integrationsRouter = router({
         fmcsa: {
           name: "FMCSA SAFER",
           configured: fmcsaService.isConfigured(),
-          description: "Carrier verification, safety ratings, authority status",
+          description: "Catalyst verification, safety ratings, authority status",
         },
         eld: {
           name: "ELD Providers",
@@ -405,16 +405,16 @@ export const integrationsRouter = router({
   // ============================================================================
 
   /**
-   * Bulk verify multiple carriers
+   * Bulk verify multiple catalysts
    */
-  bulkVerifyCarriers: adminProcedure
+  bulkVerifyCatalysts: adminProcedure
     .input(z.object({
       dotNumbers: z.array(z.string()),
     }))
     .mutation(async ({ input }) => {
       const results = await Promise.all(
         input.dotNumbers.map(async (dot) => {
-          const result = await fmcsaService.verifyCarrier(dot);
+          const result = await fmcsaService.verifyCatalyst(dot);
           return { dotNumber: dot, ...result };
         })
       );

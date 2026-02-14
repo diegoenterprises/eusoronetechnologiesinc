@@ -29,16 +29,16 @@ export default function BidManagement() {
   const [filter, setFilter] = useState("all");
   const [bidAmount, setBidAmount] = useState<Record<string, string>>({});
 
-  const bidsQuery = (trpc as any).carriers.getBids.useQuery({ filter });
-  const statsQuery = (trpc as any).carriers.getBidStats.useQuery();
-  const availableLoadsQuery = (trpc as any).carriers.getAvailableLoads.useQuery({ limit: 5 });
+  const bidsQuery = (trpc as any).catalysts.getBids.useQuery({ filter });
+  const statsQuery = (trpc as any).catalysts.getBidStats.useQuery();
+  const availableLoadsQuery = (trpc as any).catalysts.getAvailableLoads.useQuery({ limit: 5 });
 
-  const submitBidMutation = (trpc as any).carriers.submitBid.useMutation({
+  const submitBidMutation = (trpc as any).catalysts.submitBid.useMutation({
     onSuccess: () => { toast.success("Bid submitted"); bidsQuery.refetch(); availableLoadsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });
 
-  const cancelBidMutation = (trpc as any).carriers.cancelBid.useMutation({
+  const cancelBidMutation = (trpc as any).catalysts.cancelBid.useMutation({
     onSuccess: () => { toast.success("Bid cancelled"); bidsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Cannot cancel bid", { description: error.message }),
   });

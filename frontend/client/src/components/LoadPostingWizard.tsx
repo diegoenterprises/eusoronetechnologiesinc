@@ -474,7 +474,7 @@ export const LoadPostingWizard: React.FC<LoadPostingWizardProps> = ({
             checked={formData.insuranceRequired}
             onChange={e => updateField('insuranceRequired', e.target.checked)}
           />
-          <span className="text-sm text-gray-300">Require carrier insurance</span>
+          <span className="text-sm text-gray-300">Require catalyst insurance</span>
         </label>
       </div>
     </div>

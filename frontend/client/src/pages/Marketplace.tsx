@@ -3,12 +3,12 @@
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
  * 100% Dynamic - No mock data
  * 
- * Load marketplace for shippers to post loads and carriers to bid.
+ * Load marketplace for shippers to post loads and catalysts to bid.
  * Features:
  * - Browse available loads
  * - Advanced filtering and search
  * - Bid on loads
- * - View carrier ratings
+ * - View catalyst ratings
  * - Real-time bid updates
  * - Load details and requirements
  * - Bid comparison
@@ -60,8 +60,8 @@ interface Load {
 
 interface Bid {
   id: string;
-  carrier: string;
-  carrierRating: number;
+  catalyst: string;
+  catalystRating: number;
   rate: number;
   estimatedDelivery: Date;
   vehicles: number;
@@ -482,7 +482,7 @@ export default function Marketplace() {
                     >
                       <div>
                         <p className="text-white font-semibold">
-                          {bid.carrier}
+                          {bid.catalyst}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-slate-400 mt-1">
                           <span className="flex items-center gap-1">
@@ -490,7 +490,7 @@ export default function Marketplace() {
                               size={14}
                               className="text-yellow-500 fill-yellow-500"
                             />
-                            {bid.carrierRating}
+                            {bid.catalystRating}
                           </span>
                           <span>{bid.experience} experience</span>
                           <span>{bid.reviews} reviews</span>

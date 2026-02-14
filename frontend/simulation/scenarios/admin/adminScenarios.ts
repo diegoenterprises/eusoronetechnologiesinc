@@ -10,7 +10,7 @@ const a = (id: number, name: string, actor: string, steps: string[], vals: strin
 export const ADMIN_SCENARIOS: Scenario[] = [
   a(1, 'Admin views platform dashboard', 'ADMIN', ['Login', 'View metrics', 'Check health'], ['dashboard_ok']),
   a(2, 'Admin creates new user', 'ADMIN', ['Navigate users', 'Create form', 'Submit'], ['user_created']),
-  a(3, 'Admin verifies carrier', 'ADMIN', ['View queue', 'Check docs', 'Approve'], ['carrier_verified']),
+  a(3, 'Admin verifies catalyst', 'ADMIN', ['View queue', 'Check docs', 'Approve'], ['catalyst_verified']),
   a(4, 'Admin suspends user', 'ADMIN', ['Find user', 'Review violations', 'Suspend'], ['user_suspended']),
   a(5, 'Admin configures platform fees', 'ADMIN', ['Navigate fees', 'Set rates', 'Save'], ['fees_updated']),
   a(6, 'Admin views revenue breakdown', 'ADMIN', ['Open analytics', 'View revenue', 'Filter date'], ['revenue_ok']),

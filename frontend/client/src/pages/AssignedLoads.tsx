@@ -1,5 +1,5 @@
 /**
- * ASSIGNED LOADS PAGE - CARRIER ROLE
+ * ASSIGNED LOADS PAGE - CATALYST ROLE
  * Accepted loads awaiting pickup with preparation checklist and scheduling
  */
 

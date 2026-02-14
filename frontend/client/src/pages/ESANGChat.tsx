@@ -34,10 +34,10 @@ const ROLE_CAPABILITIES: Record<string, Array<{ icon: any; label: string }>> = {
     { icon: Package, label: "Load recommendations" },
     { icon: Route, label: "Route optimization" },
     { icon: ShieldCheck, label: "Compliance guidance" },
-    { icon: Target, label: "Carrier matching" },
+    { icon: Target, label: "Catalyst matching" },
     { icon: Gauge, label: "Market intelligence" },
   ],
-  CARRIER: [
+  CATALYST: [
     { icon: Package, label: "Load matching" },
     { icon: BarChart3, label: "Bid fairness analysis" },
     { icon: Truck, label: "Fleet optimization" },
@@ -55,10 +55,10 @@ const ROLE_CAPABILITIES: Record<string, Array<{ icon: any; label: string }>> = {
   ],
   BROKER: [
     { icon: BarChart3, label: "Lane pricing analysis" },
-    { icon: Target, label: "Carrier-load matching" },
+    { icon: Target, label: "Catalyst-load matching" },
     { icon: TrendingUp, label: "Margin optimization" },
     { icon: Gauge, label: "Market rate intel" },
-    { icon: ShieldCheck, label: "Carrier verification" },
+    { icon: ShieldCheck, label: "Catalyst verification" },
     { icon: Route, label: "Multi-stop planning" },
   ],
   TERMINAL_MANAGER: [
@@ -85,7 +85,7 @@ export default function ESANGChat() {
   const { user } = useAuth();
   const userRole = ((user as any)?.role || "SHIPPER").toUpperCase();
   const capabilities = ROLE_CAPABILITIES[userRole] || ROLE_CAPABILITIES["SHIPPER"];
-  const showSpectraMatch = ["SHIPPER", "TERMINAL_MANAGER", "CARRIER", "BROKER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
+  const showSpectraMatch = ["SHIPPER", "TERMINAL_MANAGER", "CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"].includes(userRole);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<any[]>([]);
   const [lastActions, setLastActions] = useState<any[]>([]);

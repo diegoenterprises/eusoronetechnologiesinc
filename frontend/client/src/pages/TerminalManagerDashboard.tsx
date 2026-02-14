@@ -116,7 +116,7 @@ export default function TerminalManagerDashboard() {
                         <p className="text-white font-medium text-sm">{apt.time}</p>
                         <Badge className={cn("border-0 text-xs", apt.status === "confirmed" ? "bg-green-500/20 text-green-400" : apt.status === "checked_in" ? "bg-cyan-500/20 text-cyan-400" : "bg-yellow-500/20 text-yellow-400")}>{apt.status?.replace("_", " ")}</Badge>
                       </div>
-                      <p className="text-xs text-slate-500">{apt.carrier} | {apt.product}</p>
+                      <p className="text-xs text-slate-500">{apt.catalyst} | {apt.product}</p>
                     </div>
                     <p className="text-xs text-slate-400">Rack {apt.rack}</p>
                   </div>

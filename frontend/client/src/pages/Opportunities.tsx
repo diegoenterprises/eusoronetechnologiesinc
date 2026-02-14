@@ -1,5 +1,5 @@
 /**
- * OPPORTUNITIES PAGE - CATALYST PROFILE
+ * OPPORTUNITIES PAGE - DISPATCH PROFILE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
@@ -21,10 +21,10 @@ import { toast } from "sonner";
 export default function Opportunities() {
   const [category, setCategory] = useState("all");
 
-  const opportunitiesQuery = (trpc as any).catalysts.getOpportunities.useQuery({ category });
-  const statsQuery = (trpc as any).catalysts.getOpportunityStats.useQuery();
+  const opportunitiesQuery = (trpc as any).dispatchRole.getOpportunities.useQuery({ category });
+  const statsQuery = (trpc as any).dispatchRole.getOpportunityStats.useQuery();
 
-  const applyMutation = (trpc as any).catalysts.applyToOpportunity.useMutation({
+  const applyMutation = (trpc as any).dispatchRole.applyToOpportunity.useMutation({
     onSuccess: () => { toast.success("Application submitted"); opportunitiesQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });

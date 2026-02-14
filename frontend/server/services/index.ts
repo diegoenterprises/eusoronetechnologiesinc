@@ -6,11 +6,11 @@
 // FMCSA SAFER System
 export { fmcsaService } from './fmcsa';
 export type {
-  FMCSACarrierInfo,
+  FMCSACatalystInfo,
   FMCSASafetyRating,
   FMCSAAuthority,
   FMCSAInsurance,
-  CarrierVerificationResult,
+  CatalystVerificationResult,
 } from './fmcsa';
 
 // ELD Integration

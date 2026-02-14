@@ -184,7 +184,7 @@ export const loadBiddingRouter = router({
         loadId: input.loadId,
         bidderUserId: ctx.user!.id,
         bidderCompanyId: ctx.user?.companyId || null,
-        bidderRole: (ctx.user?.role?.toLowerCase() || "carrier") as any,
+        bidderRole: (ctx.user?.role?.toLowerCase() || "catalyst") as any,
         bidAmount: input.bidAmount.toString(),
         rateType: input.rateType,
         equipmentType: input.equipmentType,
@@ -242,7 +242,7 @@ export const loadBiddingRouter = router({
         loadId: input.loadId,
         bidderUserId: ctx.user!.id,
         bidderCompanyId: ctx.user?.companyId || null,
-        bidderRole: (ctx.user?.role?.toLowerCase() || "carrier") as any,
+        bidderRole: (ctx.user?.role?.toLowerCase() || "catalyst") as any,
         bidAmount: input.counterAmount.toString(),
         rateType: input.rateType,
         parentBidId: input.parentBidId,
@@ -279,9 +279,9 @@ export const loadBiddingRouter = router({
           sql`${loadBids.id} != ${input.bidId}`
         ));
 
-      // Update load status to assigned and set carrier
+      // Update load status to assigned and set catalyst
       await db.update(loads)
-        .set({ status: "assigned", carrierId: bid.bidderUserId, rate: bid.bidAmount })
+        .set({ status: "assigned", catalystId: bid.bidderUserId, rate: bid.bidAmount })
         .where(eq(loads.id, bid.loadId));
 
       return { success: true, status: "accepted", loadId: bid.loadId };
@@ -351,12 +351,12 @@ export const loadBiddingRouter = router({
       name: z.string(),
       maxRate: z.number().optional(),
       maxRatePerMile: z.number().optional(),
-      minCarrierRating: z.number().optional(),
+      minCatalystRating: z.number().optional(),
       requiredInsuranceMin: z.number().optional(),
       requiredEquipmentTypes: z.array(z.string()).optional(),
       requiredHazmat: z.boolean().optional(),
       maxTransitDays: z.number().optional(),
-      preferredCarrierIds: z.array(z.number()).optional(),
+      preferredCatalystIds: z.array(z.number()).optional(),
       originStates: z.array(z.string()).optional(),
       destinationStates: z.array(z.string()).optional(),
     }))
@@ -370,12 +370,12 @@ export const loadBiddingRouter = router({
         name: input.name,
         maxRate: input.maxRate?.toString(),
         maxRatePerMile: input.maxRatePerMile?.toString(),
-        minCarrierRating: input.minCarrierRating?.toString(),
+        minCatalystRating: input.minCatalystRating?.toString(),
         requiredInsuranceMin: input.requiredInsuranceMin?.toString(),
         requiredEquipmentTypes: input.requiredEquipmentTypes || [],
         requiredHazmat: input.requiredHazmat || false,
         maxTransitDays: input.maxTransitDays,
-        preferredCarrierIds: input.preferredCarrierIds || [],
+        preferredCatalystIds: input.preferredCatalystIds || [],
         originStates: input.originStates || [],
         destinationStates: input.destinationStates || [],
         isActive: true,
@@ -436,9 +436,9 @@ async function checkAutoAcceptRules(
         matches = false;
       }
 
-      // Check preferred carriers
-      if (rule.preferredCarrierIds && (rule.preferredCarrierIds as number[]).length > 0) {
-        if (!(rule.preferredCarrierIds as number[]).includes(bidderId)) {
+      // Check preferred catalysts
+      if (rule.preferredCatalystIds && (rule.preferredCatalystIds as number[]).length > 0) {
+        if (!(rule.preferredCatalystIds as number[]).includes(bidderId)) {
           matches = false;
         }
       }

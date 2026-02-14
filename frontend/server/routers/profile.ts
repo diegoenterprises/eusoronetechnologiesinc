@@ -127,9 +127,9 @@ export const profileRouter = router({
     }),
 
   /**
-   * Get carrier-specific profile details — returns empty/default when no carrier data exists
+   * Get catalyst-specific profile details — returns empty/default when no catalyst data exists
    */
-  getCarrierProfile: protectedProcedure
+  getCatalystProfile: protectedProcedure
     .query(async ({ ctx }) => {
       const dbUser = await resolveDbUser(ctx.user);
       let companyData: any = null;
@@ -141,7 +141,7 @@ export const profileRouter = router({
         } catch {}
       }
       return {
-        carrierId: dbUser?.id || ctx.user?.id || 0,
+        catalystId: dbUser?.id || ctx.user?.id || 0,
         companyName: companyData?.name || "",
         dotNumber: companyData?.dotNumber || "",
         mcNumber: companyData?.mcNumber || "",

@@ -24,14 +24,14 @@ export default function RatingsReviews() {
   const { theme } = useTheme();
   const L = theme === "light";
   const [tab, setTab] = useState<"received" | "given" | "submit">("received");
-  const [submitForm, setSubmitForm] = useState({ entityType: "carrier" as string, entityId: "", loadId: "", rating: 0, comment: "", anonymous: false });
+  const [submitForm, setSubmitForm] = useState({ entityType: "catalyst" as string, entityId: "", loadId: "", rating: 0, comment: "", anonymous: false });
   const [hoverStar, setHoverStar] = useState(0);
 
   const summaryQ = (trpc as any).ratings?.getMySummary?.useQuery?.() || { data: null, isLoading: false };
   const leaderQ = (trpc as any).ratings?.getLeaderboard?.useQuery?.({ category: "overall", limit: 10 }) || { data: null, isLoading: false };
 
   const submitMut = (trpc as any).ratings?.submit?.useMutation?.({
-    onSuccess: () => { toast.success("Review submitted!"); setSubmitForm({ entityType: "carrier", entityId: "", loadId: "", rating: 0, comment: "", anonymous: false }); setTab("received"); summaryQ.refetch?.(); },
+    onSuccess: () => { toast.success("Review submitted!"); setSubmitForm({ entityType: "catalyst", entityId: "", loadId: "", rating: 0, comment: "", anonymous: false }); setTab("received"); summaryQ.refetch?.(); },
     onError: (e: any) => toast.error(e?.message || "Failed to submit"),
   }) || { mutate: () => toast.error("Unavailable"), isPending: false };
 
@@ -71,8 +71,8 @@ export default function RatingsReviews() {
       {/* My Rating Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { l: "My Rating", v: summary?.asCarrier?.overallRating?.toFixed(1) || summary?.asDriver?.overallRating?.toFixed(1) || "—", I: Star, c: "text-yellow-500", b: "from-yellow-500/10 to-yellow-600/5" },
-          { l: "Reviews", v: (summary?.asCarrier?.totalReviews || 0) + (summary?.asDriver?.totalReviews || 0), I: MessageSquare, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
+          { l: "My Rating", v: summary?.asCatalyst?.overallRating?.toFixed(1) || summary?.asDriver?.overallRating?.toFixed(1) || "—", I: Star, c: "text-yellow-500", b: "from-yellow-500/10 to-yellow-600/5" },
+          { l: "Reviews", v: (summary?.asCatalyst?.totalReviews || 0) + (summary?.asDriver?.totalReviews || 0), I: MessageSquare, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
           { l: "Given", v: summary?.givenThisMonth || 0, I: ThumbsUp, c: "text-green-500", b: "from-green-500/10 to-green-600/5" },
           { l: "Received", v: summary?.receivedThisMonth || 0, I: Award, c: "text-purple-500", b: "from-purple-500/10 to-purple-600/5" },
         ].map((s: any) => (
@@ -128,7 +128,7 @@ export default function RatingsReviews() {
                 <label className="text-xs text-slate-400 mb-1 block">Who are you reviewing?</label>
                 <select value={submitForm.entityType} onChange={(e) => setSubmitForm({...submitForm, entityType: e.target.value})}
                   className={cn("w-full px-3 py-2 rounded-xl text-sm border", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700/50 text-white")}>
-                  <option value="carrier">Carrier</option>
+                  <option value="catalyst">Catalyst</option>
                   <option value="shipper">Shipper</option>
                   <option value="driver">Driver</option>
                   <option value="broker">Broker</option>

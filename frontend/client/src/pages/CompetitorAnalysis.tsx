@@ -74,9 +74,9 @@ export default function CompetitorAnalysis() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Users className="w-4 h-4 text-cyan-400" />
-              <span className="text-slate-400 text-sm">Active Carriers</span>
+              <span className="text-slate-400 text-sm">Active Catalysts</span>
             </div>
-            <p className="text-2xl font-bold text-white">{(data as any)?.totalCarriers?.toLocaleString() || "2,450"}</p>
+            <p className="text-2xl font-bold text-white">{(data as any)?.totalCatalysts?.toLocaleString() || "2,450"}</p>
           </CardContent>
         </Card>
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">

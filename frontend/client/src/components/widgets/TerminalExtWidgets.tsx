@@ -14,7 +14,7 @@ export const OutboundShipmentsWidget: React.FC = () => {
         <WidgetList items={shipments.slice(0, exp ? 4 : 2)} renderItem={(s: any, i: number) => (
           <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-white/5">
             <Truck className="w-3 h-3 text-blue-400 flex-shrink-0" />
-            <span className="text-xs text-white flex-1 truncate">{s.carrier || `Shipment ${i+1}`}</span>
+            <span className="text-xs text-white flex-1 truncate">{s.catalyst || `Shipment ${i+1}`}</span>
             <span className="text-[10px] text-cyan-400">{s.status || "Loading"}</span>
           </div>
         )} empty="No outbound shipments" />

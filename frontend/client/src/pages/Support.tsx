@@ -75,11 +75,11 @@ export default function Support() {
   };
 
   const kbArticles = [
-    { title: "Getting Started with EusoTrip", desc: "Learn the basics of creating loads and finding carriers", icon: <BookOpen className="w-5 h-5 text-blue-500" />, category: "Onboarding" },
+    { title: "Getting Started with EusoTrip", desc: "Learn the basics of creating loads and finding catalysts", icon: <BookOpen className="w-5 h-5 text-blue-500" />, category: "Onboarding" },
     { title: "HazMat Compliance Guide", desc: "DOT/FMCSA requirements for hazardous materials transport", icon: <Shield className="w-5 h-5 text-orange-500" />, category: "Compliance" },
     { title: "Understanding Platform Fees", desc: "How the dynamic commission engine calculates fees (5-15%)", icon: <TrendingUp className="w-5 h-5 text-purple-500" />, category: "Billing" },
     { title: "Spectra-Match Product ID", desc: "How crude oil identification works with spectral analysis", icon: <EsangIcon className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />, category: "Technology" },
-    { title: "Agreements & Smart Contracts", desc: "Creating, signing, and managing carrier agreements", icon: <FileText className="w-5 h-5 text-blue-400" />, category: "Contracts" },
+    { title: "Agreements & Smart Contracts", desc: "Creating, signing, and managing catalyst agreements", icon: <FileText className="w-5 h-5 text-blue-400" />, category: "Contracts" },
     { title: "Emergency Response (ERG 2024)", desc: "Using ESANG AI for real-time emergency guidance", icon: <AlertTriangle className="w-5 h-5 text-red-400" />, category: "Safety" },
   ];
 
@@ -214,7 +214,7 @@ export default function Support() {
                     <SelectItem value="general">General Question</SelectItem>
                     <SelectItem value="billing">Billing & Payments</SelectItem>
                     <SelectItem value="load_issue">Load Issue</SelectItem>
-                    <SelectItem value="carrier_dispute">Carrier Dispute</SelectItem>
+                    <SelectItem value="catalyst_dispute">Catalyst Dispute</SelectItem>
                     <SelectItem value="compliance">Compliance & Safety</SelectItem>
                     <SelectItem value="technical">Technical Issue</SelectItem>
                     <SelectItem value="account">Account & Profile</SelectItem>

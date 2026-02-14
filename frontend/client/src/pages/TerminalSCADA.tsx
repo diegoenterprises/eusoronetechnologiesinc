@@ -29,7 +29,7 @@ interface Rack {
   product: string | null;
   currentLoad?: {
     loadNumber: string;
-    carrier: string;
+    catalyst: string;
     driver?: string;
     gallonsLoaded: number;
     targetGallons: number;
@@ -42,7 +42,7 @@ interface Rack {
   pressure?: number;
   reservation?: {
     loadNumber: string;
-    carrier: string;
+    catalyst: string;
     scheduledTime: string;
   };
   maintenanceNote?: string;
@@ -345,7 +345,7 @@ export default function TerminalSCADA() {
                     <div className="space-y-2">
                       <div className="text-xs text-slate-400">
                         <p className="text-white font-medium">{rack.currentLoad.loadNumber}</p>
-                        <p>{rack.currentLoad.carrier}</p>
+                        <p>{rack.currentLoad.catalyst}</p>
                       </div>
                       <div>
                         <div className="flex justify-between text-xs mb-1">
@@ -369,7 +369,7 @@ export default function TerminalSCADA() {
                   {rack.status === "reserved" && rack.reservation && (
                     <div className="text-xs text-slate-400">
                       <p className="text-white font-medium">{rack.reservation.loadNumber}</p>
-                      <p>{rack.reservation.carrier}</p>
+                      <p>{rack.reservation.catalyst}</p>
                       <p className="flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3" />
                         {new Date(rack.reservation.scheduledTime).toLocaleTimeString()}

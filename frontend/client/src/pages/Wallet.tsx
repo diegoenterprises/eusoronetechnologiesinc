@@ -802,7 +802,7 @@ export default function Wallet() {
                   <p className={`font-semibold text-sm ${isLight ? 'text-blue-700' : 'text-blue-300'}`}>ESCROW PROTECTION</p>
                   <p className={`text-sm mt-1 ${isLight ? 'text-blue-600/80' : 'text-blue-200/80'}`}>
                     When you book a load, funds are held in escrow and only released to the driver upon confirmed delivery.
-                    This protects both shippers and carriers. Disputes are mediated by the EusoTrip platform.
+                    This protects both shippers and catalysts. Disputes are mediated by the EusoTrip platform.
                   </p>
                 </div>
               </div>

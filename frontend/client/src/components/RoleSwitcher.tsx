@@ -42,7 +42,7 @@ const TEST_ACCOUNTS = [
     color: "text-blue-500",
   },
   {
-    role: "CARRIER",
+    role: "CATALYST",
     name: "Mike Johnson",
     email: "mike.johnson@swiftlogistics.com",
     icon: Truck,
@@ -63,9 +63,9 @@ const TEST_ACCOUNTS = [
     color: "text-orange-500",
   },
   {
-    role: "CATALYST",
+    role: "DISPATCH",
     name: "David Thompson",
-    email: "david.thompson@catalyst.com",
+    email: "david.thompson@dispatch.com",
     icon: Flame,
     color: "text-red-500",
   },

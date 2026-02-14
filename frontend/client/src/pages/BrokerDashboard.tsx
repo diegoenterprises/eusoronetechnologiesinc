@@ -20,7 +20,7 @@ export default function BrokerDashboard() {
   const statsQuery = (trpc as any).brokers.getDashboardStats.useQuery();
   const shipperLoadsQuery = (trpc as any).brokers.getShipperLoads.useQuery({ limit: 5 });
   const inProgressQuery = (trpc as any).brokers.getLoadsInProgress.useQuery({ limit: 5 });
-  const capacityQuery = (trpc as any).brokers.getCarrierCapacity.useQuery({ limit: 5 });
+  const capacityQuery = (trpc as any).brokers.getCatalystCapacity.useQuery({ limit: 5 });
 
   const stats = statsQuery.data;
 
@@ -29,7 +29,7 @@ export default function BrokerDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Broker Dashboard</h1>
-          <p className="text-slate-400 text-sm mt-1">Match shippers with carriers</p>
+          <p className="text-slate-400 text-sm mt-1">Match shippers with catalysts</p>
         </div>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
           <Plus className="w-4 h-4 mr-2" />New Match
@@ -104,7 +104,7 @@ export default function BrokerDashboard() {
         </Card>
 
         <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
-          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-green-400" />Carrier Capacity</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-white text-lg flex items-center gap-2"><Truck className="w-5 h-5 text-green-400" />Catalyst Capacity</CardTitle></CardHeader>
           <CardContent className="p-0">
             {capacityQuery.isLoading ? (
               <div className="p-4 space-y-3">{[1, 2, 3].map((i: any) => <Skeleton key={i} className="h-14 w-full rounded-lg" />)}</div>
@@ -112,13 +112,13 @@ export default function BrokerDashboard() {
               <div className="p-6 text-center"><Truck className="w-8 h-8 text-slate-500 mx-auto mb-2" /><p className="text-slate-400 text-sm">No capacity available</p></div>
             ) : (
               <div className="divide-y divide-slate-700/50">
-                {(capacityQuery.data as any)?.map((carrier: any) => (
-                  <div key={carrier.id} className="p-3">
+                {(capacityQuery.data as any)?.map((catalyst: any) => (
+                  <div key={catalyst.id} className="p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <p className="text-white font-medium text-sm">{carrier.name}</p>
-                      <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">{carrier.availableTrucks} trucks</Badge>
+                      <p className="text-white font-medium text-sm">{catalyst.name}</p>
+                      <Badge className="bg-green-500/20 text-green-400 border-0 text-xs">{catalyst.availableTrucks} trucks</Badge>
                     </div>
-                    <p className="text-xs text-slate-500">{carrier.location} | {carrier.equipment}</p>
+                    <p className="text-xs text-slate-500">{catalyst.location} | {catalyst.equipment}</p>
                   </div>
                 ))}
               </div>
@@ -141,7 +141,7 @@ export default function BrokerDashboard() {
                       <p className="text-white font-medium text-sm">#{load.loadNumber}</p>
                       <Badge className={cn("border-0 text-xs", load.status === "in_transit" ? "bg-cyan-500/20 text-cyan-400" : "bg-yellow-500/20 text-yellow-400")}>{load.status?.replace("_", " ")}</Badge>
                     </div>
-                    <p className="text-xs text-slate-500">{load.shipper} → {load.carrier}</p>
+                    <p className="text-xs text-slate-500">{load.shipper} → {load.catalyst}</p>
                     <p className="text-xs bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Commission: ${load.commission}</p>
                   </div>
                 ))}

@@ -1,7 +1,7 @@
 /**
- * CATALYST (DISPATCHER) REGISTRATION PAGE
- * Multi-step registration for dispatchers and coordinators
- * Based on 05_CATALYST_USER_JOURNEY.md & EUSOTRIP_USER_REGISTRATION_ONBOARDING.md
+ * CATALYST REGISTRATION PAGE
+ * Multi-step registration for trucking companies
+ * Based on EUSOTRIP_USER_REGISTRATION_ONBOARDING.md
  */
 
 import React, { useState } from "react";
@@ -9,116 +9,199 @@ import { useLocation } from "wouter";
 import { RegistrationWizard, WizardStep } from "@/components/registration/RegistrationWizard";
 import { ComplianceIntegrations, PasswordFields, validatePassword, emptyComplianceIds } from "@/components/registration/ComplianceIntegrations";
 import type { ComplianceIds } from "@/components/registration/ComplianceIntegrations";
+import { FMCSALookup } from "@/components/registration/FMCSALookup";
+import type { FMCSAData } from "@/components/registration/FMCSALookup";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { 
-  Flame, User, FileText, Building2, 
-  CheckCircle, AlertCircle, Mail, Phone, MapPin, Award, Lock, ShieldCheck
+  Truck, Building2, FileText, Shield, CreditCard, 
+  Upload, CheckCircle, AlertCircle, User, Mail, Phone,
+  MapPin, Hash, Search, Loader2, Lock, ShieldCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 
 interface CatalystFormData {
-  // Step 1: Personal Information
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  
-  // Step 2: Employment
-  employmentType: string;
+  // Step 1: Company Information
   companyName: string;
-  companyUsdot: string;
-  jobTitle: string;
-  department: string;
+  dba: string;
+  usdotNumber: string;
+  mcNumber: string;
+  einNumber: string;
   
-  // Step 3: Experience & Training
-  yearsExperience: string;
-  dispatchSoftware: string[];
-  hazmatTrainingDate: string;
-  hazmatTrainingProvider: string;
+  // Step 2: FMCSA Verification (auto-filled from SAFER lookup)
+  operatingStatus: string;
+  entityType: string;
+  physicalAddress: string;
+  mailingAddress: string;
+  phoneNumber: string;
+  saferVerified: boolean;
   
-  // Step 4: Certifications
-  certifications: string[];
-  otherCertifications: string;
+  // Step 3: Authority & Endorsements
+  hasHazmatAuthority: boolean;
+  hazmatAuthorityNumber: string;
+  catalystType: string[];
+  equipmentTypes: string[];
   
-  // Step 5: Account Security
+  // Step 4: Contact Information
+  primaryContactName: string;
+  primaryContactTitle: string;
+  primaryContactEmail: string;
+  primaryContactPhone: string;
+  dispatchEmail: string;
+  dispatchPhone: string;
+  
+  // Step 5: Insurance
+  liabilityCatalyst: string;
+  liabilityPolicy: string;
+  liabilityCoverage: string;
+  liabilityExpiration: string;
+  cargoCatalyst: string;
+  cargoPolicy: string;
+  cargoCoverage: string;
+  cargoExpiration: string;
+  
+  // Step 6: Fleet Information
+  powerUnits: string;
+  drivers: string;
+  hazmatCertifiedDrivers: string;
+  
+  // Step 7: Address
+  streetAddress: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  
+  // Step 8: Account Security
   password: string;
   confirmPassword: string;
   
-  // Step 6: Compliance Integrations
+  // Step 9: Compliance Integrations
   complianceIds: ComplianceIds;
   
-  // Step 7: Terms
+  // Step 10: Terms
   acceptTerms: boolean;
   acceptPrivacy: boolean;
-  acceptResponsibility: boolean;
+  acceptSafetyPolicy: boolean;
 }
 
 const initialFormData: CatalystFormData = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  employmentType: "",
   companyName: "",
-  companyUsdot: "",
-  jobTitle: "",
-  department: "",
-  yearsExperience: "",
-  dispatchSoftware: [],
-  hazmatTrainingDate: "",
-  hazmatTrainingProvider: "",
-  certifications: [],
-  otherCertifications: "",
+  dba: "",
+  usdotNumber: "",
+  mcNumber: "",
+  einNumber: "",
+  operatingStatus: "",
+  entityType: "",
+  physicalAddress: "",
+  mailingAddress: "",
+  phoneNumber: "",
+  saferVerified: false,
+  hasHazmatAuthority: false,
+  hazmatAuthorityNumber: "",
+  catalystType: [],
+  equipmentTypes: [],
+  primaryContactName: "",
+  primaryContactTitle: "",
+  primaryContactEmail: "",
+  primaryContactPhone: "",
+  dispatchEmail: "",
+  dispatchPhone: "",
+  liabilityCatalyst: "",
+  liabilityPolicy: "",
+  liabilityCoverage: "",
+  liabilityExpiration: "",
+  cargoCatalyst: "",
+  cargoPolicy: "",
+  cargoCoverage: "",
+  cargoExpiration: "",
+  powerUnits: "",
+  drivers: "",
+  hazmatCertifiedDrivers: "",
+  streetAddress: "",
+  city: "",
+  state: "",
+  zipCode: "",
   password: "",
   confirmPassword: "",
   complianceIds: emptyComplianceIds,
   acceptTerms: false,
   acceptPrivacy: false,
-  acceptResponsibility: false,
+  acceptSafetyPolicy: false,
 };
 
-const DISPATCH_SOFTWARE = [
-  "McLeod Software",
-  "TMW Systems",
-  "Prophesy",
-  "Axon Software",
-  "Truckstop.com",
-  "DAT",
-  "LoadLink",
-  "TruckingOffice",
-  "Rose Rocket",
-  "KeepTruckin",
-  "Samsara",
-  "Other TMS",
-];
-
-const CERTIFICATIONS = [
-  "Certified Transportation Broker (CTB)",
-  "Certified Logistics Professional (CLP)",
-  "Hazmat Operations Training",
-  "FMCSA Compliance Training",
-  "DOT Safety Training",
-  "Emergency Response Training",
+const EQUIPMENT_TYPES = [
+  { value: "mc306", label: "MC-306 (Gasoline Tanker)" },
+  { value: "mc307", label: "MC-307 (Chemical Tanker)" },
+  { value: "mc312", label: "MC-312 (Corrosive Tanker)" },
+  { value: "mc331", label: "MC-331 (Pressure Tank)" },
+  { value: "mc338", label: "MC-338 (Cryogenic)" },
+  { value: "dryvan", label: "Dry Van" },
+  { value: "flatbed", label: "Flatbed" },
+  { value: "reefer", label: "Refrigerated" },
 ];
 
 export default function RegisterCatalyst() {
   const [, setLocation] = useLocation();
   const [formData, setFormData] = useState<CatalystFormData>(initialFormData);
+  const [fmcsaData, setFmcsaData] = useState<FMCSAData | null>(null);
 
   const updateFormData = (updates: Partial<CatalystFormData>) => {
     setFormData((prev: any) => ({ ...prev, ...updates }));
   };
 
+  const handleFMCSADataLoaded = (data: FMCSAData) => {
+    setFmcsaData(data);
+    if (!data.verified) return;
+
+    // Auto-populate 30+ fields from FMCSA response
+    const cp = data.companyProfile;
+    const auth = data.authority;
+    const safety = data.safety;
+    const ins = data.insurance;
+
+    const updates: Partial<CatalystFormData> = {
+      saferVerified: true,
+      operatingStatus: auth?.operatingStatus || "",
+      entityType: auth?.catalystOperation || "CATALYST",
+    };
+
+    if (cp) {
+      updates.companyName = cp.legalName || formData.companyName;
+      updates.dba = cp.dba || formData.dba;
+      updates.physicalAddress = [cp.physicalAddress.street, cp.physicalAddress.city, cp.physicalAddress.state, cp.physicalAddress.zip].filter(Boolean).join(", ");
+      updates.streetAddress = cp.physicalAddress.street || formData.streetAddress;
+      updates.city = cp.physicalAddress.city || formData.city;
+      updates.state = cp.physicalAddress.state || formData.state;
+      updates.zipCode = cp.physicalAddress.zip || formData.zipCode;
+      updates.phoneNumber = cp.phone || formData.phoneNumber;
+      updates.powerUnits = String(cp.fleetSize || formData.powerUnits);
+      updates.drivers = String(cp.driverCount || formData.drivers);
+    }
+
+    if (auth) {
+      updates.mcNumber = auth.docketNumbers?.[0]?.docketNumber
+        ? `MC-${auth.docketNumbers[0].docketNumber}`
+        : formData.mcNumber;
+    }
+
+    if (data.hazmat?.authorized) {
+      updates.hasHazmatAuthority = true;
+    }
+
+    updateFormData(updates);
+    toast.success("FMCSA data retrieved — fields auto-populated", {
+      description: data.warnings?.length ? `${data.warnings.length} warning(s) found` : undefined,
+    });
+  };
+
   const registerMutation = (trpc as any).registration.registerCatalyst.useMutation({
     onSuccess: () => {
-      toast.success("Registration submitted!", {
-        description: "Your account is pending company verification.",
-      });
+      toast.success("Registration submitted!", { description: "Your catalyst account is pending USDOT verification." });
       setLocation("/login");
     },
     onError: (error: any) => {
@@ -127,333 +210,482 @@ export default function RegisterCatalyst() {
   });
 
   const handleComplete = async () => {
+    const complianceIds = Object.fromEntries(
+      Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
+    );
+
     await registerMutation.mutateAsync({
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
+      companyName: formData.companyName,
+      dba: formData.dba || undefined,
+      usdotNumber: formData.usdotNumber,
+      mcNumber: formData.mcNumber || undefined,
+      einNumber: formData.einNumber || undefined,
+      contactName: formData.primaryContactName,
+      contactEmail: formData.primaryContactEmail,
+      contactPhone: formData.primaryContactPhone,
       password: formData.password,
-      employerCompanyName: formData.companyName,
-      jobTitle: formData.jobTitle,
-      hazmatTrainingCompleted: !!formData.hazmatTrainingDate,
-      complianceIds: Object.fromEntries(
-        Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
-      ) || undefined,
+      streetAddress: formData.streetAddress || formData.physicalAddress,
+      city: formData.city,
+      state: formData.state,
+      zipCode: formData.zipCode,
+      fleetSize: {
+        powerUnits: Number(formData.powerUnits) || 0,
+        trailers: 0,
+        drivers: Number(formData.drivers) || 0,
+      },
+      hazmatEndorsed: formData.hasHazmatAuthority,
+      hazmatClasses: [],
+      tankerEndorsed: false,
+      liabilityCatalyst: formData.liabilityCatalyst,
+      liabilityPolicy: formData.liabilityPolicy,
+      liabilityCoverage: formData.liabilityCoverage,
+      liabilityExpiration: formData.liabilityExpiration,
+      complianceIds: Object.keys(complianceIds).length > 0 ? complianceIds : undefined,
     });
   };
 
   const steps: WizardStep[] = [
     {
-      id: "personal",
-      title: "Personal Information",
-      description: "Your contact details",
-      icon: <User className="w-5 h-5" />,
+      id: "usdot",
+      title: "USDOT Verification",
+      description: "Enter your USDOT number for FMCSA verification",
+      icon: <Shield className="w-5 h-5" />,
       component: (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                First Name <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                value={formData.firstName}
-                onChange={(e: any) => updateFormData({ firstName: e.target.value })}
-                placeholder="John"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                Last Name <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                value={formData.lastName}
-                onChange={(e: any) => updateFormData({ lastName: e.target.value })}
-                placeholder="Smith"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                Email <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                type="email"
-                value={formData.email}
-                onChange={(e: any) => updateFormData({ email: e.target.value })}
-                placeholder="john@company.com"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                Phone <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                type="tel"
-                value={formData.phone}
-                onChange={(e: any) => updateFormData({ phone: e.target.value })}
-                placeholder="(555) 123-4567"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </div>
-        </div>
-      ),
-      validate: () => {
-        if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone) {
-          toast.error("Please fill in all required fields");
-          return false;
-        }
-        return true;
-      },
-    },
-    {
-      id: "employment",
-      title: "Employment",
-      description: "Your company affiliation",
-      icon: <Building2 className="w-5 h-5" />,
-      component: (
-        <div className="space-y-6">
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-blue-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-blue-300 font-medium">Company Association Required</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  Catalysts must be associated with a registered carrier on EusoTrip. 
-                  Your company administrator will need to approve your registration.
-                </p>
-              </div>
-            </div>
-          </div>
+          <FMCSALookup
+            mode="both"
+            dotNumber={formData.usdotNumber}
+            mcNumber={formData.mcNumber}
+            onDotChange={(v) => updateFormData({ usdotNumber: v })}
+            onMcChange={(v) => updateFormData({ mcNumber: v })}
+            onDataLoaded={handleFMCSADataLoaded}
+            fmcsaData={fmcsaData}
+          />
 
           <div className="space-y-2">
-            <Label className="text-slate-300">Employment Type <span className="text-red-400">*</span></Label>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {[
-                { value: "employee", label: "W-2 Employee", desc: "Full-time or part-time employee" },
-                { value: "contractor", label: "1099 Contractor", desc: "Independent contractor" },
-                { value: "agency", label: "Staffing Agency", desc: "Placed by staffing agency" },
-              ].map((type: any) => (
-                <div
-                  key={type.value}
-                  onClick={() => updateFormData({ employmentType: type.value })}
-                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                    formData.employmentType === type.value
-                      ? "bg-red-500/20 border-red-500"
-                      : "bg-slate-700/30 border-slate-600 hover:border-slate-500"
-                  }`}
-                >
-                  <p className="text-sm font-medium text-white">{type.label}</p>
-                  <p className="text-xs text-slate-400 mt-1">{type.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                Company Name <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                value={formData.companyName}
-                onChange={(e: any) => updateFormData({ companyName: e.target.value })}
-                placeholder="ABC Trucking LLC"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                Company USDOT Number <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                value={formData.companyUsdot}
-                onChange={(e: any) => updateFormData({ companyUsdot: e.target.value })}
-                placeholder="1234567"
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Job Title</Label>
-              <Input
-                value={formData.jobTitle}
-                onChange={(e: any) => updateFormData({ jobTitle: e.target.value })}
-                placeholder="Dispatcher, Load Coordinator, etc."
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">Department</Label>
-              <Select value={formData.department} onValueChange={(v: any) => updateFormData({ department: v })}>
-                <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                  <SelectValue placeholder="Select department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="dispatch">Dispatch</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
-                  <SelectItem value="logistics">Logistics</SelectItem>
-                  <SelectItem value="customer_service">Customer Service</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
-      ),
-      validate: () => {
-        if (!formData.employmentType || !formData.companyName || !formData.companyUsdot) {
-          toast.error("Please fill in all required company information");
-          return false;
-        }
-        return true;
-      },
-    },
-    {
-      id: "experience",
-      title: "Experience & Training",
-      description: "Your dispatch experience and training",
-      icon: <Award className="w-5 h-5" />,
-      component: (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label className="text-slate-300">Years of Dispatch Experience</Label>
-            <Select value={formData.yearsExperience} onValueChange={(v: any) => updateFormData({ yearsExperience: v })}>
-              <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
-                <SelectValue placeholder="Select experience level" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0-1">Less than 1 year</SelectItem>
-                <SelectItem value="1-3">1-3 years</SelectItem>
-                <SelectItem value="3-5">3-5 years</SelectItem>
-                <SelectItem value="5-10">5-10 years</SelectItem>
-                <SelectItem value="10+">10+ years</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-slate-300">Dispatch Software Experience</Label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {DISPATCH_SOFTWARE.map((software: any) => (
-                <div key={software} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
-                  <Checkbox
-                    id={software}
-                    checked={formData.dispatchSoftware.includes(software)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        updateFormData({ dispatchSoftware: [...formData.dispatchSoftware, software] });
-                      } else {
-                        updateFormData({ dispatchSoftware: formData.dispatchSoftware.filter(s => s !== software) });
-                      }
-                    }}
-                  />
-                  <Label htmlFor={software} className="text-xs text-slate-300 cursor-pointer">
-                    {software}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-yellow-300 font-medium">Hazmat Training Recommended</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  If you will be dispatching hazmat loads, hazmat operations training is highly recommended 
-                  to understand emergency procedures and compliance requirements.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-slate-300">Hazmat Training Completion Date</Label>
-              <Input
-                type="date"
-                value={formData.hazmatTrainingDate}
-                onChange={(e: any) => updateFormData({ hazmatTrainingDate: e.target.value })}
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-slate-300">Training Provider</Label>
-              <Input
-                value={formData.hazmatTrainingProvider}
-                onChange={(e: any) => updateFormData({ hazmatTrainingProvider: e.target.value })}
-                placeholder="J.J. Keller, company training, etc."
-                className="bg-slate-700/50 border-slate-600 text-white"
-              />
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "certifications",
-      title: "Certifications",
-      description: "Professional certifications",
-      icon: <Award className="w-5 h-5" />,
-      component: (
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <Label className="text-slate-300">Industry Certifications</Label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              {CERTIFICATIONS.map((cert: any) => (
-                <div key={cert} className="flex items-center space-x-2 p-3 rounded bg-slate-700/30">
-                  <Checkbox
-                    id={cert}
-                    checked={formData.certifications.includes(cert)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        updateFormData({ certifications: [...formData.certifications, cert] });
-                      } else {
-                        updateFormData({ certifications: formData.certifications.filter(c => c !== cert) });
-                      }
-                    }}
-                  />
-                  <Label htmlFor={cert} className="text-sm text-slate-300 cursor-pointer">
-                    {cert}
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-slate-300">Other Certifications</Label>
+            <Label htmlFor="einNumber" className="text-slate-300">
+              EIN (Tax ID) <span className="text-red-400">*</span>
+            </Label>
             <Input
-              value={formData.otherCertifications}
-              onChange={(e: any) => updateFormData({ otherCertifications: e.target.value })}
-              placeholder="List any other relevant certifications"
+              id="einNumber"
+              value={formData.einNumber}
+              onChange={(e: any) => updateFormData({ einNumber: e.target.value })}
+              placeholder="XX-XXXXXXX"
               className="bg-slate-700/50 border-slate-600 text-white"
             />
           </div>
 
-          {formData.certifications.length > 0 && (
-            <div className="p-4 rounded-lg bg-slate-700/30">
-              <p className="text-sm text-slate-300 mb-2">Selected Certifications:</p>
-              <div className="flex flex-wrap gap-2">
-                {formData.certifications.map((cert: any) => (
-                  <Badge key={cert} className="bg-red-500/20 text-red-400">
-                    {cert}
-                  </Badge>
-                ))}
-              </div>
+          {formData.saferVerified && formData.companyName && (
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+              <span className="text-sm text-green-300">
+                <strong>{formData.companyName}</strong> — verified & auto-populated from FMCSA
+              </span>
             </div>
           )}
         </div>
       ),
+      validate: () => {
+        if (!formData.usdotNumber || !formData.einNumber) {
+          toast.error("Please enter USDOT number and EIN");
+          return false;
+        }
+        if (fmcsaData?.isBlocked) {
+          toast.error("Registration blocked", { description: fmcsaData.blockReason || "Catalyst not authorized to operate" });
+          return false;
+        }
+        return true;
+      },
+    },
+    {
+      id: "authority",
+      title: "Operating Authority",
+      description: "Hazmat authority and equipment types",
+      icon: <Truck className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5" />
+              <div>
+                <p className="text-sm text-yellow-300 font-medium">Hazmat Authority Required</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  To transport hazardous materials on EusoTrip, you must have valid hazmat authority 
+                  from FMCSA and appropriate insurance coverage.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 rounded-lg bg-slate-700/30">
+            <Checkbox
+              id="hasHazmatAuthority"
+              checked={formData.hasHazmatAuthority}
+              onCheckedChange={(checked) => updateFormData({ hasHazmatAuthority: checked as boolean })}
+            />
+            <Label htmlFor="hasHazmatAuthority" className="text-slate-300 cursor-pointer">
+              I have valid Hazmat Operating Authority
+            </Label>
+          </div>
+
+          {formData.hasHazmatAuthority && (
+            <div className="space-y-2">
+              <Label htmlFor="hazmatAuthorityNumber" className="text-slate-300">
+                Hazmat Authority Number
+              </Label>
+              <Input
+                id="hazmatAuthorityNumber"
+                value={formData.hazmatAuthorityNumber}
+                onChange={(e: any) => updateFormData({ hazmatAuthorityNumber: e.target.value })}
+                placeholder="HM-123456"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label className="text-slate-300">Equipment Types</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {EQUIPMENT_TYPES.map((equip: any) => (
+                <div key={equip.value} className="flex items-center space-x-2 p-2 rounded bg-slate-700/30">
+                  <Checkbox
+                    id={equip.value}
+                    checked={formData.equipmentTypes.includes(equip.value)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        updateFormData({ equipmentTypes: [...formData.equipmentTypes, equip.value] });
+                      } else {
+                        updateFormData({ equipmentTypes: formData.equipmentTypes.filter((t: any) => t !== equip.value) });
+                      }
+                    }}
+                  />
+                  <Label htmlFor={equip.value} className="text-sm text-slate-300 cursor-pointer">
+                    {equip.label}
+                  </Label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: "contact",
+      title: "Contact Information",
+      description: "Primary and dispatch contacts",
+      icon: <User className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h4 className="text-white font-medium">Primary Contact</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactName" className="text-slate-300">
+                  Name <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="primaryContactName"
+                  value={formData.primaryContactName}
+                  onChange={(e: any) => updateFormData({ primaryContactName: e.target.value })}
+                  placeholder="John Smith"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactTitle" className="text-slate-300">Title</Label>
+                <Input
+                  id="primaryContactTitle"
+                  value={formData.primaryContactTitle}
+                  onChange={(e: any) => updateFormData({ primaryContactTitle: e.target.value })}
+                  placeholder="Owner/Operations Manager"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactEmail" className="text-slate-300">
+                  Email <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="primaryContactEmail"
+                  type="email"
+                  value={formData.primaryContactEmail}
+                  onChange={(e: any) => updateFormData({ primaryContactEmail: e.target.value })}
+                  placeholder="john@trucking.com"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="primaryContactPhone" className="text-slate-300">
+                  Phone <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  id="primaryContactPhone"
+                  type="tel"
+                  value={formData.primaryContactPhone}
+                  onChange={(e: any) => updateFormData({ primaryContactPhone: e.target.value })}
+                  placeholder="(555) 123-4567"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-white font-medium">Dispatch Contact</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dispatchEmail" className="text-slate-300">Dispatch Email</Label>
+                <Input
+                  id="dispatchEmail"
+                  type="email"
+                  value={formData.dispatchEmail}
+                  onChange={(e: any) => updateFormData({ dispatchEmail: e.target.value })}
+                  placeholder="dispatch@trucking.com"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dispatchPhone" className="text-slate-300">24/7 Dispatch Phone</Label>
+                <Input
+                  id="dispatchPhone"
+                  type="tel"
+                  value={formData.dispatchPhone}
+                  onChange={(e: any) => updateFormData({ dispatchPhone: e.target.value })}
+                  placeholder="(555) 123-4568"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      validate: () => {
+        if (!formData.primaryContactName || !formData.primaryContactEmail || !formData.primaryContactPhone) {
+          toast.error("Please fill in all required contact fields");
+          return false;
+        }
+        return true;
+      },
+    },
+    {
+      id: "insurance",
+      title: "Insurance",
+      description: "Liability and cargo insurance",
+      icon: <CreditCard className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <h4 className="text-white font-medium">Liability Insurance (Min $1,000,000)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Insurance Catalyst <span className="text-red-400">*</span></Label>
+                <Input
+                  value={formData.liabilityCatalyst}
+                  onChange={(e: any) => updateFormData({ liabilityCatalyst: e.target.value })}
+                  placeholder="ABC Insurance"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Policy Number <span className="text-red-400">*</span></Label>
+                <Input
+                  value={formData.liabilityPolicy}
+                  onChange={(e: any) => updateFormData({ liabilityPolicy: e.target.value })}
+                  placeholder="POL-123456"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
+                <Select value={formData.liabilityCoverage} onValueChange={(v: any) => updateFormData({ liabilityCoverage: v })}>
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                    <SelectValue placeholder="Select coverage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1000000">$1,000,000</SelectItem>
+                    <SelectItem value="2000000">$2,000,000</SelectItem>
+                    <SelectItem value="5000000">$5,000,000</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.liabilityExpiration}
+                  onChange={(e: any) => updateFormData({ liabilityExpiration: e.target.value })}
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h4 className="text-white font-medium">Cargo Insurance (Min $100,000)</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-slate-300">Insurance Catalyst <span className="text-red-400">*</span></Label>
+                <Input
+                  value={formData.cargoCatalyst}
+                  onChange={(e: any) => updateFormData({ cargoCatalyst: e.target.value })}
+                  placeholder="ABC Insurance"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Policy Number <span className="text-red-400">*</span></Label>
+                <Input
+                  value={formData.cargoPolicy}
+                  onChange={(e: any) => updateFormData({ cargoPolicy: e.target.value })}
+                  placeholder="CARGO-123456"
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Coverage Amount <span className="text-red-400">*</span></Label>
+                <Select value={formData.cargoCoverage} onValueChange={(v: any) => updateFormData({ cargoCoverage: v })}>
+                  <SelectTrigger className="bg-slate-700/50 border-slate-600 text-white">
+                    <SelectValue placeholder="Select coverage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="100000">$100,000</SelectItem>
+                    <SelectItem value="250000">$250,000</SelectItem>
+                    <SelectItem value="500000">$500,000</SelectItem>
+                    <SelectItem value="1000000">$1,000,000</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-slate-300">Expiration Date <span className="text-red-400">*</span></Label>
+                <Input
+                  type="date"
+                  value={formData.cargoExpiration}
+                  onChange={(e: any) => updateFormData({ cargoExpiration: e.target.value })}
+                  className="bg-slate-700/50 border-slate-600 text-white"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      validate: () => {
+        if (!formData.liabilityCatalyst || !formData.liabilityPolicy || !formData.cargoCatalyst || !formData.cargoPolicy) {
+          toast.error("Please fill in all insurance fields");
+          return false;
+        }
+        return true;
+      },
+    },
+    {
+      id: "fleet",
+      title: "Fleet Information",
+      description: "Power units and driver count",
+      icon: <Truck className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label className="text-slate-300">Power Units <span className="text-red-400">*</span></Label>
+              <Input
+                type="number"
+                value={formData.powerUnits}
+                onChange={(e: any) => updateFormData({ powerUnits: e.target.value })}
+                placeholder="10"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Total Drivers <span className="text-red-400">*</span></Label>
+              <Input
+                type="number"
+                value={formData.drivers}
+                onChange={(e: any) => updateFormData({ drivers: e.target.value })}
+                placeholder="15"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">Hazmat Certified Drivers</Label>
+              <Input
+                type="number"
+                value={formData.hazmatCertifiedDrivers}
+                onChange={(e: any) => updateFormData({ hazmatCertifiedDrivers: e.target.value })}
+                placeholder="12"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+          </div>
+
+          <div className="p-4 rounded-lg bg-slate-700/30">
+            <p className="text-sm text-slate-400">
+              After registration, you'll be able to add individual drivers and vehicles to your fleet.
+              Each driver must have their own profile with CDL verification and hazmat endorsement (if applicable).
+            </p>
+          </div>
+        </div>
+      ),
+      validate: () => {
+        if (!formData.powerUnits || !formData.drivers) {
+          toast.error("Please enter fleet information");
+          return false;
+        }
+        return true;
+      },
+    },
+    {
+      id: "address",
+      title: "Business Address",
+      description: "Company headquarters address",
+      icon: <MapPin className="w-5 h-5" />,
+      component: (
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <Label className="text-slate-300">Street Address <span className="text-red-400">*</span></Label>
+            <Input
+              value={formData.streetAddress}
+              onChange={(e: any) => updateFormData({ streetAddress: e.target.value })}
+              placeholder="123 Trucking Way"
+              className="bg-slate-700/50 border-slate-600 text-white"
+            />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-2 col-span-2">
+              <Label className="text-slate-300">City <span className="text-red-400">*</span></Label>
+              <Input
+                value={formData.city}
+                onChange={(e: any) => updateFormData({ city: e.target.value })}
+                placeholder="Houston"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">State <span className="text-red-400">*</span></Label>
+              <Input
+                value={formData.state}
+                onChange={(e: any) => updateFormData({ state: e.target.value })}
+                placeholder="TX"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-slate-300">ZIP Code <span className="text-red-400">*</span></Label>
+              <Input
+                value={formData.zipCode}
+                onChange={(e: any) => updateFormData({ zipCode: e.target.value })}
+                placeholder="77001"
+                className="bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+          </div>
+        </div>
+      ),
+      validate: () => {
+        if (!formData.streetAddress || !formData.city || !formData.state || !formData.zipCode) {
+          toast.error("Please fill in all address fields");
+          return false;
+        }
+        return true;
+      },
     },
     {
       id: "security",
@@ -479,7 +711,7 @@ export default function RegisterCatalyst() {
     {
       id: "compliance",
       title: "Compliance Integrations",
-      description: "Link existing compliance IDs for faster verification",
+      description: "Link existing compliance network memberships for faster verification",
       icon: <ShieldCheck className="w-5 h-5" />,
       component: (
         <ComplianceIntegrations
@@ -492,66 +724,52 @@ export default function RegisterCatalyst() {
     {
       id: "terms",
       title: "Terms & Agreements",
-      description: "Review and accept terms",
+      description: "Review and accept platform terms",
       icon: <FileText className="w-5 h-5" />,
       component: (
         <div className="space-y-6">
           <div className="space-y-4">
-            <div className="flex items-start space-x-3 p-4 rounded-lg bg-slate-700/30">
+            <div className="flex items-start space-x-3">
               <Checkbox
-                id="terms"
+                id="acceptTerms"
                 checked={formData.acceptTerms}
-                onCheckedChange={(c: any) => updateFormData({ acceptTerms: c as boolean })}
+                onCheckedChange={(checked) => updateFormData({ acceptTerms: checked as boolean })}
               />
-              <Label htmlFor="terms" className="text-sm text-slate-300 cursor-pointer">
-                I accept the <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a> and 
-                <a href="/privacy-policy" className="text-blue-400 hover:underline ml-1">Privacy Policy</a>
+              <Label htmlFor="acceptTerms" className="text-sm text-slate-300 cursor-pointer">
+                I accept the <a href="/terms-of-service" className="text-blue-400 hover:underline">Terms of Service</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>
 
-            <div className="flex items-start space-x-3 p-4 rounded-lg bg-slate-700/30">
+            <div className="flex items-start space-x-3">
               <Checkbox
-                id="privacy"
+                id="acceptPrivacy"
                 checked={formData.acceptPrivacy}
-                onCheckedChange={(c: any) => updateFormData({ acceptPrivacy: c as boolean })}
+                onCheckedChange={(checked) => updateFormData({ acceptPrivacy: checked as boolean })}
               />
-              <Label htmlFor="privacy" className="text-sm text-slate-300 cursor-pointer">
-                I understand that my employer will be notified of my registration and must approve my access
+              <Label htmlFor="acceptPrivacy" className="text-sm text-slate-300 cursor-pointer">
+                I accept the <a href="/privacy-policy" className="text-blue-400 hover:underline">Privacy Policy</a>
                 <span className="text-red-400"> *</span>
               </Label>
             </div>
 
-            <div className="flex items-start space-x-3 p-4 rounded-lg bg-slate-700/30">
+            <div className="flex items-start space-x-3">
               <Checkbox
-                id="responsibility"
-                checked={formData.acceptResponsibility}
-                onCheckedChange={(c: any) => updateFormData({ acceptResponsibility: c as boolean })}
+                id="acceptSafetyPolicy"
+                checked={formData.acceptSafetyPolicy}
+                onCheckedChange={(checked) => updateFormData({ acceptSafetyPolicy: checked as boolean })}
               />
-              <Label htmlFor="responsibility" className="text-sm text-slate-300 cursor-pointer">
-                I understand my responsibility to comply with FMCSA HOS regulations when dispatching drivers 
-                and will not instruct drivers to violate safety regulations
+              <Label htmlFor="acceptSafetyPolicy" className="text-sm text-slate-300 cursor-pointer">
+                I certify that my company maintains a valid safety management program and all drivers 
+                are properly qualified per FMCSA regulations
                 <span className="text-red-400"> *</span>
               </Label>
-            </div>
-          </div>
-
-          <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
-              <div>
-                <p className="text-sm text-green-300 font-medium">What happens next?</p>
-                <p className="text-xs text-slate-400 mt-1">
-                  After submission, your company administrator will receive a notification to approve 
-                  your account. Once approved, you'll have access to the Catalyst dispatch dashboard.
-                </p>
-              </div>
             </div>
           </div>
         </div>
       ),
       validate: () => {
-        if (!formData.acceptTerms || !formData.acceptPrivacy || !formData.acceptResponsibility) {
+        if (!formData.acceptTerms || !formData.acceptPrivacy || !formData.acceptSafetyPolicy) {
           toast.error("Please accept all required terms");
           return false;
         }
@@ -565,9 +783,9 @@ export default function RegisterCatalyst() {
       steps={steps}
       onComplete={handleComplete}
       title="Catalyst Registration"
-      subtitle="Register as a dispatcher/coordinator"
-      roleIcon={<Flame className="w-8 h-8 text-white" />}
-      roleColor="from-red-500 to-red-600"
+      subtitle="Register your trucking company to haul freight on EusoTrip"
+      roleIcon={<Truck className="w-8 h-8 text-white" />}
+      roleColor="from-green-500 to-green-600"
     />
   );
 }

@@ -352,8 +352,8 @@ export async function getLeaderboard(
     {
       rank: 2,
       userId: 2,
-      userName: "Jane Carrier",
-      userRole: "CARRIER",
+      userName: "Jane Catalyst",
+      userRole: "CATALYST",
       points: 12500,
       tier: "GOLD",
       badge: "five_star_pro",

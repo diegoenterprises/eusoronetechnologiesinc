@@ -13,10 +13,10 @@ export const rateConfirmationsRouter = router({
   list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
 
   getById: protectedProcedure.input(z.object({ id: z.string() })).query(async ({ input }) => ({
-    id: input.id, loadNumber: "", carrier: "", rate: 0, status: "",
+    id: input.id, loadNumber: "", catalyst: "", rate: 0, status: "",
   })),
 
-  send: protectedProcedure.input(z.object({ loadId: z.string().optional(), carrierId: z.string().optional(), rate: z.number().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({
+  send: protectedProcedure.input(z.object({ loadId: z.string().optional(), catalystId: z.string().optional(), rate: z.number().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({
     success: true, confirmationId: "rc_123",
   })),
 

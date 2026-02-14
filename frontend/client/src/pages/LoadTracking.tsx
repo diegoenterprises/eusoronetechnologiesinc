@@ -230,7 +230,7 @@ export default function LoadTracking() {
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                     {[
                       { label: "ETA", value: trackedLoad.eta },
-                      { label: "Carrier", value: trackedLoad.carrier },
+                      { label: "Catalyst", value: trackedLoad.catalyst },
                       { label: "Driver", value: trackedLoad.driver },
                       { label: "Product", value: trackedLoad.product },
                       { label: "Rate", value: trackedLoad.rate > 0 ? `$${trackedLoad.rate.toLocaleString()}` : "N/A" },

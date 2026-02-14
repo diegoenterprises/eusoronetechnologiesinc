@@ -28,7 +28,7 @@ const BROKER_DOCS = [
   { value: "w9", label: "W-9 Form", category: "financial", required: true },
   { value: "bank_info", label: "Banking Information", category: "financial", required: true },
   { value: "credit_report", label: "Business Credit Report", category: "financial", required: false },
-  { value: "carrier_setup_packet", label: "Carrier Setup Packet Template", category: "operational", required: true },
+  { value: "catalyst_setup_packet", label: "Catalyst Setup Packet Template", category: "operational", required: true },
   { value: "shipper_agreement", label: "Shipper Agreement Template", category: "operational", required: true },
   { value: "rate_confirmation", label: "Rate Confirmation Template", category: "operational", required: true },
 ];

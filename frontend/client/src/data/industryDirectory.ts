@@ -1,13 +1,13 @@
 /**
  * INDUSTRY DIRECTORY DATA
- * Oil & Gas Companies, Hazmat Carriers, Fuel Resellers, and Terminals
+ * Oil & Gas Companies, Hazmat Catalysts, Fuel Resellers, and Terminals
  * Organized by state and company type
  */
 
 export type CompanyType = 
   | "refinery" 
   | "shipper" 
-  | "carrier" 
+  | "catalyst" 
   | "terminal" 
   | "fuel_reseller" 
   | "logistics" 
@@ -386,7 +386,7 @@ export const CALIFORNIA_COMPANIES: Company[] = [
   {
     id: "ca-allchemical",
     name: "All Chemical Transport Corp",
-    type: "carrier",
+    type: "catalyst",
     state: "CA",
     phone: "(800) 451-2436",
     website: "https://allchemical.com",
@@ -396,7 +396,7 @@ export const CALIFORNIA_COMPANIES: Company[] = [
   {
     id: "ca-powersource",
     name: "Powersource Transportation",
-    type: "carrier",
+    type: "catalyst",
     state: "CA",
     phone: "(800) 438-8789",
     website: "https://www.powersourcetrans.com",
@@ -472,7 +472,7 @@ export const ILLINOIS_COMPANIES: Company[] = [
   {
     id: "il-sully",
     name: "Sully Transport, Inc.",
-    type: "carrier",
+    type: "catalyst",
     state: "IL",
     phone: "(641) 594-3435",
     website: "https://sullytransport.com",
@@ -482,7 +482,7 @@ export const ILLINOIS_COMPANIES: Company[] = [
   {
     id: "il-par",
     name: "PAR Trucking Inc",
-    type: "carrier",
+    type: "catalyst",
     state: "IL",
     phone: "(708) 924-6163",
     website: "https://www.partrucking.com",
@@ -492,7 +492,7 @@ export const ILLINOIS_COMPANIES: Company[] = [
   {
     id: "il-schwerman",
     name: "Schwerman Trucking Co.",
-    type: "carrier",
+    type: "catalyst",
     state: "IL",
     phone: "(847) 273-7700",
     website: "https://schwerman.com",
@@ -502,7 +502,7 @@ export const ILLINOIS_COMPANIES: Company[] = [
   {
     id: "il-dupre",
     name: "Dupré Logistics",
-    type: "carrier",
+    type: "catalyst",
     state: "IL",
     phone: "(708) 424-0200",
     website: "https://duprelogistics.com",
@@ -512,7 +512,7 @@ export const ILLINOIS_COMPANIES: Company[] = [
   {
     id: "il-hittman",
     name: "Hittman Transport Services",
-    type: "carrier",
+    type: "catalyst",
     state: "IL",
     phone: "(800) 987-6663",
     website: "https://hittmantransport.com",
@@ -614,7 +614,7 @@ export const PENNSYLVANIA_COMPANIES: Company[] = [
   {
     id: "pa-penntank",
     name: "Penn Tank Lines, Inc.",
-    type: "carrier",
+    type: "catalyst",
     state: "PA",
     phone: "(610) 444-6000",
     website: "https://penntanklines.com",
@@ -624,7 +624,7 @@ export const PENNSYLVANIA_COMPANIES: Company[] = [
   {
     id: "pa-ward",
     name: "Ward Trucking",
-    type: "carrier",
+    type: "catalyst",
     state: "PA",
     phone: "(800) 458-3625",
     website: "https://wardtrucking.com",
@@ -634,7 +634,7 @@ export const PENNSYLVANIA_COMPANIES: Company[] = [
   {
     id: "pa-aduie",
     name: "A. Duie Pyle, Inc.",
-    type: "carrier",
+    type: "catalyst",
     state: "PA",
     phone: "(800) 523-5020",
     website: "https://aduiepyle.com",
@@ -644,7 +644,7 @@ export const PENNSYLVANIA_COMPANIES: Company[] = [
   {
     id: "pa-langer",
     name: "Langer Transport Corp.",
-    type: "carrier",
+    type: "catalyst",
     state: "PA",
     phone: "(800) 362-5218",
     website: "https://langertransport.com",
@@ -654,7 +654,7 @@ export const PENNSYLVANIA_COMPANIES: Company[] = [
   {
     id: "pa-patransformer",
     name: "Pennsylvania Transformer Technology",
-    type: "carrier",
+    type: "catalyst",
     state: "PA",
     phone: "(724) 346-8146",
     website: "https://patransformer.com",
@@ -737,7 +737,7 @@ export const OHIO_COMPANIES: Company[] = [
   {
     id: "oh-rj",
     name: "R&J Trucking Inc.",
-    type: "carrier",
+    type: "catalyst",
     state: "OH",
     phone: "(800) 262-9365",
     website: "https://rjtrucking.com",
@@ -747,7 +747,7 @@ export const OHIO_COMPANIES: Company[] = [
   {
     id: "oh-venture",
     name: "Venture Logistics",
-    type: "carrier",
+    type: "catalyst",
     state: "OH",
     phone: "(614) 876-9961",
     website: "https://venturelogistics.com",
@@ -757,7 +757,7 @@ export const OHIO_COMPANIES: Company[] = [
   {
     id: "oh-kenan",
     name: "Kenan Advantage Group",
-    type: "carrier",
+    type: "catalyst",
     state: "OH",
     phone: "(800) 969-5466",
     website: "https://thekag.com",
@@ -776,8 +776,8 @@ export const OHIO_COMPANIES: Company[] = [
   },
   {
     id: "oh-schneider",
-    name: "Schneider National Bulk Carriers",
-    type: "carrier",
+    name: "Schneider National Bulk Catalysts",
+    type: "catalyst",
     state: "OH",
     phone: "(800) 558-6767",
     website: "https://schneider.com",
@@ -859,11 +859,11 @@ export const NEW_JERSEY_COMPANIES: Company[] = [
   },
   {
     id: "nj-superior",
-    name: "Superior Carriers",
-    type: "carrier",
+    name: "Superior Catalysts",
+    type: "catalyst",
     state: "NJ",
     phone: "(732) 349-9600",
-    website: "https://superior-carriers.com",
+    website: "https://superior-catalysts.com",
     services: ["Liquid Transport", "Chemical Transport"],
     isVerified: true,
   },
@@ -880,7 +880,7 @@ export const NEW_JERSEY_COMPANIES: Company[] = [
   {
     id: "nj-dana",
     name: "Dana Transport",
-    type: "carrier",
+    type: "catalyst",
     state: "NJ",
     phone: "(732) 280-1010",
     website: "https://danacompanies.com",
@@ -890,7 +890,7 @@ export const NEW_JERSEY_COMPANIES: Company[] = [
   {
     id: "nj-quality",
     name: "Quality Distribution Inc.",
-    type: "carrier",
+    type: "catalyst",
     state: "NJ",
     phone: "(800) 282-2031",
     website: "https://qualitydistribution.com",
@@ -900,7 +900,7 @@ export const NEW_JERSEY_COMPANIES: Company[] = [
   {
     id: "nj-kenan",
     name: "Kenan Advantage Group",
-    type: "carrier",
+    type: "catalyst",
     state: "NJ",
     phone: "(800) 969-5466",
     website: "https://thekag.com",
@@ -981,7 +981,7 @@ export const STATE_NAMES: Record<State, string> = {
 export const COMPANY_TYPE_LABELS: Record<CompanyType, string> = {
   refinery: "Refinery",
   shipper: "Shipper",
-  carrier: "Carrier",
+  catalyst: "Catalyst",
   terminal: "Terminal",
   fuel_reseller: "Fuel Reseller",
   logistics: "Logistics",

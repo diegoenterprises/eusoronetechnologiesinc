@@ -54,8 +54,8 @@ export interface FMCSAData {
     commonAuthority: string;
     contractAuthority: string;
     brokerAuthority: string;
-    carrierOperation: string | null;
-    carrierOperationCode: string | null;
+    catalystOperation: string | null;
+    catalystOperationCode: string | null;
     docketNumbers: any[];
   };
   safety?: {
@@ -173,7 +173,7 @@ export function FMCSALookup({
         onDataLoaded(data);
         setLookupStatus("done");
       } else {
-        setErrorMsg(data?.error || "Carrier not found");
+        setErrorMsg(data?.error || "Catalyst not found");
         setLookupStatus("error");
         onDataLoaded(data || { verified: false, error: "Not found" });
       }
@@ -195,12 +195,12 @@ export function FMCSALookup({
       const result = await mcQuery.refetch();
       const data = result.data;
       if (data?.results?.length > 0) {
-        // Found carrier(s) by MC — auto-trigger DOT lookup for first result
+        // Found catalyst(s) by MC — auto-trigger DOT lookup for first result
         const firstDot = data.results[0].dotNumber;
         onDotChange(firstDot);
         setLookupStatus("done");
       } else {
-        setErrorMsg(data?.error || "No carrier found for this MC number");
+        setErrorMsg(data?.error || "No catalyst found for this MC number");
         setLookupStatus("error");
       }
     } catch (err: any) {
@@ -377,8 +377,8 @@ export function FMCSALookup({
                 <AuthBadge label="Contract" status={d.authority.contractAuthority} />
                 <AuthBadge label="Broker" status={d.authority.brokerAuthority} />
               </div>
-              {d.authority.carrierOperation && (
-                <p className="text-xs text-slate-400 mt-2">Operation: {d.authority.carrierOperation}</p>
+              {d.authority.catalystOperation && (
+                <p className="text-xs text-slate-400 mt-2">Operation: {d.authority.catalystOperation}</p>
               )}
             </div>
           )}

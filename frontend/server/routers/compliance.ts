@@ -481,7 +481,7 @@ export const complianceRouter = router({
   getFMCSAData: protectedProcedure
     .query(async ({ ctx }) => {
       return {
-        carrier: {
+        catalyst: {
           dotNumber: "",
           mcNumber: "",
           legalName: "",
@@ -494,8 +494,8 @@ export const complianceRouter = router({
         saferRating: "satisfactory",
         lastUpdated: new Date().toISOString(),
         authority: {
-          commonCarrier: true,
-          contractCarrier: true,
+          commonCatalyst: true,
+          contractCatalyst: true,
           broker: false,
           hazmat: true,
         },
@@ -818,16 +818,16 @@ export const complianceRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CARRIER COMPLIANCE - MC Authority, DOT, Insurance, FMCSA
+  // CATALYST COMPLIANCE - MC Authority, DOT, Insurance, FMCSA
   // ═══════════════════════════════════════════════════════════════════════════
-  getCarrierCompliance: protectedProcedure.query(async ({ ctx }) => ({
+  getCatalystCompliance: protectedProcedure.query(async ({ ctx }) => ({
     score: 0, mcAuthority: "", dotNumber: "", ucr: "", ifta: "", irp: "",
     liabilityInsurance: { status: "", coverage: 0, expires: "" },
     cargoInsurance: { status: "", coverage: 0, expires: "" },
     safetyRating: "", csaScore: 0,
   })),
 
-  getCarrierDocuments: protectedProcedure.query(async ({ ctx }) => []),
+  getCatalystDocuments: protectedProcedure.query(async ({ ctx }) => []),
 
   // ═══════════════════════════════════════════════════════════════════════════
   // BROKER COMPLIANCE - Authority, Surety Bond, Insurance
@@ -859,7 +859,7 @@ export const complianceRouter = router({
     .input(z.object({
       documentType: z.string(),
       expirationDate: z.string().optional(),
-      userType: z.enum(["driver", "carrier", "broker", "shipper", "owner_operator"]),
+      userType: z.enum(["driver", "catalyst", "broker", "shipper", "owner_operator"]),
       fileUrl: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => ({
@@ -874,15 +874,15 @@ export const complianceRouter = router({
 
   // Get compliance by user type
   getComplianceByUserType: protectedProcedure
-    .input(z.object({ userType: z.enum(["driver", "carrier", "broker", "shipper", "owner_operator"]) }))
+    .input(z.object({ userType: z.enum(["driver", "catalyst", "broker", "shipper", "owner_operator"]) }))
     .query(async ({ ctx, input }) => {
-      const scores: Record<string, number> = { driver: 85, carrier: 92, broker: 95, shipper: 88, owner_operator: 90 };
+      const scores: Record<string, number> = { driver: 85, catalyst: 92, broker: 95, shipper: 88, owner_operator: 90 };
       return { userType: input.userType, score: scores[input.userType], status: scores[input.userType] >= 80 ? "compliant" : "action_required" };
     }),
 
   // Get all document requirements by user type
   getDocumentRequirements: protectedProcedure
-    .input(z.object({ userType: z.enum(["driver", "carrier", "broker", "shipper", "owner_operator"]) }))
+    .input(z.object({ userType: z.enum(["driver", "catalyst", "broker", "shipper", "owner_operator"]) }))
     .query(async ({ input }) => {
       const requirements: Record<string, Array<{ type: string; name: string; required: boolean; category: string }>> = {
         driver: [
@@ -895,7 +895,7 @@ export const complianceRouter = router({
           { type: "mvr", name: "Motor Vehicle Record", required: true, category: "driving" },
           { type: "w9", name: "W-9 Form", required: true, category: "financial" },
         ],
-        carrier: [
+        catalyst: [
           { type: "mc_authority", name: "MC Authority", required: true, category: "authority" },
           { type: "dot_number", name: "DOT Number", required: true, category: "authority" },
           { type: "liability_insurance", name: "Liability Insurance ($1M+)", required: true, category: "insurance" },

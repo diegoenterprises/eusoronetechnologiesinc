@@ -272,8 +272,8 @@ export default function DashboardLayout({
     searchInputRef.current?.blur();
     switch (result.type) {
       case "load": navigate(`/loads/${result.id}`); break;
-      case "driver": navigate(`/carriers`); break;
-      case "carrier": navigate(`/carriers`); break;
+      case "driver": navigate(`/catalysts`); break;
+      case "catalyst": navigate(`/catalysts`); break;
       case "invoice": navigate(`/documents`); break;
       case "document": navigate(`/documents`); break;
       case "user": navigate(`/profile`); break;
@@ -636,7 +636,7 @@ export default function DashboardLayout({
                         <div className="py-6 text-center">
                           <Search size={24} className="mx-auto text-gray-600 mb-2" />
                           <p className="text-gray-400 text-sm">No results for "{searchQuery}"</p>
-                          <p className="text-gray-600 text-xs mt-1">Try loads, cities, carriers, or driver names</p>
+                          <p className="text-gray-600 text-xs mt-1">Try loads, cities, catalysts, or driver names</p>
                         </div>
                       ) : (
                         <>
@@ -657,12 +657,12 @@ export default function DashboardLayout({
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                 r.type === "load" ? "bg-blue-500/15 text-blue-400" :
                                 r.type === "driver" ? "bg-cyan-500/15 text-cyan-400" :
-                                r.type === "carrier" ? "bg-purple-500/15 text-purple-400" :
+                                r.type === "catalyst" ? "bg-purple-500/15 text-purple-400" :
                                 "bg-gray-500/15 text-gray-400"
                               }`}>
                                 {r.type === "load" ? <Package size={16} /> :
                                  r.type === "driver" ? <User size={16} /> :
-                                 r.type === "carrier" ? <Truck size={16} /> :
+                                 r.type === "catalyst" ? <Truck size={16} /> :
                                  <FileText size={16} />}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -672,7 +672,7 @@ export default function DashboardLayout({
                               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                                 r.type === "load" ? "bg-blue-500/10 text-blue-400" :
                                 r.type === "driver" ? "bg-cyan-500/10 text-cyan-400" :
-                                r.type === "carrier" ? "bg-purple-500/10 text-purple-400" :
+                                r.type === "catalyst" ? "bg-purple-500/10 text-purple-400" :
                                 "bg-gray-500/10 text-gray-400"
                               }`}>
                                 {r.type.toUpperCase()}

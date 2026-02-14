@@ -2,7 +2,7 @@
  * STRIPE ROUTER
  * Unified tRPC router for all Stripe payment operations
  * - Checkout sessions (load payments + subscriptions)
- * - Stripe Connect onboarding (carriers, drivers, brokers)
+ * - Stripe Connect onboarding (catalysts, drivers, brokers)
  * - Customer management
  * - Payment methods (add, remove, list)
  * - Subscription management
@@ -271,7 +271,7 @@ export const stripeRouter = router({
       loadId: z.number(),
       loadNumber: z.string(),
       amount: z.number(), // in dollars
-      carrierConnectId: z.string().optional(),
+      catalystConnectId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const amountCents = Math.round(input.amount * 100);
@@ -306,12 +306,12 @@ export const stripeRouter = router({
         },
       };
 
-      // If carrier has a Connect account, route payment to them
-      if (input.carrierConnectId) {
+      // If catalyst has a Connect account, route payment to them
+      if (input.catalystConnectId) {
         sessionParams.payment_intent_data = {
           application_fee_amount: platformFeeCents,
           transfer_data: {
-            destination: input.carrierConnectId,
+            destination: input.catalystConnectId,
           },
         };
       }
@@ -491,7 +491,7 @@ export const stripeRouter = router({
     }),
 
   // ═══════════════════════════════════════════════════════════════
-  // STRIPE CONNECT (Carrier/Driver/Broker onboarding)
+  // STRIPE CONNECT (Catalyst/Driver/Broker onboarding)
   // ═══════════════════════════════════════════════════════════════
 
   /**
@@ -526,7 +526,7 @@ export const stripeRouter = router({
         metadata: {
           userId: String(userId),
           platform: "eusotrip",
-          userRole: ctx.user.role || "carrier",
+          userRole: ctx.user.role || "catalyst",
         },
       });
 
@@ -673,7 +673,7 @@ export const stripeRouter = router({
   // ═══════════════════════════════════════════════════════════════
 
   /**
-   * Create a transfer to a connected account (carrier/driver payout)
+   * Create a transfer to a connected account (catalyst/driver payout)
    */
   createTransfer: protectedProcedure
     .input(z.object({
@@ -805,7 +805,7 @@ export const stripeRouter = router({
 // Helper: get features for each plan
 function getFeaturesByPlan(planId: string): string[] {
   switch (planId) {
-    case "prod_premium_carrier":
+    case "prod_premium_catalyst":
       return [
         "Unlimited load matching",
         "Priority bidding",
@@ -816,7 +816,7 @@ function getFeaturesByPlan(planId: string): string[] {
     case "prod_premium_broker":
       return [
         "Unlimited load posting",
-        "Carrier network access",
+        "Catalyst network access",
         "Advanced analytics",
         "Automated invoicing",
         "Commission tracking",
@@ -825,7 +825,7 @@ function getFeaturesByPlan(planId: string): string[] {
     case "prod_premium_shipper":
       return [
         "Unlimited load creation",
-        "Carrier matching AI",
+        "Catalyst matching AI",
         "Real-time tracking",
         "Advanced analytics",
         "Custom integrations",

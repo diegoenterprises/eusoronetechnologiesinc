@@ -2,7 +2,7 @@
  * BID MANAGEMENT INTERFACE - REAL-TIME
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
  * 
- * Comprehensive bid management for shippers and carriers with real-time
+ * Comprehensive bid management for shippers and catalysts with real-time
  * notifications, bid comparison, and acceptance workflow.
  */
 
@@ -20,10 +20,10 @@ export type BidStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'WITHD
 export interface Bid {
   id: string;
   loadId: string;
-  carrierId: string;
-  carrierName: string;
-  carrierRating: number;
-  carrierReviews: number;
+  catalystId: string;
+  catalystName: string;
+  catalystRating: number;
+  catalystReviews: number;
   rate: number;
   estimatedPickup: Date;
   estimatedDelivery: Date;
@@ -42,11 +42,11 @@ export interface Bid {
 interface BidManagementInterfaceProps {
   loadId: string;
   bids: Bid[];
-  userRole?: 'SHIPPER' | 'CARRIER';
+  userRole?: 'SHIPPER' | 'CATALYST';
   onAcceptBid?: (bidId: string) => void;
   onRejectBid?: (bidId: string) => void;
   onWithdrawBid?: (bidId: string) => void;
-  onContactCarrier?: (carrierId: string) => void;
+  onContactCatalyst?: (catalystId: string) => void;
 }
 
 type SortOption = 'rate-asc' | 'rate-desc' | 'rating' | 'newest';
@@ -59,7 +59,7 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
   onAcceptBid,
   onRejectBid,
   onWithdrawBid,
-  onContactCarrier,
+  onContactCatalyst,
 }) => {
   const [sortBy, setSortBy] = useState<SortOption>('rate-asc');
   const [filterBy, setFilterBy] = useState<FilterOption>('all');
@@ -84,7 +84,7 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
       case 'rate-desc':
         return sorted.sort((a, b) => b.rate - a.rate);
       case 'rating':
-        return sorted.sort((a, b) => b.carrierRating - a.carrierRating);
+        return sorted.sort((a, b) => b.catalystRating - a.catalystRating);
       case 'newest':
         return sorted.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
       default:
@@ -185,7 +185,7 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
           >
             <option value="rate-asc">Rate (Low to High)</option>
             <option value="rate-desc">Rate (High to Low)</option>
-            <option value="rating">Carrier Rating</option>
+            <option value="rating">Catalyst Rating</option>
             <option value="newest">Newest First</option>
           </select>
         </div>
@@ -220,10 +220,10 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
                   {/* Main bid info */}
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-4 flex-1">
-                      {/* Carrier info */}
+                      {/* Catalyst info */}
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-white">{bid.carrierName}</h3>
+                          <h3 className="font-semibold text-white">{bid.catalystName}</h3>
                           <div className={`${getStatusColor(bid.status)} rounded-full px-2 py-1 flex items-center gap-1`}>
                             <StatusIcon size={14} className="text-white" />
                             <span className="text-xs font-semibold text-white">{bid.status}</span>
@@ -237,12 +237,12 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
                               <Star
                                 key={i}
                                 size={14}
-                                className={i < Math.floor(bid.carrierRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
+                                className={i < Math.floor(bid.catalystRating) ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}
                               />
                             ))}
                           </div>
                           <span className="text-sm text-gray-400">
-                            {bid.carrierRating.toFixed(1)} ({bid.carrierReviews} reviews)
+                            {bid.catalystRating.toFixed(1)} ({bid.catalystReviews} reviews)
                           </span>
                         </div>
 
@@ -387,7 +387,7 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
                       </>
                     )}
 
-                    {userRole === 'CARRIER' && bid.status === 'PENDING' && (
+                    {userRole === 'CATALYST' && bid.status === 'PENDING' && (
                       <Button
                         onClick={() => onWithdrawBid?.(bid.id)}
                         variant="outline"
@@ -400,7 +400,7 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
 
                     {bid.status !== 'REJECTED' && bid.status !== 'EXPIRED' && (
                       <Button
-                        onClick={() => onContactCarrier?.(bid.carrierId)}
+                        onClick={() => onContactCatalyst?.(bid.catalystId)}
                         variant="outline"
                         className="flex-1 text-gray-300"
                       >
@@ -441,7 +441,7 @@ export const BidManagementInterface: React.FC<BidManagementInterfaceProps> = ({
             <div>
               <p className="text-xs text-gray-400 mb-1">Avg Rating</p>
               <p className="text-lg font-bold text-yellow-400">
-                {(sortedBids.reduce((sum, b) => sum + b.carrierRating, 0) / sortedBids.length).toFixed(1)}
+                {(sortedBids.reduce((sum, b) => sum + b.catalystRating, 0) / sortedBids.length).toFixed(1)}
               </p>
             </div>
           </div>

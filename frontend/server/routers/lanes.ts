@@ -51,7 +51,7 @@ export const lanesRouter = router({
         transitTime: { min: 0, avg: 0, max: 0 },
         pricing: { current: 0, low: 0, high: 0, trend: "stable", change: 0 },
         volume: { daily: 0, weekly: 0, monthly: 0, trend: "stable" },
-        topShippers: [], topCarriers: [],
+        topShippers: [], topCatalysts: [],
         seasonality: { peakMonths: [], lowMonths: [] },
         restrictions: [],
       };

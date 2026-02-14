@@ -9,7 +9,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 
-const entityTypeSchema = z.enum(["driver", "carrier", "shipper", "broker", "facility"]);
+const entityTypeSchema = z.enum(["driver", "catalyst", "shipper", "broker", "facility"]);
 const ratingCategorySchema = z.enum([
   "overall", "communication", "timeliness", "professionalism", "safety", "condition", "accuracy"
 ]);
@@ -70,7 +70,7 @@ export const ratingsRouter = router({
   getMySummary: protectedProcedure
     .query(async () => ({
       asDriver: { overallRating: 0, totalReviews: 0, recentTrend: "stable" },
-      asCarrier: { overallRating: 0, totalReviews: 0, recentTrend: "stable" },
+      asCatalyst: { overallRating: 0, totalReviews: 0, recentTrend: "stable" },
       pendingReviews: [], givenThisMonth: 0, receivedThisMonth: 0,
     })),
 

@@ -37,14 +37,14 @@ interface RoleViz {
 function getRoleViz(perspective: string | undefined): RoleViz {
   // sizeMetric MUST return values in 6-14 range (clamped downstream)
   switch (perspective) {
-    case "carrier_availability": // SHIPPER — sees truck availability, green tones
+    case "catalyst_availability": // SHIPPER — sees truck availability, green tones
       return {
         dotLabel: z => `${z.liveTrucks || 0}T`,
         sizeMetric: z => 7 + Math.min(7, (z.liveTrucks || 80) / 60),
         critColor: "#4ADE80", highColor: "#60A5FA", elevColor: "#C084FC",
         glowColor: "#4ADE80",
-        subtitle: "Where carriers are available for your loads",
-        emphasis: "carrier_count",
+        subtitle: "Where catalysts are available for your loads",
+        emphasis: "catalyst_count",
       };
     case "spread_opportunity": // BROKER — sees margin, emerald tones
       return {
@@ -73,7 +73,7 @@ function getRoleViz(perspective: string | undefined): RoleViz {
         subtitle: "Oversized/overweight escort demand corridors",
         emphasis: "oversized",
       };
-    case "dispatch_intelligence": // CATALYST — sees L:T ratio, red/orange tones
+    case "dispatch_intelligence": // DISPATCH — sees L:T ratio, red/orange tones
       return {
         dotLabel: z => `${z.liveLoads || 0}/${z.liveTrucks || 0}`,
         sizeMetric: z => 7 + Math.min(7, (z.liveRatio || 1) * 2.5),
@@ -128,7 +128,7 @@ function getRoleViz(perspective: string | undefined): RoleViz {
         subtitle: "Platform-wide operational intelligence",
         emphasis: "overview",
       };
-    default: // CARRIER / default freight view
+    default: // CATALYST / default freight view
       return {
         dotLabel: z => `$${Number(z.liveRate || 0).toFixed(2)}`,
         sizeMetric: z => 7 + Math.min(7, (z.liveRatio || 1) * 2.5),
@@ -520,8 +520,8 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                     )}
                   </g>
                 )}
-                {/* Carrier Capacity layer */}
-                {activeLayers.includes("carrier_capacity") && (
+                {/* Catalyst Capacity layer */}
+                {activeLayers.includes("catalyst_capacity") && (
                   <g className="select-none pointer-events-none">
                     <circle cx={zx} cy={zy} r={r + s(6)} fill="none" stroke="#22C55E" strokeWidth={s(0.8)} strokeDasharray={`${s(3)} ${s(2)}`} opacity={0.6} />
                     <rect x={zx + r + s(2)} y={zy + s(2)} width={s(24)} height={s(9)} rx={s(3)} fill={isLight ? "#DCFCE7" : "#14532D"} opacity={0.9} stroke="#22C55E" strokeWidth={s(0.4)} />
@@ -629,7 +629,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                   {activeLayers.includes("weather_risk") && (tip.z.weatherAlerts?.length || 0) > 0 && (
                     <div className="flex justify-between"><span className="text-blue-400">Weather</span><span className="font-bold text-amber-400">{tip.z.weatherAlerts.length} alert{tip.z.weatherAlerts.length !== 1 ? "s" : ""}</span></div>
                   )}
-                  {activeLayers.includes("carrier_capacity") && (
+                  {activeLayers.includes("catalyst_capacity") && (
                     <div className="flex justify-between"><span className="text-emerald-400">Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveTrucks || 0} available</span></div>
                   )}
                   {activeLayers.includes("compliance_risk") && (

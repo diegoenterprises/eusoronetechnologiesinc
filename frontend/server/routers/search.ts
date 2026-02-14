@@ -15,7 +15,7 @@ import { loads, drivers, users, documents, companies } from "../../drizzle/schem
 
 export const searchRouter = router({
   global: protectedProcedure.input(z.object({ query: z.string(), type: z.string().optional(), filters: z.any().optional() }).optional()).query(async ({ ctx, input }) => {
-    const empty = { loads: [], drivers: [], carriers: [], invoices: [], total: 0, counts: { loads: 0, drivers: 0, carriers: 0, invoices: 0 }, results: [] as any[] };
+    const empty = { loads: [], drivers: [], catalysts: [], invoices: [], total: 0, counts: { loads: 0, drivers: 0, catalysts: 0, invoices: 0 }, results: [] as any[] };
     if (!input?.query || input.query.trim().length < 2) return empty;
     const db = await getDb();
     if (!db) return empty;
@@ -28,9 +28,9 @@ export const searchRouter = router({
       const results: any[] = [];
 
       // ── LOADS ──────────────────────────────────────────────────────────
-      // Scope: shipper sees own loads, carrier sees assigned, driver sees assigned
+      // Scope: shipper sees own loads, catalyst sees assigned, driver sees assigned
       const loadScope = userRole === "SHIPPER" ? eq(loads.shipperId, userId)
-        : userRole === "CARRIER" ? eq(loads.carrierId, userId)
+        : userRole === "CATALYST" ? eq(loads.catalystId, userId)
         : userRole === "DRIVER" ? eq(loads.driverId, userId)
         : undefined; // admin/broker see all
 
@@ -71,7 +71,7 @@ export const searchRouter = router({
         });
       }
 
-      // ── USERS (drivers, carriers, etc.) ───────────────────────────────
+      // ── USERS (drivers, catalysts, etc.) ───────────────────────────────
       const userMatch = or(like(users.name, q), like(users.email, q), like(users.phone, q));
       const userWhere = companyId
         ? and(eq(users.companyId, companyId), userMatch)
@@ -84,7 +84,7 @@ export const searchRouter = router({
       } catch (e) { console.error("[search.global] users query error:", e); }
 
       for (const u of userResults) {
-        const type = u.role === "DRIVER" ? "driver" : u.role === "CARRIER" ? "carrier" : "user";
+        const type = u.role === "DRIVER" ? "driver" : u.role === "CATALYST" ? "catalyst" : "user";
         results.push({ id: String(u.id), type, title: u.name || "Unknown", subtitle: `${u.role || ""} · ${u.email || ""}`, match: 85 });
       }
 
@@ -98,7 +98,7 @@ export const searchRouter = router({
       } catch { /* companies table may not exist yet */ }
 
       for (const c of companyResults) {
-        results.push({ id: String(c.id), type: "carrier", title: c.name || c.legalName || "Company", subtitle: c.legalName && c.legalName !== c.name ? c.legalName : "Company", match: 80 });
+        results.push({ id: String(c.id), type: "catalyst", title: c.name || c.legalName || "Company", subtitle: c.legalName && c.legalName !== c.name ? c.legalName : "Company", match: 80 });
       }
 
       // ── DOCUMENTS ─────────────────────────────────────────────────────
@@ -121,13 +121,13 @@ export const searchRouter = router({
       return {
         loads: loadResults.map((l: any) => ({ id: String(l.id), loadNumber: l.loadNumber, match: 95 })),
         drivers: userResults.filter((u: any) => u.role === "DRIVER").map((u: any) => ({ id: String(u.id), name: u.name, match: 85 })),
-        carriers: userResults.filter((u: any) => u.role === "CARRIER").map((u: any) => ({ id: String(u.id), name: u.name, match: 85 })),
+        catalysts: userResults.filter((u: any) => u.role === "CATALYST").map((u: any) => ({ id: String(u.id), name: u.name, match: 85 })),
         invoices: [],
         total: results.length,
         counts: {
           loads: loadResults.length,
           drivers: userResults.filter((u: any) => u.role === "DRIVER").length,
-          carriers: userResults.filter((u: any) => u.role === "CARRIER").length,
+          catalysts: userResults.filter((u: any) => u.role === "CATALYST").length,
           invoices: 0,
           documents: docResults.length,
           companies: companyResults.length,

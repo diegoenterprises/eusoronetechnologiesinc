@@ -1,7 +1,7 @@
 /**
  * LOAD DETAILS PAGE
  * 100% Dynamic - No mock data
- * Theme-aware | Brand gradient | Carrier Place Bid CTA | Shipper design standard
+ * Theme-aware | Brand gradient | Catalyst Place Bid CTA | Shipper design standard
  */
 
 import React from "react";
@@ -50,10 +50,10 @@ export default function LoadDetails() {
   const isLoadOwner = load?.shipperId && authUser?.id && Number(load.shipperId) === Number(authUser.id);
   const userRole = (authUser?.role || "").toUpperCase();
   const isShipper = isLoadOwner || userRole === "SHIPPER";
-  const canBid = !isLoadOwner && ["CARRIER", "BROKER", "CATALYST"].includes(userRole);
-  const isAssignedCarrier = load?.carrierId && authUser?.id && Number(load.carrierId) === Number(authUser.id);
+  const canBid = !isLoadOwner && ["CATALYST", "BROKER", "DISPATCH"].includes(userRole);
+  const isAssignedCatalyst = load?.catalystId && authUser?.id && Number(load.catalystId) === Number(authUser.id);
 
-  // Load status progression mutation (carrier/driver use)
+  // Load status progression mutation (catalyst/driver use)
   const updateStatusMutation = (trpc as any).bids.updateLoadStatus.useMutation({
     onSuccess: (data: any) => { toast.success(`Load status updated to ${data.status.replace(/_/g, ' ')}`); loadQuery.refetch(); },
     onError: (err: any) => toast.error("Failed to update status", { description: err.message }),
@@ -443,7 +443,7 @@ export default function LoadDetails() {
               <div className="text-center py-8">
                 <DollarSign className={cn("w-12 h-12 mx-auto mb-3", isLight ? "text-slate-300" : "text-slate-600")} />
                 <p className={cn("font-medium", isLight ? "text-slate-500" : "text-slate-400")}>No bids yet</p>
-                <p className="text-sm text-slate-500 mt-1">Carriers will bid on your load once it's visible in the marketplace.</p>
+                <p className="text-sm text-slate-500 mt-1">Catalysts will bid on your load once it's visible in the marketplace.</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -460,7 +460,7 @@ export default function LoadDetails() {
                       </div>
                       <div>
                         <p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>
-                          {bid.carrierName || `Carrier #${bid.carrierId}`}
+                          {bid.catalystName || `Catalyst #${bid.catalystId}`}
                         </p>
                         <p className="text-xs text-slate-500">
                           {bid.createdAt ? new Date(bid.createdAt).toLocaleDateString() : ""}
@@ -504,8 +504,8 @@ export default function LoadDetails() {
         </Card>
       )}
 
-      {/* ── Carrier Load Status Progression (per Contract Articles 7, 9, 10) ── */}
-      {isAssignedCarrier && STATUS_CHAIN[load.status] && (
+      {/* ── Catalyst Load Status Progression (per Contract Articles 7, 9, 10) ── */}
+      {isAssignedCatalyst && STATUS_CHAIN[load.status] && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
           <div className={cn("bg-gradient-to-r px-6 py-4", isLight ? "from-blue-50 to-purple-50" : "from-[#1473FF]/10 to-[#BE01FF]/10")}>
             <div className="flex items-center gap-2">
@@ -548,7 +548,7 @@ export default function LoadDetails() {
       )}
 
       {/* ── Load Delivered Confirmation ── */}
-      {isAssignedCarrier && load.status === 'delivered' && (
+      {isAssignedCatalyst && load.status === 'delivered' && (
         <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
           <CardContent className="p-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
@@ -566,7 +566,7 @@ export default function LoadDetails() {
         </Card>
       )}
 
-      {/* ── Bottom Place Bid CTA (for posted loads — carriers only, not load owner) ── */}
+      {/* ── Bottom Place Bid CTA (for posted loads — catalysts only, not load owner) ── */}
       {load.status === "posted" && canBid && (
         <div className={cn("rounded-2xl border p-6 flex flex-col sm:flex-row items-center justify-between gap-4", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50")}>
           <div>

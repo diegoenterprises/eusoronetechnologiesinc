@@ -11,7 +11,7 @@ import { getDb } from "../db";
 import { users, companies } from "../../drizzle/schema";
 
 const contactTypeSchema = z.enum([
-  "shipper", "carrier", "broker", "driver", "terminal", "vendor", "other"
+  "shipper", "catalyst", "broker", "driver", "terminal", "vendor", "other"
 ]);
 
 export const contactsRouter = router({
@@ -77,23 +77,23 @@ export const contactsRouter = router({
   getSummary: protectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
-      if (!db) return { total: 0, shippers: 0, carriers: 0, drivers: 0 };
+      if (!db) return { total: 0, shippers: 0, catalysts: 0, drivers: 0 };
 
       try {
         const [total] = await db.select({ count: sql<number>`count(*)` }).from(users);
         const [shippers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'SHIPPER'));
-        const [carriers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'CARRIER'));
+        const [catalysts] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'CATALYST'));
         const [drivers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'DRIVER'));
 
         return {
           total: total?.count || 0,
           shippers: shippers?.count || 0,
-          carriers: carriers?.count || 0,
+          catalysts: catalysts?.count || 0,
           drivers: drivers?.count || 0,
         };
       } catch (error) {
         console.error('[Contacts] getSummary error:', error);
-        return { total: 0, shippers: 0, carriers: 0, drivers: 0 };
+        return { total: 0, shippers: 0, catalysts: 0, drivers: 0 };
       }
     }),
 

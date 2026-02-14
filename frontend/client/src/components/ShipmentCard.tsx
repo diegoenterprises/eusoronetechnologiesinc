@@ -54,7 +54,7 @@ export interface Load {
   currentLocation?: string;
   progressPercentage?: number;
   eta?: Date;
-  assignedCarrier?: string;
+  assignedCatalyst?: string;
   assignedDriver?: string;
 }
 
@@ -211,7 +211,7 @@ export const ShipmentCard: React.FC<ShipmentCardProps> = ({
         }
         break;
 
-      case 'CARRIER':
+      case 'CATALYST':
         if (currentLoad.status === 'POSTED') {
           return (
             <div className="flex gap-2">

@@ -51,7 +51,7 @@ export default function CompanyVerification() {
 
   const getTypeBadge = (type: string) => {
     switch (type) {
-      case "carrier": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Carrier</Badge>;
+      case "catalyst": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Catalyst</Badge>;
       case "shipper": return <Badge className="bg-emerald-500/20 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent border-0">Shipper</Badge>;
       case "broker": return <Badge className="bg-purple-500/20 text-purple-400 border-0">Broker</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{type}</Badge>;

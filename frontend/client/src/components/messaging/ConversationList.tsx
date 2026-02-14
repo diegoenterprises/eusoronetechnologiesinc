@@ -19,7 +19,7 @@ export interface Conversation {
   participants: {
     id: string;
     name: string;
-    role: "shipper" | "carrier" | "driver" | "dispatcher";
+    role: "shipper" | "catalyst" | "driver" | "dispatcher";
     isOnline?: boolean;
   }[];
   lastMessage: {
@@ -41,7 +41,7 @@ interface ConversationListProps {
 
 const ROLE_COLORS = {
   shipper: "bg-blue-500",
-  carrier: "bg-green-500",
+  catalyst: "bg-green-500",
   driver: "bg-purple-500",
   dispatcher: "bg-orange-500",
 };
@@ -130,7 +130,7 @@ export function ConversationList({
                         ROLE_COLORS[otherParticipant.role]
                       )}>
                         {otherParticipant.role === "shipper" && <Package className="w-5 h-5 text-white" />}
-                        {otherParticipant.role === "carrier" && <Truck className="w-5 h-5 text-white" />}
+                        {otherParticipant.role === "catalyst" && <Truck className="w-5 h-5 text-white" />}
                         {otherParticipant.role === "driver" && <User className="w-5 h-5 text-white" />}
                         {otherParticipant.role === "dispatcher" && <User className="w-5 h-5 text-white" />}
                       </div>
@@ -200,7 +200,7 @@ export function getSampleConversations(currentUserId: string): Conversation[] {
       loadNumber: "LOAD-45901",
       participants: [
         { id: currentUserId, name: "You", role: "shipper", isOnline: true },
-        { id: "carrier1", name: "ABC Transport", role: "carrier", isOnline: true },
+        { id: "catalyst1", name: "ABC Transport", role: "catalyst", isOnline: true },
         { id: "driver1", name: "John Smith", role: "driver", isOnline: true },
       ],
       lastMessage: {
@@ -218,11 +218,11 @@ export function getSampleConversations(currentUserId: string): Conversation[] {
       loadNumber: "LOAD-45898",
       participants: [
         { id: currentUserId, name: "You", role: "shipper", isOnline: true },
-        { id: "carrier2", name: "XYZ Hazmat", role: "carrier", isOnline: false },
+        { id: "catalyst2", name: "XYZ Hazmat", role: "catalyst", isOnline: false },
       ],
       lastMessage: {
         content: "Driver has been dispatched. ETA 2 hours.",
-        senderId: "carrier2",
+        senderId: "catalyst2",
         senderName: "XYZ Hazmat",
         timestamp: new Date(Date.now() - 3600000),
       },
@@ -235,11 +235,11 @@ export function getSampleConversations(currentUserId: string): Conversation[] {
       loadNumber: "LOAD-45895",
       participants: [
         { id: currentUserId, name: "You", role: "shipper", isOnline: true },
-        { id: "carrier3", name: "SafeHaul Inc", role: "carrier", isOnline: true },
+        { id: "catalyst3", name: "SafeHaul Inc", role: "catalyst", isOnline: true },
       ],
       lastMessage: {
         content: "There's a delay at the terminal due to weather.",
-        senderId: "carrier3",
+        senderId: "catalyst3",
         senderName: "SafeHaul Inc",
         timestamp: new Date(Date.now() - 7200000),
       },

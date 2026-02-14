@@ -1,7 +1,7 @@
 /**
  * DRIVER ASSIGNMENT COMPONENT
- * For Catalysts (Dispatchers) to assign drivers to loads
- * Based on 05_CATALYST_USER_JOURNEY.md
+ * For Dispatch (Dispatchers) to assign drivers to loads
+ * Based on 05_DISPATCH_USER_JOURNEY.md
  */
 
 import React, { useState } from "react";

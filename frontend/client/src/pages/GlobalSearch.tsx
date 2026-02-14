@@ -31,7 +31,7 @@ export default function GlobalSearch() {
     switch (type) {
       case "load": return <Truck className="w-5 h-5 text-blue-400" />;
       case "driver": return <Users className="w-5 h-5 text-green-400" />;
-      case "carrier": return <Users className="w-5 h-5 text-purple-400" />;
+      case "catalyst": return <Users className="w-5 h-5 text-purple-400" />;
       case "invoice": return <FileText className="w-5 h-5 text-orange-400" />;
       case "payment": return <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />;
       default: return <Search className="w-5 h-5 text-slate-400" />;
@@ -42,7 +42,7 @@ export default function GlobalSearch() {
     switch (type) {
       case "load": return "bg-blue-500/20";
       case "driver": return "bg-green-500/20";
-      case "carrier": return "bg-purple-500/20";
+      case "catalyst": return "bg-purple-500/20";
       case "invoice": return "bg-orange-500/20";
       case "payment": return "bg-emerald-500/20";
       default: return "bg-slate-500/20";
@@ -64,7 +64,7 @@ export default function GlobalSearch() {
         <CardContent className="p-6">
           <div className="relative">
             <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-            <Input value={query} onChange={(e: any) => setQuery(e.target.value)} placeholder="Search loads, drivers, carriers, invoices..." className="pl-12 h-14 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" autoFocus />
+            <Input value={query} onChange={(e: any) => setQuery(e.target.value)} placeholder="Search loads, drivers, catalysts, invoices..." className="pl-12 h-14 text-lg bg-slate-800/50 border-slate-700/50 rounded-xl" autoFocus />
           </div>
         </CardContent>
       </Card>
@@ -78,7 +78,7 @@ export default function GlobalSearch() {
                 <TabsTrigger value="all">All ({(searchQuery.data as any)?.total || 0})</TabsTrigger>
                 <TabsTrigger value="load">Loads ({(searchQuery.data as any)?.counts?.loads || 0})</TabsTrigger>
                 <TabsTrigger value="driver">Drivers ({(searchQuery.data as any)?.counts?.drivers || 0})</TabsTrigger>
-                <TabsTrigger value="carrier">Carriers ({(searchQuery.data as any)?.counts?.carriers || 0})</TabsTrigger>
+                <TabsTrigger value="catalyst">Catalysts ({(searchQuery.data as any)?.counts?.catalysts || 0})</TabsTrigger>
                 <TabsTrigger value="invoice">Invoices ({(searchQuery.data as any)?.counts?.invoices || 0})</TabsTrigger>
               </TabsList>
             </Tabs>

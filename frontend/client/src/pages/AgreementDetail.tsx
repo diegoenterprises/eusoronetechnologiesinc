@@ -117,12 +117,12 @@ export default function AgreementDetail() {
         <Button variant="outline" className={cn("rounded-xl font-bold", isLight ? "border-slate-200" : "border-slate-700")}
           onClick={() => downloadAgreementPdf({
             agreementNumber: ag.agreementNumber || `AG-${ag.id}`,
-            agreementType: ag.agreementType || "carrier_shipper",
+            agreementType: ag.agreementType || "catalyst_shipper",
             contractDuration: ag.contractDuration,
             status: ag.status,
             generatedContent: ag.generatedContent || "No content available.",
             partyAName, partyARole: ag.partyARole || "SHIPPER",
-            partyBName, partyBRole: ag.partyBRole || "CARRIER",
+            partyBName, partyBRole: ag.partyBRole || "CATALYST",
             baseRate: ag.baseRate, rateType: ag.rateType,
             paymentTermDays: ag.paymentTermDays,
             effectiveDate: ag.effectiveDate, expirationDate: ag.expirationDate,
@@ -148,7 +148,7 @@ export default function AgreementDetail() {
         <div className={cl}>
           <div className="flex items-center gap-2 mb-2">
             <Truck className="w-4 h-4 text-purple-500" />
-            <span className="text-xs font-bold text-purple-500 uppercase">Party B ({fmt(ag.partyBRole || "Carrier")})</span>
+            <span className="text-xs font-bold text-purple-500 uppercase">Party B ({fmt(ag.partyBRole || "Catalyst")})</span>
           </div>
           <p className={cn("font-bold", vl)}>{partyBName}</p>
           {ag.partyBCompany?.name && <p className="text-xs text-slate-400">{ag.partyBCompany.name}</p>}

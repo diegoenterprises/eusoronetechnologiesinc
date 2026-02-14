@@ -1,7 +1,7 @@
 /**
  * CHAT WINDOW COMPONENT
  * Real-time messaging for load-related communications
- * Supports shipper-carrier, dispatcher-driver messaging
+ * Supports shipper-catalyst, dispatcher-driver messaging
  */
 
 import React, { useState, useRef, useEffect } from "react";
@@ -20,7 +20,7 @@ export interface Message {
   id: string;
   senderId: string;
   senderName: string;
-  senderRole: "shipper" | "carrier" | "driver" | "dispatcher" | "system";
+  senderRole: "shipper" | "catalyst" | "driver" | "dispatcher" | "system";
   content: string;
   timestamp: Date;
   status: "sending" | "sent" | "delivered" | "read";
@@ -37,7 +37,7 @@ export interface Message {
 export interface ChatParticipant {
   id: string;
   name: string;
-  role: "shipper" | "carrier" | "driver" | "dispatcher";
+  role: "shipper" | "catalyst" | "driver" | "dispatcher";
   avatar?: string;
   isOnline?: boolean;
   lastSeen?: Date;
@@ -47,7 +47,7 @@ export interface ChatWindowProps {
   loadId: string;
   loadNumber: string;
   currentUserId: string;
-  currentUserRole: "shipper" | "carrier" | "driver" | "dispatcher";
+  currentUserRole: "shipper" | "catalyst" | "driver" | "dispatcher";
   participants: ChatParticipant[];
   messages: Message[];
   onSendMessage: (content: string, attachments?: Message["attachments"]) => void;
@@ -56,7 +56,7 @@ export interface ChatWindowProps {
 
 const ROLE_COLORS = {
   shipper: "bg-blue-500",
-  carrier: "bg-green-500",
+  catalyst: "bg-green-500",
   driver: "bg-purple-500",
   dispatcher: "bg-orange-500",
   system: "bg-slate-500",
@@ -64,7 +64,7 @@ const ROLE_COLORS = {
 
 const ROLE_ICONS = {
   shipper: Package,
-  carrier: Truck,
+  catalyst: Truck,
   driver: User,
   dispatcher: User,
   system: AlertTriangle,
@@ -327,9 +327,9 @@ export function getSampleMessages(): Message[] {
     },
     {
       id: "m2",
-      senderId: "carrier1",
+      senderId: "catalyst1",
       senderName: "ABC Transport",
-      senderRole: "carrier",
+      senderRole: "catalyst",
       content: "Driver John Smith is en route. ETA 30 minutes.",
       timestamp: new Date(Date.now() - 3600000 * 1.5),
       status: "read",

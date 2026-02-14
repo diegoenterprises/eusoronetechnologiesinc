@@ -1,7 +1,7 @@
 /**
  * AGREEMENT PDF DOWNLOAD — EusoContract™
  * One-click .pdf file download using jsPDF.
- * Works for all roles: shipper, carrier, broker, escort, dispatch, etc.
+ * Works for all roles: shipper, catalyst, broker, escort, dispatch, etc.
  */
 
 import { jsPDF } from "jspdf";
@@ -314,7 +314,7 @@ export function downloadAgreementPdf(data: AgreementPdfData) {
     // Empty signature lines for both parties
     for (const party of [
       { name: data.partyAName || "Party A", role: data.partyARole || "Shipper" },
-      { name: data.partyBName || "Party B", role: data.partyBRole || "Carrier" },
+      { name: data.partyBName || "Party B", role: data.partyBRole || "Catalyst" },
     ]) {
       y = checkPage(doc, y, 20);
       doc.setDrawColor(180, 180, 180);

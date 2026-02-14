@@ -49,7 +49,7 @@ interface FacilityStats {
 interface Shipment {
   id: string;
   type: "incoming" | "outgoing";
-  carrier: string;
+  catalyst: string;
   driver: string;
   commodity: string;
   quantity: number;
@@ -122,7 +122,7 @@ export default function FacilityPage() {
   const shipments: Shipment[] = (shipmentsQuery.data || []).map((s: any) => ({
     id: String(s.id),
     type: s.type || 'incoming',
-    carrier: s.carrier || '',
+    catalyst: s.catalyst || '',
     driver: s.driver || '',
     commodity: s.commodity || '',
     quantity: s.weight || 0,
@@ -377,9 +377,9 @@ export default function FacilityPage() {
 
                       <div className="grid grid-cols-2 gap-4 mb-3">
                         <div>
-                          <p className="text-slate-400 text-sm mb-1">Carrier</p>
+                          <p className="text-slate-400 text-sm mb-1">Catalyst</p>
                           <p className="text-white font-semibold">
-                            {shipment.carrier}
+                            {shipment.catalyst}
                           </p>
                         </div>
                         <div>

@@ -24,7 +24,7 @@ const driverStatusSchema = z.enum([
 
 export const dispatchRouter = router({
   /**
-   * Get dashboard stats for CatalystDashboard
+   * Get dashboard stats for DispatchDashboard
    */
   getDashboardStats: protectedProcedure
     .input(z.object({ filters: z.any().optional() }).optional())

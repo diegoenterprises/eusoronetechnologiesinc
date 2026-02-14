@@ -265,7 +265,7 @@ class WebSocketManager {
         this.subscribe(WS_CHANNELS.DRIVERS_ALERTS);
         if (this.userId) this.subscribe(WS_CHANNELS.DRIVER(this.userId));
         break;
-      case 'CATALYST':
+      case 'DISPATCH':
         this.subscribe(WS_CHANNELS.DISPATCH_UPDATES);
         break;
       case 'TERMINAL_MANAGER':

@@ -22,7 +22,7 @@ import { loads, documents, users, vehicles } from "../../drizzle/schema";
 const runTicketSchema = z.object({
   // Load info
   loadId: z.string(),
-  carrierId: z.string(),
+  catalystId: z.string(),
   driverId: z.string(),
   vehicleId: z.string(),
   trailerId: z.string().optional(),
@@ -79,10 +79,10 @@ const bolSchema = z.object({
   consigneeAddress: z.string(),
   consigneeContact: z.string().optional(),
   
-  // Carrier info
-  carrierName: z.string(),
-  carrierMC: z.string(),
-  carrierDOT: z.string(),
+  // Catalyst info
+  catalystName: z.string(),
+  catalystMC: z.string(),
+  catalystDOT: z.string(),
   driverName: z.string(),
   driverCDL: z.string(),
   vehiclePlate: z.string(),
@@ -110,7 +110,7 @@ const bolSchema = z.object({
   
   // Signatures
   shipperSignature: z.string().optional(),
-  carrierSignature: z.string().optional(),
+  catalystSignature: z.string().optional(),
 });
 
 export const eusoTicketRouter = router({
@@ -151,7 +151,7 @@ export const eusoTicketRouter = router({
             ticketNumber: input.ticketNumber,
             status: "not_found",
             loadId: "",
-            carrierId: "",
+            catalystId: "",
             driverId: "",
             vehicleId: "",
             originTerminalId: "",
@@ -182,7 +182,7 @@ export const eusoTicketRouter = router({
           ticketNumber: input.ticketNumber,
           status: load.status || "pending",
           loadId: `LD-${load.id}`,
-          carrierId: String(load.carrierId || ""),
+          catalystId: String(load.catalystId || ""),
           driverId: String(load.driverId || ""),
           vehicleId: "",
           originTerminalId: "",
@@ -290,9 +290,9 @@ export const eusoTicketRouter = router({
         shipperAddress: "",
         consigneeName: "",
         consigneeAddress: "",
-        carrierName: "",
-        carrierMC: "",
-        carrierDOT: "",
+        catalystName: "",
+        catalystMC: "",
+        catalystDOT: "",
         driverName: "",
         driverCDL: "",
         vehiclePlate: "",
@@ -310,7 +310,7 @@ export const eusoTicketRouter = router({
         specialInstructions: "",
         emergencyContact: "",
         shipperSignature: "",
-        carrierSignature: "",
+        catalystSignature: "",
         createdAt: new Date().toISOString(),
         deliveredAt: new Date().toISOString(),
       };
@@ -320,7 +320,7 @@ export const eusoTicketRouter = router({
   listBOLs: protectedProcedure
     .input(z.object({
       status: z.enum(["draft", "issued", "in_transit", "delivered", "cancelled"]).optional(),
-      carrierId: z.string().optional(),
+      catalystId: z.string().optional(),
       shipperId: z.string().optional(),
       dateFrom: z.string().optional(),
       dateTo: z.string().optional(),

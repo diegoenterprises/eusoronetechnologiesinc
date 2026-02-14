@@ -530,7 +530,7 @@ export const adminRouter = router({
     .query(async ({ ctx }) => {
       return {
         users: { total: 0, active: 0, pending: 0, suspended: 0 },
-        companies: { total: 0, carriers: 0, shippers: 0, brokers: 0, other: 0 },
+        companies: { total: 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
         loads: { active: 0, completedToday: 0, totalThisMonth: 0 },
         revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
         pendingVerifications: 0,
@@ -832,7 +832,7 @@ export const adminRouter = router({
 
   // Permissions & Roles
   getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [] as any; perms.categories = []; return perms; }),
-  getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 0, carrier: 0, shipper: 0, driver: 0, totalRoles: 0, totalPermissions: 0, usersWithRoles: 0, customRoles: 0 })),
+  getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 0, catalyst: 0, shipper: 0, driver: 0, totalRoles: 0, totalPermissions: 0, usersWithRoles: 0, customRoles: 0 })),
   getRoles: auditedAdminProcedure.query(async () => []),
   updateRolePermissions: auditedAdminProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
 

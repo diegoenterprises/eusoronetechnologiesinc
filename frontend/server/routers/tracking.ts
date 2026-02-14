@@ -46,12 +46,12 @@ export const trackingRouter = router({
           }
         }
 
-        // Get carrier info
-        let carrierInfo = { name: "Carrier", mcNumber: "" };
-        if (load.carrierId) {
-          const [carrier] = await db.select({ name: companies.name, mcNumber: companies.mcNumber })
-            .from(companies).where(eq(companies.id, load.carrierId)).limit(1);
-          if (carrier) carrierInfo = { name: carrier.name, mcNumber: carrier.mcNumber || "" };
+        // Get catalyst info
+        let catalystInfo = { name: "Catalyst", mcNumber: "" };
+        if (load.catalystId) {
+          const [catalyst] = await db.select({ name: companies.name, mcNumber: companies.mcNumber })
+            .from(companies).where(eq(companies.id, load.catalystId)).limit(1);
+          if (catalyst) catalystInfo = { name: catalyst.name, mcNumber: catalyst.mcNumber || "" };
         }
 
         // Get current GPS location if available
@@ -79,7 +79,7 @@ export const trackingRouter = router({
           currentLocation,
           progress,
           driver: driverInfo,
-          carrier: carrierInfo,
+          catalyst: catalystInfo,
           milestones: [
             { status: "created", timestamp: load.createdAt?.toISOString() || "", completed: true },
             { status: "dispatched", timestamp: load.status !== 'posted' && load.status !== 'bidding' ? load.updatedAt?.toISOString() : null, completed: currentIdx >= 2 },
@@ -404,15 +404,15 @@ export const trackingRouter = router({
           pickupLocation: loads.pickupLocation,
           deliveryLocation: loads.deliveryLocation,
           driverId: loads.driverId,
-          carrierId: loads.carrierId,
+          catalystId: loads.catalystId,
           shipperId: loads.shipperId,
         })
         .from(loads)
         .where(
           userRole === 'SHIPPER' && companyId
             ? eq(loads.shipperId, companyId)
-            : userRole === 'CARRIER' && companyId
-            ? eq(loads.carrierId, companyId)
+            : userRole === 'CATALYST' && companyId
+            ? eq(loads.catalystId, companyId)
             : userRole === 'DRIVER' && userId
             ? eq(loads.driverId, userId)
             : undefined as any
@@ -479,8 +479,8 @@ export const trackingRouter = router({
           }
         }
 
-        // Get fleet vehicles for CARRIER/CATALYST
-        if ((userRole === 'CARRIER' || userRole === 'CATALYST') && companyId) {
+        // Get fleet vehicles for CATALYST/DISPATCH
+        if ((userRole === 'CATALYST' || userRole === 'DISPATCH') && companyId) {
           const fleetVehicles = await db.select()
             .from(vehicles)
             .where(eq(vehicles.companyId, companyId))
@@ -632,8 +632,8 @@ function getSeedMapLocations(role: string) {
   switch (role) {
     case 'SHIPPER':
       return base.filter(l => l.type === 'truck' || l.type === 'job');
-    case 'CARRIER':
     case 'CATALYST':
+    case 'DISPATCH':
       return base.filter(l => l.type === 'truck' || l.type === 'terminal');
     case 'BROKER':
       return base;

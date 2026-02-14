@@ -555,7 +555,7 @@ export const ENERGY_FEEDS: RSSFeed[] = [
 // ============================================================================
 
 export const GOVERNMENT_FEEDS: RSSFeed[] = [
-  { id: "fmcsa-news", name: "FMCSA News", url: "https://www.fmcsa.dot.gov/newsroom/rss", category: "government", description: "Federal Motor Carrier Safety Administration", priority: 5, enabled: true },
+  { id: "fmcsa-news", name: "FMCSA News", url: "https://www.fmcsa.dot.gov/newsroom/rss", category: "government", description: "Federal Motor Catalyst Safety Administration", priority: 5, enabled: true },
   { id: "dot-news", name: "DOT News", url: "https://www.transportation.gov/rss", category: "government", description: "Department of Transportation", priority: 5, enabled: true },
   { id: "nhtsa-news", name: "NHTSA News", url: "https://www.nhtsa.gov/rss", category: "government", description: "National Highway Traffic Safety", priority: 5, enabled: true },
   { id: "ntsb-news", name: "NTSB News", url: "https://www.ntsb.gov/Pages/RSS.aspx", category: "government", description: "National Transportation Safety Board", priority: 5, enabled: true },

@@ -91,7 +91,7 @@ export default function RecurringLoadScheduler() {
   const [duration, setDuration] = useState("short_term");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [endDate, setEndDate] = useState("");
-  const [carrierName, setCarrierName] = useState("");
+  const [catalystName, setCatalystName] = useState("");
   const [linkedAgreement, setLinkedAgreement] = useState("");
   const [patterns, setPatterns] = useState<SchedulePattern[]>([]);
   const [activating, setActivating] = useState(false);
@@ -159,7 +159,7 @@ export default function RecurringLoadScheduler() {
                     pickupDate,
                     deliveryDate,
                     rate: parseFloat(pattern.ratePerLoad) || 0,
-                    specialInstructions: `[Recurring: ${contractName}] ${pattern.equipmentType.replace(/_/g, " ")} | ${driveMiles} mi | ${carrierName ? `Dedicated: ${carrierName}` : "Open for bidding"} | ${pattern.notes || ""}`.trim(),
+                    specialInstructions: `[Recurring: ${contractName}] ${pattern.equipmentType.replace(/_/g, " ")} | ${driveMiles} mi | ${catalystName ? `Dedicated: ${catalystName}` : "Open for bidding"} | ${pattern.notes || ""}`.trim(),
                   });
                   created++;
                 }
@@ -171,7 +171,7 @@ export default function RecurringLoadScheduler() {
       }
 
       if (created > 0) {
-        toast.success(`Schedule activated! ${created} loads created.`, { description: carrierName ? `Dedicated to ${carrierName}` : "Posted for carrier bidding" });
+        toast.success(`Schedule activated! ${created} loads created.`, { description: catalystName ? `Dedicated to ${catalystName}` : "Posted for catalyst bidding" });
         setLocation("/loads/active");
       } else if (failed > 0) {
         toast.error(`Failed to create loads (${failed} errors). Check your schedule configuration.`);
@@ -305,7 +305,7 @@ export default function RecurringLoadScheduler() {
                 <div><label className={lb}>Start Date</label><Input type="date" value={startDate} onChange={(e: any) => setStartDate(e.target.value)} className={ic} /></div>
                 <div><label className={lb}>End Date</label><Input type="date" value={endDate} onChange={(e: any) => setEndDate(e.target.value)} className={ic} /></div>
               </div>
-              <div><label className={lb}>Dedicated Carrier (optional)</label><Input value={carrierName} onChange={(e: any) => setCarrierName(e.target.value)} placeholder="Leave blank to open for bidding" className={ic} /></div>
+              <div><label className={lb}>Dedicated Catalyst (optional)</label><Input value={catalystName} onChange={(e: any) => setCatalystName(e.target.value)} placeholder="Leave blank to open for bidding" className={ic} /></div>
             </CardContent>
           </Card>
           <Button className="w-full h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={!contractName} onClick={() => { if (patterns.length === 0) addPattern(); setStep("schedule"); }}>

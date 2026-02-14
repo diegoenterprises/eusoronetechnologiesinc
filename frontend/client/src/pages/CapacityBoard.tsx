@@ -22,8 +22,8 @@ export default function CapacityBoard() {
   const [, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
 
-  const capacityQuery = (trpc as any).carriers.getAvailableCapacity.useQuery({ limit: 50 });
-  const summaryQuery = (trpc as any).carriers.getCapacitySummary.useQuery();
+  const capacityQuery = (trpc as any).catalysts.getAvailableCapacity.useQuery({ limit: 50 });
+  const summaryQuery = (trpc as any).catalysts.getCapacitySummary.useQuery();
 
   const summary = summaryQuery.data;
 
@@ -39,7 +39,7 @@ export default function CapacityBoard() {
 
   const filteredCapacity = (capacityQuery.data as any)?.filter((item: any) => {
     return !searchTerm || 
-      item.carrierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.catalystName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.origin?.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.destination?.city?.toLowerCase().includes(searchTerm.toLowerCase());
   });
@@ -52,7 +52,7 @@ export default function CapacityBoard() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Capacity Board
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Available carrier capacity for matching</p>
+          <p className="text-slate-400 text-sm mt-1">Available catalyst capacity for matching</p>
         </div>
         <Button className="bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-700 hover:to-emerald-700 rounded-lg">
           <Plus className="w-4 h-4 mr-2" />Post Capacity
@@ -132,7 +132,7 @@ export default function CapacityBoard() {
         <Input
           value={searchTerm}
           onChange={(e: any) => setSearchTerm(e.target.value)}
-          placeholder="Search by carrier or location..."
+          placeholder="Search by catalyst or location..."
           className="pl-9 bg-slate-800/50 border-slate-700/50 rounded-lg focus:border-cyan-500/50"
         />
       </div>
@@ -163,7 +163,7 @@ export default function CapacityBoard() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <p className="text-white font-medium">{item.carrierName}</p>
+                          <p className="text-white font-medium">{item.catalystName}</p>
                           {getEquipmentBadge(item.equipmentType)}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-400 mb-2">
@@ -190,7 +190,7 @@ export default function CapacityBoard() {
                         <p className="text-white font-medium">{item.truckCount} truck{item.truckCount !== 1 ? "s" : ""}</p>
                         <p className="text-xs text-slate-500">{item.maxWeight?.toLocaleString()} lbs max</p>
                       </div>
-                      <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation(`/carriers/${item.carrierId}`)}>
+                      <Button size="sm" className="bg-slate-700 hover:bg-slate-600 rounded-lg" onClick={() => setLocation(`/catalysts/${item.catalystId}`)}>
                         <Eye className="w-4 h-4 mr-1" />View
                       </Button>
                     </div>

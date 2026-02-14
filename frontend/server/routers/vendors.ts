@@ -45,7 +45,7 @@ export const vendorsRouter = router({
         pricing: { laborRate: 0, shopSupplies: 0, partsMarkup: 0 },
         statistics: { totalSpend: 0, ordersThisYear: 0, avgOrderValue: 0, avgResponseTime: 0, completionRate: 0 },
         certifications: [],
-        insurance: { liability: { carrier: "", limit: 0, expiresAt: "" }, workersComp: { carrier: "", expiresAt: "" } },
+        insurance: { liability: { catalyst: "", limit: 0, expiresAt: "" }, workersComp: { catalyst: "", expiresAt: "" } },
         rating: 0, reviews: 0, notes: "", createdAt: "",
       };
     }),

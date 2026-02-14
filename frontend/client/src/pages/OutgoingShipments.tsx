@@ -121,8 +121,8 @@ export default function OutgoingShipments() {
                       <p className="text-white text-sm flex items-center gap-1"><MapPin className="w-3 h-3" />{shipment.destination}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-700/30">
-                      <p className="text-xs text-slate-500">Carrier</p>
-                      <p className="text-white text-sm">{shipment.carrier}</p>
+                      <p className="text-xs text-slate-500">Catalyst</p>
+                      <p className="text-white text-sm">{shipment.catalyst}</p>
                     </div>
                     <div className="p-2 rounded-lg bg-slate-700/30">
                       <p className="text-xs text-slate-500">Driver</p>

@@ -637,7 +637,7 @@ export const billingRouter = router({
     }),
 
   // ════════════════════════════════════════════════════════════════
-  // FACTORING — Real DB: carrier submits invoice for same-day funding
+  // FACTORING — Real DB: catalyst submits invoice for same-day funding
   // Scenarios WAL-020, WAL-021
   // ════════════════════════════════════════════════════════════════
 
@@ -651,7 +651,7 @@ export const billingRouter = router({
           CREATE TABLE IF NOT EXISTS factoring_invoices (
             id INT AUTO_INCREMENT PRIMARY KEY,
             loadId INT NOT NULL,
-            carrierUserId INT NOT NULL,
+            catalystUserId INT NOT NULL,
             shipperUserId INT,
             factoringCompanyId INT,
             invoiceNumber VARCHAR(50) NOT NULL UNIQUE,
@@ -672,14 +672,14 @@ export const billingRouter = router({
             notes TEXT,
             createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            INDEX factoring_carrier_idx (carrierUserId),
+            INDEX factoring_catalyst_idx (catalystUserId),
             INDEX factoring_status_idx (status)
           )
         `);
 
         const userId = Number(ctx.user?.id) || 0;
         let invoices = await db.select().from(factoringInvoices)
-          .where(eq(factoringInvoices.carrierUserId, userId))
+          .where(eq(factoringInvoices.catalystUserId, userId))
           .orderBy(desc(factoringInvoices.createdAt));
 
         if (input?.status && input.status !== "all") {
@@ -716,7 +716,7 @@ export const billingRouter = router({
     try {
       const userId = Number(ctx.user?.id) || 0;
       const invoices = await db.select().from(factoringInvoices)
-        .where(eq(factoringInvoices.carrierUserId, userId));
+        .where(eq(factoringInvoices.catalystUserId, userId));
       if (invoices.length === 0) return empty;
 
       const submitted = invoices.filter(i => i.status === "submitted" || i.status === "under_review").length;
@@ -768,7 +768,7 @@ export const billingRouter = router({
 
       const [result] = await db.insert(factoringInvoices).values({
         loadId: input.loadId,
-        carrierUserId: userId,
+        catalystUserId: userId,
         invoiceNumber,
         invoiceAmount: String(input.invoiceAmount),
         factoringFeePercent: String(input.feePercent),
@@ -809,7 +809,7 @@ export const billingRouter = router({
       const advanceAmount = parseFloat(String(invoice.advanceAmount)) || 0;
       if (advanceAmount > 0) {
         const [wallet] = await db.select().from(wallets)
-          .where(eq(wallets.userId, invoice.carrierUserId)).limit(1);
+          .where(eq(wallets.userId, invoice.catalystUserId)).limit(1);
         if (wallet) {
           await db.update(wallets)
             .set({ availableBalance: String(parseFloat(wallet.availableBalance || "0") + advanceAmount) })

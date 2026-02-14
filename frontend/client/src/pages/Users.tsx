@@ -176,7 +176,7 @@ export default function UsersPage() {
               className="bg-slate-700 border-slate-600 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
             />
             <div className="flex gap-2">
-              {["all", "DRIVER", "SHIPPER", "CARRIER"].map((role: any) => (
+              {["all", "DRIVER", "SHIPPER", "CATALYST"].map((role: any) => (
                 <Button
                   key={role}
                   onClick={() => setFilterRole(role)}

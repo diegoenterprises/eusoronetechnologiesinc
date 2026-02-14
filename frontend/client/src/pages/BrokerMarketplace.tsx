@@ -32,7 +32,7 @@ export default function BrokerMarketplace() {
 
   const statsQuery = (trpc as any).brokers.getMarketplaceStats.useQuery();
 
-  const matchMutation = (trpc as any).brokers.matchLoadToCarrier.useMutation({
+  const matchMutation = (trpc as any).brokers.matchLoadToCatalyst.useMutation({
     onSuccess: () => {
       toast.success("Load matched successfully");
       loadsQuery.refetch();
@@ -47,7 +47,7 @@ export default function BrokerMarketplace() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Marketplace
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Match loads with carriers for maximum margin</p>
+          <p className="text-slate-400 text-sm mt-1">Match loads with catalysts for maximum margin</p>
         </div>
         <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg">
           <Zap className="w-4 h-4 mr-2" />
@@ -80,8 +80,8 @@ export default function BrokerMarketplace() {
                     <Users className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.availableCarriers || 0}</p>
-                    <p className="text-xs text-slate-400">Available Carriers</p>
+                    <p className="text-2xl font-bold text-white">{(statsQuery.data as any)?.availableCatalysts || 0}</p>
+                    <p className="text-xs text-slate-400">Available Catalysts</p>
                   </div>
                 </div>
               </CardContent>
@@ -224,7 +224,7 @@ export default function BrokerMarketplace() {
                         onClick={() => matchMutation.mutate({ loadId: load.id })}
                         disabled={matchMutation.isPending}
                       >
-                        Find Carrier
+                        Find Catalyst
                       </Button>
                     </div>
                   </div>

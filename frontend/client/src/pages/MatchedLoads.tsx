@@ -1,5 +1,5 @@
 /**
- * MATCHED LOADS PAGE - CATALYST PROFILE
+ * MATCHED LOADS PAGE - DISPATCH PROFILE
  * 100% Dynamic - No mock data
  * UI Style: Gradient headers, stat cards with icons, rounded cards
  */
@@ -32,10 +32,10 @@ function isSpectraQualified(cargoType?: string, commodity?: string, hazmatClass?
 export default function MatchedLoads() {
   const [search, setSearch] = useState("");
 
-  const loadsQuery = (trpc as any).catalysts.getMatchedLoads.useQuery({ search });
-  const statsQuery = (trpc as any).catalysts.getMatchStats.useQuery();
+  const loadsQuery = (trpc as any).dispatchRole.getMatchedLoads.useQuery({ search });
+  const statsQuery = (trpc as any).dispatchRole.getMatchStats.useQuery();
 
-  const acceptMutation = (trpc as any).catalysts.acceptLoad.useMutation({
+  const acceptMutation = (trpc as any).dispatchRole.acceptLoad.useMutation({
     onSuccess: () => { toast.success("Load accepted"); loadsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
   });

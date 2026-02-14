@@ -31,7 +31,7 @@ export default function LoadBids() {
   const bidsQuery = (trpc as any).bids.getByLoad.useQuery({ loadId: loadId! }, { enabled: !!loadId });
 
   const acceptBidMutation = (trpc as any).bids.accept.useMutation({
-    onSuccess: () => { toast.success("Bid accepted! Load assigned to carrier."); bidsQuery.refetch(); loadQuery.refetch(); },
+    onSuccess: () => { toast.success("Bid accepted! Load assigned to catalyst."); bidsQuery.refetch(); loadQuery.refetch(); },
     onError: (error: any) => toast.error("Failed to accept bid", { description: error.message }),
   });
 
@@ -76,7 +76,7 @@ export default function LoadBids() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Bids on Load</h1>
-            <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>Review and manage carrier bids</p>
+            <p className={cn("text-sm", isLight ? "text-slate-500" : "text-slate-400")}>Review and manage catalyst bids</p>
           </div>
         </div>
       </div>
@@ -138,7 +138,7 @@ export default function LoadBids() {
                 <DollarSign className="w-8 h-8 text-slate-400" />
               </div>
               <p className={cn("font-medium", isLight ? "text-slate-600" : "text-slate-300")}>No bids received yet</p>
-              <p className="text-sm text-slate-400 mt-1">Carriers will appear here when they bid on your load</p>
+              <p className="text-sm text-slate-400 mt-1">Catalysts will appear here when they bid on your load</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -154,7 +154,7 @@ export default function LoadBids() {
                       <Building className={cn("w-5 h-5", isLight ? "text-slate-500" : "text-slate-400")} />
                     </div>
                     <div>
-                      <p className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>{bid.carrierName}</p>
+                      <p className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>{bid.catalystName}</p>
                       {bid.companyName && <p className="text-xs text-slate-400">{bid.companyName}</p>}
                       <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
                         {bid.submittedAt && <span>Submitted {new Date(bid.submittedAt).toLocaleDateString()}</span>}

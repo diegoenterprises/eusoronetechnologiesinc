@@ -54,14 +54,14 @@ export const dashboardRouter = router({
       switch (role) {
         case 'SHIPPER':
           return await getShipperStats(db, userId);
-        case 'CARRIER':
-          return await getCarrierStats(db, companyId);
+        case 'CATALYST':
+          return await getCatalystStats(db, companyId);
         case 'BROKER':
           return await getBrokerStats(db, userId);
         case 'DRIVER':
           return await getDriverStats(db, userId);
-        case 'CATALYST':
-          return await getCatalystStats(db, companyId);
+        case 'DISPATCH':
+          return await getDispatchStats(db, companyId);
         case 'TERMINAL_MANAGER':
           return await getTerminalStats(db, companyId);
         case 'COMPLIANCE_OFFICER':
@@ -97,12 +97,12 @@ export const dashboardRouter = router({
         whereClause = sql`${loads.status} IN ('in_transit', 'assigned', 'bidding')`;
       } else if (role === 'SHIPPER' || role === 'BROKER') {
         whereClause = sql`${loads.shipperId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'bidding', 'posted')`;
-      } else if (role === 'CARRIER' || role === 'CATALYST') {
-        whereClause = sql`${loads.carrierId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading')`;
+      } else if (role === 'CATALYST' || role === 'DISPATCH') {
+        whereClause = sql`${loads.catalystId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'unloading')`;
       } else if (role === 'DRIVER') {
         whereClause = sql`${loads.driverId} = ${userId} AND ${loads.status} IN ('in_transit', 'assigned', 'loading', 'at_pickup', 'at_delivery')`;
       } else {
-        whereClause = sql`${loads.status} IN ('in_transit', 'assigned') AND (${loads.shipperId} = ${userId} OR ${loads.carrierId} = ${userId} OR ${loads.driverId} = ${userId})`;
+        whereClause = sql`${loads.status} IN ('in_transit', 'assigned') AND (${loads.shipperId} = ${userId} OR ${loads.catalystId} = ${userId} OR ${loads.driverId} = ${userId})`;
       }
 
       const results = await db
@@ -129,7 +129,7 @@ export const dashboardRouter = router({
   }),
 
   /**
-   * Get fleet status for carrier/catalyst
+   * Get fleet status for catalyst/dispatch
    */
   getFleetStatus: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
@@ -234,7 +234,7 @@ export const dashboardRouter = router({
   }),
 
   /**
-   * Get earnings summary for drivers/carriers
+   * Get earnings summary for drivers/catalysts
    */
   getEarnings: protectedProcedure
     .input(z.object({
@@ -383,7 +383,7 @@ export const dashboardRouter = router({
   }),
 
   /**
-   * Get dispatch data for Catalyst (per 05_CATALYST_USER_JOURNEY.md)
+   * Get dispatch data for Dispatch (per 05_DISPATCH_USER_JOURNEY.md)
    */
   getDispatchData: protectedProcedure.query(async ({ ctx }) => {
     // In production, would aggregate real-time load and driver data
@@ -420,10 +420,10 @@ export const dashboardRouter = router({
   }),
 
   /**
-   * Get carrier sourcing data for brokers
+   * Get catalyst sourcing data for brokers
    */
-  getCarrierSourcing: protectedProcedure.query(async ({ ctx }) => {
-    return getSeedCarrierSourcing();
+  getCatalystSourcing: protectedProcedure.query(async ({ ctx }) => {
+    return getSeedCatalystSourcing();
   }),
 
   /**
@@ -799,7 +799,7 @@ export const dashboardRouter = router({
   })),
 
   // ========================================================================
-  // CATALYST & ESCORT WIDGET PROCEDURES
+  // DISPATCH & ESCORT WIDGET PROCEDURES
   // ========================================================================
 
   getEscortEarnings: protectedProcedure.query(async () => ({
@@ -904,21 +904,21 @@ async function getShipperStats(db: any, userId: number) {
   };
 }
 
-async function getCarrierStats(db: any, companyId: number) {
+async function getCatalystStats(db: any, companyId: number) {
   const [totalLoads] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(eq(loads.carrierId, companyId));
+    .where(eq(loads.catalystId, companyId));
 
   const [activeLoads] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(and(eq(loads.carrierId, companyId), sql`${loads.status} = 'in_transit'`));
+    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} = 'in_transit'`));
 
   const [totalRevenue] = await db
     .select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` })
     .from(loads)
-    .where(and(eq(loads.carrierId, companyId), sql`${loads.status} = 'delivered'`));
+    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} = 'delivered'`));
 
   const [fleetSize] = await db
     .select({ count: sql<number>`count(*)` })
@@ -956,7 +956,7 @@ async function getBrokerStats(db: any, userId: number) {
 
   return {
     activeShippers: 0,
-    activeCarriers: 0,
+    activeCatalysts: 0,
     loadsThisMonth: loadsThisMonth?.count || 0,
     totalCommission: 0,
     avgMargin: 12.5,
@@ -987,7 +987,7 @@ async function getDriverStats(db: any, userId: number) {
   };
 }
 
-async function getCatalystStats(db: any, companyId: number) {
+async function getDispatchStats(db: any, companyId: number) {
   const [activeDriversCount] = await db
     .select({ count: sql<number>`count(*)` })
     .from(drivers)
@@ -996,12 +996,12 @@ async function getCatalystStats(db: any, companyId: number) {
   const [loadsInTransit] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(and(eq(loads.carrierId, companyId), eq(loads.status, 'in_transit')));
+    .where(and(eq(loads.catalystId, companyId), eq(loads.status, 'in_transit')));
 
   const [pendingAssignments] = await db
     .select({ count: sql<number>`count(*)` })
     .from(loads)
-    .where(and(eq(loads.carrierId, companyId), sql`${loads.status} IN ('assigned', 'bidding')`, sql`${loads.driverId} IS NULL`));
+    .where(and(eq(loads.catalystId, companyId), sql`${loads.status} IN ('assigned', 'bidding')`, sql`${loads.driverId} IS NULL`));
 
   const [fleetTotal] = await db
     .select({ count: sql<number>`count(*)` })
@@ -1172,10 +1172,10 @@ async function getAdminStats(db: any) {
 function getSeedStats(role: string) {
   const empty = {
     SHIPPER: { totalLoads: 0, activeLoads: 0, deliveredLoads: 0, totalSpent: 0, onTimeRate: 0, avgTransitTime: '0 days' },
-    CARRIER: { totalLoads: 0, activeLoads: 0, totalRevenue: 0, fleetSize: 0, utilizationRate: 0, avgRatePerMile: 0 },
-    BROKER: { activeShippers: 0, activeCarriers: 0, loadsThisMonth: 0, totalCommission: 0, avgMargin: 0, pendingPayments: 0 },
+    CATALYST: { totalLoads: 0, activeLoads: 0, totalRevenue: 0, fleetSize: 0, utilizationRate: 0, avgRatePerMile: 0 },
+    BROKER: { activeShippers: 0, activeCatalysts: 0, loadsThisMonth: 0, totalCommission: 0, avgMargin: 0, pendingPayments: 0 },
     DRIVER: { completedLoads: 0, totalEarnings: 0, milesThisWeek: 0, safetyScore: 0, hoursAvailable: 0, nextLoad: null },
-    CATALYST: { activeDrivers: 0, loadsInTransit: 0, pendingAssignments: 0, hosViolations: 0, avgResponseTime: '0 min', fleetUtilization: 0 },
+    DISPATCH: { activeDrivers: 0, loadsInTransit: 0, pendingAssignments: 0, hosViolations: 0, avgResponseTime: '0 min', fleetUtilization: 0 },
     TERMINAL_MANAGER: { docksActive: 0, docksTotal: 0, appointmentsToday: 0, throughputToday: 0, tankUtilization: 0, pendingBOLs: 0 },
     COMPLIANCE_OFFICER: { driversCompliant: 0, driversTotal: 0, expiringDocuments: 0, pendingAudits: 0, csaScore: 'N/A', lastAuditDate: '' },
     SAFETY_MANAGER: { accidentsYTD: 0, incidentRate: 0, driverScoreAvg: 0, inspectionsPassed: 0, maintenanceDue: 0, safetyMeetingsCompleted: 0 },
@@ -1216,10 +1216,10 @@ export function getSeedDriverScorecard() { return []; }
 export function getSeedDispatchData() { return { activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, driversAvailable: 0, loadsRequiringAction: [] }; }
 export function getSeedEscortJobs() { return { activeJobs: 0, upcoming: 0, completed: 0, monthlyEarnings: 0, rating: 0, availableJobs: [], certifications: [] }; }
 export function getSeedShipperDashboard() { return { activeLoads: 0, pendingBids: 0, deliveredThisWeek: 0, avgRatePerMile: 0, onTimeRate: 0, loadsRequiringAttention: [] }; }
-export function getSeedBrokerDashboard() { return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, shipperLoads: 0, carrierCapacity: [] }; }
+export function getSeedBrokerDashboard() { return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, shipperLoads: 0, catalystCapacity: [] }; }
 export function getSeedAdminDashboard() { return { totalUsers: 0, pendingVerifications: 0, activeLoads: 0, todaySignups: 0, openTickets: 0, platformHealth: { api: { status: 'healthy', latency: 0 }, database: { status: 'healthy', uptime: 0 }, eldSync: { status: 'healthy' }, payment: { status: 'healthy' }, gps: { status: 'healthy' }, scada: { status: 'healthy' } }, criticalErrors24h: 0 }; }
-export function getSeedCarrierSourcing() { return []; }
-export function getSeedMarginCalculator() { return { shipperRate: 0, carrierRate: 0, margin: 0, marginPercent: 0, avgMargin: 0, fuelSurcharge: 0, accessorials: 0 }; }
+export function getSeedCatalystSourcing() { return []; }
+export function getSeedMarginCalculator() { return { shipperRate: 0, catalystRate: 0, margin: 0, marginPercent: 0, avgMargin: 0, fuelSurcharge: 0, accessorials: 0 }; }
 export function getSeedFuelStations() { return []; }
 export function getSeedWeatherData() { return { current: { temp: 0, condition: 'N/A', humidity: 0, wind: 0 }, forecast: [], alerts: [] }; }
 export function getSeedAccidentTracker() { return { ytd: 0, lastIncident: 'N/A', severity: { minor: 0, major: 0, fatal: 0 }, trend: '0%', preventable: 0, nonPreventable: 0 }; }
@@ -1229,7 +1229,7 @@ export function getSeedRoutePermits() { return []; }
 export function getSeedFormationTracking() { return { loadId: '', escortLead: { name: '', distance: 0, status: '' }, mainVehicle: { driver: '', speed: 0, status: '' }, escortChase: { name: '', distance: 0, status: '' }, formationStatus: 'N/A', nextCheckpoint: '', eta: '' }; }
 export function getSeedNotifications() { return []; }
 export function getSeedRecentActivity() { return []; }
-export function getSeedQuickActions() { return [{ id: 'create_load', label: 'Create Load', icon: 'Package', color: 'blue' }, { id: 'find_carrier', label: 'Find Carrier', icon: 'Truck', color: 'green' }, { id: 'view_bids', label: 'View Bids', icon: 'DollarSign', color: 'yellow' }, { id: 'track_shipments', label: 'Track Shipments', icon: 'MapPin', color: 'purple' }]; }
+export function getSeedQuickActions() { return [{ id: 'create_load', label: 'Create Load', icon: 'Package', color: 'blue' }, { id: 'find_catalyst', label: 'Find Catalyst', icon: 'Truck', color: 'green' }, { id: 'view_bids', label: 'View Bids', icon: 'DollarSign', color: 'yellow' }, { id: 'track_shipments', label: 'Track Shipments', icon: 'MapPin', color: 'purple' }]; }
 export function getSeedDocumentExpirations() { return []; }
 export function getSeedDetentionTracking() { return { totalHours: 0, estimatedCharges: 0, locations: [] as { location: string; hours: number }[], mtdCharges: 0, avgWaitTime: '0 hours' }; }
 export function getSeedDockScheduling() { return []; }
