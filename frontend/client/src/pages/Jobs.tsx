@@ -81,10 +81,11 @@ export default function JobsPage() {
 
   const { data: myBidsData } = (trpc as any).bids.getMyBids.useQuery();
 
-  const submitBidMutation = (trpc as any).bids.create.useMutation({
+  const submitBidMutation = (trpc as any).bids.submitBid.useMutation({
     onSuccess: () => {
       toast.success("Bid submitted successfully!");
       setShowBidModal(false);
+      setSelectedLoad(null);
     },
     onError: (error: any) => {
       toast.error(`Failed to submit bid: ${error.message}`);
@@ -214,12 +215,12 @@ export default function JobsPage() {
   };
 
   const handleSubmitBid = () => {
-    if (!selectedLoad) return;
-    
-    // TODO: Call tRPC mutation to submit bid
-    toast.success(`Bid of $${bidAmount.toLocaleString()} submitted for ${selectedLoad.id}`);
-    setShowBidModal(false);
-    setSelectedLoad(null);
+    if (!selectedLoad || !bidAmount) return;
+    submitBidMutation.mutate({
+      loadId: typeof selectedLoad.id === "string" ? parseInt(selectedLoad.id, 10) : selectedLoad.id,
+      amount: bidAmount,
+      notes: "",
+    });
   };
 
   const handleCounterOffer = (load: Load) => {

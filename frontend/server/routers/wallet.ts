@@ -1150,24 +1150,15 @@ export const walletRouter = router({
       const userId = Number(ctx.user?.id) || 0;
       if (!db) return [];
 
-      // TODO: Replace with Stripe Issuing API call:
-      // const cards = await stripe.issuing.cards.list({ cardholder: stripeCardholderId });
-      // For now, return from DB or seed data
+      // Stripe Issuing integration required for real card data
+      // Returns empty until Stripe Issuing is configured
       try {
-        // Check if user has a virtual card already (auto-provisioned)
-        return [
-          {
-            id: `card_virtual_${userId}`,
-            type: "virtual",
-            last4: String(1000 + (userId % 9000)).slice(-4),
-            cardholderName: ctx.user?.name || "Cardholder",
-            expiry: "12/28",
-            status: "active",
-            brand: "Visa",
-            spendingLimit: 10000,
-            monthlySpent: 0,
-          },
-        ];
+        const stripeCustomerId = ctx.user?.stripeCustomerId;
+        if (!stripeCustomerId) return [];
+        // When Stripe Issuing is set up:
+        // const cards = await stripe.issuing.cards.list({ cardholder: stripeCardholderId });
+        // return cards.data.map(c => ({ id: c.id, type: c.type, last4: c.last4, ... }));
+        return [];
       } catch {
         return [];
       }

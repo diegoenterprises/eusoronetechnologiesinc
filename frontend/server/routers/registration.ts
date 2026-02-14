@@ -640,7 +640,27 @@ export const registrationRouter = router({
   verifyEmail: auditedPublicProcedure
     .input(z.object({ token: z.string() }))
     .mutation(async ({ input }) => {
-      // TODO: Implement token verification from database
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // Token is the user's openId — a unique UUID assigned at registration
+      const [user] = await db.select({ id: users.id, isVerified: users.isVerified })
+        .from(users)
+        .where(eq(users.openId, input.token))
+        .limit(1);
+
+      if (!user) {
+        throw new Error("Invalid or expired verification token");
+      }
+
+      if (user.isVerified) {
+        return { success: true, message: "Email already verified" };
+      }
+
+      await db.update(users)
+        .set({ isVerified: true })
+        .where(eq(users.id, user.id));
+
       return { success: true, message: "Email verified successfully" };
     }),
 
@@ -650,8 +670,28 @@ export const registrationRouter = router({
   resendVerification: auditedPublicProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input }) => {
-      // TODO: Implement resend logic
-      return { success: true, message: "Verification email sent" };
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [user] = await db.select({ id: users.id, openId: users.openId, isVerified: users.isVerified })
+        .from(users)
+        .where(eq(users.email, input.email))
+        .limit(1);
+
+      if (!user) {
+        // Don't reveal whether email exists — return generic success
+        return { success: true, message: "If an account exists, a verification email has been sent" };
+      }
+
+      if (user.isVerified) {
+        return { success: true, message: "Email already verified" };
+      }
+
+      // In production: send email with verification link containing user.openId
+      // For now: log the token for manual verification
+      console.log(`[Registration] Verification token for ${input.email}: ${user.openId}`);
+
+      return { success: true, message: "If an account exists, a verification email has been sent" };
     }),
 
   /**

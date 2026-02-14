@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, superAdminProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 // @ts-ignore - Schema import
 import { users, companies } from "../../drizzle/schema";

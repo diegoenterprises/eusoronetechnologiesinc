@@ -147,16 +147,6 @@ export default function LoadCreationWizard() {
   const [truckRoster, setTruckRoster] = useState<Array<{ id: string; name: string; capacity: number; fill: number }>>([]);
   const [usePerTruckCapacity, setUsePerTruckCapacity] = useState(false);
   const [linkedAgreementId, setLinkedAgreementId] = useState("");
-  const maxTrucksAllowed = useMemo(() => {
-    const qty = Number(formData.quantity) || 0;
-    if (qty <= 0) return 1;
-    const avgFill = truckRoster.length > 0 ? Math.max(truckRoster.reduce((s, t) => s + t.fill, 0) / truckRoster.length, 1) : 190;
-    return Math.max(1, Math.ceil(qty / avgFill));
-  }, [formData.quantity, truckRoster]);
-  const addTruckToRoster = () => {
-    if (truckRoster.length >= maxTrucksAllowed) return;
-    setTruckRoster(prev => [...prev, { id: `t${Date.now()}`, name: `Truck ${prev.length + 1}`, capacity: 200, fill: 190 }]);
-  };
   const removeTruckFromRoster = (id: string) => setTruckRoster(prev => prev.filter(t => t.id !== id));
   const updateTruckInRoster = (id: string, field: string, value: any) => setTruckRoster(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
 
@@ -171,6 +161,49 @@ export default function LoadCreationWizard() {
   const isHazmat = selectedTrailer?.hazmat ?? false;
   const isLiquidOrGas = selectedTrailer?.animType === "liquid" || selectedTrailer?.animType === "gas";
   const isTanker = ["liquid_tank", "gas_tank", "cryogenic"].includes(formData.trailerType || "");
+
+  // Unit-aware max capacity per truck (must match fleet calc unitMaxMap)
+  const truckUnitDefaults = useMemo(() => {
+    const unit = formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets");
+    const map: Record<string, { capacity: number; fill: number }> = {
+      "Gallons": { capacity: selectedTrailer?.maxGal || 9500, fill: Math.round((selectedTrailer?.maxGal || 9500) * 0.9) },
+      "Barrels": { capacity: 200, fill: 190 },
+      "Liters": { capacity: 36000, fill: 34000 },
+      "Pallets": { capacity: 24, fill: 22 },
+      "Units": { capacity: 100, fill: 90 },
+      "Cases": { capacity: 500, fill: 450 },
+      "Boxes": { capacity: 1000, fill: 900 },
+      "Pieces": { capacity: 20, fill: 18 },
+      "Bundles": { capacity: 12, fill: 11 },
+      "Linear Feet": { capacity: 53, fill: 48 },
+      "Tons": { capacity: 25, fill: 23 },
+      "Cubic Yards": { capacity: 35, fill: 32 },
+      "Cubic Feet": { capacity: 1700, fill: 1500 },
+      "Drums": { capacity: 80, fill: 72 },
+      "PSI Units": { capacity: 300, fill: 270 },
+      "Cubic Meters": { capacity: 40, fill: 36 },
+    };
+    return map[unit] || { capacity: 100, fill: 90 };
+  }, [formData.quantityUnit, isLiquidOrGas, selectedTrailer]);
+
+  const maxTrucksAllowed = useMemo(() => {
+    const qty = Number(formData.quantity) || 0;
+    if (qty <= 0) return 1;
+    const avgFill = truckRoster.length > 0
+      ? Math.max(truckRoster.reduce((s, t) => s + t.fill, 0) / truckRoster.length, 1)
+      : truckUnitDefaults.fill;
+    return Math.max(1, Math.ceil(qty / avgFill));
+  }, [formData.quantity, truckRoster, truckUnitDefaults]);
+
+  const addTruckToRoster = () => {
+    if (truckRoster.length >= maxTrucksAllowed) return;
+    setTruckRoster(prev => [...prev, {
+      id: `t${Date.now()}`,
+      name: `Truck ${prev.length + 1}`,
+      capacity: truckUnitDefaults.capacity,
+      fill: truckUnitDefaults.fill,
+    }]);
+  };
 
   // Fleet calculator — computes trucks needed, loads, costs
   const fleet = useMemo(() => {

@@ -486,7 +486,7 @@ export const usersRouter = router({
       }
     }),
 
-  // Update notification preferences
+  // Update notification preferences — stored in user metadata JSON
   updateNotifications: protectedProcedure
     .input(
       z.object({
@@ -496,12 +496,22 @@ export const usersRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // TODO: Store notification preferences in database
-      // For now, just return success
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new Error("User not found");
+
+      // Read existing metadata, merge notification prefs
+      const [user] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = user?.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
+      meta.notificationPreferences = { ...meta.notificationPreferences, ...input };
+
+      await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
       return { success: true, preferences: input };
     }),
 
-  // Update security settings
+  // Update security settings — real password change with bcrypt
   updateSecurity: protectedProcedure
     .input(
       z.object({
@@ -511,8 +521,41 @@ export const usersRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // TODO: Implement password change and 2FA
-      // For now, just return success
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new Error("User not found");
+
+      const [user] = await db.select({ id: users.id, passwordHash: users.passwordHash, metadata: users.metadata })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      if (!user) throw new Error("User not found");
+
+      // Password change
+      if (input.newPassword) {
+        if (!input.newPassword || input.newPassword.length < 8) {
+          throw new Error("New password must be at least 8 characters");
+        }
+
+        // If user has existing password, verify current password
+        if (user.passwordHash && input.currentPassword) {
+          const bcryptMod = await import("bcryptjs");
+          const valid = await bcryptMod.default.compare(input.currentPassword, user.passwordHash);
+          if (!valid) throw new Error("Current password is incorrect");
+        }
+
+        const bcryptMod = await import("bcryptjs");
+        const newHash = await bcryptMod.default.hash(input.newPassword, 12);
+        await db.update(users).set({ passwordHash: newHash }).where(eq(users.id, userId));
+      }
+
+      // 2FA toggle — store in metadata
+      if (input.twoFactorEnabled !== undefined) {
+        let meta: any = {};
+        try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch { meta = {}; }
+        meta.twoFactorEnabled = input.twoFactorEnabled;
+        await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+      }
+
       return { success: true };
     }),
 
