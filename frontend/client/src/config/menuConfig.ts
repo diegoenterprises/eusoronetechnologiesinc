@@ -226,13 +226,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet GPS tracking"
     },
     { 
-      icon: "Users", 
-      label: "Drivers", 
-      path: "/drivers", 
-      badge: 0,
-      description: "Driver management"
-    },
-    { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
