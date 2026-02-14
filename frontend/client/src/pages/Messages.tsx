@@ -16,7 +16,7 @@ import { trpc } from "@/lib/trpc";
 import {
   MessageSquare, Search, Send, Users, Plus, X, Phone,
   Check, CheckCheck, Loader2, AlertTriangle, ArrowLeft, Paperclip,
-  User, Trash2, Archive, MoreVertical, Truck, Shield, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Lock
+  User, Trash2, Archive, MoreVertical, Truck, Shield, DollarSign, CreditCard, ArrowUpRight, ArrowDownLeft, Lock, BrainCircuit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -37,6 +37,8 @@ export default function Messages() {
   const [paymentNote, setPaymentNote] = useState("");
   const [paymentType, setPaymentType] = useState<"send" | "request">("send");
   const [messageContextMenu, setMessageContextMenu] = useState<{ id: string; x: number; y: number } | null>(null);
+  const [smartReplies, setSmartReplies] = useState<string[]>([]);
+  const [aiRepliesLoading, setAiRepliesLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const msgFileInputRef = useRef<HTMLInputElement>(null);
@@ -610,6 +612,15 @@ export default function Messages() {
                     <Loader2 className="w-3 h-3 animate-spin" /> Uploading file...
                   </div>
                 )}
+                {smartReplies.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-1.5">
+                    <span className="text-[10px] text-purple-400 self-center mr-1">AI:</span>
+                    {smartReplies.map((reply, i) => (
+                      <button key={i} onClick={() => { setNewMessage(reply); setSmartReplies([]); inputRef.current?.focus(); }} className="px-3 py-1.5 text-xs rounded-full bg-purple-500/15 text-purple-300 border border-purple-500/30 hover:bg-purple-500/25 transition-colors truncate max-w-[200px]">{reply}</button>
+                    ))}
+                    <button onClick={() => setSmartReplies([])} className="px-2 py-1 text-[10px] text-slate-500 hover:text-slate-300"><X className="w-3 h-3" /></button>
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
@@ -619,6 +630,25 @@ export default function Messages() {
                     title="Attach file"
                   >
                     <Paperclip className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      const msgs = (messagesQuery.data || []).slice(-6).map((m: any) => ({ sender: m.senderName || (m.isOwn ? "Me" : "Them"), text: m.content || "" }));
+                      if (msgs.length === 0) return;
+                      setAiRepliesLoading(true);
+                      try {
+                        const result = await (trpc as any).esang.smartReplies.mutate({ messages: msgs });
+                        setSmartReplies(result.replies || []);
+                      } catch { toast.error("Smart replies unavailable"); }
+                      setAiRepliesLoading(false);
+                    }}
+                    disabled={aiRepliesLoading}
+                    className="rounded-xl h-10 w-10 p-0 text-purple-400 hover:bg-purple-500/10 flex-shrink-0"
+                    title="ESANG AI Smart Replies"
+                  >
+                    <BrainCircuit className={`w-5 h-5 ${aiRepliesLoading ? 'animate-spin' : ''}`} />
                   </Button>
                   <Button
                     variant="ghost"

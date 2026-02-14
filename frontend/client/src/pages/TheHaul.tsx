@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import {
   Trophy, Target, Gift, MessageCircle, Send, Shield, Star,
   Zap, Clock, Users, TrendingUp, Award, Flame, ChevronRight,
-  MapPin, Truck, CheckCircle, Crown, RefreshCw, Package, XCircle,
+  MapPin, Truck, CheckCircle, Crown, RefreshCw, Package, XCircle, BrainCircuit,
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -93,11 +93,14 @@ export default function TheHaul() {
     return () => clearInterval(iv);
   }, [activeTab]);
 
+  const [aiGenMissions, setAiGenMissions] = useState<any[]>([]);
+  const [aiGenLoading, setAiGenLoading] = useState(false);
+
   const profile = profileQ.data;
   const msgs = lobbyQ.data?.messages || [];
   const dbM = missionsQ.data || { active: [], completed: [], available: [] };
   const aiM = aiMissionsQ.data || [];
-  const allAvail = [...(dbM.available || []), ...aiM];
+  const allAvail = [...(dbM.available || []), ...aiM, ...aiGenMissions];
   const activeM = dbM.active || [];
   const rewards = rewardsQ.data;
   const crates = cratesQ.data || [];
@@ -117,6 +120,33 @@ export default function TheHaul() {
           </h1>
           <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Your digital truck stop — find work, complete missions, earn rewards</p>
         </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("rounded-xl", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-600/50 hover:bg-slate-700")}
+          disabled={aiGenLoading}
+          onClick={async () => {
+            setAiGenLoading(true);
+            try {
+              const result = await (trpc as any).esang.generateMissions.mutate({
+                level: profile?.level || 1,
+                recentActivity: (dbM.completed || []).slice(0, 3).map((m: any) => m.title || m.name || "mission"),
+                completedMissions: (dbM.completed || []).slice(0, 5).map((m: any) => m.title || m.name || ""),
+              });
+              const generated = (result.missions || []).map((m: any, i: number) => ({
+                id: `ai-gen-${Date.now()}-${i}`, title: m.title, description: m.description,
+                xpReward: m.xpReward || 100, difficulty: m.difficulty || "medium",
+                category: m.category || "learning", type: "ai_generated", source: "esang-ai",
+              }));
+              setAiGenMissions(generated);
+              toast.success(`ESANG AI generated ${generated.length} personalized missions!`);
+            } catch { toast.error("Mission generation unavailable"); }
+            setAiGenLoading(false);
+          }}
+        >
+          <BrainCircuit className={`w-4 h-4 mr-1.5 ${aiGenLoading ? 'animate-spin' : ''}`} />
+          {aiGenLoading ? "Generating..." : "AI Missions"}
+        </Button>
         {profile && (
           <div className={cn("flex items-center gap-4 px-4 py-2 rounded-xl", isLight ? "bg-slate-50 border border-slate-200" : "bg-slate-800/50 border border-slate-700/50")}>
             <div className="text-center"><p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Lv.{profile.level}</p><p className="text-[10px] text-slate-400">Level</p></div>

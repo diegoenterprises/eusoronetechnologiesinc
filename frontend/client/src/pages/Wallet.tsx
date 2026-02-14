@@ -27,7 +27,7 @@ import {
   Building2, Users, Copy, Eye, EyeOff, RefreshCw,
   Smartphone, X, ArrowRight, Banknote, FileText, Receipt,
   Download, Search, Calendar, Filter, CheckCircle,
-  CircleDollarSign, MailCheck
+  CircleDollarSign, MailCheck, BrainCircuit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +47,8 @@ export default function Wallet() {
 
   const [invoiceFilter, setInvoiceFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [aiInsights, setAiInsights] = useState<any>(null);
+  const [aiLoading, setAiLoading] = useState(false);
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
 
   const balanceQuery = (trpc as any).wallet.getBalance.useQuery();
@@ -180,6 +182,28 @@ export default function Wallet() {
             variant="outline"
             size="sm"
             className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 text-white'}`}
+            onClick={async () => {
+              setAiLoading(true);
+              try {
+                const result = await (trpc as any).esang.walletInsights.mutate({
+                  balance: balance?.available || 0,
+                  recentTransactions: (transactions || []).slice(0, 10).map((t: any) => ({ type: t.type || "transfer", amount: Number(t.amount) || 0, date: t.date || new Date().toISOString(), description: t.description || t.type || "" })),
+                  monthlyEarnings: balance?.monthlyEarnings || 0,
+                  monthlyExpenses: balance?.monthlyExpenses || 0,
+                  outstandingInvoices: paySummary?.outstanding || 0,
+                });
+                setAiInsights(result);
+              } catch { toast.error("AI insights unavailable"); }
+              setAiLoading(false);
+            }}
+            disabled={aiLoading}
+          >
+            <BrainCircuit className={`w-4 h-4 mr-1 ${aiLoading ? 'animate-spin' : ''}`} />{aiLoading ? "Analyzing..." : "AI Insights"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 text-white'}`}
             onClick={() => { balanceQuery.refetch(); transactionsQuery.refetch(); }}
           >
             <RefreshCw className="w-4 h-4 mr-1" />Refresh
@@ -237,6 +261,48 @@ export default function Wallet() {
           </div>
         </div>
       </div>
+
+      {/* ESANG AI Financial Insights */}
+      {aiInsights && (
+        <Card className={`rounded-2xl border ${isLight ? 'bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200/50' : 'bg-gradient-to-r from-blue-950/30 to-purple-950/30 border-blue-800/30'}`}>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <BrainCircuit className="w-4 h-4 text-purple-500" />
+                ESANG AI Financial Insights
+              </CardTitle>
+              <button onClick={() => setAiInsights(null)} className="text-slate-400 hover:text-slate-600"><X className="w-4 h-4" /></button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3 pt-0">
+            <p className={`text-sm font-medium ${isLight ? 'text-slate-700' : 'text-slate-200'}`}>{aiInsights.summary}</p>
+            {aiInsights.insights?.length > 0 && (
+              <div className="space-y-1">
+                {aiInsights.insights.map((insight: string, i: number) => (
+                  <p key={i} className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>- {insight}</p>
+                ))}
+              </div>
+            )}
+            {aiInsights.recommendations?.length > 0 && (
+              <div className={`p-3 rounded-xl ${isLight ? 'bg-white/80' : 'bg-slate-800/50'}`}>
+                <p className="text-xs font-semibold mb-1">Recommendations</p>
+                {aiInsights.recommendations.map((rec: string, i: number) => (
+                  <p key={i} className={`text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>{i + 1}. {rec}</p>
+                ))}
+              </div>
+            )}
+            {aiInsights.riskAlerts?.length > 0 && (
+              <div className={`p-3 rounded-xl ${isLight ? 'bg-red-50' : 'bg-red-950/20'}`}>
+                <p className="text-xs font-semibold text-red-500 mb-1">Risk Alerts</p>
+                {aiInsights.riskAlerts.map((alert: string, i: number) => (
+                  <p key={i} className="text-xs text-red-400">{alert}</p>
+                ))}
+              </div>
+            )}
+            <p className={`text-xs italic ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>Forecast: {aiInsights.cashFlowForecast}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tab Navigation */}
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
