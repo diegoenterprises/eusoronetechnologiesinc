@@ -15,7 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
-import { Package, MapPin, Truck, Shield, DollarSign, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Loader2, Calendar, Repeat, Info, Calculator } from "lucide-react";
+import { Package, MapPin, Truck, Shield, DollarSign, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Loader2, Calendar, Repeat, Info, Calculator, Plus, Trash2, FileText, Scale, Link2 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
@@ -37,6 +38,12 @@ export default function CreateLoad() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [step, setStep] = useState(1);
+  // Multi-truck roster
+  interface TruckEntry { id: string; name: string; capacity: number; fill: number; }
+  const [trucks, setTrucks] = useState<TruckEntry[]>([]);
+  const [useUniformCapacity, setUseUniformCapacity] = useState(true);
+  const [linkedAgreementId, setLinkedAgreementId] = useState<string>("");
+
   const [formData, setFormData] = useState({
     // Step 1: Product & Hazmat
     productName: "", hazmatClass: "", unNumber: "", packingGroup: "", isHazmat: false,
@@ -61,6 +68,15 @@ export default function CreateLoad() {
     ratePerLoad: "", paymentTerms: "30", notes: "",
   });
 
+  // Agreement query for contract integration
+  const agreementsQuery = (trpc as any).agreements?.list?.useQuery?.(
+    { status: "active" },
+    { enabled: formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker" }
+  ) ?? { data: [], isLoading: false };
+
+  // Geofence mutation for auto-creating pickup/delivery zones
+  const createGeofencesMut = (trpc as any).geofencing?.createLoadGeofences?.useMutation?.() ?? { mutateAsync: async () => ({}) };
+
   const hazmatQuery = (trpc as any).esang.chat.useMutation();
   const createLoadMutation = (trpc as any).loads.create.useMutation({
     onSuccess: (data: any) => { toast.success(`Job created: ${data.loadCount || 1} load(s) posted`); navigate("/my-loads"); },
@@ -71,11 +87,14 @@ export default function CreateLoad() {
   const nextStep = () => step < 8 && setStep(step + 1);
   const prevStep = () => step > 1 && setStep(step - 1);
 
+  // Truck roster helpers
+  const addTruck = () => setTrucks(prev => [...prev, { id: `t${Date.now()}`, name: `Truck ${prev.length + 1}`, capacity: 200, fill: 190 }]);
+  const removeTruck = (id: string) => setTrucks(prev => prev.filter(t => t.id !== id));
+  const updateTruck = (id: string, field: keyof TruckEntry, value: any) => setTrucks(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+
   // Auto-calculate fleet requirements from demand
   const calc = useMemo(() => {
     const demand = parseFloat(formData.totalDemand) || 0;
-    const capacity = parseFloat(formData.actualFill) || 190;
-    const maxCap = parseFloat(formData.tankerCapacity) || 200;
     const loadsPerDay = parseInt(formData.loadsPerTruckPerDay) || 1;
     const days = parseInt(formData.totalDays) || 1;
     const ratePerLoad = parseFloat(formData.ratePerLoad) || 0;
@@ -84,30 +103,66 @@ export default function CreateLoad() {
     // gallons conversion: 1 barrel = 42 gallons
     const demandBbl = formData.demandUnit === "gallons" ? demand / 42 : demand;
     const demandGal = formData.demandUnit === "barrels" ? demand * 42 : demand;
-    const capacityBbl = capacity;
-    const capacityGal = capacity * 42;
 
-    // Total loads needed to move all product
-    const totalLoads = demandBbl > 0 ? Math.ceil(demandBbl / capacityBbl) : 0;
+    // Multi-truck: calculate per-truck loads if roster is used
+    const hasRoster = !useUniformCapacity && trucks.length > 0;
+    const uniformFill = parseFloat(formData.actualFill) || 190;
+    const uniformMax = parseFloat(formData.tankerCapacity) || 200;
+
+    // Per-truck breakdown for variable capacity mode
+    let truckBreakdown: Array<{ name: string; capacity: number; fill: number; loads: number; volume: number }> = [];
+    let totalLoads = 0;
+
+    if (hasRoster && demandBbl > 0) {
+      // Distribute demand across trucks with different capacities
+      let remaining = demandBbl;
+      const totalDailyCapacity = trucks.reduce((sum, t) => sum + (t.fill * loadsPerDay), 0);
+      for (const t of trucks) {
+        const truckDailyCapacity = t.fill * loadsPerDay * days;
+        const proportion = totalDailyCapacity > 0 ? (t.fill * loadsPerDay) / totalDailyCapacity : 1 / trucks.length;
+        const allocated = Math.min(remaining, demandBbl * proportion);
+        const loads = Math.ceil(allocated / t.fill);
+        truckBreakdown.push({ name: t.name, capacity: t.capacity, fill: t.fill, loads, volume: loads * t.fill });
+        totalLoads += loads;
+        remaining -= allocated;
+      }
+      // Distribute any remainder to first truck
+      if (remaining > 0 && truckBreakdown.length > 0) {
+        const extra = Math.ceil(remaining / trucks[0].fill);
+        truckBreakdown[0].loads += extra;
+        truckBreakdown[0].volume += extra * trucks[0].fill;
+        totalLoads += extra;
+      }
+    } else {
+      // Uniform capacity mode
+      totalLoads = demandBbl > 0 ? Math.ceil(demandBbl / uniformFill) : 0;
+    }
+
+    const capacityBbl = hasRoster ? (trucks.reduce((s, t) => s + t.fill, 0) / Math.max(trucks.length, 1)) : uniformFill;
+    const capacityGal = capacityBbl * 42;
 
     // With schedule: how many loads per day total
-    const totalLoadsPerDay = Math.ceil(totalLoads / days);
+    const totalLoadsPerDay = days > 0 ? Math.ceil(totalLoads / days) : totalLoads;
 
     // Trucks needed (considering each truck does X loads/day)
-    const trucksFromCalc = formData.manualTruckOverride
-      ? parseInt(formData.trucksNeeded) || 1
-      : Math.ceil(totalLoadsPerDay / loadsPerDay);
+    const trucksFromCalc = hasRoster
+      ? trucks.length
+      : formData.manualTruckOverride
+        ? parseInt(formData.trucksNeeded) || 1
+        : Math.max(1, Math.ceil(totalLoadsPerDay / loadsPerDay));
 
-    // Actual loads per truck per day (may differ from input if truck override)
     const actualLoadsPerTruckPerDay = trucksFromCalc > 0 ? Math.ceil(totalLoadsPerDay / trucksFromCalc) : 0;
 
     // Total weight (approx 7.1 lbs/gal for crude, 6.6 for gasoline - use 7 avg)
     const totalWeightLbs = demandGal * 7;
 
-    // Pricing totals
+    // Pricing totals with platform fee (5-15% dynamic, use 8% average)
+    const PLATFORM_FEE_PCT = 0.08;
     const totalJobCost = totalLoads * ratePerLoad;
-    const ratePerMile = 0; // needs distance input
-    const utilizationPct = demandBbl > 0 ? Math.min(100, ((capacity / maxCap) * 100)) : 0;
+    const platformFee = totalJobCost * PLATFORM_FEE_PCT;
+    const totalWithFee = totalJobCost + platformFee;
+    const maxCap = hasRoster ? Math.max(...trucks.map(t => t.capacity), 200) : uniformMax;
+    const utilizationPct = demandBbl > 0 ? Math.min(100, ((capacityBbl / maxCap) * 100)) : 0;
 
     // For convoy mode
     const isConvoy = formData.scheduleType === "convoy";
@@ -116,10 +171,10 @@ export default function CreateLoad() {
     return {
       demandBbl, demandGal, capacityBbl, capacityGal, totalLoads, totalLoadsPerDay,
       trucksNeeded: effectiveTrucks, actualLoadsPerTruckPerDay,
-      totalWeightLbs, totalJobCost, ratePerMile, utilizationPct,
-      isConvoy, maxCap,
+      totalWeightLbs, totalJobCost, platformFee, totalWithFee, utilizationPct,
+      isConvoy, maxCap, truckBreakdown, hasRoster,
     };
-  }, [formData]);
+  }, [formData, trucks, useUniformCapacity]);
 
   const handleSubmit = () => {
     const origin = [formData.originCity, formData.originState].filter(Boolean).join(", ");
@@ -171,7 +226,7 @@ export default function CreateLoad() {
 
       <Progress value={(step / 8) * 100} className="h-2 mb-6" />
 
-      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+      <Card className={cn("rounded-xl", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/50 border-slate-700/50")}>
         <CardContent className="p-6">
           {step === 1 && (
             <div className="space-y-6">
@@ -202,23 +257,54 @@ export default function CreateLoad() {
               </div>
 
               <div className={cn("p-4 rounded-xl border", isLight ? "bg-blue-50 border-blue-200" : "bg-[#1473FF]/5 border-[#1473FF]/20")}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Truck className="w-5 h-5 text-[#BE01FF]" />
-                  <h3 className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>Tanker Configuration</h3>
-                  <Badge className="bg-[#BE01FF]/15 text-[#BE01FF] border-[#BE01FF]/30 text-[10px]">Variable Capacity</Badge>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-5 h-5 text-[#BE01FF]" />
+                    <h3 className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>Tanker Configuration</h3>
+                    <Badge className="bg-[#BE01FF]/15 text-[#BE01FF] border-[#BE01FF]/30 text-[10px]">Variable Capacity</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setUseUniformCapacity(true)} className={cn("px-3 py-1 rounded-lg text-xs font-medium transition-colors", useUniformCapacity ? "bg-[#1473FF] text-white" : isLight ? "bg-slate-200 text-slate-600" : "bg-slate-700 text-slate-400")}>Uniform</button>
+                    <button onClick={() => { setUseUniformCapacity(false); if (trucks.length === 0) addTruck(); }} className={cn("px-3 py-1 rounded-lg text-xs font-medium transition-colors", !useUniformCapacity ? "bg-[#BE01FF] text-white" : isLight ? "bg-slate-200 text-slate-600" : "bg-slate-700 text-slate-400")}>Per Truck</button>
+                  </div>
                 </div>
-                <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Not all tankers are the same. Set the trailer max capacity and actual fill level for accurate calculations.</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div><Label>Tanker Max Capacity (bbl)</Label><Input type="number" value={formData.tankerCapacity} onChange={e => updateField("tankerCapacity", e.target.value)} placeholder="130-210" className="bg-slate-700/50" /><p className="text-[10px] text-slate-500 mt-1">Industry range: 130-210 bbl</p></div>
-                  <div><Label>Actual Fill Per Load (bbl)</Label><Input type="number" value={formData.actualFill} onChange={e => updateField("actualFill", e.target.value)} placeholder="e.g. 190" className="bg-slate-700/50" /><p className="text-[10px] text-slate-500 mt-1">Operators rarely fill to max</p></div>
-                  <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className="bg-slate-700/50" /><p className="text-[10px] text-slate-500 mt-1">Round trips per truck daily</p></div>
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <Checkbox checked={formData.manualTruckOverride} onCheckedChange={v => updateField("manualTruckOverride", v)} />
-                  <Label className="text-sm">I want to specify exact truck count</Label>
-                </div>
-                {formData.manualTruckOverride && (
-                  <div className="mt-2 w-48"><Label>Trucks</Label><Input type="number" min="1" value={formData.trucksNeeded} onChange={e => updateField("trucksNeeded", e.target.value)} className="bg-slate-700/50" /></div>
+
+                {useUniformCapacity ? (
+                  <>
+                    <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>All trucks use the same tanker capacity and fill level.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div><Label>Tanker Max Capacity (bbl)</Label><Input type="number" value={formData.tankerCapacity} onChange={e => updateField("tankerCapacity", e.target.value)} placeholder="130-210" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Industry range: 130-210 bbl</p></div>
+                      <div><Label>Actual Fill Per Load (bbl)</Label><Input type="number" value={formData.actualFill} onChange={e => updateField("actualFill", e.target.value)} placeholder="e.g. 190" className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Operators rarely fill to max</p></div>
+                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /><p className="text-[10px] text-slate-500 mt-1">Round trips per truck daily</p></div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <Checkbox checked={formData.manualTruckOverride} onCheckedChange={v => updateField("manualTruckOverride", v)} />
+                      <Label className="text-sm">I want to specify exact truck count</Label>
+                    </div>
+                    {formData.manualTruckOverride && (
+                      <div className="mt-2 w-48"><Label>Trucks</Label><Input type="number" min="1" value={formData.trucksNeeded} onChange={e => updateField("trucksNeeded", e.target.value)} className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /></div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Define individual trucks with different tanker capacities. The system distributes loads proportionally.</p>
+                    <div className="space-y-2">
+                      {trucks.map((t, i) => (
+                        <div key={t.id} className={cn("flex items-center gap-3 p-3 rounded-lg border", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
+                          <span className={cn("text-xs font-mono w-6 text-center", isLight ? "text-slate-400" : "text-slate-500")}>{i + 1}</span>
+                          <Input value={t.name} onChange={e => updateTruck(t.id, "name", e.target.value)} className={cn("w-32 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} placeholder="Name" />
+                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Max</Label><Input type="number" value={t.capacity} onChange={e => updateTruck(t.id, "capacity", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
+                          <div className="flex items-center gap-1"><Label className="text-[10px] text-slate-400 shrink-0">Fill</Label><Input type="number" value={t.fill} onChange={e => updateTruck(t.id, "fill", parseInt(e.target.value) || 0)} className={cn("w-20 h-8 text-xs", isLight ? "bg-slate-50" : "bg-slate-700/50")} /></div>
+                          <Badge className={cn("text-[9px] shrink-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400 border-0" : "bg-slate-500/15 text-slate-400 border-0")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/10" onClick={() => removeTruck(t.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
+                        </div>
+                      ))}
+                      <Button variant="outline" size="sm" onClick={addTruck} className={cn("w-full h-9 rounded-lg border-dashed", isLight ? "border-slate-300 text-slate-500 hover:bg-slate-50" : "border-slate-600 text-slate-400 hover:bg-slate-800")}><Plus className="w-3.5 h-3.5 mr-1.5" />Add Truck</Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-3">
+                      <div><Label>Loads Per Truck / Day</Label><Input type="number" min="1" value={formData.loadsPerTruckPerDay} onChange={e => updateField("loadsPerTruckPerDay", e.target.value)} className={cn("w-32", isLight ? "bg-white border-slate-300" : "bg-slate-700/50")} /></div>
+                    </div>
+                  </>
                 )}
               </div>
 
@@ -237,6 +323,23 @@ export default function CreateLoad() {
                     <div><p className="text-slate-400 text-xs">Est. Weight/Load</p><p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>{Math.round(calc.totalWeightLbs / calc.totalLoads).toLocaleString()} lbs</p></div>
                     <div><p className="text-slate-400 text-xs">Total Weight</p><p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>{Math.round(calc.totalWeightLbs).toLocaleString()} lbs</p></div>
                   </div>
+                  {calc.hasRoster && calc.truckBreakdown.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-slate-700/30">
+                      <p className={cn("text-xs font-medium mb-2", isLight ? "text-slate-600" : "text-slate-300")}>Per-Truck Load Distribution</p>
+                      <div className="space-y-1">
+                        {calc.truckBreakdown.map((tb, i) => (
+                          <div key={i} className={cn("flex items-center justify-between px-3 py-1.5 rounded-lg text-xs", isLight ? "bg-white/60" : "bg-slate-800/40")}>
+                            <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{tb.name}</span>
+                            <div className="flex items-center gap-4">
+                              <span className="text-slate-400">{tb.fill} bbl fill / {tb.capacity} bbl max</span>
+                              <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-0 text-[10px]">{tb.loads} loads</Badge>
+                              <span className={cn("font-mono", isLight ? "text-slate-600" : "text-slate-300")}>{tb.volume.toLocaleString()} bbl</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -327,6 +430,49 @@ export default function CreateLoad() {
                   ))}
                 </div>
               </div>
+
+              {(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") && (
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-blue-50 border-blue-200" : "bg-[#1473FF]/5 border-[#1473FF]/20")}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Link2 className="w-4 h-4 text-[#1473FF]" />
+                    <h4 className={cn("font-semibold text-sm", isLight ? "text-slate-800" : "text-white")}>Link to Agreement</h4>
+                    <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-[#1473FF]/30 text-[10px]">Contract Integration</Badge>
+                  </div>
+                  <p className={cn("text-xs mb-3", isLight ? "text-slate-500" : "text-slate-400")}>Link this job to an existing agreement to inherit rates and payment terms.</p>
+                  <Select value={linkedAgreementId} onValueChange={(v) => {
+                    setLinkedAgreementId(v);
+                    const ag = (agreementsQuery.data || []).find((a: any) => String(a.id) === v);
+                    if (ag?.baseRate) updateField("ratePerLoad", String(parseFloat(ag.baseRate)));
+                    if (ag?.paymentTermDays) updateField("paymentTerms", String(ag.paymentTermDays));
+                  }}>
+                    <SelectTrigger className={cn(isLight ? "bg-white border-slate-300" : "bg-slate-700/50")}>
+                      <SelectValue placeholder="Select an active agreement (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Agreement</SelectItem>
+                      {(agreementsQuery.data || []).map((ag: any) => (
+                        <SelectItem key={ag.id} value={String(ag.id)}>
+                          #{ag.agreementNumber || ag.id} - {ag.type?.replace(/_/g, " ")} - ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"}/load
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {linkedAgreementId && linkedAgreementId !== "none" && (() => {
+                    const ag = (agreementsQuery.data || []).find((a: any) => String(a.id) === linkedAgreementId);
+                    if (!ag) return null;
+                    return (
+                      <div className={cn("mt-3 p-3 rounded-lg border flex items-center gap-3", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
+                        <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-white")}>Linked: #{ag.agreementNumber || ag.id}</p>
+                          <p className="text-[10px] text-slate-400">Rate: ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"} / {ag.rateType?.replace(/_/g, " ") || "per load"} - Net {ag.paymentTermDays || 30} days</p>
+                        </div>
+                        <FileText className="w-4 h-4 text-green-400 shrink-0" />
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
@@ -338,11 +484,18 @@ export default function CreateLoad() {
               </div>
               {calc.totalLoads > 0 && parseFloat(formData.ratePerLoad) > 0 && (
                 <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-[#1473FF]/30")}>
-                  <h4 className={cn("font-semibold mb-3", isLight ? "text-slate-800" : "text-white")}>Total Job Cost Breakdown</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                  <h4 className={cn("font-semibold mb-3 flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}>
+                    <Scale className="w-4 h-4 text-[#BE01FF]" />Total Job Cost Breakdown
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div><p className="text-slate-400 text-xs">Rate / Load</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${parseFloat(formData.ratePerLoad).toLocaleString()}</p></div>
                     <div><p className="text-slate-400 text-xs">Total Loads</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>{calc.totalLoads}</p></div>
-                    <div><p className="text-slate-400 text-xs">Total Job Cost</p><p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${calc.totalJobCost.toLocaleString()}</p></div>
+                    <div><p className="text-slate-400 text-xs">Carrier Payout</p><p className={cn("text-lg font-bold", isLight ? "text-slate-800" : "text-white")}>${calc.totalJobCost.toLocaleString()}</p></div>
+                    <div><p className="text-slate-400 text-xs">Platform Fee (8%)</p><p className="text-lg font-bold text-[#BE01FF]">${calc.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                  </div>
+                  <div className={cn("mt-3 pt-3 border-t flex items-center justify-between", isLight ? "border-slate-200" : "border-slate-700/30")}>
+                    <p className={cn("text-sm font-medium", isLight ? "text-slate-600" : "text-slate-300")}>Total Cost (incl. platform fee)</p>
+                    <p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${calc.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                   </div>
                 </div>
               )}
@@ -355,11 +508,12 @@ export default function CreateLoad() {
               <h3 className={cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white")}>Review Your Job</h3>
 
               <div className={cn("p-4 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-[#1473FF]/30")}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                   <div><p className="text-slate-400 text-xs">Total Loads</p><p className="text-2xl font-bold text-[#1473FF]">{calc.totalLoads}</p></div>
                   <div><p className="text-slate-400 text-xs">Trucks</p><p className="text-2xl font-bold text-[#BE01FF]">{calc.trucksNeeded}</p></div>
                   <div><p className="text-slate-400 text-xs">Volume</p><p className={cn("text-2xl font-bold", isLight ? "text-slate-800" : "text-white")}>{calc.demandBbl.toLocaleString()} bbl</p></div>
-                  <div><p className="text-slate-400 text-xs">Total Cost</p><p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${calc.totalJobCost.toLocaleString()}</p></div>
+                  <div><p className="text-slate-400 text-xs">Carrier Payout</p><p className={cn("text-2xl font-bold", isLight ? "text-slate-800" : "text-white")}>${calc.totalJobCost.toLocaleString()}</p></div>
+                  <div><p className="text-slate-400 text-xs">Total w/ Fee</p><p className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${calc.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
                 </div>
               </div>
 
@@ -367,7 +521,7 @@ export default function CreateLoad() {
                 <div><p className="text-slate-400 text-xs">Product</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.productName || "N/A"}</p></div>
                 <div><p className="text-slate-400 text-xs">Hazmat</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.isHazmat ? `Class ${formData.hazmatClass} (${formData.unNumber})` : "No"}</p></div>
                 <div><p className="text-slate-400 text-xs">Equipment</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.equipmentType || "N/A"}</p></div>
-                <div><p className="text-slate-400 text-xs">Tanker Capacity</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.actualFill} bbl fill / {formData.tankerCapacity} bbl max ({calc.utilizationPct.toFixed(0)}%)</p></div>
+                <div><p className="text-slate-400 text-xs">Tanker Config</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{calc.hasRoster ? `${trucks.length} trucks (variable)` : `${formData.actualFill} bbl fill / ${formData.tankerCapacity} bbl max`}</p></div>
                 <div><p className="text-slate-400 text-xs">Weight Per Load</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{calc.totalLoads > 0 ? Math.round(calc.totalWeightLbs / calc.totalLoads).toLocaleString() : 0} lbs</p></div>
                 <div><p className="text-slate-400 text-xs">Total Weight</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{Math.round(calc.totalWeightLbs).toLocaleString()} lbs</p></div>
                 <div><p className="text-slate-400 text-xs">Origin</p><p className="font-medium text-[#1473FF]">{formData.originCity ? `${formData.originCity}, ${formData.originState}` : "N/A"}</p></div>
@@ -377,6 +531,31 @@ export default function CreateLoad() {
                 <div><p className="text-slate-400 text-xs">Rate / Load</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>${parseFloat(formData.ratePerLoad || "0").toLocaleString()}</p></div>
                 <div><p className="text-slate-400 text-xs">Assignment</p><p className={cn("font-medium", isLight ? "text-slate-800" : "text-white")}>{formData.assignmentType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</p></div>
               </div>
+
+              {calc.hasRoster && calc.truckBreakdown.length > 0 && (
+                <div className={cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700")}>
+                  <p className={cn("text-xs font-semibold mb-2 flex items-center gap-2", isLight ? "text-slate-700" : "text-slate-300")}><Truck className="w-3.5 h-3.5" />Multi-Truck Roster ({trucks.length} trucks)</p>
+                  <div className="space-y-1">
+                    {calc.truckBreakdown.map((tb, i) => (
+                      <div key={i} className={cn("flex items-center justify-between px-3 py-1.5 rounded-lg text-xs", isLight ? "bg-white border border-slate-100" : "bg-slate-800/50")}>
+                        <span className={cn("font-medium", isLight ? "text-slate-700" : "text-white")}>{tb.name}</span>
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-400">{tb.fill}/{tb.capacity} bbl</span>
+                          <Badge className="bg-[#1473FF]/15 text-[#1473FF] border-0 text-[10px]">{tb.loads} loads</Badge>
+                          <span className={cn("font-mono", isLight ? "text-slate-600" : "text-slate-300")}>{tb.volume.toLocaleString()} bbl</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {linkedAgreementId && linkedAgreementId !== "none" && (
+                <div className={cn("p-3 rounded-xl border flex items-center gap-3", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
+                  <Link2 className="w-4 h-4 text-green-500 shrink-0" />
+                  <p className={cn("text-xs font-medium", isLight ? "text-slate-700" : "text-white")}>Linked Agreement: #{linkedAgreementId}</p>
+                </div>
+              )}
 
               {formData.notes && (
                 <div className={cn("p-3 rounded-xl border text-sm", isLight ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}>
