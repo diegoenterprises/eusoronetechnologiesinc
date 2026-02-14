@@ -249,4 +249,44 @@ export const geofencingRouter = router({
 
     return { success: true, pickupGeofenceId: pickup.id, deliveryGeofenceId: delivery.id };
   }),
+
+  // Download geofences near a point for offline caching
+  getNearbyGeofences: protectedProcedure.input(z.object({
+    lat: z.number(),
+    lng: z.number(),
+    radiusMeters: z.number().default(5000),
+    loadId: z.number().optional(),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+
+    let conditions: any[] = [eq(geofences.isActive, true)];
+    if (input.loadId) conditions.push(eq(geofences.loadId, input.loadId));
+
+    const gfs = await db.select().from(geofences)
+      .where(conditions.length > 1 ? and(...conditions) : conditions[0])
+      .limit(500);
+
+    // Filter by distance client-side (MySQL doesn't have native geo queries)
+    const nearby = gfs.filter(g => {
+      if (!g.center) return true; // keep polygon geofences
+      const c = g.center as { lat: number; lng: number };
+      return isPointInCircle(input.lat, input.lng, c.lat, c.lng, input.radiusMeters);
+    });
+
+    return nearby.map(g => ({
+      id: g.id,
+      name: g.name,
+      type: g.type,
+      shape: g.shape,
+      center: g.center,
+      radiusMeters: g.radiusMeters || (g.radius ? Number(g.radius) * 1609.34 : 200),
+      polygon: g.polygon,
+      loadId: g.loadId,
+      alertOnEnter: g.alertOnEnter,
+      alertOnExit: g.alertOnExit,
+      alertOnDwell: g.alertOnDwell,
+      dwellThresholdSeconds: g.dwellThresholdSeconds,
+    }));
+  }),
 });
