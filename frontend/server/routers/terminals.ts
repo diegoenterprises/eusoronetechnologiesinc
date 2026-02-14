@@ -177,8 +177,20 @@ export const terminalsRouter = router({
    */
   getAppointments: protectedProcedure
     .input(z.object({ date: z.string().optional(), terminal: z.string().optional(), terminalId: z.string().optional() }))
-    .query(async () => {
-      return [];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+        const appts = await db.select().from(appointments)
+          .where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)))
+          .orderBy(appointments.scheduledAt).limit(50);
+        return appts.map(a => ({
+          id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '',
+          dock: a.dockNumber || '', status: a.status, driverId: a.driverId, loadId: a.loadId,
+        }));
+      } catch { return []; }
     }),
 
   /**
@@ -270,19 +282,20 @@ export const terminalsRouter = router({
   getDashboardSummary: protectedProcedure
     .input(z.object({ terminalId: z.string().optional() }))
     .query(async ({ input }) => {
-      return {
-        todayAppointments: 24,
-        trucksCheckedIn: 8,
-        currentlyLoading: 5,
-        rackUtilization: 65,
-        totalInventory: 425000,
-        inventoryUnit: "bbl",
-        avgLoadTime: 42,
-        avgLoadTimeUnit: "min",
-        alerts: [
-          { type: "maintenance", message: "Rack 3 scheduled maintenance at 2:00 PM" },
-        ],
-      };
+      const db = await getDb();
+      if (!db) return { todayAppointments: 0, trucksCheckedIn: 0, currentlyLoading: 0, rackUtilization: 0, totalInventory: 0, inventoryUnit: 'bbl', avgLoadTime: 0, avgLoadTimeUnit: 'min', alerts: [] };
+      try {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
+        const [checked] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'checked_in')));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'completed')));
+        return {
+          todayAppointments: total?.count || 0, trucksCheckedIn: checked?.count || 0,
+          currentlyLoading: completed?.count || 0, rackUtilization: 0,
+          totalInventory: 0, inventoryUnit: 'bbl', avgLoadTime: 0, avgLoadTimeUnit: 'min', alerts: [],
+        };
+      } catch { return { todayAppointments: 0, trucksCheckedIn: 0, currentlyLoading: 0, rackUtilization: 0, totalInventory: 0, inventoryUnit: 'bbl', avgLoadTime: 0, avgLoadTimeUnit: 'min', alerts: [] }; }
     }),
 
   /**
@@ -295,10 +308,25 @@ export const terminalsRouter = router({
       status: appointmentStatusSchema.optional(),
     }))
     .query(async ({ input }) => {
-      return {
-        appointments: [],
-        summary: { total: 0, completed: 0, inProgress: 0, upcoming: 0 },
-      };
+      const db = await getDb();
+      if (!db) return { appointments: [], summary: { total: 0, completed: 0, inProgress: 0, upcoming: 0 } };
+      try {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+        const conditions = [gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)];
+        if (input.status) conditions.push(eq(appointments.status, input.status as any));
+        const appts = await db.select().from(appointments).where(and(...conditions)).orderBy(appointments.scheduledAt).limit(50);
+        const mapped = await Promise.all(appts.map(async (a) => {
+          let driverName = 'Unassigned';
+          if (a.driverId) { const [d] = await db.select({ name: users.name }).from(users).where(eq(users.id, a.driverId)).limit(1); driverName = d?.name || `Driver #${a.driverId}`; }
+          return { id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '', dock: a.dockNumber || '', status: a.status, driver: driverName, loadId: a.loadId ? String(a.loadId) : null };
+        }));
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'completed')));
+        const [inProg] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'checked_in')));
+        const [sched] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'scheduled')));
+        return { appointments: mapped, summary: { total: total?.count || 0, completed: completed?.count || 0, inProgress: inProg?.count || 0, upcoming: sched?.count || 0 } };
+      } catch { return { appointments: [], summary: { total: 0, completed: 0, inProgress: 0, upcoming: 0 } }; }
     }),
 
   /**
@@ -483,7 +511,17 @@ export const terminalsRouter = router({
       limit: z.number().default(50),
     }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const completed = await db.select().from(appointments)
+          .where(eq(appointments.status, 'completed'))
+          .orderBy(desc(appointments.scheduledAt)).limit(input.limit || 50);
+        return completed.map(a => ({
+          id: String(a.id), type: a.type, dock: a.dockNumber || '',
+          completedAt: a.scheduledAt?.toISOString() || '', loadId: a.loadId ? String(a.loadId) : null,
+        }));
+      } catch { return []; }
     }),
 
   /**
@@ -651,8 +689,17 @@ export const terminalsRouter = router({
    */
   list: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(50) }))
-    .query(async () => {
-      return [];
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const tList = await db.select().from(terminals).limit(input.limit || 50);
+        return tList.map(t => ({
+          id: String(t.id), name: t.name, city: t.city, state: t.state,
+          location: t.city && t.state ? `${t.city}, ${t.state}` : 'Unknown',
+          status: t.status || 'active', type: 'terminal',
+        }));
+      } catch { return []; }
     }),
 
   /**
@@ -660,7 +707,13 @@ export const terminalsRouter = router({
    */
   getDirectorySummary: protectedProcedure
     .query(async () => {
-      return { total: 0, operational: 0, maintenance: 0, offline: 0, totalRacks: 0, totalTanks: 0, avgWaitTime: 0 };
+      const db = await getDb();
+      if (!db) return { total: 0, operational: 0, maintenance: 0, offline: 0, totalRacks: 0, totalTanks: 0, avgWaitTime: 0 };
+      try {
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(terminals);
+        const [active] = await db.select({ count: sql<number>`count(*)` }).from(terminals).where(eq(terminals.status, 'active'));
+        return { total: total?.count || 0, operational: active?.count || 0, maintenance: 0, offline: 0, totalRacks: 0, totalTanks: 0, avgWaitTime: 0 };
+      } catch { return { total: 0, operational: 0, maintenance: 0, offline: 0, totalRacks: 0, totalTanks: 0, avgWaitTime: 0 }; }
     }),
 
   /**
@@ -668,7 +721,19 @@ export const terminalsRouter = router({
    */
   getDashboardStats: protectedProcedure
     .query(async () => {
-      return { appointmentsToday: 0, loadsCompleted: 0, throughputToday: 0, alertsActive: 0, todayAppointments: 0, checkedIn: 0, loading: 0, rackUtilization: 0, inventoryLevel: 0 };
+      const db = await getDb();
+      if (!db) return { appointmentsToday: 0, loadsCompleted: 0, throughputToday: 0, alertsActive: 0, todayAppointments: 0, checkedIn: 0, loading: 0, rackUtilization: 0, inventoryLevel: 0 };
+      try {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'completed')));
+        const [checked] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'checked_in')));
+        return {
+          appointmentsToday: total?.count || 0, loadsCompleted: completed?.count || 0, throughputToday: 0, alertsActive: 0,
+          todayAppointments: total?.count || 0, checkedIn: checked?.count || 0, loading: 0, rackUtilization: 0, inventoryLevel: 0,
+        };
+      } catch { return { appointmentsToday: 0, loadsCompleted: 0, throughputToday: 0, alertsActive: 0, todayAppointments: 0, checkedIn: 0, loading: 0, rackUtilization: 0, inventoryLevel: 0 }; }
     }),
 
   /**
@@ -712,10 +777,40 @@ export const terminalsRouter = router({
   // Shipments
   checkInShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, checkedInAt: new Date().toISOString() })),
   dispatchShipment: protectedProcedure.input(z.object({ shipmentId: z.string() })).mutation(async ({ input }) => ({ success: true, shipmentId: input.shipmentId, dispatchedAt: new Date().toISOString() })),
-  getIncomingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
-  getIncomingStats: protectedProcedure.query(async () => ({ expected: 0, arrived: 0, late: 0, total: 0, enRoute: 0, delayed: 0 })),
-  getOutgoingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => []),
-  getOutgoingStats: protectedProcedure.query(async () => ({ scheduled: 0, dispatched: 0, pending: 0, total: 0, ready: 0, loading: 0 })),
+  getIncomingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const incoming = await db.select().from(appointments).where(sql`${appointments.type} IN ('delivery','unloading')`).orderBy(desc(appointments.scheduledAt)).limit(20);
+      return incoming.map(a => ({ id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '', dock: a.dockNumber || '', status: a.status }));
+    } catch { return []; }
+  }),
+  getIncomingStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { expected: 0, arrived: 0, late: 0, total: 0, enRoute: 0, delayed: 0 };
+    try {
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(sql`${appointments.type} IN ('delivery','unloading')`);
+      const [arrived] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(sql`${appointments.type} IN ('delivery','unloading')`, eq(appointments.status, 'completed')));
+      return { expected: total?.count || 0, arrived: arrived?.count || 0, late: 0, total: total?.count || 0, enRoute: 0, delayed: 0 };
+    } catch { return { expected: 0, arrived: 0, late: 0, total: 0, enRoute: 0, delayed: 0 }; }
+  }),
+  getOutgoingShipments: protectedProcedure.input(z.object({ date: z.string().optional(), search: z.string().optional() }).optional()).query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const outgoing = await db.select().from(appointments).where(sql`${appointments.type} IN ('pickup','loading')`).orderBy(desc(appointments.scheduledAt)).limit(20);
+      return outgoing.map(a => ({ id: String(a.id), type: a.type, scheduledAt: a.scheduledAt?.toISOString() || '', dock: a.dockNumber || '', status: a.status }));
+    } catch { return []; }
+  }),
+  getOutgoingStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { scheduled: 0, dispatched: 0, pending: 0, total: 0, ready: 0, loading: 0 };
+    try {
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(sql`${appointments.type} IN ('pickup','loading')`);
+      const [done] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(sql`${appointments.type} IN ('pickup','loading')`, eq(appointments.status, 'completed')));
+      return { scheduled: (total?.count || 0) - (done?.count || 0), dispatched: done?.count || 0, pending: 0, total: total?.count || 0, ready: 0, loading: 0 };
+    } catch { return { scheduled: 0, dispatched: 0, pending: 0, total: 0, ready: 0, loading: 0 }; }
+  }),
 
   // Alerts & Tanks
   getActiveAlerts: protectedProcedure.input(z.object({ terminal: z.string().optional() }).optional()).query(async () => []),
