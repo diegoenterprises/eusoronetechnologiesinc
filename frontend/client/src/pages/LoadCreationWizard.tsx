@@ -5,7 +5,7 @@
  * Google Maps Places Autocomplete for origin/destination
  */
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,8 @@ import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Truck, DollarSign, CheckCircle,
   ArrowRight, ArrowLeft, AlertTriangle, Info, Search,
-  Droplets, Wind, Box, Thermometer, Snowflake
+  Droplets, Wind, Box, Thermometer, Snowflake,
+  Scale, Link2, Plus, Trash2, Calculator
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -142,10 +143,81 @@ export default function LoadCreationWizard() {
   const destACRef = useRef<any>(null);
   // Map rendering handled by RouteMap component
 
+  // Multi-truck roster for variable capacity
+  const [truckRoster, setTruckRoster] = useState<Array<{ id: string; name: string; capacity: number; fill: number }>>([]);
+  const [usePerTruckCapacity, setUsePerTruckCapacity] = useState(false);
+  const [linkedAgreementId, setLinkedAgreementId] = useState("");
+  const addTruckToRoster = () => setTruckRoster(prev => [...prev, { id: `t${Date.now()}`, name: `Truck ${prev.length + 1}`, capacity: 200, fill: 190 }]);
+  const removeTruckFromRoster = (id: string) => setTruckRoster(prev => prev.filter(t => t.id !== id));
+  const updateTruckInRoster = (id: string, field: string, value: any) => setTruckRoster(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+
+  // Agreement query for contract integration
+  const agreementsQuery = (trpc as any).agreements?.list?.useQuery?.(
+    { status: "active" },
+    { enabled: !!(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") }
+  ) ?? { data: [], isLoading: false };
+
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
   const isLiquidOrGas = selectedTrailer?.animType === "liquid" || selectedTrailer?.animType === "gas";
   const isTanker = ["liquid_tank", "gas_tank", "cryogenic"].includes(formData.trailerType || "");
+
+  // Fleet calculator — computes trucks needed, loads, costs
+  const fleet = useMemo(() => {
+    const qty = Number(formData.quantity) || 0;
+    const rate = Number(formData.rate) || 0;
+    const distance = formData.distance || 0;
+    if (!selectedTrailer || qty <= 0) return null;
+
+    const hasRoster = usePerTruckCapacity && truckRoster.length > 0;
+
+    // Max capacity per truck based on unit type
+    const unitMaxMap: Record<string, number> = {
+      "Gallons": selectedTrailer.maxGal || 9000, "Barrels": 200, "Liters": 36000,
+      "Pallets": 24, "Units": 100, "Cases": 500, "Boxes": 1000,
+      "Pieces": 20, "Bundles": 12, "Linear Feet": 53, "Tons": 25,
+      "Cubic Yards": 35, "Cubic Feet": 1700, "Drums": 80, "PSI Units": 300,
+      "Cubic Meters": 40,
+    };
+    const unit = formData.quantityUnit || (isLiquidOrGas ? "Gallons" : "Pallets");
+    const defaultMax = unitMaxMap[unit] || 100;
+
+    let totalLoads = 0;
+    let truckBreakdown: Array<{ name: string; capacity: number; fill: number; loads: number; volume: number }> = [];
+
+    if (hasRoster) {
+      let remaining = qty;
+      const totalFill = truckRoster.reduce((s, t) => s + t.fill, 0);
+      for (const t of truckRoster) {
+        const proportion = totalFill > 0 ? t.fill / totalFill : 1 / truckRoster.length;
+        const allocated = Math.min(remaining, qty * proportion);
+        const loads = Math.ceil(allocated / t.fill);
+        truckBreakdown.push({ name: t.name, capacity: t.capacity, fill: t.fill, loads, volume: loads * t.fill });
+        totalLoads += loads;
+        remaining -= allocated;
+      }
+      if (remaining > 0 && truckBreakdown.length > 0) {
+        const extra = Math.ceil(remaining / truckRoster[0].fill);
+        truckBreakdown[0].loads += extra;
+        truckBreakdown[0].volume += extra * truckRoster[0].fill;
+        totalLoads += extra;
+      }
+    } else {
+      totalLoads = Math.ceil(qty / defaultMax);
+    }
+
+    const trucksNeeded = hasRoster ? truckRoster.length : totalLoads;
+    const PLATFORM_FEE_PCT = 0.08;
+    const totalJobCost = totalLoads * rate;
+    const platformFee = totalJobCost * PLATFORM_FEE_PCT;
+    const totalWithFee = totalJobCost + platformFee;
+
+    return {
+      totalLoads, trucksNeeded, unit, defaultMax,
+      totalJobCost, platformFee, totalWithFee,
+      hasRoster, truckBreakdown,
+    };
+  }, [formData.quantity, formData.quantityUnit, formData.rate, formData.distance, selectedTrailer, truckRoster, usePerTruckCapacity, isLiquidOrGas]);
 
   // Correct quantity units per trailer type — NO gallons for pallets
   const getQuantityUnits = (trailerId: string) => {
@@ -775,6 +847,65 @@ export default function LoadCreationWizard() {
                   />
                 </div>
               )}
+
+              {/* Fleet Calculator Panel */}
+              {fleet && fleet.totalLoads > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/30 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="w-4 h-4 text-[#1473FF]" />
+                      <span className="text-white font-bold text-sm">Fleet Calculator</span>
+                      <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} load{fleet.totalLoads !== 1 ? "s" : ""}</Badge>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button onClick={() => { setUsePerTruckCapacity(false); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", !usePerTruckCapacity ? "bg-[#1473FF] text-white" : "bg-slate-700/50 text-slate-400")}>Uniform</button>
+                      <button onClick={() => { setUsePerTruckCapacity(true); if (truckRoster.length === 0) addTruckToRoster(); }} className={cn("px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors", usePerTruckCapacity ? "bg-[#BE01FF] text-white" : "bg-slate-700/50 text-slate-400")}>Per Truck</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 text-center mb-3">
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-white text-lg font-bold">{fleet.totalLoads}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Trucks Needed</p><p className="text-[#1473FF] text-lg font-bold">{fleet.trucksNeeded}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Max Per Truck</p><p className="text-[#BE01FF] text-lg font-bold">{fleet.defaultMax.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</p></div>
+                  </div>
+
+                  {/* Per-Truck Roster */}
+                  {usePerTruckCapacity && (
+                    <div className="space-y-2 mt-3 pt-3 border-t border-slate-700/30">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider">Variable Capacity Roster</p>
+                      {truckRoster.map((t, i) => (
+                        <div key={t.id} className="flex items-center gap-2 p-2 rounded-lg bg-slate-800/40">
+                          <span className="text-[10px] font-mono text-slate-500 w-5 text-center">{i + 1}</span>
+                          <Input value={t.name} onChange={e => updateTruckInRoster(t.id, "name", e.target.value)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-24" />
+                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Max</span><Input type="number" value={t.capacity} onChange={e => updateTruckInRoster(t.id, "capacity", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
+                          <div className="flex items-center gap-1"><span className="text-[9px] text-slate-500">Fill</span><Input type="number" value={t.fill} onChange={e => updateTruckInRoster(t.id, "fill", parseInt(e.target.value) || 0)} className="h-7 text-xs bg-slate-700/50 border-slate-600/50 rounded w-16" /></div>
+                          <Badge variant="outline" className={cn("text-[9px] border-0", t.fill > 0 && t.capacity > 0 ? "bg-green-500/15 text-green-400" : "bg-slate-500/15 text-slate-400")}>{t.capacity > 0 ? Math.round((t.fill / t.capacity) * 100) : 0}%</Badge>
+                          <button onClick={() => removeTruckFromRoster(t.id)} className="text-red-400/60 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
+                        </div>
+                      ))}
+                      <button onClick={addTruckToRoster} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-slate-600/50 text-slate-400 text-xs hover:bg-slate-800/30 transition-colors">
+                        <Plus className="w-3 h-3" />Add Truck
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Per-truck load distribution */}
+                  {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-700/30 space-y-1">
+                      <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-1">Load Distribution</p>
+                      {fleet.truckBreakdown.map((tb, i) => (
+                        <div key={i} className="flex items-center justify-between px-2 py-1 rounded bg-slate-800/30 text-xs">
+                          <span className="text-white font-medium">{tb.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-400">{tb.fill}/{tb.capacity}</span>
+                            <Badge variant="outline" className="text-[9px] border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
+                            <span className="text-slate-300 font-mono">{tb.volume.toLocaleString()} {fleet.unit?.toLowerCase().slice(0, 3)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -833,6 +964,66 @@ export default function LoadCreationWizard() {
                 <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                   <div className="flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-400" /><span className="text-orange-400 text-sm font-medium">Hazmat load requires HM endorsement on CDL</span></div>
                   <p className="text-slate-400 text-xs mt-1">Carrier must have active hazmat endorsement and appropriate insurance coverage.</p>
+                </div>
+              )}
+
+              {/* Assignment Type */}
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Assignment Type</label>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {[
+                    { v: "open_market", label: "Open Market", desc: "Post to all carriers" },
+                    { v: "direct_carrier", label: "Direct Carrier", desc: "Assign to specific carrier" },
+                    { v: "broker", label: "Via Broker", desc: "Let a broker coordinate" },
+                    { v: "own_fleet", label: "Own Fleet", desc: "Use your own trucks" },
+                  ].map(opt => (
+                    <button key={opt.v} onClick={() => updateField("assignmentType", opt.v)}
+                      className={cn("p-3 rounded-xl border text-left transition-all", formData.assignmentType === opt.v ? "border-[#1473FF] bg-[#1473FF]/10" : "border-slate-700 bg-slate-800/30 hover:border-slate-600")}>
+                      <p className="text-white text-xs font-semibold">{opt.label}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Agreement/Contract Linking */}
+              {(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") && (
+                <div className="p-4 rounded-xl bg-[#1473FF]/5 border border-[#1473FF]/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Link2 className="w-4 h-4 text-[#1473FF]" />
+                    <span className="text-white font-semibold text-sm">Link to Agreement</span>
+                    <Badge variant="outline" className="text-[10px] border-[#1473FF]/30 text-[#1473FF]">Contract Integration</Badge>
+                  </div>
+                  <p className="text-slate-400 text-[10px] mb-2">Link this load to an existing agreement to auto-populate rate and payment terms.</p>
+                  <Select value={linkedAgreementId} onValueChange={(v) => {
+                    setLinkedAgreementId(v);
+                    const ag = (agreementsQuery.data || []).find((a: any) => String(a.id) === v);
+                    if (ag?.baseRate) updateField("rate", String(parseFloat(ag.baseRate)));
+                    if (ag?.ratePerMile) updateField("ratePerMile", String(parseFloat(ag.ratePerMile)));
+                  }}>
+                    <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select an active agreement (optional)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Agreement</SelectItem>
+                      {(agreementsQuery.data || []).map((ag: any) => (
+                        <SelectItem key={ag.id} value={String(ag.id)}>
+                          #{ag.agreementNumber || ag.id} - {ag.type?.replace(/_/g, " ")} - ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"}/load
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {linkedAgreementId && linkedAgreementId !== "none" && (() => {
+                    const ag = (agreementsQuery.data || []).find((a: any) => String(a.id) === linkedAgreementId);
+                    if (!ag) return null;
+                    return (
+                      <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4 text-green-400 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-xs font-medium">Linked: #{ag.agreementNumber || ag.id}</p>
+                          <p className="text-slate-400 text-[10px]">Rate: ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"} / {ag.rateType?.replace(/_/g, " ") || "per load"}</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -982,6 +1173,23 @@ export default function LoadCreationWizard() {
                   </div>
                 );
               })()}
+
+              {/* Platform Fee & Total Job Cost */}
+              {fleet && fleet.totalLoads > 1 && Number(formData.rate) > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Scale className="w-4 h-4 text-[#BE01FF]" />
+                    <span className="text-white font-bold text-sm">Multi-Load Job Cost</span>
+                    <Badge variant="outline" className="text-[10px] border-[#BE01FF]/30 text-[#BE01FF]">{fleet.totalLoads} loads</Badge>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Rate / Load</p><p className="text-white text-sm font-bold">${Number(formData.rate).toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Carrier Payout</p><p className="text-white text-sm font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Platform Fee (8%)</p><p className="text-[#BE01FF] text-sm font-bold">${fleet.platformFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-sm font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1026,7 +1234,45 @@ export default function LoadCreationWizard() {
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Pickup</p><p className="text-white">{formData.pickupDate || "N/A"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Delivery</p><p className="text-white">{formData.deliveryDate || "N/A"}</p></div>
                 <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Rate</p><p className="text-white">${formData.rate}{formData.ratePerMile ? ` ($${formData.ratePerMile}/mi)` : ""}</p></div>
+                {formData.assignmentType && <div className="p-3 rounded-lg bg-slate-700/30"><p className="text-xs text-slate-500">Assignment</p><p className="text-white">{formData.assignmentType?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}</p></div>}
               </div>
+
+              {/* Fleet Summary */}
+              {fleet && fleet.totalLoads > 1 && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border border-[#1473FF]/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Calculator className="w-4 h-4 text-[#1473FF]" />
+                    <span className="text-white font-bold text-sm">Fleet Summary</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total Loads</p><p className="text-[#1473FF] text-xl font-bold">{fleet.totalLoads}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Trucks</p><p className="text-[#BE01FF] text-xl font-bold">{fleet.trucksNeeded}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Carrier Payout</p><p className="text-white text-xl font-bold">${fleet.totalJobCost.toLocaleString()}</p></div>
+                    <div className="p-2 rounded-lg bg-slate-800/50"><p className="text-[10px] text-slate-500">Total w/ Fee</p><p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent text-xl font-bold">${fleet.totalWithFee.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></div>
+                  </div>
+                  {fleet.hasRoster && fleet.truckBreakdown.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-slate-700/30 space-y-1">
+                      {fleet.truckBreakdown.map((tb, i) => (
+                        <div key={i} className="flex items-center justify-between px-2 py-1 rounded bg-slate-800/30 text-xs">
+                          <span className="text-white font-medium">{tb.name}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-slate-400">{tb.fill}/{tb.capacity}</span>
+                            <Badge variant="outline" className="text-[9px] border-[#1473FF]/30 text-[#1473FF]">{tb.loads} loads</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Linked Agreement */}
+              {linkedAgreementId && linkedAgreementId !== "none" && (
+                <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center gap-2">
+                  <Link2 className="w-4 h-4 text-green-400 shrink-0" />
+                  <p className="text-white text-xs font-medium">Linked Agreement: #{linkedAgreementId}</p>
+                </div>
+              )}
               {/* ── Compartment Breakdown (multi-comp tankers) ── */}
               {(formData.compartments || 1) > 1 && formData.compartmentProducts?.length > 0 && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20">
