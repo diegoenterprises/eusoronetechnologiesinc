@@ -30,12 +30,14 @@ import {
   CircleDollarSign, MailCheck, BrainCircuit
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 type WalletTab = "overview" | "invoices" | "send" | "cards" | "bank" | "escrow" | "history";
 
 export default function Wallet() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<WalletTab>("overview");
   const [historyFilter, setHistoryFilter] = useState("all");
   const [showBalance, setShowBalance] = useState(true);
@@ -55,6 +57,8 @@ export default function Wallet() {
     onError: (err: any) => { toast.error(err?.message || "AI insights temporarily unavailable"); },
   }) || { mutate: () => toast.error("AI insights not available"), isPending: false };
 
+  const companyQuery = (trpc as any).companies?.getCompanyProfile?.useQuery?.() || { data: null };
+
   const balanceQuery = (trpc as any).wallet.getBalance.useQuery();
   const transactionsQuery = (trpc as any).wallet.getTransactions.useQuery({ limit: 50 });
   const cardsQuery = (trpc as any).wallet.getCards.useQuery();
@@ -72,6 +76,7 @@ export default function Wallet() {
   const balance = balanceQuery.data;
   const transactions = transactionsQuery.data || [];
   const cards = cardsQuery.data || [];
+  const cardHolderName = cards[0]?.cardholderName || companyQuery.data?.name || user?.name || 'Account Holder';
   const bankAccounts = bankQuery.data || [];
   const escrowHolds = escrowQuery.data || [];
 
@@ -628,7 +633,7 @@ export default function Wallet() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-slate-500 text-[10px]">CARD HOLDER</p>
-                  <p className="text-white text-sm font-medium">{cards[0]?.cardholderName || 'YOUR NAME'}</p>
+                  <p className="text-white text-sm font-medium">{cardHolderName}</p>
                 </div>
                 <div>
                   <p className="text-slate-500 text-[10px]">EXPIRES</p>
