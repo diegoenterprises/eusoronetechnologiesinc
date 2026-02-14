@@ -164,7 +164,7 @@ export default function TerminalSCADA() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">{overview.terminalName}</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{overview.terminalName}</h1>
           <div className="flex items-center gap-3 mt-1">
             <Badge className={cn(
               overview.status === "operational" 

@@ -97,7 +97,7 @@ export default function ClearinghouseDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">FMCSA Clearinghouse</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">FMCSA Clearinghouse</h1>
           <p className="text-slate-400 text-sm">Drug & Alcohol Clearinghouse compliance management</p>
         </div>
         <div className="flex items-center gap-3">

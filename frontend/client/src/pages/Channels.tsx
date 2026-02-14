@@ -47,7 +47,7 @@ export default function ChannelsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Company Channels</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Company Channels</h1>
         <Button className="bg-blue-600 hover:bg-blue-700">
           <Plus size={18} className="mr-2" />
           Create Channel

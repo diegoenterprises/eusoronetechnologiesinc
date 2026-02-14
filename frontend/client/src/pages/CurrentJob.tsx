@@ -35,7 +35,7 @@ export default function CurrentJob() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Current Job</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Current Job</h1>
           <p className="text-slate-400">Load #{job.loadNumber}</p>
         </div>
         <Badge className="bg-blue-500/20 text-blue-400">In Transit</Badge>

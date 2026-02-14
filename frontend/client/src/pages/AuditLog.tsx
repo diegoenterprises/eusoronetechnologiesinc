@@ -26,7 +26,7 @@ export default function AuditLog() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Audit Log Details</h1>
+      <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Audit Log Details</h1>
       
       <Card>
         <CardHeader>

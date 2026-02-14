@@ -80,7 +80,7 @@ export default function Erg() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white">Emergency Response Guidebook</h1>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Emergency Response Guidebook</h1>
             <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs">ERG 2024</Badge>
             <Badge className="bg-blue-500/20 text-blue-400 text-xs">
               <Sparkles className="w-3 h-3 mr-1" />

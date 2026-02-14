@@ -19,6 +19,7 @@ import {
   Phone,
   MessageSquare,
   X,
+  Star,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -119,7 +120,7 @@ export default function ZeunBreakdownReport() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-3xl font-bold text-white">Breakdown Diagnostic Results</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Breakdown Diagnostic Results</h1>
           <p className="text-slate-400 mt-1">Report ID: {reportId}</p>
         </div>
 
@@ -234,7 +235,7 @@ export default function ZeunBreakdownReport() {
                     </div>
                     <div className="text-right">
                       <div className="flex items-center gap-1">
-                        <span className="text-yellow-400">★</span>
+                        <Star className="w-4 h-4 text-yellow-400" />
                         <span className="font-bold text-white">{provider.rating}</span>
                       </div>
                       <p className="text-xs text-slate-400 mt-1">Rating</p>

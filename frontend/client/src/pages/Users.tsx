@@ -160,7 +160,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Users</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Users</h1>
           <p className="text-slate-400 mt-1">Manage user profiles and compliance documentation</p>
         </div>
       </div>

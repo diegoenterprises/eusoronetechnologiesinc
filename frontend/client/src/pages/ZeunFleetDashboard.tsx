@@ -59,9 +59,8 @@ export default function ZeunFleetDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Wrench className="h-6 w-6" />
-            Zeun Mechanics Fleet Dashboard
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+            Zeun Fleet Dashboard
           </h1>
           <p className="text-muted-foreground">Fleet breakdown and maintenance management</p>
         </div>

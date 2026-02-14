@@ -64,7 +64,7 @@ export default function ZeunProviderNetwork() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Provider Network</h1>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Provider Network</h1>
         <p className="text-slate-400 mt-1">Find repair facilities and service providers nationwide</p>
       </div>
 

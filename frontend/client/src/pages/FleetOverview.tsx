@@ -66,7 +66,7 @@ export default function FleetOverview() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Fleet Overview</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Fleet Overview</h1>
           <p className="text-slate-400 text-sm">Manage vehicles, maintenance, and compliance</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">

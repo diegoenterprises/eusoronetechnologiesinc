@@ -67,7 +67,7 @@ export default function ShipperCompliance() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2"><Factory className="w-8 h-8" />Shipper Compliance</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Shipper Compliance</h1>
           <p className="text-muted-foreground">Business Verification, Credit & Insurance</p>
         </div>
         <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>

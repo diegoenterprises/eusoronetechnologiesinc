@@ -410,7 +410,7 @@ export default function MessagingCenter() {
                               <p className="text-2xl font-bold text-white">${(message.metadata?.amount || 0).toFixed(2)} <span className="text-sm font-normal">USD</span></p>
                               {message.metadata?.status && (
                                 <p className={cn("text-xs mt-1 font-medium", message.metadata.status === "completed" ? "text-emerald-200" : "text-yellow-300")}>
-                                  {message.metadata.status === "completed" ? "✓ Completed" : "● Pending"}
+                                  {message.metadata.status === "completed" ? "Completed" : "Pending"}
                                 </p>
                               )}
                               {message.messageType === "payment_request" && !message.isOwn && message.metadata?.status !== "completed" && (

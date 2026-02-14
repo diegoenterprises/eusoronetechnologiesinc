@@ -148,7 +148,7 @@ export default function IndustryDirectory() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Industry Directory</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Industry Directory</h1>
           <p className="text-slate-400">Oil & Gas companies, carriers, and terminals</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">

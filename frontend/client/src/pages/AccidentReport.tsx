@@ -81,7 +81,7 @@ export default function AccidentReport() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Accident Reports</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Accident Reports</h1>
           <p className="text-slate-400 text-sm">Safety incident tracking and management</p>
         </div>
         <div className="flex items-center gap-2">

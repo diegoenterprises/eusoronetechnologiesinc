@@ -445,9 +445,9 @@ export default function RecurringLoadScheduler() {
                       <Badge className={cn("text-[10px] border", allOk ? "bg-green-500/15 text-green-500 border-green-500/30" : "bg-red-500/15 text-red-400 border-red-500/30")}>{allOk ? "Compliant" : "Violation"}</Badge>
                     </div>
                     <div className="grid grid-cols-3 gap-3 text-xs">
-                      <div><p className="text-slate-400">Daily Drive ({p.loadsPerDay} loads × {p.estimatedDriveHours}hr)</p><p className={cn("font-bold", hos.dailyDriveOk ? "text-green-500" : "text-red-400")}>{hos.totalDailyDrive}hr / {HOS_LIMITS.maxDrive}hr {hos.dailyDriveOk ? "✓" : "✗"}</p></div>
-                      <div><p className="text-slate-400">Daily Duty (est.)</p><p className={cn("font-bold", hos.dailyDutyOk ? "text-green-500" : "text-red-400")}>{hos.dailyDuty}hr / {HOS_LIMITS.maxDuty}hr {hos.dailyDutyOk ? "✓" : "✗"}</p></div>
-                      <div><p className="text-slate-400">Weekly ({p.days.length} days)</p><p className={cn("font-bold", hos.weeklyOk ? "text-green-500" : "text-red-400")}>{hos.weeklyHours}hr / {HOS_LIMITS.maxWeekly}hr {hos.weeklyOk ? "✓" : "✗"}</p></div>
+                      <div><p className="text-slate-400">Daily Drive ({p.loadsPerDay} loads × {p.estimatedDriveHours}hr)</p><p className={cn("font-bold", hos.dailyDriveOk ? "text-green-500" : "text-red-400")}>{hos.totalDailyDrive}hr / {HOS_LIMITS.maxDrive}hr {hos.dailyDriveOk ? "OK" : "OVER"}</p></div>
+                      <div><p className="text-slate-400">Daily Duty (est.)</p><p className={cn("font-bold", hos.dailyDutyOk ? "text-green-500" : "text-red-400")}>{hos.dailyDuty}hr / {HOS_LIMITS.maxDuty}hr {hos.dailyDutyOk ? "OK" : "OVER"}</p></div>
+                      <div><p className="text-slate-400">Weekly ({p.days.length} days)</p><p className={cn("font-bold", hos.weeklyOk ? "text-green-500" : "text-red-400")}>{hos.weeklyHours}hr / {HOS_LIMITS.maxWeekly}hr {hos.weeklyOk ? "OK" : "OVER"}</p></div>
                     </div>
                     {!allOk && <p className="text-[11px] text-red-400 mt-2">This schedule may require team drivers or schedule adjustment to maintain HOS compliance.</p>}
                   </div>

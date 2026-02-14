@@ -44,7 +44,7 @@ export default function BrokerMarketplace() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Marketplace
           </h1>
           <p className="text-slate-400 text-sm mt-1">Match loads with carriers for maximum margin</p>

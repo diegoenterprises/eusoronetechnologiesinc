@@ -94,8 +94,7 @@ export default function LiveNewsFeed() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Rss className="w-6 h-6 text-orange-400" />
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
             Live News Feed
           </h1>
           <p className="text-slate-400">Real-time industry news from {ENABLED_FEEDS.length} sources</p>

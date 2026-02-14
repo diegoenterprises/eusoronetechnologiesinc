@@ -97,7 +97,7 @@ export default function EusoTicket() {
             <FileText className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
               EusoTicket™
             </h1>
             <p className="text-slate-400 text-sm">Run Tickets & Bills of Lading</p>
