@@ -147,15 +147,25 @@ export default function LoadCreationWizard() {
   const [truckRoster, setTruckRoster] = useState<Array<{ id: string; name: string; capacity: number; fill: number }>>([]);
   const [usePerTruckCapacity, setUsePerTruckCapacity] = useState(false);
   const [linkedAgreementId, setLinkedAgreementId] = useState("");
-  const addTruckToRoster = () => setTruckRoster(prev => [...prev, { id: `t${Date.now()}`, name: `Truck ${prev.length + 1}`, capacity: 200, fill: 190 }]);
+  const maxTrucksAllowed = useMemo(() => {
+    const qty = Number(formData.quantity) || 0;
+    if (qty <= 0) return 1;
+    const avgFill = truckRoster.length > 0 ? Math.max(truckRoster.reduce((s, t) => s + t.fill, 0) / truckRoster.length, 1) : 190;
+    return Math.max(1, Math.ceil(qty / avgFill));
+  }, [formData.quantity, truckRoster]);
+  const addTruckToRoster = () => {
+    if (truckRoster.length >= maxTrucksAllowed) return;
+    setTruckRoster(prev => [...prev, { id: `t${Date.now()}`, name: `Truck ${prev.length + 1}`, capacity: 200, fill: 190 }]);
+  };
   const removeTruckFromRoster = (id: string) => setTruckRoster(prev => prev.filter(t => t.id !== id));
   const updateTruckInRoster = (id: string, field: string, value: any) => setTruckRoster(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
 
   // Agreement query for contract integration
-  const agreementsQuery = (trpc as any).agreements?.list?.useQuery?.(
+  const agreementsQueryRaw = (trpc as any).agreements?.list?.useQuery?.(
     { status: "active" },
     { enabled: !!(formData.assignmentType === "direct_carrier" || formData.assignmentType === "broker") }
-  ) ?? { data: [], isLoading: false };
+  ) ?? { data: null, isLoading: false };
+  const agreementsList: any[] = Array.isArray(agreementsQueryRaw.data) ? agreementsQueryRaw.data : (agreementsQueryRaw.data?.agreements ?? []);
 
   const selectedTrailer = TRAILER_TYPES.find(t => t.id === formData.trailerType);
   const isHazmat = selectedTrailer?.hazmat ?? false;
@@ -882,9 +892,15 @@ export default function LoadCreationWizard() {
                           <button onClick={() => removeTruckFromRoster(t.id)} className="text-red-400/60 hover:text-red-400 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       ))}
-                      <button onClick={addTruckToRoster} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-slate-600/50 text-slate-400 text-xs hover:bg-slate-800/30 transition-colors">
-                        <Plus className="w-3 h-3" />Add Truck
-                      </button>
+                      {truckRoster.length >= maxTrucksAllowed ? (
+                        <div className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-red-500/30 text-red-400/60 text-xs">
+                          <AlertTriangle className="w-3 h-3" />Max {maxTrucksAllowed} truck{maxTrucksAllowed !== 1 ? "s" : ""} for {Number(formData.quantity).toLocaleString()} {fleet?.unit?.toLowerCase() || "units"}
+                        </div>
+                      ) : (
+                        <button onClick={addTruckToRoster} className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-slate-600/50 text-slate-400 text-xs hover:bg-slate-800/30 transition-colors">
+                          <Plus className="w-3 h-3" />Add Truck ({truckRoster.length}/{maxTrucksAllowed})
+                        </button>
+                      )}
                     </div>
                   )}
 
@@ -997,14 +1013,14 @@ export default function LoadCreationWizard() {
                   <p className="text-slate-400 text-[10px] mb-2">Link this load to an existing agreement to auto-populate rate and payment terms.</p>
                   <Select value={linkedAgreementId} onValueChange={(v) => {
                     setLinkedAgreementId(v);
-                    const ag = (agreementsQuery.data || []).find((a: any) => String(a.id) === v);
+                    const ag = agreementsList.find((a: any) => String(a.id) === v);
                     if (ag?.baseRate) updateField("rate", String(parseFloat(ag.baseRate)));
                     if (ag?.ratePerMile) updateField("ratePerMile", String(parseFloat(ag.ratePerMile)));
                   }}>
                     <SelectTrigger className="bg-slate-700/50 border-slate-600/50 rounded-lg"><SelectValue placeholder="Select an active agreement (optional)" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Agreement</SelectItem>
-                      {(agreementsQuery.data || []).map((ag: any) => (
+                      {agreementsList.map((ag: any) => (
                         <SelectItem key={ag.id} value={String(ag.id)}>
                           #{ag.agreementNumber || ag.id} - {ag.type?.replace(/_/g, " ")} - ${ag.baseRate ? parseFloat(ag.baseRate).toLocaleString() : "N/A"}/load
                         </SelectItem>
@@ -1012,7 +1028,7 @@ export default function LoadCreationWizard() {
                     </SelectContent>
                   </Select>
                   {linkedAgreementId && linkedAgreementId !== "none" && (() => {
-                    const ag = (agreementsQuery.data || []).find((a: any) => String(a.id) === linkedAgreementId);
+                    const ag = agreementsList.find((a: any) => String(a.id) === linkedAgreementId);
                     if (!ag) return null;
                     return (
                       <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
