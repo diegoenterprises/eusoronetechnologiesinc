@@ -432,6 +432,135 @@ const ACTION_REGISTRY: Record<string, ActionDef> = {
       };
     },
   },
+  // ── Wallet / Financial Actions ─────────────────────────────────────────────
+
+  analyze_finances: {
+    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Get AI-powered financial insights and recommendations for your wallet",
+    schema: z.object({}),
+    handler: async (ctx) => {
+      const { esangAI } = await import("../_core/esangAI");
+      const db = await getDb();
+      if (!db) return { success: false, action: "analyze_finances", message: "Database unavailable" };
+      const dbUserId = await resolveDbUserId(ctx.userEmail);
+      // Gather wallet data
+      const result = await esangAI.analyzeFinancials({
+        userId: String(dbUserId), role: ctx.role, balance: 0,
+        recentTransactions: [], monthlyEarnings: 0, monthlyExpenses: 0, outstandingInvoices: 0,
+      });
+      return { success: true, action: "analyze_finances", message: result.summary, data: result as any };
+    },
+  },
+
+  // ── Zeun Mechanics Actions ────────────────────────────────────────────────
+
+  diagnose_issue: {
+    allowedRoles: ["DRIVER", "CARRIER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Get AI-powered diagnosis for a truck issue based on symptoms and fault codes",
+    schema: z.object({
+      symptoms: z.array(z.string()).min(1),
+      faultCodes: z.array(z.string()).optional(),
+      issueCategory: z.string().default("OTHER"),
+      severity: z.string().default("MEDIUM"),
+      canDrive: z.boolean().default(true),
+    }),
+    handler: async (_ctx, params) => {
+      const { esangAI } = await import("../_core/esangAI");
+      const p = params as { symptoms: string[]; faultCodes?: string[]; issueCategory: string; severity: string; canDrive: boolean };
+      const diag = await esangAI.diagnoseBreakdown({
+        symptoms: p.symptoms, faultCodes: p.faultCodes, issueCategory: p.issueCategory,
+        severity: p.severity, canDrive: p.canDrive,
+      });
+      return {
+        success: true, action: "diagnose_issue",
+        message: `Diagnosis: ${diag.primaryDiagnosis.issue} (${diag.primaryDiagnosis.probability}% confidence, ${diag.primaryDiagnosis.severity})`,
+        data: diag as any,
+      };
+    },
+  },
+
+  lookup_fault_code: {
+    allowedRoles: ["DRIVER", "CARRIER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Look up a truck DTC/SPN-FMI fault code and get detailed analysis",
+    schema: z.object({ code: z.string().min(1) }),
+    handler: async (_ctx, params) => {
+      const { esangAI } = await import("../_core/esangAI");
+      const p = params as { code: string };
+      const result = await esangAI.analyzeDTC(p.code);
+      return {
+        success: true, action: "lookup_fault_code",
+        message: `${p.code}: ${result.description} (${result.severity})${!result.canDrive ? " — DO NOT DRIVE" : ""}`,
+        data: result as any,
+      };
+    },
+  },
+
+  // ── Rate Analysis Actions ─────────────────────────────────────────────────
+
+  analyze_rate: {
+    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ADMIN", "SUPER_ADMIN"],
+    description: "Analyze a freight rate for fairness using AI market intelligence",
+    schema: z.object({
+      origin: z.string(), destination: z.string(), cargoType: z.string().default("general"),
+      proposedRate: z.number().positive(), distance: z.number().optional(),
+      hazmat: z.boolean().optional(), equipmentType: z.string().optional(),
+    }),
+    handler: async (_ctx, params) => {
+      const { esangAI } = await import("../_core/esangAI");
+      const p = params as any;
+      const result = await esangAI.analyzeRate(p);
+      return {
+        success: true, action: "analyze_rate",
+        message: `Rate analysis: ${result.fairnessScore}/100 fairness — ${result.recommendation}. ${result.reasoning}`,
+        data: result as any,
+      };
+    },
+  },
+
+  // ── Gamification Actions ──────────────────────────────────────────────────
+
+  generate_missions: {
+    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Generate personalized AI-powered missions for The Haul gamification system",
+    schema: z.object({
+      level: z.number().default(1),
+      recentActivity: z.array(z.string()).default([]),
+    }),
+    handler: async (ctx, params) => {
+      const { esangAI } = await import("../_core/esangAI");
+      const p = params as { level: number; recentActivity: string[] };
+      const result = await esangAI.generateMissions({
+        role: ctx.role, level: p.level, recentActivity: p.recentActivity, completedMissions: [],
+      });
+      return {
+        success: true, action: "generate_missions",
+        message: `Generated ${result.missions.length} personalized mission(s) for you.`,
+        data: result as any,
+      };
+    },
+  },
+
+  // ── Messaging Actions ─────────────────────────────────────────────────────
+
+  smart_reply: {
+    allowedRoles: ["SHIPPER", "CARRIER", "DRIVER", "BROKER", "CATALYST", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+    description: "Generate smart reply suggestions for a conversation",
+    schema: z.object({
+      messages: z.array(z.object({ sender: z.string(), text: z.string() })).min(1),
+    }),
+    handler: async (ctx, params) => {
+      const { esangAI } = await import("../_core/esangAI");
+      const p = params as { messages: Array<{ sender: string; text: string }> };
+      const result = await esangAI.generateSmartReplies({
+        messages: p.messages, userRole: ctx.role, userName: ctx.userName,
+      });
+      return {
+        success: true, action: "smart_reply",
+        message: `Suggested replies: ${result.replies.join(" | ")}`,
+        data: result as any,
+      };
+    },
+  },
 };
 
 // ─── Audit Log ───────────────────────────────────────────────────────────────

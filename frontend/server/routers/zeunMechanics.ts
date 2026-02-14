@@ -6,6 +6,7 @@
 import { z } from "zod";
 import { eq, desc, and, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { esangAI } from "../_core/esangAI";
 import { getDb } from "../db";
 import {
   zeunBreakdownReports,
@@ -166,25 +167,40 @@ export const zeunMechanicsRouter = router({
       status: "REPORTED",
     }).$returningId();
 
-    // Run AI diagnosis
-    const diagnosis = analyzeSymptoms(input.symptoms);
-    const canDriveResult = input.severity !== "CRITICAL" && input.canDrive;
+    // Run ESANG AI Gemini-powered diagnosis
+    const aiDiag = await esangAI.diagnoseBreakdown({
+      symptoms: input.symptoms,
+      faultCodes: input.faultCodes,
+      issueCategory: input.issueCategory,
+      severity: input.severity,
+      odometerMiles: input.currentOdometer,
+      fuelLevel: input.fuelLevelPercent,
+      defLevel: input.defLevelPercent,
+      oilPressure: input.oilPressurePsi,
+      coolantTemp: input.coolantTempF,
+      batteryVoltage: input.batteryVoltage,
+      canDrive: input.canDrive,
+      isHazmat: input.isHazmat,
+      driverNotes: input.driverNotes,
+    });
+    const diagnosis = aiDiag.primaryDiagnosis;
+    const canDriveResult = aiDiag.canDrive;
 
     // Store diagnostic result
     await db.insert(zeunDiagnosticResults).values({
       breakdownReportId: report.id,
-      confidence: String(diagnosis.probability * 100),
+      confidence: String(diagnosis.probability),
       primaryDiagnosis: diagnosis,
-      alternativeDiagnoses: [],
-      recommendedActions: canDriveResult ? ["Drive to nearest repair facility", "Monitor gauges closely"] : ["Do not drive", "Request tow or mobile service"],
+      alternativeDiagnoses: aiDiag.alternativeDiagnoses,
+      recommendedActions: aiDiag.recommendedActions,
       canDrive: canDriveResult,
-      outOfService: input.severity === "CRITICAL",
-      estimatedCostMin: "200",
-      estimatedCostMax: "1500",
+      outOfService: aiDiag.outOfService,
+      estimatedCostMin: String(aiDiag.estimatedCostMin),
+      estimatedCostMax: String(aiDiag.estimatedCostMax),
       estimatedRepairTimeMin: 1,
-      estimatedRepairTimeMax: 8,
+      estimatedRepairTimeMax: aiDiag.estimatedRepairHours,
       processingTimeMs: Date.now() - startTime,
-      aiModel: "zeun-pattern-v1",
+      aiModel: "esang-gemini-2.0-flash",
     });
 
     // Update report status
@@ -212,7 +228,12 @@ export const zeunMechanicsRouter = router({
         rating: p.rating ? Number(p.rating) : null,
         available24x7: p.available24x7,
       })),
-      estimatedCost: { min: 200, max: 1500 },
+      estimatedCost: { min: aiDiag.estimatedCostMin, max: aiDiag.estimatedCostMax },
+      partsLikelyNeeded: aiDiag.partsLikelyNeeded,
+      safetyWarnings: aiDiag.safetyWarnings,
+      preventiveTips: aiDiag.preventiveTips,
+      alternativeDiagnoses: aiDiag.alternativeDiagnoses,
+      aiModel: "esang-gemini-2.0-flash",
     };
   }),
 
@@ -766,10 +787,27 @@ export const zeunMechanicsRouter = router({
       };
     }
 
+    // Fallback: Use ESANG AI Gemini for deep fault code analysis
+    try {
+      const aiResult = await esangAI.analyzeDTC(normalizedCode);
+      if (aiResult.description && aiResult.description !== `Code ${normalizedCode}`) {
+        return {
+          found: true,
+          code: normalizedCode,
+          spn: normalizedCode.split("-")[0],
+          fmi: normalizedCode.split("-")[1],
+          ...aiResult,
+          estimatedCost: aiResult.estimatedCost,
+          estimatedTimeHours: aiResult.estimatedHours,
+          source: "esang-gemini-ai",
+        };
+      }
+    } catch { /* AI unavailable, return generic */ }
+
     return {
       found: false,
       code: normalizedCode,
-      description: "Code format not recognized. Try SPN-FMI format (e.g. 520342-31)",
+      description: "Code not recognized. Try SPN-FMI format (e.g. 520342-31)",
       severity: "MEDIUM",
       symptoms: [],
       commonCauses: [],

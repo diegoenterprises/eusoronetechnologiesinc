@@ -339,6 +339,70 @@ export const esangRouter = router({
         return ["How can you help me?", "What are my active tasks?", "Show my dashboard summary"];
     }
   }),
+  // ── ESANG AI Deep Integrations ──────────────────────────────────────────
+
+  analyzeRate: protectedProcedure.input(z.object({
+    origin: z.string(), destination: z.string(), cargoType: z.string().default("general"),
+    proposedRate: z.number().positive(), distance: z.number().optional(),
+    hazmat: z.boolean().optional(), equipmentType: z.string().optional(),
+  })).mutation(async ({ input }) => {
+    return esangAI.analyzeRate(input);
+  }),
+
+  walletInsights: protectedProcedure.input(z.object({
+    balance: z.number().default(0),
+    recentTransactions: z.array(z.object({ type: z.string(), amount: z.number(), date: z.string(), description: z.string() })).default([]),
+    monthlyEarnings: z.number().optional(), monthlyExpenses: z.number().optional(),
+    outstandingInvoices: z.number().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    return esangAI.analyzeFinancials({
+      userId: String(ctx.user.id), role: ctx.user.role || "USER",
+      balance: input.balance, recentTransactions: input.recentTransactions,
+      monthlyEarnings: input.monthlyEarnings, monthlyExpenses: input.monthlyExpenses,
+      outstandingInvoices: input.outstandingInvoices,
+    });
+  }),
+
+  smartReplies: protectedProcedure.input(z.object({
+    messages: z.array(z.object({ sender: z.string(), text: z.string() })).min(1),
+  })).mutation(async ({ ctx, input }) => {
+    return esangAI.generateSmartReplies({
+      messages: input.messages, userRole: ctx.user.role || "USER", userName: ctx.user.name || "User",
+    });
+  }),
+
+  generateMissions: protectedProcedure.input(z.object({
+    level: z.number().default(1),
+    recentActivity: z.array(z.string()).default([]),
+    completedMissions: z.array(z.string()).default([]),
+  })).mutation(async ({ ctx, input }) => {
+    return esangAI.generateMissions({
+      role: ctx.user.role || "USER", level: input.level,
+      recentActivity: input.recentActivity, completedMissions: input.completedMissions,
+    });
+  }),
+
+  diagnoseIssue: protectedProcedure.input(z.object({
+    symptoms: z.array(z.string()).min(1),
+    faultCodes: z.array(z.string()).optional(),
+    issueCategory: z.string().default("OTHER"),
+    severity: z.string().default("MEDIUM"),
+    canDrive: z.boolean().default(true),
+    isHazmat: z.boolean().optional(),
+    driverNotes: z.string().optional(),
+  })).mutation(async ({ input }) => {
+    return esangAI.diagnoseBreakdown(input);
+  }),
+
+  analyzeDTC: protectedProcedure.input(z.object({
+    code: z.string().min(1),
+    vehicleMake: z.string().optional(),
+    vehicleYear: z.number().optional(),
+    engine: z.string().optional(),
+  })).mutation(async ({ input }) => {
+    return esangAI.analyzeDTC(input.code, { make: input.vehicleMake, year: input.vehicleYear, engine: input.engine });
+  }),
+
   searchERG: protectedProcedure.input(z.object({ query: z.string() })).query(async ({ input }) => {
     const results = await searchMaterials(input.query, 20);
     return results.map(m => ({

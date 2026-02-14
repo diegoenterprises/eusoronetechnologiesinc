@@ -260,14 +260,32 @@ You have the ability to ACTUALLY PERFORM real operations in the EusoTrip platfor
 [ESANG_ACTION:{"action":"ACTION_NAME","params":{...}}]
 
 **Available actions (you will be told which ones are available for this user's role):**
+
+**Load Management:**
 - create_load: params = { origin, destination, cargoType, productName?, weight?, volume?, hazmatClass?, unNumber?, rate?, pickupDate?, deliveryDate?, specialInstructions? }
 - list_my_loads: params = { status?, limit? }
 - cancel_load: params = { loadId, reason? }
 - search_marketplace: params = { limit? }
 - submit_bid: params = { loadId, amount, notes? }
 - get_my_bids: params = { limit? }
-- erg_lookup: params = { unNumber?, materialName? }
 - get_load_stats: params = {}
+- analyze_rate: params = { origin, destination, cargoType, proposedRate, distance?, hazmat?, equipmentType? }
+
+**ERG / HazMat:**
+- erg_lookup: params = { unNumber?, materialName? }
+
+**EusoWallet Financial:**
+- analyze_finances: params = {} (analyzes wallet balance, transactions, cash flow)
+
+**Zeun Mechanics:**
+- diagnose_issue: params = { symptoms: string[], faultCodes?: string[], issueCategory?, severity?, canDrive? }
+- lookup_fault_code: params = { code: string } (J1939 SPN-FMI or OBD-II code)
+
+**The Haul Gamification:**
+- generate_missions: params = { level?, recentActivity?: string[] }
+
+**Messaging:**
+- smart_reply: params = { messages: [{sender, text}] }
 
 **Rules for action execution:**
 1. When a user asks you to DO something (book, create, cancel, bid, look up), ALWAYS include the action block.
@@ -1203,6 +1221,63 @@ Enhance each clause with specific, legally-precise language incorporating all th
     };
   }
 
+  // =========================================================================
+  // ZEUN MECHANICS — Gemini-Powered AI Diagnostics
+  // =========================================================================
+
+  async diagnoseBreakdown(request: {
+    symptoms: string[]; faultCodes?: string[]; issueCategory: string; severity: string;
+    vehicleMake?: string; vehicleYear?: number; odometerMiles?: number;
+    fuelLevel?: number; defLevel?: number; oilPressure?: number; coolantTemp?: number;
+    batteryVoltage?: number; canDrive: boolean; isHazmat?: boolean; driverNotes?: string;
+  }): Promise<{
+    primaryDiagnosis: { issue: string; probability: number; severity: string; description: string };
+    alternativeDiagnoses: Array<{ issue: string; probability: number; severity: string }>;
+    recommendedActions: string[]; canDrive: boolean; outOfService: boolean;
+    estimatedCostMin: number; estimatedCostMax: number; estimatedRepairHours: number;
+    partsLikelyNeeded: string[]; safetyWarnings: string[]; preventiveTips: string[];
+  }> {
+    const ZEUN_PROMPT = `You are ESANG AI powering Zeun Mechanics, an advanced AI truck diagnostic system. Expert in Class 8 trucks (Freightliner, Kenworth, Peterbilt, Volvo, International, Mack), engines (Cummins X15/ISX, Detroit DD13/DD15/DD16, PACCAR MX-13), aftertreatment (DPF/SCR/DEF/EGR), J1939 SPN/FMI fault codes, air brakes, electrical/CAN bus, FMCSA out-of-service criteria. Respond in VALID JSON only:
+{"primaryDiagnosis":{"issue":"string","probability":0-100,"severity":"LOW|MEDIUM|HIGH|CRITICAL","description":"string"},"alternativeDiagnoses":[{"issue":"string","probability":0-100,"severity":"string"}],"recommendedActions":["string"],"canDrive":boolean,"outOfService":boolean,"estimatedCostMin":number,"estimatedCostMax":number,"estimatedRepairHours":number,"partsLikelyNeeded":["string"],"safetyWarnings":["string"],"preventiveTips":["string"]}`;
+
+    const input = `Diagnose: Category=${request.issueCategory}, Severity=${request.severity}, Symptoms=[${request.symptoms.join(",")}]${request.faultCodes?.length ? `, Fault codes=[${request.faultCodes.join(",")}]` : ""}${request.vehicleMake ? `, Vehicle=${request.vehicleYear||""} ${request.vehicleMake}` : ""}${request.odometerMiles ? `, Odo=${request.odometerMiles}mi` : ""}, CanDrive=${request.canDrive}${request.isHazmat ? ", HAZMAT LOAD" : ""}, Telemetry: Fuel=${request.fuelLevel??"N/A"}% DEF=${request.defLevel??"N/A"}% Oil=${request.oilPressure??"N/A"}psi Coolant=${request.coolantTemp??"N/A"}F Batt=${request.batteryVoltage??"N/A"}V${request.driverNotes ? `, Notes: ${request.driverNotes}` : ""}`;
+
+    try {
+      if (!this.apiKey) return this.fallbackZeunDiag(request);
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ role: "user", parts: [{ text: ZEUN_PROMPT }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: input }] }],
+          generationConfig: { temperature: 0.3, topK: 20, topP: 0.85, maxOutputTokens: 2048 },
+          safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }],
+        }),
+      });
+      if (!resp.ok) return this.fallbackZeunDiag(request);
+      const data = await resp.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const parsed = JSON.parse((text.match(/\{[\s\S]*\}/) || [text])[0]);
+      return {
+        primaryDiagnosis: parsed.primaryDiagnosis || { issue: "Unknown", probability: 50, severity: "MEDIUM", description: "Requires inspection" },
+        alternativeDiagnoses: parsed.alternativeDiagnoses || [],
+        recommendedActions: parsed.recommendedActions || ["Contact roadside assistance"],
+        canDrive: parsed.canDrive ?? request.canDrive, outOfService: parsed.outOfService ?? (request.severity === "CRITICAL"),
+        estimatedCostMin: parsed.estimatedCostMin || 200, estimatedCostMax: parsed.estimatedCostMax || 1500,
+        estimatedRepairHours: parsed.estimatedRepairHours || 4,
+        partsLikelyNeeded: parsed.partsLikelyNeeded || [], safetyWarnings: parsed.safetyWarnings || [], preventiveTips: parsed.preventiveTips || [],
+      };
+    } catch (e) { console.error("[ZEUN AI] Diagnosis error:", e); return this.fallbackZeunDiag(request); }
+  }
+
+  private fallbackZeunDiag(r: any) {
+    return {
+      primaryDiagnosis: { issue: `${r.issueCategory} issue`, probability: 60, severity: r.severity, description: `Symptoms: ${r.symptoms?.slice(0,3).join(", ")}` },
+      alternativeDiagnoses: [], recommendedActions: r.canDrive ? ["Drive to nearest shop", "Monitor gauges"] : ["Do not drive", "Request tow"],
+      canDrive: r.severity !== "CRITICAL" && r.canDrive, outOfService: r.severity === "CRITICAL",
+      estimatedCostMin: 200, estimatedCostMax: 1500, estimatedRepairHours: 4,
+      partsLikelyNeeded: [], safetyWarnings: r.isHazmat ? ["Hazmat load - follow ERG if cargo compromised"] : [], preventiveTips: ["Regular preventive maintenance"],
+    };
+  }
+
   /**
    * Get conversation history for a user
    */
@@ -1222,6 +1297,112 @@ Enhance each clause with specific, legally-precise language incorporating all th
    */
   clearSpectraMatchHistory(userId: string): void {
     this.spectraMatchHistory.delete(userId);
+  }
+
+  // =========================================================================
+  // WALLET — Gemini-Powered Financial Insights
+  // =========================================================================
+
+  async analyzeFinancials(request: {
+    userId: string; role: string; balance: number;
+    recentTransactions: Array<{ type: string; amount: number; date: string; description: string }>;
+    monthlyEarnings?: number; monthlyExpenses?: number; outstandingInvoices?: number;
+  }): Promise<{ summary: string; insights: string[]; recommendations: string[]; cashFlowForecast: string; riskAlerts: string[] }> {
+    const prompt = `Analyze finances for a ${request.role} on EusoTrip. Balance: $${request.balance}, Monthly earnings: $${request.monthlyEarnings||0}, expenses: $${request.monthlyExpenses||0}, outstanding invoices: $${request.outstandingInvoices||0}. Recent: ${request.recentTransactions.slice(0,5).map(t=>`${t.type} $${t.amount}`).join(", ")}. JSON: {"summary":"string","insights":["string"],"recommendations":["string"],"cashFlowForecast":"string","riskAlerts":["string"]}`;
+    try {
+      if (!this.apiKey) return { summary: "AI unavailable", insights: [], recommendations: [], cashFlowForecast: "N/A", riskAlerts: [] };
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "You are ESANG AI financial analyst for freight professionals. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 1024 } }),
+      });
+      if (!resp.ok) throw new Error("API error");
+      const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+    } catch { return { summary: "Analysis unavailable", insights: [], recommendations: [], cashFlowForecast: "N/A", riskAlerts: [] }; }
+  }
+
+  // =========================================================================
+  // MESSAGING — Gemini-Powered Smart Replies & Summaries
+  // =========================================================================
+
+  async generateSmartReplies(request: {
+    messages: Array<{ sender: string; text: string }>; userRole: string; userName: string;
+  }): Promise<{ replies: string[]; sentiment: string; summary: string }> {
+    const prompt = `Generate smart reply suggestions for a ${request.userRole} named ${request.userName}. Recent messages:\n${request.messages.slice(-6).map(m=>`[${m.sender}]: ${m.text}`).join("\n")}\nJSON: {"replies":["3 professional replies"],"sentiment":"positive|neutral|negative|urgent","summary":"one-sentence summary"}`;
+    try {
+      if (!this.apiKey) return { replies: [], sentiment: "neutral", summary: "" };
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI: generate smart freight conversation replies. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 512 } }),
+      });
+      if (!resp.ok) throw new Error("API error");
+      const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+    } catch { return { replies: [], sentiment: "neutral", summary: "" }; }
+  }
+
+  // =========================================================================
+  // LOAD MANAGEMENT — Gemini-Powered Rate Analysis
+  // =========================================================================
+
+  async analyzeRate(request: {
+    origin: string; destination: string; cargoType: string; proposedRate: number;
+    distance?: number; hazmat?: boolean; weight?: number; equipmentType?: string;
+  }): Promise<{ fairnessScore: number; recommendation: string; reasoning: string; marketEstimate: { low: number; mid: number; high: number }; factors: Array<{ name: string; impact: string; score: number }>; counterOffer?: number }> {
+    const prompt = `Analyze freight rate: ${request.origin} to ${request.destination}, ${request.cargoType}${request.hazmat?" HAZMAT":""},${request.distance?` ${request.distance}mi,`:""} proposed $${request.proposedRate}. JSON: {"fairnessScore":0-100,"recommendation":"accept|negotiate|reject","reasoning":"string","marketEstimate":{"low":number,"mid":number,"high":number},"factors":[{"name":"string","impact":"positive|negative|neutral","score":number}],"counterOffer":number_or_null}`;
+    try {
+      if (!this.apiKey) { const d = request.distance||500; const rpm = request.proposedRate/d; return { fairnessScore: rpm>2?70:40, recommendation: rpm>2?"accept":"negotiate", reasoning: "Offline", marketEstimate: { low: d*1.8, mid: d*2.5, high: d*3.2 }, factors: [] }; }
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI freight rate analyst. US market knowledge. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1024 } }),
+      });
+      if (!resp.ok) throw new Error("API error");
+      const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+    } catch { return { fairnessScore: 50, recommendation: "negotiate", reasoning: "Unavailable", marketEstimate: { low: 0, mid: 0, high: 0 }, factors: [] }; }
+  }
+
+  // =========================================================================
+  // GAMIFICATION — Gemini-Powered Personalized Missions
+  // =========================================================================
+
+  async generateMissions(request: {
+    role: string; level: number; recentActivity: string[]; completedMissions: string[];
+  }): Promise<{ missions: Array<{ title: string; description: string; xpReward: number; difficulty: string; category: string }> }> {
+    const prompt = `Generate 3 personalized gamification missions for Level ${request.level} ${request.role}. Recent: ${request.recentActivity.slice(0,3).join(",")}. Done: ${request.completedMissions.slice(0,3).join(",")}. JSON: {"missions":[{"title":"string","description":"string","xpReward":number,"difficulty":"easy|medium|hard|legendary","category":"safety|efficiency|community|learning"}]}`;
+    try {
+      if (!this.apiKey) return { missions: [] };
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI mission generator for freight gamification. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }),
+      });
+      if (!resp.ok) throw new Error("API error");
+      const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+    } catch { return { missions: [] }; }
+  }
+
+  // =========================================================================
+  // DTC FAULT CODE — Gemini-Powered Deep Analysis
+  // =========================================================================
+
+  async analyzeDTC(code: string, vehicleInfo?: { make?: string; year?: number; engine?: string }): Promise<{
+    description: string; severity: string; category: string; symptoms: string[];
+    commonCauses: string[]; canDrive: boolean; repairUrgency: string;
+    estimatedCost: { min: number; max: number }; estimatedHours: number;
+    affectedSystems: string[]; techTips: string[];
+  }> {
+    const prompt = `Analyze truck DTC fault code: ${code}${vehicleInfo?.make ? `, Vehicle: ${vehicleInfo.year||""} ${vehicleInfo.make}` : ""}${vehicleInfo?.engine ? `, Engine: ${vehicleInfo.engine}` : ""}. JSON: {"description":"string","severity":"LOW|MEDIUM|HIGH|CRITICAL","category":"string","symptoms":["string"],"commonCauses":["string"],"canDrive":boolean,"repairUrgency":"string","estimatedCost":{"min":number,"max":number},"estimatedHours":number,"affectedSystems":["string"],"techTips":["string"]}`;
+    try {
+      if (!this.apiKey) return { description: `Code ${code}`, severity: "MEDIUM", category: "Unknown", symptoms: [], commonCauses: [], canDrive: true, repairUrgency: "Schedule inspection", estimatedCost: { min: 0, max: 0 }, estimatedHours: 0, affectedSystems: [], techTips: [] };
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI: expert J1939/OBD-II truck fault code analyst. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1024 } }),
+      });
+      if (!resp.ok) throw new Error("API error");
+      const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
+    } catch { return { description: `Code ${code}`, severity: "MEDIUM", category: "Unknown", symptoms: [], commonCauses: [], canDrive: true, repairUrgency: "Schedule inspection", estimatedCost: { min: 0, max: 0 }, estimatedHours: 0, affectedSystems: [], techTips: [] }; }
   }
 }
 
