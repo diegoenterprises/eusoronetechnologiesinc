@@ -1097,11 +1097,11 @@ export default function LoadCreationWizard() {
       </Card>
 
       <div className="flex items-center justify-between">
-        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => setStep(s => s - 1)} disabled={step === 0}>
+        <Button variant="outline" className="bg-slate-800/50 border-slate-700/50 hover:bg-slate-700 rounded-lg" onClick={() => setStep(step - 1)} disabled={step === 0}>
           <ArrowLeft className="w-4 h-4 mr-2" />Back
         </Button>
         {step < STEPS.length - 1 ? (
-          <Button className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 hover:from-blue-600 hover:via-purple-600 hover:to-purple-700 rounded-lg" onClick={() => setStep(s => s + 1)} disabled={!canProceed()}>
+          <Button className="bg-gradient-to-r from-blue-500 via-purple-500 to-purple-600 hover:from-blue-600 hover:via-purple-600 hover:to-purple-700 rounded-lg" onClick={() => setStep(step + 1)} disabled={!canProceed()}>
             Next<ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         ) : (

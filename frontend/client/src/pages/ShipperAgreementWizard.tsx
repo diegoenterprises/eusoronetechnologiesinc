@@ -72,6 +72,7 @@ export default function ShipperAgreementWizard() {
   const [effDate, setEffDate] = useState(new Date().toISOString().split("T")[0]);
   const [expDate, setExpDate] = useState("");
   const [lanes, setLanes] = useState<Lane[]>([]);
+  const updateLane = (i: number, field: keyof Lane, value: string) => setLanes(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
   const [notes, setNotes] = useState("");
   const [agId, setAgId] = useState<number|null>(null);
   const [agNum, setAgNum] = useState(""); const [genContent, setGenContent] = useState("");

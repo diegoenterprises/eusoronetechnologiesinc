@@ -240,7 +240,7 @@ export function useEncryption({ userId, enabled = true }: UseEncryptionOptions) 
           creatorPubKey
         );
         const raw = await crypto.subtle.exportKey("raw", groupKey);
-        const rawBase64 = btoa(String.fromCharCode(...new Uint8Array(raw)));
+        const rawBase64 = btoa(String.fromCharCode.apply(null, Array.from(new Uint8Array(raw))));
         await storeGroupKey(channelId, rawBase64);
         groupKeyCache.current.set(channelId, groupKey);
         return true;

@@ -193,10 +193,12 @@ export const runTicketsRouter = router({
 
       // 3. HAZMAT COMPLIANCE CHECK
       if (bolIsHazmat || input.bolHazmatClass) {
-        if (!bolUnNumber) {
+        if (!bolUnNumber && input.bolHazmatClass) {
+          status = "COMPLIANCE_FAILURE";
+          errors.push("HazMat cargo declared with hazmat class but missing required UN number on BOL. Loading PROHIBITED until corrected.");
+        } else if (!bolUnNumber) {
           warnings.push("HazMat cargo declared but no UN number on BOL.");
         }
-        // In production: check driver HazMat endorsement, vehicle inspection, placard requirements
       }
 
       // 4. Build validation report
