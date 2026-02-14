@@ -44,6 +44,7 @@ import InTransitPage from "./pages/InTransit";
 import CarrierAnalyticsPage from "./pages/CarrierAnalytics";
 import FleetPage from "./pages/Fleet";
 import DriversPage from "./pages/Drivers";
+import FleetCommandCenter from "./pages/FleetCommandCenter";
 import EarningsPage from "./pages/Earnings";
 import ErgPage from "./pages/Erg";
 import Login from "./pages/Login";
@@ -166,6 +167,8 @@ import ZeunBreakdown from "./pages/ZeunBreakdown";
 import ZeunFleetDashboard from "./pages/ZeunFleetDashboard";
 import ZeunAdminDashboard from "./pages/ZeunAdminDashboard";
 import HotZones from "./pages/HotZones";
+import RatingsReviews from "./pages/RatingsReviews";
+import ClaimsPage from "./pages/Claims";
 import MarketPricing from "./pages/MarketPricing";
 import CarrierCompliance from "./pages/CarrierCompliance";
 import FuelPrices from "./pages/FuelPrices";
@@ -247,6 +250,8 @@ function Router() {
       <Route path={"/zeun-fleet"} component={guard(ALL, <ZeunFleetDashboard />)} />
       <Route path={"/admin/zeun"} component={guard(ADMN, <ZeunAdminDashboard />)} />
       <Route path={"/hot-zones"} component={guard(ALL, <HotZones />)} />
+      <Route path={"/ratings"} component={guard(ALL, <RatingsReviews />)} />
+      <Route path={"/claims"} component={guard(ALL, <ClaimsPage />)} />
       <Route path={"/market-pricing"} component={guard(ALL, <MarketPricing />)} />
 
       {/* ============================================ */}
@@ -278,9 +283,11 @@ function Router() {
       <Route path={"/loads/transit"} component={guard([...CARR, "DRIVER"], <InTransitPage />)} />
       <Route path={"/loads/:loadId/bids"} component={guard(LOAD, <LoadBids />)} />
       <Route path={"/load/:loadId"} component={guard(LOAD, <LoadDetails />)} />
-      <Route path={"/fleet"} component={guard(CARR, <FleetManagement />)} />
-      <Route path={"/drivers"} component={guard(CARR, <DriversPage />)} />
-      <Route path={"/earnings"} component={guard([...CARR, "DRIVER", "CATALYST", "ESCORT"], <EarningsPage />)} />
+      <Route path={"/fleet"} component={guard(CARR, <FleetCommandCenter />)} />
+      <Route path={"/fleet-management"} component={guard(CARR, <FleetCommandCenter />)} />
+      <Route path={"/driver/management"} component={guard(CARR, <FleetCommandCenter />)} />
+      <Route path={"/drivers"} component={guard(CARR, <FleetCommandCenter />)} />
+      <Route path={"/earnings"} component={guard([...CARR, "DRIVER", "CATALYST", "ESCORT"], <WalletPage />)} />
       <Route path={"/analytics"} component={guard([...CARR, "BROKER"], <Analytics />)} />
 
       {/* ============================================ */}

@@ -240,13 +240,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Driver management"
     },
     { 
-      icon: "TrendingUp", 
-      label: "Earnings", 
-      path: "/earnings", 
-      badge: 0,
-      description: "Revenue and commissions"
-    },
-    { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
@@ -272,7 +265,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Account balance"
+      description: "Wallet, earnings & payments"
     },
     { 
       icon: "MessageSquare", 

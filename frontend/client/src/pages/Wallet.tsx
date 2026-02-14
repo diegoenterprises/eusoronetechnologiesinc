@@ -48,8 +48,12 @@ export default function Wallet() {
   const [invoiceFilter, setInvoiceFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [aiInsights, setAiInsights] = useState<any>(null);
-  const [aiLoading, setAiLoading] = useState(false);
   const [payingInvoice, setPayingInvoice] = useState<string | null>(null);
+
+  const aiInsightsMutation = (trpc as any).esang?.walletInsights?.useMutation?.({
+    onSuccess: (data: any) => { setAiInsights(data); },
+    onError: (err: any) => { toast.error(err?.message || "AI insights temporarily unavailable"); },
+  }) || { mutate: () => toast.error("AI insights not available"), isPending: false };
 
   const balanceQuery = (trpc as any).wallet.getBalance.useQuery();
   const transactionsQuery = (trpc as any).wallet.getTransactions.useQuery({ limit: 50 });
@@ -182,23 +186,18 @@ export default function Wallet() {
             variant="outline"
             size="sm"
             className={`rounded-lg ${isLight ? 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700' : 'bg-slate-700/50 border-slate-600/50 hover:bg-slate-700 text-white'}`}
-            onClick={async () => {
-              setAiLoading(true);
-              try {
-                const result = await (trpc as any).esang.walletInsights.mutate({
-                  balance: balance?.available || 0,
-                  recentTransactions: (transactions || []).slice(0, 10).map((t: any) => ({ type: t.type || "transfer", amount: Number(t.amount) || 0, date: t.date || new Date().toISOString(), description: t.description || t.type || "" })),
-                  monthlyEarnings: balance?.monthlyEarnings || 0,
-                  monthlyExpenses: balance?.monthlyExpenses || 0,
-                  outstandingInvoices: paySummary?.outstanding || 0,
-                });
-                setAiInsights(result);
-              } catch { toast.error("AI insights unavailable"); }
-              setAiLoading(false);
+            onClick={() => {
+              aiInsightsMutation.mutate({
+                balance: balance?.available || 0,
+                recentTransactions: (transactions || []).slice(0, 10).map((t: any) => ({ type: t.type || "transfer", amount: Number(t.amount) || 0, date: t.date || new Date().toISOString(), description: t.description || t.type || "" })),
+                monthlyEarnings: balance?.monthlyEarnings || 0,
+                monthlyExpenses: balance?.monthlyExpenses || 0,
+                outstandingInvoices: paySummary?.outstanding || 0,
+              });
             }}
-            disabled={aiLoading}
+            disabled={aiInsightsMutation.isPending}
           >
-            <BrainCircuit className={`w-4 h-4 mr-1 ${aiLoading ? 'animate-spin' : ''}`} />{aiLoading ? "Analyzing..." : "AI Insights"}
+            <BrainCircuit className={`w-4 h-4 mr-1 ${aiInsightsMutation.isPending ? 'animate-spin' : ''}`} />{aiInsightsMutation.isPending ? "Analyzing..." : "AI Insights"}
           </Button>
           <Button
             variant="outline"

@@ -1,160 +1,124 @@
 /**
- * ANALYTICS PAGE
- * 100% Dynamic - No mock data
- * Theme-aware | Brand gradient | Shipper design standard
+ * ANALYTICS — Business Intelligence Dashboard
+ * Premium metrics, trends, and performance insights.
+ * 100% Dynamic | Theme-aware | Brand gradient.
  */
 
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  TrendingUp, DollarSign, Package, Truck, Users,
-  Calendar, Download, ArrowUpRight, ArrowDownRight, BarChart3
+  TrendingUp, DollarSign, Package, Truck,
+  Calendar, Download, ArrowUpRight, ArrowDownRight, BarChart3, Activity, Target, Zap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Analytics() {
   const { theme } = useTheme();
-  const isLight = theme === "light";
+  const L = theme === "light";
   const [activeTab, setActiveTab] = useState("overview");
   const [period, setPeriod] = useState("month");
 
-  const summaryQuery = (trpc as any).analytics.getSummary.useQuery({ period });
-  const trendsQuery = (trpc as any).analytics.getTrends.useQuery({ period });
+  const summaryQuery = (trpc as any).analytics?.getSummary?.useQuery?.({ period }) || { data: null, isLoading: false };
+  const trendsQuery = (trpc as any).analytics?.getTrends?.useQuery?.({ period }) || { data: null, isLoading: false };
   const summary = summaryQuery.data;
 
-  const cardCls = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
-  const titleCls = cn("text-lg font-semibold", isLight ? "text-slate-800" : "text-white");
-  const cellCls = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
+  const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
+  const titleCls = cn("text-sm font-semibold", L ? "text-slate-800" : "text-white");
+  const cellCls = cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
 
-  const periodTabs = [
-    { id: "week", label: "Week" },
-    { id: "month", label: "Month" },
-    { id: "year", label: "Year" },
-  ];
-
-  const viewTabs = [
-    { id: "overview", label: "Overview" },
-    { id: "revenue", label: "Revenue" },
-    { id: "loads", label: "Loads" },
-  ];
-
-  const ChangeIndicator = ({ value }: { value: number | undefined }) => {
+  const CI = ({ value }: { value: number | undefined }) => {
     if (!value) return null;
     return (
-      <span className={cn("flex items-center gap-0.5 text-xs font-bold", value >= 0 ? "text-green-500" : "text-red-500")}>
-        {value >= 0 ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
+      <span className={cn("flex items-center gap-0.5 text-[10px] font-bold", value >= 0 ? "text-green-500" : "text-red-500")}>
+        {value >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
         {Math.abs(value)}%
       </span>
     );
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-[1200px] mx-auto">
+    <div className="p-4 md:p-6 space-y-5">
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Analytics</h1>
-          <p className={cn("text-sm mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Track performance and business metrics</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Analytics</h1>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+              <Activity className="w-3 h-3 text-blue-500" />
+              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Insights</span>
+            </div>
+          </div>
+          <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Business intelligence & performance metrics</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            {periodTabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setPeriod(tab.id)}
-                className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium transition-all",
-                  period === tab.id
-                    ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
-                    : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                )}
-              >
-                {tab.label}
-              </button>
+        <div className="flex items-center gap-2">
+          <div className={cn("flex items-center gap-1 p-1 rounded-xl", L ? "bg-slate-100" : "bg-slate-800/60")}>
+            {["week", "month", "year"].map((t) => (
+              <button key={t} onClick={() => setPeriod(t)} className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                period === t ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500" : "text-slate-400"
+              )}>{t.charAt(0).toUpperCase() + t.slice(1)}</button>
             ))}
           </div>
-          <Button variant="outline" className={cn("rounded-xl text-sm", isLight ? "border-slate-200 hover:bg-slate-50" : "border-slate-700 hover:bg-slate-700")}>
-            <Download className="w-4 h-4 mr-2" />Export
-          </Button>
+          <Button size="sm" variant="outline" className="rounded-xl"><Download className="w-3.5 h-3.5 mr-1.5" />Export</Button>
         </div>
       </div>
 
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* ── Pulse Metrics ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "Revenue", value: `$${(summary?.revenue || 0).toLocaleString()}`, icon: <DollarSign className="w-5 h-5" />, color: "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent", bg: "bg-emerald-500/15", change: summary?.revenueChange },
-          { label: "Loads", value: summary?.totalLoads || 0, icon: <Package className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/15", change: summary?.loadsChange },
-          { label: "Miles", value: ((summary as any)?.distanceLogged || (summary as any)?.totalMiles || 0).toLocaleString(), icon: <Truck className="w-5 h-5" />, color: "text-purple-500", bg: "bg-purple-500/15", change: undefined },
-          { label: "Avg $/Mile", value: `$${summary?.avgRatePerMile?.toFixed(2) || "0.00"}`, icon: <TrendingUp className="w-5 h-5" />, color: "text-cyan-500", bg: "bg-cyan-500/15", change: undefined },
-        ].map((stat) => (
-          <Card key={stat.label} className={cardCls}>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={cn("p-3 rounded-xl", stat.bg)}>
-                    <span className={stat.color}>{stat.icon}</span>
-                  </div>
-                  <div>
-                    {summaryQuery.isLoading ? (
-                      <Skeleton className={cn("h-7 w-16 rounded-lg", isLight ? "bg-slate-200" : "")} />
-                    ) : (
-                      <p className={cn("text-xl font-bold", stat.color)}>{stat.value}</p>
-                    )}
-                    <p className="text-[10px] text-slate-400 uppercase">{stat.label}</p>
-                  </div>
-                </div>
-                <ChangeIndicator value={stat.change} />
-              </div>
-            </CardContent>
-          </Card>
+          { l: "Revenue", v: `$${(summary?.revenue || 0).toLocaleString()}`, I: DollarSign, c: "text-emerald-500", b: "from-emerald-500/10 to-emerald-600/5", ch: summary?.revenueChange },
+          { l: "Loads", v: summary?.totalLoads || 0, I: Package, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5", ch: summary?.loadsChange },
+          { l: "Miles", v: ((summary as any)?.distanceLogged || (summary as any)?.totalMiles || 0).toLocaleString(), I: Truck, c: "text-purple-500", b: "from-purple-500/10 to-purple-600/5" },
+          { l: "Avg $/Mile", v: `$${summary?.avgRatePerMile?.toFixed(2) || "0.00"}`, I: TrendingUp, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5" },
+        ].map((s: any) => (
+          <div key={s.l} className={cn("rounded-2xl p-4 bg-gradient-to-br border", L ? `${s.b} border-slate-200/60` : `${s.b} border-slate-700/30`)}>
+            <div className="flex items-center justify-between mb-2">
+              <s.I className={cn("w-4 h-4", s.c)} />
+              {s.ch && <CI value={s.ch} />}
+            </div>
+            {summaryQuery.isLoading ? <Skeleton className="h-7 w-20 rounded-lg" /> : (
+              <p className={cn("text-2xl font-bold tracking-tight", s.c)}>{s.v}</p>
+            )}
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{s.l}</p>
+          </div>
         ))}
       </div>
 
       {/* ── View Tabs ── */}
-      <div className="flex items-center gap-2">
-        {viewTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={cn(
-              "px-4 py-2 rounded-full text-sm font-medium transition-all",
-              activeTab === tab.id
-                ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md"
-                : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-            )}
-          >
-            {tab.label}
-          </button>
+      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-slate-800/60")}>
+        {[{ id: "overview", l: "Overview", I: BarChart3 }, { id: "revenue", l: "Revenue", I: DollarSign }, { id: "loads", l: "Loads", I: Package }].map((tab: any) => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all",
+            activeTab === tab.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500 hover:text-slate-700" : "text-slate-400 hover:text-white"
+          )}><tab.I className="w-3.5 h-3.5" />{tab.l}</button>
         ))}
       </div>
 
       {/* ── Overview Tab ── */}
       {activeTab === "overview" && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className={cardCls}>
-            <CardHeader className="pb-3">
-              <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
-                <BarChart3 className="w-5 h-5 text-blue-500" />Performance Trends
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <Card className={cc}>
+            <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+              <BarChart3 className="w-4 h-4 text-blue-500" />
+              <span className={titleCls}>Performance Trends</span>
+            </div>
+            <CardContent className="p-4">
               {trendsQuery.isLoading ? (
-                <div className="space-y-4">{[1, 2, 3, 4].map((i: number) => <Skeleton key={i} className={cn("h-12 w-full rounded-xl", isLight ? "bg-slate-100" : "")} />)}</div>
+                <div className="space-y-3">{[1,2,3,4].map((i: number) => <Skeleton key={i} className="h-14 w-full rounded-xl" />)}</div>
               ) : (trendsQuery.data as any)?.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {(trendsQuery.data as any)?.map((trend: any, idx: number) => (
                     <div key={idx} className={cellCls}>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15">
-                            <Calendar className="w-4 h-4 text-blue-500" />
+                          <div className="p-2 rounded-lg bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10">
+                            <Calendar className="w-3.5 h-3.5 text-blue-500" />
                           </div>
-                          <span className={cn("text-sm font-medium", isLight ? "text-slate-700" : "text-white")}>{trend.period}</span>
+                          <span className={cn("text-sm font-medium", L ? "text-slate-700" : "text-white")}>{trend.period}</span>
                         </div>
                         <div className="text-right">
                           <p className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent font-bold text-sm">${trend.revenue?.toLocaleString()}</p>
@@ -165,37 +129,35 @@ export default function Analytics() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-slate-400 text-sm">No trend data available</p>
+                <div className="text-center py-10">
+                  <BarChart3 className="w-10 h-10 mx-auto text-slate-400 mb-2" />
+                  <p className="text-sm text-slate-400">No trend data available</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
-          <Card className={cardCls}>
-            <CardHeader className="pb-3">
-              <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
-                <TrendingUp className="w-5 h-5 text-green-500" />Top Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { label: "On-Time Delivery", value: summary?.onTimeRate || 0, gradient: "from-green-500 to-emerald-500", color: "text-green-500" },
-                  { label: "Fleet Utilization", value: summary?.fleetUtilization || 0, gradient: "from-[#1473FF] to-[#BE01FF]", color: "text-blue-500" },
-                  { label: "Customer Satisfaction", value: summary?.customerSatisfaction || 0, gradient: "from-purple-500 to-pink-500", color: "text-purple-500" },
-                ].map((metric) => (
-                  <div key={metric.label} className={cellCls}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={cn("text-sm", isLight ? "text-slate-600" : "text-slate-300")}>{metric.label}</span>
-                      <span className={cn("font-bold text-sm", metric.color)}>{metric.value}%</span>
-                    </div>
-                    <div className={cn("h-2 rounded-full overflow-hidden", isLight ? "bg-slate-200" : "bg-slate-700")}>
-                      <div className={cn("h-full rounded-full bg-gradient-to-r", metric.gradient)} style={{ width: `${metric.value}%` }} />
-                    </div>
+          <Card className={cc}>
+            <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+              <Target className="w-4 h-4 text-green-500" />
+              <span className={titleCls}>Performance Scorecard</span>
+            </div>
+            <CardContent className="p-4 space-y-4">
+              {[
+                { label: "On-Time Delivery", value: summary?.onTimeRate || 0, gradient: "from-green-500 to-emerald-500", color: "text-green-500" },
+                { label: "Fleet Utilization", value: summary?.fleetUtilization || 0, gradient: "from-[#1473FF] to-[#BE01FF]", color: "text-blue-500" },
+                { label: "Customer Satisfaction", value: summary?.customerSatisfaction || 0, gradient: "from-purple-500 to-pink-500", color: "text-purple-500" },
+              ].map((m) => (
+                <div key={m.label} className={cellCls}>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className={cn("text-xs font-medium", L ? "text-slate-600" : "text-slate-300")}>{m.label}</span>
+                    <span className={cn("font-bold text-sm", m.color)}>{m.value}%</span>
                   </div>
-                ))}
-              </div>
+                  <div className={cn("h-2 rounded-full overflow-hidden", L ? "bg-slate-200" : "bg-slate-700")}>
+                    <div className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-700", m.gradient)} style={{ width: `${m.value}%` }} />
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </div>
@@ -203,19 +165,30 @@ export default function Analytics() {
 
       {/* ── Revenue Tab ── */}
       {activeTab === "revenue" && (
-        <Card className={cardCls}>
-          <CardHeader className="pb-3">
-            <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
-              <DollarSign className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />Revenue Breakdown
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <DollarSign className="w-8 h-8 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />
+        <Card className={cc}>
+          <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+            <DollarSign className="w-4 h-4 text-emerald-500" />
+            <span className={titleCls}>Revenue Breakdown</span>
+          </div>
+          <CardContent className="p-6">
+            <div className="text-center py-8">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 mx-auto mb-4 flex items-center justify-center">
+                <DollarSign className="w-10 h-10 text-emerald-500" />
               </div>
-              <p className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-2">${(summary?.revenue || 0).toLocaleString()}</p>
-              <p className="text-slate-400 text-sm">Total Revenue This {period.charAt(0).toUpperCase() + period.slice(1)}</p>
+              <p className="text-4xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent mb-1">${(summary?.revenue || 0).toLocaleString()}</p>
+              <p className="text-sm text-slate-400">Total Revenue This {period.charAt(0).toUpperCase() + period.slice(1)}</p>
+            </div>
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {[
+                { l: "Gross", v: `$${(summary?.revenue || 0).toLocaleString()}`, c: "text-emerald-500" },
+                { l: "Expenses", v: `$${(summary?.expenses || 0).toLocaleString()}`, c: "text-red-500" },
+                { l: "Net Profit", v: `$${((summary?.revenue || 0) - (summary?.expenses || 0)).toLocaleString()}`, c: "text-blue-500" },
+              ].map((r) => (
+                <div key={r.l} className={cn(cellCls, "text-center")}>
+                  <p className={cn("text-lg font-bold", r.c)}>{r.v}</p>
+                  <p className="text-[10px] text-slate-400 uppercase mt-0.5">{r.l}</p>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -223,23 +196,22 @@ export default function Analytics() {
 
       {/* ── Loads Tab ── */}
       {activeTab === "loads" && (
-        <Card className={cardCls}>
-          <CardHeader className="pb-3">
-            <CardTitle className={cn(titleCls, "flex items-center gap-2")}>
-              <Package className="w-5 h-5 text-blue-500" />Load Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className={cc}>
+          <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+            <Package className="w-4 h-4 text-blue-500" />
+            <span className={titleCls}>Load Statistics</span>
+          </div>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: "Total Loads", value: summary?.totalLoads || 0, color: "text-blue-500" },
-                { label: "Completed", value: summary?.completedLoads || 0, color: "text-green-500" },
-                { label: "In Transit", value: summary?.inTransitLoads || 0, color: "text-cyan-500" },
-                { label: "Pending", value: summary?.pendingLoads || 0, color: "text-yellow-500" },
+                { l: "Total", v: summary?.totalLoads || 0, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
+                { l: "Completed", v: summary?.completedLoads || 0, c: "text-green-500", b: "from-green-500/10 to-green-600/5" },
+                { l: "In Transit", v: summary?.inTransitLoads || 0, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5" },
+                { l: "Pending", v: summary?.pendingLoads || 0, c: "text-yellow-500", b: "from-yellow-500/10 to-yellow-600/5" },
               ].map((s) => (
-                <div key={s.label} className={cn(cellCls, "text-center")}>
-                  <p className={cn("text-2xl font-bold", s.color)}>{s.value}</p>
-                  <p className="text-[10px] text-slate-400 uppercase mt-1">{s.label}</p>
+                <div key={s.l} className={cn("rounded-xl p-4 text-center bg-gradient-to-br border", L ? `${s.b} border-slate-200/60` : `${s.b} border-slate-700/30`)}>
+                  <p className={cn("text-3xl font-bold", s.c)}>{s.v}</p>
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider mt-1">{s.l}</p>
                 </div>
               ))}
             </div>

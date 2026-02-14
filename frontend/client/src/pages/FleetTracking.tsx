@@ -1,21 +1,27 @@
 /**
- * Fleet Tracking Page - Real-time fleet management for carriers
- * 100% Dynamic - All data from tRPC
+ * FLEET TRACKING — Premium Real-Time Fleet Intelligence
+ * Jony Ive-inspired: frosted glass, purposeful motion, clean data.
+ * 100% Dynamic — tRPC with 10s live polling.
  */
 
 import { useState } from "react";
-import { Truck, MapPin, Users, AlertTriangle, Circle, Filter, RefreshCw, Settings, Activity } from "lucide-react";
+import { Truck, MapPin, Users, AlertTriangle, Circle, RefreshCw, Activity, Search, Navigation, Gauge, Radio, Shield, Zap } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { TelemetryMap } from "../components/maps/TelemetryMap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useTheme } from "@/contexts/ThemeContext";
+import { cn } from "@/lib/utils";
 
 export default function FleetTracking() {
+  const { theme } = useTheme();
+  const L = theme === "light";
   const [selectedDriver, setSelectedDriver] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [viewFilter, setViewFilter] = useState<"all" | "moving" | "stopped">("all");
 
   const { data: fleetLocations, isLoading: fleetLoading, refetch: refetchFleet } = (trpc as any).telemetry.getFleetLocations.useQuery(
     {},
@@ -36,12 +42,21 @@ export default function FleetTracking() {
     { limit: 5 }
   );
 
-  const filteredLocations = fleetLocations?.filter((loc: any) =>
-    loc.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const allLocations = fleetLocations?.filter((loc: any) =>
+    loc.name?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const movingCount = filteredLocations.filter((l: any) => l.isMoving).length;
-  const stationaryCount = filteredLocations.length - movingCount;
+  const filteredLocations = viewFilter === "all" ? allLocations
+    : viewFilter === "moving" ? allLocations.filter((l: any) => l.isMoving)
+    : allLocations.filter((l: any) => !l.isMoving);
+
+  const movingCount = allLocations.filter((l: any) => l.isMoving).length;
+  const stationaryCount = allLocations.length - movingCount;
+  const avgSpeed = movingCount > 0 ? Math.round(allLocations.filter((l: any) => l.isMoving).reduce((s: number, l: any) => s + (l.speed || 0), 0) / movingCount) : 0;
+  const alertCount = activeAlerts?.length || 0;
+  const selectedData = selectedDriver ? allLocations.find((l: any) => l.userId === selectedDriver) : null;
+
+  const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
 
   const mapMarkers = filteredLocations.map((loc: any) => ({
     lat: loc.lat,
@@ -63,121 +78,79 @@ export default function FleetTracking() {
   })) || [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 md:p-6 space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
-            Fleet Tracking
-          </h1>
-          <p className="text-muted-foreground">Real-time fleet locations and management</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Fleet Tracking</h1>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider">Live</span>
+            </div>
+          </div>
+          <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>Real-time fleet intelligence — 10s refresh</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => refetchFleet()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          <Button variant="outline" className="gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </Button>
-        </div>
+        <Button size="sm" variant="outline" className="rounded-xl gap-2" onClick={() => refetchFleet()}>
+          <RefreshCw className="h-3.5 w-3.5" />Refresh
+        </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <Users className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Drivers</p>
-                {fleetLoading ? <Skeleton className="h-6 w-12" /> : (
-                  <p className="text-2xl font-bold">{filteredLocations.length}</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-green-100 dark:bg-green-900/30">
-                <Activity className="h-5 w-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Moving</p>
-                {fleetLoading ? <Skeleton className="h-6 w-12" /> : (
-                  <p className="text-2xl font-bold">{movingCount}</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-slate-800 dark:bg-gray-800">
-                <MapPin className="h-5 w-5 text-slate-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Stationary</p>
-                {fleetLoading ? <Skeleton className="h-6 w-12" /> : (
-                  <p className="text-2xl font-bold">{stationaryCount}</p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-orange-100 dark:bg-orange-900/30">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Active Alerts</p>
-                <p className="text-2xl font-bold">{activeAlerts?.length || 0}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── Pulse Metrics ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {[
+          { l: "Fleet Size", v: allLocations.length, I: Users, c: "text-blue-500", b: "from-blue-500/10 to-blue-600/5" },
+          { l: "Moving", v: movingCount, I: Navigation, c: "text-green-500", b: "from-green-500/10 to-green-600/5" },
+          { l: "Stopped", v: stationaryCount, I: MapPin, c: "text-slate-400", b: "from-slate-500/5 to-slate-600/5" },
+          { l: "Avg Speed", v: avgSpeed, I: Gauge, c: "text-cyan-500", b: "from-cyan-500/10 to-cyan-600/5", suffix: " mph" },
+          { l: "Alerts", v: alertCount, I: AlertTriangle, c: alertCount > 0 ? "text-red-500" : "text-slate-400", b: alertCount > 0 ? "from-red-500/10 to-red-600/5" : "from-slate-500/5 to-slate-600/5" },
+        ].map((s: any) => (
+          <div key={s.l} className={cn("rounded-2xl p-3.5 bg-gradient-to-br border", L ? `${s.b} border-slate-200/60` : `${s.b} border-slate-700/30`)}>
+            <s.I className={cn("w-4 h-4 mb-1.5", s.c)} />
+            {fleetLoading ? <Skeleton className="h-7 w-10 rounded-lg" /> : (
+              <p className={cn("text-2xl font-bold tracking-tight", s.c)}>{s.v}{s.suffix || ""}</p>
+            )}
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-0.5">{s.l}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Map */}
+      {/* ── Map Filter Tabs ── */}
+      <div className="flex items-center gap-2">
+        {(["all", "moving", "stopped"] as const).map((f) => (
+          <button key={f} onClick={() => setViewFilter(f)} className={cn(
+            "px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
+            viewFilter === f ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-slate-800/60 text-slate-400 hover:bg-slate-700"
+          )}>
+            {f === "all" ? `All (${allLocations.length})` : f === "moving" ? `Moving (${movingCount})` : `Stopped (${stationaryCount})`}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* ── Map Panel ── */}
         <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Fleet Map
-                </CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-green-500" />
-                    <span className="text-xs">Moving</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded-full bg-blue-500" />
-                    <span className="text-xs">Stationary</span>
-                  </div>
-                </div>
+          <Card className={cn(cc, "overflow-hidden")}>
+            <div className={cn("px-4 py-3 flex items-center justify-between border-b", L ? "border-slate-100" : "border-slate-700/30")}>
+              <div className="flex items-center gap-2">
+                <MapPin className={cn("w-4 h-4", L ? "text-slate-600" : "text-slate-300")} />
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Fleet Map</span>
               </div>
-            </CardHeader>
-            <CardContent>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" /><span className="text-[10px] text-slate-400">Moving</span></div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-blue-500" /><span className="text-[10px] text-slate-400">Stopped</span></div>
+              </div>
+            </div>
+            <CardContent className="p-0">
               {fleetLoading ? (
-                <Skeleton className="h-[500px] w-full" />
+                <Skeleton className="h-[520px] w-full" />
               ) : (
                 <TelemetryMap
                   markers={mapMarkers}
                   geofences={mapGeofences}
-                  height="500px"
+                  height="520px"
                   onMarkerClick={(marker) => {
                     const driver = filteredLocations.find(
                       (l: any) => l.lat === marker.lat && l.lng === marker.lng
@@ -190,57 +163,44 @@ export default function FleetTracking() {
           </Card>
         </div>
 
-        {/* Driver List */}
+        {/* ── Sidebar: Drivers + Geofences ── */}
         <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Drivers
-              </CardTitle>
-              <Input
-                placeholder="Search drivers..."
-                value={searchQuery}
-                onChange={(e: any) => setSearchQuery(e.target.value)}
-                className="mt-2"
-              />
-            </CardHeader>
-            <CardContent className="max-h-[400px] overflow-y-auto">
+          <Card className={cc}>
+            <div className={cn("px-4 py-3 border-b", L ? "border-slate-100" : "border-slate-700/30")}>
+              <div className="flex items-center justify-between mb-2">
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Drivers ({filteredLocations.length})</span>
+              </div>
+              <div className={cn("relative rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/50")}>
+                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Input placeholder="Search..." value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} className="pl-8 h-8 text-xs border-0 bg-transparent rounded-xl focus-visible:ring-0" />
+              </div>
+            </div>
+            <CardContent className="p-0 max-h-[420px] overflow-y-auto">
               {fleetLoading ? (
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map((i: any) => (
-                    <Skeleton key={i} className="h-16 w-full" />
-                  ))}
-                </div>
+                <div className="p-3 space-y-2">{[1,2,3,4].map((i: any) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)}</div>
               ) : filteredLocations.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">No drivers found</p>
+                <p className={cn("text-center py-8 text-sm", L ? "text-slate-400" : "text-slate-500")}>No drivers found</p>
               ) : (
-                <div className="space-y-2">
+                <div className={cn("divide-y", L ? "divide-slate-100" : "divide-slate-700/20")}>
                   {filteredLocations.map((driver: any) => (
-                    <div
-                      key={driver.userId}
-                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
-                        selectedDriver === driver.userId
-                          ? "bg-primary/10 border-primary"
-                          : "hover:bg-muted"
-                      }`}
-                      onClick={() => setSelectedDriver(driver.userId)}
-                    >
+                    <div key={driver.userId} onClick={() => setSelectedDriver(driver.userId)}
+                      className={cn("px-4 py-3 cursor-pointer transition-all", selectedDriver === driver.userId
+                        ? L ? "bg-blue-50/80 border-l-2 border-l-blue-500" : "bg-blue-500/10 border-l-2 border-l-blue-500"
+                        : L ? "hover:bg-slate-50" : "hover:bg-slate-700/20"
+                      )}>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-2 h-2 rounded-full ${driver.isMoving ? "bg-green-500" : "bg-slate-400"}`} />
-                          <span className="font-medium">{driver.name}</span>
+                        <div className="flex items-center gap-2.5">
+                          <div className={cn("w-2 h-2 rounded-full", driver.isMoving ? "bg-green-500 animate-pulse" : "bg-slate-400")} />
+                          <span className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{driver.name}</span>
                         </div>
-                        <Badge variant={driver.isMoving ? "default" : "secondary"}>
+                        <Badge className={cn("border-0 text-[10px] font-bold", driver.isMoving ? "bg-green-500/15 text-green-500" : "bg-slate-500/15 text-slate-400")}>
                           {driver.isMoving ? `${driver.speed?.toFixed(0) || 0} mph` : "Stopped"}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {driver.lat.toFixed(4)}, {driver.lng.toFixed(4)}
-                      </p>
-                      {driver.loadId && (
-                        <p className="text-xs text-blue-600 mt-1">Load #{driver.loadId}</p>
-                      )}
+                      <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                        <span>{driver.lat?.toFixed(4)}, {driver.lng?.toFixed(4)}</span>
+                        {driver.loadId && <span className="text-blue-500 font-medium">Load #{driver.loadId}</span>}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -248,28 +208,27 @@ export default function FleetTracking() {
             </CardContent>
           </Card>
 
-          {/* Geofences */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Circle className="h-5 w-5" />
-                Geofences ({geofences?.length || 0})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="max-h-[200px] overflow-y-auto">
-              {geofencesLoading ? (
-                <Skeleton className="h-20 w-full" />
-              ) : geofences?.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">No geofences</p>
-              ) : (
-                <div className="space-y-2">
-                  {geofences?.slice(0, 5).map((gf: any) => (
-                    <div key={gf.id} className="flex items-center justify-between p-2 rounded border">
+          {/* ── Geofences ── */}
+          <Card className={cc}>
+            <div className={cn("px-4 py-3 border-b flex items-center justify-between", L ? "border-slate-100" : "border-slate-700/30")}>
+              <div className="flex items-center gap-2">
+                <Circle className={cn("w-4 h-4", L ? "text-slate-500" : "text-slate-400")} />
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Geofences</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-medium">{geofences?.length || 0}</span>
+            </div>
+            <CardContent className="p-0 max-h-[180px] overflow-y-auto">
+              {geofencesLoading ? <div className="p-3"><Skeleton className="h-16 w-full rounded-xl" /></div>
+              : !geofences?.length ? <p className="text-center py-6 text-xs text-slate-400">No geofences</p>
+              : (
+                <div className={cn("divide-y", L ? "divide-slate-100" : "divide-slate-700/20")}>
+                  {geofences.slice(0, 5).map((gf: any) => (
+                    <div key={gf.id} className="px-4 py-2.5 flex items-center justify-between">
                       <div>
-                        <p className="font-medium text-sm">{gf.name}</p>
-                        <p className="text-xs text-muted-foreground">{gf.type}</p>
+                        <p className={cn("text-xs font-medium", L ? "text-slate-700" : "text-slate-200")}>{gf.name}</p>
+                        <p className="text-[10px] text-slate-400">{gf.type}</p>
                       </div>
-                      <Badge variant="outline">{gf.shape}</Badge>
+                      <Badge className="border-0 bg-slate-500/10 text-slate-400 text-[10px]">{gf.shape}</Badge>
                     </div>
                   ))}
                 </div>
@@ -279,30 +238,61 @@ export default function FleetTracking() {
         </div>
       </div>
 
-      {/* Active Alerts */}
+      {/* ── Selected Driver Detail ── */}
+      {selectedData && (
+        <Card className={cn(cc, "border-blue-500/30")}>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", selectedData.isMoving ? "bg-green-500/15" : "bg-slate-500/15")}>
+                  <Truck className={cn("w-5 h-5", selectedData.isMoving ? "text-green-500" : "text-slate-400")} />
+                </div>
+                <div>
+                  <p className={cn("font-semibold", L ? "text-slate-800" : "text-white")}>{selectedData.name}</p>
+                  <p className="text-xs text-slate-400">{selectedData.lat?.toFixed(5)}, {selectedData.lng?.toFixed(5)}</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedDriver(null)} className="text-xs text-slate-400 hover:text-slate-600">Dismiss</button>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
+                <p className="text-lg font-bold text-green-500">{selectedData.speed?.toFixed(0) || 0}</p>
+                <p className="text-[10px] text-slate-400 uppercase">mph</p>
+              </div>
+              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
+                <p className="text-lg font-bold text-blue-500">{selectedData.heading ? `${Math.round(selectedData.heading)}°` : "—"}</p>
+                <p className="text-[10px] text-slate-400 uppercase">Heading</p>
+              </div>
+              <div className={cn("rounded-xl p-3 text-center", L ? "bg-slate-50" : "bg-slate-800/50")}>
+                <p className={cn("text-lg font-bold", selectedData.isMoving ? "text-green-500" : "text-slate-400")}>{selectedData.isMoving ? "En Route" : "Idle"}</p>
+                <p className="text-[10px] text-slate-400 uppercase">Status</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Active Alerts ── */}
       {activeAlerts && activeAlerts.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Active Alerts
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <Card className={cc}>
+          <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+            <AlertTriangle className="w-4 h-4 text-orange-500" />
+            <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Active Alerts</span>
+            <Badge className="border-0 bg-red-500/15 text-red-500 text-[10px] font-bold ml-auto">{activeAlerts.length}</Badge>
+          </div>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {activeAlerts.map((alert: any) => (
-                <div key={alert.id} className="p-4 rounded-lg border bg-muted/50">
+                <div key={alert.id} className={cn("p-3.5 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                   <div className="flex items-center justify-between mb-2">
-                    <Badge variant={alert.severity === "emergency" || alert.severity === "critical" ? "destructive" : "secondary"}>
-                      {alert.severity}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ""}
-                    </span>
+                    <Badge className={cn("border-0 text-[10px] font-bold uppercase",
+                      alert.severity === "emergency" || alert.severity === "critical" ? "bg-red-500/15 text-red-500" : "bg-yellow-500/15 text-yellow-500"
+                    )}>{alert.severity}</Badge>
+                    <span className="text-[10px] text-slate-400">{alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString() : ""}</span>
                   </div>
-                  <p className="font-medium">{alert.userName}</p>
-                  <p className="text-sm text-muted-foreground">{alert.type.replace(/_/g, " ")}</p>
-                  {alert.message && <p className="text-sm mt-1">{alert.message}</p>}
+                  <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{alert.userName}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{alert.type?.replace(/_/g, " ")}</p>
+                  {alert.message && <p className={cn("text-xs mt-1.5", L ? "text-slate-600" : "text-slate-300")}>{alert.message}</p>}
                 </div>
               ))}
             </div>
