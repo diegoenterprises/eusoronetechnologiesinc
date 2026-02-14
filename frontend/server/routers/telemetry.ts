@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { eq, desc, sql, and } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { locationHistory, geofences, geofenceEvents, routes, routeWaypoints, convoys, etaHistory, speedEvents, safetyAlerts, users } from "../../drizzle/schema";
 

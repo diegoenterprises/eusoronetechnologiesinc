@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { carrierProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { companies, users, vehicles, loads, bids, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, gte, or } from "drizzle-orm";
