@@ -64,6 +64,8 @@ export default function ZeunBreakdown() {
   const { theme } = useTheme();
   const L = theme === "light";
   const [step, setStep] = useState(1);
+  const [selectedVehicle, setSelectedVehicle] = useState<{ id: string; unitNumber: string; make: string; model: string; year: number; type: string } | null>(null);
+  const [vehicleSearch, setVehicleSearch] = useState("");
   const [issueCategory, setIssueCategory] = useState<IssueCategory | "">("");
   const [severity, setSeverity] = useState<Severity | "">("");
   const [symptoms, setSymptoms] = useState<string[]>([]);
@@ -79,10 +81,15 @@ export default function ZeunBreakdown() {
     estimatedCost: { min: number; max: number };
   } | null>(null);
 
+  const { data: fleetVehicles, isLoading: fleetLoading } = (trpc as any).fleet.getVehicles.useQuery(
+    { search: vehicleSearch || undefined },
+    { staleTime: 60000 }
+  );
+
   const reportMutation = (trpc as any).zeunMechanics.reportBreakdown.useMutation({
     onSuccess: (result: any) => {
       setReportResult(result);
-      setStep(5);
+      setStep(6);
     },
   });
 
@@ -122,6 +129,7 @@ export default function ZeunBreakdown() {
     }
 
     await reportMutation.mutateAsync({
+      vehicleId: selectedVehicle ? parseInt(selectedVehicle.id) : undefined,
       issueCategory,
       severity,
       symptoms,
@@ -134,6 +142,8 @@ export default function ZeunBreakdown() {
 
   const resetForm = () => {
     setStep(1);
+    setSelectedVehicle(null);
+    setVehicleSearch("");
     setIssueCategory("");
     setSeverity("");
     setSymptoms([]);
@@ -158,7 +168,7 @@ export default function ZeunBreakdown() {
           </div>
           <p className={cn("text-sm mt-1", L ? "text-slate-500" : "text-slate-400")}>AI-powered breakdown diagnosis & roadside intelligence</p>
         </div>
-        {step > 1 && step < 5 && (
+        {step > 1 && step < 6 && (
           <Button size="sm" variant="outline" className="rounded-xl" onClick={resetForm}>
             <RefreshCw className="h-3.5 w-3.5 mr-1.5" />Start Over
           </Button>
@@ -198,21 +208,74 @@ export default function ZeunBreakdown() {
       )}
 
       {/* ── Step Progress ── */}
-      {step < 5 && (
+      {step < 6 && (
         <div className="flex items-center gap-1 mb-2">
-          {[1, 2, 3, 4].map((s: any) => (
+          {[1, 2, 3, 4, 5].map((s: any) => (
             <div key={s} className="flex items-center flex-1 last:flex-none">
               <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all",
                 step >= s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "bg-slate-100 text-slate-400" : "bg-slate-800 text-slate-500"
               )}>{step > s ? <CheckCircle className="w-4 h-4" /> : s}</div>
-              {s < 4 && <div className={cn("flex-1 h-0.5 mx-2 rounded-full", step > s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" : L ? "bg-slate-200" : "bg-slate-700")} />}
+              {s < 5 && <div className={cn("flex-1 h-0.5 mx-2 rounded-full", step > s ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" : L ? "bg-slate-200" : "bg-slate-700")} />}
             </div>
           ))}
         </div>
       )}
 
-      {/* ── Step 1: Issue Type ── */}
+      {/* ── Step 1: Select Vehicle ── */}
       {step === 1 && (
+        <Card className={cc}>
+          <div className={cn("px-4 py-3 border-b", L ? "border-slate-100" : "border-slate-700/30")}>
+            <p className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Select Vehicle</p>
+            <p className="text-xs text-slate-400 mt-0.5">Choose the vehicle experiencing the issue from your fleet</p>
+          </div>
+          <CardContent className="p-4 space-y-4">
+            <Input
+              value={vehicleSearch}
+              onChange={(e: any) => setVehicleSearch(e.target.value)}
+              placeholder="Search by unit number, make, or model..."
+              className={cn("rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")}
+            />
+            {fleetLoading ? (
+              <div className="space-y-2"><Skeleton className="h-16 w-full rounded-xl" /><Skeleton className="h-16 w-full rounded-xl" /><Skeleton className="h-16 w-full rounded-xl" /></div>
+            ) : fleetVehicles && fleetVehicles.length > 0 ? (
+              <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                {fleetVehicles.map((v: any) => {
+                  const sel = selectedVehicle?.id === v.id;
+                  return (
+                    <button key={v.id} onClick={() => setSelectedVehicle(v)}
+                      className={cn("w-full flex items-center gap-4 p-4 rounded-xl border-2 text-left transition-all",
+                        sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/5"
+                      )}>
+                      <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center", sel ? "bg-blue-500/20" : L ? "bg-slate-100" : "bg-slate-800")}>
+                        <Truck className={cn("w-5 h-5", sel ? "text-blue-500" : L ? "text-slate-500" : "text-slate-400")} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn("font-semibold text-sm", L ? "text-slate-800" : "text-white")}>{v.unitNumber}</p>
+                        <p className="text-xs text-slate-400">{v.year} {v.make} {v.model} {v.type ? `- ${v.type}` : ""}</p>
+                      </div>
+                      <Badge className={cn("border-0 text-[10px] font-bold flex-shrink-0",
+                        v.status === "active" ? "bg-green-500/15 text-green-500" :
+                        v.status === "maintenance" ? "bg-yellow-500/15 text-yellow-500" :
+                        "bg-slate-500/15 text-slate-400"
+                      )}>{v.status}</Badge>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-center py-6 text-sm text-slate-400">No vehicles found in your fleet</p>
+            )}
+            <div className="flex justify-end pt-2">
+              <Button onClick={() => setStep(2)} disabled={!selectedVehicle} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
+                Next <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Step 2: Issue Type ── */}
+      {step === 2 && (
         <Card className={cc}>
           <div className={cn("px-4 py-3 border-b", L ? "border-slate-100" : "border-slate-700/30")}>
             <p className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>What is the problem?</p>
@@ -224,7 +287,7 @@ export default function ZeunBreakdown() {
                 const Icon = category.icon;
                 const sel = issueCategory === category.value;
                 return (
-                  <button key={category.value} onClick={() => { setIssueCategory(category.value); setStep(2); }}
+                  <button key={category.value} onClick={() => { setIssueCategory(category.value); setStep(3); }}
                     className={cn("p-4 rounded-xl border-2 text-left transition-all group",
                       sel ? "border-blue-500 bg-blue-500/10" : L ? "border-slate-200 hover:border-blue-300 hover:bg-blue-50/50" : "border-slate-700/50 hover:border-blue-500/50 hover:bg-blue-500/5"
                     )}>
@@ -238,8 +301,8 @@ export default function ZeunBreakdown() {
         </Card>
       )}
 
-      {/* ── Step 2: Symptoms ── */}
-      {step === 2 && (
+      {/* ── Step 3: Symptoms ── */}
+      {step === 3 && (
         <Card className={cc}>
           <div className={cn("px-4 py-3 border-b", L ? "border-slate-100" : "border-slate-700/30")}>
             <p className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Describe the symptoms</p>
@@ -278,8 +341,8 @@ export default function ZeunBreakdown() {
             )}
 
             <div className="flex justify-between pt-4">
-              <Button variant="outline" className="rounded-xl" onClick={() => setStep(1)}>Back</Button>
-              <Button onClick={() => setStep(3)} disabled={symptoms.length === 0} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
+              <Button variant="outline" className="rounded-xl" onClick={() => setStep(2)}>Back</Button>
+              <Button onClick={() => setStep(4)} disabled={symptoms.length === 0} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
                 Next <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -287,8 +350,8 @@ export default function ZeunBreakdown() {
         </Card>
       )}
 
-      {/* ── Step 3: Severity & Drivability ── */}
-      {step === 3 && (
+      {/* ── Step 4: Severity & Drivability ── */}
+      {step === 4 && (
         <Card className={cc}>
           <div className={cn("px-4 py-3 border-b", L ? "border-slate-100" : "border-slate-700/30")}>
             <p className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>How serious is it?</p>
@@ -330,8 +393,8 @@ export default function ZeunBreakdown() {
             </div>
 
             <div className="flex justify-between pt-4">
-              <Button variant="outline" className="rounded-xl" onClick={() => setStep(2)}>Back</Button>
-              <Button onClick={() => setStep(4)} disabled={!severity || canDrive === null} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
+              <Button variant="outline" className="rounded-xl" onClick={() => setStep(3)}>Back</Button>
+              <Button onClick={() => setStep(5)} disabled={!severity || canDrive === null} className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
                 Next <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -339,8 +402,8 @@ export default function ZeunBreakdown() {
         </Card>
       )}
 
-      {/* ── Step 4: Notes & Submit ── */}
-      {step === 4 && (
+      {/* ── Step 5: Notes & Submit ── */}
+      {step === 5 && (
         <Card className={cc}>
           <div className={cn("px-4 py-3 border-b", L ? "border-slate-100" : "border-slate-700/30")}>
             <p className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Additional details</p>
@@ -351,6 +414,7 @@ export default function ZeunBreakdown() {
             <div className={cn("p-4 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
               <p className={cn("text-xs font-bold uppercase tracking-wider mb-3", L ? "text-slate-500" : "text-slate-400")}>Report Summary</p>
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><span className="text-slate-400 text-xs">Vehicle</span><p className={cn("font-medium", L ? "text-slate-800" : "text-white")}>{selectedVehicle ? `${selectedVehicle.unitNumber} - ${selectedVehicle.make} ${selectedVehicle.model}` : "N/A"}</p></div>
                 <div><span className="text-slate-400 text-xs">Issue</span><p className={cn("font-medium", L ? "text-slate-800" : "text-white")}>{ISSUE_CATEGORIES.find((c: any) => c.value === issueCategory)?.label}</p></div>
                 <div><span className="text-slate-400 text-xs">Severity</span><p className={cn("font-medium", L ? "text-slate-800" : "text-white")}>{severity}</p></div>
                 <div><span className="text-slate-400 text-xs">Symptoms</span><p className={cn("font-medium", L ? "text-slate-800" : "text-white")}>{symptoms.length} reported</p></div>
@@ -359,7 +423,7 @@ export default function ZeunBreakdown() {
             </div>
 
             <div className="flex justify-between pt-2">
-              <Button variant="outline" className="rounded-xl" onClick={() => setStep(3)}>Back</Button>
+              <Button variant="outline" className="rounded-xl" onClick={() => setStep(4)}>Back</Button>
               <Button onClick={handleSubmit} disabled={reportMutation.isPending} className="bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-bold">
                 {reportMutation.isPending ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Analyzing...</> : <><AlertTriangle className="h-4 w-4 mr-2" />Submit Breakdown Report</>}
               </Button>
@@ -368,8 +432,8 @@ export default function ZeunBreakdown() {
         </Card>
       )}
 
-      {/* ── Step 5: Results ── */}
-      {step === 5 && reportResult && (
+      {/* ── Step 6: Results ── */}
+      {step === 6 && reportResult && (
         <div className="space-y-4">
           {/* Diagnosis Card */}
           <Card className={cn(cc, "border-green-500/30")}>

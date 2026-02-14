@@ -226,13 +226,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet GPS tracking"
     },
     { 
-      icon: "Wrench", 
-      label: "Zeun Mechanics", 
-      path: "/zeun-fleet", 
-      badge: 0,
-      description: "Fleet breakdown and maintenance"
-    },
-    { 
       icon: "Users", 
       label: "Drivers", 
       path: "/drivers", 
