@@ -1332,4 +1332,53 @@ export const gamificationRouter = router({
 
       return { success: true };
     }),
+
+  /**
+   * Purchase a reward item with points
+   */
+  purchaseItem: protectedProcedure
+    .input(z.object({ rewardId: z.string(), quantity: z.number().default(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = Number(ctx.user?.id) || 0;
+      const userRole = (ctx.user as any)?.role || "DRIVER";
+      const catalog = getRewardsCatalogForRole(userRole);
+      const item = catalog.rewards.find((r: any) => r.id === input.rewardId);
+      if (!item) throw new Error("Reward not found");
+      const [profile] = await db.select().from(gamificationProfiles).where(eq(gamificationProfiles.userId, userId)).limit(1);
+      if (!profile) throw new Error("No gamification profile found");
+      const totalCost = (item.cost || 0) * input.quantity;
+      if ((profile.totalXp || 0) < totalCost) throw new Error(`Not enough points. Need ${totalCost}, have ${profile.totalXp || 0}`);
+      await db.update(gamificationProfiles).set({
+        totalXp: sql`${gamificationProfiles.totalXp} - ${totalCost}`,
+      } as any).where(eq(gamificationProfiles.id, profile.id));
+      // Record purchase in rewards table
+      try {
+        await db.insert(rewards).values({
+          userId, type: "purchase" as any, name: item.name || input.rewardId,
+          description: `Purchased ${input.quantity}x ${item.name || input.rewardId}`,
+          pointsCost: totalCost, status: "claimed" as any,
+        } as any);
+      } catch {}
+      return { success: true, rewardId: input.rewardId, pointsSpent: totalCost, remainingPoints: (profile.totalXp || 0) - totalCost };
+    }),
+
+  /**
+   * Get user's reward inventory (purchased items)
+   */
+  getInventory: protectedProcedure
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const userId = Number(ctx.user?.id) || 0;
+      try {
+        const items = await db.select().from(rewards).where(eq(rewards.userId, userId)).orderBy(desc(rewards.createdAt)).limit(50);
+        return items.map((i: any) => ({
+          id: i.id, name: i.name || "Reward", description: i.description || "",
+          type: i.type, pointsCost: i.pointsCost || 0, status: i.status || "claimed",
+          purchasedAt: i.createdAt?.toISOString(),
+        }));
+      } catch { return []; }
+    }),
 });

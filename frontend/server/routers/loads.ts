@@ -1499,6 +1499,162 @@ export const bidsRouter = router({
     }),
 
   /**
+   * Save a load as a reusable template
+   */
+  saveAsTemplate: protectedProcedure
+    .input(z.object({ loadId: z.number(), templateName: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+      const result = await db.insert(loads).values({
+        shipperId: userId,
+        loadNumber: `TMPL-${Date.now().toString(36).toUpperCase()}`,
+        cargoType: load.cargoType,
+        weight: load.weight, rate: load.rate,
+        pickupLocation: load.pickupLocation,
+        deliveryLocation: load.deliveryLocation,
+        hazmatClass: load.hazmatClass, unNumber: load.unNumber,
+        commodityName: load.commodityName,
+        specialInstructions: JSON.stringify({ templateName: input.templateName }),
+        status: "draft",
+      } as any);
+      const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+      return { success: true, templateId: insertId, name: input.templateName };
+    }),
+
+  /**
+   * Create a load from a saved template
+   */
+  createFromTemplate: protectedProcedure
+    .input(z.object({ templateId: z.number(), pickupDate: z.string().optional(), deliveryDate: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const [template] = await db.select().from(loads).where(and(eq(loads.id, input.templateId), eq(loads.status, "draft"))).limit(1);
+      if (!template) throw new Error("Template not found");
+      const loadNumber = `LD-${Date.now().toString(36).toUpperCase()}`;
+      const result = await db.insert(loads).values({
+        shipperId: userId, loadNumber,
+        cargoType: template.cargoType,
+        weight: template.weight, rate: template.rate,
+        pickupLocation: template.pickupLocation,
+        deliveryLocation: template.deliveryLocation,
+        hazmatClass: template.hazmatClass, unNumber: template.unNumber,
+        commodityName: template.commodityName,
+        specialInstructions: template.specialInstructions,
+        pickupDate: input.pickupDate ? new Date(input.pickupDate) : undefined,
+        deliveryDate: input.deliveryDate ? new Date(input.deliveryDate) : undefined,
+        status: "posted",
+      } as any);
+      const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+      emitLoadStatusChange({ loadId: String(insertId), loadNumber, previousStatus: "", newStatus: "posted", timestamp: new Date().toISOString(), updatedBy: String(userId) });
+      return { success: true, loadId: insertId, loadNumber };
+    }),
+
+  /**
+   * Bulk create multiple loads at once
+   */
+  bulkCreate: protectedProcedure
+    .input(z.object({
+      loads: z.array(z.object({
+        origin: z.string(), destination: z.string(),
+        cargoType: z.string().optional(),
+        weight: z.number().optional(), rate: z.number().optional(),
+        pickupDate: z.string().optional(), deliveryDate: z.string().optional(),
+        specialInstructions: z.string().optional(),
+      })).min(1).max(50),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const created: { loadId: number; loadNumber: string }[] = [];
+      for (const ld of input.loads) {
+        const loadNumber = `LD-${Date.now().toString(36).toUpperCase()}-${created.length}`;
+        const result = await db.insert(loads).values({
+          shipperId: userId, loadNumber,
+          cargoType: (ld.cargoType || "general") as any,
+          weight: ld.weight ? String(ld.weight) : null,
+          rate: ld.rate ? String(ld.rate) : null,
+          pickupLocation: { address: ld.origin, city: ld.origin.split(",")[0]?.trim() || "", state: ld.origin.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 },
+          deliveryLocation: { address: ld.destination, city: ld.destination.split(",")[0]?.trim() || "", state: ld.destination.split(",")[1]?.trim() || "", zipCode: "", lat: 0, lng: 0 },
+          pickupDate: ld.pickupDate ? new Date(ld.pickupDate) : undefined,
+          deliveryDate: ld.deliveryDate ? new Date(ld.deliveryDate) : undefined,
+          specialInstructions: ld.specialInstructions || null,
+          status: "posted",
+        } as any);
+        const insertId = (result as any).insertId || (result as any)[0]?.insertId;
+        created.push({ loadId: insertId, loadNumber });
+      }
+      return { success: true, count: created.length, loads: created };
+    }),
+
+  /**
+   * Cancel a load with a reason
+   */
+  cancelWithReason: protectedProcedure
+    .input(z.object({ loadId: z.number(), reason: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+      if (load.shipperId !== userId) throw new Error("Not authorized to cancel this load");
+      if (load.status === "delivered" || load.status === "cancelled") throw new Error("Cannot cancel — load is " + load.status);
+      await db.update(loads).set({
+        status: "cancelled",
+        specialInstructions: `${load.specialInstructions || ""}\n[CANCELLED: ${input.reason}]`.trim(),
+      } as any).where(eq(loads.id, input.loadId));
+      emitLoadStatusChange({ loadId: String(input.loadId), loadNumber: load.loadNumber || "", previousStatus: load.status, newStatus: "cancelled", timestamp: new Date().toISOString(), updatedBy: String(userId) });
+      return { success: true, loadId: input.loadId, reason: input.reason };
+    }),
+
+  /**
+   * Bulk decline bids on a load
+   */
+  bulkDeclineBids: protectedProcedure
+    .input(z.object({ loadId: z.number(), bidIds: z.array(z.number()).min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load || load.shipperId !== userId) throw new Error("Not authorized");
+      await db.update(bids).set({ status: "rejected" } as any)
+        .where(and(eq(bids.loadId, input.loadId), inArray(bids.id, input.bidIds)));
+      return { success: true, declined: input.bidIds.length };
+    }),
+
+  /**
+   * Auto-award bid to lowest/best bidder
+   */
+  autoAwardBid: protectedProcedure
+    .input(z.object({ loadId: z.number(), strategy: z.enum(["lowest_price", "highest_rated", "fastest_delivery"]).default("lowest_price") }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
+      const [load] = await db.select().from(loads).where(eq(loads.id, input.loadId)).limit(1);
+      if (!load || load.shipperId !== userId) throw new Error("Not authorized");
+      const loadBids = await db.select().from(bids).where(and(eq(bids.loadId, input.loadId), eq(bids.status, "pending"))).limit(100);
+      if (loadBids.length === 0) throw new Error("No pending bids");
+      const sorted = [...loadBids].sort((a, b) => parseFloat(a.amount || "0") - parseFloat(b.amount || "0"));
+      const winner = sorted[0];
+      await db.update(bids).set({ status: "accepted" } as any).where(eq(bids.id, winner.id));
+      await db.update(bids).set({ status: "rejected" } as any)
+        .where(and(eq(bids.loadId, input.loadId), eq(bids.status, "pending")));
+      await db.update(loads).set({ status: "assigned", carrierId: winner.carrierId } as any).where(eq(loads.id, input.loadId));
+      emitBidAwarded({ bidId: String(winner.id), loadId: String(input.loadId), carrierId: String(winner.carrierId), carrierName: "Carrier", amount: Number(winner.amount) || 0, status: "accepted", loadNumber: load.loadNumber || "", timestamp: new Date().toISOString() });
+      emitLoadStatusChange({ loadId: String(input.loadId), loadNumber: load.loadNumber || "", previousStatus: load.status, newStatus: "assigned", timestamp: new Date().toISOString(), updatedBy: String(userId) });
+      return { success: true, winnerId: winner.id, winnerCarrierId: winner.carrierId, amount: winner.amount };
+    }),
+
+  /**
    * Place a bid on a load
    */
   placeBid: protectedProcedure

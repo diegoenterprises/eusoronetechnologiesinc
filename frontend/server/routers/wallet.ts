@@ -1429,10 +1429,41 @@ export const walletRouter = router({
       };
     }),
 
-  /**
-   * Release escrow funds to driver upon job completion
-   * Stripe Treasury: releases held funds from escrow to driver's connected account
-   */
+  getPayoutHistory: auditedProtectedProcedure
+    .input(z.object({ limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const userId = Number(ctx.user?.id) || 0;
+      const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+      if (!wallet) return [];
+      const payouts = await db.select().from(walletTransactions)
+        .where(and(eq(walletTransactions.walletId, wallet.id), eq(walletTransactions.type, "payout")))
+        .orderBy(desc(walletTransactions.createdAt)).limit(input.limit);
+      return payouts.map(p => ({
+        id: `po_${p.id}`, amount: Math.abs(parseFloat(p.amount || "0")),
+        status: p.status || "completed", method: p.description?.includes("wire") ? "wire" : "ach",
+        createdAt: p.createdAt?.toISOString(), completedAt: p.completedAt?.toISOString(),
+      }));
+    }),
+
+  disputeTransaction: auditedProtectedProcedure
+    .input(z.object({ transactionId: z.number(), reason: z.string().min(5), category: z.enum(["unauthorized", "duplicate", "incorrect_amount", "service_not_received", "other"]).default("other") }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const userId = Number(ctx.user?.id) || 0;
+      const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+      if (!wallet) throw new Error("Wallet not found");
+      const [txn] = await db.select().from(walletTransactions).where(and(eq(walletTransactions.id, input.transactionId), eq(walletTransactions.walletId, wallet.id))).limit(1);
+      if (!txn) throw new Error("Transaction not found");
+      await db.update(walletTransactions).set({
+        status: "cancelled" as any,
+        description: sql`CONCAT(${walletTransactions.description}, ' [DISPUTED: ${input.reason}]')`,
+      } as any).where(eq(walletTransactions.id, input.transactionId));
+      return { success: true, disputeId: `disp_${Date.now()}`, transactionId: input.transactionId, category: input.category, status: "under_review" };
+    }),
+
   releaseEscrow: auditedProtectedProcedure
     .input(z.object({
       escrowId: z.string(),
