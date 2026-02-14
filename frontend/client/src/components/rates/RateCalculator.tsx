@@ -13,9 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { 
   Calculator, DollarSign, Fuel, Clock, TrendingUp,
-  TrendingDown, AlertTriangle, CheckCircle, Sparkles,
+  TrendingDown, AlertTriangle, CheckCircle,
   MapPin, Truck, Info
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 
 interface LoadDetails {
@@ -147,7 +148,7 @@ export function RateCalculator({ load, onBidSubmit }: RateCalculatorProps) {
           {/* AI Suggestion */}
           <div className="mt-2 p-2 rounded bg-purple-500/10 border border-purple-500/20">
             <div className="flex items-center gap-2 text-xs text-purple-300">
-              <Sparkles className="w-3 h-3" />
+              <EsangIcon className="w-3 h-3" />
               AI Suggested Range: ${aiSuggestedMin.toFixed(0)} - ${aiSuggestedMax.toFixed(0)}
             </div>
           </div>

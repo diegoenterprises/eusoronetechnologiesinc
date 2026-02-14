@@ -10,7 +10,7 @@ import {
   Search, AlertTriangle, Phone, ChevronRight, ChevronDown,
   Flame, Shield, Wind, Droplets, Activity, BookOpen,
   MapPin, Clock, ArrowRight, X, Info, Zap, AlertCircle,
-  Radiation, Skull, Biohazard, Sparkles
+  Radiation, Skull, Biohazard
 } from 'lucide-react';
 
 // ============================================================================

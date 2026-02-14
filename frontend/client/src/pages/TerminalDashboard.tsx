@@ -13,8 +13,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Fuel, Truck, Calendar, Clock, AlertTriangle,
-  CheckCircle, Eye, Activity, Beaker, Target, Sparkles
+  CheckCircle, Eye, Activity, Beaker, Target
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -86,7 +87,7 @@ export default function TerminalDashboard() {
                 <p className="text-white font-bold flex items-center gap-2">
                   SPECTRA-MATCH™
                   <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs">
-                    <Sparkles className="w-3 h-3 mr-1" />AI
+                    <EsangIcon className="w-3 h-3 mr-1" />AI
                   </Badge>
                 </p>
                 <p className="text-sm text-slate-400">Crude/fuel product identification system</p>

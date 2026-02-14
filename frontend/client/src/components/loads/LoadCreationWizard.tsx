@@ -18,8 +18,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, ArrowRight, Check, Loader2, AlertTriangle, 
   Package, MapPin, Truck, Shield, DollarSign, FileText,
-  Sparkles, Search, Clock, Scale, Thermometer, Users
+  Search, Clock, Scale, Thermometer, Users
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
@@ -306,7 +307,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
           <div className="space-y-6">
             <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
               <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-purple-400" />
+                <EsangIcon className="w-5 h-5 text-purple-400" />
                 <div className="flex-1">
                   <p className="text-sm text-purple-300 font-medium">ESANG AI™ Classification Assistant</p>
                   <p className="text-xs text-slate-400">Enter a product name and let AI suggest the hazmat classification</p>
@@ -947,7 +948,7 @@ export function LoadCreationWizard({ onComplete, onCancel }: LoadCreationWizardP
 
             <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 text-green-400" />
+                <EsangIcon className="w-4 h-4 text-green-400" />
                 <span className="text-sm text-green-400 font-medium">AI Suggested Rate</span>
               </div>
               <p className="text-lg text-white font-bold">$2,650 - $2,900</p>

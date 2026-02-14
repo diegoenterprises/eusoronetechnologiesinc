@@ -16,8 +16,9 @@ import { trpc } from "@/lib/trpc";
 import {
   FileText, CheckCircle, ArrowLeft, Shield, DollarSign,
   MapPin, Navigation, Truck, Clock, Package, Building2,
-  AlertTriangle, ChevronRight, Sparkles, Download
+  AlertTriangle, ChevronRight, Download
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -357,7 +358,7 @@ export default function ContractSigning() {
           {/* Summary bar */}
           <div className={cn("flex items-center justify-between p-4 rounded-xl border", isLight ? "bg-blue-50 border-blue-200" : "bg-blue-500/10 border-blue-500/30")}>
             <div className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-blue-500" />
+              <EsangIcon className="w-5 h-5 text-blue-500" />
               <div>
                 <p className={cn("font-bold text-sm", isLight ? "text-slate-800" : "text-white")}>Load #{load.loadNumber}</p>
                 <p className="text-xs text-slate-400">{originCity} → {destCity}</p>
@@ -417,7 +418,7 @@ export default function ContractSigning() {
                 <Shield className="w-3 h-3 mr-1" />ESIGN Act Compliant
               </Badge>
               <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">
-                <Sparkles className="w-3 h-3 mr-1" />Gradient Ink Verified
+                <EsangIcon className="w-3 h-3 mr-1" />Gradient Ink Verified
               </Badge>
             </div>
 

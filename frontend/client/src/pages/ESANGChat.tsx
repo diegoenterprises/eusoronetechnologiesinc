@@ -15,12 +15,13 @@ import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
 import { renderChatMarkdown } from "@/lib/renderChatMarkdown";
 import {
-  Sparkles, Send, User, Bot, Trash2,
+  Send, User, Bot, Trash2,
   MessageSquare, Lightbulb, HelpCircle, Beaker,
   Target, Brain, Shield, Flame, TrendingUp,
   Truck, Package, Route, BarChart3, Gauge, FileCheck,
   ShieldCheck, Activity, Zap, Building2, ClipboardList
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";

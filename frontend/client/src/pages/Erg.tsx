@@ -14,9 +14,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   AlertTriangle, Search, Phone, Flame, Droplets,
   Shield, Skull, ChevronRight,
-  BookOpen, FileText, Sparkles, Info, MapPin, Activity,
+  BookOpen, FileText, Info, MapPin, Activity,
   ArrowRight, Loader2, Zap, Database, Navigation
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 
@@ -83,7 +84,7 @@ export default function Erg() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Emergency Response Guidebook</h1>
             <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs">ERG 2024</Badge>
             <Badge className="bg-blue-500/20 text-blue-400 text-xs">
-              <Sparkles className="w-3 h-3 mr-1" />
+              <EsangIcon className="w-3 h-3 mr-1" />
               ESANG AI Powered
             </Badge>
           </div>
@@ -178,7 +179,7 @@ export default function Erg() {
             Guide Viewer
           </TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-1">
-            <Sparkles className="w-3.5 h-3.5" />
+            <EsangIcon className="w-3.5 h-3.5" />
             Ask ESANG AI
           </TabsTrigger>
           <TabsTrigger value="contacts" className="flex items-center gap-1">
@@ -558,7 +559,7 @@ export default function Erg() {
               <Card className="bg-slate-800/50 border-slate-700">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
+                    <EsangIcon className="w-5 h-5 text-blue-400" />
                     Ask ESANG AI About Hazmat / ERG
                   </CardTitle>
                 </CardHeader>
@@ -586,7 +587,7 @@ export default function Erg() {
                   {aiChatMutation.data && (
                     <div className="p-4 rounded-lg bg-slate-700/30 border border-slate-600">
                       <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-4 h-4 text-blue-400" />
+                        <EsangIcon className="w-4 h-4 text-blue-400" />
                         <span className="text-sm font-medium text-blue-400">ESANG AI Response</span>
                       </div>
                       <div className="text-sm text-slate-300 whitespace-pre-wrap">
@@ -617,7 +618,7 @@ export default function Erg() {
               <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/30">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-5 h-5 text-blue-400" />
+                    <EsangIcon className="w-5 h-5 text-blue-400" />
                     <span className="text-sm font-medium text-white">ESANG AI ERG Intelligence</span>
                   </div>
                   <p className="text-xs text-slate-400">

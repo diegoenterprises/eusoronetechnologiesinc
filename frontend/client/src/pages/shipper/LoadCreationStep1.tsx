@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
-import { Package, AlertTriangle, Sparkles, ChevronRight } from "lucide-react";
+import { Package, AlertTriangle, ChevronRight } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { useLocation } from "wouter";
 
 export default function LoadCreationStep1() {
@@ -45,7 +46,7 @@ export default function LoadCreationStep1() {
             <div className="flex gap-2">
               <Input value={productName} onChange={(e) => setProductName(e.target.value)} placeholder="e.g., Gasoline, Diesel Fuel, Crude Oil" className="bg-slate-700/50 border-slate-600/50 rounded-lg" />
               <Button onClick={handleAISuggest} disabled={!productName || classifyMutation.isPending} className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg">
-                <Sparkles className="w-4 h-4 mr-2" />ESANG AI
+                <EsangIcon className="w-4 h-4 mr-2" />ESANG AI
               </Button>
             </div>
           </div>
@@ -53,7 +54,7 @@ export default function LoadCreationStep1() {
           {classifyMutation.data && (
             <Card className="bg-purple-500/10 border-purple-500/30 rounded-lg">
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2"><Sparkles className="w-4 h-4 text-purple-400" /><span className="text-purple-400 font-medium">AI Suggestion</span></div>
+                <div className="flex items-center gap-2 mb-2"><EsangIcon className="w-4 h-4 text-purple-400" /><span className="text-purple-400 font-medium">AI Suggestion</span></div>
                 <p className="text-white">Class {classifyMutation.data.class}: {(classifyMutation.data as any).name || classifyMutation.data.properName}</p>
                 <p className="text-slate-400 text-sm mt-1">{(classifyMutation.data as any).description || ""}</p>
                 <Button size="sm" className="mt-3" onClick={() => setHazmatClass(classifyMutation.data.class)}>Use This Classification</Button>

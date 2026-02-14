@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
-import { FileText, CheckCircle, ArrowLeft, Shield, DollarSign, ChevronRight, Sparkles, Clock, Building2, MapPin, Plus, Trash2, FileUp, Scan, Truck, Users, Calendar, Download } from "lucide-react";
+import { FileText, CheckCircle, ArrowLeft, Shield, DollarSign, ChevronRight, Clock, Building2, MapPin, Plus, Trash2, FileUp, Scan, Truck, Users, Calendar, Download } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -132,7 +133,7 @@ export default function ShipperAgreementWizard() {
       {step==="mode"&&(<div className="space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <button onClick={()=>setMode("generate")} className={cn("p-6 rounded-2xl border-2 text-left transition-all",mode==="generate"?"border-[#1473FF] bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 shadow-lg":isLight?"border-slate-200 bg-white hover:border-slate-300":"border-slate-700 bg-slate-800/60 hover:border-slate-600")}>
-            <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 w-12 h-12 flex items-center justify-center mb-3"><Sparkles className="w-6 h-6 text-[#1473FF]"/></div>
+            <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/15 to-[#BE01FF]/15 w-12 h-12 flex items-center justify-center mb-3"><EsangIcon className="w-6 h-6 text-[#1473FF]"/></div>
             <p className={cn("font-bold mb-1",vl)}>Generate Agreement</p><p className={cn("text-xs",mt)}>Auto-generate MSA, Rate Confirmation, or Lane Commitment with FMCSA-compliant clauses.</p>
           </button>
           <button onClick={()=>setMode("upload")} className={cn("p-6 rounded-2xl border-2 text-left transition-all",mode==="upload"?"border-[#BE01FF] bg-gradient-to-br from-[#BE01FF]/10 to-[#1473FF]/10 shadow-lg":isLight?"border-slate-200 bg-white hover:border-slate-300":"border-slate-700 bg-slate-800/60 hover:border-slate-600")}>
@@ -275,12 +276,12 @@ export default function ShipperAgreementWizard() {
           </CardContent></Card>
         <div className="flex gap-3">
           <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold",isLight?"border-slate-200":"border-slate-700")} onClick={()=>setStep("financial")}><ArrowLeft className="w-4 h-4 mr-2"/>Back</Button>
-          <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={genMut.isPending} onClick={doGen}>{genMut.isPending?<><Clock className="w-4 h-4 mr-2 animate-spin"/>Generating...</>:<><Sparkles className="w-4 h-4 mr-2"/>Generate Agreement</>}</Button>
+          <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={genMut.isPending} onClick={doGen}>{genMut.isPending?<><Clock className="w-4 h-4 mr-2 animate-spin"/>Generating...</>:<><EsangIcon className="w-4 h-4 mr-2"/>Generate Agreement</>}</Button>
         </div>
       </div>)}
       {step==="review"&&(<div className="space-y-5">
         <div className={cn("flex items-center justify-between p-4 rounded-xl border",isLight?"bg-green-50 border-green-200":"bg-green-500/10 border-green-500/30")}>
-          <div className="flex items-center gap-3"><Sparkles className="w-5 h-5 text-green-500"/><div><p className={cn("font-bold text-sm",vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{agType.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())} · {dur.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())}</p></div></div>
+          <div className="flex items-center gap-3"><EsangIcon className="w-5 h-5 text-green-500"/><div><p className={cn("font-bold text-sm",vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{agType.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())} · {dur.replace(/_/g," ").replace(/\b\w/g,(c:string)=>c.toUpperCase())}</p></div></div>
           <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">Draft</Badge>
         </div>
         <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><FileText className="w-5 h-5 text-blue-500"/>Agreement Content</CardTitle></CardHeader>
@@ -297,7 +298,7 @@ export default function ShipperAgreementWizard() {
       </div>)}
       {step==="sign"&&(<div className="space-y-5">
         <div className={cn("flex items-center justify-between p-4 rounded-xl border",isLight?"bg-blue-50 border-blue-200":"bg-blue-500/10 border-blue-500/30")}>
-          <div className="flex items-center gap-3"><Sparkles className="w-5 h-5 text-blue-500"/><div><p className={cn("font-bold text-sm",vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{bComp||bName} · ${parseFloat(baseRate||"0").toLocaleString()} {rateType.replace(/_/g," ")}</p></div></div>
+          <div className="flex items-center gap-3"><EsangIcon className="w-5 h-5 text-blue-500"/><div><p className={cn("font-bold text-sm",vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{bComp||bName} · ${parseFloat(baseRate||"0").toLocaleString()} {rateType.replace(/_/g," ")}</p></div></div>
           <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">Ready to Sign</Badge>
         </div>
         <Card className={cc}><CardContent className="p-5">
@@ -315,7 +316,7 @@ export default function ShipperAgreementWizard() {
           <p className={cn("text-sm max-w-md mx-auto",mt)}>Your Gradient Ink signature has been recorded for agreement #{agNum}. Awaiting carrier counter-signature to fully execute.</p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <Badge className="bg-green-500/15 text-green-500 border border-green-500/30 text-xs font-bold"><Shield className="w-3 h-3 mr-1"/>ESIGN Act Compliant</Badge>
-            <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold"><Sparkles className="w-3 h-3 mr-1"/>Gradient Ink Verified</Badge>
+            <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold"><EsangIcon className="w-3 h-3 mr-1"/>Gradient Ink Verified</Badge>
           </div>
           <div className={cn("mx-auto mt-8 max-w-sm p-5 rounded-xl border text-left",cl)}>
             <div className="space-y-3">

@@ -17,8 +17,9 @@ import {
   FileText, Search, Upload, Download, Trash2, Eye, X, Plus,
   CheckCircle, Clock, AlertTriangle, FolderOpen, PenTool,
   Receipt, FileSignature, ScrollText, Handshake, ClipboardList,
-  ScanLine, RotateCcw, Save, Eraser, Loader2, Sparkles, Brain, Tag
+  ScanLine, RotateCcw, Save, Eraser, Loader2, Brain, Tag
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -275,7 +276,7 @@ function DigitizeModal({ onClose, onDigitized }: { onClose: () => void; onDigiti
             <div onClick={() => fileRef.current?.click()} className={cn("border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all", file ? "border-cyan-500/50 bg-cyan-500/5" : "border-slate-700 hover:border-slate-500 bg-slate-800/30")}>
               <input ref={fileRef} type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png,.tiff,.doc,.docx" onChange={e => { const f = e.target.files?.[0]; if (f) setFile(f); }} />
               {file ? <div className="flex items-center justify-center gap-3"><ScanLine className="w-8 h-8 text-cyan-400" /><div className="text-left"><p className="text-white font-medium">{file.name}</p><p className="text-xs text-cyan-400">Ready for ESANG AI analysis</p></div></div>
-                : <><Sparkles className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-white font-medium">Upload document to digitize</p><p className="text-xs text-slate-400 mt-1">PDF, DOC, JPG, PNG, TIFF — ESANG AI reads & classifies automatically</p></>}
+                : <><EsangIcon className="w-10 h-10 text-slate-500 mx-auto mb-3" /><p className="text-white font-medium">Upload document to digitize</p><p className="text-xs text-slate-400 mt-1">PDF, DOC, JPG, PNG, TIFF — ESANG AI reads & classifies automatically</p></>}
             </div>
             {scanning && <div className="flex items-center gap-3 p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/20"><Loader2 className="w-5 h-5 text-cyan-400 animate-spin" /><div><p className="text-cyan-400 font-medium text-sm">ESANG AI analyzing document...</p><p className="text-xs text-slate-400">Digitizing → extracting text → classifying</p></div></div>}
             <Button onClick={scan} disabled={!file || scanning} className="w-full bg-gradient-to-r from-cyan-600 to-emerald-600 text-white border-0 rounded-lg disabled:opacity-40">

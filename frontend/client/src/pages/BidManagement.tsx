@@ -14,8 +14,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Gavel, DollarSign, CheckCircle, XCircle, Clock,
-  TrendingUp, Package, Sparkles, Search, Navigation, MapPin, Building2, Eye, FileText
+  TrendingUp, Package, Search, Navigation, MapPin, Building2, Eye, FileText
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -134,7 +135,7 @@ export default function BidManagement() {
                     className={cn("w-24 rounded-lg h-9 text-sm", isLight ? "bg-white border-slate-200" : "bg-slate-900/50 border-slate-700")}
                   />
                   <Button size="sm" variant="outline" className={cn("rounded-lg h-9", isLight ? "border-purple-200 text-purple-600 hover:bg-purple-50" : "bg-purple-500/15 border-purple-500/30 text-purple-400")} onClick={() => analyzeMutation.mutate({ loadId: load.id, bidAmount: parseFloat(bidAmount[load.id] || "0") })}>
-                    <Sparkles className="w-3 h-3" />
+                    <EsangIcon className="w-3 h-3" />
                   </Button>
                   <Button size="sm" className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-lg h-9 font-bold" onClick={() => submitBidMutation.mutate({ loadId: load.id, amount: parseFloat(bidAmount[load.id] || "0") })} disabled={!bidAmount[load.id]}>
                     Bid

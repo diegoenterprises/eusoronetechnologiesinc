@@ -13,11 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import {
   HelpCircle, MessageSquare, Phone, Mail, Clock,
-  CheckCircle, Plus, Send, Loader2, Sparkles, Bot,
+  CheckCircle, Plus, Send, Loader2, Bot,
   BookOpen, Shield, AlertTriangle, ChevronRight,
   Headphones, LifeBuoy, Zap, FileText, Search,
   ExternalLink, Star, TrendingUp
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
@@ -77,7 +78,7 @@ export default function Support() {
     { title: "Getting Started with EusoTrip", desc: "Learn the basics of creating loads and finding carriers", icon: <BookOpen className="w-5 h-5 text-blue-500" />, category: "Onboarding" },
     { title: "HazMat Compliance Guide", desc: "DOT/FMCSA requirements for hazardous materials transport", icon: <Shield className="w-5 h-5 text-orange-500" />, category: "Compliance" },
     { title: "Understanding Platform Fees", desc: "How the dynamic commission engine calculates fees (5-15%)", icon: <TrendingUp className="w-5 h-5 text-purple-500" />, category: "Billing" },
-    { title: "Spectra-Match Product ID", desc: "How crude oil identification works with spectral analysis", icon: <Sparkles className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />, category: "Technology" },
+    { title: "Spectra-Match Product ID", desc: "How crude oil identification works with spectral analysis", icon: <EsangIcon className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />, category: "Technology" },
     { title: "Agreements & Smart Contracts", desc: "Creating, signing, and managing carrier agreements", icon: <FileText className="w-5 h-5 text-blue-400" />, category: "Contracts" },
     { title: "Emergency Response (ERG 2024)", desc: "Using ESANG AI for real-time emergency guidance", icon: <AlertTriangle className="w-5 h-5 text-red-400" />, category: "Safety" },
   ];
@@ -111,7 +112,7 @@ export default function Support() {
             <p className="text-xs text-slate-400">Our AI assistant can answer compliance questions, look up ERG data, explain platform features, and help troubleshoot issues — 24/7.</p>
           </div>
           <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold flex-shrink-0 h-10" onClick={() => { toast.info("ESANG AI is available via the chat icon in the bottom-right corner"); }}>
-            <Sparkles className="w-4 h-4 mr-2" />Chat with ESANG AI
+            <EsangIcon className="w-4 h-4 mr-2" />Chat with ESANG AI
           </Button>
         </div>
       </div>

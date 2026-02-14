@@ -20,8 +20,9 @@ import { toast } from "sonner";
 import {
   MessageSquare, DollarSign, TrendingUp, TrendingDown, Clock,
   CheckCircle, XCircle, ArrowRight, ArrowLeftRight, Send,
-  Target, Sparkles, History, AlertTriangle
+  Target, History, AlertTriangle
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 
 interface Negotiation {
   id: number;

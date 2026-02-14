@@ -22,10 +22,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import {
   FileText, CheckCircle, ArrowLeft, Shield, DollarSign,
-  ChevronRight, Sparkles, Clock, Building2, MapPin,
+  ChevronRight, Clock, Building2, MapPin,
   Plus, Trash2, AlertTriangle, Truck, Users, Repeat,
   Calendar, Scale, Timer, Route, Zap
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
@@ -512,7 +513,7 @@ export default function RecurringLoadScheduler() {
               )}
               {linkedAgreement === "new" && (
                 <Button className="w-full rounded-xl bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-bold" onClick={() => setLocation("/agreements/create")}>
-                  <Sparkles className="w-4 h-4 mr-2" />Open Agreement Wizard
+                  <EsangIcon className="w-4 h-4 mr-2" />Open Agreement Wizard
                 </Button>
               )}
             </CardContent>

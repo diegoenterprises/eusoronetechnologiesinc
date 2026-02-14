@@ -16,9 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Truck, DollarSign, CheckCircle,
-  ArrowRight, ArrowLeft, AlertTriangle, Sparkles, Info, Search,
+  ArrowRight, ArrowLeft, AlertTriangle, Info, Search,
   Droplets, Wind, Box, Thermometer, Snowflake
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { HazmatDecalPreview } from "@/components/HazmatDecal";
@@ -429,7 +430,7 @@ export default function LoadCreationWizard() {
                         className="bg-slate-700/50 border-slate-600/50 rounded-lg pl-10" />
                     </div>
                     <Button variant="outline" className="bg-purple-500/20 border-purple-500/30 text-purple-400 hover:bg-purple-500/30 rounded-lg" onClick={handleSuggest}>
-                      <Sparkles className="w-4 h-4 mr-2" />ESANG AI
+                      <EsangIcon className="w-4 h-4 mr-2" />ESANG AI
                     </Button>
                   </div>
                   {showSuggestions && ergSearch.data?.results?.length > 0 && (
@@ -453,7 +454,7 @@ export default function LoadCreationWizard() {
                   )}
                   {showSuggestions && searchQuery.length >= 2 && ergSearch.isLoading && (
                     <div className="absolute z-50 left-0 right-16 mt-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-3">
-                      <div className="flex items-center gap-2 text-slate-400 text-sm"><Sparkles className="w-4 h-4 animate-spin" />Searching ERG 2020 database...</div>
+                      <div className="flex items-center gap-2 text-slate-400 text-sm"><EsangIcon className="w-4 h-4 animate-spin" />Searching ERG 2020 database...</div>
                     </div>
                   )}
                 </div>
@@ -520,7 +521,7 @@ export default function LoadCreationWizard() {
           {rs === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-cyan-400" />
+                <EsangIcon className="w-5 h-5 text-cyan-400" />
                 <p className="text-white font-bold text-lg">SPECTRA-MATCH Parameters</p>
                 <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400 ml-auto">Product Verification</Badge>
               </div>
@@ -704,7 +705,7 @@ export default function LoadCreationWizard() {
                             )}
                             {showCompSuggestions && activeCompIdx === i && compSearchQuery.length >= 2 && ergCompSearch.isLoading && (
                               <div className="absolute z-[100] left-0 right-0 bottom-full mb-1 bg-slate-800 border border-slate-600/50 rounded-lg shadow-xl p-2">
-                                <div className="flex items-center gap-2 text-slate-400 text-xs"><Sparkles className="w-3 h-3 animate-spin" />Searching ERG 2020...</div>
+                                <div className="flex items-center gap-2 text-slate-400 text-xs"><EsangIcon className="w-3 h-3 animate-spin" />Searching ERG 2020...</div>
                               </div>
                             )}
                           </div>
@@ -916,7 +917,7 @@ export default function LoadCreationWizard() {
                 return (
                   <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-purple-500/20 shadow-sm dark:shadow-none">
                     <div className="flex items-center gap-2 mb-4">
-                      <Sparkles className="w-4 h-4 text-purple-500 dark:text-purple-400" />
+                      <EsangIcon className="w-4 h-4 text-purple-500 dark:text-purple-400" />
                       <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
                     </div>
 
@@ -968,7 +969,7 @@ export default function LoadCreationWizard() {
 
                     <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/30">
                       <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-3 h-3 text-purple-500 dark:text-purple-400" />
+                        <EsangIcon className="w-3 h-3 text-purple-500 dark:text-purple-400" />
                         <span className="text-[11px] font-bold text-purple-600 dark:text-purple-300">ESANG Recommendation</span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
@@ -1075,7 +1076,7 @@ export default function LoadCreationWizard() {
               {(formData.apiGravity || formData.bsw || formData.sulfurContent || formData.flashPoint) && (
                 <div className="p-4 rounded-xl bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border border-purple-500/20">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="w-4 h-4 text-purple-400" />
+                    <EsangIcon className="w-4 h-4 text-purple-400" />
                     <span className="text-purple-400 font-bold text-sm">SPECTRA-MATCH Parameters</span>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

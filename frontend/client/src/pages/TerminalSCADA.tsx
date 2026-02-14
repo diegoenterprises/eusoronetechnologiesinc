@@ -15,8 +15,9 @@ import {
   Gauge, Fuel, Thermometer, Droplets, AlertTriangle, CheckCircle,
   Play, Square, Clock, Truck, RefreshCw, Activity, BarChart3,
   Bell, Settings, Eye, ArrowUp, ArrowDown, Zap, Calendar,
-  Beaker, Target, FileText, Sparkles, FlaskConical
+  Beaker, Target, FileText, FlaskConical
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import SpectraMatchWidget from "@/components/SpectraMatchWidget";
@@ -695,7 +696,7 @@ export default function TerminalSCADA() {
             <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/30">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-purple-400" />
+                  <EsangIcon className="w-5 h-5 text-purple-400" />
                   Quick Actions
                 </CardTitle>
               </CardHeader>

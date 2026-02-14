@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
-  FileText, Sparkles, Bug, Wrench, AlertTriangle,
+  FileText, Bug, Wrench, AlertTriangle,
   Clock, Tag, ChevronDown, ChevronUp
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 
 export default function ReleaseNotes() {
@@ -25,7 +26,7 @@ export default function ReleaseNotes() {
 
   const getTypeIcon = (type: string) => {
     switch (type) {
-      case "feature": return <Sparkles className="w-4 h-4 text-cyan-400" />;
+      case "feature": return <EsangIcon className="w-4 h-4 text-cyan-400" />;
       case "bugfix": return <Bug className="w-4 h-4 text-red-400" />;
       case "improvement": return <Wrench className="w-4 h-4 text-purple-400" />;
       case "security": return <AlertTriangle className="w-4 h-4 text-yellow-400" />;
@@ -35,7 +36,7 @@ export default function ReleaseNotes() {
 
   const getTypeBadge = (type: string) => {
     switch (type) {
-      case "feature": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0"><Sparkles className="w-3 h-3 mr-1" />Feature</Badge>;
+      case "feature": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0"><EsangIcon className="w-3 h-3 mr-1" />Feature</Badge>;
       case "bugfix": return <Badge className="bg-red-500/20 text-red-400 border-0"><Bug className="w-3 h-3 mr-1" />Bug Fix</Badge>;
       case "improvement": return <Badge className="bg-purple-500/20 text-purple-400 border-0"><Wrench className="w-3 h-3 mr-1" />Improvement</Badge>;
       case "security": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0"><AlertTriangle className="w-3 h-3 mr-1" />Security</Badge>;

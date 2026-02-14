@@ -16,10 +16,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { renderChatMarkdown } from "@/lib/renderChatMarkdown";
 import {
-  Send, Mic, MicOff, Paperclip, X, Sparkles, Maximize2,
+  Send, Mic, MicOff, Paperclip, X, Maximize2,
   ChevronDown, Trash2, Bot, User, Image as ImageIcon,
   Loader2, ArrowRight, Beaker, Shield, MapPin, FileText
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -324,7 +325,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
                     {/* esang label for AI messages */}
                     {msg.role === "assistant" && (
                       <div className="flex items-center gap-1.5 mb-1 ml-1">
-                        <Sparkles className="w-3 h-3 text-purple-400" />
+                        <EsangIcon className="w-3 h-3 text-purple-400" />
                         <span className={cn("text-[10px] font-medium", isLight ? "text-slate-500" : "text-slate-500")}>esang</span>
                       </div>
                     )}
@@ -368,7 +369,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
                 {sendMutation.isPending && (
                   <div className="flex flex-col items-start">
                     <div className="flex items-center gap-1.5 mb-1 ml-1">
-                      <Sparkles className="w-3 h-3 text-purple-400" />
+                      <EsangIcon className="w-3 h-3 text-purple-400" />
                       <span className="text-[10px] text-slate-500 font-medium">esang</span>
                     </div>
                     <div className={cn(

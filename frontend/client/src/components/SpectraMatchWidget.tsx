@@ -24,8 +24,9 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Activity, Droplets, Target, CheckCircle, ChevronDown, ChevronUp,
-  Sparkles, Save, Flame, MapPin, Gauge, Thermometer, Beaker,
+  Save, Flame, MapPin, Gauge, Thermometer, Beaker,
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -195,7 +196,7 @@ export default function SpectraMatchWidget({
             </div>
             SPECTRA-MATCH™
             <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px] px-1.5 py-0">
-              <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+              <EsangIcon className="w-2.5 h-2.5 mr-0.5" />
               AI
             </Badge>
           </div>
@@ -512,7 +513,7 @@ export default function SpectraMatchWidget({
               {result.esangAI && (
                 <div className="space-y-2 pt-2 border-t border-slate-700/50">
                   <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3 text-purple-400" />
+                    <EsangIcon className="w-3 h-3 text-purple-400" />
                     <span className="text-[10px] text-purple-400 font-medium">ESANG AI Analysis</span>
                     {result.esangVerified && (
                       <Badge className="bg-green-500/20 text-green-400 border-0 text-[9px] px-1 py-0 ml-auto">Verified</Badge>

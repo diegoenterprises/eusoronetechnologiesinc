@@ -16,9 +16,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   DollarSign, MapPin, Truck, AlertTriangle, CheckCircle, Calendar,
-  Package, ArrowRight, ArrowLeft, Sparkles, Navigation, Building2,
+  Package, ArrowRight, ArrowLeft, Navigation, Building2,
   User, Clock, Shield, FileText, Loader2, Gavel, Droplets, FlaskConical
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useParams, useLocation } from "wouter";
@@ -370,7 +371,7 @@ export default function CarrierBidSubmission() {
               {rateIntel && (
                 <div className={cn("p-5 rounded-xl border shadow-sm", isLight ? "bg-white border-slate-200" : "bg-slate-900 border-purple-500/20")}>
                   <div className="flex items-center gap-2 mb-4">
-                    <Sparkles className="w-4 h-4 text-purple-500" />
+                    <EsangIcon className="w-4 h-4 text-purple-500" />
                     <span className="text-sm font-bold bg-gradient-to-r from-[#BE01FF] to-[#1473FF] bg-clip-text text-transparent">ESANG AI Rate Intelligence</span>
                   </div>
                   <div className="flex flex-col items-center">
@@ -412,7 +413,7 @@ export default function CarrierBidSubmission() {
                   </div>
                   <div className={cn("mt-4 p-3 rounded-lg border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
                     <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-3 h-3 text-purple-500" />
+                      <EsangIcon className="w-3 h-3 text-purple-500" />
                       <span className={cn("text-[11px] font-bold", isLight ? "text-purple-600" : "text-purple-300")}>ESANG Recommendation</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">

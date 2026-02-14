@@ -10,8 +10,9 @@ import { trpc } from "@/lib/trpc";
 import { useRoute, useLocation } from "wouter";
 import {
   ArrowLeft, FileText, CheckCircle, Clock, Shield, Download,
-  Building2, Calendar, DollarSign, Truck, MapPin, Sparkles, PenTool,
+  Building2, Calendar, DollarSign, Truck, MapPin, PenTool,
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -187,7 +188,7 @@ export default function AgreementDetail() {
       <Card className={cc}>
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-blue-500" />
+            <EsangIcon className="w-5 h-5 text-blue-500" />
             <h3 className={cn("font-bold text-lg", vl)}>Agreement Terms</h3>
           </div>
           <div className={cn("prose prose-sm max-w-none whitespace-pre-wrap leading-relaxed", isLight ? "text-slate-700" : "text-slate-300")}>

@@ -26,10 +26,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import {
   FileText, CheckCircle, ArrowLeft, Shield, DollarSign,
-  ChevronRight, Sparkles, Clock, Building2, MapPin,
+  ChevronRight, Clock, Building2, MapPin,
   AlertTriangle, Truck, Users, Scale, ArrowRight,
   Percent, CreditCard, Calendar, Download
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -309,7 +310,7 @@ export default function BrokerContractWizard() {
           </Card>
           <div className="flex gap-3">
             <Button variant="outline" className={cn("flex-1 rounded-xl h-12 font-bold", isLight ? "border-slate-200" : "border-slate-700")} onClick={() => setStep("rates")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button>
-            <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={genMut.isPending} onClick={doGen}>{genMut.isPending ? <><Clock className="w-4 h-4 mr-2 animate-spin" />Generating...</> : <><Sparkles className="w-4 h-4 mr-2" />Generate Agreement</>}</Button>
+            <Button className="flex-1 h-12 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" disabled={genMut.isPending} onClick={doGen}>{genMut.isPending ? <><Clock className="w-4 h-4 mr-2 animate-spin" />Generating...</> : <><EsangIcon className="w-4 h-4 mr-2" />Generate Agreement</>}</Button>
           </div>
         </div>
       )}
@@ -318,7 +319,7 @@ export default function BrokerContractWizard() {
       {step === "review" && (
         <div className="space-y-5">
           <div className={cn("flex items-center justify-between p-4 rounded-xl border", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
-            <div className="flex items-center gap-3"><Sparkles className="w-5 h-5 text-green-500" /><div><p className={cn("font-bold text-sm", vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{direction === "shipper_to_broker" ? "Shipper → Broker" : "Broker → Carrier"}</p></div></div>
+            <div className="flex items-center gap-3"><EsangIcon className="w-5 h-5 text-green-500" /><div><p className={cn("font-bold text-sm", vl)}>Agreement #{agNum}</p><p className="text-xs text-slate-400">{direction === "shipper_to_broker" ? "Shipper → Broker" : "Broker → Carrier"}</p></div></div>
             <Badge className="bg-gradient-to-r from-[#1473FF]/15 to-[#BE01FF]/15 text-purple-400 border border-purple-500/30 text-xs font-bold">Draft</Badge>
           </div>
           <Card className={cc}><CardContent className="p-4"><pre className={cn("text-xs whitespace-pre-wrap leading-relaxed p-4 rounded-xl max-h-[300px] overflow-y-auto font-mono", cl)}>{genContent || "Agreement content..."}</pre></CardContent></Card>

@@ -14,8 +14,9 @@ import { trpc } from "@/lib/trpc";
 import {
   Trophy, Target, Gift, MessageCircle, Send, Shield, Star,
   Zap, Clock, Users, TrendingUp, Award, Flame, ChevronRight,
-  Sparkles, MapPin, Truck, CheckCircle, Crown, RefreshCw, Package, XCircle,
+  MapPin, Truck, CheckCircle, Crown, RefreshCw, Package, XCircle,
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
@@ -135,7 +136,7 @@ export default function TheHaul() {
             <span className="text-xs text-slate-400">{profile.currentXp || 0} / {profile.xpToNextLevel || 1000} XP</span>
           </div>
           <Progress value={xpPct} className="h-2.5" />
-          {season && <div className="flex items-center gap-2 mt-2"><Sparkles className="w-3 h-3 text-purple-400" /><span className="text-[11px] text-purple-400">Season: {season.name}</span></div>}
+          {season && <div className="flex items-center gap-2 mt-2"><EsangIcon className="w-3 h-3 text-purple-400" /><span className="text-[11px] text-purple-400">Season: {season.name}</span></div>}
         </div>
       )}
 
@@ -204,7 +205,7 @@ export default function TheHaul() {
                   </div>
                 </div>); })}</CardContent></Card>)}
 
-          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Target className="w-5 h-5 text-cyan-400" />Available Missions<Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]"><Sparkles className="w-2.5 h-2.5 mr-0.5" />AI + Shipper</Badge></CardTitle></CardHeader>
+          <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("text-lg flex items-center gap-2", isLight ? "text-slate-800" : "text-white")}><Target className="w-5 h-5 text-cyan-400" />Available Missions<Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px]"><EsangIcon className="w-2.5 h-2.5 mr-0.5" />AI + Shipper</Badge></CardTitle></CardHeader>
             <CardContent>{missionsQ.isLoading ? <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
               : allAvail.length === 0 ? <div className="text-center py-8"><Target className="w-10 h-10 text-slate-500 mx-auto mb-2" /><p className="text-slate-400">No missions available</p></div>
               : <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{allAvail.map((m: any, i: number) => (

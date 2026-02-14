@@ -160,11 +160,11 @@ export default function CreateLoad() {
       <div className="flex items-center gap-1 md:gap-2 mb-6 overflow-x-auto pb-2">
         {STEPS.map((s, i) => (
           <React.Fragment key={s.id}>
-            <button onClick={() => s.id < step && setStep(s.id)} className={cn("flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg transition-colors shrink-0", step === s.id ? "bg-[#1473FF]/20 text-[#1473FF]" : step > s.id ? "bg-[#BE01FF]/15 text-[#BE01FF] cursor-pointer hover:bg-[#BE01FF]/25" : isLight ? "bg-slate-100 text-slate-400" : "bg-slate-800/50 text-slate-500")}>
+            <button onClick={() => s.id < step && setStep(s.id)} className={cn("flex items-center gap-1.5 px-2 md:px-3 py-2 rounded-lg transition-colors shrink-0", step === s.id ? "bg-cyan-500/20 text-cyan-400" : step > s.id ? "bg-green-500/20 text-green-400 cursor-pointer hover:bg-green-500/25" : isLight ? "bg-slate-100 text-slate-400" : "bg-slate-800/50 text-slate-500")}>
               <s.icon className="w-4 h-4" />
               <span className="text-xs md:text-sm hidden md:inline">{s.title}</span>
             </button>
-            {i < STEPS.length - 1 && <div className={cn("h-0.5 w-4 md:w-8 shrink-0", step > s.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" : isLight ? "bg-slate-200" : "bg-slate-700")} />}
+            {i < STEPS.length - 1 && <div className={cn("h-0.5 w-4 md:w-8 shrink-0", step > s.id ? "bg-green-500" : isLight ? "bg-slate-200" : "bg-slate-700")} />}
           </React.Fragment>
         ))}
       </div>

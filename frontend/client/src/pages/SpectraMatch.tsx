@@ -30,7 +30,6 @@ import {
   Save,
   RotateCcw,
   ChevronRight,
-  Sparkles,
   MapPin,
   Clock,
   FileText,
@@ -43,6 +42,7 @@ import {
   BarChart3,
   Loader2,
 } from 'lucide-react';
+import { EsangIcon } from '@/components/EsangIcon';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -150,7 +150,7 @@ export default function SpectraMatch() {
         </div>
         <div className="flex items-center gap-2 mt-3">
           <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30">
-            <Sparkles className="w-3 h-3 mr-1" />
+            <EsangIcon className="w-3 h-3 mr-1" />
             ESANG AI™ Powered
           </Badge>
         </div>
@@ -465,7 +465,7 @@ export default function SpectraMatch() {
                       <Brain className="w-5 h-5 text-purple-400" />
                       ESANG AI Intelligence
                       <Badge className="bg-purple-500/20 text-purple-400 border-0 text-xs ml-auto">
-                        <Sparkles className="w-3 h-3 mr-1" />
+                        <EsangIcon className="w-3 h-3 mr-1" />
                         {identifyMutation.data.esangAI.poweredBy}
                       </Badge>
                     </CardTitle>
@@ -551,7 +551,7 @@ export default function SpectraMatch() {
                   {aiResponse && (
                     <div className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20">
                       <div className="flex items-center gap-2 mb-2">
-                        <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                        <EsangIcon className="w-3.5 h-3.5 text-purple-400" />
                         <span className="text-xs text-purple-400 font-medium">ESANG AI Response</span>
                       </div>
                       <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{aiResponse}</p>
@@ -628,7 +628,7 @@ export default function SpectraMatch() {
                 <BarChart3 className="w-4 h-4 text-purple-400" />
                 SPECTRA-MATCH Learning Stats
                 <Badge className="bg-purple-500/20 text-purple-400 border-0 text-[10px] ml-auto">
-                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />ESANG AI
+                  <EsangIcon className="w-2.5 h-2.5 mr-0.5" />ESANG AI
                 </Badge>
               </CardTitle>
             </CardHeader>

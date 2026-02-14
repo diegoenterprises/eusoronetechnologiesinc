@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Search, X, Plus, Star, Filter, LayoutGrid,
-  ChevronDown, ChevronUp, Check, Sparkles
+  ChevronDown, ChevronUp, Check
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import {
   ALL_WIDGETS, WidgetDefinition, WidgetCategory,
@@ -158,7 +159,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
                     : "bg-slate-800/50 text-slate-400 hover:text-white hover:bg-slate-700/50"
                 )}
               >
-                {tab.id === "premium" && <Sparkles className="w-3 h-3" />}
+                {tab.id === "premium" && <EsangIcon className="w-3 h-3" />}
                 {tab.label}
                 <span className={cn("px-1.5 py-0.5 rounded-full text-[10px]",
                   activeTab === tab.id ? "bg-white/20" : "bg-slate-700"
@@ -224,7 +225,7 @@ export default function WidgetStore({ role, activeWidgetIds, onAddWidget, onClos
                                 <p className="text-sm font-medium text-white truncate">{widget.name}</p>
                                 {widget.premium && (
                                   <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-[10px] px-1.5 py-0">
-                                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />PRO
+                                    <EsangIcon className="w-2.5 h-2.5 mr-0.5" />PRO
                                   </Badge>
                                 )}
                               </div>

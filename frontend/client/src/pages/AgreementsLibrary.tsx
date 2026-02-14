@@ -14,10 +14,11 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import {
   FileText, CheckCircle, Plus, Shield, DollarSign,
-  Clock, Building2, Search, Filter, Sparkles,
+  Clock, Building2, Search, Filter,
   AlertTriangle, Eye, PenTool, Truck, Users, Repeat,
   ChevronRight, ArrowUpRight, Calendar, Scale, Download
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -252,7 +253,7 @@ export default function AgreementsLibrary() {
       {!isCarrier && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <button onClick={() => setLocation("/agreements/create")} className={cn("p-4 rounded-xl border text-left transition-all hover:shadow-md", cl)}>
-            <Sparkles className="w-5 h-5 text-blue-500 mb-2" />
+            <EsangIcon className="w-5 h-5 text-blue-500 mb-2" />
             <p className={cn("font-bold text-sm", vl)}>Generate MSA</p>
             <p className="text-xs text-slate-400">Auto-generate a Master Service Agreement from strategic inputs</p>
           </button>

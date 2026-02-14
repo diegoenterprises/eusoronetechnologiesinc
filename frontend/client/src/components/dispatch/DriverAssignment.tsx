@@ -11,9 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { 
   User, Truck, Clock, MapPin, CheckCircle, AlertTriangle,
-  Search, Star, Shield, Phone, Sparkles, ChevronRight,
+  Search, Star, Shield, Phone, ChevronRight,
   Package, Navigation, Calendar, Filter, X
 } from "lucide-react";
+import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -213,7 +214,7 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
                               <span className="text-white font-medium">{driver.name}</span>
                               {driver.aiMatchScore && driver.aiMatchScore >= 90 && (
                                 <Badge className="bg-purple-500/20 text-purple-400 text-xs">
-                                  <Sparkles className="w-3 h-3 mr-1" />
+                                  <EsangIcon className="w-3 h-3 mr-1" />
                                   AI Pick
                                 </Badge>
                               )}
@@ -276,7 +277,7 @@ export function DriverAssignment({ load, availableDrivers, onAssign, onCancel }:
 
                       {driver.aiReason && can && (
                         <div className="mt-2 p-2 rounded bg-purple-500/10 text-xs text-purple-300">
-                          <Sparkles className="w-3 h-3 inline mr-1" />
+                          <EsangIcon className="w-3 h-3 inline mr-1" />
                           {driver.aiReason}
                         </div>
                       )}
