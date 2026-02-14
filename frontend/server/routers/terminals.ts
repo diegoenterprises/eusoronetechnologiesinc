@@ -7,7 +7,7 @@
  */
 
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { terminalProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { terminals, appointments, users, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
