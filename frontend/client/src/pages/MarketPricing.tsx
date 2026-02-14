@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp, TrendingDown, Flame, BarChart3, RefreshCw,
   Search, Filter, Fuel, Wheat, Gem, Truck, ChevronDown,
-  ArrowUpRight, ArrowDownRight, Minus, Activity,
+  ArrowUpRight, ArrowDownRight, Minus, Activity, MapPin,
 } from "lucide-react";
+import HotZones from "./HotZones";
 
 // ── CATEGORY CONFIG ──
 const CATEGORIES: Record<string, { label: string; icon: typeof Flame; color: string }> = {
@@ -62,6 +63,7 @@ function fmtChange(val: number | string | undefined, pct: number | string | unde
 export default function MarketPricing() {
   const { theme } = useTheme();
   const isLight = theme === "light";
+  const [activeView, setActiveView] = useState<"rates" | "hotzones">("rates");
   const [activeCategory, setActiveCategory] = useState("All Markets");
   const [search, setSearch] = useState("");
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export default function MarketPricing() {
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className={`text-xl font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>Market Pricing</h1>
+                <h1 className={`text-xl font-semibold tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>Market Intelligence</h1>
                 <div className="flex items-center gap-2 mt-0.5">
                   <div className={`w-1.5 h-1.5 rounded-full ${isLive ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
                   <p className={`text-[11px] ${isLight ? "text-slate-500" : "text-white/40"}`}>{source}</p>
@@ -137,8 +139,28 @@ export default function MarketPricing() {
             </div>
           )}
 
-          {/* Category tabs */}
-          <div className="flex items-center gap-1 mt-3 overflow-x-auto no-scrollbar">
+          {/* View toggle: Rates vs Hot Zones */}
+          <div className="flex items-center gap-1 mt-3">
+            <button onClick={() => setActiveView("rates")}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeView === "rates"
+                  ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-[#1473FF]/25"
+                  : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"
+              }`}>
+              <BarChart3 className="w-3.5 h-3.5" /> Rates & Commodities
+            </button>
+            <button onClick={() => setActiveView("hotzones")}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                activeView === "hotzones"
+                  ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-lg shadow-[#1473FF]/25"
+                  : isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"
+              }`}>
+              <MapPin className="w-3.5 h-3.5" /> Hot Zones
+            </button>
+          </div>
+
+          {/* Category tabs (only for rates view) */}
+          {activeView === "rates" && <div className="flex items-center gap-1 mt-3 overflow-x-auto no-scrollbar">
             {categories.map(cat => {
               const cfg = CATEGORIES[cat];
               const active = activeCategory === cat;
@@ -153,11 +175,15 @@ export default function MarketPricing() {
                 </button>
               );
             })}
-          </div>
+          </div>}
         </div>
       </div>
 
-      {/* ── MAIN BODY ── */}
+      {/* ── HOT ZONES VIEW ── */}
+      {activeView === "hotzones" && <HotZones />}
+
+      {/* ── RATES MAIN BODY ── */}
+      {activeView === "rates" && (
       <div className="max-w-[1600px] mx-auto px-6 py-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-32">
@@ -317,6 +343,7 @@ export default function MarketPricing() {
           </>
         )}
       </div>
+      )}
     </div>
   );
 }
