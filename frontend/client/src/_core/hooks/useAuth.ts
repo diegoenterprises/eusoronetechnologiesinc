@@ -8,6 +8,22 @@ type UseAuthOptions = {
   redirectPath?: string;
 };
 
+// Migration map: old role names → new role names (from CARRIER→CATALYST, CATALYST→DISPATCH rename)
+const ROLE_MIGRATION: Record<string, string> = {
+  CARRIER: 'CATALYST',
+  carrier: 'catalyst',
+};
+
+function migrateRole(user: any): any {
+  if (!user || !user.role) return user;
+  const newRole = ROLE_MIGRATION[user.role];
+  if (newRole) {
+    console.log(`[useAuth] Migrating role ${user.role} → ${newRole}`);
+    return { ...user, role: newRole };
+  }
+  return user;
+}
+
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
     options ?? {};
@@ -76,9 +92,10 @@ export function useAuth(options?: UseAuthOptions) {
   const state = useMemo(() => {
     // Prioritize test user if it exists
     if (testUser) {
-      console.log('[useAuth] Using test user:', testUser);
+      const migrated = migrateRole(testUser);
+      console.log('[useAuth] Using test user:', migrated);
       return {
-        user: testUser,
+        user: migrated,
         loading: false,
         error: null,
         isAuthenticated: true,
@@ -86,12 +103,13 @@ export function useAuth(options?: UseAuthOptions) {
     }
 
     // Fall back to real auth
+    const realUser = meQuery.data ? migrateRole(meQuery.data) : null;
     localStorage.setItem(
       "eusotrip-user-info",
-      JSON.stringify(meQuery.data)
+      JSON.stringify(realUser)
     );
     return {
-      user: meQuery.data ?? null,
+      user: realUser,
       loading: meQuery.isLoading || logoutMutation.isPending,
       error: meQuery.error ?? logoutMutation.error ?? null,
       isAuthenticated: Boolean(meQuery.data),

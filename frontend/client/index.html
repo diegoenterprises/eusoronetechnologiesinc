@@ -15,7 +15,17 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root"><div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0f172a;color:#94a3b8;font-family:system-ui"><div style="text-align:center"><div style="font-size:24px;font-weight:bold;color:#fff;margin-bottom:8px">EusoTrip</div><div>Loading...</div></div></div></div>
+    <script>
+      window.addEventListener('error', function(e) {
+        var r = document.getElementById('root');
+        if (r) r.innerHTML = '<div style="padding:40px;font-family:monospace;background:#1e1e2e;color:#f38ba8;min-height:100vh;word-break:break-all"><h2 style="color:#cdd6f4">Error</h2><pre style="white-space:pre-wrap;color:#fab387">' + (e.message || e) + '</pre><pre style="color:#a6adc8">' + (e.filename || '') + ':' + (e.lineno || '') + '</pre><pre style="color:#6c7086;font-size:12px">' + (e.error && e.error.stack ? e.error.stack : '') + '</pre></div>';
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        var r = document.getElementById('root');
+        if (r) r.innerHTML = '<div style="padding:40px;font-family:monospace;background:#1e1e2e;color:#f38ba8;min-height:100vh;word-break:break-all"><h2 style="color:#cdd6f4">Promise Error</h2><pre style="white-space:pre-wrap;color:#fab387">' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)) + '</pre><pre style="color:#6c7086;font-size:12px">' + (e.reason && e.reason.stack ? e.reason.stack : '') + '</pre></div>';
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 
