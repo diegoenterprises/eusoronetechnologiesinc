@@ -141,10 +141,28 @@ export const catalystsRouter = router({
    */
   getDashboardSummary: protectedProcedure
     .query(async ({ ctx }) => {
-      return {
-        activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0,
-        inTransit: 0, issues: 0, fleetUtilization: 0, avgLoadTime: 0,
-      };
+      const db = await getDb();
+      if (!db) return { activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, fleetUtilization: 0, avgLoadTime: 0 };
+      try {
+        const [active] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading')`);
+        const [unassigned] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'posted'));
+        const [enRoute] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(sql`${loads.status} IN ('en_route_pickup','at_pickup')`);
+        const [loadingCount] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'loading'));
+        const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
+        return {
+          activeLoads: active?.count || 0,
+          unassigned: unassigned?.count || 0,
+          enRoute: enRoute?.count || 0,
+          loading: loadingCount?.count || 0,
+          inTransit: inTransit?.count || 0,
+          issues: 0,
+          fleetUtilization: 0,
+          avgLoadTime: 0,
+        };
+      } catch (e) {
+        console.error('[Catalysts] getDashboardSummary error:', e);
+        return { activeLoads: 0, unassigned: 0, enRoute: 0, loading: 0, inTransit: 0, issues: 0, fleetUtilization: 0, avgLoadTime: 0 };
+      }
     }),
 
   /**
@@ -156,13 +174,36 @@ export const catalystsRouter = router({
       priority: z.enum(["all", "high", "normal"]).optional(),
     }))
     .query(async ({ input }) => {
-      return {
-        loads: [],
-        summary: {
-          total: 0,
-          byStatus: { unassigned: 0, inTransit: 0, loading: 0, issue: 0 },
-        },
-      };
+      const db = await getDb();
+      if (!db) return { loads: [], summary: { total: 0, byStatus: { unassigned: 0, inTransit: 0, loading: 0, issue: 0 } } };
+      try {
+        const statusFilter = input.status ? eq(loads.status, input.status as any) : sql`${loads.status} IN ('posted','assigned','en_route_pickup','at_pickup','loading','in_transit','at_delivery','unloading')`;
+        const loadList = await db.select().from(loads).where(statusFilter).orderBy(desc(loads.createdAt)).limit(50);
+        const mapped = await Promise.all(loadList.map(async (l) => {
+          const [shipper] = await db.select({ name: users.name }).from(users).where(eq(users.id, l.shipperId)).limit(1);
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          return {
+            id: String(l.id), loadNumber: l.loadNumber, status: l.status,
+            shipper: shipper?.name || 'Unknown',
+            origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+            destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            pickupDate: l.pickupDate?.toISOString().split('T')[0] || '',
+            carrierId: l.carrierId,
+          };
+        }));
+        const [unassigned] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'posted'));
+        const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
+        const [loadingC] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'loading'));
+        return {
+          loads: mapped,
+          summary: { total: mapped.length, byStatus: { unassigned: unassigned?.count || 0, inTransit: inTransit?.count || 0, loading: loadingC?.count || 0, issue: 0 } },
+        };
+      } catch (e) {
+        console.error('[Catalysts] getDispatchBoard error:', e);
+        return { loads: [], summary: { total: 0, byStatus: { unassigned: 0, inTransit: 0, loading: 0, issue: 0 } } };
+      }
     }),
 
   /**
@@ -207,6 +248,12 @@ export const catalystsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error('Database unavailable');
+      const loadIdNum = parseInt(input.loadId, 10);
+      const driverIdNum = parseInt(input.driverId, 10);
+      if (isNaN(loadIdNum) || isNaN(driverIdNum)) throw new Error('Invalid load or driver ID');
+      await db.update(loads).set({ carrierId: driverIdNum, status: 'assigned' as any }).where(eq(loads.id, loadIdNum));
       return {
         success: true,
         loadId: input.loadId,

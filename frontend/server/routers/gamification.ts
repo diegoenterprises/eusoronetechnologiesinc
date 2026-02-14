@@ -139,7 +139,7 @@ export const gamificationRouter = router({
     }),
 
   /**
-   * Get achievements
+   * Get achievements — DB-backed with badge catalog
    */
   getAchievements: protectedProcedure
     .input(z.object({
@@ -147,101 +147,74 @@ export const gamificationRouter = router({
       category: z.enum(["all", "safety", "performance", "milestones", "special"]).default("all"),
     }))
     .query(async ({ ctx, input }) => {
-      const achievements = [
-        {
-          id: "ach_001",
-          name: "First Load",
-          description: "Complete your first load",
-          category: "milestones",
-          icon: "truck",
-          points: 100,
-          earnedAt: "2022-03-20",
-          rarity: "common",
-        },
-        {
-          id: "ach_002",
-          name: "Century Club",
-          description: "Complete 100 loads",
-          category: "milestones",
-          icon: "award",
-          points: 500,
-          earnedAt: "2023-05-15",
-          rarity: "uncommon",
-        },
-        {
-          id: "ach_003",
-          name: "Safety First",
-          description: "30 days without incidents",
-          category: "safety",
-          icon: "shield",
-          points: 250,
-          earnedAt: "2022-04-20",
-          rarity: "uncommon",
-        },
-        {
-          id: "ach_004",
-          name: "Road Warrior",
-          description: "Drive 100,000 miles",
-          category: "milestones",
-          icon: "map",
-          points: 1000,
-          earnedAt: "2024-08-10",
-          rarity: "rare",
-        },
-        {
-          id: "ach_005",
-          name: "Perfect Week",
-          description: "100% on-time deliveries for a week",
-          category: "performance",
-          icon: "clock",
-          points: 200,
-          earnedAt: "2025-01-15",
-          rarity: "uncommon",
-        },
-        {
-          id: "ach_006",
-          name: "Customer Favorite",
-          description: "Receive 50 five-star ratings",
-          category: "performance",
-          icon: "star",
-          points: 750,
-          earnedAt: "2024-11-20",
-          rarity: "rare",
-        },
-      ];
+      const db = await getDb();
+      const userId = input.userId ? Number(input.userId) : Number(ctx.user?.id) || 0;
 
-      const locked = [
-        {
-          id: "ach_007",
-          name: "Legend",
-          description: "Complete 1,000 loads",
-          category: "milestones",
-          icon: "trophy",
-          points: 2500,
-          progress: 342,
-          target: 1000,
-          rarity: "legendary",
-        },
-        {
-          id: "ach_008",
-          name: "Safety Champion",
-          description: "One full year without incidents",
-          category: "safety",
-          icon: "shield-check",
-          points: 2000,
-          progress: 156,
-          target: 365,
-          rarity: "epic",
-        },
-      ];
+      if (!db) {
+        return { earned: [], locked: [], totalEarned: 0, totalAvailable: 0, totalPoints: 0 };
+      }
 
-      return {
-        earned: achievements,
-        locked: locked,
-        totalEarned: achievements.length,
-        totalAvailable: achievements.length + locked.length,
-        totalPoints: achievements.reduce((sum, a) => sum + a.points, 0),
-      };
+      try {
+        // Get all badges (achievement catalog)
+        const allBadgesList = await db.select().from(badges).where(eq(badges.isActive, true));
+
+        // Get user's earned badges
+        const earnedBadges = await db.select().from(userBadges).where(eq(userBadges.userId, userId));
+        const earnedBadgeIds = new Set(earnedBadges.map(eb => eb.badgeId));
+
+        // Category mapping from badge category to achievement category
+        const categoryMap: Record<string, string> = {
+          milestone: "milestones", performance: "performance", specialty: "special",
+          seasonal: "special", epic: "special", legendary: "special",
+        };
+
+        const tierRarityMap: Record<string, string> = {
+          bronze: "common", silver: "uncommon", gold: "rare", platinum: "epic", diamond: "legendary",
+        };
+
+        const earned = allBadgesList
+          .filter(b => earnedBadgeIds.has(b.id))
+          .filter(b => input.category === "all" || categoryMap[b.category] === input.category)
+          .map(b => {
+            const ub = earnedBadges.find(e => e.badgeId === b.id);
+            return {
+              id: `ach_${b.id}`,
+              name: b.name,
+              description: b.description || "",
+              category: categoryMap[b.category] || b.category,
+              icon: b.iconUrl || "award",
+              points: b.xpValue || 0,
+              earnedAt: ub?.earnedAt?.toISOString().split("T")[0] || "",
+              rarity: tierRarityMap[b.tier || "bronze"] || "common",
+            };
+          });
+
+        const locked = allBadgesList
+          .filter(b => !earnedBadgeIds.has(b.id))
+          .filter(b => input.category === "all" || categoryMap[b.category] === input.category)
+          .map(b => ({
+            id: `ach_${b.id}`,
+            name: b.name,
+            description: b.description || "",
+            category: categoryMap[b.category] || b.category,
+            icon: b.iconUrl || "lock",
+            points: b.xpValue || 0,
+            progress: 0,
+            target: 1,
+            rarity: tierRarityMap[b.tier || "bronze"] || "common",
+          }));
+
+        return {
+          earned,
+          locked,
+          totalEarned: earned.length,
+          totalAvailable: earned.length + locked.length,
+          totalPoints: earned.reduce((sum, a) => sum + a.points, 0),
+        };
+      } catch (err) {
+        console.error("[TheHaul] getAchievements error:", err);
+        return { earned: [], locked: [], totalEarned: 0, totalAvailable: 0, totalPoints: 0 };
+      }
     }),
 
   /**
@@ -367,14 +340,54 @@ export const gamificationRouter = router({
     }),
 
   /**
-   * Get points history
+   * Get points history — DB-backed via rewards table
    */
   getPointsHistory: protectedProcedure
     .input(z.object({ limit: z.number().default(20), offset: z.number().default(0) }))
-    .query(async () => ({
-      transactions: [], total: 0,
-      summary: { earnedThisMonth: 0, redeemedThisMonth: 0, netThisMonth: 0 },
-    })),
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      const empty = { transactions: [] as any[], total: 0, summary: { earnedThisMonth: 0, redeemedThisMonth: 0, netThisMonth: 0 } };
+      if (!db) return empty;
+
+      try {
+        const rewardsList = await db.select()
+          .from(rewards)
+          .where(eq(rewards.userId, userId))
+          .orderBy(desc(rewards.createdAt))
+          .limit(input.limit)
+          .offset(input.offset);
+
+        const transactions = rewardsList.map(r => {
+          const amt = r.amount ? parseFloat(r.amount) : 0;
+          return {
+            id: `pts_${r.id}`,
+            type: amt < 0 ? "redeemed" : "earned",
+            amount: Math.abs(amt),
+            description: r.description || r.type,
+            source: r.sourceType,
+            date: r.createdAt?.toISOString().split("T")[0] || "",
+          };
+        });
+
+        // Monthly summary
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+        const monthRewards = rewardsList.filter(r => r.createdAt && r.createdAt >= monthStart);
+        const earnedThisMonth = monthRewards.reduce((s, r) => { const a = parseFloat(r.amount || "0"); return a > 0 ? s + a : s; }, 0);
+        const redeemedThisMonth = monthRewards.reduce((s, r) => { const a = parseFloat(r.amount || "0"); return a < 0 ? s + Math.abs(a) : s; }, 0);
+
+        return {
+          transactions,
+          total: rewardsList.length,
+          summary: { earnedThisMonth, redeemedThisMonth, netThisMonth: earnedThisMonth - redeemedThisMonth },
+        };
+      } catch (err) {
+        console.error("[TheHaul] getPointsHistory error:", err);
+        return empty;
+      }
+    }),
 
   /**
    * Get challenges
@@ -383,11 +396,46 @@ export const gamificationRouter = router({
     .query(async () => ({ active: [], upcoming: [], completed: [] })),
 
   /**
-   * Get badges
+   * Get badges — DB-backed
    */
   getBadges: protectedProcedure
     .input(z.object({ userId: z.string().optional() }))
-    .query(async () => ({ displayBadges: [], allBadges: [] })),
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = input.userId ? Number(input.userId) : Number(ctx.user?.id) || 0;
+      if (!db) return { displayBadges: [], allBadges: [] };
+
+      try {
+        const earnedRows = await db.select().from(userBadges).where(eq(userBadges.userId, userId));
+        if (earnedRows.length === 0) return { displayBadges: [], allBadges: [] };
+
+        const badgeIds = earnedRows.map(e => e.badgeId);
+        const allBadgeRows = await db.select().from(badges).where(eq(badges.isActive, true));
+        const badgeMap = new Map(allBadgeRows.map(b => [b.id, b]));
+
+        const allBadges = earnedRows.map(ub => {
+          const b = badgeMap.get(ub.badgeId);
+          return {
+            id: `badge_${ub.badgeId}`,
+            name: b?.name || "Badge",
+            description: b?.description || "",
+            category: b?.category || "milestone",
+            tier: b?.tier || "bronze",
+            icon: b?.iconUrl || "award",
+            xpValue: b?.xpValue || 0,
+            earnedAt: ub.earnedAt?.toISOString().split("T")[0] || "",
+            isDisplay: ub.isDisplayed || false,
+          };
+        });
+
+        const displayBadges = allBadges.filter(b => b.isDisplay).slice(0, 3);
+
+        return { displayBadges, allBadges };
+      } catch (err) {
+        console.error("[TheHaul] getBadges error:", err);
+        return { displayBadges: [], allBadges: [] };
+      }
+    }),
 
   /**
    * Update display badges

@@ -481,12 +481,28 @@ export default function MyLoads() {
                       >
                         <Navigation className="w-4 h-4 mr-1.5" />Track
                       </Button>
+                    ) : isPending && canCreateLoads ? (
+                      <>
+                        <Button
+                          className="flex-1 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-0 rounded-xl font-bold text-sm h-10"
+                          onClick={() => setLocation(`/loads/${load.id}/bids`)}
+                        >
+                          <DollarSign className="w-4 h-4 mr-1.5" />Review Bids
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className={cn("rounded-xl font-bold text-sm h-10", isLight ? "border-slate-200" : "border-slate-600")}
+                          onClick={() => setLocation(`/loads/${load.id}`)}
+                        >
+                          Details
+                        </Button>
+                      </>
                     ) : isPending ? (
                       <Button
                         className="flex-1 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white border-0 rounded-xl font-bold text-sm h-10"
                         onClick={() => setLocation(`/loads/${load.id}`)}
                       >
-                        Post a Job
+                        View Load
                       </Button>
                     ) : (
                       <Button

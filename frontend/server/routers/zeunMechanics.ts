@@ -16,6 +16,7 @@ import {
   zeunMaintenanceSchedules,
   zeunVehicleRecalls,
   zeunBreakdownStatusHistory,
+  dtcCodes,
   users,
   vehicles,
 } from "../../drizzle/schema";
@@ -607,6 +608,432 @@ export const zeunMechanicsRouter = router({
     }
 
     return { totalCost, byCategory, breakdownCount: reports.length };
+  }),
+
+  // ============================================================================
+  // DTC LOOKUP — Scenario ZEUN-011
+  // Driver enters a fault code and gets instant actionable info
+  // ============================================================================
+
+  lookupDTC: protectedProcedure.input(z.object({
+    code: z.string().min(1),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    const normalizedCode = input.code.trim().toUpperCase().replace(/\s+/g, "-");
+
+    // Try DB first
+    if (db) {
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS dtc_codes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            code VARCHAR(20) NOT NULL UNIQUE,
+            spn VARCHAR(20),
+            fmi VARCHAR(10),
+            description VARCHAR(512) NOT NULL,
+            severity ENUM('LOW','MEDIUM','HIGH','CRITICAL') NOT NULL,
+            category VARCHAR(100),
+            symptoms JSON,
+            commonCauses JSON,
+            canDrive BOOLEAN DEFAULT TRUE,
+            repairUrgency VARCHAR(100),
+            estimatedCostMin DECIMAL(10,2),
+            estimatedCostMax DECIMAL(10,2),
+            estimatedTimeHours DECIMAL(5,1),
+            affectedSystems JSON,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX dtc_spn_idx (spn),
+            INDEX dtc_severity_idx (severity)
+          )
+        `);
+
+        const [row] = await db.select().from(dtcCodes)
+          .where(eq(dtcCodes.code, normalizedCode)).limit(1);
+
+        if (row) {
+          return {
+            found: true,
+            code: row.code,
+            spn: row.spn,
+            fmi: row.fmi,
+            description: row.description,
+            severity: row.severity,
+            category: row.category,
+            symptoms: row.symptoms || [],
+            commonCauses: row.commonCauses || [],
+            canDrive: row.canDrive ?? true,
+            repairUrgency: row.repairUrgency || "Schedule repair soon",
+            estimatedCost: {
+              min: parseFloat(String(row.estimatedCostMin)) || 0,
+              max: parseFloat(String(row.estimatedCostMax)) || 0,
+            },
+            estimatedTimeHours: parseFloat(String(row.estimatedTimeHours)) || 0,
+            affectedSystems: row.affectedSystems || [],
+          };
+        }
+      } catch (err) {
+        console.error("[Zeun] DTC lookup DB error:", err);
+      }
+    }
+
+    // Fallback: built-in common truck DTC codes
+    const BUILT_IN_CODES: Record<string, any> = {
+      "520342-31": {
+        description: "DEF Doser Condition",
+        severity: "HIGH",
+        category: "Aftertreatment",
+        symptoms: ["Derate warning", "DEF light on", "Reduced power"],
+        commonCauses: ["Clogged DEF doser", "DEF pump failure", "Poor DEF quality", "Wiring issue"],
+        canDrive: true,
+        repairUrgency: "Schedule repair within 48 hours",
+        estimatedCost: { min: 300, max: 1500 },
+        estimatedTimeHours: 2,
+        affectedSystems: ["Aftertreatment", "Emissions"],
+      },
+      "3364-4": {
+        description: "EGR Valve Position Error",
+        severity: "MEDIUM",
+        category: "Emissions",
+        symptoms: ["Check engine light", "Rough idle", "Decreased fuel economy"],
+        commonCauses: ["Carbon buildup on EGR valve", "Faulty EGR position sensor", "Vacuum leak"],
+        canDrive: true,
+        repairUrgency: "Schedule repair within 1 week",
+        estimatedCost: { min: 200, max: 800 },
+        estimatedTimeHours: 1.5,
+        affectedSystems: ["Emissions", "Engine"],
+      },
+      "111-3": {
+        description: "Engine Coolant Level Low",
+        severity: "HIGH",
+        category: "Cooling",
+        symptoms: ["Overheating warning", "Coolant temperature rising", "Steam from engine"],
+        commonCauses: ["Coolant leak", "Radiator crack", "Hose failure", "Water pump failure"],
+        canDrive: false,
+        repairUrgency: "STOP - Do not drive. Risk of engine damage",
+        estimatedCost: { min: 50, max: 2000 },
+        estimatedTimeHours: 1,
+        affectedSystems: ["Cooling", "Engine"],
+      },
+      "84-2": {
+        description: "Vehicle Speed Signal Error",
+        severity: "MEDIUM",
+        category: "Drivetrain",
+        symptoms: ["Speedometer erratic", "Cruise control inoperative", "ABS light on"],
+        commonCauses: ["Speed sensor failure", "Wiring damage", "Tone ring damage"],
+        canDrive: true,
+        repairUrgency: "Schedule repair within 3 days",
+        estimatedCost: { min: 100, max: 500 },
+        estimatedTimeHours: 1,
+        affectedSystems: ["Drivetrain", "ABS"],
+      },
+      "1569-31": {
+        description: "Engine Protection Torque Derate",
+        severity: "CRITICAL",
+        category: "Engine",
+        symptoms: ["Significant power loss", "Engine derate active", "Multiple warning lights"],
+        commonCauses: ["Aftertreatment issue", "Sensor failure", "DPF full", "DEF quality"],
+        canDrive: true,
+        repairUrgency: "Immediate - find safe stopping point and call for service",
+        estimatedCost: { min: 500, max: 5000 },
+        estimatedTimeHours: 4,
+        affectedSystems: ["Engine", "Aftertreatment"],
+      },
+    };
+
+    const builtin = BUILT_IN_CODES[normalizedCode];
+    if (builtin) {
+      return { found: true, code: normalizedCode, spn: normalizedCode.split("-")[0], fmi: normalizedCode.split("-")[1], ...builtin };
+    }
+
+    // SPN/FMI pattern match attempt
+    const parts = normalizedCode.split("-");
+    if (parts.length === 2) {
+      return {
+        found: false,
+        code: normalizedCode,
+        spn: parts[0],
+        fmi: parts[1],
+        description: `SPN ${parts[0]} FMI ${parts[1]} - Code not in database`,
+        severity: "MEDIUM",
+        category: "Unknown",
+        symptoms: ["Consult manufacturer documentation"],
+        commonCauses: ["Refer to OEM service manual for SPN " + parts[0]],
+        canDrive: true,
+        repairUrgency: "Have inspected at next available service stop",
+        estimatedCost: { min: 0, max: 0 },
+        estimatedTimeHours: 0,
+        affectedSystems: [],
+      };
+    }
+
+    return {
+      found: false,
+      code: normalizedCode,
+      description: "Code format not recognized. Try SPN-FMI format (e.g. 520342-31)",
+      severity: "MEDIUM",
+      symptoms: [],
+      commonCauses: [],
+      canDrive: true,
+      repairUrgency: "Unknown",
+      estimatedCost: { min: 0, max: 0 },
+      estimatedTimeHours: 0,
+      affectedSystems: [],
+    };
+  }),
+
+  // ============================================================================
+  // EMERGENCY PROCEDURES — Scenarios ZEUN-012, ZEUN-013
+  // Critical safety procedures displayed immediately
+  // ============================================================================
+
+  getEmergencyProcedure: protectedProcedure.input(z.object({
+    emergencyType: z.enum([
+      "engine_fire", "brake_failure", "tire_blowout", "rollover",
+      "hazmat_spill", "medical_emergency", "accident", "stolen_vehicle",
+      "weather_severe", "breakdown_highway",
+    ]),
+  })).query(async ({ input }) => {
+    const PROCEDURES: Record<string, any> = {
+      engine_fire: {
+        title: "Engine Fire Emergency",
+        severity: "CRITICAL",
+        immediateAction: "STOP IMMEDIATELY - Turn off engine",
+        steps: [
+          "Pull over to safe location immediately",
+          "Turn off engine and engage parking brake",
+          "Turn off fuel shutoff valve if accessible",
+          "Exit vehicle and move at least 100 feet away",
+          "Call 911 immediately",
+          "DO NOT open the hood - oxygen feeds fire",
+          "Use fire extinguisher ONLY if safe to approach",
+          "Warn other drivers and bystanders",
+          "If hauling hazmat: call CHEMTREC at 1-800-424-9300",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+          { name: "CHEMTREC (Hazmat)", number: "1-800-424-9300", priority: "hazmat" },
+        ],
+        doNot: [
+          "Do NOT open the hood",
+          "Do NOT try to drive to a service station",
+          "Do NOT use water on electrical or grease fires",
+        ],
+      },
+      brake_failure: {
+        title: "Brake Failure Emergency",
+        severity: "CRITICAL",
+        immediateAction: "DO NOT DRIVE - Set parking brake immediately",
+        steps: [
+          "Engage parking brake immediately",
+          "If moving, downshift to lowest gear for engine braking",
+          "Find safe location and stop completely",
+          "Chock wheels with available materials",
+          "Set emergency triangles (50, 100, 200 feet behind vehicle)",
+          "Call for heavy-duty tow service",
+          "Do NOT attempt to drive the vehicle",
+          "Report to your dispatcher immediately",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+        ],
+        doNot: [
+          "Do NOT attempt to drive",
+          "Do NOT pump brakes repeatedly if air pressure is zero",
+          "Do NOT leave vehicle unattended on a grade",
+        ],
+      },
+      tire_blowout: {
+        title: "Tire Blowout Procedure",
+        severity: "HIGH",
+        immediateAction: "Hold steering firmly - DO NOT brake suddenly",
+        steps: [
+          "Grip the steering wheel firmly with both hands",
+          "Take your foot OFF the accelerator - do NOT brake",
+          "Let the vehicle slow down naturally",
+          "Gently steer to the right shoulder",
+          "Once slow enough, gently apply brakes",
+          "Come to a complete stop on level ground",
+          "Engage parking brake and turn on hazard lights",
+          "Set emergency triangles behind vehicle",
+          "Assess tire damage - call for mobile tire service",
+        ],
+        emergencyContacts: [],
+        doNot: [
+          "Do NOT slam on the brakes",
+          "Do NOT make sudden steering corrections",
+          "Do NOT drive on a flat tire",
+        ],
+      },
+      hazmat_spill: {
+        title: "Hazmat Spill Emergency",
+        severity: "CRITICAL",
+        immediateAction: "STOP - Evacuate area - Call 911 and CHEMTREC",
+        steps: [
+          "Stop the vehicle if spill is from your load",
+          "Move upwind and uphill from the spill",
+          "Evacuate at least 1,000 feet in all directions",
+          "Call 911 immediately",
+          "Call CHEMTREC: 1-800-424-9300",
+          "Provide: UN Number, placard info, quantity spilled",
+          "Do NOT attempt to clean up or contain the spill",
+          "Keep all persons away from the area",
+          "Refer to ERG guide number for your material",
+          "Wait for HazMat response team",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+          { name: "CHEMTREC", number: "1-800-424-9300", priority: "primary" },
+          { name: "National Response Center", number: "1-800-424-8802", priority: "secondary" },
+        ],
+        doNot: [
+          "Do NOT touch or walk through spilled material",
+          "Do NOT attempt cleanup without proper equipment",
+          "Do NOT eat, drink, or smoke near the spill",
+        ],
+      },
+      medical_emergency: {
+        title: "Medical Emergency",
+        severity: "CRITICAL",
+        immediateAction: "Call 911 - Pull over safely if driving",
+        steps: [
+          "If driving, safely pull over and stop",
+          "Call 911 and describe symptoms",
+          "Unlock vehicle doors for emergency responders",
+          "If conscious, sit upright and stay calm",
+          "Share your exact GPS location with 911",
+          "If chest pain: chew aspirin if available",
+          "Do not drive yourself - wait for EMS",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+        ],
+        doNot: [
+          "Do NOT continue driving",
+          "Do NOT ignore chest pain or stroke symptoms",
+        ],
+      },
+      accident: {
+        title: "Vehicle Accident Procedure",
+        severity: "HIGH",
+        immediateAction: "Check for injuries - Call 911 if needed",
+        steps: [
+          "Check yourself and others for injuries",
+          "Call 911 if anyone is injured",
+          "Move to safe area if possible, away from traffic",
+          "Turn on hazard lights",
+          "Set emergency triangles",
+          "Exchange insurance information with other parties",
+          "Take photos of damage, scene, and positions",
+          "Do NOT admit fault at the scene",
+          "Report to your carrier/dispatcher",
+          "File police report if required by law",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+        ],
+        doNot: [
+          "Do NOT leave the scene",
+          "Do NOT admit fault",
+          "Do NOT move severely injured persons",
+        ],
+      },
+      breakdown_highway: {
+        title: "Highway Breakdown Procedure",
+        severity: "MEDIUM",
+        immediateAction: "Move to right shoulder - Turn on hazards",
+        steps: [
+          "Signal and move to the right shoulder safely",
+          "Turn on hazard flashers immediately",
+          "Engage parking brake on level ground",
+          "Set emergency triangles: 50, 100, 200 feet behind",
+          "Assess the issue if safe to do so",
+          "Report breakdown through Zeun app",
+          "Stay in vehicle if shoulder is narrow",
+          "If you must exit, exit from the passenger side",
+          "Call for roadside assistance or tow",
+        ],
+        emergencyContacts: [],
+        doNot: [
+          "Do NOT stand behind or beside the vehicle on the traffic side",
+          "Do NOT attempt repairs in a travel lane",
+        ],
+      },
+      rollover: {
+        title: "Rollover Emergency",
+        severity: "CRITICAL",
+        immediateAction: "Brace - Turn off engine after stopping",
+        steps: [
+          "If rolling: brace yourself, do NOT unbuckle",
+          "Once stopped: turn off engine immediately",
+          "Check for injuries",
+          "Call 911",
+          "If fuel is leaking, evacuate immediately",
+          "If hauling hazmat: call CHEMTREC",
+          "Do NOT attempt to right the vehicle",
+          "Wait for emergency responders",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+          { name: "CHEMTREC (if Hazmat)", number: "1-800-424-9300", priority: "hazmat" },
+        ],
+        doNot: [
+          "Do NOT unbuckle while vehicle is still moving",
+          "Do NOT smoke or use open flames near fuel spill",
+        ],
+      },
+      stolen_vehicle: {
+        title: "Stolen Vehicle / Cargo Theft",
+        severity: "HIGH",
+        immediateAction: "Call 911 - Do NOT pursue",
+        steps: [
+          "Call 911 immediately and report location",
+          "Note suspect description and direction of travel",
+          "Do NOT attempt to follow or confront",
+          "Call your dispatcher/carrier",
+          "Document vehicle details: VIN, plate, load info",
+          "File police report",
+          "Contact insurance company",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+          { name: "FBI Cargo Theft Hotline", number: "1-888-324-3228", priority: "secondary" },
+        ],
+        doNot: [
+          "Do NOT pursue the thief",
+          "Do NOT put yourself at risk",
+        ],
+      },
+      weather_severe: {
+        title: "Severe Weather Emergency",
+        severity: "HIGH",
+        immediateAction: "Find safe shelter - Avoid driving in tornado/severe storm",
+        steps: [
+          "Monitor weather alerts on your route",
+          "If tornado: stop and seek shelter in sturdy building",
+          "If no building: lie flat in a ditch, cover your head",
+          "Do NOT shelter under overpass (wind tunnel effect)",
+          "If flooding: NEVER drive through standing water",
+          "Turn around, don't drown",
+          "If high winds: park into the wind, away from trees",
+          "Wait for all-clear before continuing",
+        ],
+        emergencyContacts: [
+          { name: "911 Emergency", number: "911", priority: "primary" },
+        ],
+        doNot: [
+          "Do NOT drive through flooded roads",
+          "Do NOT park under overpasses during tornado",
+          "Do NOT ignore weather warnings",
+        ],
+      },
+    };
+
+    const procedure = PROCEDURES[input.emergencyType];
+    if (!procedure) {
+      return { found: false, emergencyType: input.emergencyType };
+    }
+
+    return { found: true, emergencyType: input.emergencyType, ...procedure };
   }),
 
   // ============================================================================

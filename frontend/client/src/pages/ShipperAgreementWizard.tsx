@@ -24,15 +24,31 @@ type Step = "mode"|"parties"|"financial"|"lanes"|"review"|"sign"|"complete";
 type Mode = "generate"|"upload"|null;
 interface Lane { oC:string; oS:string; dC:string; dS:string; rate:string; rt:string; vol:string; vp:string; }
 
+const ROLE_AGREEMENT_MAP: Record<string, {types:{value:string;label:string}[]; defaultType:string; partyALabel:string; partyBLabel:string; partyBRole:string}> = {
+  SHIPPER: { types:[{value:"carrier_shipper",label:"Carrier-Shipper"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge Schedule"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"carrier_shipper", partyALabel:"Shipper", partyBLabel:"Carrier", partyBRole:"CARRIER" },
+  CARRIER: { types:[{value:"carrier_shipper",label:"Carrier-Shipper"},{value:"carrier_driver",label:"Carrier-Driver (Owner-Op)"},{value:"broker_carrier",label:"Broker-Carrier"},{value:"master_service",label:"Master Service Agreement"},{value:"factoring",label:"Factoring Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"carrier_shipper", partyALabel:"Carrier", partyBLabel:"Shipper / Driver", partyBRole:"SHIPPER" },
+  BROKER: { types:[{value:"broker_carrier",label:"Broker-Carrier"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"master_service",label:"Master Service Agreement"},{value:"lane_commitment",label:"Lane Commitment"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"broker_carrier", partyALabel:"Broker", partyBLabel:"Carrier / Shipper", partyBRole:"CARRIER" },
+  CATALYST: { types:[{value:"catalyst_dispatch",label:"Dispatch Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"catalyst_dispatch", partyALabel:"Catalyst (Dispatcher)", partyBLabel:"Carrier", partyBRole:"CARRIER" },
+  ESCORT: { types:[{value:"escort_service",label:"Escort Service Agreement"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"escort_service", partyALabel:"Escort Provider", partyBLabel:"Carrier", partyBRole:"CARRIER" },
+  TERMINAL_MANAGER: { types:[{value:"terminal_access",label:"Terminal Access & Services"},{value:"master_service",label:"Master Service Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"terminal_access", partyALabel:"Terminal Operator", partyBLabel:"Carrier / Shipper", partyBRole:"CARRIER" },
+  DRIVER: { types:[{value:"carrier_driver",label:"Carrier-Driver (Owner-Op)"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"carrier_driver", partyALabel:"Driver", partyBLabel:"Carrier", partyBRole:"CARRIER" },
+  ADMIN: { types:[{value:"carrier_shipper",label:"Carrier-Shipper"},{value:"broker_carrier",label:"Broker-Carrier"},{value:"broker_shipper",label:"Broker-Shipper"},{value:"carrier_driver",label:"Carrier-Driver"},{value:"escort_service",label:"Escort Service"},{value:"catalyst_dispatch",label:"Dispatch Service"},{value:"terminal_access",label:"Terminal Access"},{value:"master_service",label:"Master Service"},{value:"lane_commitment",label:"Lane Commitment"},{value:"fuel_surcharge",label:"Fuel Surcharge"},{value:"accessorial_schedule",label:"Accessorial Schedule"},{value:"factoring",label:"Factoring"},{value:"nda",label:"NDA"},{value:"custom",label:"Custom"}], defaultType:"carrier_shipper", partyALabel:"Party A", partyBLabel:"Party B", partyBRole:"CARRIER" },
+};
+ROLE_AGREEMENT_MAP.SUPER_ADMIN = ROLE_AGREEMENT_MAP.ADMIN;
+ROLE_AGREEMENT_MAP.COMPLIANCE_OFFICER = { types:[{value:"nda",label:"Non-Disclosure Agreement"},{value:"master_service",label:"Master Service Agreement"}], defaultType:"nda", partyALabel:"Company", partyBLabel:"Counterparty", partyBRole:"CARRIER" };
+ROLE_AGREEMENT_MAP.SAFETY_MANAGER = ROLE_AGREEMENT_MAP.COMPLIANCE_OFFICER;
+ROLE_AGREEMENT_MAP.FACTORING = { types:[{value:"factoring",label:"Factoring Agreement"},{value:"nda",label:"Non-Disclosure Agreement"}], defaultType:"factoring", partyALabel:"Factoring Company", partyBLabel:"Carrier", partyBRole:"CARRIER" };
+
 export default function ShipperAgreementWizard() {
   const { theme } = useTheme(); const isLight = theme === "light";
   const { user } = useAuth(); const [, setLocation] = useLocation();
   const fileRef = useRef<HTMLInputElement>(null);
+  const roleConfig = ROLE_AGREEMENT_MAP[user?.role || "SHIPPER"] || ROLE_AGREEMENT_MAP.SHIPPER;
   const [step, setStep] = useWizardHistory<Step>("mode", "/agreements");
   const [mode, setMode] = useState<Mode>(null);
   const [uploadedFile, setUploadedFile] = useState<File|null>(null);
   const [isDigitizing, setIsDigitizing] = useState(false);
-  const [agType, setAgType] = useState("carrier_shipper");
+  const [agType, setAgType] = useState(roleConfig.defaultType);
   const [dur, setDur] = useState<string>("short_term");
   const [aDisplayName, setADisplayName] = useState("");
   const [aName, setAName] = useState(user?.name || ""); const [aComp, setAComp] = useState("");
@@ -88,8 +104,9 @@ export default function ShipperAgreementWizard() {
 
   const doGen = () => {
     const ld = lanes.filter(l=>l.oC&&l.dC).map(l=>({ origin:{city:l.oC,state:l.oS,radius:50}, destination:{city:l.dC,state:l.dS,radius:50}, rate:parseFloat(l.rate)||0, rateType:l.rt||"flat", volumeCommitment:parseInt(l.vol)||undefined, volumePeriod:l.vp||undefined }));
-    genMut.mutate({ agreementType:agType, contractDuration:dur, partyBUserId:0, partyBRole:"CARRIER",
-      strategicInputs:{ partyASignerName:aName||user?.name||"Shipper", partyACompanyName:aComp, partyAName:aDisplayName||aComp||aName||user?.name||"Shipper", partyAMc:aMc, partyADot:aDot, partyARole:user?.role||"SHIPPER", partyBSignerName:bName, partyBCompanyName:bComp, partyBName:bDisplayName||bComp||bName||"Party B", partyBCompany:bComp, partyBMc:bMc, partyBDot:bDot, partyBRole:"CARRIER", jurisdiction, payFrequency:payFreq, nonCircumventionMonths:nonCircumventMonths, terminationNoticeDays:terminationNoticeDays, noticePeriodDays:noticePeriodDays },
+    const resolvedPartyBRole = agType==="carrier_driver"?"DRIVER":agType==="broker_shipper"?"SHIPPER":agType==="factoring"?"CARRIER":roleConfig.partyBRole;
+    genMut.mutate({ agreementType:agType, contractDuration:dur, partyBUserId:0, partyBRole:resolvedPartyBRole,
+      strategicInputs:{ partyASignerName:aName||user?.name||roleConfig.partyALabel, partyACompanyName:aComp, partyAName:aDisplayName||aComp||aName||user?.name||roleConfig.partyALabel, partyAMc:aMc, partyADot:aDot, partyARole:user?.role||"SHIPPER", partyBSignerName:bName, partyBCompanyName:bComp, partyBName:bDisplayName||bComp||bName||"Party B", partyBCompany:bComp, partyBMc:bMc, partyBDot:bDot, partyBRole:resolvedPartyBRole, jurisdiction, payFrequency:payFreq, nonCircumventionMonths:nonCircumventMonths, terminationNoticeDays:terminationNoticeDays, noticePeriodDays:noticePeriodDays },
       rateType, baseRate:parseFloat(baseRate)||0, fuelSurchargeType:fuelType, fuelSurchargeValue:parseFloat(fuelVal)||undefined,
       minimumCharge:parseFloat(minChg)||undefined, maximumCharge:parseFloat(maxChg)||undefined,
       paymentTermDays:parseInt(payDays)||30, quickPayDiscount:parseFloat(qpDisc)||undefined, quickPayDays:parseInt(qpDays)||undefined,
@@ -104,7 +121,7 @@ export default function ShipperAgreementWizard() {
     <div className="p-4 md:p-6 space-y-6 max-w-[960px] mx-auto">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" className={cn("rounded-xl",isLight?"hover:bg-slate-100":"hover:bg-slate-700")} onClick={()=>setLocation("/agreements")}><ArrowLeft className="w-4 h-4"/></Button>
-        <div><h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Agreement Wizard</h1><p className={mt}>Generate or digitize a carrier-shipper agreement</p></div>
+        <div><h1 className="text-2xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Agreement Wizard</h1><p className={mt}>Generate or digitize a {agType.replace(/_/g, " ")} agreement</p></div>
       </div>
       <div className="flex items-center gap-1 overflow-x-auto pb-1">
         {steps.map((s,i)=>(<React.Fragment key={s.id}><div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0",i<si?"bg-green-500/15 text-green-500":i===si?"bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md":isLight?"bg-slate-100 text-slate-400":"bg-slate-800 text-slate-500")}>{i<si?<CheckCircle className="w-3.5 h-3.5"/>:s.i}<span className="hidden sm:inline">{s.l}</span></div>{i<steps.length-1&&<ChevronRight className={cn("w-3.5 h-3.5 flex-shrink-0",isLight?"text-slate-300":"text-slate-600")}/>}</React.Fragment>))}
@@ -129,7 +146,7 @@ export default function ShipperAgreementWizard() {
           {uploadedFile&&<Button className="w-full h-11 bg-gradient-to-r from-[#BE01FF] to-[#1473FF] text-white rounded-xl font-bold" onClick={()=>{setIsDigitizing(true);setTimeout(()=>{setIsDigitizing(false);toast.success("Digitized");setStep("parties");},2000);}} disabled={isDigitizing}>{isDigitizing?<><Clock className="w-4 h-4 mr-2 animate-spin"/>Digitizing...</>:<><Scan className="w-4 h-4 mr-2"/>Digitize</>}</Button>}
         </CardContent></Card>)}
         {mode==="generate"&&(<Card className={cc}><CardContent className="p-5 space-y-4">
-          <div><label className={lb}>Agreement Type</label><Select value={agType} onValueChange={setAgType}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="carrier_shipper">Carrier-Shipper</SelectItem><SelectItem value="master_service">Master Service Agreement</SelectItem><SelectItem value="lane_commitment">Lane Commitment</SelectItem><SelectItem value="broker_carrier">Broker-Carrier</SelectItem></SelectContent></Select></div>
+          <div><label className={lb}>Agreement Type</label><Select value={agType} onValueChange={setAgType}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent>{roleConfig.types.map(t=>(<SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>))}</SelectContent></Select></div>
           <div><label className={lb}>Duration</label><Select value={dur} onValueChange={setDur}><SelectTrigger className={ic}><SelectValue/></SelectTrigger><SelectContent><SelectItem value="spot">Spot (Single Load)</SelectItem><SelectItem value="short_term">Short Term (1-6 mo)</SelectItem><SelectItem value="long_term">Long Term (6-24 mo)</SelectItem><SelectItem value="evergreen">Evergreen</SelectItem></SelectContent></Select></div>
           <div className="grid grid-cols-2 gap-3"><div><label className={lb}>Effective Date</label><Input type="date" value={effDate} onChange={(e:any)=>setEffDate(e.target.value)} className={ic}/></div><div><label className={lb}>Expiration</label><Input type="date" value={expDate} onChange={(e:any)=>setExpDate(e.target.value)} className={ic}/></div></div>
         </CardContent></Card>)}
@@ -138,7 +155,7 @@ export default function ShipperAgreementWizard() {
 
       {/* PLACEHOLDER FOR REMAINING STEPS */}
       {step==="parties"&&(<div className="space-y-5">
-        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Users className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"/>Party A (Shipper)</CardTitle></CardHeader>
+        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Users className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent"/>Party A ({roleConfig.partyALabel})</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div><label className={lb}>Party A Name (as shown on agreement)</label><Input value={aDisplayName} onChange={(e:any)=>setADisplayName(e.target.value)} placeholder="e.g. Acme Logistics LLC" className={cn(ic,"font-semibold")}/><p className={cn("text-[10px] mt-1",mt)}>This name appears as "PARTY A" in the generated contract</p></div>
             <div className="grid grid-cols-2 gap-3">
@@ -150,7 +167,7 @@ export default function ShipperAgreementWizard() {
               <div><label className={lb}>DOT Number</label><Input value={aDot} onChange={(e:any)=>setADot(e.target.value)} placeholder="DOT XXXXXXX" className={ic}/></div>
             </div>
           </CardContent></Card>
-        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Building2 className="w-5 h-5 text-blue-500"/>Party B (Carrier)</CardTitle></CardHeader>
+        <Card className={cc}><CardHeader className="pb-3"><CardTitle className={cn("flex items-center gap-2",tc)}><Building2 className="w-5 h-5 text-blue-500"/>Party B ({roleConfig.partyBLabel})</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <div><label className={lb}>Party B Name (as shown on agreement)</label><Input value={bDisplayName} onChange={(e:any)=>setBDisplayName(e.target.value)} placeholder="e.g. Swift Transport Inc" className={cn(ic,"font-semibold")}/><p className={cn("text-[10px] mt-1",mt)}>This name appears as "PARTY B" in the generated contract</p></div>
             <div className="grid grid-cols-2 gap-3">

@@ -685,6 +685,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "ESANG AI chat"
     },
     { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements", 
+      badge: 0,
+      description: "Dispatch service agreements"
+    },
+    { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
@@ -792,6 +799,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/reports", 
       badge: 0,
       description: "Escort reports"
+    },
+    { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements", 
+      badge: 0,
+      description: "Escort service agreements"
     },
     { 
       icon: "MessageSquare", 
@@ -908,6 +922,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/compliance", 
       badge: 0,
       description: "Regulatory compliance"
+    },
+    { 
+      icon: "PenTool", 
+      label: "Agreements", 
+      path: "/agreements", 
+      badge: 0,
+      description: "Terminal access & service agreements"
     },
     { 
       icon: "BarChart3", 

@@ -3563,6 +3563,7 @@ export const agreementTemplates = mysqlTable(
       "fuel_surcharge",
       "accessorial_schedule",
       "nda",
+      "factoring",
       "custom",
     ]).notNull(),
     category: mysqlEnum("category", ["system", "company", "custom", "uploaded"]).default("system").notNull(),
@@ -3632,6 +3633,7 @@ export const agreements = mysqlTable(
       "fuel_surcharge",
       "accessorial_schedule",
       "nda",
+      "factoring",
       "custom",
     ]).notNull(),
     contractDuration: mysqlEnum("contractDuration", [
@@ -4304,4 +4306,130 @@ export const ergProtectiveDistances = mysqlTable(
 
 export type ErgProtectiveDistance = typeof ergProtectiveDistances.$inferSelect;
 export type InsertErgProtectiveDistance = typeof ergProtectiveDistances.$inferInsert;
+
+// ============================================================================
+// DETENTION CLAIMS — Geofence-triggered dwell time billing
+// Scenarios: LOAD-012 to LOAD-014 (driver arrives, detention accrues, auto-billed)
+// ============================================================================
+
+export const detentionClaims = mysqlTable(
+  "detention_claims",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    claimedByUserId: int("claimedByUserId").notNull(),
+    claimedAgainstUserId: int("claimedAgainstUserId"),
+    locationType: mysqlEnum("locationType", ["pickup", "delivery"]).notNull(),
+    facilityName: varchar("facilityName", { length: 255 }),
+    appointmentTime: timestamp("appointmentTime"),
+    arrivalTime: timestamp("arrivalTime").notNull(),
+    departureTime: timestamp("departureTime"),
+    freeTimeMinutes: int("freeTimeMinutes").default(120),
+    totalDwellMinutes: int("totalDwellMinutes"),
+    billableMinutes: int("billableMinutes"),
+    hourlyRate: decimal("hourlyRate", { precision: 10, scale: 2 }).default("75.00"),
+    totalAmount: decimal("totalAmount", { precision: 10, scale: 2 }),
+    status: mysqlEnum("status", [
+      "accruing", "pending_review", "approved", "disputed", "denied", "paid",
+    ]).default("accruing").notNull(),
+    disputeReason: text("disputeReason"),
+    disputeEvidence: json("disputeEvidence").$type<{ type: string; url: string; description: string }[]>(),
+    gpsEvidence: json("gpsEvidence").$type<{ lat: number; lng: number; timestamp: string }[]>(),
+    approvedBy: int("approvedBy"),
+    approvedAt: timestamp("approvedAt"),
+    paidAt: timestamp("paidAt"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("detention_load_idx").on(table.loadId),
+    claimedByIdx: index("detention_claimed_by_idx").on(table.claimedByUserId),
+    statusIdx: index("detention_status_idx").on(table.status),
+  })
+);
+
+export type DetentionClaim = typeof detentionClaims.$inferSelect;
+export type InsertDetentionClaim = typeof detentionClaims.$inferInsert;
+
+// ============================================================================
+// FACTORING INVOICES — Carrier submits invoice for same-day funding
+// Scenarios: WAL-020, WAL-021 (carrier factors invoice, factoring co collects)
+// ============================================================================
+
+export const factoringInvoices = mysqlTable(
+  "factoring_invoices",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId").notNull(),
+    carrierUserId: int("carrierUserId").notNull(),
+    shipperUserId: int("shipperUserId"),
+    factoringCompanyId: int("factoringCompanyId"),
+    invoiceNumber: varchar("invoiceNumber", { length: 50 }).notNull(),
+    invoiceAmount: decimal("invoiceAmount", { precision: 10, scale: 2 }).notNull(),
+    advanceRate: decimal("advanceRate", { precision: 5, scale: 2 }).default("97.00"),
+    factoringFeePercent: decimal("factoringFeePercent", { precision: 5, scale: 2 }).default("3.00"),
+    factoringFeeAmount: decimal("factoringFeeAmount", { precision: 10, scale: 2 }),
+    advanceAmount: decimal("advanceAmount", { precision: 10, scale: 2 }),
+    reserveAmount: decimal("reserveAmount", { precision: 10, scale: 2 }),
+    status: mysqlEnum("status", [
+      "submitted", "under_review", "approved", "funded", "collection",
+      "collected", "short_paid", "disputed", "chargedback", "closed",
+    ]).default("submitted").notNull(),
+    submittedAt: timestamp("submittedAt").defaultNow().notNull(),
+    approvedAt: timestamp("approvedAt"),
+    fundedAt: timestamp("fundedAt"),
+    collectedAt: timestamp("collectedAt"),
+    collectedAmount: decimal("collectedAmount", { precision: 10, scale: 2 }),
+    dueDate: timestamp("dueDate"),
+    supportingDocs: json("supportingDocs").$type<{ type: string; url: string; name: string }[]>(),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    loadIdx: index("factoring_load_idx").on(table.loadId),
+    carrierIdx: index("factoring_carrier_idx").on(table.carrierUserId),
+    statusIdx: index("factoring_status_idx").on(table.status),
+    invoiceNumIdx: unique("factoring_invoice_num_unique").on(table.invoiceNumber),
+  })
+);
+
+export type FactoringInvoice = typeof factoringInvoices.$inferSelect;
+export type InsertFactoringInvoice = typeof factoringInvoices.$inferInsert;
+
+// ============================================================================
+// DTC CODES — Diagnostic Trouble Codes for Zeun Mechanics
+// Scenario: ZEUN-011 (driver looks up fault code for instant diagnosis)
+// ============================================================================
+
+export const dtcCodes = mysqlTable(
+  "dtc_codes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 20 }).notNull(),
+    spn: varchar("spn", { length: 20 }),
+    fmi: varchar("fmi", { length: 10 }),
+    description: varchar("description", { length: 512 }).notNull(),
+    severity: mysqlEnum("severity", ["LOW", "MEDIUM", "HIGH", "CRITICAL"]).notNull(),
+    category: varchar("category", { length: 100 }),
+    symptoms: json("symptoms").$type<string[]>(),
+    commonCauses: json("commonCauses").$type<string[]>(),
+    canDrive: boolean("canDrive").default(true),
+    repairUrgency: varchar("repairUrgency", { length: 100 }),
+    estimatedCostMin: decimal("estimatedCostMin", { precision: 10, scale: 2 }),
+    estimatedCostMax: decimal("estimatedCostMax", { precision: 10, scale: 2 }),
+    estimatedTimeHours: decimal("estimatedTimeHours", { precision: 5, scale: 1 }),
+    affectedSystems: json("affectedSystems").$type<string[]>(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    codeIdx: unique("dtc_code_unique").on(table.code),
+    spnIdx: index("dtc_spn_idx").on(table.spn),
+    severityIdx: index("dtc_severity_idx").on(table.severity),
+  })
+);
+
+export type DtcCode = typeof dtcCodes.$inferSelect;
+export type InsertDtcCode = typeof dtcCodes.$inferInsert;
 

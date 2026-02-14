@@ -4,13 +4,9 @@
 ._*
 Thumbs.db
 
-# Python
-backend/eusotrip.db
-services/gamma/venv/
-__pycache__/
-*.pyc
-*.pyo
+# Environment
 .env
+.env.*
 
 # Node
 node_modules/
@@ -21,3 +17,6 @@ dist/
 .vscode/
 .idea/
 *.swp
+
+# Build artifacts
+*.tsbuildinfo

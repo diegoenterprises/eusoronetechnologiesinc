@@ -96,6 +96,15 @@ export default function AgreementsLibrary() {
       case "lane_commitment": return "Lane Commitment";
       case "broker_carrier": return "Broker-Carrier";
       case "broker_shipper": return "Broker-Shipper";
+      case "carrier_driver": return "Carrier-Driver";
+      case "escort_service": return "Escort Service";
+      case "catalyst_dispatch": return "Dispatch Service";
+      case "terminal_access": return "Terminal Access";
+      case "fuel_surcharge": return "Fuel Surcharge";
+      case "accessorial_schedule": return "Accessorial Schedule";
+      case "nda": return "NDA";
+      case "factoring": return "Factoring";
+      case "custom": return "Custom";
       default: return t?.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || "Agreement";
     }
   };

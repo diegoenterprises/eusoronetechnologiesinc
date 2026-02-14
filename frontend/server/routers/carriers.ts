@@ -12,7 +12,26 @@ import { getDb } from "../db";
 import { companies, users, vehicles, loads, bids, documents } from "../../drizzle/schema";
 import { eq, and, desc, sql, count, gte, or } from "drizzle-orm";
 
+import {
+  emitBidReceived,
+  emitNotification,
+} from "../_core/websocket";
+import { fireGamificationEvent } from "../services/gamificationDispatcher";
+
 const carrierStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
+
+async function resolveCarrierUserId(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const email = ctxUser?.email || "";
+  if (email) {
+    try {
+      const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+      if (row) return row.id;
+    } catch {}
+  }
+  return 0;
+}
 
 export const carriersRouter = router({
   // Generic CRUD for screen templates
@@ -628,7 +647,8 @@ export const carriersRouter = router({
       if (!db) return [];
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveCarrierUserId(ctx.user);
+        if (!userId) return [];
         const validStatuses = ['pending', 'accepted', 'rejected', 'expired', 'withdrawn'] as const;
         const filterStatus = input.filter && validStatuses.includes(input.filter as any) ? input.filter as typeof validStatuses[number] : null;
 
@@ -643,13 +663,19 @@ export const carriersRouter = router({
           const [load] = await db.select().from(loads).where(eq(loads.id, b.loadId)).limit(1);
           const pickup = load?.pickupLocation as any || {};
           const delivery = load?.deliveryLocation as any || {};
+          const dist = load?.distance ? parseFloat(String(load.distance)) : 0;
+          const amt = b.amount ? parseFloat(String(b.amount)) : 0;
           return {
             id: String(b.id),
+            loadId: String(b.loadId),
             loadNumber: load?.loadNumber || '',
             origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
             destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
-            myBid: b.amount ? parseFloat(String(b.amount)) : 0,
+            amount: amt,
+            myBid: amt,
+            perMile: dist > 0 ? Math.round((amt / dist) * 100) / 100 : 0,
             status: b.status,
+            submittedAt: b.createdAt?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) || '',
             expires: null,
           };
         }));
@@ -668,7 +694,8 @@ export const carriersRouter = router({
       if (!db) return { activeBids: 0, wonThisWeek: 0, winRate: 0, avgBidAmount: 0, pending: 0, accepted: 0, avgBid: 0 };
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveCarrierUserId(ctx.user);
+        if (!userId) return { activeBids: 0, wonThisWeek: 0, winRate: 0, avgBidAmount: 0, pending: 0, accepted: 0, avgBid: 0 };
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
 
@@ -738,13 +765,104 @@ export const carriersRouter = router({
    */
   submitBid: protectedProcedure
     .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional() }))
-    .mutation(async ({ input }) => {
-      return {
-        success: true,
-        bidId: `bid_${Date.now()}`,
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const carrierId = await resolveCarrierUserId(ctx.user);
+      if (!carrierId) throw new Error("Could not resolve user");
+      const loadIdNum = parseInt(input.loadId, 10);
+      if (!loadIdNum) throw new Error("Invalid load ID");
+
+      const result = await db.insert(bids).values({
+        loadId: loadIdNum,
+        carrierId,
+        amount: input.amount.toString(),
+        notes: input.notes || '',
+        status: 'pending',
+      });
+      const bidId = (result as any).insertId || 0;
+
+      const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+      emitBidReceived({
+        bidId: String(bidId),
         loadId: input.loadId,
+        loadNumber: load?.loadNumber || '',
+        carrierId: String(carrierId),
+        carrierName: ctx.user?.name || 'Carrier',
         amount: input.amount,
-        submittedAt: new Date().toISOString(),
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+      });
+      if (load?.shipperId) {
+        emitNotification(String(load.shipperId), {
+          id: `notif_${Date.now()}`,
+          type: 'bid_received',
+          title: 'New Bid Received',
+          message: `New bid of $${input.amount.toLocaleString()} for load ${load.loadNumber}`,
+          priority: 'medium',
+          data: { loadId: input.loadId, bidId: String(bidId) },
+          actionUrl: `/loads/${loadIdNum}/bids`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      fireGamificationEvent({ userId: carrierId, type: "bid_submitted", value: 1 });
+      return { success: true, bidId: String(bidId), loadId: input.loadId, amount: input.amount, submittedAt: new Date().toISOString() };
+    }),
+
+  cancelBid: protectedProcedure
+    .input(z.object({ bidId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+      const carrierId = await resolveCarrierUserId(ctx.user);
+      if (!carrierId) throw new Error("Could not resolve user");
+      const bidIdNum = parseInt(input.bidId, 10);
+      const [bid] = await db.select().from(bids).where(eq(bids.id, bidIdNum)).limit(1);
+      if (!bid) throw new Error("Bid not found");
+      if (bid.carrierId !== carrierId) throw new Error("You can only cancel your own bids");
+      if (bid.status !== 'pending') throw new Error("Only pending bids can be cancelled");
+      await db.update(bids).set({ status: 'withdrawn' } as any).where(eq(bids.id, bidIdNum));
+      const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+      if (load?.shipperId) {
+        emitNotification(String(load.shipperId), {
+          id: `notif_${Date.now()}`,
+          type: 'bid_withdrawn',
+          title: 'Bid Withdrawn',
+          message: `A carrier withdrew their bid on load ${load.loadNumber}`,
+          priority: 'low',
+          data: { loadId: String(bid.loadId), bidId: input.bidId },
+          actionUrl: `/loads/${bid.loadId}/bids`,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      return { success: true, bidId: input.bidId };
+    }),
+
+  /**
+   * Get accepted bid for a load (used by ContractSigning page)
+   */
+  getAcceptedBid: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const carrierId = await resolveCarrierUserId(ctx.user);
+      if (!carrierId) return null;
+      const loadIdNum = parseInt(input.loadId, 10);
+      const [bid] = await db.select().from(bids)
+        .where(and(eq(bids.loadId, loadIdNum), eq(bids.carrierId, carrierId), eq(bids.status, 'accepted')))
+        .limit(1);
+      if (!bid) return null;
+      const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+      return {
+        id: String(bid.id),
+        loadId: String(bid.loadId),
+        amount: bid.amount ? parseFloat(String(bid.amount)) : 0,
+        status: bid.status,
+        notes: bid.notes || '',
+        submittedAt: bid.createdAt?.toISOString() || '',
+        loadNumber: load?.loadNumber || '',
+        rate: load?.rate ? parseFloat(String(load.rate)) : 0,
       };
     }),
 

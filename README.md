@@ -1,79 +1,122 @@
-# EusoTrip: The Revolutionary Logistics Platform - Powered by ESANG AI
+# EusoTrip by Eusorone Technologies, Inc.
 
-## The Platform : A Unified, Intelligent Ecosystem
-
-EusoTrip is the definitive next-generation logistics and transportation ecosystem, built on a foundation of **Intelligence, Compliance, and Collaboration**. Developed by Eusorone Technologies, this platform transforms the hazardous materials and specialized freight industry by unifying shippers, carriers, and brokers onto a single, transparent, and AI-driven network.
-
-This repository contains the complete, integrated codebase for the EusoTrip platform, a testament to the successful collaboration between Development Teams Alpha, Beta, Gamma, and Delta.
+The unified logistics and transportation platform. Live at **[eusotrip.com](https://eusotrip.com)**
 
 ---
 
-## Core Intellectual Property (IP) and Feature Highlights
+## Platform Overview
 
-The EusoTrip platform is defined by the seamless integration of several proprietary systems, each designed to eliminate fragmentation and enhance safety.
+EusoTrip connects shippers, carriers, brokers, drivers, escorts, terminal operators, and fleet managers on a single intelligent network. The platform handles the full freight lifecycle from load creation and bidding through real-time tracking, delivery confirmation, and financial settlement.
 
-### 1. ESANG AI™ Intelligence Layer
-
-The **ESANG AI™ Intelligence Layer** is the central nervous system of EusoTrip. It drives all predictive modeling, intelligent decision-making, and automated processes across the platform.
-
-*   **Intelligent Load Matching:** Uses proprietary algorithms to match specialized loads with the most qualified, certified drivers.
-*   **Hazmat-Compliant Routing:** Calculates optimal routes while dynamically adhering to all local, state, and federal hazardous materials restrictions.
-*   **Mobile AI Assistant:** Provides drivers and operators with real-time, voice-enabled support via the mobile app.
-
-### 2. Specialized Compliance and Safety Systems
-
-EusoTrip's commitment to safety is embedded in its architecture, ensuring uncompromising regulatory adherence.
-
-| System | Description | Integrated By |
-| :--- | :--- | :--- |
-| **ERG & Hazmat Compliance** | AI-driven Emergency Response Guide (ERG) system, providing real-time, location-based guidance and critical alert triggering for all Hazmat incidents. | Team Gamma |
-| **Spectra-Match™ Oil ID** | Proprietary system for crude oil grade identification based on physical parameters, utilizing the **Wave Oil Meter** mobile component for in-field analysis. | Teams Gamma & Delta |
-| **Load Lifecycle State Machine** | A robust state machine implemented in the core API to track loads through **Pre-Loading, Loading, and In-Transit** phases with immutable, time-stamped milestones. | Team Alpha |
-
-### 3. EusoWallet & Collaborative Ecosystem
-
-The platform is designed to empower its users financially and operationally through innovative fintech and logistics logic.
-
-*   **EusoWallet & Commission Engine:** Provides drivers with instant pay capabilities, automated commission calculation, and secure, multi-party payment splitting logic.
-*   **Collaborative Logistics Engine:** Enables secure, real-time load sharing and data exchange between trusted, certified business partners, enhancing network efficiency.
-*   **Gamification:** A unique system that tracks driver performance, calculates reputation scores, and rewards safe, efficient operation through achievement unlocking and leaderboards.
+**12 user roles** | **370+ screens** | **120+ tRPC procedures** | **94 database tables** | **14 agreement types**
 
 ---
 
-## Technical Architecture & Development Teams
+## Architecture
 
-The platform is built on a modern, scalable microservices architecture, with clear delineation of responsibilities across the four development teams.
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 19, TypeScript 5, Tailwind CSS 4, Vite 7 |
+| **Backend** | Express 4, tRPC 11, Node.js 20 |
+| **Database** | MySQL via Drizzle ORM |
+| **AI** | ESANG AI (Gemini 2.0 Flash) |
+| **Auth** | JWT + session-based authentication |
+| **Payments** | Stripe + EUSOBANK (in-house ACH) |
+| **Hosting** | Azure App Service |
+| **DNS** | eusotrip.com via Azure DNS |
 
-| Team | Focus Area | Core Technologies | Repository Location |
-| :--- | :--- | :--- | :--- |
-| **Alpha** | **Core Platform & Backend** | FastAPI, SQLAlchemy (PostgreSQL), WebSockets | `backend/` |
-| **Beta** | **Frontend & User Experience** | React/TypeScript, HTML/CSS (Master Design Shell) | `frontend/` |
-| **Gamma** | **Specialized Systems & AI** | Python Microservices (Hazmat, AI, Gamification) | `services/gamma/` |
-| **Delta** | **Mobile & Cross-Platform** | SwiftUI, Swift, Custom UI Kits | `mobile-app/` (Simulated) |
+### Repository Structure
 
-### Deployment
+```
+frontend/
+  client/src/          React app (pages, components, hooks, config)
+  server/              Express + tRPC server
+    routers/           120+ tRPC routers
+    services/          Business logic (eusobank, gamification, etc.)
+    _core/             Auth, tRPC context, ESANG AI, WebSocket
+  drizzle/             Schema definitions (94 tables)
+docs/                  Founder documents, development directives
+```
 
-The EusoTrip Core Platform API is configured for immediate deployment to **AWS Elastic Beanstalk**. Refer to `backend/DEPLOYMENT_GUIDE_AWS_EB.md` for the final launch sequence and configuration details.
+---
+
+## Core Systems
+
+### Load Management and Brokerage
+Full load lifecycle: creation, bidding, carrier assignment, real-time status progression (posted through delivered), detention tracking, TONU fee handling, and post-delivery documentation (BOL, POD, invoice).
+
+### EusoWallet and Financial Engine
+Wallet balances, P2P transfers, instant pay, cash advances, chat payments, escrow holds, Stripe integration, EUSOBANK ACH transfers, payout scheduling, tax document generation, and invoice factoring.
+
+### ESANG AI Intelligence Layer
+Voice-enabled AI assistant powered by Gemini 2.0 Flash. Capabilities include ERG 2024 hazmat guidance, Spectra-Match crude oil identification (90+ grades), smart rate negotiation, emergency response, and per-user contextual learning.
+
+### The Haul (Gamification)
+Mission system, loot crates, badges, achievements, XP/leveling, seasonal content, leaderboards, digital truck stop lobby chat, and AI-generated missions.
+
+### Zeun Mechanics
+AI-powered breakdown reporting, DTC fault code lookup, diagnostic results, repair provider search with reviews, maintenance logging and scheduling, vehicle recall checks, fleet cost analytics, and 10 emergency procedure guides.
+
+### Agreements Engine
+14 agreement types (carrier-shipper, broker-carrier, factoring, NDA, etc.) with AI-generated legal clauses, role-aware creation wizard, digital signatures, and version tracking.
+
+### Real-Time Messaging
+Database-backed conversations with participant management, unread counts, typing indicators, and WebSocket event broadcasting.
 
 ---
 
-## Getting Started (For Developers)
+## Getting Started
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone diegoenterprises/eusoronetechnologiesinc
-    ```
-2.  **Setup Core Backend (Team Alpha):**
-    Navigate to `backend/` and install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    The core API uses a local SQLite database for development. Run the API:
-    ```bash
-    uvicorn app.main:app --reload
-    ```
-3.  **Setup Frontend Shell (Team Beta):**
-    Open `frontend/design-system/index.html` in your browser to view the master shell and test the integrated authentication and search features.
+```bash
+# Clone
+git clone https://github.com/diegoenterprises/eusoronetechnologiesinc.git
+
+# Install dependencies
+cd frontend
+pnpm install
+
+# Set environment variables
+cp .env.example .env
+# Fill in: DATABASE_URL, JWT_SECRET, GEMINI_API_KEY, STRIPE_SECRET_KEY, etc.
+
+# Run development server
+pnpm dev
+```
+
+The app runs at `http://localhost:5000`.
 
 ---
-**EusoTrip: Intelligence. Compliance. Collaboration. Ready for Launch.**
+
+## Deployment
+
+EusoTrip deploys to **Azure App Service** via blob-based package deployment.
+
+```bash
+npm run build                    # Vite + esbuild -> dist/
+zip -r deploy.zip dist/ package.json
+# Upload to Azure Blob Storage, set WEBSITE_RUN_FROM_PACKAGE, restart
+```
+
+See `AZURE_INFRASTRUCTURE_SETUP.md` and `frontend/AZURE_DEPLOYMENT_GUIDE.md` for full details.
+
+---
+
+## Environment Variables
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | MySQL connection string |
+| `JWT_SECRET` | Authentication token signing |
+| `GEMINI_API_KEY` | ESANG AI (Google Gemini) |
+| `STRIPE_SECRET_KEY` | Payment processing |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Client-side Stripe |
+| `ENCRYPTION_KEY` | Sensitive data encryption |
+| `FMCSA_API_KEY` | FMCSA carrier verification |
+| `FRED_API_KEY` | Economic data feeds |
+| `EIA_API_KEY` | Energy/fuel price data |
+| `NREL_API_KEY` | Alternative fuel station data |
+| `AZURE_EMAIL_CONNECTION_STRING` | Azure Communication Services |
+
+---
+
+**Eusorone Technologies, Inc.** | Intelligence. Compliance. Collaboration.

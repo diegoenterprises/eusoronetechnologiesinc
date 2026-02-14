@@ -13,8 +13,9 @@ import { trpc } from "@/lib/trpc";
 import {
   Package, MapPin, Truck, DollarSign, Calendar, ArrowLeft,
   Phone, Navigation, Clock, User, AlertTriangle, CheckCircle, Shield,
-  Building2, Gavel, Droplets, FlaskConical, FileText
+  Building2, Gavel, Droplets, FlaskConical, FileText, Loader2, PlayCircle
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useLocation, useParams } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -50,19 +51,37 @@ export default function LoadDetails() {
   const userRole = (authUser?.role || "").toUpperCase();
   const isShipper = isLoadOwner || userRole === "SHIPPER";
   const canBid = !isLoadOwner && ["CARRIER", "BROKER", "CATALYST"].includes(userRole);
+  const isAssignedCarrier = load?.carrierId && authUser?.id && Number(load.carrierId) === Number(authUser.id);
+
+  // Load status progression mutation (carrier/driver use)
+  const updateStatusMutation = (trpc as any).bids.updateLoadStatus.useMutation({
+    onSuccess: (data: any) => { toast.success(`Load status updated to ${data.status.replace(/_/g, ' ')}`); loadQuery.refetch(); },
+    onError: (err: any) => toast.error("Failed to update status", { description: err.message }),
+  });
+
+  // Status progression chain per contract Articles 7, 9, 10
+  const STATUS_CHAIN: Record<string, { next: string; label: string; icon: React.ReactNode; color: string }> = {
+    assigned: { next: 'en_route_pickup', label: 'Start Route to Pickup', icon: <Truck className="w-4 h-4" />, color: 'from-blue-500 to-cyan-500' },
+    en_route_pickup: { next: 'at_pickup', label: 'Arrived at Pickup', icon: <MapPin className="w-4 h-4" />, color: 'from-blue-500 to-cyan-500' },
+    at_pickup: { next: 'loading', label: 'Start Loading', icon: <Package className="w-4 h-4" />, color: 'from-cyan-500 to-emerald-500' },
+    loading: { next: 'in_transit', label: 'Loading Complete — Depart', icon: <Navigation className="w-4 h-4" />, color: 'from-emerald-500 to-green-500' },
+    in_transit: { next: 'at_delivery', label: 'Arrived at Delivery', icon: <MapPin className="w-4 h-4" />, color: 'from-green-500 to-emerald-600' },
+    at_delivery: { next: 'unloading', label: 'Start Unloading', icon: <Package className="w-4 h-4" />, color: 'from-emerald-600 to-teal-500' },
+    unloading: { next: 'delivered', label: 'Unloading Complete — Delivered', icon: <CheckCircle className="w-4 h-4" />, color: 'from-[#1473FF] to-[#BE01FF]' },
+  };
 
   // Fetch bids for this load (shipper view)
-  const bidsQuery = (trpc as any).loads.getForLoad.useQuery(
-    { loadId: Number(loadId) },
+  const bidsQuery = (trpc as any).bids.getByLoad.useQuery(
+    { loadId: loadId! },
     { enabled: !!loadId && isShipper }
   );
   const bids = (bidsQuery.data as any[]) || [];
   const pendingBids = bids.filter((b: any) => b.status === "pending");
 
-  const acceptBidMutation = (trpc as any).loads.updateStatus.useMutation({
+  const acceptBidMutation = (trpc as any).bids.accept.useMutation({
     onSuccess: () => { bidsQuery.refetch(); loadQuery.refetch(); },
   });
-  const rejectBidMutation = (trpc as any).loads.updateStatus.useMutation({
+  const rejectBidMutation = (trpc as any).bids.reject.useMutation({
     onSuccess: () => { bidsQuery.refetch(); },
   });
 
@@ -465,12 +484,12 @@ export default function LoadDetails() {
                       {bid.status === "pending" && (
                         <div className="flex gap-1">
                           <Button size="sm" variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10"
-                            onClick={() => rejectBidMutation.mutate({ bidId: bid.id, status: "rejected" })}
+                            onClick={() => rejectBidMutation.mutate({ bidId: bid.id })}
                             disabled={rejectBidMutation.isPending}>
                             Reject
                           </Button>
                           <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white"
-                            onClick={() => acceptBidMutation.mutate({ bidId: bid.id, status: "accepted" })}
+                            onClick={() => acceptBidMutation.mutate({ bidId: bid.id })}
                             disabled={acceptBidMutation.isPending}>
                             Accept
                           </Button>
@@ -481,6 +500,68 @@ export default function LoadDetails() {
                 ))}
               </div>
             )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Carrier Load Status Progression (per Contract Articles 7, 9, 10) ── */}
+      {isAssignedCarrier && STATUS_CHAIN[load.status] && (
+        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-white border-slate-200 shadow-md" : "bg-slate-800/60 border-slate-700/50")}>
+          <div className={cn("bg-gradient-to-r px-6 py-4", isLight ? "from-blue-50 to-purple-50" : "from-[#1473FF]/10 to-[#BE01FF]/10")}>
+            <div className="flex items-center gap-2">
+              <PlayCircle className="w-5 h-5 text-blue-500" />
+              <p className={cn("font-bold", isLight ? "text-slate-800" : "text-white")}>Load Status Update</p>
+            </div>
+            <p className={cn("text-xs mt-1", isLight ? "text-slate-500" : "text-slate-400")}>Progress this load through the transportation lifecycle</p>
+          </div>
+          <CardContent className="p-6">
+            {/* Status timeline */}
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              {['assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered'].map((s, idx, arr) => {
+                const isCurrent = load.status === s;
+                const isPast = arr.indexOf(load.status) > idx;
+                return (
+                  <React.Fragment key={s}>
+                    <div className={cn(
+                      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border",
+                      isCurrent ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white border-transparent" :
+                      isPast ? (isLight ? "bg-green-50 text-green-600 border-green-200" : "bg-green-500/15 text-green-400 border-green-500/30") :
+                      isLight ? "bg-slate-100 text-slate-400 border-slate-200" : "bg-slate-800 text-slate-500 border-slate-700"
+                    )}>
+                      {s.replace(/_/g, ' ')}
+                    </div>
+                    {idx < arr.length - 1 && <span className="text-slate-400 text-xs">→</span>}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+            <Button
+              className={cn("w-full rounded-xl font-bold h-12 text-base bg-gradient-to-r text-white", STATUS_CHAIN[load.status].color)}
+              onClick={() => updateStatusMutation.mutate({ loadId: String(load.id), status: STATUS_CHAIN[load.status].next })}
+              disabled={updateStatusMutation.isPending}
+            >
+              {updateStatusMutation.isPending ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : STATUS_CHAIN[load.status].icon}
+              <span className="ml-2">{STATUS_CHAIN[load.status].label}</span>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Load Delivered Confirmation ── */}
+      {isAssignedCarrier && load.status === 'delivered' && (
+        <Card className={cn("rounded-2xl border overflow-hidden", isLight ? "bg-green-50 border-green-200" : "bg-green-500/10 border-green-500/30")}>
+          <CardContent className="p-6 text-center">
+            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
+            <p className={cn("text-lg font-bold", isLight ? "text-green-700" : "text-green-400")}>Load Delivered Successfully</p>
+            <p className="text-sm text-slate-400 mt-1">Submit your documentation (BOL, POD) to receive payment per contract terms.</p>
+            <div className="flex gap-3 justify-center mt-4">
+              <Button variant="outline" className={cn("rounded-xl", isLight ? "border-green-200 text-green-700" : "border-green-500/30 text-green-400")} onClick={() => setLocation(`/documents`)}>
+                <FileText className="w-4 h-4 mr-2" />Upload Documents
+              </Button>
+              <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold" onClick={() => setLocation(`/invoices`)}>
+                <DollarSign className="w-4 h-4 mr-2" />Submit Invoice
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}

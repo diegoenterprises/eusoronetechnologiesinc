@@ -8,7 +8,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { payments, loads, users, vehicles, companies } from "../../drizzle/schema";
+import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 
 const invoiceStatusSchema = z.enum(["draft", "pending", "paid", "overdue", "cancelled"]);
@@ -442,16 +442,393 @@ export const billingRouter = router({
   getAccessorialStats: protectedProcedure.query(async () => ({ total: 0, pending: 0, approved: 0, denied: 0, totalTypes: 0, totalCollected: 0, loadsWithCharges: 0, avgCharge: 0 })),
   deleteAccessorialCharge: protectedProcedure.input(z.object({ chargeId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, chargeId: input.chargeId })),
 
-  // Detention — return empty (no table yet)
-  getDetentions: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => []),
-  getDetentionStats: protectedProcedure.query(async () => ({ total: 0, claimed: 0, pending: 0, totalAmount: 0, active: 0, pendingAmount: 0, collected: 0, avgHours: 0 })),
-  claimDetention: protectedProcedure.input(z.object({ loadId: z.string().optional(), detentionId: z.string().optional(), hours: z.number().optional(), notes: z.string().optional() })).mutation(async () => ({ success: true, claimId: null })),
+  // ════════════════════════════════════════════════════════════════
+  // DETENTION — Real DB: geofence-triggered dwell time billing
+  // Scenarios LOAD-012 to LOAD-014
+  // ════════════════════════════════════════════════════════════════
 
-  // Factoring — return empty (no table yet)
-  getFactoringInvoices: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => []),
-  getFactoringStats: protectedProcedure.query(async () => ({ totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, submitted: 0, funded: 0, avgDays: 0, invoicesFactored: 0 })),
-  getFactoringRates: protectedProcedure.query(async () => ({ standard: 3.0, quickPay: 4.5, sameDay: 6.0, currentRate: 3.0, advanceRate: 90 })),
-  submitToFactoring: protectedProcedure.input(z.object({ invoiceId: z.string() })).mutation(async () => ({ success: true, factorId: null })),
+  getDetentions: protectedProcedure
+    .input(z.object({ status: z.string().optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS detention_claims (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            loadId INT NOT NULL,
+            claimedByUserId INT NOT NULL,
+            claimedAgainstUserId INT,
+            locationType ENUM('pickup','delivery') NOT NULL,
+            facilityName VARCHAR(255),
+            appointmentTime TIMESTAMP NULL,
+            arrivalTime TIMESTAMP NOT NULL,
+            departureTime TIMESTAMP NULL,
+            freeTimeMinutes INT DEFAULT 120,
+            totalDwellMinutes INT,
+            billableMinutes INT,
+            hourlyRate DECIMAL(10,2) DEFAULT 75.00,
+            totalAmount DECIMAL(10,2),
+            status ENUM('accruing','pending_review','approved','disputed','denied','paid') DEFAULT 'accruing',
+            disputeReason TEXT,
+            disputeEvidence JSON,
+            gpsEvidence JSON,
+            approvedBy INT,
+            approvedAt TIMESTAMP NULL,
+            paidAt TIMESTAMP NULL,
+            notes TEXT,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX detention_load_idx (loadId),
+            INDEX detention_status_idx (status)
+          )
+        `);
+
+        const userId = Number(ctx.user?.id) || 0;
+        let claims = await db.select().from(detentionClaims)
+          .where(eq(detentionClaims.claimedByUserId, userId))
+          .orderBy(desc(detentionClaims.createdAt));
+
+        if (input?.status && input.status !== "all") {
+          claims = claims.filter(c => c.status === input.status);
+        }
+
+        return claims.map(c => ({
+          id: String(c.id),
+          loadId: c.loadId,
+          locationType: c.locationType,
+          facilityName: c.facilityName,
+          appointmentTime: c.appointmentTime?.toISOString(),
+          arrivalTime: c.arrivalTime?.toISOString(),
+          departureTime: c.departureTime?.toISOString(),
+          freeTimeMinutes: c.freeTimeMinutes || 120,
+          totalDwellMinutes: c.totalDwellMinutes || 0,
+          billableMinutes: c.billableMinutes || 0,
+          hourlyRate: parseFloat(String(c.hourlyRate)) || 75,
+          totalAmount: parseFloat(String(c.totalAmount)) || 0,
+          status: c.status,
+          notes: c.notes,
+          createdAt: c.createdAt?.toISOString(),
+        }));
+      } catch (err) {
+        console.error("[billing] getDetentions error:", err);
+        return [];
+      }
+    }),
+
+  getDetentionStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const empty = { total: 0, claimed: 0, pending: 0, totalAmount: 0, active: 0, pendingAmount: 0, collected: 0, avgHours: 0 };
+    if (!db) return empty;
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const claims = await db.select().from(detentionClaims)
+        .where(eq(detentionClaims.claimedByUserId, userId));
+      if (claims.length === 0) return empty;
+
+      const total = claims.length;
+      const active = claims.filter(c => c.status === "accruing").length;
+      const pending = claims.filter(c => c.status === "pending_review").length;
+      const claimed = claims.filter(c => ["approved", "paid"].includes(c.status)).length;
+      const collected = claims.filter(c => c.status === "paid").length;
+      const totalAmount = claims.reduce((s, c) => s + (parseFloat(String(c.totalAmount)) || 0), 0);
+      const pendingAmount = claims.filter(c => c.status === "pending_review").reduce((s, c) => s + (parseFloat(String(c.totalAmount)) || 0), 0);
+      const totalHours = claims.reduce((s, c) => s + ((c.billableMinutes || 0) / 60), 0);
+      const avgHours = total > 0 ? Math.round((totalHours / total) * 10) / 10 : 0;
+
+      return { total, claimed, pending, totalAmount, active, pendingAmount, collected, avgHours };
+    } catch { return empty; }
+  }),
+
+  claimDetention: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      locationType: z.enum(["pickup", "delivery"]),
+      facilityName: z.string().optional(),
+      appointmentTime: z.string().optional(),
+      arrivalTime: z.string(),
+      departureTime: z.string().optional(),
+      freeTimeMinutes: z.number().default(120),
+      hourlyRate: z.number().default(75),
+      notes: z.string().optional(),
+      gpsEvidence: z.array(z.object({ lat: z.number(), lng: z.number(), timestamp: z.string() })).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+
+      const arrival = new Date(input.arrivalTime);
+      const departure = input.departureTime ? new Date(input.departureTime) : null;
+      const totalDwellMinutes = departure ? Math.round((departure.getTime() - arrival.getTime()) / 60000) : 0;
+      const billableMinutes = Math.max(0, totalDwellMinutes - input.freeTimeMinutes);
+      const totalAmount = Math.round((billableMinutes / 60) * input.hourlyRate * 100) / 100;
+
+      const [result] = await db.insert(detentionClaims).values({
+        loadId: input.loadId,
+        claimedByUserId: userId,
+        locationType: input.locationType,
+        facilityName: input.facilityName,
+        appointmentTime: input.appointmentTime ? new Date(input.appointmentTime) : undefined,
+        arrivalTime: arrival,
+        departureTime: departure || undefined,
+        freeTimeMinutes: input.freeTimeMinutes,
+        totalDwellMinutes,
+        billableMinutes,
+        hourlyRate: String(input.hourlyRate),
+        totalAmount: String(totalAmount),
+        status: departure ? "pending_review" : "accruing",
+        gpsEvidence: input.gpsEvidence,
+        notes: input.notes,
+      });
+
+      return {
+        success: true,
+        claimId: result.insertId,
+        totalDwellMinutes,
+        billableMinutes,
+        totalAmount,
+        status: departure ? "pending_review" : "accruing",
+      };
+    }),
+
+  disputeDetention: protectedProcedure
+    .input(z.object({
+      detentionId: z.number(),
+      reason: z.string(),
+      evidence: z.array(z.object({ type: z.string(), url: z.string(), description: z.string() })).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      await db.update(detentionClaims)
+        .set({
+          status: "disputed",
+          disputeReason: input.reason,
+          disputeEvidence: input.evidence,
+        })
+        .where(eq(detentionClaims.id, input.detentionId));
+
+      return { success: true };
+    }),
+
+  approveDetention: protectedProcedure
+    .input(z.object({ detentionId: z.number(), adjustedAmount: z.number().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const adminId = Number(ctx.user?.id) || 0;
+
+      const updates: Record<string, any> = {
+        status: "approved",
+        approvedBy: adminId,
+        approvedAt: new Date(),
+      };
+      if (input.adjustedAmount !== undefined) {
+        updates.totalAmount = String(input.adjustedAmount);
+      }
+
+      await db.update(detentionClaims)
+        .set(updates)
+        .where(eq(detentionClaims.id, input.detentionId));
+
+      return { success: true };
+    }),
+
+  // ════════════════════════════════════════════════════════════════
+  // FACTORING — Real DB: carrier submits invoice for same-day funding
+  // Scenarios WAL-020, WAL-021
+  // ════════════════════════════════════════════════════════════════
+
+  getFactoringInvoices: protectedProcedure
+    .input(z.object({ status: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        await db.execute(sql`
+          CREATE TABLE IF NOT EXISTS factoring_invoices (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            loadId INT NOT NULL,
+            carrierUserId INT NOT NULL,
+            shipperUserId INT,
+            factoringCompanyId INT,
+            invoiceNumber VARCHAR(50) NOT NULL UNIQUE,
+            invoiceAmount DECIMAL(10,2) NOT NULL,
+            advanceRate DECIMAL(5,2) DEFAULT 97.00,
+            factoringFeePercent DECIMAL(5,2) DEFAULT 3.00,
+            factoringFeeAmount DECIMAL(10,2),
+            advanceAmount DECIMAL(10,2),
+            reserveAmount DECIMAL(10,2),
+            status ENUM('submitted','under_review','approved','funded','collection','collected','short_paid','disputed','chargedback','closed') DEFAULT 'submitted',
+            submittedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            approvedAt TIMESTAMP NULL,
+            fundedAt TIMESTAMP NULL,
+            collectedAt TIMESTAMP NULL,
+            collectedAmount DECIMAL(10,2),
+            dueDate TIMESTAMP NULL,
+            supportingDocs JSON,
+            notes TEXT,
+            createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX factoring_carrier_idx (carrierUserId),
+            INDEX factoring_status_idx (status)
+          )
+        `);
+
+        const userId = Number(ctx.user?.id) || 0;
+        let invoices = await db.select().from(factoringInvoices)
+          .where(eq(factoringInvoices.carrierUserId, userId))
+          .orderBy(desc(factoringInvoices.createdAt));
+
+        if (input?.status && input.status !== "all") {
+          invoices = invoices.filter(i => i.status === input.status);
+        }
+
+        return invoices.map(i => ({
+          id: String(i.id),
+          loadId: i.loadId,
+          invoiceNumber: i.invoiceNumber,
+          invoiceAmount: parseFloat(String(i.invoiceAmount)),
+          advanceRate: parseFloat(String(i.advanceRate)) || 97,
+          factoringFeePercent: parseFloat(String(i.factoringFeePercent)) || 3,
+          factoringFeeAmount: parseFloat(String(i.factoringFeeAmount)) || 0,
+          advanceAmount: parseFloat(String(i.advanceAmount)) || 0,
+          reserveAmount: parseFloat(String(i.reserveAmount)) || 0,
+          status: i.status,
+          submittedAt: i.submittedAt?.toISOString(),
+          fundedAt: i.fundedAt?.toISOString(),
+          collectedAt: i.collectedAt?.toISOString(),
+          dueDate: i.dueDate?.toISOString(),
+          createdAt: i.createdAt?.toISOString(),
+        }));
+      } catch (err) {
+        console.error("[billing] getFactoringInvoices error:", err);
+        return [];
+      }
+    }),
+
+  getFactoringStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    const empty = { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, submitted: 0, funded: 0, avgDays: 0, invoicesFactored: 0 };
+    if (!db) return empty;
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const invoices = await db.select().from(factoringInvoices)
+        .where(eq(factoringInvoices.carrierUserId, userId));
+      if (invoices.length === 0) return empty;
+
+      const submitted = invoices.filter(i => i.status === "submitted" || i.status === "under_review").length;
+      const funded = invoices.filter(i => ["funded", "collection", "collected", "closed"].includes(i.status)).length;
+      const totalFunded = invoices.filter(i => i.advanceAmount).reduce((s, i) => s + (parseFloat(String(i.advanceAmount)) || 0), 0);
+      const pending = invoices.filter(i => i.status === "collection").length;
+      const pendingPayments = invoices.filter(i => i.status === "collection").reduce((s, i) => s + (parseFloat(String(i.invoiceAmount)) || 0), 0);
+      const totalFactored = invoices.reduce((s, i) => s + (parseFloat(String(i.invoiceAmount)) || 0), 0);
+
+      return {
+        totalFactored,
+        pendingPayments,
+        availableCredit: Math.max(0, 50000 - pendingPayments),
+        totalFunded,
+        pending,
+        submitted,
+        funded,
+        avgDays: funded > 0 ? 1 : 0,
+        invoicesFactored: invoices.length,
+      };
+    } catch { return empty; }
+  }),
+
+  getFactoringRates: protectedProcedure.query(async () => ({
+    standard: 3.0,
+    quickPay: 4.5,
+    sameDay: 6.0,
+    currentRate: 3.0,
+    advanceRate: 97,
+  })),
+
+  submitToFactoring: protectedProcedure
+    .input(z.object({
+      loadId: z.number(),
+      invoiceAmount: z.number().positive(),
+      feePercent: z.number().default(3),
+      notes: z.string().optional(),
+      supportingDocs: z.array(z.object({ type: z.string(), url: z.string(), name: z.string() })).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+
+      const feeAmount = Math.round(input.invoiceAmount * (input.feePercent / 100) * 100) / 100;
+      const advanceAmount = Math.round((input.invoiceAmount - feeAmount) * 100) / 100;
+      const reserveAmount = Math.round(input.invoiceAmount * 0.03 * 100) / 100;
+      const invoiceNumber = `FI-${new Date().getFullYear()}-${Math.floor(Math.random() * 99999).toString().padStart(5, "0")}`;
+
+      const [result] = await db.insert(factoringInvoices).values({
+        loadId: input.loadId,
+        carrierUserId: userId,
+        invoiceNumber,
+        invoiceAmount: String(input.invoiceAmount),
+        factoringFeePercent: String(input.feePercent),
+        factoringFeeAmount: String(feeAmount),
+        advanceAmount: String(advanceAmount),
+        reserveAmount: String(reserveAmount),
+        supportingDocs: input.supportingDocs,
+        notes: input.notes,
+        status: "submitted",
+        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      });
+
+      return {
+        success: true,
+        factorId: result.insertId,
+        invoiceNumber,
+        invoiceAmount: input.invoiceAmount,
+        feeAmount,
+        advanceAmount,
+        status: "submitted",
+      };
+    }),
+
+  approveFactoring: protectedProcedure
+    .input(z.object({ factoringId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const [invoice] = await db.select().from(factoringInvoices)
+        .where(eq(factoringInvoices.id, input.factoringId)).limit(1);
+      if (!invoice) throw new Error("Factoring invoice not found");
+
+      await db.update(factoringInvoices)
+        .set({ status: "funded", approvedAt: new Date(), fundedAt: new Date() })
+        .where(eq(factoringInvoices.id, input.factoringId));
+
+      const advanceAmount = parseFloat(String(invoice.advanceAmount)) || 0;
+      if (advanceAmount > 0) {
+        const [wallet] = await db.select().from(wallets)
+          .where(eq(wallets.userId, invoice.carrierUserId)).limit(1);
+        if (wallet) {
+          await db.update(wallets)
+            .set({ availableBalance: String(parseFloat(wallet.availableBalance || "0") + advanceAmount) })
+            .where(eq(wallets.id, wallet.id));
+          await db.insert(walletTransactions).values({
+            walletId: wallet.id,
+            type: "earnings",
+            amount: String(advanceAmount),
+            fee: String(parseFloat(String(invoice.factoringFeeAmount)) || 0),
+            netAmount: String(advanceAmount),
+            status: "completed",
+            description: `Factoring advance for invoice ${invoice.invoiceNumber}`,
+            completedAt: new Date(),
+          });
+        }
+      }
+
+      return { success: true, funded: advanceAmount };
+    }),
 
   // Payment method management — real Stripe
   deletePaymentMethod: protectedProcedure.input(z.object({ paymentMethodId: z.string().optional(), methodId: z.string().optional() })).mutation(async ({ input }) => {

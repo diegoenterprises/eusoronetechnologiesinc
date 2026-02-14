@@ -9,7 +9,7 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { terminals, appointments } from "../../drizzle/schema";
+import { terminals, appointments, users, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 
 const appointmentStatusSchema = z.enum(["scheduled", "checked_in", "loading", "completed", "cancelled", "no_show"]);
@@ -130,18 +130,33 @@ export const terminalsRouter = router({
           .orderBy(appointments.scheduledAt)
           .limit(input?.limit || 20);
 
-        return apptList.map(a => ({
-          id: `apt_${a.id}`,
-          time: a.scheduledAt?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '',
-          carrier: 'Carrier',
-          carrierName: 'Carrier',
-          driver: 'Driver',
-          driverName: 'Driver',
-          truckNumber: '',
-          product: a.type || 'General',
-          quantity: 0,
-          rackNumber: 'Rack 1',
-          status: a.status,
+        return await Promise.all(apptList.map(async (a) => {
+          let driverName = 'Unassigned';
+          let carrierName = 'Unknown';
+          if (a.driverId) {
+            const [driver] = await db.select({ name: users.name }).from(users).where(eq(users.id, a.driverId)).limit(1);
+            driverName = driver?.name || `Driver #${a.driverId}`;
+          }
+          if (a.loadId) {
+            const [load] = await db.select({ carrierId: loads.carrierId }).from(loads).where(eq(loads.id, a.loadId)).limit(1);
+            if (load?.carrierId) {
+              const [carrier] = await db.select({ name: users.name }).from(users).where(eq(users.id, load.carrierId)).limit(1);
+              carrierName = carrier?.name || `Carrier #${load.carrierId}`;
+            }
+          }
+          return {
+            id: `apt_${a.id}`,
+            time: a.scheduledAt?.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) || '',
+            carrier: carrierName,
+            carrierName,
+            driver: driverName,
+            driverName,
+            truckNumber: '',
+            product: a.type || 'General',
+            quantity: 0,
+            rackNumber: a.dockNumber || 'Rack 1',
+            status: a.status,
+          };
         }));
       } catch (error) {
         console.error('[Terminals] getTodayAppointments error:', error);

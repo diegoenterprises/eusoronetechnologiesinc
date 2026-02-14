@@ -761,13 +761,65 @@ export const loadsRouter = router({
     };
   }),
 
-  cancel: protectedProcedure.input(z.object({ loadId: z.string(), reason: z.string().optional() })).mutation(async ({ input, ctx }) => {
+  cancel: protectedProcedure.input(z.object({
+    loadId: z.string(),
+    reason: z.string().optional(),
+    waiveTonus: z.boolean().default(false),
+  })).mutation(async ({ input, ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-    
+
     const loadId = parseInt(input.loadId, 10);
-    await db.update(loads).set({ status: 'cancelled' }).where(and(eq(loads.id, loadId), eq(loads.shipperId, ctx.user.id)));
-    return { success: true, loadId: input.loadId };
+    const userId = ctx.user?.id || 0;
+
+    // Get load details to check if carrier was assigned (TONU scenario)
+    const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+    if (!load) throw new Error("Load not found");
+
+    // Only owner or admin can cancel
+    if (load.shipperId !== userId) {
+      throw new Error("Only the load owner can cancel this load");
+    }
+
+    // Check if load is in a cancellable state
+    const nonCancellable = ["delivered", "cancelled"];
+    if (nonCancellable.includes(load.status)) {
+      throw new Error(`Cannot cancel a load in '${load.status}' status`);
+    }
+
+    let tonuFee = 0;
+    let tonuApplied = false;
+    const carrierAssigned = load.carrierId && ["assigned", "en_route_pickup", "at_pickup"].includes(load.status);
+
+    // TONU: If a carrier was assigned and load is being cancelled by shipper
+    if (carrierAssigned && !input.waiveTonus) {
+      // Standard TONU fee: $250 or 25% of load rate, whichever is greater
+      const loadRate = parseFloat(String(load.rate)) || 0;
+      tonuFee = Math.max(250, loadRate * 0.25);
+      tonuApplied = true;
+    }
+
+    // Cancel the load
+    await db.update(loads)
+      .set({ status: "cancelled" })
+      .where(eq(loads.id, loadId));
+
+    // Reject any pending bids
+    try {
+      await db.execute(sql`
+        UPDATE bids SET status = 'rejected'
+        WHERE loadId = ${loadId} AND status = 'pending'
+      `);
+    } catch (_) { /* non-critical */ }
+
+    return {
+      success: true,
+      loadId: input.loadId,
+      tonuApplied,
+      tonuFee,
+      reason: input.reason,
+      carrierNotified: !!carrierAssigned,
+    };
   }),
 
   getHistoryStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async ({ ctx }) => {
@@ -945,11 +997,13 @@ export const bidsRouter = router({
   getMyBids: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("Database not available");
+    const userId = await resolveUserId(ctx.user);
+    if (!userId) return [];
 
     const results = await db
       .select()
       .from(bids)
-      .where(eq(bids.carrierId, ctx.user.id))
+      .where(eq(bids.carrierId, userId))
       .orderBy(desc(bids.createdAt));
 
     return results;
@@ -1055,21 +1109,22 @@ export const bidsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
+      const userId = await resolveUserId(ctx.user);
 
-      // Verify the bid belongs to the user
       const bid = await db
         .select()
         .from(bids)
         .where(eq(bids.id, input.bidId))
         .limit(1);
 
-      if (bid.length === 0 || bid[0].carrierId !== ctx.user.id) {
+      if (bid.length === 0 || bid[0].carrierId !== userId) {
         throw new Error("Cannot withdraw this bid");
       }
+      if (bid[0].status !== 'pending') throw new Error("Only pending bids can be withdrawn");
 
       await db
         .update(bids)
-        .set({ status: "rejected" })
+        .set({ status: "withdrawn" } as any)
         .where(eq(bids.id, input.bidId));
 
       return { success: true };
@@ -1124,26 +1179,55 @@ export const bidsRouter = router({
     const loadId = parseInt(input.loadId, 10);
     const results = await db.select().from(bids).where(eq(bids.loadId, loadId)).orderBy(desc(bids.createdAt));
     
-    return results.map(b => ({
-      id: String(b.id),
-      carrierId: String(b.carrierId),
-      carrierName: 'Carrier',
-      amount: b.amount ? parseFloat(String(b.amount)) : 0,
-      status: b.status,
-      carrierRating: 4.5,
-      carrierMC: '',
-      ratePerMile: 0,
-    }));
+    // Batch-fetch carrier user info
+    const carrierIds = Array.from(new Set(results.map(b => b.carrierId).filter(Boolean)));
+    const carrierMap = new Map<number, { name: string | null; companyId: number | null }>();
+    const companyMap = new Map<number, { name: string; logo: string | null }>();
+    if (carrierIds.length > 0) {
+      try {
+        const carrierRows = await db.select({ id: users.id, name: users.name, companyId: users.companyId }).from(users).where(inArray(users.id, carrierIds));
+        for (const c of carrierRows) carrierMap.set(c.id, { name: c.name, companyId: c.companyId });
+        const compIds = Array.from(new Set(carrierRows.filter(c => c.companyId).map(c => c.companyId!)));
+        if (compIds.length > 0) {
+          const compRows = await db.select({ id: companies.id, name: companies.name, logo: companies.logo }).from(companies).where(inArray(companies.id, compIds));
+          for (const c of compRows) companyMap.set(c.id, { name: c.name, logo: c.logo });
+        }
+      } catch {}
+    }
+    const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+    const dist = load?.distance ? parseFloat(String(load.distance)) : 0;
+    
+    return results.map(b => {
+      const carrier = carrierMap.get(b.carrierId);
+      const company = carrier?.companyId ? companyMap.get(carrier.companyId) : null;
+      const amt = b.amount ? parseFloat(String(b.amount)) : 0;
+      return {
+        id: String(b.id),
+        carrierId: String(b.carrierId),
+        carrierName: carrier?.name || 'Unknown Carrier',
+        companyName: company?.name || null,
+        companyLogo: company?.logo || null,
+        amount: amt,
+        status: b.status,
+        notes: b.notes || '',
+        submittedAt: b.createdAt?.toISOString() || '',
+        carrierRating: 4.5,
+        carrierMC: '',
+        ratePerMile: dist > 0 ? Math.round((amt / dist) * 100) / 100 : 0,
+      };
+    });
   }),
 
   getHistory: protectedProcedure.input(z.object({ limit: z.number().optional(), status: z.string().optional() })).query(async ({ ctx, input }) => {
     const db = await getDb();
     if (!db) return [];
+    const userId = await resolveUserId(ctx.user);
+    if (!userId) return [];
     
     const results = await db
       .select()
       .from(bids)
-      .where(eq(bids.carrierId, ctx.user.id))
+      .where(eq(bids.carrierId, userId))
       .orderBy(desc(bids.createdAt))
       .limit(input?.limit || 20);
     
@@ -1164,12 +1248,14 @@ export const bidsRouter = router({
   getHistorySummary: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return { total: 0, accepted: 0, rejected: 0, pending: 0, winRate: 0, totalBids: 0, totalValue: 0 };
+    const userId = await resolveUserId(ctx.user);
+    if (!userId) return { total: 0, accepted: 0, rejected: 0, pending: 0, winRate: 0, totalBids: 0, totalValue: 0 };
     
-    const [total] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.carrierId, ctx.user.id));
-    const [accepted] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, ctx.user.id), eq(bids.status, 'accepted')));
-    const [rejected] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, ctx.user.id), eq(bids.status, 'rejected')));
-    const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, ctx.user.id), eq(bids.status, 'pending')));
-    const [totalValue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` }).from(bids).where(eq(bids.carrierId, ctx.user.id));
+    const [total] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(eq(bids.carrierId, userId));
+    const [accepted] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'accepted')));
+    const [rejected] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'rejected')));
+    const [pending] = await db.select({ count: sql<number>`count(*)` }).from(bids).where(and(eq(bids.carrierId, userId), eq(bids.status, 'pending')));
+    const [totalValue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(amount AS DECIMAL)), 0)` }).from(bids).where(eq(bids.carrierId, userId));
     
     const totalCount = total?.count || 0;
     const acceptedCount = accepted?.count || 0;
@@ -1225,8 +1311,137 @@ export const bidsRouter = router({
 
       return { success: true, bidId: String(bidId) };
     }),
-  accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
-  reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, bidId: input.bidId })),
+  accept: protectedProcedure.input(z.object({ bidId: z.string() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    const bidIdNum = parseInt(input.bidId, 10);
+    const [bid] = await db.select().from(bids).where(eq(bids.id, bidIdNum)).limit(1);
+    if (!bid) throw new Error("Bid not found");
+    const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+    const userId = await resolveUserId(ctx.user);
+    if (load && load.shipperId !== userId) throw new Error("Only the load owner can accept bids");
+    await db.update(bids).set({ status: 'accepted' } as any).where(eq(bids.id, bidIdNum));
+    // Reject all other pending bids on this load
+    await db.update(bids).set({ status: 'rejected' } as any).where(and(eq(bids.loadId, bid.loadId), sql`${bids.id} != ${bidIdNum}`, eq(bids.status, 'pending')));
+    // Assign carrier to load
+    await db.update(loads).set({ status: 'assigned', carrierId: bid.carrierId } as any).where(eq(loads.id, bid.loadId));
+    emitBidAwarded({ bidId: input.bidId, loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', carrierId: String(bid.carrierId), carrierName: 'Carrier', amount: Number(bid.amount), status: 'accepted', timestamp: new Date().toISOString() });
+    emitLoadStatusChange({ loadId: String(bid.loadId), loadNumber: load?.loadNumber || '', previousStatus: load?.status || '', newStatus: 'assigned', timestamp: new Date().toISOString() });
+    emitNotification(String(bid.carrierId), { id: `notif_${Date.now()}`, type: 'bid_accepted', title: 'Bid Accepted!', message: `Your bid of $${Number(bid.amount).toLocaleString()} for load ${load?.loadNumber} has been accepted`, priority: 'high', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/loads/${bid.loadId}`, timestamp: new Date().toISOString() });
+    fireGamificationEvent({ userId: bid.carrierId, type: "bid_accepted", value: 1 });
+    return { success: true, bidId: input.bidId };
+  }),
+  reject: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    const bidIdNum = parseInt(input.bidId, 10);
+    const [bid] = await db.select().from(bids).where(eq(bids.id, bidIdNum)).limit(1);
+    if (!bid) throw new Error("Bid not found");
+    const [load] = await db.select().from(loads).where(eq(loads.id, bid.loadId)).limit(1);
+    const userId = await resolveUserId(ctx.user);
+    if (load && load.shipperId !== userId) throw new Error("Only the load owner can reject bids");
+    await db.update(bids).set({ status: 'rejected' } as any).where(eq(bids.id, bidIdNum));
+    emitNotification(String(bid.carrierId), { id: `notif_${Date.now()}`, type: 'bid_rejected', title: 'Bid Declined', message: `Your bid for load ${load?.loadNumber} was declined${input.reason ? ': ' + input.reason : ''}`, priority: 'medium', data: { loadId: String(bid.loadId), bidId: input.bidId }, actionUrl: `/bids`, timestamp: new Date().toISOString() });
+    return { success: true, bidId: input.bidId };
+  }),
+
+  cancelBid: protectedProcedure.input(z.object({ bidId: z.string(), reason: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    const userId = await resolveUserId(ctx.user);
+    const bidIdNum = parseInt(input.bidId, 10);
+    const [bid] = await db.select().from(bids).where(eq(bids.id, bidIdNum)).limit(1);
+    if (!bid) throw new Error("Bid not found");
+    if (bid.carrierId !== userId) throw new Error("You can only cancel your own bids");
+    if (bid.status !== 'pending') throw new Error("Only pending bids can be cancelled");
+    await db.update(bids).set({ status: 'withdrawn' } as any).where(eq(bids.id, bidIdNum));
+    return { success: true, bidId: input.bidId };
+  }),
+
+  getBidsForMyLoads: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const userId = await resolveUserId(ctx.user);
+    if (!userId) return [];
+    // Get all loads owned by this user
+    const myLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation, status: loads.status, rate: loads.rate }).from(loads).where(eq(loads.shipperId, userId)).orderBy(desc(loads.createdAt)).limit(100);
+    if (myLoads.length === 0) return [];
+    const loadIds = myLoads.map(l => l.id);
+    const allBids = await db.select().from(bids).where(inArray(bids.loadId, loadIds)).orderBy(desc(bids.createdAt));
+    // Fetch carrier info
+    const carrierIds = Array.from(new Set(allBids.map(b => b.carrierId).filter(Boolean)));
+    const carrierMap = new Map<number, { name: string | null; companyId: number | null }>();
+    if (carrierIds.length > 0) {
+      try {
+        const rows = await db.select({ id: users.id, name: users.name, companyId: users.companyId }).from(users).where(inArray(users.id, carrierIds));
+        for (const r of rows) carrierMap.set(r.id, { name: r.name, companyId: r.companyId });
+      } catch {}
+    }
+    // Group bids by load
+    return myLoads.map(l => {
+      const pickup = l.pickupLocation as any || {};
+      const delivery = l.deliveryLocation as any || {};
+      const loadBids = allBids.filter(b => b.loadId === l.id);
+      return {
+        loadId: String(l.id),
+        loadNumber: l.loadNumber,
+        origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+        destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+        loadStatus: l.status,
+        targetRate: l.rate ? parseFloat(String(l.rate)) : 0,
+        bidCount: loadBids.length,
+        pendingBids: loadBids.filter(b => b.status === 'pending').length,
+        bids: loadBids.map(b => {
+          const carrier = carrierMap.get(b.carrierId);
+          return {
+            id: String(b.id),
+            carrierId: String(b.carrierId),
+            carrierName: carrier?.name || 'Unknown Carrier',
+            amount: b.amount ? parseFloat(String(b.amount)) : 0,
+            status: b.status,
+            notes: b.notes || '',
+            submittedAt: b.createdAt?.toISOString() || '',
+          };
+        }),
+      };
+    }).filter(l => l.bidCount > 0);
+  }),
+
+  updateLoadStatus: protectedProcedure.input(z.object({
+    loadId: z.string(),
+    status: z.enum(['posted', 'bidding', 'assigned', 'en_route_pickup', 'at_pickup', 'loading', 'in_transit', 'at_delivery', 'unloading', 'delivered', 'cancelled', 'disputed']),
+    lat: z.number().optional(),
+    lng: z.number().optional(),
+    notes: z.string().optional(),
+  })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) throw new Error("Database not available");
+    const loadIdNum = parseInt(input.loadId, 10);
+    const [load] = await db.select().from(loads).where(eq(loads.id, loadIdNum)).limit(1);
+    if (!load) throw new Error("Load not found");
+    const userId = await resolveUserId(ctx.user);
+    const role = ctx.user?.role || 'SHIPPER';
+    // Auth: shipper can cancel, carrier/driver/catalyst can update transit statuses
+    const isOwner = load.shipperId === userId;
+    const isCarrier = load.carrierId === userId;
+    const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!isOwner && !isCarrier && !isAdmin) throw new Error("Not authorized to update this load");
+    const updateSet: Record<string, any> = { status: input.status, updatedAt: new Date() };
+    if (input.lat && input.lng) updateSet.currentLocation = { lat: input.lat, lng: input.lng };
+    if (input.status === 'delivered') updateSet.actualDeliveryDate = new Date();
+    if (input.notes) {
+      updateSet.specialInstructions = [(load.specialInstructions || ''), `[STATUS ${input.status.toUpperCase()} ${new Date().toISOString()}] ${input.notes}`].filter(Boolean).join('\n');
+    }
+    await db.update(loads).set(updateSet as any).where(eq(loads.id, loadIdNum));
+    emitLoadStatusChange({ loadId: input.loadId, loadNumber: load.loadNumber, previousStatus: load.status, newStatus: input.status, timestamp: new Date().toISOString(), updatedBy: String(userId) });
+    if (input.status === 'delivered') {
+      fireGamificationEvent({ userId, type: 'load_delivered', value: 1 });
+      if (load.shipperId) {
+        emitNotification(String(load.shipperId), { id: `notif_${Date.now()}`, type: 'load_delivered', title: 'Load Delivered', message: `Load ${load.loadNumber} has been delivered`, priority: 'high', data: { loadId: input.loadId }, actionUrl: `/loads/${input.loadId}`, timestamp: new Date().toISOString() });
+      }
+    }
+    return { success: true, loadId: input.loadId, status: input.status };
+  }),
 
   /**
    * Get marketplace loads for Marketplace page

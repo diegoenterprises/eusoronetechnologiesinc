@@ -84,19 +84,7 @@ export const escortsRouter = router({
    */
   getActiveJobs: protectedProcedure
     .query(async () => {
-      return [
-        {
-          id: "job_active_001",
-          title: "Oversize Load Escort - I-45 Corridor",
-          carrier: "Heavy Haul Specialists",
-          position: "lead",
-          status: "in_progress",
-          currentLocation: "Corsicana, TX",
-          destination: "Dallas, TX",
-          eta: "2 hours",
-          pay: 650,
-        },
-      ];
+      return [];
     }),
 
   /**
@@ -105,26 +93,7 @@ export const escortsRouter = router({
   getUpcomingJobs: protectedProcedure
     .input(z.object({ limit: z.number().optional().default(5) }).optional())
     .query(async () => {
-      return [
-        {
-          id: "job_upcoming_001",
-          title: "Superload Escort - Port Arthur to Austin",
-          carrier: "",
-          position: "both",
-          startDate: "2025-01-26",
-          estimatedDuration: "12 hours",
-          pay: 1200,
-        },
-        {
-          id: "job_upcoming_002",
-          title: "Wind Turbine Blade - Corpus Christi",
-          carrier: "Wind Energy Logistics",
-          position: "chase",
-          startDate: "2025-01-27",
-          estimatedDuration: "6 hours",
-          pay: 450,
-        },
-      ];
+      return [];
     }),
 
   /**

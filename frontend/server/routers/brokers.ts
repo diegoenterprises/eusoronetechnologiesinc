@@ -11,6 +11,18 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, users, companies } from "../../drizzle/schema";
 
+/** Resolve ctx.user (auth provider string) → numeric DB user id */
+async function resolveBrokerUserId(ctxUser: any): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const email = ctxUser?.email || "";
+  if (!email) return 0;
+  try {
+    const [row] = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    return row?.id || 0;
+  } catch { return 0; }
+}
+
 export const brokersRouter = router({
   // Generic CRUD for screen templates
   create: protectedProcedure
@@ -40,7 +52,8 @@ export const brokersRouter = router({
       if (!db) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCarrierRatio: 0 };
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveBrokerUserId(ctx.user);
+        if (!userId) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, marginAverage: 0, loadToCarrierRatio: 0 };
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
         const [activeLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
@@ -70,7 +83,8 @@ export const brokersRouter = router({
       if (!db) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCarrierRatio: 0 };
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveBrokerUserId(ctx.user);
+        if (!userId) return { activeLoads: 0, pendingMatches: 0, weeklyVolume: 0, commissionEarned: 0, avgMargin: 0, loadToCarrierRatio: 0 };
         const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
         const [activeLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
@@ -149,7 +163,8 @@ export const brokersRouter = router({
       if (!db) return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCarriers: [], avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0, topLanes: [] };
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveBrokerUserId(ctx.user);
+        if (!userId) return { totalLoads: 0, loadsBrokered: 0, totalRevenue: 0, totalCommission: 0, avgMargin: 0, avgMarginPercent: 0, commissionTrend: 0, loadsTrend: 0, revenueTrend: 0, topCarriers: [], avgMarginDollars: 0, activeCarriers: 0, newCarriers: 0, topLanes: [] };
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
         const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
@@ -191,7 +206,8 @@ export const brokersRouter = router({
       if (!db) return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, totalCommission: 0, loadsMatched: 0, avgMargin: 0, breakdown: [] };
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveBrokerUserId(ctx.user);
+        if (!userId) return { total: 0, pending: 0, paid: 0, avgPerLoad: 0, totalCommission: 0, loadsMatched: 0, avgMargin: 0, breakdown: [] };
         const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
         const [revenue] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.shipperId, userId));
 
@@ -225,7 +241,8 @@ export const brokersRouter = router({
       if (!db) return [];
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveBrokerUserId(ctx.user);
+        if (!userId) return [];
         const loadList = await db.select().from(loads)
           .where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')))
           .orderBy(desc(loads.createdAt))
@@ -261,7 +278,8 @@ export const brokersRouter = router({
       if (!db) return { total: 0, totalEarned: 0, totalCommission: 0, pending: 0, paid: 0, avgPerLoad: 0, loadsMatched: 0, avgMargin: 0, loadsThisPeriod: 0, trend: 'stable', trendPercent: 0, loadsCompleted: 0, breakdown: [] };
 
       try {
-        const userId = ctx.user?.id || 0;
+        const userId = await resolveBrokerUserId(ctx.user);
+        if (!userId) return { total: 0, totalEarned: 0, totalCommission: 0, pending: 0, paid: 0, avgPerLoad: 0, loadsMatched: 0, avgMargin: 0, loadsThisPeriod: 0, trend: 'stable', trendPercent: 0, loadsCompleted: 0, breakdown: [] };
         const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.shipperId, userId));
         const [delivered] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.shipperId, userId), eq(loads.status, 'delivered')));
         const [revenue] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.shipperId, userId));
@@ -467,22 +485,57 @@ export const brokersRouter = router({
       limit: z.number().default(20),
     }))
     .query(async ({ ctx, input }) => {
-      const loads: any[] = [];
+      const db = await getDb();
+      if (!db) return [];
 
-      let filtered = loads;
-      if (input.search) {
-        const s = input.search.toLowerCase();
-        filtered = filtered.filter(l => 
-          l.origin.toLowerCase().includes(s) ||
-          l.destination.toLowerCase().includes(s) ||
-          l.commodity?.toLowerCase().includes(s)
-        );
-      }
-      if (input.type) {
-        filtered = filtered.filter(l => l.equipmentType.toLowerCase().replace(" ", "_") === input.type);
-      }
+      try {
+        const loadList = await db.select().from(loads)
+          .where(sql`${loads.status} IN ('posted', 'bidding', 'open')`)
+          .orderBy(desc(loads.createdAt))
+          .limit(input.limit)
+          .offset((input.page - 1) * input.limit);
 
-      return filtered;
+        const mapped = await Promise.all(loadList.map(async (l) => {
+          const [shipper] = await db.select({ name: users.name }).from(users).where(eq(users.id, l.shipperId)).limit(1);
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          const origin = pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown';
+          const destination = delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown';
+          return {
+            id: `load_${l.id}`,
+            loadNumber: l.loadNumber,
+            shipper: shipper?.name || 'Unknown',
+            origin,
+            destination,
+            equipmentType: l.cargoType || 'general',
+            commodity: l.commodityName || l.cargoType || '',
+            weight: l.weight ? parseFloat(String(l.weight)) : 0,
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            pickupDate: l.pickupDate?.toISOString().split('T')[0] || '',
+            deliveryDate: l.deliveryDate?.toISOString().split('T')[0] || '',
+            status: l.status,
+            postedAt: l.createdAt?.toISOString() || '',
+          };
+        }));
+
+        let filtered = mapped;
+        if (input.search) {
+          const s = input.search.toLowerCase();
+          filtered = filtered.filter(l =>
+            l.origin.toLowerCase().includes(s) ||
+            l.destination.toLowerCase().includes(s) ||
+            l.commodity?.toLowerCase().includes(s) ||
+            l.loadNumber.toLowerCase().includes(s)
+          );
+        }
+        if (input.type) {
+          filtered = filtered.filter(l => l.equipmentType.toLowerCase().replace(" ", "_") === input.type);
+        }
+        return filtered;
+      } catch (error) {
+        console.error('[Brokers] getMarketplaceLoads error:', error);
+        return [];
+      }
     }),
 
   /**

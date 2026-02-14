@@ -33,8 +33,13 @@ export default function BidManagement() {
   const availableLoadsQuery = (trpc as any).carriers.getAvailableLoads.useQuery({ limit: 5 });
 
   const submitBidMutation = (trpc as any).carriers.submitBid.useMutation({
-    onSuccess: () => { toast.success("Bid submitted"); bidsQuery.refetch(); availableLoadsQuery.refetch(); },
+    onSuccess: () => { toast.success("Bid submitted"); bidsQuery.refetch(); availableLoadsQuery.refetch(); statsQuery.refetch(); },
     onError: (error: any) => toast.error("Failed", { description: error.message }),
+  });
+
+  const cancelBidMutation = (trpc as any).carriers.cancelBid.useMutation({
+    onSuccess: () => { toast.success("Bid cancelled"); bidsQuery.refetch(); statsQuery.refetch(); },
+    onError: (error: any) => toast.error("Cannot cancel bid", { description: error.message }),
   });
 
   const analyzeMutation = (trpc as any).esang.analyzeBidFairness.useMutation();
@@ -50,6 +55,7 @@ export default function BidManagement() {
       pending: { cls: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30", icon: <Clock className="w-3 h-3 mr-1" />, label: "Pending" },
       accepted: { cls: "bg-green-500/15 text-green-500 border-green-500/30", icon: <CheckCircle className="w-3 h-3 mr-1" />, label: "Accepted" },
       rejected: { cls: "bg-red-500/15 text-red-500 border-red-500/30", icon: <XCircle className="w-3 h-3 mr-1" />, label: "Rejected" },
+      withdrawn: { cls: "bg-slate-500/15 text-slate-400 border-slate-500/30", icon: <XCircle className="w-3 h-3 mr-1" />, label: "Cancelled" },
       outbid: { cls: "bg-orange-500/15 text-orange-500 border-orange-500/30", icon: null, label: "Outbid" },
     };
     const s = m[status] || { cls: "bg-slate-500/15 text-slate-400 border-slate-500/30", icon: null, label: status };
@@ -209,9 +215,19 @@ export default function BidManagement() {
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0 ml-4">
                       <div className="text-right">
-                        <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${bid.amount?.toLocaleString()}</p>
-                        <p className="text-xs text-slate-400">${bid.perMile}/mi</p>
+                        <p className="text-xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${(bid.amount || bid.myBid || 0)?.toLocaleString()}</p>
+                        <p className="text-xs text-slate-400">${bid.perMile || 0}/mi</p>
                       </div>
+                      {bid.status === "pending" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className={cn("rounded-xl font-bold text-xs h-9", isLight ? "border-red-200 text-red-600 hover:bg-red-50" : "border-red-500/30 text-red-400 hover:bg-red-500/10")}
+                          onClick={(e: React.MouseEvent) => { e.stopPropagation(); cancelBidMutation.mutate({ bidId: bid.id }); }}
+                        >
+                          <XCircle className="w-3.5 h-3.5 mr-1" />Cancel
+                        </Button>
+                      )}
                       {bid.status === "accepted" && bid.loadId && (
                         <Button
                           size="sm"
