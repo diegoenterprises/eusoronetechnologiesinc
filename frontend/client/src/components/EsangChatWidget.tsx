@@ -100,7 +100,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
       content: text,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     }]);
-    sendMutation.mutate({ message: text });
+    sendMutation.mutate({ message: text, context: { currentPage: location } });
     setMessage("");
   }, [message, sendMutation]);
 
@@ -156,6 +156,57 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
 
   const role = (user?.role || "SHIPPER").toUpperCase();
   const quickPrompts = (() => {
+    // Context-aware prompts based on current page
+    const page = location.toLowerCase();
+    if (page.includes("wallet") || page.includes("payment") || page.includes("finance")) {
+      return [
+        { icon: <Beaker className="w-3.5 h-3.5" />, text: "Analyze my finances" },
+        { icon: <FileText className="w-3.5 h-3.5" />, text: "Cash flow forecast" },
+        { icon: <Shield className="w-3.5 h-3.5" />, text: "Spending insights" },
+        { icon: <MapPin className="w-3.5 h-3.5" />, text: "Payment recommendations" },
+      ];
+    }
+    if (page.includes("zeun") || page.includes("mechanic") || page.includes("breakdown") || page.includes("maintenance")) {
+      return [
+        { icon: <Shield className="w-3.5 h-3.5" />, text: "Diagnose my truck issue" },
+        { icon: <Beaker className="w-3.5 h-3.5" />, text: "Look up a fault code" },
+        { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find repair shops nearby" },
+        { icon: <FileText className="w-3.5 h-3.5" />, text: "Maintenance schedule help" },
+      ];
+    }
+    if (page.includes("message") || page.includes("chat") || page.includes("channel")) {
+      return [
+        { icon: <Beaker className="w-3.5 h-3.5" />, text: "Suggest a reply" },
+        { icon: <FileText className="w-3.5 h-3.5" />, text: "Summarize conversation" },
+        { icon: <Shield className="w-3.5 h-3.5" />, text: "Draft a professional message" },
+        { icon: <MapPin className="w-3.5 h-3.5" />, text: "Help negotiate this deal" },
+      ];
+    }
+    if (page.includes("haul") || page.includes("gamif") || page.includes("mission") || page.includes("badge")) {
+      return [
+        { icon: <Beaker className="w-3.5 h-3.5" />, text: "Generate missions for me" },
+        { icon: <Shield className="w-3.5 h-3.5" />, text: "How do I level up faster?" },
+        { icon: <MapPin className="w-3.5 h-3.5" />, text: "What badges can I earn?" },
+        { icon: <FileText className="w-3.5 h-3.5" />, text: "Leaderboard tips" },
+      ];
+    }
+    if (page.includes("agreement") || page.includes("contract")) {
+      return [
+        { icon: <Beaker className="w-3.5 h-3.5" />, text: "Help draft an agreement" },
+        { icon: <Shield className="w-3.5 h-3.5" />, text: "Review clause for compliance" },
+        { icon: <FileText className="w-3.5 h-3.5" />, text: "Explain FMCSA requirements" },
+        { icon: <MapPin className="w-3.5 h-3.5" />, text: "Standard payment terms" },
+      ];
+    }
+    if (page.includes("load") || page.includes("bid") || page.includes("marketplace") || page.includes("job")) {
+      return [
+        { icon: <Beaker className="w-3.5 h-3.5" />, text: "Analyze this rate" },
+        { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find loads for me" },
+        { icon: <Shield className="w-3.5 h-3.5" />, text: "Check bid fairness" },
+        { icon: <FileText className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
+      ];
+    }
+    // Default role-based prompts
     const shared = [
       { icon: <FileText className="w-3.5 h-3.5" />, text: "Compliance help" },
     ];
@@ -163,25 +214,25 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
       case "DRIVER":
         return [
           { icon: <MapPin className="w-3.5 h-3.5" />, text: "Nearby gas stations" },
-          { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
-          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "Diagnose my truck issue" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Look up a fault code" },
           ...shared,
         ];
       case "CARRIER":
         return [
           { icon: <Shield className="w-3.5 h-3.5" />, text: "ERG hazmat lookup" },
-          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Analyze a rate" },
           { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find available loads" },
           ...shared,
         ];
       case "BROKER":
         return [
           { icon: <MapPin className="w-3.5 h-3.5" />, text: "Find carriers" },
-          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Rate a lane" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Analyze lane rate" },
           { icon: <Shield className="w-3.5 h-3.5" />, text: "Market pricing" },
           ...shared,
         ];
-      default: // SHIPPER
+      default:
         return [
           { icon: <MapPin className="w-3.5 h-3.5" />, text: "Track my shipments" },
           { icon: <Beaker className="w-3.5 h-3.5" />, text: "Identify a product" },
