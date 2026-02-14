@@ -75,6 +75,7 @@ import {
   Lock,
   X,
   Percent,
+  Banknote,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -142,6 +143,7 @@ const iconMap: Record<string, React.ReactNode> = {
   PenTool: <PenTool size={20} />,
   Repeat: <Repeat size={20} />,
   Scale: <Scale size={20} />,
+  Banknote: <Banknote size={20} />,
 };
 
 // --- Notification Bell Component ---

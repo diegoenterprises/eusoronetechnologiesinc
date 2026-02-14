@@ -171,10 +171,20 @@ import CarrierCompliance from "./pages/CarrierCompliance";
 import FuelPrices from "./pages/FuelPrices";
 import WeatherAlerts from "./pages/WeatherAlerts";
 import TheHaul from "./pages/TheHaul";
+import FactoringDashboardPage from "./pages/factoring/FactoringDashboard";
+import FactoringInvoicesPage from "./pages/factoring/FactoringInvoices";
+import FactoringCarriersPage from "./pages/factoring/FactoringCarriers";
+import FactoringCollectionsPage from "./pages/factoring/FactoringCollections";
+import FactoringFundingPage from "./pages/factoring/FactoringFunding";
+import FactoringRiskPage from "./pages/factoring/FactoringRisk";
+import FactoringAgingPage from "./pages/factoring/FactoringAging";
+import FactoringChargebacksPage from "./pages/factoring/FactoringChargebacks";
+import FactoringDebtorsPage from "./pages/factoring/FactoringDebtors";
+import FactoringReportsPage from "./pages/factoring/FactoringReports";
 
 function Router() {
   // Role constants for route protection
-  const ALL: UserRole[] = ["SHIPPER","CARRIER","BROKER","DRIVER","CATALYST","ESCORT","TERMINAL_MANAGER","ADMIN","SUPER_ADMIN"];
+  const ALL: UserRole[] = ["SHIPPER","CARRIER","BROKER","DRIVER","CATALYST","ESCORT","TERMINAL_MANAGER","FACTORING","ADMIN","SUPER_ADMIN"];
   const SHIP: UserRole[] = ["SHIPPER","ADMIN","SUPER_ADMIN"];
   const CARR: UserRole[] = ["CARRIER","ADMIN","SUPER_ADMIN"];
   const BROK: UserRole[] = ["BROKER","ADMIN","SUPER_ADMIN"];
@@ -182,6 +192,7 @@ function Router() {
   const DISP: UserRole[] = ["CATALYST","ADMIN","SUPER_ADMIN"];
   const ESCT: UserRole[] = ["ESCORT","ADMIN","SUPER_ADMIN"];
   const TERM: UserRole[] = ["TERMINAL_MANAGER","ADMIN","SUPER_ADMIN"];
+  const FACT: UserRole[] = ["FACTORING","ADMIN","SUPER_ADMIN"];
   const COMP: UserRole[] = ["TERMINAL_MANAGER","ADMIN","SUPER_ADMIN"];
   const SAFE: UserRole[] = ["ADMIN","SUPER_ADMIN"];
   const ADMN: UserRole[] = ["ADMIN","SUPER_ADMIN"];
@@ -347,6 +358,21 @@ function Router() {
       <Route path={"/spectra-match"} component={guard(TERM, <SpectraMatch />)} />
       <Route path={"/euso-ticket"} component={guard(TERM, <EusoTicket />)} />
       <Route path={"/run-tickets"} component={guard(TERM, <EusoTicket />)} />
+
+      {/* ============================================ */}
+      {/* FACTORING ROUTES */}
+      {/* ============================================ */}
+      <Route path={"/factoring"} component={guard(FACT, <FactoringDashboardPage />)} />
+      <Route path={"/factoring/invoices"} component={guard(FACT, <FactoringInvoicesPage />)} />
+      <Route path={"/factoring/carriers"} component={guard(FACT, <FactoringCarriersPage />)} />
+      <Route path={"/factoring/collections"} component={guard(FACT, <FactoringCollectionsPage />)} />
+      <Route path={"/factoring/funding"} component={guard(FACT, <FactoringFundingPage />)} />
+      <Route path={"/factoring/risk"} component={guard(FACT, <FactoringRiskPage />)} />
+      <Route path={"/factoring/aging"} component={guard(FACT, <FactoringAgingPage />)} />
+      <Route path={"/factoring/chargebacks"} component={guard(FACT, <FactoringChargebacksPage />)} />
+      <Route path={"/factoring/debtors"} component={guard(FACT, <FactoringDebtorsPage />)} />
+      <Route path={"/factoring/reports"} component={guard(FACT, <FactoringReportsPage />)} />
+      <Route path={"/factoring/settings"} component={guard(FACT, <SettingsPage />)} />
 
       {/* ============================================ */}
       {/* COMPLIANCE OFFICER ROUTES */}

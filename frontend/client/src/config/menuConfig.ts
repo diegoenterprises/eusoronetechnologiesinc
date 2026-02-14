@@ -31,6 +31,7 @@ export type UserRole =
   | 'CATALYST' 
   | 'ESCORT' 
   | 'TERMINAL_MANAGER' 
+  | 'FACTORING'
   | 'ADMIN' 
   | 'SUPER_ADMIN';
 
@@ -865,6 +866,24 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
+  // FACTORING: Invoice factoring, funding, risk
+  FACTORING: [
+    { icon: "LayoutDashboard", label: "Dashboard", path: "/factoring", badge: 0, description: "Factoring overview" },
+    { icon: "FileText", label: "Invoices", path: "/factoring/invoices", badge: 0, description: "Pending and funded invoices" },
+    { icon: "Users", label: "Carriers", path: "/factoring/carriers", badge: 0, description: "Carrier portfolio" },
+    { icon: "DollarSign", label: "Funding", path: "/factoring/funding", badge: 0, description: "Daily funding queue" },
+    { icon: "Banknote", label: "Collections", path: "/factoring/collections", badge: 0, description: "Outstanding collections" },
+    { icon: "ShieldCheck", label: "Risk", path: "/factoring/risk", badge: 0, description: "Credit risk assessment" },
+    { icon: "BarChart3", label: "Aging", path: "/factoring/aging", badge: 0, description: "Invoice aging report" },
+    { icon: "AlertTriangle", label: "Chargebacks", path: "/factoring/chargebacks", badge: 0, description: "Chargeback management" },
+    { icon: "Users", label: "Debtors", path: "/factoring/debtors", badge: 0, description: "Debtor accounts" },
+    { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
+    { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
+    { icon: "Wallet", label: "Wallet", path: "/wallet", badge: 0, description: "EusoWallet" },
+    { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
+    { icon: "HelpCircle", label: "Support", path: "/support", badge: 0, description: "Help & support" },
+  ],
+
   // TERMINAL_MANAGER: Facility operations, compliance
   TERMINAL_MANAGER: [
     { 
@@ -1481,6 +1500,7 @@ export function getRoleDisplayName(role: string | UserRole): string {
     CATALYST: 'Catalyst',
     ESCORT: 'Escort',
     TERMINAL_MANAGER: 'Terminal Manager',
+    FACTORING: 'Factoring Company',
     ADMIN: 'Administrator',
     SUPER_ADMIN: 'Super Administrator',
   };
