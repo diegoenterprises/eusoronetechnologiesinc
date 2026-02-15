@@ -147,8 +147,16 @@ export default function RegisterSafety() {
       phone: formData.phone,
       password: formData.password,
       employerCompanyName: formData.companyName,
-      employerUsdotNumber: formData.companyUsdot || "0000000",
-      yearsAsSafetyManager: Number(formData.yearsInSafety) || 1,
+      employerUsdotNumber: formData.companyUsdot || undefined,
+      jobTitle: formData.jobTitle || undefined,
+      reportsTo: formData.reportsTo || undefined,
+      yearsAsSafetyManager: Number(formData.yearsInSafety) || undefined,
+      certifications: formData.certifications?.length ? formData.certifications : undefined,
+      csaTrainingDate: formData.csaTrainingDate || undefined,
+      accidentInvestigationDate: formData.accidentInvestigationDate || undefined,
+      responsibilities: formData.responsibilities?.length ? formData.responsibilities : undefined,
+      fleetSize: formData.fleetSize || undefined,
+      driverCount: formData.driverCount || undefined,
       complianceIds: Object.fromEntries(
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,

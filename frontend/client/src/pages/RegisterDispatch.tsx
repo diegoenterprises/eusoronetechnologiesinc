@@ -133,9 +133,18 @@ export default function RegisterDispatch() {
       email: formData.email,
       phone: formData.phone,
       password: formData.password,
+      employmentType: formData.employmentType || undefined,
       employerCompanyName: formData.companyName,
+      companyUsdot: formData.companyUsdot || undefined,
       jobTitle: formData.jobTitle,
+      department: formData.department || undefined,
+      yearsExperience: formData.yearsExperience || undefined,
+      dispatchSoftware: formData.dispatchSoftware?.length ? formData.dispatchSoftware : undefined,
       hazmatTrainingCompleted: !!formData.hazmatTrainingDate,
+      hazmatTrainingDate: formData.hazmatTrainingDate || undefined,
+      hazmatTrainingProvider: formData.hazmatTrainingProvider || undefined,
+      certifications: formData.certifications?.length ? formData.certifications : undefined,
+      otherCertifications: formData.otherCertifications || undefined,
       complianceIds: Object.fromEntries(
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,

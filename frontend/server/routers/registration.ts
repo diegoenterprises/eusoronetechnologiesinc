@@ -50,22 +50,64 @@ const complianceIdsSchema = z.object({
   saferWebId: z.string().optional(),
 }).optional();
 
-// Helper to store compliance IDs as JSON metadata on the user record
-async function storeComplianceIds(db: any, userId: number, complianceIds: any) {
-  if (!complianceIds) return;
-  const filled = Object.fromEntries(Object.entries(complianceIds).filter(([_, v]) => v && String(v).trim()));
-  if (Object.keys(filled).length === 0) return;
-  try {
-    await db.update(users).set({ metadata: JSON.stringify(filled) }).where(eq(users.id, userId));
-  } catch (e) {
-    // metadata column may not exist yet — non-critical, try raw SQL fallback
+/**
+ * Store ALL registration data as structured JSON metadata on the user record.
+ * Schema: { complianceIds: {...}, registration: {...role-specific fields...} }
+ * Also populates companies table insurance/hazmat columns where they exist.
+ */
+async function storeRegistrationMetadata(db: any, userId: number, data: {
+  complianceIds?: any;
+  registration?: Record<string, any>;
+  companyId?: number;
+  insurance?: { policy?: string; expiry?: string; hazmatLicense?: string; hazmatExpiry?: string; twicCard?: string; twicExpiry?: string; };
+}) {
+  const metadata: Record<string, any> = {};
+
+  // Compliance IDs
+  if (data.complianceIds) {
+    const filled = Object.fromEntries(Object.entries(data.complianceIds).filter(([_, v]) => v && String(v).trim()));
+    if (Object.keys(filled).length > 0) metadata.complianceIds = filled;
+  }
+
+  // Role-specific registration data
+  if (data.registration) {
+    const filled = Object.fromEntries(Object.entries(data.registration).filter(([_, v]) => v !== undefined && v !== null && v !== ""));
+    if (Object.keys(filled).length > 0) metadata.registration = filled;
+  }
+
+  // Store metadata on user
+  if (Object.keys(metadata).length > 0) {
     try {
-      await db.execute(sql`ALTER TABLE users ADD COLUMN metadata TEXT`);
-      await db.update(users).set({ metadata: JSON.stringify(filled) }).where(eq(users.id, userId));
-    } catch {
-      console.warn("[Registration] Could not store compliance IDs:", e);
+      await db.update(users).set({ metadata: JSON.stringify(metadata) }).where(eq(users.id, userId));
+    } catch (e) {
+      try {
+        await db.execute(sql`ALTER TABLE users ADD COLUMN metadata TEXT`);
+        await db.update(users).set({ metadata: JSON.stringify(metadata) }).where(eq(users.id, userId));
+      } catch { console.warn("[Registration] Could not store metadata:", e); }
     }
   }
+
+  // Populate companies table insurance/hazmat columns
+  if (data.companyId && data.insurance) {
+    try {
+      const ins = data.insurance;
+      const updates: any = {};
+      if (ins.policy) updates.insurancePolicy = ins.policy;
+      if (ins.expiry) updates.insuranceExpiry = new Date(ins.expiry);
+      if (ins.hazmatLicense) updates.hazmatLicense = ins.hazmatLicense;
+      if (ins.hazmatExpiry) updates.hazmatExpiry = new Date(ins.hazmatExpiry);
+      if (ins.twicCard) updates.twicCard = ins.twicCard;
+      if (ins.twicExpiry) updates.twicExpiry = new Date(ins.twicExpiry);
+      if (Object.keys(updates).length > 0) {
+        await db.update(companies).set(updates).where(eq(companies.id, data.companyId));
+      }
+    } catch (e) { console.warn("[Registration] Could not store insurance on company:", e); }
+  }
+}
+
+// Backward compat alias
+async function storeComplianceIds(db: any, userId: number, complianceIds: any) {
+  await storeRegistrationMetadata(db, userId, { complianceIds });
 }
 
 export const registrationRouter = router({
@@ -79,26 +121,30 @@ export const registrationRouter = router({
       einNumber: z.string().min(9),
       dunsNumber: z.string().optional(),
       companyType: z.string(),
+      yearEstablished: z.string().optional(),
       contactName: z.string(),
       contactTitle: z.string().optional(),
       contactEmail: z.string().email(),
       contactPhone: z.string(),
+      billingEmail: z.string().optional(),
       password: z.string().min(8),
-      emergencyContactName: z.string(),
-      emergencyContactPhone: z.string(),
+      emergencyContactName: z.string().optional(),
+      emergencyContactPhone: z.string().optional(),
       streetAddress: z.string(),
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
+      country: z.string().optional(),
       phmsaNumber: z.string().optional(),
       phmsaExpiration: z.string().optional(),
       epaId: z.string().optional(),
-      hazmatClasses: z.array(hazmatClassSchema),
-      generalLiabilityCatalyst: z.string(),
-      generalLiabilityPolicy: z.string(),
-      generalLiabilityCoverage: z.string(),
-      generalLiabilityExpiration: z.string(),
-      pollutionLiabilityCatalyst: z.string().optional(),
+      statePermits: z.array(z.string()).optional(),
+      hazmatClasses: z.array(hazmatClassSchema).optional(),
+      generalLiabilityCarrier: z.string().optional(),
+      generalLiabilityPolicy: z.string().optional(),
+      generalLiabilityCoverage: z.string().optional(),
+      generalLiabilityExpiration: z.string().optional(),
+      pollutionLiabilityCarrier: z.string().optional(),
       pollutionLiabilityPolicy: z.string().optional(),
       pollutionLiabilityCoverage: z.string().optional(),
       pollutionLiabilityExpiration: z.string().optional(),
@@ -117,18 +163,20 @@ export const registrationRouter = router({
 
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
-        legalName: input.dba || input.companyName,
+        legalName: input.companyName,
         ein: input.einNumber,
         address: input.streetAddress,
         city: input.city,
         state: input.state,
         zipCode: input.zipCode,
+        country: input.country || "USA",
         phone: input.contactPhone,
         email: input.contactEmail,
+        description: input.dba ? `DBA: ${input.dba}` : undefined,
         complianceStatus: "pending",
       }).$returningId();
 
-      const companyId = companyResult[0]?.id;
+      const companyId = Number(companyResult[0]?.id);
       const openId = uuidv4();
 
       const userResult = await db.insert(users).values({
@@ -138,14 +186,43 @@ export const registrationRouter = router({
         phone: input.contactPhone,
         passwordHash,
         role: "SHIPPER",
-        companyId: Number(companyId),
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
 
-      const userId = userResult[0]?.id;
-      await storeComplianceIds(db, Number(userId), input.complianceIds);
-      initNewUserGamification(Number(userId)).catch(() => {});
+      const userId = Number(userResult[0]?.id);
+
+      // Store ALL registration data
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        companyId,
+        registration: {
+          dba: input.dba,
+          companyType: input.companyType,
+          yearEstablished: input.yearEstablished,
+          dunsNumber: input.dunsNumber,
+          contactTitle: input.contactTitle,
+          billingEmail: input.billingEmail,
+          country: input.country,
+          phmsaNumber: input.phmsaNumber,
+          phmsaExpiration: input.phmsaExpiration,
+          epaId: input.epaId,
+          statePermits: input.statePermits,
+          hazmatClasses: input.hazmatClasses,
+          emergencyContactName: input.emergencyContactName,
+          emergencyContactPhone: input.emergencyContactPhone,
+          hasSecurityPlan: input.hasSecurityPlan,
+          generalLiability: { carrier: input.generalLiabilityCarrier, policy: input.generalLiabilityPolicy, coverage: input.generalLiabilityCoverage, expiration: input.generalLiabilityExpiration },
+          pollutionLiability: { carrier: input.pollutionLiabilityCarrier, policy: input.pollutionLiabilityPolicy, coverage: input.pollutionLiabilityCoverage, expiration: input.pollutionLiabilityExpiration },
+        },
+        insurance: {
+          policy: JSON.stringify({ general: { carrier: input.generalLiabilityCarrier, policy: input.generalLiabilityPolicy, coverage: input.generalLiabilityCoverage }, pollution: { carrier: input.pollutionLiabilityCarrier, policy: input.pollutionLiabilityPolicy, coverage: input.pollutionLiabilityCoverage } }),
+          expiry: input.generalLiabilityExpiration,
+        },
+      });
+
+      initNewUserGamification(userId).catch(() => {});
 
       return {
         success: true,
@@ -168,10 +245,14 @@ export const registrationRouter = router({
       einNumber: z.string().optional(),
       phmsaNumber: z.string().optional(),
       hmspPermitNumber: z.string().optional(),
+      operatingStatus: z.string().optional(),
+      entityType: z.string().optional(),
       contactName: z.string(),
       contactTitle: z.string().optional(),
       contactEmail: z.string().email(),
       contactPhone: z.string(),
+      dispatchEmail: z.string().optional(),
+      dispatchPhone: z.string().optional(),
       password: z.string().min(8),
       streetAddress: z.string(),
       city: z.string(),
@@ -183,13 +264,17 @@ export const registrationRouter = router({
         drivers: z.number(),
       }),
       hazmatEndorsed: z.boolean().default(false),
+      hazmatAuthorityNumber: z.string().optional(),
       hazmatClasses: z.array(hazmatClassSchema).optional(),
+      hazmatCertifiedDrivers: z.number().optional(),
       tankerEndorsed: z.boolean().default(false),
-      liabilityCatalyst: z.string(),
-      liabilityPolicy: z.string(),
-      liabilityCoverage: z.string(),
-      liabilityExpiration: z.string(),
-      cargoCatalyst: z.string().optional(),
+      catalystType: z.array(z.string()).optional(),
+      equipmentTypes: z.array(z.string()).optional(),
+      liabilityCarrier: z.string().optional(),
+      liabilityPolicy: z.string().optional(),
+      liabilityCoverage: z.string().optional(),
+      liabilityExpiration: z.string().optional(),
+      cargoCarrier: z.string().optional(),
       cargoPolicy: z.string().optional(),
       cargoCoverage: z.string().optional(),
       cargoExpiration: z.string().optional(),
@@ -212,7 +297,7 @@ export const registrationRouter = router({
 
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
-        legalName: input.dba || input.companyName,
+        legalName: input.companyName,
         dotNumber: input.usdotNumber,
         mcNumber: input.mcNumber,
         ein: input.einNumber,
@@ -222,9 +307,11 @@ export const registrationRouter = router({
         zipCode: input.zipCode,
         phone: input.contactPhone,
         email: input.contactEmail,
+        description: input.dba ? `DBA: ${input.dba}` : undefined,
         complianceStatus: saferVerification.verified ? "pending" : "non_compliant",
       }).$returningId();
 
+      const companyId = Number(companyResult[0]?.id);
       const openId = uuidv4();
 
       const userResult = await db.insert(users).values({
@@ -234,18 +321,54 @@ export const registrationRouter = router({
         phone: input.contactPhone,
         passwordHash,
         role: "CATALYST",
-        companyId: Number(companyResult[0]?.id),
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
 
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
+      const userId = Number(userResult[0]?.id);
+
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        companyId,
+        registration: {
+          dba: input.dba,
+          operatingStatus: input.operatingStatus,
+          entityType: input.entityType,
+          contactTitle: input.contactTitle,
+          dispatchEmail: input.dispatchEmail,
+          dispatchPhone: input.dispatchPhone,
+          phmsaNumber: input.phmsaNumber,
+          hmspPermitNumber: input.hmspPermitNumber,
+          fleetSize: input.fleetSize,
+          hazmatEndorsed: input.hazmatEndorsed,
+          hazmatAuthorityNumber: input.hazmatAuthorityNumber,
+          hazmatClasses: input.hazmatClasses,
+          hazmatCertifiedDrivers: input.hazmatCertifiedDrivers,
+          tankerEndorsed: input.tankerEndorsed,
+          catalystType: input.catalystType,
+          equipmentTypes: input.equipmentTypes,
+          liability: { carrier: input.liabilityCarrier, policy: input.liabilityPolicy, coverage: input.liabilityCoverage, expiration: input.liabilityExpiration },
+          cargo: { carrier: input.cargoCarrier, policy: input.cargoPolicy, coverage: input.cargoCoverage, expiration: input.cargoExpiration },
+          drugAlcoholConsortium: input.drugAlcoholConsortium,
+          clearinghouseRegistered: input.clearinghouseRegistered,
+          processAgentName: input.processAgentName,
+          processAgentStates: input.processAgentStates,
+          saferVerification,
+        },
+        insurance: {
+          policy: JSON.stringify({ liability: { carrier: input.liabilityCarrier, policy: input.liabilityPolicy, coverage: input.liabilityCoverage }, cargo: { carrier: input.cargoCarrier, policy: input.cargoPolicy, coverage: input.cargoCoverage } }),
+          expiry: input.liabilityExpiration,
+          hazmatLicense: input.hazmatEndorsed ? (input.hazmatAuthorityNumber || "endorsed") : undefined,
+        },
+      });
+
+      initNewUserGamification(userId).catch(() => {});
 
       return {
         success: true,
-        userId: userResult[0]?.id,
-        companyId: companyResult[0]?.id,
+        userId,
+        companyId,
         saferVerification,
         message: "Registration submitted. USDOT verification in progress.",
         verificationRequired: true,
@@ -268,28 +391,38 @@ export const registrationRouter = router({
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
+      employmentType: z.string().optional(),
+      catalystUsdot: z.string().optional(),
+      catalystName: z.string().optional(),
       cdlNumber: z.string(),
       cdlState: z.string(),
       cdlClass: z.enum(["A", "B", "C"]),
       cdlExpiration: z.string(),
       cdlEndorsements: z.array(z.string()),
+      cdlRestrictions: z.array(z.string()).optional(),
       hazmatEndorsement: z.boolean().default(false),
       hazmatExpiration: z.string().optional(),
       tankerEndorsement: z.boolean().default(false),
       doublesTriples: z.boolean().default(false),
       twicCard: z.boolean().default(false),
+      twicNumber: z.string().optional(),
       twicExpiration: z.string().optional(),
+      medicalCardNumber: z.string().optional(),
       medicalCardExpiration: z.string(),
-      yearsExperience: z.number(),
+      hazmatTrainingDate: z.string().optional(),
+      hazmatTrainingProvider: z.string().optional(),
+      securityTrainingDate: z.string().optional(),
+      additionalCerts: z.array(z.string()).optional(),
+      yearsExperience: z.number().optional(),
       previousEmployers: z.array(z.object({
         name: z.string(),
         startDate: z.string(),
         endDate: z.string(),
         reasonForLeaving: z.string(),
       })).optional(),
-      pspConsent: z.boolean(),
-      backgroundCheckConsent: z.boolean(),
-      drugTestConsent: z.boolean(),
+      pspConsent: z.boolean().optional(),
+      backgroundCheckConsent: z.boolean().optional(),
+      drugTestConsent: z.boolean().optional(),
       companyId: z.number().optional(),
       complianceIds: complianceIdsSchema,
       documents: z.record(z.string(), z.string()).optional(),
@@ -301,6 +434,13 @@ export const registrationRouter = router({
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
 
+      // Resolve companyId from catalystUsdot if provided
+      let companyId = input.companyId || null;
+      if (!companyId && input.catalystUsdot) {
+        const [company] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, input.catalystUsdot)).limit(1);
+        if (company) companyId = company.id;
+      }
+
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
 
@@ -311,17 +451,49 @@ export const registrationRouter = router({
         phone: input.phone,
         passwordHash,
         role: "DRIVER",
-        companyId: input.companyId || null,
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
 
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
+      const userId = Number(userResult[0]?.id);
+
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        registration: {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          dateOfBirth: input.dateOfBirth,
+          ssn: input.ssn ? sensitiveData.encrypt(input.ssn) : undefined,
+          address: { street: input.streetAddress, city: input.city, state: input.state, zipCode: input.zipCode },
+          employmentType: input.employmentType,
+          catalystUsdot: input.catalystUsdot,
+          catalystName: input.catalystName,
+          cdl: { number: input.cdlNumber, state: input.cdlState, class: input.cdlClass, expiration: input.cdlExpiration, endorsements: input.cdlEndorsements, restrictions: input.cdlRestrictions },
+          hazmatEndorsement: input.hazmatEndorsement,
+          hazmatExpiration: input.hazmatExpiration,
+          tankerEndorsement: input.tankerEndorsement,
+          doublesTriples: input.doublesTriples,
+          twicCard: input.twicCard,
+          twicNumber: input.twicNumber,
+          twicExpiration: input.twicExpiration,
+          medicalCardNumber: input.medicalCardNumber,
+          medicalCardExpiration: input.medicalCardExpiration,
+          hazmatTrainingDate: input.hazmatTrainingDate,
+          hazmatTrainingProvider: input.hazmatTrainingProvider,
+          securityTrainingDate: input.securityTrainingDate,
+          additionalCerts: input.additionalCerts,
+          yearsExperience: input.yearsExperience,
+          previousEmployers: input.previousEmployers,
+          consents: { psp: input.pspConsent, backgroundCheck: input.backgroundCheckConsent, drugTest: input.drugTestConsent },
+        },
+      });
+
+      initNewUserGamification(userId).catch(() => {});
 
       return {
         success: true,
-        userId: userResult[0]?.id,
+        userId,
         message: "Registration submitted. Background check and PSP query will be initiated.",
         verificationRequired: true,
         checksRequired: ["background", "psp", "drugTest", "cdlVerification"],
@@ -338,7 +510,9 @@ export const registrationRouter = router({
       einNumber: z.string().min(9),
       mcNumber: z.string().min(5),
       usdotNumber: z.string().optional(),
+      yearEstablished: z.string().optional(),
       contactName: z.string(),
+      contactTitle: z.string().optional(),
       contactEmail: z.string().email(),
       contactPhone: z.string(),
       password: z.string().min(8),
@@ -346,10 +520,16 @@ export const registrationRouter = router({
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
+      brokerAuthority: z.string().optional(),
       suretyBondAmount: z.number().min(75000).default(75000),
-      suretyBondCatalyst: z.string(),
-      suretyBondNumber: z.string(),
+      suretyBondCarrier: z.string().optional(),
+      suretyBondNumber: z.string().optional(),
+      bondExpiration: z.string().optional(),
       brokersHazmat: z.boolean().default(false),
+      insuranceCarrier: z.string().optional(),
+      insurancePolicy: z.string().optional(),
+      insuranceCoverage: z.string().optional(),
+      insuranceExpiration: z.string().optional(),
       complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
@@ -360,7 +540,7 @@ export const registrationRouter = router({
       const passwordHash = await bcrypt.hash(input.password, 12);
       const companyResult = await db.insert(companies).values({
         name: input.companyName,
-        legalName: input.dba || input.companyName,
+        legalName: input.companyName,
         mcNumber: input.mcNumber,
         dotNumber: input.usdotNumber,
         ein: input.einNumber,
@@ -370,8 +550,10 @@ export const registrationRouter = router({
         zipCode: input.zipCode,
         phone: input.contactPhone,
         email: input.contactEmail,
+        description: input.dba ? `DBA: ${input.dba}` : undefined,
         complianceStatus: "pending",
       }).$returningId();
+      const companyId = Number(companyResult[0]?.id);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
         openId,
@@ -380,13 +562,30 @@ export const registrationRouter = router({
         phone: input.contactPhone,
         passwordHash,
         role: "BROKER",
-        companyId: Number(companyResult[0]?.id),
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
-      return { success: true, userId: userResult[0]?.id, companyId: companyResult[0]?.id, verificationRequired: true };
+      const userId = Number(userResult[0]?.id);
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        companyId,
+        registration: {
+          dba: input.dba,
+          yearEstablished: input.yearEstablished,
+          contactTitle: input.contactTitle,
+          brokerAuthority: input.brokerAuthority,
+          suretyBond: { amount: input.suretyBondAmount, carrier: input.suretyBondCarrier, number: input.suretyBondNumber, expiration: input.bondExpiration },
+          brokersHazmat: input.brokersHazmat,
+          insurance: { carrier: input.insuranceCarrier, policy: input.insurancePolicy, coverage: input.insuranceCoverage, expiration: input.insuranceExpiration },
+        },
+        insurance: {
+          policy: JSON.stringify({ suretyBond: { amount: input.suretyBondAmount, carrier: input.suretyBondCarrier, number: input.suretyBondNumber }, general: { carrier: input.insuranceCarrier, policy: input.insurancePolicy, coverage: input.insuranceCoverage } }),
+          expiry: input.insuranceExpiration || input.bondExpiration,
+        },
+      });
+      initNewUserGamification(userId).catch(() => {});
+      return { success: true, userId, companyId, verificationRequired: true };
     }),
 
   /**
@@ -399,9 +598,18 @@ export const registrationRouter = router({
       email: z.string().email(),
       phone: z.string(),
       password: z.string().min(8),
+      employmentType: z.string().optional(),
       employerCompanyName: z.string(),
+      companyUsdot: z.string().optional(),
       jobTitle: z.string(),
+      department: z.string().optional(),
+      yearsExperience: z.string().optional(),
+      dispatchSoftware: z.array(z.string()).optional(),
       hazmatTrainingCompleted: z.boolean().default(false),
+      hazmatTrainingDate: z.string().optional(),
+      hazmatTrainingProvider: z.string().optional(),
+      certifications: z.array(z.string()).optional(),
+      otherCertifications: z.string().optional(),
       companyId: z.number().optional(),
       complianceIds: complianceIdsSchema,
     }))
@@ -410,6 +618,14 @@ export const registrationRouter = router({
       if (!db) throw new Error("Database not available");
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+
+      // Resolve companyId from USDOT if provided
+      let companyId = input.companyId || null;
+      if (!companyId && input.companyUsdot) {
+        const [company] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, input.companyUsdot)).limit(1);
+        if (company) companyId = company.id;
+      }
+
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
@@ -419,13 +635,30 @@ export const registrationRouter = router({
         phone: input.phone,
         passwordHash,
         role: "DISPATCH",
-        companyId: input.companyId || null,
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
-      return { success: true, userId: userResult[0]?.id, verificationRequired: true };
+      const userId = Number(userResult[0]?.id);
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        registration: {
+          employmentType: input.employmentType,
+          employerCompanyName: input.employerCompanyName,
+          companyUsdot: input.companyUsdot,
+          jobTitle: input.jobTitle,
+          department: input.department,
+          yearsExperience: input.yearsExperience,
+          dispatchSoftware: input.dispatchSoftware,
+          hazmatTrainingCompleted: input.hazmatTrainingCompleted,
+          hazmatTrainingDate: input.hazmatTrainingDate,
+          hazmatTrainingProvider: input.hazmatTrainingProvider,
+          certifications: input.certifications,
+          otherCertifications: input.otherCertifications,
+        },
+      });
+      initNewUserGamification(userId).catch(() => {});
+      return { success: true, userId, verificationRequired: true };
     }),
 
   /**
@@ -438,13 +671,34 @@ export const registrationRouter = router({
       email: z.string().email(),
       phone: z.string(),
       password: z.string().min(8),
-      driversLicenseNumber: z.string(),
-      driversLicenseState: z.string(),
+      dateOfBirth: z.string().optional(),
       streetAddress: z.string(),
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
+      serviceRadius: z.string().optional(),
+      driversLicenseNumber: z.string(),
+      driversLicenseState: z.string(),
+      driversLicenseExpiration: z.string().optional(),
+      driversLicenseClass: z.string().optional(),
+      certifiedStates: z.array(z.string()).optional(),
+      certificationNumbers: z.record(z.string(), z.string()).optional(),
+      certificationExpirations: z.record(z.string(), z.string()).optional(),
+      vehicleYear: z.string().optional(),
+      vehicleMake: z.string().optional(),
+      vehicleModel: z.string().optional(),
+      vehicleColor: z.string().optional(),
+      vehiclePlate: z.string().optional(),
+      vehicleState: z.string().optional(),
+      hasRequiredEquipment: z.boolean().default(false),
+      equipmentList: z.array(z.string()).optional(),
+      insuranceCarrier: z.string().optional(),
+      insurancePolicy: z.string().optional(),
+      insuranceCoverage: z.string().optional(),
+      insuranceExpiration: z.string().optional(),
       experienceYears: z.number().default(0),
+      previousEmployer: z.string().optional(),
+      certifications: z.array(z.string()).optional(),
       complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
@@ -464,9 +718,26 @@ export const registrationRouter = router({
         isVerified: false,
         isActive: true,
       }).$returningId();
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
-      return { success: true, userId: userResult[0]?.id, verificationRequired: true };
+      const userId = Number(userResult[0]?.id);
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        registration: {
+          dateOfBirth: input.dateOfBirth,
+          address: { street: input.streetAddress, city: input.city, state: input.state, zipCode: input.zipCode },
+          serviceRadius: input.serviceRadius,
+          driversLicense: { number: input.driversLicenseNumber, state: input.driversLicenseState, expiration: input.driversLicenseExpiration, class: input.driversLicenseClass },
+          stateCertifications: { states: input.certifiedStates, numbers: input.certificationNumbers, expirations: input.certificationExpirations },
+          vehicle: { year: input.vehicleYear, make: input.vehicleMake, model: input.vehicleModel, color: input.vehicleColor, plate: input.vehiclePlate, state: input.vehicleState },
+          hasRequiredEquipment: input.hasRequiredEquipment,
+          equipmentList: input.equipmentList,
+          insurance: { carrier: input.insuranceCarrier, policy: input.insurancePolicy, coverage: input.insuranceCoverage, expiration: input.insuranceExpiration },
+          experienceYears: input.experienceYears,
+          previousEmployer: input.previousEmployer,
+          certifications: input.certifications,
+        },
+      });
+      initNewUserGamification(userId).catch(() => {});
+      return { success: true, userId, verificationRequired: true };
     }),
 
   /**
@@ -474,18 +745,35 @@ export const registrationRouter = router({
    */
   registerTerminalManager: auditedPublicProcedure
     .input(z.object({
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
       managerName: z.string(),
       email: z.string().email(),
       phone: z.string(),
       password: z.string().min(8),
+      jobTitle: z.string().optional(),
       facilityName: z.string(),
+      facilityType: z.string().optional(),
       ownerCompany: z.string(),
       streetAddress: z.string(),
       city: z.string(),
       state: z.string(),
       zipCode: z.string(),
       epaIdNumber: z.string().optional(),
+      statePermitNumber: z.string().optional(),
+      spccPlanDate: z.string().optional(),
       hasSpccPlan: z.boolean().default(false),
+      storageCapacity: z.string().optional(),
+      eiaReporting: z.boolean().default(false),
+      operatingHours: z.string().optional(),
+      productsHandled: z.array(z.string()).optional(),
+      loadingRacks: z.string().optional(),
+      unloadingRacks: z.string().optional(),
+      hasScada: z.boolean().default(false),
+      emergencyContact: z.string().optional(),
+      emergencyPhone: z.string().optional(),
+      lastInspectionDate: z.string().optional(),
+      oshaCompliant: z.boolean().default(false),
       complianceIds: complianceIdsSchema,
     }))
     .mutation(async ({ input }) => {
@@ -505,6 +793,7 @@ export const registrationRouter = router({
         email: input.email,
         complianceStatus: "pending",
       }).$returningId();
+      const companyId = Number(companyResult[0]?.id);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
         openId,
@@ -513,13 +802,32 @@ export const registrationRouter = router({
         phone: input.phone,
         passwordHash,
         role: "TERMINAL_MANAGER",
-        companyId: Number(companyResult[0]?.id),
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
-      return { success: true, userId: userResult[0]?.id, companyId: companyResult[0]?.id, verificationRequired: true };
+      const userId = Number(userResult[0]?.id);
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        companyId,
+        registration: {
+          jobTitle: input.jobTitle,
+          facilityType: input.facilityType,
+          ownerCompany: input.ownerCompany,
+          epaIdNumber: input.epaIdNumber,
+          statePermitNumber: input.statePermitNumber,
+          spccPlanDate: input.spccPlanDate,
+          hasSpccPlan: input.hasSpccPlan,
+          storageCapacity: input.storageCapacity,
+          eiaReporting: input.eiaReporting,
+          operations: { hours: input.operatingHours, productsHandled: input.productsHandled, loadingRacks: input.loadingRacks, unloadingRacks: input.unloadingRacks, hasScada: input.hasScada },
+          emergency: { contact: input.emergencyContact, phone: input.emergencyPhone },
+          lastInspectionDate: input.lastInspectionDate,
+          oshaCompliant: input.oshaCompliant,
+        },
+      });
+      initNewUserGamification(userId).catch(() => {});
+      return { success: true, userId, companyId, verificationRequired: true };
     }),
 
   /**
@@ -533,7 +841,16 @@ export const registrationRouter = router({
       phone: z.string(),
       password: z.string().min(8),
       employerCompanyName: z.string(),
-      yearsExperience: z.number(),
+      companyUsdot: z.string().optional(),
+      jobTitle: z.string().optional(),
+      department: z.string().optional(),
+      reportsTo: z.string().optional(),
+      yearsExperience: z.number().optional(),
+      certifications: z.array(z.string()).optional(),
+      fmcsaTrainingDate: z.string().optional(),
+      hazmatTrainingDate: z.string().optional(),
+      clearinghouseAccess: z.boolean().default(false),
+      responsibilities: z.array(z.string()).optional(),
       companyId: z.number().optional(),
       complianceIds: complianceIdsSchema,
     }))
@@ -542,6 +859,13 @@ export const registrationRouter = router({
       if (!db) throw new Error("Database not available");
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+
+      let companyId = input.companyId || null;
+      if (!companyId && input.companyUsdot) {
+        const [company] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, input.companyUsdot)).limit(1);
+        if (company) companyId = company.id;
+      }
+
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
@@ -551,13 +875,29 @@ export const registrationRouter = router({
         phone: input.phone,
         passwordHash,
         role: "COMPLIANCE_OFFICER",
-        companyId: input.companyId || null,
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
-      return { success: true, userId: userResult[0]?.id, verificationRequired: true };
+      const userId = Number(userResult[0]?.id);
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        registration: {
+          employerCompanyName: input.employerCompanyName,
+          companyUsdot: input.companyUsdot,
+          jobTitle: input.jobTitle,
+          department: input.department,
+          reportsTo: input.reportsTo,
+          yearsExperience: input.yearsExperience,
+          certifications: input.certifications,
+          fmcsaTrainingDate: input.fmcsaTrainingDate,
+          hazmatTrainingDate: input.hazmatTrainingDate,
+          clearinghouseAccess: input.clearinghouseAccess,
+          responsibilities: input.responsibilities,
+        },
+      });
+      initNewUserGamification(userId).catch(() => {});
+      return { success: true, userId, verificationRequired: true };
     }),
 
   /**
@@ -571,8 +911,16 @@ export const registrationRouter = router({
       phone: z.string(),
       password: z.string().min(8),
       employerCompanyName: z.string(),
-      employerUsdotNumber: z.string(),
-      yearsAsSafetyManager: z.number(),
+      employerUsdotNumber: z.string().optional(),
+      jobTitle: z.string().optional(),
+      reportsTo: z.string().optional(),
+      yearsAsSafetyManager: z.number().optional(),
+      certifications: z.array(z.string()).optional(),
+      csaTrainingDate: z.string().optional(),
+      accidentInvestigationDate: z.string().optional(),
+      responsibilities: z.array(z.string()).optional(),
+      fleetSize: z.string().optional(),
+      driverCount: z.string().optional(),
       companyId: z.number().optional(),
       complianceIds: complianceIdsSchema,
     }))
@@ -581,6 +929,13 @@ export const registrationRouter = router({
       if (!db) throw new Error("Database not available");
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+
+      let companyId = input.companyId || null;
+      if (!companyId && input.employerUsdotNumber) {
+        const [company] = await db.select({ id: companies.id }).from(companies).where(eq(companies.dotNumber, input.employerUsdotNumber)).limit(1);
+        if (company) companyId = company.id;
+      }
+
       const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const userResult = await db.insert(users).values({
@@ -590,13 +945,29 @@ export const registrationRouter = router({
         phone: input.phone,
         passwordHash,
         role: "SAFETY_MANAGER",
-        companyId: input.companyId || null,
+        companyId,
         isVerified: false,
         isActive: true,
       }).$returningId();
-      await storeComplianceIds(db, Number(userResult[0]?.id), input.complianceIds);
-      initNewUserGamification(Number(userResult[0]?.id)).catch(() => {});
-      return { success: true, userId: userResult[0]?.id, verificationRequired: true };
+      const userId = Number(userResult[0]?.id);
+      await storeRegistrationMetadata(db, userId, {
+        complianceIds: input.complianceIds,
+        registration: {
+          employerCompanyName: input.employerCompanyName,
+          employerUsdotNumber: input.employerUsdotNumber,
+          jobTitle: input.jobTitle,
+          reportsTo: input.reportsTo,
+          yearsAsSafetyManager: input.yearsAsSafetyManager,
+          certifications: input.certifications,
+          csaTrainingDate: input.csaTrainingDate,
+          accidentInvestigationDate: input.accidentInvestigationDate,
+          responsibilities: input.responsibilities,
+          fleetSize: input.fleetSize,
+          driverCount: input.driverCount,
+        },
+      });
+      initNewUserGamification(userId).catch(() => {});
+      return { success: true, userId, verificationRequired: true };
     }),
 
   /**
@@ -620,6 +991,7 @@ export const registrationRouter = router({
       }
       const existing = await db.select({ id: users.id, email: users.email, role: users.role }).from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) throw new Error("Email already registered");
+      const passwordHash = await bcrypt.hash(input.password, 12);
       const openId = uuidv4();
       const role = input.adminLevel === "super_admin" ? "SUPER_ADMIN" : "ADMIN";
       const userResult = await db.insert(users).values({
@@ -627,6 +999,7 @@ export const registrationRouter = router({
         name: `${input.firstName} ${input.lastName}`,
         email: input.email,
         phone: input.phone,
+        passwordHash,
         role: role as any,
         isVerified: true,
         isActive: true,

@@ -139,7 +139,15 @@ export default function RegisterCompliance() {
       phone: formData.phone,
       password: formData.password,
       employerCompanyName: formData.companyName,
-      yearsExperience: 1,
+      companyUsdot: formData.companyUsdot || undefined,
+      jobTitle: formData.jobTitle || undefined,
+      department: formData.department || undefined,
+      reportsTo: formData.reportsTo || undefined,
+      certifications: formData.certifications?.length ? formData.certifications : undefined,
+      fmcsaTrainingDate: formData.fmcsaTrainingDate || undefined,
+      hazmatTrainingDate: formData.hazmatTrainingDate || undefined,
+      clearinghouseAccess: formData.clearinghouseAccess || false,
+      responsibilities: formData.responsibilities?.length ? formData.responsibilities : undefined,
       complianceIds: Object.fromEntries(
         Object.entries(formData.complianceIds).filter(([_, v]) => v && String(v).trim())
       ) || undefined,
