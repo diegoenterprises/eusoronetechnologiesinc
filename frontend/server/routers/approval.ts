@@ -10,7 +10,7 @@ import { z } from "zod";
 import { eq, and, sql, desc, like, or } from "drizzle-orm";
 import { router, auditedProtectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { users, companies } from "../../drizzle/schema";
+import { users, companies, vehicles } from "../../drizzle/schema";
 
 const approvalStatusEnum = z.enum(["pending_review", "approved", "suspended"]);
 
@@ -63,13 +63,14 @@ export const approvalRouter = router({
         .orderBy(desc(users.createdAt));
 
       // Parse metadata and filter by approval status
+      // IMPORTANT: Only explicit approvalStatus counts. No isVerified fallback.
       const parsed = allUsers.map(u => {
         let meta: any = {};
         try {
           meta = u.metadata ? JSON.parse(u.metadata as string) : {};
         } catch {}
-        const approvalStatus = meta.approvalStatus || (u.isVerified ? "approved" : "pending_review");
-        return { ...u, approvalStatus, registrationData: meta.registration || null };
+        const approvalStatus = meta.approvalStatus || "pending_review";
+        return { ...u, approvalStatus, meta };
       });
 
       // Filter by pending status
@@ -92,29 +93,53 @@ export const approvalRouter = router({
       const total = filtered.length;
       const items = filtered.slice(offset, offset + limit);
 
-      // Fetch company names for users with companyId
+      // Fetch full company details for users with companyId
       const companyIds = Array.from(new Set(items.filter(u => u.companyId).map(u => u.companyId!)));
-      let companyMap: Record<number, string> = {};
+      let companyMap: Record<number, any> = {};
       if (companyIds.length > 0) {
         const companyRows = await db
-          .select({ id: companies.id, name: companies.name })
+          .select()
           .from(companies)
           .where(sql`${companies.id} IN (${sql.join(companyIds.map(id => sql`${id}`), sql`, `)})`);
-        companyMap = Object.fromEntries(companyRows.map(c => [c.id, c.name]));
+        companyMap = Object.fromEntries(companyRows.map(c => [c.id, c]));
       }
 
       return {
-        items: items.map(u => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          phone: u.phone,
-          role: u.role,
-          companyName: u.companyId ? companyMap[u.companyId] || null : null,
-          approvalStatus: u.approvalStatus,
-          registrationData: u.registrationData,
-          createdAt: u.createdAt,
-        })),
+        items: items.map(u => {
+          const company = u.companyId ? companyMap[u.companyId] || null : null;
+          return {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            phone: u.phone,
+            role: u.role,
+            isVerified: u.isVerified,
+            approvalStatus: u.approvalStatus,
+            createdAt: u.createdAt,
+            registrationData: u.meta?.registration || null,
+            companyName: company?.name || null,
+            company: company ? {
+              id: company.id,
+              name: company.name,
+              legalName: company.legalName,
+              dotNumber: company.dotNumber,
+              mcNumber: company.mcNumber,
+              ein: company.ein,
+              address: company.address,
+              city: company.city,
+              state: company.state,
+              zipCode: company.zipCode,
+              phone: company.phone,
+              email: company.email,
+              website: company.website,
+              complianceStatus: company.complianceStatus,
+              insuranceExpiry: company.insuranceExpiry,
+              twicExpiry: company.twicExpiry,
+              hazmatExpiry: company.hazmatExpiry,
+              createdAt: company.createdAt,
+            } : null,
+          };
+        }),
         total,
         page,
         totalPages: Math.ceil(total / limit),
@@ -166,7 +191,7 @@ export const approvalRouter = router({
         try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
         return {
           ...u,
-          approvalStatus: meta.approvalStatus || (u.isVerified ? "approved" : "pending_review"),
+          approvalStatus: meta.approvalStatus || "pending_review",
         };
       });
 
@@ -340,12 +365,122 @@ export const approvalRouter = router({
       for (const u of allUsers) {
         let meta: any = {};
         try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
-        const status = meta.approvalStatus || (u.isVerified ? "approved" : "pending_review");
+        const status = meta.approvalStatus || "pending_review";
         if (status === "pending_review") pending++;
         else if (status === "approved") approved++;
         else if (status === "suspended") suspended++;
       }
 
       return { pending, approved, suspended, total: allUsers.length };
+    }),
+
+  /**
+   * Fix missing approvalStatus in metadata for all non-admin users.
+   * Sets pending_review for users with no approvalStatus.
+   * Only SUPER_ADMIN can run this.
+   */
+  fixMissingApprovalStatus: auditedProtectedProcedure
+    .mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userRole = (ctx.user as any)?.role;
+      if (userRole !== "SUPER_ADMIN") {
+        throw new Error("Unauthorized: Super Admin access required");
+      }
+
+      const allUsers = await db
+        .select({ id: users.id, metadata: users.metadata, role: users.role, email: users.email })
+        .from(users)
+        .where(
+          and(
+            sql`${users.role} NOT IN ('ADMIN', 'SUPER_ADMIN')`,
+            users.isActive,
+          )
+        );
+
+      let fixed = 0;
+      for (const u of allUsers) {
+        let meta: any = {};
+        try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
+
+        if (!meta.approvalStatus) {
+          meta.approvalStatus = "pending_review";
+          await db.update(users).set({
+            metadata: JSON.stringify(meta),
+          }).where(eq(users.id, u.id));
+          fixed++;
+          console.log(`[ApprovalFix] Set pending_review for user ${u.email} (${u.role})`);
+        }
+      }
+
+      return { success: true, fixed, total: allUsers.length };
+    }),
+
+  /**
+   * Get detailed user info for approval review
+   */
+  getUserDetail: auditedProtectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userRole = (ctx.user as any)?.role;
+      if (!["ADMIN", "SUPER_ADMIN"].includes(userRole)) {
+        throw new Error("Unauthorized: Admin access required");
+      }
+
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, input.userId))
+        .limit(1);
+
+      if (!user) throw new Error("User not found");
+
+      let meta: any = {};
+      try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+
+      // Get company details
+      let company: any = null;
+      if (user.companyId) {
+        const [c] = await db
+          .select()
+          .from(companies)
+          .where(eq(companies.id, user.companyId))
+          .limit(1);
+        company = c || null;
+      }
+
+      // Get vehicle count for this user's company
+      let vehicleCount = 0;
+      if (user.companyId) {
+        try {
+          const [vc] = await db
+            .select({ count: sql<number>`COUNT(*)` })
+            .from(vehicles)
+            .where(eq(vehicles.companyId, user.companyId));
+          vehicleCount = vc?.count || 0;
+        } catch {}
+      }
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        profilePicture: user.profilePicture,
+        isVerified: user.isVerified,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+        lastSignedIn: user.lastSignedIn,
+        loginMethod: user.loginMethod,
+        approvalStatus: meta.approvalStatus || "pending_review",
+        metadata: meta,
+        company,
+        vehicleCount,
+      };
     }),
 });

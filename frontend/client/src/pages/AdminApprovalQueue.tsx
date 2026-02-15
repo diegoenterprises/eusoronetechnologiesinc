@@ -5,14 +5,39 @@
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle, XCircle, Clock, Shield, Users, Search,
   ChevronLeft, ChevronRight, AlertTriangle, Eye, UserCheck, Ban,
+  Building2, Mail, Phone, MapPin, Globe, Hash, Calendar,
+  FileText, Truck, ShieldCheck, ShieldAlert, Loader2, Database,
+  ChevronDown, ChevronUp,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  SHIPPER: "Posts loads, manages freight shipments",
+  CATALYST: "Carrier operator, bids on loads, manages fleet",
+  BROKER: "Intermediary connecting shippers and carriers",
+  DRIVER: "CDL driver assigned to carrier company",
+  DISPATCH: "Dispatch operator managing driver assignments",
+  ESCORT: "Pilot/escort vehicle for oversize loads",
+  TERMINAL_MANAGER: "Manages terminal/tank farm operations",
+  COMPLIANCE_OFFICER: "Handles regulatory compliance",
+  SAFETY_MANAGER: "Oversees safety programs and audits",
+};
+
+function daysAgo(date: string | Date): string {
+  const d = new Date(date);
+  const diff = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "Today";
+  if (diff === 1) return "1 day ago";
+  return `${diff} days ago`;
+}
 
 const ROLE_LABELS: Record<string, string> = {
   SHIPPER: "Shipper",
@@ -39,6 +64,8 @@ const ROLE_COLORS: Record<string, string> = {
 };
 
 export default function AdminApprovalQueue() {
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === "SUPER_ADMIN";
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string | undefined>();
   const [page, setPage] = useState(1);
@@ -79,6 +106,15 @@ export default function AdminApprovalQueue() {
     onError: (e: any) => toast.error("Suspension failed", { description: e.message }),
   });
 
+  const fixDbMutation = (trpc as any).approval?.fixMissingApprovalStatus?.useMutation({
+    onSuccess: (data: any) => {
+      toast.success(`Fixed ${data.fixed} user(s) out of ${data.total} total`);
+      (utils as any).approval?.getPendingUsers?.invalidate();
+      (utils as any).approval?.getStats?.invalidate();
+    },
+    onError: (e: any) => toast.error("Fix failed", { description: e.message }),
+  });
+
   const stats = statsQuery?.data || { pending: 0, approved: 0, suspended: 0, total: 0 };
   const data = pendingQuery?.data || { items: [], total: 0, page: 1, totalPages: 1 };
 
@@ -90,9 +126,23 @@ export default function AdminApprovalQueue() {
           <h1 className="text-2xl font-bold text-white">Approval Queue</h1>
           <p className="text-sm text-gray-400 mt-1">Review and approve new user registrations</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-blue-400" />
-          <span className="text-sm text-gray-400">Admin Access</span>
+        <div className="flex items-center gap-3">
+          {isSuperAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fixDbMutation?.mutate()}
+              disabled={fixDbMutation?.isPending}
+              className="border-amber-500/30 text-amber-300 hover:bg-amber-500/10 text-xs"
+            >
+              {fixDbMutation?.isPending ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Database className="w-3 h-3 mr-1.5" />}
+              Sync Approval Status
+            </Button>
+          )}
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-400" />
+            <span className="text-sm text-gray-400">Admin Access</span>
+          </div>
         </div>
       </div>
 
@@ -168,7 +218,7 @@ export default function AdminApprovalQueue() {
                 <Eye className="w-4 h-4 text-gray-500" />
               </div>
 
-              {/* Expanded Detail */}
+              {/* Expanded Detail — Rich Intel */}
               <AnimatePresence>
                 {expandedUser === user.id && (
                   <motion.div
@@ -178,28 +228,92 @@ export default function AdminApprovalQueue() {
                     transition={{ duration: 0.2 }}
                     className="border-t border-gray-800/50"
                   >
-                    <div className="p-4 space-y-4">
-                      {/* Registration Data */}
-                      {user.registrationData && (
-                        <div>
-                          <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                            Registration Details
-                          </h4>
+                    <div className="p-5 space-y-5">
+
+                      {/* User Overview Panel */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <IntelSection title="Account Info" icon={<Shield className="w-3.5 h-3.5" />}>
+                          <IntelRow icon={<Mail />} label="Email" value={user.email} />
+                          <IntelRow icon={<Phone />} label="Phone" value={user.phone || "Not provided"} muted={!user.phone} />
+                          <IntelRow icon={<Hash />} label="User ID" value={`#${user.id}`} />
+                          <IntelRow icon={<Calendar />} label="Registered" value={`${new Date(user.createdAt).toLocaleDateString()} (${daysAgo(user.createdAt)})`} />
+                          <IntelRow icon={<Shield />} label="Role" value={`${ROLE_LABELS[user.role] || user.role} — ${ROLE_DESCRIPTIONS[user.role] || ""}`} />
+                          <IntelRow
+                            icon={user.isVerified ? <ShieldCheck /> : <ShieldAlert />}
+                            label="Email Verified"
+                            value={user.isVerified ? "Yes" : "No"}
+                            valueColor={user.isVerified ? "text-emerald-400" : "text-red-400"}
+                          />
+                        </IntelSection>
+
+                        {/* Company Panel */}
+                        {user.company ? (
+                          <IntelSection title="Company Details" icon={<Building2 className="w-3.5 h-3.5" />}>
+                            <IntelRow icon={<Building2 />} label="Company" value={user.company.name} />
+                            {user.company.legalName && <IntelRow icon={<FileText />} label="Legal Name" value={user.company.legalName} />}
+                            {user.company.dotNumber && <IntelRow icon={<Hash />} label="DOT#" value={user.company.dotNumber} />}
+                            {user.company.mcNumber && <IntelRow icon={<Hash />} label="MC#" value={user.company.mcNumber} />}
+                            {user.company.ein && <IntelRow icon={<Hash />} label="EIN" value={user.company.ein} />}
+                            {(user.company.city || user.company.state) && (
+                              <IntelRow icon={<MapPin />} label="Location" value={[user.company.address, user.company.city, user.company.state, user.company.zipCode].filter(Boolean).join(", ")} />
+                            )}
+                            {user.company.phone && <IntelRow icon={<Phone />} label="Company Phone" value={user.company.phone} />}
+                            {user.company.email && <IntelRow icon={<Mail />} label="Company Email" value={user.company.email} />}
+                            {user.company.website && <IntelRow icon={<Globe />} label="Website" value={user.company.website} />}
+                          </IntelSection>
+                        ) : (
+                          <IntelSection title="Company Details" icon={<Building2 className="w-3.5 h-3.5" />}>
+                            <div className="text-xs text-gray-500 italic py-2">No company linked to this account</div>
+                          </IntelSection>
+                        )}
+                      </div>
+
+                      {/* Compliance Panel */}
+                      {user.company && (
+                        <IntelSection title="Compliance & Certifications" icon={<ShieldCheck className="w-3.5 h-3.5" />}>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <ComplianceBadge
+                              label="Compliance Status"
+                              value={user.company.complianceStatus || "unknown"}
+                              color={user.company.complianceStatus === "compliant" ? "emerald" : user.company.complianceStatus === "pending" ? "amber" : "red"}
+                            />
+                            <ComplianceBadge
+                              label="Insurance"
+                              value={user.company.insuranceExpiry ? `Exp: ${new Date(user.company.insuranceExpiry).toLocaleDateString()}` : "Not on file"}
+                              color={user.company.insuranceExpiry && new Date(user.company.insuranceExpiry) > new Date() ? "emerald" : "red"}
+                            />
+                            <ComplianceBadge
+                              label="TWIC"
+                              value={user.company.twicExpiry ? `Exp: ${new Date(user.company.twicExpiry).toLocaleDateString()}` : "Not on file"}
+                              color={user.company.twicExpiry && new Date(user.company.twicExpiry) > new Date() ? "emerald" : "gray"}
+                            />
+                            <ComplianceBadge
+                              label="HazMat"
+                              value={user.company.hazmatExpiry ? `Exp: ${new Date(user.company.hazmatExpiry).toLocaleDateString()}` : "Not on file"}
+                              color={user.company.hazmatExpiry && new Date(user.company.hazmatExpiry) > new Date() ? "emerald" : "gray"}
+                            />
+                          </div>
+                        </IntelSection>
+                      )}
+
+                      {/* Registration Data (metadata from signup) */}
+                      {user.registrationData && Object.keys(user.registrationData).length > 0 && (
+                        <IntelSection title="Registration Data" icon={<FileText className="w-3.5 h-3.5" />}>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                            {Object.entries(user.registrationData).slice(0, 12).map(([key, val]: [string, any]) => (
+                            {Object.entries(user.registrationData).map(([key, val]: [string, any]) => (
                               <div key={key} className="bg-gray-800/40 rounded-lg p-2">
-                                <span className="text-gray-500 block">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                                <span className="text-gray-500 block text-[10px] uppercase tracking-wider">{key.replace(/([A-Z])/g, " $1").trim()}</span>
                                 <span className="text-gray-300">
-                                  {typeof val === "object" ? JSON.stringify(val) : String(val)}
+                                  {typeof val === "object" ? JSON.stringify(val) : String(val || "—")}
                                 </span>
                               </div>
                             ))}
                           </div>
-                        </div>
+                        </IntelSection>
                       )}
 
                       {/* Action Buttons */}
-                      <div className="flex gap-3 pt-2">
+                      <div className="flex gap-3 pt-2 border-t border-gray-800/50">
                         <div className="flex-1">
                           <Input
                             value={approveNotes}
@@ -294,6 +408,44 @@ function StatCard({ label, value, icon, color }: { label: string; value: number;
         <span className="text-2xl font-bold">{value}</span>
       </div>
       <p className="text-xs text-gray-400">{label}</p>
+    </div>
+  );
+}
+
+function IntelSection({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className="bg-gray-800/30 rounded-xl p-4">
+      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-700/50">
+        <span className="text-blue-400">{icon}</span>
+        <h4 className="text-xs font-semibold text-gray-300 uppercase tracking-wider">{title}</h4>
+      </div>
+      <div className="space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function IntelRow({ icon, label, value, muted, valueColor }: { icon: React.ReactNode; label: string; value: string; muted?: boolean; valueColor?: string }) {
+  return (
+    <div className="flex items-start gap-2 text-xs">
+      <span className="text-gray-600 mt-0.5 w-3.5 h-3.5 flex-shrink-0 [&>svg]:w-3.5 [&>svg]:h-3.5">{icon}</span>
+      <span className="text-gray-500 w-24 flex-shrink-0">{label}</span>
+      <span className={cn("break-all", muted ? "text-gray-600 italic" : valueColor || "text-gray-200")}>{value}</span>
+    </div>
+  );
+}
+
+function ComplianceBadge({ label, value, color }: { label: string; value: string; color: string }) {
+  const colorMap: Record<string, string> = {
+    emerald: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+    amber: "bg-amber-500/10 border-amber-500/20 text-amber-400",
+    red: "bg-red-500/10 border-red-500/20 text-red-400",
+    gray: "bg-gray-700/30 border-gray-600/30 text-gray-500",
+  };
+
+  return (
+    <div className={`rounded-lg border p-2.5 ${colorMap[color] || colorMap.gray}`}>
+      <div className="text-[10px] uppercase tracking-wider opacity-70 mb-1">{label}</div>
+      <div className="text-xs font-medium">{value}</div>
     </div>
   );
 }
