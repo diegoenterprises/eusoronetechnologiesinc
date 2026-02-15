@@ -166,6 +166,7 @@ import AdminTelemetry from "./pages/AdminTelemetry";
 import ZeunBreakdown from "./pages/ZeunBreakdown";
 import ZeunFleetDashboard from "./pages/ZeunFleetDashboard";
 import ZeunAdminDashboard from "./pages/ZeunAdminDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import HotZones from "./pages/HotZones";
 import RatingsReviews from "./pages/RatingsReviews";
 import ClaimsPage from "./pages/Claims";
@@ -434,7 +435,7 @@ function Router() {
       {/* ============================================ */}
       {/* SUPER ADMIN ROUTES */}
       {/* ============================================ */}
-      <Route path={"/super-admin"} component={guard(SUPR, <AdminDashboard />)} />
+      <Route path={"/super-admin"} component={guard(SUPR, <SuperAdminDashboard />)} />
       <Route path={"/super-admin/users"} component={guard(SUPR, <UserManagement />)} />
       <Route path={"/super-admin/companies"} component={guard(SUPR, <CompanyPage />)} />
       <Route path={"/super-admin/loads"} component={guard(SUPR, <MyLoadsPage />)} />

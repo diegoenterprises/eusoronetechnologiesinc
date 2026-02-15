@@ -528,15 +528,113 @@ export const adminRouter = router({
    */
   getDashboardSummary: auditedAdminProcedure
     .query(async ({ ctx }) => {
-      return {
-        users: { total: 0, active: 0, pending: 0, suspended: 0 },
-        companies: { total: 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
-        loads: { active: 0, completedToday: 0, totalThisMonth: 0 },
-        revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
-        pendingVerifications: 0,
-        openTickets: 0,
-        systemHealth: "unknown",
-      };
+      const db = await getDb();
+      if (!db) {
+        return {
+          users: { total: 0, active: 0, pending: 0, suspended: 0 },
+          companies: { total: 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
+          loads: { active: 0, completedToday: 0, totalThisMonth: 0 },
+          revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
+          pendingVerifications: 0,
+          pendingApprovals: 0,
+          openTickets: 0,
+          systemHealth: "unknown",
+          roleBreakdown: [],
+          recentUsers: [],
+        };
+      }
+
+      try {
+        const [totalUsers] = await db.select({ count: sql<number>`count(*)` }).from(users);
+        const [activeUsers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.isActive, true), eq(users.isVerified, true)));
+        const [pendingUsers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isVerified, false));
+        const [suspendedUsers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isActive, false));
+        const [totalCompanies] = await db.select({ count: sql<number>`count(*)` }).from(companies);
+
+        // Role breakdown
+        const roleRows = await db.select({
+          role: users.role,
+          count: sql<number>`count(*)`,
+        }).from(users).groupBy(users.role);
+
+        const roleBreakdown = roleRows.map(r => ({ role: r.role || 'UNKNOWN', count: r.count }));
+
+        // Pending approvals (users with pending_review in metadata)
+        let pendingApprovals = 0;
+        try {
+          const allNonAdmin = await db.select({ metadata: users.metadata }).from(users).where(
+            sql`${users.role} NOT IN ('ADMIN', 'SUPER_ADMIN') AND ${users.isActive} = true`
+          );
+          pendingApprovals = allNonAdmin.filter(u => {
+            try {
+              const meta = u.metadata ? JSON.parse(u.metadata as string) : {};
+              return meta.approvalStatus === 'pending_review';
+            } catch { return false; }
+          }).length;
+        } catch {}
+
+        // Recent users (last 10 signups)
+        const recentUsers = await db.select({
+          id: users.id, name: users.name, email: users.email,
+          role: users.role, createdAt: users.createdAt, isActive: users.isActive,
+        }).from(users).orderBy(desc(users.createdAt)).limit(10);
+
+        // Load counts
+        let activeLoads = 0;
+        let totalLoadsThisMonth = 0;
+        try {
+          const { loads: loadsTable } = await import("../../drizzle/schema");
+          const [active] = await db.select({ count: sql<number>`count(*)` }).from(loadsTable).where(
+            sql`status IN ('posted','bidding','assigned','in_transit','at_pickup','loading','at_delivery','unloading')`
+          );
+          activeLoads = active?.count || 0;
+
+          const monthStart = new Date();
+          monthStart.setDate(1);
+          monthStart.setHours(0, 0, 0, 0);
+          const [monthLoads] = await db.select({ count: sql<number>`count(*)` }).from(loadsTable).where(gte(loadsTable.createdAt, monthStart));
+          totalLoadsThisMonth = monthLoads?.count || 0;
+        } catch {}
+
+        return {
+          users: {
+            total: totalUsers?.count || 0,
+            active: activeUsers?.count || 0,
+            pending: pendingUsers?.count || 0,
+            suspended: suspendedUsers?.count || 0,
+          },
+          companies: { total: totalCompanies?.count || 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
+          loads: { active: activeLoads, completedToday: 0, totalThisMonth: totalLoadsThisMonth },
+          revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
+          pendingVerifications: pendingUsers?.count || 0,
+          pendingApprovals,
+          openTickets: 0,
+          systemHealth: "healthy",
+          roleBreakdown,
+          recentUsers: recentUsers.map(u => ({
+            id: String(u.id),
+            name: u.name || 'Unknown',
+            email: u.email || '',
+            role: u.role || 'UNKNOWN',
+            createdAt: u.createdAt?.toISOString() || '',
+            isActive: u.isActive,
+          })),
+        };
+      } catch (error) {
+        console.error('[Admin] getDashboardSummary error:', error);
+        return {
+          users: { total: 0, active: 0, pending: 0, suspended: 0 },
+          companies: { total: 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
+          loads: { active: 0, completedToday: 0, totalThisMonth: 0 },
+          revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
+          pendingVerifications: 0,
+          pendingApprovals: 0,
+          openTickets: 0,
+          systemHealth: "degraded",
+          roleBreakdown: [],
+          recentUsers: [],
+        };
+      }
     }),
 
   /**
