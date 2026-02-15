@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 import type { Request } from "express";
 import { COOKIE_NAME } from "@shared/const";
 import { getDb } from "../db";
-import { users, companies } from "../../drizzle/schema";
+import { users } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
 
 const JWT_SECRET = process.env.JWT_SECRET || "eusotrip-dev-secret-key-change-in-production";
@@ -184,34 +184,12 @@ export const authService = {
           }
 
           if (dbRow) {
-            // Auto-create company if user doesn't have one
-            let companyId = dbRow.companyId;
-            if (!companyId) {
-              try {
-                const companyName = `${dbRow.name || testUser.name || "User"}'s Company`;
-                const [insertResult] = await db.insert(companies).values({
-                  name: companyName,
-                  email: dbRow.email || testUser.email,
-                  complianceStatus: "compliant",
-                  isActive: true,
-                } as any);
-                const newCompanyId = (insertResult as any).insertId;
-                if (newCompanyId) {
-                  await db.update(users).set({ companyId: newCompanyId }).where(eq(users.id, dbRow.id));
-                  companyId = newCompanyId;
-                  console.log(`[auth] Created company ${newCompanyId} for user ${dbRow.id} (${dbRow.email})`);
-                }
-              } catch (compErr) {
-                console.warn("[auth] Could not auto-create company:", compErr);
-              }
-            }
-
             resolvedUser = {
               id: String(dbRow.id),
               email: dbRow.email || testUser.email,
               role: dbRow.role || testUser.role,
               name: dbRow.name || testUser.name,
-              companyId: companyId ? String(companyId) : undefined,
+              companyId: dbRow.companyId ? String(dbRow.companyId) : undefined,
             };
           }
         }
