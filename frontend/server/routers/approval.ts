@@ -414,21 +414,27 @@ export const approvalRouter = router({
           console.log(`[ApprovalFix] Set pending_review for user ${u.email} (${u.role})`);
         }
 
-        // Fix legacy CARRIER → CATALYST role rename
+        // Fix legacy CARRIER → CATALYST
         if ((u.role as string) === "CARRIER") {
-          updates.role = "CATALYST";
-          rolesFixed++;
-          console.log(`[ApprovalFix] Renamed role CARRIER → CATALYST for user ${u.email}`);
-        }
-
-        // Fix legacy carrier email → catalyst email (only if target doesn't already exist)
-        if (u.email === "carrier@eusotrip.com") {
-          const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, "catalyst@eusotrip.com")).limit(1);
-          if (!existing) {
+          // If this is carrier@eusotrip.com and catalyst@eusotrip.com already exists, delete this duplicate
+          if (u.email === "carrier@eusotrip.com") {
+            const [catalystExists] = await db.select({ id: users.id }).from(users).where(eq(users.email, "catalyst@eusotrip.com")).limit(1);
+            if (catalystExists) {
+              await db.delete(users).where(eq(users.id, u.id));
+              rolesFixed++;
+              console.log(`[ApprovalFix] Deleted stale duplicate carrier@eusotrip.com (catalyst@eusotrip.com already exists)`);
+              continue;
+            }
+            // No catalyst user exists — rename both role and email
+            updates.role = "CATALYST";
             updates.email = "catalyst@eusotrip.com";
-            console.log(`[ApprovalFix] Renamed email carrier@eusotrip.com → catalyst@eusotrip.com`);
+            rolesFixed++;
+            console.log(`[ApprovalFix] Renamed CARRIER → CATALYST and carrier@ → catalyst@ for user ${u.id}`);
           } else {
-            console.log(`[ApprovalFix] Skipped email rename — catalyst@eusotrip.com already exists`);
+            // Non-test CARRIER user — just fix the role
+            updates.role = "CATALYST";
+            rolesFixed++;
+            console.log(`[ApprovalFix] Renamed role CARRIER → CATALYST for user ${u.email}`);
           }
         }
 
