@@ -115,6 +115,18 @@ export default function AdminApprovalQueue() {
     onError: (e: any) => toast.error("Fix failed", { description: e.message }),
   });
 
+  const [resetEmails, setResetEmails] = useState("");
+  const resetMutation = (trpc as any).approval?.resetUserToPending?.useMutation({
+    onSuccess: (data: any) => {
+      const msgs = data.results.map((r: any) => `${r.email}: ${r.status}`).join(", ");
+      toast.success("Reset complete", { description: msgs });
+      (utils as any).approval?.getPendingUsers?.invalidate();
+      (utils as any).approval?.getStats?.invalidate();
+      setResetEmails("");
+    },
+    onError: (e: any) => toast.error("Reset failed", { description: e.message }),
+  });
+
   const stats = statsQuery?.data || { pending: 0, approved: 0, suspended: 0, total: 0 };
   const data = pendingQuery?.data || { items: [], total: 0, page: 1, totalPages: 1 };
 
@@ -153,6 +165,35 @@ export default function AdminApprovalQueue() {
         <StatCard label="Suspended" value={stats.suspended} icon={<XCircle className="w-5 h-5" />} color="red" />
         <StatCard label="Total Users" value={stats.total} icon={<Users className="w-5 h-5" />} color="blue" />
       </div>
+
+      {/* Reset Users to Queue — Super Admin only */}
+      {isSuperAdmin && (
+        <div className="bg-gray-900/60 border border-gray-800/60 rounded-xl p-4">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Reset Users to Queue</h3>
+          <div className="flex gap-2">
+            <Input
+              value={resetEmails}
+              onChange={(e: any) => setResetEmails(e.target.value)}
+              placeholder="Enter emails separated by commas (e.g. user@example.com, user2@example.com)"
+              className="bg-gray-800/50 border-gray-700 text-white text-sm flex-1"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!resetEmails.trim() || resetMutation?.isPending}
+              onClick={() => {
+                const emails = resetEmails.split(",").map((e: string) => e.trim()).filter(Boolean);
+                if (emails.length > 0) resetMutation?.mutate({ emails });
+              }}
+              className="border-red-500/30 text-red-300 hover:bg-red-500/10 text-xs whitespace-nowrap"
+            >
+              {resetMutation?.isPending ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Ban className="w-3 h-3 mr-1.5" />}
+              Reset to Pending
+            </Button>
+          </div>
+          <p className="text-[10px] text-gray-600 mt-1.5">Resets approval status to pending_review. Users will appear in queue for re-approval.</p>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">

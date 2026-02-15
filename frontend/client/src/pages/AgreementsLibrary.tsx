@@ -4,7 +4,7 @@
  *
  * Shows: active, pending, draft, expired agreements
  * Actions: create new, attach to load, view detail, sign pending
- * Platform fee displayed on every agreement
+ * Dynamic fee calculation handled by platform fee engine
  */
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import {
   FileText, CheckCircle, Plus, Shield, DollarSign,
   Clock, Building2, Search, Filter,
   AlertTriangle, Eye, PenTool, Truck, Users, Repeat,
-  ChevronRight, ArrowUpRight, Calendar, Scale, Download
+  ChevronRight, ArrowUpRight, Calendar, Download
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { downloadAgreementPdf } from "@/lib/agreementPdf";
@@ -28,9 +28,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 type TabFilter = "all" | "active" | "pending" | "draft" | "expired";
 type TypeFilter = "all" | "spot" | "short_term" | "long_term" | "master_service";
 
-// Platform fee constants — tied into every transaction
-const PLATFORM_FEE_PERCENT = 3.5;
-const PLATFORM_FEE_MIN = 15;
 
 export default function AgreementsLibrary() {
   const { theme } = useTheme();
@@ -71,9 +68,6 @@ export default function AgreementsLibrary() {
     return true;
   });
 
-  // Calculate platform fee for display
-  const calcFee = (rate: number) => Math.max(rate * (PLATFORM_FEE_PERCENT / 100), PLATFORM_FEE_MIN);
-
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const cl = cn("p-4 rounded-xl border", isLight ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30");
   const vl = cn("font-medium text-sm", isLight ? "text-slate-800" : "text-white");
@@ -92,7 +86,8 @@ export default function AgreementsLibrary() {
 
   const typeLabel = (t: string) => {
     switch (t) {
-      case "catalyst_shipper": return "Catalyst-Shipper";
+      case "catalyst_shipper": return "Catalyst Shipper";
+      case "carrier_shipper": return "Catalyst Shipper";
       case "master_service": return "MSA";
       case "lane_commitment": return "Lane Commitment";
       case "broker_catalyst": return "Broker-Catalyst";
@@ -151,15 +146,6 @@ export default function AgreementsLibrary() {
             <p className={cn("text-xl font-bold", vl)}>{s.value}</p>
           </div>
         ))}
-      </div>
-
-      {/* Platform Fee Notice */}
-      <div className={cn("flex items-center gap-3 p-3 rounded-xl border", isLight ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/5 to-[#BE01FF]/5 border-slate-700")}>
-        <Scale className="w-5 h-5 text-purple-500 flex-shrink-0" />
-        <div>
-          <p className={cn("text-xs font-bold", vl)}>Platform Fee: {PLATFORM_FEE_PERCENT}% per transaction (min ${PLATFORM_FEE_MIN})</p>
-          <p className="text-[10px] text-slate-400">Applied to every load under every agreement. Covers escrow, insurance verification, compliance, and dispute resolution.</p>
-        </div>
       </div>
 
       {/* Filters */}
@@ -229,7 +215,6 @@ export default function AgreementsLibrary() {
                     {ag.baseRate && (
                       <div className="text-right">
                         <p className="text-lg font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">${parseFloat(ag.baseRate).toLocaleString()}</p>
-                        <p className="text-[10px] text-slate-400">Fee: ${calcFee(parseFloat(ag.baseRate)).toFixed(2)}</p>
                       </div>
                     )}
                     <Button size="sm" variant="ghost" className={cn("rounded-lg h-8 w-8 p-0", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")} onClick={(e: React.MouseEvent) => { e.stopPropagation(); downloadAgreementPdf({ agreementNumber: ag.agreementNumber || `AG-${ag.id}`, agreementType: ag.agreementType || "catalyst_shipper", contractDuration: ag.contractDuration, status: ag.status, generatedContent: ag.generatedContent || "Agreement content not available — open the agreement to view full details.", partyAName: ag.partyAName || user?.name, partyARole: ag.partyARole || role, partyBName: ag.partyBName || ag.partyBCompany, partyBCompany: ag.partyBCompany, partyBRole: ag.partyBRole || "CATALYST", baseRate: ag.baseRate, rateType: ag.rateType, paymentTermDays: ag.paymentTermDays, effectiveDate: ag.effectiveDate, expirationDate: ag.expirationDate, equipmentTypes: ag.equipmentTypes, hazmatRequired: ag.hazmatRequired }); }}>

@@ -418,6 +418,62 @@ export const approvalRouter = router({
     }),
 
   /**
+   * Reset specific users to pending_review by email.
+   * SUPER_ADMIN only. Used to put accounts back into the approval queue.
+   */
+  resetUserToPending: auditedProtectedProcedure
+    .input(z.object({
+      emails: z.array(z.string()),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userRole = (ctx.user as any)?.role;
+      if (userRole !== "SUPER_ADMIN") {
+        throw new Error("Unauthorized: Super Admin access required");
+      }
+
+      const results: { email: string; status: string }[] = [];
+
+      for (const email of input.emails) {
+        const [target] = await db
+          .select({ id: users.id, email: users.email, metadata: users.metadata, role: users.role })
+          .from(users)
+          .where(eq(users.email, email))
+          .limit(1);
+
+        if (!target) {
+          results.push({ email, status: "not_found" });
+          continue;
+        }
+
+        // Don't reset admins
+        if (["ADMIN", "SUPER_ADMIN"].includes(target.role!)) {
+          results.push({ email, status: "skipped_admin" });
+          continue;
+        }
+
+        let meta: any = {};
+        try { meta = target.metadata ? JSON.parse(target.metadata as string) : {}; } catch {}
+
+        meta.approvalStatus = "pending_review";
+        delete meta.approvedAt;
+        delete meta.approvedBy;
+        delete meta.approvalNotes;
+
+        await db.update(users).set({
+          metadata: JSON.stringify(meta),
+        }).where(eq(users.id, target.id));
+
+        console.log(`[Approval] Reset ${email} (${target.role}) to pending_review by ${(ctx.user as any)?.email}`);
+        results.push({ email, status: "reset_to_pending" });
+      }
+
+      return { success: true, results };
+    }),
+
+  /**
    * Get detailed user info for approval review
    */
   getUserDetail: auditedProtectedProcedure
