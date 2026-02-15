@@ -44,7 +44,7 @@ export const analyticsRouter = router({
         const growth = lastTotal > 0 ? ((total - lastTotal) / lastTotal) * 100 : 0;
         const avgPerLoad = currentMonth?.count > 0 ? total / currentMonth.count : 0;
 
-        return { total, change: growth, growth, avgPerLoad, topCustomer: "Top Customer", margin: 18.5 };
+        return { total, change: growth, growth, avgPerLoad, topCustomer: "", margin: 0 };
       } catch (error) {
         console.error('[Analytics] getRevenue error:', error);
         return { total: 0, change: 0, growth: 0, avgPerLoad: 0, topCustomer: "", margin: 0 };
@@ -118,13 +118,50 @@ export const analyticsRouter = router({
    */
   getSummary: protectedProcedure
     .input(z.object({ period: z.string().optional().default("month") }))
-    .query(async () => ({
-      revenue: { total: 0, change: 0 }, loads: { total: 0, change: 0 },
-      drivers: { active: 0, utilization: 0 }, onTimeRate: 0, safetyScore: 0,
-      revenueChange: 0, totalLoads: 0, loadsChange: 0, milesLogged: 0, milesChange: 0,
-      avgDeliveryTime: 0, deliveryTimeChange: 0, avgRatePerMile: 0, fleetUtilization: 0,
-      customerSatisfaction: 0, completedLoads: 0, inTransitLoads: 0, pendingLoads: 0,
-    })),
+    .query(async () => {
+      const db = await getDb();
+      if (!db) return {
+        revenue: 0, revenueChange: 0, totalLoads: 0, loadsChange: 0,
+        milesLogged: 0, avgRatePerMile: 0, fleetUtilization: 0,
+        customerSatisfaction: 0, completedLoads: 0, inTransitLoads: 0, pendingLoads: 0,
+        onTimeRate: 0, expenses: 0,
+      };
+
+      try {
+        const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads);
+        const [delivered] = await db.select({ count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.status, 'delivered'));
+        const [inTransit] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'in_transit'));
+        const [pending] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.status, 'posted'));
+
+        const revenue = delivered?.revenue || 0;
+        const completedCount = delivered?.count || 0;
+        const avgRate = completedCount > 0 ? revenue / completedCount : 0;
+
+        return {
+          revenue,
+          revenueChange: 0,
+          totalLoads: totalLoads?.count || 0,
+          loadsChange: 0,
+          milesLogged: 0,
+          avgRatePerMile: avgRate > 0 ? Math.round(avgRate * 100) / 100 : 0,
+          fleetUtilization: 0,
+          customerSatisfaction: 0,
+          completedLoads: completedCount,
+          inTransitLoads: inTransit?.count || 0,
+          pendingLoads: pending?.count || 0,
+          onTimeRate: 0,
+          expenses: 0,
+        };
+      } catch (error) {
+        console.error('[Analytics] getSummary error:', error);
+        return {
+          revenue: 0, revenueChange: 0, totalLoads: 0, loadsChange: 0,
+          milesLogged: 0, avgRatePerMile: 0, fleetUtilization: 0,
+          customerSatisfaction: 0, completedLoads: 0, inTransitLoads: 0, pendingLoads: 0,
+          onTimeRate: 0, expenses: 0,
+        };
+      }
+    }),
 
   /**
    * Get trends for Analytics page

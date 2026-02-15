@@ -3,7 +3,7 @@
  * Comprehensive company details, compliance, fleet info, and document management
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   Building2, Users, MapPin, Phone, Globe, Mail, FileText,
@@ -58,131 +58,89 @@ export default function CompanyPage() {
   // Fetch fleet vehicles from database
   const { data: fleetData, isLoading: fleetLoading } = (trpc as any).companies.getFleet.useQuery({ companyId });
 
-  // Company data state
+  // Company data state — synced from DB via tRPC
   const [companyData, setCompanyData] = useState({
-    name: "Johnson Transport LLC",
-    legalName: "Johnson Transport, LLC",
-    mcNumber: "MC-123456",
-    dotNumber: "DOT-789012",
-    scacCode: "JHNS",
-    taxId: "12-3456789",
-    dunsNumber: "123456789",
-    address: "123 Main St, Houston, TX 77001",
-    phone: "(555) 123-4567",
-    email: "contact@johnsontransport.com",
-    website: "www.johnsontransport.com",
-    founded: "2016",
-    fleetSize: 15,
-    driverCount: 23,
+    name: "",
+    legalName: "",
+    mcNumber: "",
+    dotNumber: "",
+    scacCode: "",
+    taxId: "",
+    dunsNumber: "",
+    address: "",
+    phone: "",
+    email: "",
+    website: "",
+    founded: "",
+    fleetSize: 0,
+    driverCount: 0,
     operatingAuthority: "Interstate",
-    safetyRating: "Satisfactory",
-    description: "Professional transportation and logistics services specializing in hazardous materials and bulk liquids.",
+    safetyRating: "",
+    description: "",
   });
 
-  // Compliance documents (mock data - replace with tRPC query)
-  const [documents] = useState<ComplianceDocument[]>([
-    {
-      id: "1",
-      type: "INSURANCE",
-      name: "General Liability Insurance",
-      uploadedAt: "2024-01-15",
-      expiresAt: "2025-01-15",
-      status: "VALID",
-      fileUrl: "/documents/insurance.pdf",
-    },
-    {
-      id: "2",
-      type: "INSURANCE",
-      name: "Cargo Insurance",
-      uploadedAt: "2024-01-15",
-      expiresAt: "2025-01-15",
-      status: "VALID",
-      fileUrl: "/documents/cargo-insurance.pdf",
-    },
-    {
-      id: "3",
-      type: "W9",
-      name: "W9 Tax Form",
-      uploadedAt: "2024-01-10",
-      status: "VALID",
-      fileUrl: "/documents/w9.pdf",
-    },
-    {
-      id: "4",
-      type: "AUTHORITY",
-      name: "Operating Authority",
-      uploadedAt: "2023-06-01",
-      expiresAt: "2025-12-31",
-      status: "EXPIRING",
-      fileUrl: "/documents/authority.pdf",
-    },
-    {
-      id: "5",
-      type: "HAZMAT",
-      name: "HazMat Certification",
-      uploadedAt: "2024-03-01",
-      expiresAt: "2025-03-01",
-      status: "VALID",
-      fileUrl: "/documents/hazmat.pdf",
-    },
-  ]);
+  // Sync DB company profile into form state
+  useEffect(() => {
+    if (companyProfile) {
+      setCompanyData({
+        name: companyProfile.name || "",
+        legalName: companyProfile.legalName || "",
+        mcNumber: companyProfile.mcNumber || "",
+        dotNumber: companyProfile.dotNumber || "",
+        scacCode: companyProfile.scacCode || "",
+        taxId: companyProfile.ein || "",
+        dunsNumber: "",
+        address: [companyProfile.address, companyProfile.city, companyProfile.state, companyProfile.zipCode].filter(Boolean).join(", ") || "",
+        phone: companyProfile.phone || "",
+        email: companyProfile.email || "",
+        website: companyProfile.website || "",
+        founded: "",
+        fleetSize: 0,
+        driverCount: 0,
+        operatingAuthority: "Interstate",
+        safetyRating: companyProfile.complianceStatus || "",
+        description: companyProfile.description || "",
+      });
+    }
+  }, [companyProfile]);
 
-  // Fleet vehicles (mock data - replace with tRPC query)
-  const [fleet] = useState<FleetVehicle[]>([
-    {
-      id: "1",
-      type: "Tanker",
-      make: "Peterbilt",
-      model: "579",
-      year: 2022,
-      vin: "1XPWD40X1ED123456",
-      status: "ACTIVE",
-    },
-    {
-      id: "2",
-      type: "Tanker",
-      make: "Kenworth",
-      model: "T680",
-      year: 2021,
-      vin: "1XKWD40X2ED234567",
-      status: "ACTIVE",
-    },
-    {
-      id: "3",
-      type: "Dry Van",
-      make: "Freightliner",
-      model: "Cascadia",
-      year: 2023,
-      vin: "1FUJGLDR3ELBA1234",
-      status: "ACTIVE",
-    },
-    {
-      id: "4",
-      type: "Flatbed",
-      make: "Volvo",
-      model: "VNL 760",
-      year: 2020,
-      vin: "4V4NC9EH5LN123456",
-      status: "MAINTENANCE",
-    },
-  ]);
+  // Compliance documents from database
+  const documentsQuery = (trpc as any).companies.getDocuments.useQuery({ category: undefined });
+  const documents: ComplianceDocument[] = (documentsQuery.data || []).map((d: any) => ({
+    id: String(d.id),
+    type: d.type || "OTHER",
+    name: d.name || d.fileName || "Document",
+    uploadedAt: d.uploadedAt || d.createdAt || "",
+    expiresAt: d.expiresAt || undefined,
+    status: d.status || "VALID",
+    fileUrl: d.fileUrl || "",
+  }));
 
-  // Certifications
-  const certifications = [
-    { name: "HazMat Endorsement", status: "ACTIVE", expires: "2025-06-15" },
-    { name: "TWIC Card", status: "ACTIVE", expires: "2026-01-20" },
-    { name: "SmartWay Certified", status: "ACTIVE", expires: "N/A" },
-    { name: "C-TPAT Certified", status: "ACTIVE", expires: "2025-12-31" },
-  ];
+  // Fleet vehicles from database
+  const fleet: FleetVehicle[] = (fleetData || []).map((v: any) => ({
+    id: String(v.id),
+    type: v.type || "Unknown",
+    make: v.make || "",
+    model: v.model || "",
+    year: v.year || 0,
+    vin: v.vin || "",
+    status: v.status || "ACTIVE",
+  }));
 
-  // Performance metrics
+  // Certifications — derived from company profile expiry dates
+  const certifications: { name: string; status: string; expires: string }[] = [];
+  if (companyProfile?.hazmatExpiry) certifications.push({ name: "HazMat Certification", status: new Date(companyProfile.hazmatExpiry) > new Date() ? "ACTIVE" : "EXPIRED", expires: companyProfile.hazmatExpiry });
+  if (companyProfile?.twicExpiry) certifications.push({ name: "TWIC Card", status: new Date(companyProfile.twicExpiry) > new Date() ? "ACTIVE" : "EXPIRED", expires: companyProfile.twicExpiry });
+  if (companyProfile?.insuranceExpiry) certifications.push({ name: "Insurance", status: new Date(companyProfile.insuranceExpiry) > new Date() ? "ACTIVE" : "EXPIRED", expires: companyProfile.insuranceExpiry });
+
+  // Performance metrics — real data or zeros
   const performanceMetrics = {
-    onTimeDelivery: 98.5,
-    safetyScore: 95,
-    customerRating: 4.8,
-    totalLoads: 1247,
-    totalMiles: 523000,
-    avgLoadValue: 3250,
+    onTimeDelivery: 0,
+    safetyScore: 0,
+    customerRating: 0,
+    totalLoads: 0,
+    totalMiles: 0,
+    avgLoadValue: 0,
   };
 
   const handleSave = () => {
