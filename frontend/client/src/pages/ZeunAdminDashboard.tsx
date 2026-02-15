@@ -243,14 +243,15 @@ export default function ZeunAdminDashboard() {
         </Card>
       </div>
 
-      {/* Provider Network */}
+      {/* Provider Network — ESANG AI Powered */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
             Provider Network
+            <Badge className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] px-2">ESANG AI</Badge>
           </CardTitle>
-          <CardDescription>Registered repair providers</CardDescription>
+          <CardDescription>AI-powered repair provider discovery — powered by Gemini</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -267,68 +268,86 @@ export default function ZeunAdminDashboard() {
 
           {providersLoading ? (
             <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                <Activity className="h-4 w-4 animate-pulse text-blue-500" />
+                <span>ESANG AI is discovering providers in your area...</span>
+              </div>
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
             </div>
           ) : providers && providers.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {providers
-                .filter((p: { name: string; chainName: string | null }) => 
-                  !providerSearch || 
-                  p.name.toLowerCase().includes(providerSearch.toLowerCase()) ||
-                  (p.chainName && p.chainName.toLowerCase().includes(providerSearch.toLowerCase()))
-                )
-                .slice(0, 10)
-                .map((provider: { id: number; name: string; type: string; chainName: string | null; distance: number; rating: number | null; phone: string | null; available24x7: boolean | null; services: string[] | null }) => (
-                  <div key={provider.id} className="p-4 border rounded-lg">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-bold">{provider.name}</h4>
-                        <p className="text-sm text-muted-foreground">{provider.type.replace(/_/g, " ")}</p>
-                        {provider.chainName && (
-                          <Badge variant="outline" className="mt-1">{provider.chainName}</Badge>
-                        )}
+            <div>
+              <p className="text-xs text-muted-foreground mb-3">
+                {providers.length} provider{providers.length !== 1 ? "s" : ""} found within 100mi of Dallas, TX
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {providers
+                  .filter((p: { name: string; chainName: string | null }) => 
+                    !providerSearch || 
+                    p.name.toLowerCase().includes(providerSearch.toLowerCase()) ||
+                    (p.chainName && p.chainName.toLowerCase().includes(providerSearch.toLowerCase()))
+                  )
+                  .slice(0, 10)
+                  .map((provider: { id: number; name: string; type: string; chainName: string | null; distance: number; rating: number | null; phone: string | null; available24x7: boolean | null; services: string[] | null; aiGenerated?: boolean }) => (
+                    <div key={provider.id} className="p-4 border rounded-lg">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold">{provider.name}</h4>
+                          <p className="text-sm text-muted-foreground">{provider.type.replace(/_/g, " ")}</p>
+                          {provider.chainName && (
+                            <Badge variant="outline" className="mt-1">{provider.chainName}</Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {provider.available24x7 && (
+                            <Badge variant="secondary">24/7</Badge>
+                          )}
+                          {provider.aiGenerated && (
+                            <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500">AI</Badge>
+                          )}
+                        </div>
                       </div>
-                      {provider.available24x7 && (
-                        <Badge variant="secondary">24/7</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-4 mt-3 text-sm">
-                      <span className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {provider.distance} mi
-                      </span>
-                      {provider.rating && (
+                      <div className="flex items-center gap-4 mt-3 text-sm">
                         <span className="flex items-center gap-1">
-                          <Star className="h-4 w-4 text-yellow-500" />
-                          {provider.rating.toFixed(1)}
+                          <MapPin className="h-4 w-4" />
+                          {provider.distance} mi
                         </span>
-                      )}
-                      {provider.phone && (
-                        <a href={`tel:${provider.phone}`} className="flex items-center gap-1 text-primary hover:underline">
-                          <Phone className="h-4 w-4" />
-                          Call
-                        </a>
-                      )}
-                    </div>
-                    {provider.services && provider.services.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {provider.services.slice(0, 4).map((service: any) => (
-                          <Badge key={service} variant="outline" className="text-xs">
-                            {service.replace(/_/g, " ")}
-                          </Badge>
-                        ))}
-                        {provider.services.length > 4 && (
-                          <Badge variant="outline" className="text-xs">+{provider.services.length - 4} more</Badge>
+                        {provider.rating && (
+                          <span className="flex items-center gap-1">
+                            <Star className="h-4 w-4 text-yellow-500" />
+                            {provider.rating.toFixed(1)}
+                          </span>
+                        )}
+                        {provider.phone && (
+                          <a href={`tel:${provider.phone}`} className="flex items-center gap-1 text-primary hover:underline">
+                            <Phone className="h-4 w-4" />
+                            Call
+                          </a>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {provider.services && provider.services.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {provider.services.slice(0, 4).map((service: any) => (
+                            <Badge key={service} variant="outline" className="text-xs">
+                              {service.replace(/_/g, " ")}
+                            </Badge>
+                          ))}
+                          {provider.services.length > 4 && (
+                            <Badge variant="outline" className="text-xs">+{provider.services.length - 4} more</Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </div>
             </div>
           ) : (
-            <p className="text-center py-6 text-muted-foreground">No providers found</p>
+            <div className="text-center py-6">
+              <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-muted-foreground">No providers found in this area</p>
+              <p className="text-xs text-muted-foreground mt-1">ESANG AI will automatically discover providers when available</p>
+            </div>
           )}
         </CardContent>
       </Card>

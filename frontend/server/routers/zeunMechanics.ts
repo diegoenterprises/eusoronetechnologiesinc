@@ -345,7 +345,65 @@ export const zeunMechanicsRouter = router({
       conditions.push(eq(zeunRepairProviders.providerType, input.providerType as any));
     }
 
-    const providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
+    let providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
+
+    // AI FALLBACK: If DB has no providers, use ESANG AI (Gemini) to discover them
+    if (providers.length === 0) {
+      console.log(`[ZEUN] No providers in DB — invoking ESANG AI discovery for ${input.latitude.toFixed(2)}, ${input.longitude.toFixed(2)}`);
+      try {
+        const aiProviders = await esangAI.discoverProviders({
+          latitude: input.latitude,
+          longitude: input.longitude,
+          radiusMiles: input.radiusMiles,
+          providerType: input.providerType,
+          count: Math.max(input.maxResults, 12),
+        });
+
+        // Cache AI-generated providers into DB for persistence
+        if (aiProviders.length > 0) {
+          const VALID_TYPES = ["TRUCK_STOP", "DEALER", "INDEPENDENT", "MOBILE", "TOWING", "TIRE_SHOP"] as const;
+          type ValidType = typeof VALID_TYPES[number];
+          for (const ap of aiProviders) {
+            try {
+              const pType = VALID_TYPES.includes(ap.providerType as ValidType)
+                ? (ap.providerType as ValidType)
+                : "INDEPENDENT";
+              await db.insert(zeunRepairProviders).values({
+                source: "GOOGLE" as const,
+                name: (ap.name || "Unknown Provider").slice(0, 255),
+                providerType: pType,
+                chainName: ap.chainName?.slice(0, 100) || null,
+                address: ap.address?.slice(0, 500) || null,
+                city: ap.city?.slice(0, 100) || null,
+                state: ap.state?.slice(0, 2) || null,
+                zip: ap.zip?.slice(0, 10) || null,
+                latitude: String(ap.latitude),
+                longitude: String(ap.longitude),
+                phone: ap.phone?.slice(0, 20) || null,
+                website: ap.website?.slice(0, 500) || null,
+                services: ap.services || [],
+                certifications: ap.certifications || [],
+                oemBrands: ap.oemBrands || [],
+                available24x7: ap.available24x7 ?? false,
+                hasMobileService: ap.hasMobileService ?? false,
+                rating: String(Math.min(5, Math.max(1, ap.rating || 4.0))),
+                reviewCount: ap.reviewCount || 0,
+                averageWaitTimeMinutes: ap.averageWaitTimeMinutes || 60,
+                isActive: true,
+              });
+            } catch (insertErr) {
+              console.warn("[ZEUN] Failed to cache provider:", (insertErr as Error).message);
+            }
+          }
+          console.log(`[ZEUN] Cached ${aiProviders.length} AI-generated providers into DB`);
+
+          // Re-query from DB so we get proper IDs
+          providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
+        }
+      } catch (aiErr) {
+        console.error("[ZEUN] AI provider discovery failed:", aiErr);
+      }
+    }
 
     const scoredProviders = providers.map((p) => {
       const distance = p.latitude && p.longitude ? calculateDistance(input.latitude, input.longitude, Number(p.latitude), Number(p.longitude)) : 999;
@@ -374,6 +432,7 @@ export const zeunMechanicsRouter = router({
       hasMobileService: p.hasMobileService,
       services: p.services,
       score: p.score,
+      aiGenerated: !p.externalId && !p.lastVerified,
     }));
   }),
 

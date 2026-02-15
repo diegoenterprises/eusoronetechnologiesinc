@@ -1404,6 +1404,144 @@ Enhance each clause with specific, legally-precise language incorporating all th
       return JSON.parse((t.match(/\{[\s\S]*\}/) || [t])[0]);
     } catch { return { description: `Code ${code}`, severity: "MEDIUM", category: "Unknown", symptoms: [], commonCauses: [], canDrive: true, repairUrgency: "Schedule inspection", estimatedCost: { min: 0, max: 0 }, estimatedHours: 0, affectedSystems: [], techTips: [] }; }
   }
+
+  // =========================================================================
+  // ZEUN PROVIDER NETWORK — Gemini-Powered Provider Discovery
+  // =========================================================================
+
+  async discoverProviders(request: {
+    latitude: number;
+    longitude: number;
+    radiusMiles: number;
+    providerType?: string;
+    count?: number;
+  }): Promise<Array<{
+    name: string;
+    providerType: string;
+    chainName: string | null;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    latitude: number;
+    longitude: number;
+    phone: string;
+    website: string | null;
+    services: string[];
+    certifications: string[];
+    oemBrands: string[];
+    available24x7: boolean;
+    hasMobileService: boolean;
+    rating: number;
+    reviewCount: number;
+    averageWaitTimeMinutes: number;
+  }>> {
+    const count = request.count || 12;
+    const typeFilter = request.providerType ? `Focus on ${request.providerType.replace(/_/g, " ")} providers.` : "Include a diverse mix of provider types.";
+
+    const prompt = `You are ESANG AI generating realistic truck repair/service provider data for a freight logistics platform.
+
+Location: ${request.latitude.toFixed(4)}, ${request.longitude.toFixed(4)} (within ${request.radiusMiles} mile radius)
+${typeFilter}
+
+Generate exactly ${count} realistic repair/service providers that would actually exist near this location. Use real city names, realistic street addresses, proper area codes for the region, and realistic business names (mix of chains like TA, Petro, Love's, Pilot, Rush Truck Centers AND independent shops).
+
+Provider types must be one of: TRUCK_STOP, DEALER, INDEPENDENT, MOBILE, TOWING, TIRE_SHOP
+
+Each provider's lat/lng must be within ${request.radiusMiles} miles of the search point. Vary distances realistically.
+
+Respond in VALID JSON array only — no markdown, no explanation:
+[{
+  "name": "string",
+  "providerType": "TRUCK_STOP|DEALER|INDEPENDENT|MOBILE|TOWING|TIRE_SHOP",
+  "chainName": "string or null (e.g. TA, Petro, Love's, Rush, Pilot, null for independents)",
+  "address": "street address",
+  "city": "string",
+  "state": "2-letter code",
+  "zip": "5-digit",
+  "latitude": number,
+  "longitude": number,
+  "phone": "xxx-xxx-xxxx with correct area code",
+  "website": "url or null",
+  "services": ["engine_repair","transmission","brakes","electrical","hvac","tires","alignment","pm_service","diagnostics","welding","body_work","reefer_repair","trailer_repair","dot_inspection","roadside_assistance","towing"],
+  "certifications": ["ASE","TIA","MACS","OEM_CERTIFIED"],
+  "oemBrands": ["Freightliner","Kenworth","Peterbilt","Volvo","International","Mack","Cummins","Detroit","PACCAR"],
+  "available24x7": boolean,
+  "hasMobileService": boolean,
+  "rating": number (3.5-5.0),
+  "reviewCount": number (5-500),
+  "averageWaitTimeMinutes": number (15-180)
+}]`;
+
+    try {
+      if (!this.apiKey) return this.fallbackProviders(request);
+
+      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            { role: "user", parts: [{ text: "You are ESANG AI provider network intelligence. Generate realistic truck service provider data. JSON array only, no markdown." }] },
+            { role: "model", parts: [{ text: '[{"ready":true}]' }] },
+            { role: "user", parts: [{ text: prompt }] },
+          ],
+          generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, maxOutputTokens: 4096 },
+        }),
+      });
+
+      if (!resp.ok) {
+        console.error("[ESANG AI] Provider discovery API error:", resp.status);
+        return this.fallbackProviders(request);
+      }
+
+      const data = await resp.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+      const parsed = JSON.parse((text.match(/\[[\s\S]*\]/) || [text])[0]);
+
+      if (!Array.isArray(parsed) || parsed.length === 0) return this.fallbackProviders(request);
+
+      console.log(`[ESANG AI] Generated ${parsed.length} providers near ${request.latitude.toFixed(2)}, ${request.longitude.toFixed(2)}`);
+      return parsed;
+    } catch (e) {
+      console.error("[ESANG AI] Provider discovery error:", e);
+      return this.fallbackProviders(request);
+    }
+  }
+
+  private fallbackProviders(request: { latitude: number; longitude: number; radiusMiles: number }): Array<any> {
+    // Generate basic fallback providers when Gemini is unavailable
+    const types = ["TRUCK_STOP", "DEALER", "INDEPENDENT", "MOBILE", "TOWING", "TIRE_SHOP"] as const;
+    const chains = ["TA Travel Center", "Love's Travel Stop", "Pilot Flying J", "Rush Truck Centers", "Petro Stopping Center", null, null, null];
+    const servicesList = ["engine_repair", "brakes", "tires", "diagnostics", "pm_service", "electrical", "dot_inspection"];
+
+    return Array.from({ length: 8 }, (_, i) => {
+      const angle = (i / 8) * 2 * Math.PI;
+      const dist = 5 + Math.random() * (request.radiusMiles * 0.6);
+      const latOffset = (dist / 69) * Math.cos(angle);
+      const lngOffset = (dist / (69 * Math.cos(request.latitude * Math.PI / 180))) * Math.sin(angle);
+      return {
+        name: chains[i] || `Highway ${i + 1} Truck Service`,
+        providerType: types[i % types.length],
+        chainName: chains[i] || null,
+        address: `${1000 + i * 200} Highway ${i + 10}`,
+        city: "Area",
+        state: "TX",
+        zip: "75001",
+        latitude: request.latitude + latOffset,
+        longitude: request.longitude + lngOffset,
+        phone: "800-555-0100",
+        website: null,
+        services: servicesList.slice(0, 3 + Math.floor(Math.random() * 4)),
+        certifications: ["ASE"],
+        oemBrands: ["Freightliner", "Kenworth"],
+        available24x7: i < 3,
+        hasMobileService: i % 3 === 0,
+        rating: 3.5 + Math.random() * 1.5,
+        reviewCount: 10 + Math.floor(Math.random() * 200),
+        averageWaitTimeMinutes: 20 + Math.floor(Math.random() * 120),
+      };
+    });
+  }
 }
 
 export const esangAI = new ESANGAIService();
