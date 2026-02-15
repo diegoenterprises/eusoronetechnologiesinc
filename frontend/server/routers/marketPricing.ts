@@ -234,32 +234,6 @@ function generateSparkline(base: number, trend: "up" | "down" | "flat", timeSeed
   return points;
 }
 
-// Time-based micro-variation for seed data so prices are never frozen
-function applyDynamicVariation(commodities: CommodityData[]): CommodityData[] {
-  const now = Date.now();
-  const hourSeed = Math.floor(now / 60000); // changes every minute
-  return commodities.map((c, idx) => {
-    const hash = Math.sin(hourSeed * 0.001 + idx * 73.7 + c.price * 11.3) * 43758.5453;
-    const r = hash - Math.floor(hash); // 0..1
-    const pctVar = (r - 0.5) * 0.02; // ±1% variation
-    const newPrice = +(c.price * (1 + pctVar)).toFixed(c.price >= 100 ? 2 : 4);
-    const newChange = +(newPrice - c.previousClose).toFixed(c.price >= 100 ? 2 : 4);
-    const newChangePct = c.previousClose > 0 ? +((newChange / c.previousClose) * 100).toFixed(2) : c.changePercent;
-    const trend = newChangePct > 0.5 ? "up" as const : newChangePct < -0.5 ? "down" as const : "flat" as const;
-    return {
-      ...c,
-      price: newPrice,
-      change: newChange,
-      changePercent: newChangePct,
-      high: +(Math.max(c.high, newPrice) * (1 + Math.abs(pctVar) * 0.3)).toFixed(c.price >= 100 ? 2 : 4),
-      low: +(Math.min(c.low, newPrice) * (1 - Math.abs(pctVar) * 0.3)).toFixed(c.price >= 100 ? 2 : 4),
-      intraday: newChangePct > 0.5 ? "BULL" as const : newChangePct < -0.5 ? "BEAR" as const : "FLAT" as const,
-      daily: newChangePct > 0 ? "UP" as const : newChangePct < 0 ? "DOWN" as const : "FLAT" as const,
-      sparkline: generateSparkline(newPrice, trend, hourSeed + idx),
-    };
-  });
-}
-
 const COMMODITIES: CommodityData[] = [
   // === ENERGY === (Feb 2026 baseline estimates)
   { symbol: "CL", name: "WTI Crude Oil", category: "Energy", price: 71.25, change: 0.85, changePercent: 1.21, previousClose: 70.40, open: 70.50, high: 71.60, low: 70.10, volume: "412K", unit: "$/bbl", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(71, "up") },
@@ -290,17 +264,17 @@ const COMMODITIES: CommodityData[] = [
   { symbol: "LB", name: "Lumber", category: "Agriculture", price: 548.00, change: -8.50, changePercent: -1.53, previousClose: 556.50, open: 554.00, high: 558.00, low: 545.00, volume: "6K", unit: "$/MBF", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "UP", sparkline: generateSparkline(548, "down") },
 
   // === FREIGHT INDICES ===
-  { symbol: "DVAN", name: "Dry Van National", category: "Freight", price: 2.35, change: 0.07, changePercent: 3.07, previousClose: 2.28, open: 2.29, high: 2.38, low: 2.27, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(2.35, "up") },
-  { symbol: "REEF", name: "Reefer National", category: "Freight", price: 3.12, change: 0.07, changePercent: 2.30, previousClose: 3.05, open: 3.06, high: 3.15, low: 3.04, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.12, "up") },
-  { symbol: "FLAT", name: "Flatbed National", category: "Freight", price: 2.85, change: 0.07, changePercent: 2.52, previousClose: 2.78, open: 2.79, high: 2.88, low: 2.77, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "FLAT", sparkline: generateSparkline(2.85, "up") },
-  { symbol: "TANK", name: "Tanker National", category: "Freight", price: 3.45, change: 0.07, changePercent: 2.07, previousClose: 3.38, open: 3.39, high: 3.48, low: 3.37, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "UP", sparkline: generateSparkline(3.45, "up") },
-  { symbol: "HAZM", name: "Hazmat National", category: "Freight", price: 4.15, change: 0.10, changePercent: 2.47, previousClose: 4.05, open: 4.06, high: 4.18, low: 4.04, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(4.15, "up") },
-  { symbol: "OVER", name: "Oversize National", category: "Freight", price: 6.50, change: 0.15, changePercent: 2.36, previousClose: 6.35, open: 6.36, high: 6.55, low: 6.33, volume: "N/A", unit: "$/mi", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(6.50, "up") },
+  { symbol: "DVAN", name: "Dry Van National", category: "Freight", price: 2.35, change: 0, changePercent: 0, previousClose: 2.35, open: 2.35, high: 2.35, low: 2.35, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(2.35, "flat") },
+  { symbol: "REEF", name: "Reefer National", category: "Freight", price: 3.12, change: 0, changePercent: 0, previousClose: 3.12, open: 3.12, high: 3.12, low: 3.12, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(3.12, "flat") },
+  { symbol: "FLAT", name: "Flatbed National", category: "Freight", price: 2.85, change: 0, changePercent: 0, previousClose: 2.85, open: 2.85, high: 2.85, low: 2.85, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(2.85, "flat") },
+  { symbol: "TANK", name: "Tanker National", category: "Freight", price: 3.45, change: 0, changePercent: 0, previousClose: 3.45, open: 3.45, high: 3.45, low: 3.45, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(3.45, "flat") },
+  { symbol: "HAZM", name: "Hazmat National", category: "Freight", price: 4.15, change: 0, changePercent: 0, previousClose: 4.15, open: 4.15, high: 4.15, low: 4.15, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(4.15, "flat") },
+  { symbol: "OVER", name: "Oversize National", category: "Freight", price: 6.50, change: 0, changePercent: 0, previousClose: 6.50, open: 6.50, high: 6.50, low: 6.50, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(6.50, "flat") },
 
   // === FUEL INDEX ===
-  { symbol: "DOE", name: "DOE Diesel Avg", category: "Fuel", price: 3.6880, change: 0.07, changePercent: 0.19, previousClose: 3.6810, open: 3.6830, high: 3.7000, low: 3.6750, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "UP", monthly: "UP", sparkline: generateSparkline(3.69, "up") },
-  { symbol: "DEF", name: "DEF Fluid", category: "Fuel", price: 3.2950, change: 0.035, changePercent: 1.07, previousClose: 3.2600, open: 3.2650, high: 3.3100, low: 3.2550, volume: "N/A", unit: "$/gal", intraday: "BULL", daily: "UP", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(3.29, "flat") },
-  { symbol: "FSC", name: "Fuel Surcharge/Mi", category: "Fuel", price: 0.4060, change: -0.015, changePercent: -3.57, previousClose: 0.4210, open: 0.4200, high: 0.4220, low: 0.4040, volume: "N/A", unit: "$/mi", intraday: "BEAR", daily: "DOWN", weekly: "DOWN", monthly: "DOWN", sparkline: generateSparkline(0.41, "down") },
+  { symbol: "DOE", name: "DOE Diesel Avg", category: "Fuel", price: 3.6880, change: 0, changePercent: 0, previousClose: 3.6880, open: 3.6880, high: 3.6880, low: 3.6880, volume: "N/A", unit: "$/gal", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(3.69, "flat") },
+  { symbol: "DEF", name: "DEF Fluid", category: "Fuel", price: 2.9500, change: 0, changePercent: 0, previousClose: 2.9500, open: 2.9500, high: 2.9500, low: 2.9500, volume: "N/A", unit: "$/gal", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(2.95, "flat") },
+  { symbol: "FSC", name: "Fuel Surcharge/Mi", category: "Fuel", price: 0.4060, change: 0, changePercent: 0, previousClose: 0.4060, open: 0.4060, high: 0.4060, low: 0.4060, volume: "N/A", unit: "$/mi", intraday: "FLAT", daily: "FLAT", weekly: "FLAT", monthly: "FLAT", sparkline: generateSparkline(0.41, "flat") },
 ];
 
 export const marketPricingRouter = router({
@@ -508,12 +482,16 @@ export const marketPricingRouter = router({
       if (liveFuel.isLive) {
         all = all.map(c => {
           if (c.symbol === "FSC") {
-            const prev = 0.406;
-            return { ...c, price: liveFuel.surchargePerMile, change: +(liveFuel.surchargePerMile - prev).toFixed(4), changePercent: +((liveFuel.surchargePerMile - prev) / prev * 100).toFixed(2) };
+            const prev = liveFuel.diesel.previous > 0 ? +((liveFuel.diesel.previous - 1.25) / 6).toFixed(3) : c.previousClose;
+            const changeAmt = +(liveFuel.surchargePerMile - prev).toFixed(4);
+            const changePct = prev > 0 ? +((changeAmt / prev) * 100).toFixed(2) : 0;
+            return { ...c, price: liveFuel.surchargePerMile, previousClose: prev, change: changeAmt, changePercent: changePct, intraday: changePct > 0.5 ? "BULL" as const : changePct < -0.5 ? "BEAR" as const : "FLAT" as const, daily: changePct > 0 ? "UP" as const : changePct < 0 ? "DOWN" as const : "FLAT" as const, sparkline: generateSparkline(liveFuel.surchargePerMile, changePct > 0.5 ? "up" : changePct < -0.5 ? "down" : "flat") };
           }
           if (c.symbol === "DEF") {
-            const prev = 2.95;
-            return { ...c, price: liveFuel.def.current, change: +(liveFuel.def.current - prev).toFixed(4), changePercent: +((liveFuel.def.current - prev) / prev * 100).toFixed(2) };
+            const prev = liveFuel.def.previous > 0 ? liveFuel.def.previous : c.previousClose;
+            const changeAmt = +(liveFuel.def.current - prev).toFixed(4);
+            const changePct = prev > 0 ? +((changeAmt / prev) * 100).toFixed(2) : 0;
+            return { ...c, price: liveFuel.def.current, previousClose: prev, change: changeAmt, changePercent: changePct, intraday: changePct > 0.5 ? "BULL" as const : changePct < -0.5 ? "BEAR" as const : "FLAT" as const, daily: changePct > 0 ? "UP" as const : changePct < 0 ? "DOWN" as const : "FLAT" as const, sparkline: generateSparkline(liveFuel.def.current, changePct > 0.5 ? "up" : changePct < -0.5 ? "down" : "flat") };
           }
           return c;
         });

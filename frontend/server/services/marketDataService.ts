@@ -291,7 +291,9 @@ export const YAHOO_COMMODITY_SYMBOLS: Record<string, string> = {
   "LE=F": "LE",     // Live Cattle
   "LBS=F": "LB",    // Lumber
   "ALI=F": "ALI",   // Aluminum
-  "PA=F": "NI",     // Palladium (proxy for Nickel)
+  "NI=F": "NI",     // Nickel
+  "EH=F": "ETH",    // Ethanol
+  "B0=F": "PROP",   // Propane (Mont Belvieu)
 };
 
 export async function fetchYahooFinanceQuotes(symbols: string[]): Promise<Map<string, YahooQuote>> {
@@ -368,7 +370,8 @@ const COMMODITY_PRICE_API_BASE = "https://api.commoditypriceapi.com/v2";
 // Map our internal symbols to CommodityPriceAPI symbols
 export const CPAPI_SYMBOL_MAP: Record<string, string> = {
   CL: "WTI", BZ: "BRENT", NG: "NG", HO: "HO",
-  GC: "XAU", SI: "XAG", HG: "XCU", ALI: "ALU", STEEL: "STEEL",
+  RB: "GASOLINE", ULSD: "DIESEL", ETH: "ETHANOL", PROP: "PROPANE",
+  GC: "XAU", SI: "XAG", HG: "XCU", ALI: "ALU", STEEL: "STEEL", NI: "NICKEL",
   ZC: "CORN", ZS: "SOYBEAN", ZW: "WHEAT", CT: "COTTON", SB: "SUGAR",
   KC: "COFFEE", LE: "CATTLE", LB: "LUMBER",
 };

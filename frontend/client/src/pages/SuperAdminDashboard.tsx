@@ -121,7 +121,9 @@ export default function SuperAdminDashboard() {
                   <div className={`p-2 rounded-lg ${c.bg}`}><span className={c.color}>{ROLE_CFG[r.role] ? <Users className="w-4 h-4" /> : <Users className="w-4 h-4" />}</span></div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1"><span className="text-sm text-white font-medium">{c.label}</span><span className="text-xs text-slate-400">{r.count} ({pct}%)</span></div>
-                    <Progress value={pct} className="h-1.5" />
+                    <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-slate-700/50">
+                      <div className="h-full rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] transition-all" style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
                 </div>
               );
