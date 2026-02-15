@@ -143,13 +143,24 @@ export default function SuperAdminDashboard() {
               <div className="divide-y divide-slate-700/50">
                 {recent.map(u => {
                   const rc = ROLE_CFG[u.role] || { label: u.role, color: "text-slate-400", bg: "bg-slate-500/20" };
+                  const approvalColor = u.approvalStatus === "approved" ? "bg-green-500/20 text-green-400" : u.approvalStatus === "pending_review" ? "bg-yellow-500/20 text-yellow-400" : "bg-slate-500/20 text-slate-400";
                   return (
                     <div key={u.id} className="px-4 py-3 flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-sm font-bold">{(u.name || "?").charAt(0)}</div>
+                        {u.profilePicture ? (
+                          <img src={u.profilePicture} alt="" className="w-9 h-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white text-sm font-bold">{(u.name || "?").charAt(0)}</div>
+                        )}
                         <div><p className="text-white font-medium text-sm">{u.name}</p><p className="text-xs text-slate-500">{u.email}</p></div>
                       </div>
-                      <div className="text-right"><Badge className={`border-0 ${rc.bg} ${rc.color} text-xs`}>{rc.label}</Badge><p className="text-[10px] text-slate-500 mt-1">{u.createdAt ? timeAgo(u.createdAt) : ""}</p></div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <Badge className={`border-0 ${rc.bg} ${rc.color} text-xs`}>{rc.label}</Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge className={`border-0 text-[9px] ${approvalColor}`}>{u.approvalStatus === "approved" ? "Approved" : u.approvalStatus === "pending_review" ? "Pending" : u.approvalStatus || "—"}</Badge>
+                          <span className="text-[10px] text-slate-500">{u.createdAt ? timeAgo(u.createdAt) : ""}</span>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}

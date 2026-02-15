@@ -36,21 +36,30 @@ export default function UserManagement() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active": return <Badge className="bg-green-500/20 text-green-400 border-0"><CheckCircle className="w-3 h-3 mr-1" />Active</Badge>;
+      case "suspended": return <Badge className="bg-red-500/20 text-red-400 border-0"><XCircle className="w-3 h-3 mr-1" />Suspended</Badge>;
       case "inactive": return <Badge className="bg-red-500/20 text-red-400 border-0"><XCircle className="w-3 h-3 mr-1" />Inactive</Badge>;
-      case "pending": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Pending</Badge>;
+      case "pending": return <Badge className="bg-yellow-500/20 text-yellow-400 border-0">Pending Verification</Badge>;
       default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{status}</Badge>;
     }
   };
 
   const getRoleBadge = (role: string) => {
-    switch (role) {
-      case "admin": return <Badge className="bg-purple-500/20 text-purple-400 border-0"><Shield className="w-3 h-3 mr-1" />Admin</Badge>;
-      case "dispatcher": return <Badge className="bg-blue-500/20 text-blue-400 border-0">Dispatcher</Badge>;
-      case "driver": return <Badge className="bg-cyan-500/20 text-cyan-400 border-0">Driver</Badge>;
-      case "shipper": return <Badge className="bg-green-500/20 text-green-400 border-0">Shipper</Badge>;
-      case "catalyst": return <Badge className="bg-orange-500/20 text-orange-400 border-0">Catalyst</Badge>;
-      default: return <Badge className="bg-slate-500/20 text-slate-400 border-0">{role}</Badge>;
-    }
+    const r = role?.toLowerCase();
+    const map: Record<string, { cls: string; label: string }> = {
+      super_admin: { cls: "bg-yellow-500/20 text-yellow-400", label: "Super Admin" },
+      admin: { cls: "bg-purple-500/20 text-purple-400", label: "Admin" },
+      shipper: { cls: "bg-green-500/20 text-green-400", label: "Shipper" },
+      catalyst: { cls: "bg-orange-500/20 text-orange-400", label: "Catalyst" },
+      broker: { cls: "bg-emerald-500/20 text-emerald-400", label: "Broker" },
+      driver: { cls: "bg-cyan-500/20 text-cyan-400", label: "Driver" },
+      dispatch: { cls: "bg-blue-500/20 text-blue-400", label: "Dispatch" },
+      escort: { cls: "bg-pink-500/20 text-pink-400", label: "Escort" },
+      terminal_manager: { cls: "bg-amber-500/20 text-amber-400", label: "Terminal Mgr" },
+      compliance_officer: { cls: "bg-teal-500/20 text-teal-400", label: "Compliance" },
+      safety_manager: { cls: "bg-red-500/20 text-red-400", label: "Safety Mgr" },
+    };
+    const m = map[r] || { cls: "bg-slate-500/20 text-slate-400", label: role };
+    return <Badge className={`${m.cls} border-0`}>{r === "admin" || r === "super_admin" ? <Shield className="w-3 h-3 mr-1" /> : null}{m.label}</Badge>;
   };
 
   return (
@@ -109,11 +118,17 @@ export default function UserManagement() {
           <SelectTrigger className="w-[150px] bg-slate-800/50 border-slate-700/50 rounded-lg"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Roles</SelectItem>
+            <SelectItem value="super_admin">Super Admin</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
-            <SelectItem value="dispatcher">Dispatcher</SelectItem>
-            <SelectItem value="driver">Driver</SelectItem>
             <SelectItem value="shipper">Shipper</SelectItem>
             <SelectItem value="catalyst">Catalyst</SelectItem>
+            <SelectItem value="broker">Broker</SelectItem>
+            <SelectItem value="driver">Driver</SelectItem>
+            <SelectItem value="dispatch">Dispatch</SelectItem>
+            <SelectItem value="escort">Escort</SelectItem>
+            <SelectItem value="terminal_manager">Terminal Manager</SelectItem>
+            <SelectItem value="compliance_officer">Compliance Officer</SelectItem>
+            <SelectItem value="safety_manager">Safety Manager</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -143,7 +158,7 @@ export default function UserManagement() {
                       </div>
                       <div className="flex items-center gap-4 text-xs text-slate-500">
                         <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{user.email}</span>
-                        <span>Last login: {user.lastLogin}</span>
+                        <span>Last login: {user.lastLogin || "Never"}</span>
                       </div>
                     </div>
                   </div>

@@ -124,7 +124,31 @@ export const adminRouter = router({
   toggleUserStatus: auditedAdminProcedure
     .input(z.object({ userId: z.string().optional(), status: z.string().optional(), id: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, userId: input.userId, newStatus: input.status };
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const targetId = parseInt(input.userId || input.id || "0");
+      if (!targetId) throw new Error("User ID required");
+
+      // Get current status
+      const [user] = await db.select({ isActive: users.isActive }).from(users).where(eq(users.id, targetId)).limit(1);
+      if (!user) throw new Error("User not found");
+
+      const newActive = !user.isActive;
+      await db.update(users).set({ isActive: newActive }).where(eq(users.id, targetId));
+
+      // Log the action
+      try {
+        await db.insert(auditLogs).values({
+          userId: targetId,
+          action: newActive ? "user_activated" : "user_deactivated",
+          entityType: "user",
+          entityId: targetId,
+          changes: JSON.stringify({ isActive: newActive }),
+        });
+      } catch {}
+
+      return { success: true, userId: String(targetId), newStatus: newActive ? "active" : "suspended" };
     }),
 
   /**
@@ -579,6 +603,7 @@ export const adminRouter = router({
         const recentUsers = await db.select({
           id: users.id, name: users.name, email: users.email,
           role: users.role, createdAt: users.createdAt, isActive: users.isActive,
+          profilePicture: users.profilePicture, metadata: users.metadata,
         }).from(users).orderBy(desc(users.createdAt)).limit(10);
 
         // Load counts
@@ -605,7 +630,13 @@ export const adminRouter = router({
             pending: pendingUsers?.count || 0,
             suspended: suspendedUsers?.count || 0,
           },
-          companies: { total: totalCompanies?.count || 0, catalysts: 0, shippers: 0, brokers: 0, other: 0 },
+          companies: {
+            total: totalCompanies?.count || 0,
+            catalysts: roleBreakdown.find(r => r.role === 'CATALYST')?.count || 0,
+            shippers: roleBreakdown.find(r => r.role === 'SHIPPER')?.count || 0,
+            brokers: roleBreakdown.find(r => r.role === 'BROKER')?.count || 0,
+            other: (totalCompanies?.count || 0) - (roleBreakdown.find(r => r.role === 'CATALYST')?.count || 0) - (roleBreakdown.find(r => r.role === 'SHIPPER')?.count || 0) - (roleBreakdown.find(r => r.role === 'BROKER')?.count || 0),
+          },
           loads: { active: activeLoads, completedToday: 0, totalThisMonth: totalLoadsThisMonth },
           revenue: { gmvToday: 0, gmvThisMonth: 0, platformFeesThisMonth: 0 },
           pendingVerifications: pendingUsers?.count || 0,
@@ -613,14 +644,20 @@ export const adminRouter = router({
           openTickets: 0,
           systemHealth: "healthy",
           roleBreakdown,
-          recentUsers: recentUsers.map(u => ({
-            id: String(u.id),
-            name: u.name || 'Unknown',
-            email: u.email || '',
-            role: u.role || 'UNKNOWN',
-            createdAt: u.createdAt?.toISOString() || '',
-            isActive: u.isActive,
-          })),
+          recentUsers: recentUsers.map(u => {
+            let approvalStatus = "unknown";
+            try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch {}
+            return {
+              id: String(u.id),
+              name: u.name || 'Unknown',
+              email: u.email || '',
+              role: u.role || 'UNKNOWN',
+              createdAt: u.createdAt?.toISOString() || '',
+              isActive: u.isActive,
+              profilePicture: u.profilePicture || null,
+              approvalStatus,
+            };
+          }),
         };
       } catch (error) {
         console.error('[Admin] getDashboardSummary error:', error);
@@ -883,9 +920,76 @@ export const adminRouter = router({
   createApiKey: auditedAdminProcedure.input(z.object({ name: z.string(), permissions: z.array(z.string()).optional() })).mutation(async ({ input }) => ({ success: true, key: "pk_live_abc123", name: input.name })),
   revokeApiKey: auditedAdminProcedure.input(z.object({ keyId: z.string() })).mutation(async ({ input }) => ({ success: true, keyId: input.keyId })),
 
-  // Audit logs
-  getAuditLogs: auditedAdminProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => []),
-  getAuditStats: auditedAdminProcedure.query(async () => ({ totalLogs: 0, todayLogs: 0, uniqueUsers: 0, topActions: [], total: 0, today: 0, criticalActions: 0 })),
+  // Audit logs — real data from audit_logs table
+  getAuditLogs: auditedAdminProcedure.input(z.object({ userId: z.string().optional(), action: z.string().optional(), limit: z.number().optional(), search: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const limit = input?.limit || 100;
+      const rows = await db.select({
+        id: auditLogs.id,
+        userId: auditLogs.userId,
+        action: auditLogs.action,
+        entityType: auditLogs.entityType,
+        entityId: auditLogs.entityId,
+        changes: auditLogs.changes,
+        ipAddress: auditLogs.ipAddress,
+        createdAt: auditLogs.createdAt,
+      }).from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
+
+      // Batch resolve user names
+      const userIds = Array.from(new Set(rows.map(r => r.userId).filter(Boolean))) as number[];
+      const userMap: Record<number, string> = {};
+      if (userIds.length > 0) {
+        const userRows = await db.select({ id: users.id, name: users.name, email: users.email }).from(users).where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+        for (const u of userRows) userMap[u.id] = u.name || u.email || "Unknown";
+      }
+
+      let results = rows.map(r => ({
+        id: String(r.id),
+        action: r.action,
+        description: `${r.action.replace(/_/g, " ")} on ${r.entityType} #${r.entityId || ""}`,
+        userName: r.userId ? (userMap[r.userId] || `User #${r.userId}`) : "System",
+        resource: r.entityType,
+        ipAddress: r.ipAddress || "",
+        timestamp: r.createdAt?.toISOString() || "",
+        changes: r.changes,
+      }));
+
+      if (input?.action && input.action !== "all") {
+        results = results.filter(r => r.action.includes(input.action!));
+      }
+      if (input?.search) {
+        const q = input.search.toLowerCase();
+        results = results.filter(r => r.description.toLowerCase().includes(q) || r.userName.toLowerCase().includes(q) || r.action.toLowerCase().includes(q));
+      }
+      return results;
+    } catch (error) {
+      console.error('[Admin] getAuditLogs error:', error);
+      return [];
+    }
+  }),
+  getAuditStats: auditedAdminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { totalLogs: 0, todayLogs: 0, uniqueUsers: 0, topActions: [], total: 0, today: 0, criticalActions: 0 };
+    try {
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs);
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+      const [today] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(gte(auditLogs.createdAt, todayStart));
+      const [uniqueUsers] = await db.select({ count: sql<number>`COUNT(DISTINCT userId)` }).from(auditLogs);
+      const [critical] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(sql`${auditLogs.action} IN ('user_deactivated','user_suspended','delete')`);
+      return {
+        total: total?.count || 0, totalLogs: total?.count || 0,
+        today: today?.count || 0, todayLogs: today?.count || 0,
+        uniqueUsers: uniqueUsers?.count || 0,
+        criticalActions: critical?.count || 0,
+        topActions: [],
+      };
+    } catch (error) {
+      console.error('[Admin] getAuditStats error:', error);
+      return { totalLogs: 0, todayLogs: 0, uniqueUsers: 0, topActions: [], total: 0, today: 0, criticalActions: 0 };
+    }
+  }),
 
   // Broadcasts
   getBroadcasts: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
