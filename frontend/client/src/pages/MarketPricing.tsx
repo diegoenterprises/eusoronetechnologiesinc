@@ -159,7 +159,7 @@ export default function MarketPricing() {
 
                 {/* Universal Search Results Dropdown */}
                 {showSearchResults && debouncedSearch.length >= 2 && (
-                  <div className={`absolute right-0 top-full mt-2 w-96 max-h-[420px] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${isLight ? "bg-white border-slate-200 shadow-slate-200/50" : "bg-[#12121a] border-white/[0.08] shadow-black/40"}`}>
+                  <div className={`absolute right-0 top-full mt-2 w-96 max-h-[60vh] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${isLight ? "bg-white border-slate-200 shadow-slate-200/50" : "bg-[#12121a] border-white/[0.08] shadow-black/40"}`}>
                     <div className={`sticky top-0 px-4 py-2.5 border-b flex items-center justify-between ${isLight ? "bg-white/95 border-slate-100 backdrop-blur" : "bg-[#12121a]/95 border-white/[0.04] backdrop-blur"}`}>
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>
                         {searchQuery?.isLoading ? "Searching..." : `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`}

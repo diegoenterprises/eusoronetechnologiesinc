@@ -16,7 +16,7 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
-import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, fetchCommodityPriceAPI, fetchCPAPIHistorical, fetchAllCPAPIQuotes, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
+import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, searchYahooFinance, fetchCommodityPriceAPI, fetchCPAPIHistorical, fetchAllCPAPIQuotes, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
 
 // Cached live snapshot (shared across endpoints)
 let _liveSnapshot: MarketSnapshot | null = null;
@@ -770,10 +770,28 @@ export const marketPricingRouter = router({
           }));
       } catch { /* CommodityPriceAPI search failed, use local only */ }
 
+      // Also search Yahoo Finance for stocks, ETFs, and any other tickers
+      let yahooMatches: typeof apiMatches = [];
+      try {
+        const yResults = await searchYahooFinance(input.query);
+        yahooMatches = yResults
+          .filter(r => !localMatches.find(l => l.symbol === r.symbol) && !apiMatches.find(a => a.symbol === r.symbol))
+          .map(r => ({
+            symbol: r.symbol,
+            name: r.name,
+            price: r.price,
+            category: r.category,
+            unit: "USD",
+            changePercent: r.changePercent,
+            source: "api" as const,
+          }));
+      } catch { /* Yahoo Finance search failed */ }
+
+      const allApi = [...apiMatches, ...yahooMatches];
       return {
-        results: [...localMatches, ...apiMatches].slice(0, 25),
+        results: [...localMatches, ...allApi].slice(0, 25),
         totalLocal: localMatches.length,
-        totalApi: apiMatches.length,
+        totalApi: allApi.length,
       };
     }),
 
@@ -801,34 +819,46 @@ export const marketPricingRouter = router({
         } catch { /* ignore */ }
       }
 
+      // Direct Yahoo Finance lookup for any ticker (stocks, ETFs, etc.)
+      let directYahoo: { price: number; change: number; changePercent: number; high: number; low: number; open: number; prevClose: number; volume: number; name: string; category: string } | null = null;
+      if (!seed && !directPrice && !cpapi && !yq) {
+        try {
+          const yResults = await searchYahooFinance(sym);
+          const match = yResults.find(r => r.symbol === sym);
+          if (match) {
+            directYahoo = { price: match.price, change: match.change, changePercent: match.changePercent, high: 0, low: 0, open: 0, prevClose: 0, volume: 0, name: match.name, category: match.category };
+          }
+        } catch { /* ignore */ }
+      }
+
       // Cross-reference: pick best price
-      const bestPrice = directPrice || cpapi || (yq ? yq.price : null) || (seed ? seed.price : null);
+      const bestPrice = directPrice || cpapi || (yq ? yq.price : null) || (directYahoo ? directYahoo.price : null) || (seed ? seed.price : null);
 
       return {
         symbol: sym,
-        name: seed?.name || sym,
+        name: directYahoo?.name || seed?.name || sym,
         price: bestPrice,
-        change: yq?.change || seed?.change || 0,
-        changePercent: yq?.changePercent || seed?.changePercent || 0,
+        change: yq?.change || directYahoo?.change || seed?.change || 0,
+        changePercent: yq?.changePercent || directYahoo?.changePercent || seed?.changePercent || 0,
         high: yq?.high || seed?.high || 0,
         low: yq?.low || seed?.low || 0,
         open: yq?.open || seed?.open || 0,
         previousClose: yq?.prevClose || seed?.previousClose || 0,
         volume: yq ? (yq.volume > 1000 ? `${Math.round(yq.volume / 1000)}K` : String(yq.volume)) : seed?.volume || "N/A",
-        category: seed?.category || "External",
+        category: directYahoo?.category || seed?.category || "External",
         unit: seed?.unit || "USD",
         sparkline: seed?.sparkline || [],
-        intraday: seed?.intraday || "FLAT",
-        daily: seed?.daily || "FLAT",
+        intraday: seed?.intraday || (directYahoo && directYahoo.changePercent > 0.5 ? "BULL" : directYahoo && directYahoo.changePercent < -0.5 ? "BEAR" : "FLAT"),
+        daily: seed?.daily || (directYahoo && directYahoo.changePercent > 0 ? "UP" : directYahoo && directYahoo.changePercent < 0 ? "DOWN" : "FLAT"),
         weekly: seed?.weekly || "FLAT",
         monthly: seed?.monthly || "FLAT",
         sources: {
           commodityPriceAPI: directPrice || cpapi || null,
-          yahooFinance: yq ? yq.price : null,
+          yahooFinance: yq ? yq.price : directYahoo ? directYahoo.price : null,
           fredEia: snap?.crudeOilWTI && sym === "CL" ? snap.crudeOilWTI.price : snap?.naturalGas && sym === "NG" ? snap.naturalGas.price : null,
           seed: seed?.price || null,
         },
-        bestSource: directPrice || cpapi ? "CommodityPriceAPI" : yq ? "Yahoo Finance" : "Seed Data",
+        bestSource: directPrice || cpapi ? "CommodityPriceAPI" : yq || directYahoo ? "Yahoo Finance" : "Seed Data",
       };
     }),
 
