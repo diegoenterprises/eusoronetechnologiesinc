@@ -79,6 +79,7 @@ import {
   Percent,
   Banknote,
   UserCheck,
+  Radio,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -148,6 +149,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Scale: <Scale size={20} />,
   Banknote: <Banknote size={20} />,
   UserCheck: <UserCheck size={20} />,
+  Radio: <Radio size={20} />,
 };
 
 // --- Notification Bell Component ---

@@ -118,7 +118,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Company details"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -192,13 +192,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Accepted loads"
     },
     { 
-      icon: "TrendingUp", 
-      label: "In Transit", 
-      path: "/loads/transit", 
-      badge: 0,
-      description: "Currently moving loads"
-    },
-    { 
       icon: "Truck", 
       label: "Fleet", 
       path: "/fleet", 
@@ -241,7 +234,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Wallet, earnings & payments"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -364,7 +357,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Account balance"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -431,13 +424,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Active job details"
     },
     { 
-      icon: "MapPin", 
-      label: "Navigation", 
-      path: "/navigation", 
-      badge: 0,
-      description: "GPS and routing"
-    },
-    { 
       icon: "TrendingUp", 
       label: "Earnings", 
       path: "/earnings", 
@@ -450,13 +436,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/vehicle", 
       badge: 0,
       description: "Vehicle information"
-    },
-    { 
-      icon: "AlertCircle", 
-      label: "Diagnostics", 
-      path: "/diagnostics", 
-      badge: 0,
-      description: "Vehicle health"
     },
     { 
       icon: "FileText", 
@@ -515,7 +494,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Earned rewards and XP"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -582,13 +561,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "AI-matched opportunities"
     },
     { 
-      icon: "TrendingUp", 
-      label: "Opportunities", 
-      path: "/opportunities", 
-      badge: 0,
-      description: "Recommended loads"
-    },
-    { 
       icon: "BarChart3", 
       label: "Performance", 
       path: "/performance", 
@@ -638,7 +610,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Account balance"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -747,7 +719,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Account balance"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -910,7 +882,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -1012,7 +984,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Preferences"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -1114,7 +1086,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Preferences"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -1237,7 +1209,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Platform settings"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
@@ -1360,7 +1332,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "System settings"
     },
     { 
-      icon: "MessageSquare", 
+      icon: "Radio", 
       label: "Company Channels", 
       path: "/company-channels", 
       badge: 0,
