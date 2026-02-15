@@ -1283,25 +1283,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "System-wide fleet tracking"
     },
     { 
-      icon: "Zap", 
-      label: "System Config", 
-      path: "/super-admin/config", 
-      badge: 0,
-      description: "System configuration"
-    },
-    { 
       icon: "Database", 
       label: "Database", 
       path: "/super-admin/database", 
       badge: 0,
       description: "Database management"
-    },
-    { 
-      icon: "Shield", 
-      label: "Security", 
-      path: "/super-admin/security", 
-      badge: 0,
-      description: "Security settings"
     },
     { 
       icon: "AlertTriangle", 

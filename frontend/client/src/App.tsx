@@ -439,9 +439,7 @@ function Router() {
       <Route path={"/super-admin/users"} component={guard(SUPR, <UserManagement />)} />
       <Route path={"/super-admin/companies"} component={guard(SUPR, <CompanyPage />)} />
       <Route path={"/super-admin/loads"} component={guard(SUPR, <MyLoadsPage />)} />
-      <Route path={"/super-admin/config"} component={guard(SUPR, <SettingsPage />)} />
       <Route path={"/super-admin/database"} component={guard(SUPR, <Analytics />)} />
-      <Route path={"/super-admin/security"} component={guard(SUPR, <SettingsPage />)} />
       <Route path={"/super-admin/logs"} component={guard(SUPR, <AuditLogs />)} />
       <Route path={"/super-admin/monitoring"} component={guard(SUPR, <Analytics />)} />
       <Route path={"/super-admin/settings"} component={guard(SUPR, <SettingsPage />)} />

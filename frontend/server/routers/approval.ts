@@ -421,10 +421,15 @@ export const approvalRouter = router({
           console.log(`[ApprovalFix] Renamed role CARRIER → CATALYST for user ${u.email}`);
         }
 
-        // Fix legacy carrier email → catalyst email
+        // Fix legacy carrier email → catalyst email (only if target doesn't already exist)
         if (u.email === "carrier@eusotrip.com") {
-          updates.email = "catalyst@eusotrip.com";
-          console.log(`[ApprovalFix] Renamed email carrier@eusotrip.com → catalyst@eusotrip.com`);
+          const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, "catalyst@eusotrip.com")).limit(1);
+          if (!existing) {
+            updates.email = "catalyst@eusotrip.com";
+            console.log(`[ApprovalFix] Renamed email carrier@eusotrip.com → catalyst@eusotrip.com`);
+          } else {
+            console.log(`[ApprovalFix] Skipped email rename — catalyst@eusotrip.com already exists`);
+          }
         }
 
         if (Object.keys(updates).length > 0) {
