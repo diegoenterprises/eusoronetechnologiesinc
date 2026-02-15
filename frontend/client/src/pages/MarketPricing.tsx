@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "@/contexts/ThemeContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -6,6 +6,7 @@ import {
   TrendingUp, TrendingDown, Flame, BarChart3, RefreshCw,
   Search, Filter, Fuel, Wheat, Gem, Truck, ChevronDown,
   ArrowUpRight, ArrowDownRight, Minus, Activity, MapPin,
+  X, ExternalLink, Loader2, Globe, Database, Zap,
 } from "lucide-react";
 import HotZones from "./HotZones";
 
@@ -67,6 +68,25 @@ export default function MarketPricing() {
   const [activeCategory, setActiveCategory] = useState("All Markets");
   const [search, setSearch] = useState("");
   const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [selectedQuoteSymbol, setSelectedQuoteSymbol] = useState<string | null>(null);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  // Debounce search input for API calls (300ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearchResults(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const { data, isLoading, refetch } = trpc.marketPricing.getCommodities.useQuery(
     { category: activeCategory !== "All Markets" ? activeCategory : undefined, search: search || undefined },
@@ -74,6 +94,21 @@ export default function MarketPricing() {
   );
 
   const { data: intel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { refetchInterval: 60000 });
+
+  // Universal ticker search — calls searchCommodity which queries CommodityPriceAPI + local
+  const searchQuery = (trpc as any).marketPricing?.searchCommodity?.useQuery?.(
+    { query: debouncedSearch },
+    { enabled: debouncedSearch.length >= 2, staleTime: 30000, retry: 1 }
+  );
+  const searchResults = searchQuery?.data?.results || [];
+  const searchTotalApi = searchQuery?.data?.totalApi || 0;
+
+  // Quote detail for selected symbol
+  const quoteQuery = (trpc as any).marketPricing?.getQuote?.useQuery?.(
+    { symbol: selectedQuoteSymbol || "" },
+    { enabled: !!selectedQuoteSymbol, staleTime: 15000 }
+  );
+  const quoteData = quoteQuery?.data;
 
   const commodities = data?.commodities || [];
   const breadth = data?.marketBreadth;
@@ -104,16 +139,68 @@ export default function MarketPricing() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <div className={`relative ${isLight ? "" : ""}`}>
+              <div ref={searchRef} className="relative">
                 <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 ${isLight ? "text-slate-400" : "text-white/30"}`} />
                 <input
-                  type="text" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search..."
-                  className={`pl-9 pr-3 py-2 rounded-xl text-xs w-48 transition-all focus:w-64 outline-none ${isLight
+                  type="text" value={search}
+                  onChange={e => { setSearch(e.target.value); setShowSearchResults(true); }}
+                  onFocus={() => { if (search.length >= 2) setShowSearchResults(true); }}
+                  placeholder="Search any ticker, stock, or commodity..."
+                  className={`pl-9 pr-8 py-2 rounded-xl text-xs w-56 transition-all focus:w-80 outline-none ${isLight
                     ? "bg-slate-100 text-slate-700 placeholder:text-slate-400 focus:bg-white focus:ring-1 focus:ring-[#1473FF]/30"
                     : "bg-white/[0.06] text-white/80 placeholder:text-white/30 focus:bg-white/[0.1] focus:ring-1 focus:ring-[#1473FF]/30"
                   }`}
                 />
+                {search && (
+                  <button onClick={() => { setSearch(""); setShowSearchResults(false); setSelectedQuoteSymbol(null); }} className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                    <X className={`w-3 h-3 ${isLight ? "text-slate-400 hover:text-slate-600" : "text-white/30 hover:text-white/60"}`} />
+                  </button>
+                )}
+
+                {/* Universal Search Results Dropdown */}
+                {showSearchResults && debouncedSearch.length >= 2 && (
+                  <div className={`absolute right-0 top-full mt-2 w-96 max-h-[420px] overflow-y-auto rounded-2xl border shadow-2xl z-50 ${isLight ? "bg-white border-slate-200 shadow-slate-200/50" : "bg-[#12121a] border-white/[0.08] shadow-black/40"}`}>
+                    <div className={`sticky top-0 px-4 py-2.5 border-b flex items-center justify-between ${isLight ? "bg-white/95 border-slate-100 backdrop-blur" : "bg-[#12121a]/95 border-white/[0.04] backdrop-blur"}`}>
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>
+                        {searchQuery?.isLoading ? "Searching..." : `${searchResults.length} result${searchResults.length !== 1 ? "s" : ""}`}
+                        {searchTotalApi > 0 && <span className="text-[#1473FF]"> · {searchTotalApi} from API</span>}
+                      </span>
+                      {searchQuery?.isLoading && <Loader2 className="w-3 h-3 animate-spin text-[#1473FF]" />}
+                    </div>
+                    {searchResults.length === 0 && !searchQuery?.isLoading ? (
+                      <div className="py-8 text-center">
+                        <Search className={`w-6 h-6 mx-auto mb-2 ${isLight ? "text-slate-300" : "text-white/15"}`} />
+                        <p className={`text-xs ${isLight ? "text-slate-400" : "text-white/30"}`}>No results for "{debouncedSearch}"</p>
+                        <p className={`text-[10px] mt-1 ${isLight ? "text-slate-300" : "text-white/20"}`}>Try a ticker symbol like AAPL, TSLA, GC, CL</p>
+                      </div>
+                    ) : (
+                      searchResults.map((r: any, idx: number) => (
+                        <button key={`${r.symbol}-${idx}`}
+                          onClick={() => { setSelectedQuoteSymbol(r.symbol); setShowSearchResults(false); }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all ${isLight ? "hover:bg-slate-50" : "hover:bg-white/[0.04]"} ${idx > 0 ? (isLight ? "border-t border-slate-50" : "border-t border-white/[0.03]") : ""}`}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${r.source === "api" ? "bg-[#1473FF]/10" : isLight ? "bg-slate-100" : "bg-white/[0.06]"}`}>
+                            {r.source === "api" ? <Globe className="w-3.5 h-3.5 text-[#1473FF]" /> : <Database className="w-3.5 h-3.5 text-emerald-500" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs font-semibold ${isLight ? "text-slate-800" : "text-white/90"}`}>{r.name}</span>
+                              {r.source === "api" && <span className="text-[8px] font-bold px-1.5 py-0.5 rounded bg-[#1473FF]/10 text-[#1473FF] uppercase">API</span>}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={`text-[10px] font-mono ${isLight ? "text-slate-400" : "text-white/30"}`}>{r.symbol}</span>
+                              <span className={`text-[10px] ${isLight ? "text-slate-300" : "text-white/20"}`}>·</span>
+                              <span className={`text-[10px] ${isLight ? "text-slate-300" : "text-white/20"}`}>{r.category}</span>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            {r.price > 0 && <span className={`text-xs font-bold tabular-nums ${isLight ? "text-slate-800" : "text-white/80"}`}>${r.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: r.price >= 100 ? 2 : 4 })}</span>}
+                            {r.changePercent !== 0 && <div className={`text-[10px] font-semibold tabular-nums ${r.changePercent > 0 ? "text-emerald-500" : "text-red-400"}`}>{r.changePercent > 0 ? "+" : ""}{Number(r.changePercent).toFixed(2)}%</div>}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
               <button onClick={() => refetch()}
                 className={`p-2 rounded-xl transition-all ${isLight ? "bg-slate-100 text-slate-500 hover:bg-slate-200" : "bg-white/[0.06] text-white/40 hover:bg-white/[0.1]"}`}>
@@ -178,6 +265,70 @@ export default function MarketPricing() {
           </div>}
         </div>
       </div>
+
+      {/* ── SELECTED QUOTE DETAIL CARD ── */}
+      {selectedQuoteSymbol && quoteData && (
+        <div className="max-w-[1600px] mx-auto px-6 pt-4">
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+            className={`rounded-2xl border p-5 relative ${isLight ? "bg-white border-[#1473FF]/20 shadow-lg shadow-[#1473FF]/5" : "bg-white/[0.04] border-[#1473FF]/30 shadow-lg shadow-[#1473FF]/5"}`}>
+            <button onClick={() => setSelectedQuoteSymbol(null)} className={`absolute top-4 right-4 p-1.5 rounded-lg transition-colors ${isLight ? "hover:bg-slate-100" : "hover:bg-white/[0.06]"}`}>
+              <X className={`w-4 h-4 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+            </button>
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#1473FF] to-[#BE01FF] flex items-center justify-center shadow-lg shadow-[#1473FF]/20">
+                <Zap className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-3">
+                  <h2 className={`text-lg font-bold ${isLight ? "text-slate-900" : "text-white"}`}>{quoteData.name}</h2>
+                  <span className={`text-xs font-mono px-2 py-0.5 rounded-lg ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>{quoteData.symbol}</span>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${quoteData.category === "External" ? "bg-[#1473FF]/10 text-[#1473FF]" : isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/40"}`}>{quoteData.category}</span>
+                </div>
+                <div className="flex items-end gap-4 mt-2">
+                  <span className={`text-3xl font-bold tabular-nums ${isLight ? "text-slate-900" : "text-white"}`}>
+                    {quoteData.price != null ? `$${Number(quoteData.price).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: quoteData.price >= 100 ? 2 : 4 })}` : "N/A"}
+                  </span>
+                  <span className={`text-[10px] mb-1 ${isLight ? "text-slate-400" : "text-white/30"}`}>{quoteData.unit}</span>
+                  {quoteData.changePercent !== 0 && (
+                    <span className={`text-sm font-bold tabular-nums mb-0.5 ${quoteData.changePercent > 0 ? "text-emerald-500" : "text-red-400"}`}>
+                      {quoteData.changePercent > 0 ? "+" : ""}{Number(quoteData.changePercent).toFixed(2)}%
+                    </span>
+                  )}
+                </div>
+                {/* Detail grid */}
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-4">
+                  {[
+                    { label: "Open", value: quoteData.open },
+                    { label: "High", value: quoteData.high },
+                    { label: "Low", value: quoteData.low },
+                    { label: "Prev Close", value: quoteData.previousClose },
+                    { label: "Volume", value: quoteData.volume },
+                    { label: "Change", value: quoteData.change },
+                  ].map(d => (
+                    <div key={d.label}>
+                      <p className={`text-[9px] uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>{d.label}</p>
+                      <p className={`text-xs font-semibold tabular-nums mt-0.5 ${isLight ? "text-slate-700" : "text-white/70"}`}>
+                        {typeof d.value === "number" ? (d.value >= 100 ? d.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : Number(d.value).toFixed(4)) : d.value || "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* Source badges */}
+                {quoteData.sources && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className={`text-[9px] uppercase tracking-wider font-medium ${isLight ? "text-slate-400" : "text-white/25"}`}>Sources:</span>
+                    {quoteData.sources.commodityPriceAPI && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-[#1473FF]/10 text-[#1473FF]">CommodityPriceAPI ${Number(quoteData.sources.commodityPriceAPI).toFixed(2)}</span>}
+                    {quoteData.sources.yahooFinance && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-purple-500/10 text-purple-400">Yahoo ${Number(quoteData.sources.yahooFinance).toFixed(2)}</span>}
+                    {quoteData.sources.fredEia && <span className="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400">FRED/EIA ${Number(quoteData.sources.fredEia).toFixed(2)}</span>}
+                    {quoteData.sources.seed && <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-lg ${isLight ? "bg-slate-100 text-slate-500" : "bg-white/[0.06] text-white/30"}`}>Seed ${Number(quoteData.sources.seed).toFixed(2)}</span>}
+                    <span className={`text-[10px] ml-auto ${isLight ? "text-slate-400" : "text-white/20"}`}>Best: {quoteData.bestSource}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* ── HOT ZONES VIEW ── */}
       {activeView === "hotzones" && <HotZones />}

@@ -172,6 +172,7 @@ import RatingsReviews from "./pages/RatingsReviews";
 import ClaimsPage from "./pages/Claims";
 import MarketPricing from "./pages/MarketPricing";
 import AccountStatus from "./pages/AccountStatus";
+import DatabaseHealth from "./pages/DatabaseHealth";
 import OperatingAuthority from "./pages/OperatingAuthority";
 import AdminApprovalQueue from "./pages/AdminApprovalQueue";
 import CatalystCompliance from "./pages/CatalystCompliance";
@@ -441,7 +442,7 @@ function Router() {
       <Route path={"/super-admin/users"} component={guard(SUPR, <UserManagement />)} />
       <Route path={"/super-admin/companies"} component={guard(SUPR, <CompanyPage />)} />
       <Route path={"/super-admin/loads"} component={guard(SUPR, <MyLoadsPage />)} />
-      <Route path={"/super-admin/database"} component={guard(SUPR, <Analytics />)} />
+      <Route path={"/super-admin/database"} component={guard(SUPR, <DatabaseHealth />)} />
       <Route path={"/super-admin/logs"} component={guard(SUPR, <AuditLogs />)} />
       <Route path={"/super-admin/monitoring"} component={guard(SUPR, <Analytics />)} />
       <Route path={"/super-admin/settings"} component={guard(SUPR, <SettingsPage />)} />
