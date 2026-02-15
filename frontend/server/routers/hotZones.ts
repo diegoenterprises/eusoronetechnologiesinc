@@ -276,20 +276,57 @@ export const hotZonesRouter = router({
       };
     }),
 
-  // Surge history (simulated trend data per zone)
+  // Surge history — real DB data bucketed by hour, falls back to flat baseline
   getSurgeHistory: protectedProcedure
     .input(z.object({ zoneId: z.string(), hours: z.number().default(24) }))
-    .query(({ input }) => {
+    .query(async ({ input }) => {
       const zone = HOT_ZONES.find(z => z.id === input.zoneId);
       if (!zone) return { history: [], zoneId: input.zoneId };
-      const points = [];
+
+      // Try to pull real hourly data from DB
+      const points: Array<{ timestamp: string; surge: number; ratio: number; rate: number }> = [];
+      try {
+        const db = await getDb();
+        if (db) {
+          const since = new Date(Date.now() - input.hours * 3600000).toISOString();
+          const rows = await db.execute(
+            sql`SELECT
+              DATE_FORMAT(createdAt, '%Y-%m-%d %H:00:00') as hr,
+              COUNT(*) as loads,
+              COUNT(DISTINCT driverId) as trucks,
+              AVG(rate / NULLIF(distance, 0)) as avgRpm
+            FROM loads
+            WHERE JSON_EXTRACT(pickupLocation, '$.state') = ${zone.state}
+              AND createdAt >= ${since}
+              AND deletedAt IS NULL
+            GROUP BY hr ORDER BY hr`
+          );
+          const hourMap: Record<string, { loads: number; trucks: number; rate: number }> = {};
+          for (const r of (rows as any[]) || []) {
+            if (r.hr) hourMap[r.hr] = { loads: Number(r.loads), trucks: Math.max(Number(r.trucks), 1), rate: Number(r.avgRpm) || zone.avgRate };
+          }
+          // Build full timeline with DB data where available, flat baseline otherwise
+          const now = Date.now();
+          for (let i = input.hours; i >= 0; i--) {
+            const t = now - i * 3600000;
+            const hrKey = new Date(t).toISOString().slice(0, 13).replace("T", " ") + ":00:00";
+            const dbRow = hourMap[hrKey];
+            const loads = dbRow?.loads ?? zone.loadCount;
+            const trucks = dbRow?.trucks ?? zone.truckCount;
+            const rate = dbRow?.rate ?? zone.avgRate;
+            const ratio = trucks > 0 ? +(loads / trucks).toFixed(2) : zone.loadToTruckRatio;
+            const surge = +(ratio > 2.5 ? 1 + (ratio - 1) * 0.2 : 1 + (ratio - 1) * 0.1).toFixed(2);
+            points.push({ timestamp: new Date(t).toISOString(), surge, ratio, rate: +rate.toFixed(2) });
+          }
+          return { history: points, zoneId: input.zoneId, zoneName: zone.name };
+        }
+      } catch { /* DB not ready, use baseline */ }
+
+      // Fallback: flat baseline (no fake variation)
       const now = Date.now();
       for (let i = input.hours; i >= 0; i--) {
         const t = now - i * 3600000;
-        const seed = (t % 86400000) / 86400000;
-        const surge = +(zone.surgeMultiplier + Math.sin(seed * Math.PI * 2) * 0.15).toFixed(2);
-        const ratio = +(zone.loadToTruckRatio + Math.sin(seed * Math.PI * 2 + 1) * 0.3).toFixed(2);
-        points.push({ timestamp: new Date(t).toISOString(), surge, ratio, rate: +(zone.avgRate + Math.sin(seed * Math.PI * 2) * 0.12).toFixed(2) });
+        points.push({ timestamp: new Date(t).toISOString(), surge: zone.surgeMultiplier, ratio: zone.loadToTruckRatio, rate: zone.avgRate });
       }
       return { history: points, zoneId: input.zoneId, zoneName: zone.name };
     }),

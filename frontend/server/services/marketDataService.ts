@@ -503,28 +503,58 @@ export async function searchCommodityPriceAPI(query: string): Promise<Array<{ sy
   }
 }
 
-// Search any ticker (stocks, ETFs, commodities) via Yahoo Finance quote endpoint
+// Search any ticker (stocks, ETFs, commodities) via Yahoo Finance autosuggest + chart endpoints
 export async function searchYahooFinance(query: string): Promise<Array<{ symbol: string; name: string; price: number; change: number; changePercent: number; category: string }>> {
   try {
-    const sym = query.toUpperCase().trim();
-    const url = `https://query2.finance.yahoo.com/v6/finance/quote?symbols=${encodeURIComponent(sym)}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,shortName,quoteType`;
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
+    const q = query.trim();
+    if (!q) return [];
+
+    // Step 1: Autosuggest — discover matching symbols (less restricted endpoint)
+    const searchUrl = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(q)}&quotesCount=8&newsCount=0&enableFuzzyQuery=false&quotesQueryId=tss_match_phrase_query`;
+    const searchRes = await fetch(searchUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)" },
       signal: AbortSignal.timeout(8000),
     });
-    if (!res.ok) return [];
-    const json = await res.json();
-    const results = json.quoteResponse?.result || [];
-    return results
-      .filter((q: any) => q.regularMarketPrice > 0)
-      .map((q: any) => ({
-        symbol: q.symbol,
-        name: q.shortName || q.longName || q.symbol,
-        price: q.regularMarketPrice,
-        change: q.regularMarketChange || 0,
-        changePercent: q.regularMarketChangePercent || 0,
-        category: q.quoteType === "EQUITY" ? "Stock" : q.quoteType === "ETF" ? "ETF" : q.quoteType === "CRYPTOCURRENCY" ? "Crypto" : q.quoteType === "FUTURE" ? "Futures" : "External",
-      }));
+    if (!searchRes.ok) {
+      console.warn(`[MarketData] Yahoo autosuggest returned ${searchRes.status}`);
+      return [];
+    }
+    const searchJson = await searchRes.json();
+    const quotes = (searchJson.quotes || []).filter((q: any) => q.symbol && q.isYahooFinance !== false).slice(0, 6);
+    if (quotes.length === 0) return [];
+
+    // Step 2: Fetch prices via v8/chart endpoint for each symbol (more reliable than v6 quote)
+    const results: Array<{ symbol: string; name: string; price: number; change: number; changePercent: number; category: string }> = [];
+    const pricePromises = quotes.map(async (qt: any) => {
+      try {
+        const chartUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(qt.symbol)}?interval=1d&range=2d`;
+        const chartRes = await fetch(chartUrl, {
+          headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)" },
+          signal: AbortSignal.timeout(6000),
+        });
+        if (!chartRes.ok) return null;
+        const chartJson = await chartRes.json();
+        const meta = chartJson.chart?.result?.[0]?.meta;
+        if (!meta || !meta.regularMarketPrice) return null;
+        const price = meta.regularMarketPrice;
+        const prevClose = meta.chartPreviousClose || meta.previousClose || price;
+        const change = +(price - prevClose).toFixed(2);
+        const changePct = prevClose > 0 ? +((change / prevClose) * 100).toFixed(2) : 0;
+        const type = qt.quoteType || qt.typeDisp || "";
+        return {
+          symbol: qt.symbol,
+          name: qt.shortname || qt.longname || qt.symbol,
+          price,
+          change,
+          changePercent: changePct,
+          category: type === "EQUITY" ? "Stock" : type === "ETF" ? "ETF" : type === "CRYPTOCURRENCY" ? "Crypto" : type === "FUTURE" || type === "FUTURES" ? "Futures" : type === "INDEX" ? "Index" : "External",
+        };
+      } catch { return null; }
+    });
+
+    const settled = await Promise.all(pricePromises);
+    for (const r of settled) { if (r && r.price > 0) results.push(r); }
+    return results;
   } catch (err) {
     console.warn("[MarketData] Yahoo Finance search failed:", (err as Error).message);
     return [];
