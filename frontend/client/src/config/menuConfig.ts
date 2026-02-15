@@ -21,6 +21,7 @@ export interface MenuItem {
   badge?: number;
   description?: string; // Tooltip description
   requiresAuth?: boolean; // Default true
+  requiresApproval?: boolean; // If true, item is locked until account is approved
 }
 
 export type UserRole = 
@@ -1152,6 +1153,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "User management"
     },
     { 
+      icon: "UserCheck", 
+      label: "Approvals", 
+      path: "/admin/approvals", 
+      badge: 0,
+      description: "Review and approve new registrations"
+    },
+    { 
       icon: "Building2", 
       label: "Companies", 
       path: "/admin/companies", 
@@ -1266,6 +1274,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/super-admin/users", 
       badge: 0,
       description: "All users"
+    },
+    { 
+      icon: "UserCheck", 
+      label: "Approvals", 
+      path: "/admin/approvals", 
+      badge: 0,
+      description: "Review and approve new registrations"
     },
     { 
       icon: "Building2", 
@@ -1413,6 +1428,35 @@ export function getMenuForRole(role?: string | UserRole): MenuItem[] {
   
   const normalizedRole = String(role).toUpperCase() as UserRole;
   return menuConfigs[normalizedRole] || menuConfigs.default;
+}
+
+/**
+ * Paths that are accessible even when pending approval.
+ * Everything else gets tagged as requiresApproval.
+ */
+const ALWAYS_ACCESSIBLE = new Set([
+  "/", "/profile", "/settings", "/messages", "/news", "/support",
+  "/company-channels", "/the-haul", "/notifications", "/company",
+  "/leaderboard", "/rewards", "/missions",
+]);
+
+const ALWAYS_ACCESSIBLE_PREFIXES = ["/admin", "/super-admin", "/factoring"];
+
+/**
+ * Get menu items with approval gating flags applied
+ */
+export function getMenuForRoleWithApproval(role?: string | UserRole): MenuItem[] {
+  const items = getMenuForRole(role);
+  const normalizedRole = String(role || "").toUpperCase();
+  
+  // Admin/Super Admin bypass gating
+  if (normalizedRole === "ADMIN" || normalizedRole === "SUPER_ADMIN") return items;
+  
+  return items.map(item => {
+    const accessible = ALWAYS_ACCESSIBLE.has(item.path) ||
+      ALWAYS_ACCESSIBLE_PREFIXES.some(p => item.path.startsWith(p));
+    return { ...item, requiresApproval: !accessible };
+  });
 }
 
 /**

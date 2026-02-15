@@ -151,6 +151,7 @@ import { sidebarRouter } from "./routers/sidebar";
 import { encryptionRouter } from "./routers/encryption";
 import { commissionEngineRouter } from "./routers/commissionEngine";
 import { loadLifecycleRouter } from "./routers/loadLifecycle";
+import { approvalRouter } from "./routers/approval";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -159,7 +160,30 @@ export const appRouter = router({
   system: systemRouter,
 
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(async (opts) => {
+      if (!opts.ctx.user) return null;
+      // Enrich with metadata from DB for approval status
+      try {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db) {
+          const userId = Number((opts.ctx.user as any).id);
+          if (!isNaN(userId)) {
+            const [row] = await db
+              .select({ metadata: users.metadata })
+              .from(users)
+              .where(eq(users.id, userId))
+              .limit(1);
+            if (row?.metadata) {
+              return { ...opts.ctx.user, metadata: row.metadata };
+            }
+          }
+        }
+      } catch {}
+      return opts.ctx.user;
+    }),
     login: publicProcedure.input(z.object({ email: z.string(), password: z.string() })).mutation(async ({ input, ctx }) => {
       const { authService } = await import("./_core/auth");
       const result = await authService.loginWithCredentials(input.email, input.password);
@@ -630,6 +654,9 @@ export const appRouter = router({
 
   // Sidebar Dynamic Badge Counts
   sidebar: sidebarRouter,
+
+  // Approval Management (admin user approval/suspension)
+  approval: approvalRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

@@ -9,7 +9,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
-import { getMenuForRole } from "@/config/menuConfig";
+import { getMenuForRole, getMenuForRoleWithApproval } from "@/config/menuConfig";
+import { getApprovalStatus } from "@/lib/approvalGating";
+import { ApprovalBanner, ApprovalGateInline } from "@/components/ApprovalGate";
 import {
   LayoutDashboard,
   LogOut,
@@ -76,6 +78,7 @@ import {
   X,
   Percent,
   Banknote,
+  UserCheck,
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
@@ -144,6 +147,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Repeat: <Repeat size={20} />,
   Scale: <Scale size={20} />,
   Banknote: <Banknote size={20} />,
+  UserCheck: <UserCheck size={20} />,
 };
 
 // --- Notification Bell Component ---
@@ -314,9 +318,11 @@ export default function DashboardLayout({
     prevLocation.current = location;
   }, [location]);
 
-  // Get menu items based on user role
+  // Get menu items based on user role (with approval gating flags)
   const userRole = user?.role || "default";
-  const staticMenuItems = getMenuForRole(userRole);
+  const approvalStatus = getApprovalStatus(user);
+  const isApproved = approvalStatus === "approved";
+  const staticMenuItems = getMenuForRoleWithApproval(userRole);
 
   // Fetch dynamic badge counts from DB (polls every 30s)
   const badgeQuery = (trpc as any).sidebar?.getBadgeCounts?.useQuery?.(undefined, {
@@ -410,27 +416,42 @@ export default function DashboardLayout({
         <nav className="flex-1 overflow-y-auto smooth-scroll p-3 space-y-1">
           {menuItems.map((item, index) => {
             const isActive = activeMenuItem?.path === item.path;
+            const isLocked = !isApproved && item.requiresApproval;
             return (
               <motion.button
                 key={item.path}
-                onClick={() => handleMobileNavigate(item.path)}
+                onClick={() => {
+                  if (isLocked) {
+                    // Navigate to a gated page — ApprovalGate will show the overlay
+                    handleMobileNavigate(item.path);
+                  } else {
+                    handleMobileNavigate(item.path);
+                  }
+                }}
                 initial={{ opacity: 0, x: -12 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: Math.min(index * 0.02, 0.3), duration: 0.3 }}
-                whileHover={{ x: 4 }}
-                whileTap={{ scale: 0.97 }}
-                className={`sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg ${
-                  isActive
+                whileHover={{ x: isLocked ? 0 : 4 }}
+                whileTap={{ scale: isLocked ? 1 : 0.97 }}
+                className={`sidebar-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg relative ${
+                  isLocked
+                    ? "text-gray-600 cursor-default"
+                    : isActive
                     ? "active text-white"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
                 <motion.div
-                  className="flex-shrink-0"
-                  animate={isActive ? { scale: [1, 1.15, 1] } : {}}
+                  className="flex-shrink-0 relative"
+                  animate={isActive && !isLocked ? { scale: [1, 1.15, 1] } : {}}
                   transition={{ duration: 0.3 }}
                 >
                   {iconMap[item.icon] || item.icon}
+                  {isLocked && (
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-gray-800 flex items-center justify-center">
+                      <Lock className="w-2 h-2 text-gray-500" />
+                    </div>
+                  )}
                 </motion.div>
                 <AnimatePresence mode="wait">
                   {sidebarOpen && (
@@ -441,8 +462,10 @@ export default function DashboardLayout({
                       transition={{ duration: 0.2 }}
                       className="flex items-center gap-2 flex-1 overflow-hidden"
                     >
-                      <span className="flex-1 text-left text-sm whitespace-nowrap">{item.label}</span>
-                      {item.badge ? (
+                      <span className={`flex-1 text-left text-sm whitespace-nowrap ${isLocked ? "text-gray-600" : ""}`}>{item.label}</span>
+                      {isLocked ? (
+                        <Lock className="w-3.5 h-3.5 text-gray-600 flex-shrink-0" />
+                      ) : item.badge ? (
                         <motion.span
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
@@ -456,7 +479,7 @@ export default function DashboardLayout({
                 </AnimatePresence>
 
                 {/* Active indicator glow */}
-                {isActive && (
+                {isActive && !isLocked && (
                   <motion.div
                     layoutId="sidebar-active-glow"
                     className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-600/10 to-purple-600/10"
@@ -771,9 +794,16 @@ export default function DashboardLayout({
 
         {/* Main Content Area — Domino Cascade Page Transition */}
         <main className="flex-1 overflow-y-auto smooth-scroll bg-gray-950/50">
+          {/* Approval status banner for pending/suspended users */}
+          <ApprovalBanner />
+
           <AnimatePresence mode="wait">
             <DominoPage key={location} className="p-3 sm:p-4 md:p-6">
-              {children}
+              {!isApproved && menuItems.find(m => m.path === location)?.requiresApproval ? (
+                <ApprovalGateInline />
+              ) : (
+                children
+              )}
             </DominoPage>
           </AnimatePresence>
 

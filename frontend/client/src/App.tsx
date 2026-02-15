@@ -170,6 +170,7 @@ import HotZones from "./pages/HotZones";
 import RatingsReviews from "./pages/RatingsReviews";
 import ClaimsPage from "./pages/Claims";
 import MarketPricing from "./pages/MarketPricing";
+import AdminApprovalQueue from "./pages/AdminApprovalQueue";
 import CatalystCompliance from "./pages/CatalystCompliance";
 import FuelPrices from "./pages/FuelPrices";
 import WeatherAlerts from "./pages/WeatherAlerts";
@@ -246,6 +247,7 @@ function Router() {
       <Route path={"/live-tracking"} component={guard(ALL, <DriverTracking />)} />
       <Route path={"/fleet-tracking"} component={guard(ALL, <FleetTracking />)} />
       <Route path={"/admin/telemetry"} component={guard(ADMN, <AdminTelemetry />)} />
+      <Route path={"/admin/approvals"} component={guard(ADMN, <AdminApprovalQueue />)} />
       <Route path={"/zeun-breakdown"} component={guard(ALL, <ZeunBreakdown />)} />
       <Route path={"/zeun-fleet"} component={guard(ALL, <ZeunFleetDashboard />)} />
       <Route path={"/admin/zeun"} component={guard(ADMN, <ZeunAdminDashboard />)} />

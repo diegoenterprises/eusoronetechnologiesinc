@@ -9,6 +9,8 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getApprovalStatus } from "@/lib/approvalGating";
 import EsangChatWidget from "./EsangChatWidget";
 
 const BLUE = "#1473FF";
@@ -33,6 +35,8 @@ function hexAlpha(hex: string, alpha: number): string {
 }
 
 export default function EsangFloatingButton() {
+  const { user } = useAuth();
+  const approvalStatus = getApprovalStatus(user);
   const { theme } = useTheme();
   const isLight = theme === "light";
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -240,6 +244,9 @@ export default function EsangFloatingButton() {
   useEffect(() => {
     if (isOnEsang && chatOpen) setChatOpen(false);
   }, [isOnEsang]);
+
+  // Gate: ESANG AI is only available to approved users
+  if (approvalStatus !== "approved") return null;
 
   return (
     <>

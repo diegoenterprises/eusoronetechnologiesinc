@@ -149,6 +149,67 @@ export const operationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST, 
 export const complianceSafetyProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER);
 
 // =============================================================================
+// APPROVAL GATING MIDDLEWARE
+// Blocks unapproved users from accessing critical procedures (loads, bids,
+// wallet, billing, ESANG AI, etc.). Admins always bypass.
+// =============================================================================
+
+const requireApproval = t.middleware(async opts => {
+  const { ctx, next } = opts;
+
+  if (!ctx.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+  }
+
+  // Admins always pass
+  const role = ctx.user.role;
+  if (role === ROLES.SUPER_ADMIN || role === ROLES.ADMIN) {
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }
+
+  // Fetch fresh approval status from DB (not in JWT, always up-to-date)
+  let approvalStatus = "pending_review";
+  try {
+    const { getDb } = await import("../db");
+    const { users } = await import("../../drizzle/schema");
+    const { eq } = await import("drizzle-orm");
+    const db = await getDb();
+    if (db) {
+      const userId = Number((ctx.user as any).id);
+      if (!isNaN(userId)) {
+        const [row] = await db
+          .select({ metadata: users.metadata })
+          .from(users)
+          .where(eq(users.id, userId))
+          .limit(1);
+        if (row?.metadata) {
+          const parsed = typeof row.metadata === "string" ? JSON.parse(row.metadata) : row.metadata;
+          approvalStatus = parsed.approvalStatus || "pending_review";
+        }
+      }
+    }
+  } catch (e) {
+    // If DB lookup fails, default to pending (safe side)
+    console.warn("[ApprovalGate] DB lookup failed, defaulting to pending:", e);
+  }
+
+  if (approvalStatus !== "approved") {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "Your account is pending approval. This feature will be available once your account has been reviewed and approved.",
+    });
+  }
+
+  return next({ ctx: { ...ctx, user: ctx.user } });
+});
+
+/**
+ * Procedure that requires both authentication AND account approval.
+ * Use for critical operations: loads, bids, ESANG AI, wallet, billing, etc.
+ */
+export const approvedProcedure = t.procedure.use(requireUser).use(requireApproval);
+
+// =============================================================================
 // SOC 2 AUTO-AUDIT MIDDLEWARE (CC6.2, CC6.3, CC7.1)
 // Records every tRPC call automatically to the audit log.
 // Mutations → DATA_WRITE, Queries → DATA_READ, Errors → API_ERROR
@@ -224,6 +285,9 @@ export const auditedTerminalProcedure = roleProcedure(ROLES.TERMINAL_MANAGER).us
 export const auditedComplianceProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER).use(autoAudit);
 export const auditedSafetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER).use(autoAudit);
 export const auditedOperationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH).use(autoAudit);
+
+// Audited + Approval-gated procedure (auth + approval check + audit trail)
+export const auditedApprovedProcedure = t.procedure.use(requireUser).use(requireApproval).use(autoAudit);
 
 // =============================================================================
 // SENSITIVE DATA ENCRYPTION HELPERS

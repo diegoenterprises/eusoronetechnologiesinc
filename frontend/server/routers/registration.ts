@@ -61,7 +61,10 @@ async function storeRegistrationMetadata(db: any, userId: number, data: {
   companyId?: number;
   insurance?: { policy?: string; expiry?: string; hazmatLicense?: string; hazmatExpiry?: string; twicCard?: string; twicExpiry?: string; };
 }) {
-  const metadata: Record<string, any> = {};
+  const metadata: Record<string, any> = {
+    approvalStatus: "pending_review",
+    registeredAt: new Date().toISOString(),
+  };
 
   // Compliance IDs
   if (data.complianceIds) {
