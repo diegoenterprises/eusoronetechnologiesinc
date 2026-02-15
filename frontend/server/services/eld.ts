@@ -159,7 +159,7 @@ class ELDService {
    */
   async getDriverHOS(driverId: string, provider?: string): Promise<ELDDriverLog | null> {
     if (!this.isConfigured()) {
-      return this.getMockDriverHOS(driverId);
+      return null;
     }
 
     const providerConfig = provider
@@ -167,11 +167,10 @@ class ELDService {
       : this.providers.values().next().value;
 
     if (!providerConfig) {
-      return this.getMockDriverHOS(driverId);
+      return null;
     }
 
     try {
-      // Generic ELD API call - would be customized per provider
       const response = await fetch(
         `${providerConfig.baseUrl}/drivers/${driverId}/hos`,
         {
@@ -184,13 +183,13 @@ class ELDService {
 
       if (!response.ok) {
         console.error(`[ELD] API error: ${response.status}`);
-        return this.getMockDriverHOS(driverId);
+        return null;
       }
 
       return await response.json();
     } catch (error) {
       console.error("[ELD] getDriverHOS error:", error);
-      return this.getMockDriverHOS(driverId);
+      return null;
     }
   }
 
@@ -219,11 +218,11 @@ class ELDService {
     endDate: string
   ): Promise<ELDLogEntry[]> {
     if (!this.isConfigured()) {
-      return this.getMockLogs(driverId, startDate, endDate);
+      return [];
     }
 
     // Would call actual ELD API
-    return this.getMockLogs(driverId, startDate, endDate);
+    return [];
   }
 
   /**
@@ -231,11 +230,11 @@ class ELDService {
    */
   async getVehicleInfo(vehicleId: string): Promise<ELDVehicleInfo | null> {
     if (!this.isConfigured()) {
-      return this.getMockVehicleInfo(vehicleId);
+      return null;
     }
 
     // Would call actual ELD API
-    return this.getMockVehicleInfo(vehicleId);
+    return null;
   }
 
   /**

@@ -400,21 +400,42 @@ export const approvalRouter = router({
         );
 
       let fixed = 0;
+      let rolesFixed = 0;
       for (const u of allUsers) {
         let meta: any = {};
         try { meta = u.metadata ? JSON.parse(u.metadata as string) : {}; } catch {}
 
+        const updates: any = {};
+
         if (!meta.approvalStatus) {
           meta.approvalStatus = "pending_review";
-          await db.update(users).set({
-            metadata: JSON.stringify(meta),
-          }).where(eq(users.id, u.id));
+          updates.metadata = JSON.stringify(meta);
           fixed++;
           console.log(`[ApprovalFix] Set pending_review for user ${u.email} (${u.role})`);
         }
+
+        // Fix legacy CARRIER → CATALYST role rename
+        if ((u.role as string) === "CARRIER") {
+          updates.role = "CATALYST";
+          rolesFixed++;
+          console.log(`[ApprovalFix] Renamed role CARRIER → CATALYST for user ${u.email}`);
+        }
+
+        // Fix legacy carrier email → catalyst email
+        if (u.email === "carrier@eusotrip.com") {
+          updates.email = "catalyst@eusotrip.com";
+          console.log(`[ApprovalFix] Renamed email carrier@eusotrip.com → catalyst@eusotrip.com`);
+        }
+
+        if (Object.keys(updates).length > 0) {
+          if (updates.metadata === undefined && (updates.role || updates.email)) {
+            updates.metadata = JSON.stringify(meta);
+          }
+          await db.update(users).set(updates).where(eq(users.id, u.id));
+        }
       }
 
-      return { success: true, fixed, total: allUsers.length };
+      return { success: true, fixed, rolesFixed, total: allUsers.length };
     }),
 
   /**

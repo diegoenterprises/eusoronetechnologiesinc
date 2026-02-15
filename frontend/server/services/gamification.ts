@@ -289,27 +289,9 @@ export async function awardPoints(
   reason: string,
   db: any
 ): Promise<{ success: boolean; newTotal: number; tierUp?: boolean }> {
-  // This would integrate with your database
-  // For now, returning mock data
-  const currentTotal = 5000; // Would fetch from DB
-  const newTotal = currentTotal + points;
-  
-  const oldTier = calculateTier(currentTotal);
-  const newTier = calculateTier(newTotal);
-  const tierUp = oldTier !== newTier;
-  
-  // TODO: Insert into database
-  // await db.insert(pointsHistory).values({
-  //   userId,
-  //   points,
-  //   reason,
-  //   timestamp: new Date(),
-  // });
-  
-  // TODO: Update user's total points
-  // await db.update(users).set({ totalPoints: newTotal }).where(eq(users.id, userId));
-  
-  return { success: true, newTotal, tierUp };
+  // TODO: Integrate with gamification DB tables when ready
+  // For now, return success with zero totals (no mock data)
+  return { success: true, newTotal: points, tierUp: false };
 }
 
 /**
@@ -338,36 +320,8 @@ export async function getLeaderboard(
   // TODO: Query database for top users by points in the period
   // TODO: Filter by role if specified
   
-  // Mock data
-  return [
-    {
-      rank: 1,
-      userId: 1,
-      userName: "John Driver",
-      userRole: "DRIVER",
-      points: 15000,
-      tier: "PLATINUM",
-      badge: "safety_champion",
-    },
-    {
-      rank: 2,
-      userId: 2,
-      userName: "Jane Catalyst",
-      userRole: "CATALYST",
-      points: 12500,
-      tier: "GOLD",
-      badge: "five_star_pro",
-    },
-    {
-      rank: 3,
-      userId: 3,
-      userName: "Bob Shipper",
-      userRole: "SHIPPER",
-      points: 10000,
-      tier: "GOLD",
-      badge: "century_club",
-    },
-  ];
+  // TODO: Query database for top users by points in the period
+  return [];
 }
 
 /**

@@ -213,8 +213,8 @@ class FactoringService {
    * Get factoring account
    */
   async getAccount(companyId: string): Promise<FactoringAccount | null> {
-    // In production, would fetch from database/API
-    return this.getMockAccount(companyId);
+    // TODO: Integrate with factoring provider API (Triumph, OTR, etc.)
+    return null;
   }
 
   /**
@@ -394,24 +394,41 @@ class FactoringService {
     dotNumber?: string
   ): Promise<DebtorCreditCheck> {
     // In production, would call credit bureau/factoring provider API
-    return this.getMockCreditCheck(debtorName, mcNumber, dotNumber);
+    // TODO: Integrate with credit bureau/factoring provider API
+    return {
+      debtorName,
+      mcNumber,
+      dotNumber,
+      creditScore: 0,
+      creditRating: "N/A" as any,
+      creditLimit: 0,
+      averageDaysToPay: 0,
+      paymentTrend: "stable" as any,
+      onTimePaymentRate: 0,
+      riskLevel: "medium" as any,
+      riskFactors: ["Credit check not yet configured"],
+      recommended: false,
+      maxCreditAmount: 0,
+      checkedAt: new Date().toISOString(),
+      validUntil: new Date().toISOString(),
+    };
   }
 
   /**
    * Get factoring statistics
    */
   async getStats(accountId: string): Promise<FactoringStats> {
-    // In production, would calculate from database
+    // TODO: Calculate from database when factoring is integrated
     return {
-      totalInvoicesSubmitted: 156,
-      totalAmountFactored: 487500,
-      pendingInvoices: 8,
-      pendingAmount: 24350,
-      fundedThisMonth: 12,
-      outstandingReceivables: 87500,
-      averageFactoringFee: 2.5,
-      averageDaysToFund: 1.2,
-      rejectionRate: 3.5,
+      totalInvoicesSubmitted: 0,
+      totalAmountFactored: 0,
+      pendingInvoices: 0,
+      pendingAmount: 0,
+      fundedThisMonth: 0,
+      outstandingReceivables: 0,
+      averageFactoringFee: 0,
+      averageDaysToFund: 0,
+      rejectionRate: 0,
     };
   }
 

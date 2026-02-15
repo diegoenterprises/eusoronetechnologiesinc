@@ -112,9 +112,9 @@ class ClearinghouseService {
       dateOfBirth: string;
     },
     requestedBy: string
-  ): Promise<ClearinghouseQuery> {
+  ): Promise<ClearinghouseQuery | null> {
     if (!this.isConfigured()) {
-      return this.createMockQuery(driverId, driverInfo, "pre_employment", requestedBy);
+      return null;
     }
 
     try {
@@ -132,13 +132,13 @@ class ClearinghouseService {
 
       if (!response.ok) {
         console.error(`[Clearinghouse] API error: ${response.status}`);
-        return this.createMockQuery(driverId, driverInfo, "pre_employment", requestedBy);
+        return null;
       }
 
       return await response.json();
     } catch (error) {
       console.error("[Clearinghouse] submitPreEmploymentQuery error:", error);
-      return this.createMockQuery(driverId, driverInfo, "pre_employment", requestedBy);
+      return null;
     }
   }
 
@@ -155,9 +155,9 @@ class ClearinghouseService {
       dateOfBirth: string;
     },
     requestedBy: string
-  ): Promise<ClearinghouseQuery> {
+  ): Promise<ClearinghouseQuery | null> {
     if (!this.isConfigured()) {
-      return this.createMockQuery(driverId, driverInfo, "annual", requestedBy);
+      return null;
     }
 
     try {
@@ -174,13 +174,13 @@ class ClearinghouseService {
       });
 
       if (!response.ok) {
-        return this.createMockQuery(driverId, driverInfo, "annual", requestedBy);
+        return null;
       }
 
       return await response.json();
     } catch (error) {
       console.error("[Clearinghouse] submitAnnualQuery error:", error);
-      return this.createMockQuery(driverId, driverInfo, "annual", requestedBy);
+      return null;
     }
   }
 
@@ -189,7 +189,7 @@ class ClearinghouseService {
    */
   async getQueryStatus(queryId: string): Promise<ClearinghouseQuery | null> {
     if (!this.isConfigured()) {
-      return this.getMockQueryResult(queryId);
+      return null;
     }
 
     try {
@@ -223,11 +223,11 @@ class ClearinghouseService {
     }
   ): Promise<ClearinghouseQuery[]> {
     if (!this.isConfigured()) {
-      return this.getMockQueries();
+      return [];
     }
 
     // Would call actual API
-    return this.getMockQueries();
+    return [];
   }
 
   /**
@@ -235,11 +235,11 @@ class ClearinghouseService {
    */
   async getDriverQueryHistory(driverId: string): Promise<ClearinghouseQuery[]> {
     if (!this.isConfigured()) {
-      return this.getMockQueries().filter((q) => q.driverId === driverId);
+      return [];
     }
 
     // Would call actual API
-    return this.getMockQueries().filter((q) => q.driverId === driverId);
+    return [];
   }
 
   /**

@@ -111,8 +111,8 @@ class FMCSAService {
    */
   async getCatalystByDOT(dotNumber: string): Promise<FMCSACatalystInfo | null> {
     if (!this.isConfigured()) {
-      console.warn("[FMCSA] API key not configured, using mock data");
-      return this.getMockCatalyst(dotNumber);
+      console.warn("[FMCSA] API key not configured");
+      return null;
     }
 
     try {
@@ -144,8 +144,8 @@ class FMCSAService {
    */
   async getCatalystByMC(mcNumber: string): Promise<FMCSACatalystInfo | null> {
     if (!this.isConfigured()) {
-      console.warn("[FMCSA] API key not configured, using mock data");
-      return this.getMockCatalyst(`MC-${mcNumber}`);
+      console.warn("[FMCSA] API key not configured");
+      return null;
     }
 
     try {
@@ -176,7 +176,7 @@ class FMCSAService {
    */
   async getSafetyRating(dotNumber: string): Promise<FMCSASafetyRating | null> {
     if (!this.isConfigured()) {
-      return this.getMockSafetyRating(dotNumber);
+      return null;
     }
 
     try {
@@ -207,7 +207,7 @@ class FMCSAService {
    */
   async getAuthorities(dotNumber: string): Promise<FMCSAAuthority[]> {
     if (!this.isConfigured()) {
-      return this.getMockAuthorities(dotNumber);
+      return [];
     }
 
     try {
@@ -238,7 +238,7 @@ class FMCSAService {
    */
   async getInsurance(dotNumber: string): Promise<FMCSAInsurance[]> {
     if (!this.isConfigured()) {
-      return this.getMockInsurance(dotNumber);
+      return [];
     }
 
     try {
@@ -360,7 +360,7 @@ class FMCSAService {
     limit: number = 20
   ): Promise<FMCSACatalystInfo[]> {
     if (!this.isConfigured()) {
-      return [this.getMockCatalyst("1234567")!];
+      return [];
     }
 
     try {
