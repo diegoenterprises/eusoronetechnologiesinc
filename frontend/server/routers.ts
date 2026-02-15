@@ -152,6 +152,7 @@ import { encryptionRouter } from "./routers/encryption";
 import { commissionEngineRouter } from "./routers/commissionEngine";
 import { loadLifecycleRouter } from "./routers/loadLifecycle";
 import { approvalRouter } from "./routers/approval";
+import { authorityRouter } from "./routers/authority";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -657,6 +658,9 @@ export const appRouter = router({
 
   // Approval Management (admin user approval/suspension)
   approval: approvalRouter,
+
+  // Authority & Leasing (FMCSR Part 376)
+  authority: authorityRouter,
 
   // Singular aliases — many pages use singular names (trpc.driver vs trpc.drivers)
   broker: brokersRouter,

@@ -206,6 +206,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet GPS tracking"
     },
     { 
+      icon: "Shield", 
+      label: "Operating Authority", 
+      path: "/authority", 
+      badge: 0,
+      description: "MC/DOT authority, lease-ons & trip leases"
+    },
+    { 
       icon: "PenTool", 
       label: "Agreements", 
       path: "/agreements", 
@@ -320,6 +327,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/shippers", 
       badge: 0,
       description: "Shipper accounts"
+    },
+    { 
+      icon: "Shield", 
+      label: "Authority Verify", 
+      path: "/authority", 
+      badge: 0,
+      description: "Verify carrier authority & lease status"
     },
     { 
       icon: "PenTool", 
@@ -443,6 +457,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/documents", 
       badge: 0,
       description: "License and permits"
+    },
+    { 
+      icon: "Shield", 
+      label: "Operating Authority", 
+      path: "/authority", 
+      badge: 0,
+      description: "Authority you operate under & lease status"
     },
     { 
       icon: "MessageSquare", 
@@ -575,6 +596,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet positions"
     },
     { 
+      icon: "Shield", 
+      label: "Operating Authority", 
+      path: "/authority", 
+      badge: 0,
+      description: "Carrier authority & lease verification"
+    },
+    { 
       icon: "TrendingUp", 
       label: "Market Intelligence", 
       path: "/market-pricing", 
@@ -696,6 +724,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/reports", 
       badge: 0,
       description: "Escort reports"
+    },
+    { 
+      icon: "Shield", 
+      label: "Operating Authority", 
+      path: "/authority", 
+      badge: 0,
+      description: "Verify carrier authority for oversized loads"
     },
     { 
       icon: "PenTool", 

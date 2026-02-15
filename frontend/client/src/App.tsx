@@ -172,6 +172,7 @@ import RatingsReviews from "./pages/RatingsReviews";
 import ClaimsPage from "./pages/Claims";
 import MarketPricing from "./pages/MarketPricing";
 import AccountStatus from "./pages/AccountStatus";
+import OperatingAuthority from "./pages/OperatingAuthority";
 import AdminApprovalQueue from "./pages/AdminApprovalQueue";
 import CatalystCompliance from "./pages/CatalystCompliance";
 import FuelPrices from "./pages/FuelPrices";
@@ -258,6 +259,7 @@ function Router() {
       <Route path={"/ratings"} component={guard(ALL, <RatingsReviews />)} />
       <Route path={"/claims"} component={guard(ALL, <ClaimsPage />)} />
       <Route path={"/market-pricing"} component={guard(ALL, <MarketPricing />)} />
+      <Route path={"/authority"} component={guard([...CARR, ...DRIV, ...BROK, ...DISP, ...ESCT], <OperatingAuthority />)} />
 
       {/* ============================================ */}
       {/* SHIPPER ROUTES */}

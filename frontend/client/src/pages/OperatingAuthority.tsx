@@ -1,0 +1,723 @@
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+
+const LEASE_TYPE_LABEL: Record<string, { label: string; color: string; bg: string; desc: string }> = {
+  full_lease: { label: "Full Lease-On", color: "text-blue-400", bg: "bg-blue-500/10", desc: "Long-term operation under carrier authority" },
+  trip_lease: { label: "Trip Lease", color: "text-amber-400", bg: "bg-amber-500/10", desc: "Single trip authority transfer" },
+  interline: { label: "Interline", color: "text-purple-400", bg: "bg-purple-500/10", desc: "Shared haul between two carriers" },
+  seasonal: { label: "Seasonal", color: "text-emerald-400", bg: "bg-emerald-500/10", desc: "Seasonal lease arrangement" },
+};
+
+const STATUS_CFG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
+  draft: { label: "Draft", color: "text-slate-400", bg: "bg-slate-500/10", icon: FileText },
+  pending_signatures: { label: "Awaiting Signatures", color: "text-amber-400", bg: "bg-amber-500/10", icon: Clock },
+  active: { label: "Active", color: "text-emerald-400", bg: "bg-emerald-500/10", icon: CheckCircle },
+  expired: { label: "Expired", color: "text-red-400", bg: "bg-red-500/10", icon: XCircle },
+  terminated: { label: "Terminated", color: "text-red-400", bg: "bg-red-500/10", icon: XCircle },
+  suspended: { label: "Suspended", color: "text-orange-400", bg: "bg-orange-500/10", icon: AlertTriangle },
+};
+
+const TRAILER_TYPES = [
+  "Dry Van", "Flatbed", "Refrigerated", "Tanker", "Lowboy", "Step Deck",
+  "Double Drop", "Conestoga", "Hopper", "Dump", "Car Hauler", "Livestock",
+  "Oversized", "Intermodal", "Pneumatic", "Side Kit", "Curtain Side",
+];
+
+export default function OperatingAuthority() {
+  const [activeTab, setActiveTab] = useState<"overview" | "leases" | "equipment" | "browse">("overview");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [browseSearch, setBrowseSearch] = useState("");
+
+  const authorityQuery = (trpc as any).authority?.getMyAuthority?.useQuery?.();
+  const leasesQuery = (trpc as any).authority?.getMyLeases?.useQuery?.();
+  const statsQuery = (trpc as any).authority?.getLeaseStats?.useQuery?.();
+  const equipmentQuery = (trpc as any).authority?.getEquipmentAuthority?.useQuery?.();
+  const browseQuery = (trpc as any).authority?.browseAuthorities?.useQuery?.({ search: browseSearch });
+
+  const createLeaseMutation = (trpc as any).authority?.createLease?.useMutation?.({
+    onSuccess: () => { toast.success("Lease agreement created"); setShowCreateDialog(false); leasesQuery?.refetch?.(); statsQuery?.refetch?.(); authorityQuery?.refetch?.(); },
+    onError: (e: any) => toast.error("Failed to create", { description: e.message }),
+  });
+  const updateComplianceMutation = (trpc as any).authority?.updateCompliance?.useMutation?.({
+    onSuccess: () => { toast.success("Compliance updated"); leasesQuery?.refetch?.(); authorityQuery?.refetch?.(); },
+    onError: (e: any) => toast.error("Update failed", { description: e.message }),
+  });
+  const signMutation = (trpc as any).authority?.signLease?.useMutation?.({
+    onSuccess: () => { toast.success("Lease signed"); leasesQuery?.refetch?.(); authorityQuery?.refetch?.(); },
+    onError: (e: any) => toast.error("Signing failed", { description: e.message }),
+  });
+  const terminateMutation = (trpc as any).authority?.terminateLease?.useMutation?.({
+    onSuccess: () => { toast.success("Lease terminated"); leasesQuery?.refetch?.(); statsQuery?.refetch?.(); authorityQuery?.refetch?.(); },
+    onError: (e: any) => toast.error("Failed", { description: e.message }),
+  });
+
+  const authority = authorityQuery?.data;
+  const leases = leasesQuery?.data || [];
+  const stats = statsQuery?.data;
+  const equipment = equipmentQuery?.data || [];
+  const authorities = browseQuery?.data || [];
+  const loading = authorityQuery?.isLoading;
+
+  const complianceScore = authority?.complianceScore ?? 0;
+
+  const tabs = [
+    { key: "overview", label: "Overview", icon: Shield },
+    { key: "leases", label: "Lease Agreements", icon: Handshake },
+    { key: "equipment", label: "Equipment", icon: Truck },
+    { key: "browse", label: "Find Authority", icon: Search },
+  ] as const;
+
+  return (
+    <div className="p-4 md:p-6 space-y-6 max-w-7xl mx-auto">
+      {/* ─── HEADER ─── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">
+            Operating Authority
+          </h1>
+          <p className="text-slate-400 text-sm mt-1">
+            FMCSR Part 376 · Lease Management · Authority Verification
+          </p>
+        </div>
+        <Button
+          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl shadow-lg shadow-blue-500/20"
+          onClick={() => setShowCreateDialog(true)}
+        >
+          <Plus className="w-4 h-4 mr-2" />New Lease
+        </Button>
+      </div>
+
+      {/* ─── TAB NAV ─── */}
+      <div className="flex gap-1 p-1 bg-slate-800/50 rounded-xl border border-slate-700/50 w-fit">
+        {tabs.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              activeTab === t.key
+                ? "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border border-blue-500/30"
+                : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+            }`}
+          >
+            <t.icon className="w-4 h-4" />{t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── OVERVIEW TAB ─── */}
+      {activeTab === "overview" && (
+        <div className="space-y-6">
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Active Leases", value: stats?.active ?? 0, color: "from-emerald-500 to-teal-500", icon: CheckCircle },
+              { label: "Pending", value: stats?.pending ?? 0, color: "from-amber-500 to-orange-500", icon: Clock },
+              { label: "As Lessor", value: stats?.asLessor ?? 0, color: "from-blue-500 to-cyan-500", icon: Building2 },
+              { label: "As Lessee", value: stats?.asLessee ?? 0, color: "from-purple-500 to-pink-500", icon: Truck },
+            ].map(s => (
+              <Card key={s.label} className="bg-slate-800/50 border-slate-700/50 overflow-hidden">
+                <CardContent className="p-4 relative">
+                  <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${s.color}`} />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">{s.label}</p>
+                      <p className="text-2xl font-bold text-white mt-1">{loading ? "—" : s.value}</p>
+                    </div>
+                    <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${s.color} flex items-center justify-center opacity-80`}>
+                      <s.icon className="w-5 h-5 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Own Authority Card */}
+            <Card className="lg:col-span-2 bg-slate-800/50 border-slate-700/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-white flex items-center gap-2 text-lg">
+                  <Shield className="w-5 h-5 text-blue-400" />Your Authority
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loading ? (
+                  <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-12 w-full rounded-lg" />)}</div>
+                ) : authority?.ownAuthority ? (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-700/40">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-white font-semibold text-lg">{authority.ownAuthority.companyName}</p>
+                          {authority.ownAuthority.legalName && <p className="text-slate-500 text-xs">{authority.ownAuthority.legalName}</p>}
+                        </div>
+                        <Badge className={`border-0 text-xs ${authority.ownAuthority.complianceStatus === "compliant" ? "bg-emerald-500/20 text-emerald-400" : authority.ownAuthority.complianceStatus === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-red-500/20 text-red-400"}`}>
+                          {authority.ownAuthority.complianceStatus}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 mt-4">
+                        <AuthorityField label="MC Number" value={authority.ownAuthority.mcNumber} />
+                        <AuthorityField label="USDOT Number" value={authority.ownAuthority.dotNumber} />
+                        <AuthorityField label="Insurance" value={authority.ownAuthority.insurancePolicy ? "Active" : "Not on file"} />
+                        <AuthorityField label="Insurance Expiry" value={authority.ownAuthority.insuranceExpiry ? new Date(authority.ownAuthority.insuranceExpiry).toLocaleDateString() : "—"} />
+                      </div>
+                    </div>
+
+                    {/* Active Leases as Lessee */}
+                    {authority.activeLeasesAsLessee?.length > 0 && (
+                      <div>
+                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">Operating Under</p>
+                        {authority.activeLeasesAsLessee.map((l: any) => (
+                          <div key={l.id} className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/20 flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                                <ArrowUpRight className="w-4 h-4 text-blue-400" />
+                              </div>
+                              <div>
+                                <p className="text-white text-sm font-medium">{l.lessorCompanyName}</p>
+                                <p className="text-slate-500 text-xs">MC {l.lessorMcNumber} · DOT {l.lessorDotNumber}</p>
+                              </div>
+                            </div>
+                            <LeaseTypeBadge type={l.leaseType} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Active Leases as Lessor */}
+                    {authority.activeLeasesAsLessor?.length > 0 && (
+                      <div>
+                        <p className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2">Operators Under Your Authority</p>
+                        {authority.activeLeasesAsLessor.map((l: any) => (
+                          <div key={l.id} className="p-3 rounded-lg bg-purple-500/5 border border-purple-500/20 flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
+                                <Truck className="w-4 h-4 text-purple-400" />
+                              </div>
+                              <div>
+                                <p className="text-white text-sm font-medium">{l.lesseeName}</p>
+                                <p className="text-slate-500 text-xs">{LEASE_TYPE_LABEL[l.leaseType]?.label || l.leaseType}</p>
+                              </div>
+                            </div>
+                            <LeaseTypeBadge type={l.leaseType} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Shield className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                    <p className="text-slate-400 font-medium">No authority on file</p>
+                    <p className="text-slate-500 text-sm mt-1">Your company's MC/DOT numbers will appear here once registered</p>
+                    <Button variant="outline" className="mt-4 rounded-xl border-slate-600" onClick={() => setActiveTab("browse")}>
+                      <Search className="w-4 h-4 mr-2" />Browse Authorities to Lease On
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Compliance Score */}
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-white flex items-center gap-2 text-lg">
+                  <Scale className="w-5 h-5 text-emerald-400" />FMCSR Part 376
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Score Ring */}
+                <div className="flex flex-col items-center py-4">
+                  <div className="relative w-28 h-28">
+                    <svg className="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="42" fill="none" stroke="rgb(51,65,85)" strokeWidth="6" />
+                      <circle cx="50" cy="50" r="42" fill="none" stroke={complianceScore >= 80 ? "#10b981" : complianceScore >= 50 ? "#f59e0b" : "#ef4444"} strokeWidth="6" strokeDasharray={`${complianceScore * 2.64} 264`} strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-2xl font-bold text-white">{complianceScore}%</span>
+                    </div>
+                  </div>
+                  <p className="text-slate-500 text-xs mt-2">Compliance Score</p>
+                </div>
+
+                {/* Compliance Checklist */}
+                <div className="space-y-2">
+                  <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Requirements</p>
+                  {[
+                    { key: "hasWrittenLease", label: "Written Lease Agreement", icon: FileText },
+                    { key: "hasExclusiveControl", label: "Exclusive Vehicle Control", icon: Lock },
+                    { key: "hasInsuranceCoverage", label: "Liability Insurance Coverage", icon: Shield },
+                    { key: "hasVehicleMarking", label: "DOT Number Vehicle Marking", icon: Truck },
+                  ].map(req => {
+                    const anyLease = [...(authority?.activeLeasesAsLessee || []), ...(authority?.activeLeasesAsLessor || [])];
+                    const met = anyLease.some((l: any) => l[req.key]);
+                    return (
+                      <div key={req.key} className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors ${met ? "bg-emerald-500/5 border border-emerald-500/20" : "bg-slate-900/40 border border-slate-700/30"}`}>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${met ? "bg-emerald-500/20" : "bg-slate-700/50"}`}>
+                          {met ? <CheckCircle className="w-3.5 h-3.5 text-emerald-400" /> : <XCircle className="w-3.5 h-3.5 text-slate-500" />}
+                        </div>
+                        <span className={`text-sm ${met ? "text-white" : "text-slate-500"}`}>{req.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* ─── LEASES TAB ─── */}
+      {activeTab === "leases" && (
+        <div className="space-y-4">
+          {leasesQuery?.isLoading ? (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
+          ) : leases.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="py-16 text-center">
+                <Handshake className="w-14 h-14 text-slate-600 mx-auto mb-4" />
+                <p className="text-white font-semibold text-lg">No Lease Agreements</p>
+                <p className="text-slate-500 text-sm mt-1 max-w-sm mx-auto">
+                  Create a lease agreement to operate under another carrier's authority, or accept operators under yours.
+                </p>
+                <Button className="mt-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="w-4 h-4 mr-2" />Create Lease Agreement
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            leases.map((lease: any) => <LeaseCard key={lease.id} lease={lease} onSign={signMutation} onTerminate={terminateMutation} onUpdateCompliance={updateComplianceMutation} />)
+          )}
+        </div>
+      )}
+
+      {/* ─── EQUIPMENT TAB ─── */}
+      {activeTab === "equipment" && (
+        <div className="space-y-4">
+          {equipmentQuery?.isLoading ? (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : equipment.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="py-16 text-center">
+                <Truck className="w-14 h-14 text-slate-600 mx-auto mb-4" />
+                <p className="text-white font-semibold text-lg">No Equipment Registered</p>
+                <p className="text-slate-500 text-sm mt-1">Your fleet vehicles and their authority assignments will appear here.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {equipment.map((v: any) => (
+                <Card key={v.vehicleId} className="bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 transition-colors">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${v.authoritySource === "leased" ? "bg-blue-500/20" : "bg-slate-700/50"}`}>
+                          <Truck className={`w-5 h-5 ${v.authoritySource === "leased" ? "text-blue-400" : "text-slate-400"}`} />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium text-sm">{v.year} {v.make} {v.model}</p>
+                          <p className="text-slate-500 text-xs">VIN: {v.vin?.slice(-6)} · {v.licensePlate || "No plate"}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge className={`border-0 text-xs ${v.authoritySource === "leased" ? "bg-blue-500/20 text-blue-400" : "bg-slate-600/30 text-slate-400"}`}>
+                          {v.authoritySource === "leased" ? `Leased · MC ${v.leaseMcNumber}` : "Own Authority"}
+                        </Badge>
+                        <p className="text-[10px] text-slate-600 mt-1 capitalize">{v.type?.replace(/_/g, " ")}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── BROWSE TAB ─── */}
+      {activeTab === "browse" && (
+        <div className="space-y-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Input
+              placeholder="Search by company name, MC#, or DOT#..."
+              value={browseSearch}
+              onChange={e => setBrowseSearch(e.target.value)}
+              className="pl-10 bg-slate-800/50 border-slate-700/50 text-white rounded-xl"
+            />
+          </div>
+
+          {browseQuery?.isLoading ? (
+            <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
+          ) : authorities.length === 0 ? (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="py-12 text-center">
+                <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-slate-400">No carriers with registered authority found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {authorities.map((c: any) => (
+                <Card key={c.companyId} className="bg-slate-800/50 border-slate-700/50 hover:border-blue-500/30 transition-all group cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center border border-blue-500/20">
+                          <Building2 className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{c.companyName}</p>
+                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
+                            {c.mcNumber && <span>MC {c.mcNumber}</span>}
+                            {c.dotNumber && <span>DOT {c.dotNumber}</span>}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          {c.insuranceValid ? (
+                            <Badge className="border-0 text-[10px] bg-emerald-500/15 text-emerald-400">Insured</Badge>
+                          ) : (
+                            <Badge className="border-0 text-[10px] bg-red-500/15 text-red-400">No Insurance</Badge>
+                          )}
+                          <Badge className={`border-0 text-[10px] ${c.complianceStatus === "compliant" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>
+                            {c.complianceStatus}
+                          </Badge>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-blue-400 transition-colors" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── CREATE LEASE DIALOG ─── */}
+      <CreateLeaseDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSubmit={createLeaseMutation} authorities={authorities} />
+    </div>
+  );
+}
+
+function AuthorityField({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <p className="text-slate-500 text-[10px] font-medium uppercase tracking-wider">{label}</p>
+      <p className="text-white text-sm font-medium mt-0.5">{value || "—"}</p>
+    </div>
+  );
+}
+
+function LeaseTypeBadge({ type }: { type: string }) {
+  const cfg = LEASE_TYPE_LABEL[type] || { label: type, color: "text-slate-400", bg: "bg-slate-500/10" };
+  return <Badge className={`border-0 text-xs ${cfg.bg} ${cfg.color}`}>{cfg.label}</Badge>;
+}
+
+function LeaseCard({ lease, onSign, onTerminate, onUpdateCompliance }: { lease: any; onSign: any; onTerminate: any; onUpdateCompliance: any }) {
+  const stCfg = STATUS_CFG[lease.status] || STATUS_CFG.draft;
+  const StIcon = stCfg.icon;
+  const complianceChecks = [
+    { key: "hasWrittenLease", label: "Written Lease" },
+    { key: "hasExclusiveControl", label: "Exclusive Control" },
+    { key: "hasInsuranceCoverage", label: "Insurance" },
+    { key: "hasVehicleMarking", label: "DOT Marking" },
+  ];
+  const passed = complianceChecks.filter(c => lease[c.key]).length;
+  const total = complianceChecks.length;
+
+  return (
+    <Card className="bg-slate-800/50 border-slate-700/50 overflow-hidden">
+      <div className={`h-0.5 ${lease.status === "active" ? "bg-gradient-to-r from-emerald-500 to-teal-500" : lease.status === "pending_signatures" ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-slate-700"}`} />
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl ${stCfg.bg} flex items-center justify-center`}>
+              <StIcon className={`w-5 h-5 ${stCfg.color}`} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-white font-semibold">
+                  {lease.isLessor ? lease.lesseeName : lease.lessorCompanyName}
+                </p>
+                <Badge className={`border-0 text-xs ${stCfg.bg} ${stCfg.color}`}>{stCfg.label}</Badge>
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <LeaseTypeBadge type={lease.leaseType} />
+                <span className="text-slate-600 text-xs">·</span>
+                <span className="text-slate-500 text-xs">
+                  {lease.isLessor ? "Operator under your authority" : "You operate under their authority"}
+                </span>
+              </div>
+            </div>
+          </div>
+          {lease.revenueSharePercent && (
+            <div className="text-right">
+              <p className="text-slate-500 text-[10px] uppercase tracking-wider">Revenue Split</p>
+              <p className="text-white font-bold text-lg">{lease.revenueSharePercent}%</p>
+            </div>
+          )}
+        </div>
+
+        {/* Authority details */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          {lease.mcNumber && <AuthorityField label="MC Number" value={lease.mcNumber} />}
+          {lease.dotNumber && <AuthorityField label="DOT Number" value={lease.dotNumber} />}
+          {lease.startDate && <AuthorityField label="Start Date" value={new Date(lease.startDate).toLocaleDateString()} />}
+          {lease.endDate && <AuthorityField label="End Date" value={new Date(lease.endDate).toLocaleDateString()} />}
+        </div>
+
+        {/* Trip lease route */}
+        {lease.leaseType === "trip_lease" && (lease.originCity || lease.destinationCity) && (
+          <div className="flex items-center gap-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/15 mb-4">
+            <MapPin className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span className="text-sm text-white">
+              {lease.originCity}{lease.originState ? `, ${lease.originState}` : ""}
+            </span>
+            <ArrowRight className="w-3 h-3 text-slate-500 flex-shrink-0" />
+            <span className="text-sm text-white">
+              {lease.destinationCity}{lease.destinationState ? `, ${lease.destinationState}` : ""}
+            </span>
+          </div>
+        )}
+
+        {/* Compliance progress */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-slate-500 text-xs font-medium">FMCSR Part 376 Compliance</span>
+            <span className={`text-xs font-bold ${passed === total ? "text-emerald-400" : "text-amber-400"}`}>{passed}/{total}</span>
+          </div>
+          <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
+            <div className={`h-full rounded-full transition-all duration-500 ${passed === total ? "bg-emerald-500" : "bg-amber-500"}`} style={{ width: `${(passed / total) * 100}%` }} />
+          </div>
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {complianceChecks.map(c => (
+              <button
+                key={c.key}
+                onClick={() => onUpdateCompliance?.mutate?.({ leaseId: lease.id, [c.key]: !lease[c.key] })}
+                className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-colors cursor-pointer ${
+                  lease[c.key]
+                    ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                    : "bg-slate-800 text-slate-500 border border-slate-700/50 hover:border-slate-600"
+                }`}
+              >
+                {lease[c.key] ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                {c.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Signatures */}
+        <div className="flex items-center gap-4 mb-4">
+          <div className={`flex items-center gap-1.5 text-xs ${lease.lessorSignedAt ? "text-emerald-400" : "text-slate-500"}`}>
+            {lease.lessorSignedAt ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+            Lessor {lease.lessorSignedAt ? `signed ${new Date(lease.lessorSignedAt).toLocaleDateString()}` : "unsigned"}
+          </div>
+          <div className={`flex items-center gap-1.5 text-xs ${lease.lesseeSignedAt ? "text-emerald-400" : "text-slate-500"}`}>
+            {lease.lesseeSignedAt ? <CheckCircle className="w-3 h-3" /> : <Clock className="w-3 h-3" />}
+            Lessee {lease.lesseeSignedAt ? `signed ${new Date(lease.lesseeSignedAt).toLocaleDateString()}` : "unsigned"}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          {lease.status !== "terminated" && lease.status !== "expired" && (
+            <>
+              {lease.isLessor && !lease.lessorSignedAt && (
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 rounded-lg text-xs" onClick={() => onSign?.mutate?.({ leaseId: lease.id, role: "lessor" })}>
+                  Sign as Lessor
+                </Button>
+              )}
+              {lease.isLessee && !lease.lesseeSignedAt && (
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700 rounded-lg text-xs" onClick={() => onSign?.mutate?.({ leaseId: lease.id, role: "lessee" })}>
+                  Sign as Lessee
+                </Button>
+              )}
+              <Button size="sm" variant="outline" className="bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg text-xs" onClick={() => onTerminate?.mutate?.({ leaseId: lease.id })}>
+                Terminate
+              </Button>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open: boolean; onOpenChange: (v: boolean) => void; onSubmit: any; authorities: any[] }) {
+  const [form, setForm] = useState({
+    lessorCompanyId: 0,
+    leaseType: "full_lease" as string,
+    startDate: "",
+    endDate: "",
+    revenueSharePercent: 75,
+    originCity: "",
+    originState: "",
+    destinationCity: "",
+    destinationState: "",
+    trailerTypes: [] as string[],
+    notes: "",
+  });
+
+  const handleSubmit = () => {
+    if (!form.lessorCompanyId) { toast.error("Select a carrier"); return; }
+    onSubmit?.mutate?.({
+      lessorCompanyId: form.lessorCompanyId,
+      leaseType: form.leaseType,
+      startDate: form.startDate || undefined,
+      endDate: form.endDate || undefined,
+      revenueSharePercent: form.revenueSharePercent || undefined,
+      originCity: form.originCity || undefined,
+      originState: form.originState || undefined,
+      destinationCity: form.destinationCity || undefined,
+      destinationState: form.destinationState || undefined,
+      trailerTypes: form.trailerTypes.length > 0 ? form.trailerTypes : undefined,
+      notes: form.notes || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            New Lease Agreement
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          {/* Lease Type */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Lease Type</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
+              {Object.entries(LEASE_TYPE_LABEL).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => setForm(f => ({ ...f, leaseType: key }))}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    form.leaseType === key
+                      ? `${cfg.bg} border-current ${cfg.color}`
+                      : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  <p className="font-medium text-sm">{cfg.label}</p>
+                  <p className="text-[10px] mt-0.5 opacity-70">{cfg.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Carrier Selection */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Carrier (Lessor)</Label>
+            <Select value={form.lessorCompanyId ? String(form.lessorCompanyId) : ""} onValueChange={v => setForm(f => ({ ...f, lessorCompanyId: Number(v) }))}>
+              <SelectTrigger className="mt-1.5 bg-slate-800/50 border-slate-700/50 rounded-xl"><SelectValue placeholder="Select carrier..." /></SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700">
+                {authorities.map((a: any) => (
+                  <SelectItem key={a.companyId} value={String(a.companyId)} className="text-white">
+                    {a.companyName} {a.mcNumber ? `(MC ${a.mcNumber})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Revenue Share */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Revenue Share (%)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={form.revenueSharePercent}
+              onChange={e => setForm(f => ({ ...f, revenueSharePercent: Number(e.target.value) }))}
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl"
+            />
+          </div>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-slate-400 text-xs uppercase tracking-wider">Start Date</Label>
+              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs uppercase tracking-wider">End Date</Label>
+              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+            </div>
+          </div>
+
+          {/* Trip Lease Route */}
+          {form.leaseType === "trip_lease" && (
+            <div>
+              <Label className="text-slate-400 text-xs uppercase tracking-wider">Route</Label>
+              <div className="grid grid-cols-2 gap-3 mt-1.5">
+                <Input placeholder="Origin city" value={form.originCity} onChange={e => setForm(f => ({ ...f, originCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Origin state" value={form.originState} onChange={e => setForm(f => ({ ...f, originState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination city" value={form.destinationCity} onChange={e => setForm(f => ({ ...f, destinationCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination state" value={form.destinationState} onChange={e => setForm(f => ({ ...f, destinationState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+              </div>
+            </div>
+          )}
+
+          {/* Trailer Types */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Trailer Types</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {TRAILER_TYPES.map(tt => (
+                <button
+                  key={tt}
+                  onClick={() => setForm(f => ({
+                    ...f,
+                    trailerTypes: f.trailerTypes.includes(tt) ? f.trailerTypes.filter(t => t !== tt) : [...f.trailerTypes, tt],
+                  }))}
+                  className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
+                    form.trailerTypes.includes(tt)
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "bg-slate-800 text-slate-500 border border-slate-700/50 hover:border-slate-600"
+                  }`}
+                >
+                  {tt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Notes</Label>
+            <Textarea
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder="Additional terms or notes..."
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl resize-none"
+              rows={3}
+            />
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={onSubmit?.isLoading}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl h-11 text-sm font-semibold"
+          >
+            {onSubmit?.isLoading ? "Creating..." : "Create Lease Agreement"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

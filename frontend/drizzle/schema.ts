@@ -4433,3 +4433,91 @@ export const dtcCodes = mysqlTable(
 export type DtcCode = typeof dtcCodes.$inferSelect;
 export type InsertDtcCode = typeof dtcCodes.$inferInsert;
 
+// ============================================================================
+// LEASE AGREEMENTS — FMCSR Part 376 Authority Leasing
+// Supports: Full Lease-On, Trip Lease, Interline, Seasonal
+// ============================================================================
+
+export const leaseAgreements = mysqlTable(
+  "lease_agreements",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    // Lessor = carrier whose authority is being used ("Big Wheels Logistics")
+    lessorCompanyId: int("lessorCompanyId").notNull(),
+    lessorUserId: int("lessorUserId"),
+    // Lessee = operator using the authority ("Independent Alice")
+    lesseeUserId: int("lesseeUserId").notNull(),
+    lesseeCompanyId: int("lesseeCompanyId"),
+
+    leaseType: mysqlEnum("leaseType", [
+      "full_lease",    // Long-term lease-on under carrier authority
+      "trip_lease",    // Single trip/load authority transfer
+      "interline",     // Two carriers sharing a haul
+      "seasonal",      // Seasonal lease arrangement
+    ]).notNull(),
+
+    status: mysqlEnum("leaseStatus", [
+      "draft",
+      "pending_signatures",
+      "active",
+      "expired",
+      "terminated",
+      "suspended",
+    ]).default("draft").notNull(),
+
+    // Authority details (from lessor's company)
+    mcNumber: varchar("mcNumber", { length: 50 }),
+    dotNumber: varchar("dotNumber", { length: 50 }),
+
+    // Terms
+    startDate: timestamp("startDate"),
+    endDate: timestamp("endDate"),
+    revenueSharePercent: decimal("revenueSharePercent", { precision: 5, scale: 2 }),
+
+    // FMCSR Part 376 compliance checklist
+    hasWrittenLease: boolean("hasWrittenLease").default(false),
+    hasExclusiveControl: boolean("hasExclusiveControl").default(false),
+    hasInsuranceCoverage: boolean("hasInsuranceCoverage").default(false),
+    hasVehicleMarking: boolean("hasVehicleMarking").default(false),
+
+    // Insurance
+    insuranceProvider: varchar("insuranceProvider", { length: 255 }),
+    insurancePolicyNumber: varchar("insurancePolicyNumber", { length: 100 }),
+    insuranceExpiry: timestamp("insuranceExpiry"),
+    liabilityCoverage: decimal("liabilityCoverage", { precision: 12, scale: 2 }),
+    cargoCoverage: decimal("cargoCoverage", { precision: 12, scale: 2 }),
+
+    // Trip lease specifics
+    loadId: int("loadId"),
+    originCity: varchar("originCity", { length: 100 }),
+    originState: varchar("originState", { length: 50 }),
+    destinationCity: varchar("destinationCity", { length: 100 }),
+    destinationState: varchar("destinationState", { length: 50 }),
+
+    // Equipment covered
+    vehicleIds: json("vehicleIds").$type<number[]>(),
+    trailerTypes: json("trailerTypes").$type<string[]>(),
+
+    // Signatures
+    lessorSignedAt: timestamp("lessorSignedAt"),
+    lesseeSignedAt: timestamp("lesseeSignedAt"),
+
+    notes: text("notes"),
+    documents: json("leaseDocuments").$type<string[]>(),
+
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    lessorCompanyIdx: index("lease_lessor_company_idx").on(table.lessorCompanyId),
+    lesseeUserIdx: index("lease_lessee_user_idx").on(table.lesseeUserId),
+    statusIdx: index("lease_status_idx").on(table.status),
+    leaseTypeIdx: index("lease_type_idx").on(table.leaseType),
+    loadIdx: index("lease_load_idx").on(table.loadId),
+    dotIdx: index("lease_dot_idx").on(table.dotNumber),
+  })
+);
+
+export type LeaseAgreement = typeof leaseAgreements.$inferSelect;
+export type InsertLeaseAgreement = typeof leaseAgreements.$inferInsert;
+
