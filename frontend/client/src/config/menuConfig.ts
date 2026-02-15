@@ -602,6 +602,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Real-time fleet positions"
     },
     { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
+    },
+    { 
       icon: "Brain", 
       label: "AI Assistant", 
       path: "/ai-assistant", 
@@ -794,6 +801,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { icon: "AlertTriangle", label: "Chargebacks", path: "/factoring/chargebacks", badge: 0, description: "Chargeback management" },
     { icon: "Users", label: "Debtors", path: "/factoring/debtors", badge: 0, description: "Debtor accounts" },
     { icon: "TrendingUp", label: "Reports", path: "/factoring/reports", badge: 0, description: "Factoring reports" },
+    { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
     { icon: "MessageSquare", label: "Messages", path: "/messages", badge: 0, description: "Messaging" },
     { icon: "Wallet", label: "Wallet", path: "/wallet", badge: 0, description: "EusoWallet" },
     { icon: "Settings", label: "Settings", path: "/factoring/settings", badge: 0, description: "Account settings" },
@@ -982,6 +990,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Compliance reports"
     },
     { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
+    },
+    { 
       icon: "MessageSquare", 
       label: "Messages", 
       path: "/messages", 
@@ -1075,6 +1090,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/hazmat", 
       badge: 0,
       description: "Hazardous materials safety"
+    },
+    { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "MessageSquare", 
@@ -1184,6 +1206,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/admin/analytics", 
       badge: 0,
       description: "Platform analytics"
+    },
+    { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Percent", 
@@ -1300,6 +1329,13 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/super-admin/monitoring", 
       badge: 0,
       description: "System monitoring"
+    },
+    { 
+      icon: "TrendingUp", 
+      label: "Market Intelligence", 
+      path: "/market-pricing", 
+      badge: 0,
+      description: "Freight rates, demand heatmaps & surge pricing"
     },
     { 
       icon: "Settings", 

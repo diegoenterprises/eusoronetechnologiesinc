@@ -33,6 +33,20 @@ async function resolveCatalystUserId(ctxUser: any): Promise<number> {
   return 0;
 }
 
+async function resolveCompanyId(ctxUser: any): Promise<number> {
+  const fromCtx = Number(ctxUser?.companyId) || 0;
+  if (fromCtx) return fromCtx;
+  // Fall back: resolve from users table
+  const db = await getDb();
+  if (!db) return 0;
+  const userId = Number(ctxUser?.id) || 0;
+  if (!userId) return 0;
+  try {
+    const [row] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+    return row?.companyId || 0;
+  } catch { return 0; }
+}
+
 export const catalystsRouter = router({
   // Generic CRUD for screen templates
   create: protectedProcedure
@@ -190,7 +204,7 @@ export const catalystsRouter = router({
       }
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
         const weekAgo = new Date();
         weekAgo.setDate(weekAgo.getDate() - 7);
 
@@ -249,7 +263,7 @@ export const catalystsRouter = router({
       if (!db) return [];
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
         const { drivers } = await import('../../drizzle/schema');
 
         const driverList = await db
@@ -296,7 +310,7 @@ export const catalystsRouter = router({
       if (!db) return [];
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
 
         const activeLoads = await db
           .select()
@@ -337,7 +351,7 @@ export const catalystsRouter = router({
       if (!db) return [];
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
 
@@ -1052,7 +1066,7 @@ export const catalystsRouter = router({
       if (!db) return null;
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
         const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
         if (!company) return null;
 
@@ -1085,7 +1099,7 @@ export const catalystsRouter = router({
       if (!db) return { totalLoads: 0, totalRevenue: 0, avgRatePerMile: 0, onTimeDeliveryRate: 0, safetyScore: 0, avgPaymentReceived: 0, loadsCompleted: 0, onTimeRate: 0 };
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
         const [totalLoads] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(eq(loads.catalystId, companyId));
         const [completed] = await db.select({ count: sql<number>`count(*)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'delivered')));
         const [totalRevenue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.catalystId, companyId), eq(loads.status, 'delivered')));
@@ -1116,7 +1130,7 @@ export const catalystsRouter = router({
       if (!db) return { totalTrucks: 0, activeTrucks: 0, inMaintenance: 0, available: 0, drivers: 0, activeDrivers: 0, totalDrivers: 0, utilization: 0 };
 
       try {
-        const companyId = ctx.user?.companyId || 0;
+        const companyId = await resolveCompanyId(ctx.user);
         const { drivers } = await import('../../drizzle/schema');
 
         const [totalTrucks] = await db.select({ count: sql<number>`count(*)` }).from(vehicles).where(eq(vehicles.companyId, companyId));
