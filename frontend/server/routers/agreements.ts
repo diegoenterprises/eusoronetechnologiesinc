@@ -9,6 +9,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, or, like, gte, lte, inArray } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import {
   agreements,
   agreementTemplates,
@@ -362,8 +363,8 @@ export const agreementsRouter = router({
       const db = await getDb();
       if (!db) return { agreements: [], total: 0 };
       try {
-        const userRole = ctx.user?.role || "SHIPPER";
-        const isAdmin = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
+        const userRole = await resolveUserRole(ctx.user);
+        const isAdmin = isAdminRole(userRole);
         const conditions: any[] = [];
 
         // Admin/Super Admin see ALL agreements; regular users see only theirs

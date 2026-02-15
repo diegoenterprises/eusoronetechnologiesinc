@@ -123,13 +123,22 @@ export const authService = {
         if (dbUser && dbUser.passwordHash) {
           const valid = await bcrypt.compare(password, dbUser.passwordHash);
           if (valid) {
+            // For test user emails, override DB role with test config role
+            const testOverride = testUsers[email];
+            const effectiveRole = testOverride ? testOverride.role : (dbUser.role || "SHIPPER");
+            if (testOverride && dbUser.role !== testOverride.role) {
+              console.log(`[auth] DB login role override for test user ${email}: ${dbUser.role} -> ${testOverride.role}`);
+              // Also sync DB role to prevent future mismatches
+              try { await db.update(users).set({ role: testOverride.role } as any).where(eq(users.id, dbUser.id)); } catch {}
+            }
             const authUser: AuthUser = {
               id: String(dbUser.id),
               email: dbUser.email || email,
-              role: dbUser.role || "SHIPPER",
+              role: effectiveRole,
               name: dbUser.name || "User",
               companyId: dbUser.companyId ? String(dbUser.companyId) : undefined,
             };
+            console.log(`[auth] DB login: ${email} role=${effectiveRole} dbId=${dbUser.id}`);
             const token = this.createSessionToken(authUser);
             return { user: authUser, token };
           }
@@ -184,27 +193,36 @@ export const authService = {
             }).from(users).where(eq(users.email, testUser.email)).limit(1);
             dbRow = newRow;
           } else {
-            // Ensure existing test user is approved (fix stale pending_review)
+            // Ensure existing test user is approved AND has correct role from test config
             try {
               const [metaRow] = await db.select({ id: users.id, metadata: users.metadata }).from(users).where(eq(users.id, dbRow.id)).limit(1);
               let meta: any = {};
               try { meta = metaRow?.metadata ? JSON.parse(metaRow.metadata as string) : {}; } catch {}
-              if (meta.approvalStatus !== "approved") {
+              const needsApproval = meta.approvalStatus !== "approved";
+              const needsRoleSync = dbRow.role !== testUser.role;
+              if (needsApproval || needsRoleSync) {
                 meta.approvalStatus = "approved";
-                await db.update(users).set({ metadata: JSON.stringify(meta), isVerified: true }).where(eq(users.id, dbRow.id));
-                console.log(`[auth] Auto-approved test user ${testUser.email}`);
+                const updates: any = { metadata: JSON.stringify(meta), isVerified: true };
+                if (needsRoleSync) {
+                  updates.role = testUser.role;
+                  console.log(`[auth] Syncing test user ${testUser.email} role: ${dbRow.role} -> ${testUser.role}`);
+                }
+                await db.update(users).set(updates).where(eq(users.id, dbRow.id));
+                if (needsApproval) console.log(`[auth] Auto-approved test user ${testUser.email}`);
               }
             } catch {}
           }
 
           if (dbRow) {
+            // Always use testUser.role for test users (DB role may be stale)
             resolvedUser = {
               id: String(dbRow.id),
               email: dbRow.email || testUser.email,
-              role: dbRow.role || testUser.role,
+              role: testUser.role,
               name: dbRow.name || testUser.name,
               companyId: dbRow.companyId ? String(dbRow.companyId) : undefined,
             };
+            console.log(`[auth] Test user resolved: ${testUser.email} role=${testUser.role} dbId=${dbRow.id}`);
           }
         }
       } catch (err) {

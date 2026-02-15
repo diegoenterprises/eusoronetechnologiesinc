@@ -18,6 +18,7 @@ import {
 import { WS_EVENTS } from "@shared/websocket-events";
 import { emailService } from "../_core/email";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
+import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -455,9 +456,11 @@ export const loadsRouter = router({
       // If marketplace mode, show ALL posted/bidding loads (for Load Board / Find Loads)
       // Otherwise scope by user role so each user only sees THEIR loads
       if (!input.marketplace) {
-        const role = ctx.user?.role || 'SHIPPER';
-        if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
+        const role = await resolveUserRole(ctx.user);
+        console.log(`[loads.list] user=${ctx.user?.email} role=${role} id=${(ctx.user as any)?.id}`);
+        if (isAdminRole(role)) {
           // Admins see all — no filter needed, skip resolveUserId entirely
+          console.log(`[loads.list] Admin bypass — no user scoping applied`);
         } else {
           const dbUserId = await resolveUserId(ctx.user);
           if (role === 'CATALYST' || role === 'DISPATCH') {
