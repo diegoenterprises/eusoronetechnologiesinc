@@ -170,6 +170,7 @@ import HotZones from "./pages/HotZones";
 import RatingsReviews from "./pages/RatingsReviews";
 import ClaimsPage from "./pages/Claims";
 import MarketPricing from "./pages/MarketPricing";
+import AccountStatus from "./pages/AccountStatus";
 import AdminApprovalQueue from "./pages/AdminApprovalQueue";
 import CatalystCompliance from "./pages/CatalystCompliance";
 import FuelPrices from "./pages/FuelPrices";
@@ -233,6 +234,7 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/"} component={guard(ALL, <Dashboard />)} />
       <Route path={"/profile"} component={guard(ALL, <ProfilePage />)} />
+      <Route path={"/account-status"} component={guard(ALL, <AccountStatus />)} />
       <Route path={"/settings"} component={guard(ALL, <SettingsPage />)} />
       <Route path={"/messages"} component={guard(ALL, <MessagesPage />)} />
       <Route path={"/wallet"} component={guard(ALL, <WalletPage />)} />

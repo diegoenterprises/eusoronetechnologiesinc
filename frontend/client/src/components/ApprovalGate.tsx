@@ -268,7 +268,7 @@ export function ApprovalBanner() {
         <p className="text-xs text-amber-400/70 truncate">Some features are locked until your account is approved.</p>
       </div>
       <button
-        onClick={() => navigate("/profile")}
+        onClick={() => navigate("/account-status")}
         className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs font-medium transition-colors whitespace-nowrap"
       >
         View Status

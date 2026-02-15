@@ -30,6 +30,7 @@ const ALWAYS_ACCESSIBLE_PATHS = new Set([
   "/company-channels",
   "/notifications",
   "/company",
+  "/account-status",
 ]);
 
 /**
