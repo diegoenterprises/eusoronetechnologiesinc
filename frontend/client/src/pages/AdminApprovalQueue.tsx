@@ -240,9 +240,13 @@ export default function AdminApprovalQueue() {
                 className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-800/30 transition-colors"
                 onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
               >
-                <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-sm font-bold text-gray-400">
-                  {(user.name || "?")[0]?.toUpperCase()}
-                </div>
+                {user.profilePicture ? (
+                  <img src={user.profilePicture} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-sm font-bold text-gray-400">
+                    {(user.name || "?")[0]?.toUpperCase()}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{user.name || "No name"}</p>
                   <p className="text-xs text-gray-500 truncate">{user.email}</p>

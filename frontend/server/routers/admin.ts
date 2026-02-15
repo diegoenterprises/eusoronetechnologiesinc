@@ -50,6 +50,7 @@ export const adminRouter = router({
           name: users.name,
           email: users.email,
           role: users.role,
+          profilePicture: users.profilePicture,
           isActive: users.isActive,
           isVerified: users.isVerified,
           lastSignedIn: users.lastSignedIn,
@@ -63,6 +64,7 @@ export const adminRouter = router({
           name: u.name || 'Unknown',
           email: u.email || '',
           role: u.role?.toLowerCase() || 'user',
+          profilePicture: u.profilePicture || null,
           status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended',
           lastLogin: u.lastSignedIn?.toISOString().split('T')[0] || null,
         }));

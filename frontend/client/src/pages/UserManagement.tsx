@@ -130,7 +130,11 @@ export default function UserManagement() {
               {(usersQuery.data as any)?.map((user: any) => (
                 <div key={user.id} className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{user.name?.charAt(0)}</div>
+                    {user.profilePicture ? (
+                      <img src={user.profilePicture} alt="" className="w-12 h-12 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{user.name?.charAt(0)}</div>
+                    )}
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-white font-bold">{user.name}</p>
