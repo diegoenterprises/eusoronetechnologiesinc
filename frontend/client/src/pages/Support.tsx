@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getApprovalStatus } from "@/lib/approvalGating";
 
 type Tab = "tickets" | "new" | "kb" | "contact";
 
@@ -35,6 +37,9 @@ export default function Support() {
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState("medium");
   const [category, setCategory] = useState("general");
+
+  const { user } = useAuth();
+  const isApproved = getApprovalStatus(user) === "approved";
 
   const ticketsQuery = (trpc as any).support?.getTickets?.useQuery?.() || { data: [], isLoading: false };
   const summaryQuery = (trpc as any).support?.getSummary?.useQuery?.() || { data: null, isLoading: false };
@@ -108,11 +113,23 @@ export default function Support() {
             <Bot className="w-7 h-7 text-blue-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={cn("font-bold", vl)}>Need instant help? Ask ESANG AI</p>
-            <p className="text-xs text-slate-400">Our AI assistant can answer compliance questions, look up ERG data, explain platform features, and help troubleshoot issues — 24/7.</p>
+            <p className={cn("font-bold", vl)}>{isApproved ? "Need instant help? Ask ESANG AI" : "ESANG AI — Available Once Approved"}</p>
+            <p className="text-xs text-slate-400">{isApproved
+              ? "Our AI assistant can answer compliance questions, look up ERG data, explain platform features, and help troubleshoot issues — 24/7."
+              : "Once your account is approved, ESANG AI will be available to answer compliance questions, look up ERG data, explain platform features, and help troubleshoot issues — 24/7."
+            }</p>
           </div>
-          <Button className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl font-bold flex-shrink-0 h-10" onClick={() => { toast.info("ESANG AI is available via the chat icon in the bottom-right corner"); }}>
-            <EsangIcon className="w-4 h-4 mr-2" />Chat with ESANG AI
+          <Button
+            className={cn(
+              "rounded-xl font-bold flex-shrink-0 h-10",
+              isApproved
+                ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white"
+                : "bg-slate-700 text-slate-400 cursor-not-allowed"
+            )}
+            disabled={!isApproved}
+            onClick={() => { if (isApproved) toast.info("ESANG AI is available via the chat icon in the bottom-right corner"); }}
+          >
+            <EsangIcon className="w-4 h-4 mr-2" />{isApproved ? "Chat with ESANG AI" : "Pending Approval"}
           </Button>
         </div>
       </div>
