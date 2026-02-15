@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql2 from "mysql2";
 import { InsertUser, users } from "../drizzle/schema";
@@ -79,6 +79,26 @@ function startHealthCheck() {
   }, 30000); // Every 30 seconds
 }
 
+// One-time startup cleanup — runs once after pool init
+let _startupCleanupDone = false;
+async function runStartupCleanup(db: ReturnType<typeof drizzle>) {
+  if (_startupCleanupDone) return;
+  _startupCleanupDone = true;
+  try {
+    // Delete stale carrier@eusotrip.com if catalyst@eusotrip.com exists
+    const [catalyst] = await db.select({ id: users.id }).from(users).where(eq(users.email, "catalyst@eusotrip.com")).limit(1);
+    if (catalyst) {
+      const result = await db.delete(users).where(eq(users.email, "carrier@eusotrip.com"));
+      console.log("[Startup] Cleaned up stale carrier@eusotrip.com (catalyst exists)");
+    }
+    // Fix any remaining CARRIER roles → CATALYST
+    await db.update(users).set({ role: "CATALYST" }).where(sql`${users.role} = 'CARRIER'`);
+    console.log("[Startup] Ensured no CARRIER roles remain");
+  } catch (err) {
+    console.warn("[Startup] Cleanup error (non-fatal):", err);
+  }
+}
+
 // Lazily create the drizzle instance backed by a connection pool.
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
@@ -87,6 +107,8 @@ export async function getDb() {
       _db = drizzle(_pool);
       startHealthCheck();
       console.log("[Database] Connection pool initialized (limit: 30, keepAlive: 15s, healthCheck: 30s)");
+      // Run one-time cleanup after pool is ready
+      runStartupCleanup(_db).catch(() => {});
     } catch (error) {
       console.error("[Database] Failed to create connection pool:", error);
       _pool = null;

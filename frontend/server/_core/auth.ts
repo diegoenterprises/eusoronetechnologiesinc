@@ -161,13 +161,15 @@ export const authService = {
           }).from(users).where(eq(users.email, testUser.email)).limit(1);
 
           if (!dbRow) {
-            // Create the user in DB
+            // Create the user in DB with approved status
+            const approvedMeta = JSON.stringify({ approvalStatus: "approved" });
             const insertData: Record<string, any> = {
               email: testUser.email,
               name: testUser.name || "User",
               role: testUser.role,
               isActive: true,
               isVerified: true,
+              metadata: approvedMeta,
             };
             try {
               insertData.openId = testUser.id;
@@ -181,6 +183,18 @@ export const authService = {
               role: users.role, companyId: users.companyId,
             }).from(users).where(eq(users.email, testUser.email)).limit(1);
             dbRow = newRow;
+          } else {
+            // Ensure existing test user is approved (fix stale pending_review)
+            try {
+              const [metaRow] = await db.select({ id: users.id, metadata: users.metadata }).from(users).where(eq(users.id, dbRow.id)).limit(1);
+              let meta: any = {};
+              try { meta = metaRow?.metadata ? JSON.parse(metaRow.metadata as string) : {}; } catch {}
+              if (meta.approvalStatus !== "approved") {
+                meta.approvalStatus = "approved";
+                await db.update(users).set({ metadata: JSON.stringify(meta), isVerified: true }).where(eq(users.id, dbRow.id));
+                console.log(`[auth] Auto-approved test user ${testUser.email}`);
+              }
+            } catch {}
           }
 
           if (dbRow) {
