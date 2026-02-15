@@ -6,11 +6,12 @@
  * 
  * PENDING_REVIEW users CAN access:
  *   Dashboard (read-only widgets), Profile, Settings, Messages,
- *   News, Support, Company Channels, The Haul, Notifications
+ *   News, Support, Company Channels, Notifications, Company
  * 
  * PENDING_REVIEW users CANNOT access:
  *   Loads, Marketplace, Bidding, ESANG AI, Wallet/Billing,
- *   Fleet Management, Agreements, Analytics, Create Load, Documents
+ *   Fleet Management, Agreements, Analytics, Create Load, Documents,
+ *   The Haul, Leaderboard, Rewards, Missions
  */
 
 export type ApprovalStatus = "pending_review" | "approved" | "suspended";
@@ -27,12 +28,8 @@ const ALWAYS_ACCESSIBLE_PATHS = new Set([
   "/news",
   "/support",
   "/company-channels",
-  "/the-haul",
   "/notifications",
   "/company",
-  "/leaderboard",
-  "/rewards",
-  "/missions",
 ]);
 
 /**
