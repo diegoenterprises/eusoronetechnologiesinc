@@ -211,6 +211,20 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
       { icon: <FileText className="w-3.5 h-3.5" />, text: "Compliance help" },
     ];
     switch (role) {
+      case "SUPER_ADMIN":
+        return [
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "Platform activity summary" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Pending approvals overview" },
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Load disputes & claims" },
+          { icon: <FileText className="w-3.5 h-3.5" />, text: "System health check" },
+        ];
+      case "ADMIN":
+        return [
+          { icon: <Shield className="w-3.5 h-3.5" />, text: "User activity report" },
+          { icon: <Beaker className="w-3.5 h-3.5" />, text: "Pending verifications" },
+          { icon: <MapPin className="w-3.5 h-3.5" />, text: "Platform load stats" },
+          ...shared,
+        ];
       case "DRIVER":
         return [
           { icon: <MapPin className="w-3.5 h-3.5" />, text: "Nearby gas stations" },
@@ -339,7 +353,11 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
                   Hello{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
                 </p>
                 <p className={cn("text-xs mb-4", isLight ? "text-slate-500" : "text-slate-400")}>
-                  I'm ESANG AI. Ask me about loads, hazmat, compliance, routes, pricing, or anything logistics.
+                  {role === "SUPER_ADMIN"
+                    ? "I'm ESANG AI. Ask me about platform activity, user approvals, disputes, system health, or any oversight question."
+                    : role === "ADMIN"
+                    ? "I'm ESANG AI. Ask me about user management, verifications, platform stats, or anything admin-related."
+                    : "I'm ESANG AI. Ask me about loads, hazmat, compliance, routes, pricing, or anything logistics."}
                 </p>
                 <div className="grid grid-cols-2 gap-2 w-full">
                   {quickPrompts.map((qp, i) => (
