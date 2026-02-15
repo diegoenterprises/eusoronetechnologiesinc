@@ -102,16 +102,35 @@ const COLD_ZONES = [
   { id: "cz-oma", name: "Omaha, NE", center: { lat: 41.26, lng: -95.93 }, surgeMultiplier: 0.86, reason: "Seasonal agricultural gap" },
 ];
 // ── DB ENHANCEMENT ──
-async function getDbEnhancement() {
-  const result = { loadsByState: {} as Record<string, number>, totalPlatformLoads: 0, bidsByState: {} as Record<string, number> };
+interface DbEnhancement {
+  loadsByState: Record<string, number>;
+  totalPlatformLoads: number;
+  avgRateByState: Record<string, number>;
+  trucksByState: Record<string, number>;
+}
+async function getDbEnhancement(): Promise<DbEnhancement> {
+  const result: DbEnhancement = { loadsByState: {}, totalPlatformLoads: 0, avgRateByState: {}, trucksByState: {} };
   try {
     const db = await getDb(); if (!db) return result;
+    // Active loads by state with average rate
     const rows = await db.execute(
-      sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(*) as cnt FROM loads WHERE status IN ('posted','bidding','assigned','in_transit') AND deletedAt IS NULL GROUP BY st`
+      sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(*) as cnt, AVG(rate / NULLIF(distance, 0)) as avgRpm FROM loads WHERE status IN ('posted','bidding','assigned','in_transit') AND deletedAt IS NULL GROUP BY st`
     );
     ((rows as any[]) || []).forEach((r: any) => {
       const st = (r.st || '').replace(/"/g, '');
-      if (st) { result.loadsByState[st] = Number(r.cnt); result.totalPlatformLoads += Number(r.cnt); }
+      if (st) {
+        result.loadsByState[st] = Number(r.cnt);
+        result.totalPlatformLoads += Number(r.cnt);
+        if (r.avgRpm && Number(r.avgRpm) > 0) result.avgRateByState[st] = +Number(r.avgRpm).toFixed(2);
+      }
+    });
+    // Assigned vehicles (trucks) by state
+    const truckRows = await db.execute(
+      sql`SELECT JSON_EXTRACT(pickupLocation, '$.state') as st, COUNT(DISTINCT driverId) as cnt FROM loads WHERE status IN ('assigned','in_transit') AND driverId IS NOT NULL AND deletedAt IS NULL GROUP BY st`
+    );
+    ((truckRows as any[]) || []).forEach((r: any) => {
+      const st = (r.st || '').replace(/"/g, '');
+      if (st) result.trucksByState[st] = Number(r.cnt);
     });
   } catch (e) { /* DB may not be ready */ }
   return result;
@@ -131,29 +150,29 @@ export const hotZonesRouter = router({
         cached("fuelPrices", fetchFuelPrices),
         cached("weatherAlerts", fetchWeatherAlerts),
       ]);
-      const now = Date.now();
+      const hasDbData = dbData.totalPlatformLoads > 0;
       const feed = HOT_ZONES.map(zone => {
-        const seed = (now % 10000) / 10000;
-        const rateVar = Math.sin(seed * Math.PI * 2 + zone.center.lat) * 0.15;
-        const loadVar = Math.round(Math.sin(seed * Math.PI * 2 + zone.center.lng) * 20);
-        const truckVar = Math.round(Math.cos(seed * Math.PI * 2 + zone.center.lat) * 10);
-        const liveRate = +(zone.avgRate + rateVar).toFixed(2);
-        const liveLoads = Math.max(10, zone.loadCount + loadVar);
-        const liveTrucks = Math.max(5, zone.truckCount + truckVar);
-        const liveRatio = +(liveLoads / liveTrucks).toFixed(2);
+        // Use real DB data when available, otherwise show baseline with 0% change
+        const dbLoads = dbData.loadsByState[zone.state] || 0;
+        const dbTrucks = dbData.trucksByState[zone.state] || 0;
+        const dbRate = dbData.avgRateByState[zone.state] || 0;
+
+        const liveLoads = hasDbData ? dbLoads : zone.loadCount;
+        const liveTrucks = hasDbData ? Math.max(dbTrucks, 1) : zone.truckCount;
+        const liveRate = hasDbData && dbRate > 0 ? dbRate : zone.avgRate;
+        const liveRatio = liveTrucks > 0 ? +(liveLoads / liveTrucks).toFixed(2) : zone.loadToTruckRatio;
         const liveSurge = +(liveRatio > 2.5 ? 1 + (liveRatio - 1) * 0.2 : 1 + (liveRatio - 1) * 0.1).toFixed(2);
+        const rateChange = hasDbData && dbRate > 0 ? +(liveRate - zone.avgRate).toFixed(2) : 0;
+        const rateChangePct = hasDbData && dbRate > 0 ? +(((liveRate - zone.avgRate) / zone.avgRate) * 100).toFixed(1) : 0;
+
         const zoneFuel = fuelPrices[zone.state] || null;
         const zoneWeather = weatherAlerts.filter(a => a.state.includes(zone.state) && ["Extreme","Severe"].includes(a.severity));
-        const platformLoads = dbData.loadsByState[zone.state] || 0;
-        const blendedLoads = dbData.totalPlatformLoads > 0
-          ? Math.round(liveLoads * (1 - Math.min(dbData.totalPlatformLoads / 100, 0.5)) + platformLoads * 50 * Math.min(dbData.totalPlatformLoads / 100, 0.5))
-          : liveLoads;
+
         return {
           zoneId: zone.id, zoneName: zone.name, state: zone.state, center: zone.center, radius: zone.radius,
           demandLevel: liveRatio > 2.8 ? "CRITICAL" : liveRatio > 2.0 ? "HIGH" : "ELEVATED",
-          liveRate, liveLoads: blendedLoads, liveTrucks, liveRatio, liveSurge,
-          rateChange: +(liveRate - zone.avgRate).toFixed(2),
-          rateChangePercent: +(((liveRate - zone.avgRate) / zone.avgRate) * 100).toFixed(1),
+          liveRate, liveLoads, liveTrucks, liveRatio, liveSurge,
+          rateChange, rateChangePercent: rateChangePct,
           topEquipment: zone.topEquipment, reasons: zone.reasons, peakHours: zone.peakHours,
           hazmatClasses: zone.hazmatClasses, oversizedFrequency: zone.oversizedFrequency,
           fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
@@ -162,14 +181,14 @@ export const hotZonesRouter = router({
           complianceRiskScore: (role === "COMPLIANCE_OFFICER" || role === "SAFETY_MANAGER")
             ? Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0))
             : undefined,
-          platformLoads, timestamp: new Date().toISOString(),
+          platformLoads: dbLoads, timestamp: new Date().toISOString(),
         };
       });
       // Role-specific filtering
       let filtered = [...feed];
       if (role === "ESCORT") filtered = filtered.filter(z => z.topEquipment.some(e => ["FLATBED","HAZMAT"].includes(e)) || ["HIGH","VERY_HIGH"].includes(z.oversizedFrequency || ""));
       if (input?.equipment) filtered = filtered.filter(z => z.topEquipment.includes(input.equipment!));
-      const coldFeed = COLD_ZONES.map(z => ({ ...z, liveRate: +(1.80 + Math.random() * 0.3).toFixed(2), liveSurge: z.surgeMultiplier, timestamp: new Date().toISOString() }));
+      const coldFeed = COLD_ZONES.map(z => ({ ...z, liveRate: +(z.surgeMultiplier * 2.20).toFixed(2), liveSurge: z.surgeMultiplier, timestamp: new Date().toISOString() }));
       return {
         zones: filtered, coldZones: coldFeed, roleContext,
         platformDataAvailable: dbData.totalPlatformLoads > 0,

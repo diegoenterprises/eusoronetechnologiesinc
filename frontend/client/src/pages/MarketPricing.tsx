@@ -331,7 +331,7 @@ export default function MarketPricing() {
       )}
 
       {/* ── HOT ZONES VIEW ── */}
-      {activeView === "hotzones" && <HotZones />}
+      {activeView === "hotzones" && <HotZones embedded />}
 
       {/* ── RATES MAIN BODY ── */}
       {activeView === "rates" && (

@@ -92,7 +92,7 @@ const DEMAND_COLORS_LIGHT: Record<string, { bg: string; text: string; ring: stri
   ELEVATED: { bg: "bg-amber-50", text: "text-amber-600", ring: "ring-amber-200" },
 };
 
-export default function HotZones() {
+export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
   const [, navigate] = useLocation();
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -131,7 +131,8 @@ export default function HotZones() {
 
   return (
     <div className={`min-h-screen ${isLight ? "bg-slate-50" : "bg-[#0a0a0f]"}`}>
-      {/* ── HEADER — frosted glass, brand gradient accent ── */}
+      {/* ── HEADER — frosted glass, brand gradient accent (hidden when embedded) ── */}
+      {!embedded && (
       <div className={`sticky top-0 z-30 backdrop-blur-2xl border-b ${isLight ? "bg-white/80 border-slate-200/60" : "bg-[#0a0a0f]/80 border-white/[0.04]"}`}>
         <div className="max-w-[1600px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -202,6 +203,7 @@ export default function HotZones() {
           )}
         </div>
       </div>
+      )}
 
       {/* ── LAYER TOGGLES — expandable pill row ── */}
       <AnimatePresence>
