@@ -271,21 +271,48 @@ export default function DashboardLayout({
     setSearchQuery("");
   }, [location]);
 
-  // Navigate to search result
+  // Navigate to search result (role-aware for Super Admin / Admin)
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const isAdmin = user?.role === "ADMIN" || isSuperAdmin;
   const navigateToResult = useCallback((result: { id: string; type: string; title: string }) => {
     setSearchOpen(false);
     setSearchQuery("");
     searchInputRef.current?.blur();
-    switch (result.type) {
-      case "load": navigate(`/loads/${result.id}`); break;
-      case "driver": navigate(`/catalysts`); break;
-      case "catalyst": navigate(`/catalysts`); break;
-      case "invoice": navigate(`/documents`); break;
-      case "document": navigate(`/documents`); break;
-      case "user": navigate(`/profile`); break;
-      default: navigate(`/`);
+    if (isSuperAdmin) {
+      // Super Admin: always route to oversight pages
+      switch (result.type) {
+        case "load": navigate(`/super-admin/loads`); break;
+        case "driver":
+        case "catalyst":
+        case "user": navigate(`/super-admin/users`); break;
+        case "company": navigate(`/super-admin/companies`); break;
+        case "invoice":
+        case "document": navigate(`/super-admin/loads`); break;
+        default: navigate(`/super-admin`);
+      }
+    } else if (isAdmin) {
+      switch (result.type) {
+        case "load": navigate(`/loads/${result.id}`); break;
+        case "driver":
+        case "catalyst":
+        case "user": navigate(`/admin/users`); break;
+        case "company": navigate(`/admin/companies`); break;
+        case "invoice":
+        case "document": navigate(`/documents`); break;
+        default: navigate(`/`);
+      }
+    } else {
+      switch (result.type) {
+        case "load": navigate(`/loads/${result.id}`); break;
+        case "driver": navigate(`/catalysts`); break;
+        case "catalyst": navigate(`/catalysts`); break;
+        case "invoice": navigate(`/documents`); break;
+        case "document": navigate(`/documents`); break;
+        case "user": navigate(`/profile`); break;
+        default: navigate(`/`);
+      }
     }
-  }, [navigate]);
+  }, [navigate, isSuperAdmin, isAdmin]);
 
   // Keyboard navigation for search results
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -682,12 +709,16 @@ export default function DashboardLayout({
                               <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                 r.type === "load" ? "bg-blue-500/15 text-blue-400" :
                                 r.type === "driver" ? "bg-cyan-500/15 text-cyan-400" :
-                                r.type === "catalyst" ? "bg-purple-500/15 text-purple-400" :
+                                r.type === "catalyst" ? "bg-orange-500/15 text-orange-400" :
+                                r.type === "company" ? "bg-emerald-500/15 text-emerald-400" :
+                                r.type === "user" ? "bg-purple-500/15 text-purple-400" :
                                 "bg-gray-500/15 text-gray-400"
                               }`}>
                                 {r.type === "load" ? <Package size={16} /> :
                                  r.type === "driver" ? <User size={16} /> :
                                  r.type === "catalyst" ? <Truck size={16} /> :
+                                 r.type === "company" ? <Building2 size={16} /> :
+                                 r.type === "user" ? <User size={16} /> :
                                  <FileText size={16} />}
                               </div>
                               <div className="flex-1 min-w-0">
@@ -697,7 +728,9 @@ export default function DashboardLayout({
                               <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                                 r.type === "load" ? "bg-blue-500/10 text-blue-400" :
                                 r.type === "driver" ? "bg-cyan-500/10 text-cyan-400" :
-                                r.type === "catalyst" ? "bg-purple-500/10 text-purple-400" :
+                                r.type === "catalyst" ? "bg-orange-500/10 text-orange-400" :
+                                r.type === "company" ? "bg-emerald-500/10 text-emerald-400" :
+                                r.type === "user" ? "bg-purple-500/10 text-purple-400" :
                                 "bg-gray-500/10 text-gray-400"
                               }`}>
                                 {r.type.toUpperCase()}

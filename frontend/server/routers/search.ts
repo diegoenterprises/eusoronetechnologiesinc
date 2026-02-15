@@ -28,11 +28,13 @@ export const searchRouter = router({
       const results: any[] = [];
 
       // ── LOADS ──────────────────────────────────────────────────────────
-      // Scope: shipper sees own loads, catalyst sees assigned, driver sees assigned
-      const loadScope = userRole === "SHIPPER" ? eq(loads.shipperId, userId)
+      // Scope: admin/super_admin/broker see all; shipper sees own; catalyst sees assigned; driver sees assigned
+      const isAdminRole = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
+      const loadScope = isAdminRole ? undefined
+        : userRole === "SHIPPER" ? eq(loads.shipperId, userId)
         : userRole === "CATALYST" ? eq(loads.catalystId, userId)
         : userRole === "DRIVER" ? eq(loads.driverId, userId)
-        : undefined; // admin/broker see all
+        : undefined; // broker see all
 
       const loadMatch = or(
         like(loads.loadNumber, q),
@@ -73,9 +75,11 @@ export const searchRouter = router({
 
       // ── USERS (drivers, catalysts, etc.) ───────────────────────────────
       const userMatch = or(like(users.name, q), like(users.email, q), like(users.phone, q));
-      const userWhere = companyId
-        ? and(eq(users.companyId, companyId), userMatch)
-        : userMatch;
+      const userWhere = isAdminRole
+        ? userMatch
+        : companyId
+          ? and(eq(users.companyId, companyId), userMatch)
+          : userMatch;
 
       let userResults: any[] = [];
       try {
@@ -92,21 +96,23 @@ export const searchRouter = router({
       let companyResults: any[] = [];
       try {
         const companyMatch = or(like(companies.name, q), like(companies.legalName, q), like(companies.dotNumber, q), like(companies.mcNumber, q), like(companies.city, q), like(companies.state, q));
-        const companyWhere = companyId ? and(eq(companies.id, companyId), companyMatch) : companyMatch;
+        const companyWhere = isAdminRole ? companyMatch : (companyId ? and(eq(companies.id, companyId), companyMatch) : companyMatch);
         companyResults = await db.select({ id: companies.id, name: companies.name, legalName: companies.legalName })
           .from(companies).where(companyWhere!).limit(5);
       } catch { /* companies table may not exist yet */ }
 
       for (const c of companyResults) {
-        results.push({ id: String(c.id), type: "catalyst", title: c.name || c.legalName || "Company", subtitle: c.legalName && c.legalName !== c.name ? c.legalName : "Company", match: 80 });
+        results.push({ id: String(c.id), type: "company", title: c.name || c.legalName || "Company", subtitle: c.legalName && c.legalName !== c.name ? c.legalName : "Company", match: 80 });
       }
 
       // ── DOCUMENTS ─────────────────────────────────────────────────────
       let docResults: any[] = [];
       try {
-        const docWhere = companyId
-          ? and(or(eq(documents.userId, userId), eq(documents.companyId, companyId)), like(documents.name, q))
-          : and(eq(documents.userId, userId), like(documents.name, q));
+        const docWhere = isAdminRole
+          ? like(documents.name, q)
+          : companyId
+            ? and(or(eq(documents.userId, userId), eq(documents.companyId, companyId)), like(documents.name, q))
+            : and(eq(documents.userId, userId), like(documents.name, q));
         docResults = await db.select({ id: documents.id, name: documents.name, type: documents.type })
           .from(documents).where(docWhere!).limit(5);
       } catch { /* documents table may not exist yet */ }
