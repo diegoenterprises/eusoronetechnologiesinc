@@ -1078,4 +1078,130 @@ export const adminRouter = router({
     totalRequests: 0, successfulRequests: 0, failedRequests: 0, avgResponseTime: 0,
     successRate: 0, avgLatency: 0, remainingQuota: 0, topEndpoints: [],
   })),
+
+  /**
+   * Platform-wide activity feed for Super Admin command center
+   * Aggregates recent events from loads, bids, agreements, support, claims, users
+   */
+  getPlatformActivity: auditedAdminProcedure
+    .input(z.object({ limit: z.number().default(30) }).optional())
+    .query(async ({ input }) => {
+      const db = await getDb();
+      const limit = input?.limit || 30;
+      const events: Array<{
+        id: string; type: string; title: string; detail: string;
+        timestamp: string; severity: "info" | "warning" | "success" | "critical";
+        entity?: string; entityId?: string;
+      }> = [];
+
+      if (!db) return { events, counts: { loads: 0, bids: 0, agreements: 0, claims: 0, support: 0, users: 0, zeun: 0 } };
+
+      try {
+        // Recent loads (last 48h)
+        const { loads: loadsTable } = await import("../../drizzle/schema");
+        const recentLoads = await db.select({
+          id: loadsTable.id, status: loadsTable.status, createdAt: loadsTable.createdAt,
+          pickupLocation: loadsTable.pickupLocation, deliveryLocation: loadsTable.deliveryLocation,
+          rate: loadsTable.rate, shipperId: loadsTable.shipperId,
+        }).from(loadsTable)
+          .orderBy(desc(loadsTable.createdAt))
+          .limit(limit);
+
+        for (const l of recentLoads) {
+          const pickup = (l.pickupLocation as any)?.city || "Unknown";
+          const delivery = (l.deliveryLocation as any)?.city || "Unknown";
+          const sev = l.status === "cancelled" ? "warning" as const : l.status === "delivered" ? "success" as const : "info" as const;
+          events.push({
+            id: `load-${l.id}`, type: "load", title: `Load #${l.id} — ${l.status}`,
+            detail: `${pickup} → ${delivery} · $${l.rate || 0}`,
+            timestamp: l.createdAt?.toISOString() || new Date().toISOString(),
+            severity: sev, entity: "load", entityId: String(l.id),
+          });
+        }
+
+        // Recent bids
+        try {
+          const { bids } = await import("../../drizzle/schema");
+          const recentBids = await db.select({
+            id: bids.id, loadId: bids.loadId, amount: bids.amount, status: bids.status, createdAt: bids.createdAt,
+          }).from(bids).orderBy(desc(bids.createdAt)).limit(Math.min(limit, 15));
+          for (const b of recentBids) {
+            const sev = b.status === "accepted" ? "success" as const : b.status === "rejected" ? "warning" as const : "info" as const;
+            events.push({
+              id: `bid-${b.id}`, type: "bid", title: `Bid ${b.status} — Load #${b.loadId}`,
+              detail: `$${b.amount || 0}`,
+              timestamp: b.createdAt?.toISOString() || new Date().toISOString(),
+              severity: sev, entity: "bid", entityId: String(b.id),
+            });
+          }
+        } catch {}
+
+        // Recent user registrations
+        const recentUsers = await db.select({
+          id: users.id, name: users.name, role: users.role, createdAt: users.createdAt, metadata: users.metadata,
+        }).from(users).orderBy(desc(users.createdAt)).limit(Math.min(limit, 10));
+        for (const u of recentUsers) {
+          let approvalStatus = "unknown";
+          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch {}
+          const sev = approvalStatus === "pending_review" ? "warning" as const : "info" as const;
+          events.push({
+            id: `user-${u.id}`, type: "user", title: `${u.name || "User"} registered`,
+            detail: `Role: ${u.role} · Status: ${approvalStatus}`,
+            timestamp: u.createdAt?.toISOString() || new Date().toISOString(),
+            severity: sev, entity: "user", entityId: String(u.id),
+          });
+        }
+
+        // Recent agreements
+        try {
+          const { agreements } = await import("../../drizzle/schema");
+          const recentAgreements = await db.select({
+            id: agreements.id, title: (agreements as any).title, status: (agreements as any).status, createdAt: agreements.createdAt,
+          }).from(agreements).orderBy(desc(agreements.createdAt)).limit(Math.min(limit, 10));
+          for (const a of recentAgreements) {
+            events.push({
+              id: `agreement-${a.id}`, type: "agreement", title: `Agreement: ${a.title || `#${a.id}`}`,
+              detail: `Status: ${a.status || "draft"}`,
+              timestamp: a.createdAt?.toISOString() || new Date().toISOString(),
+              severity: "info", entity: "agreement", entityId: String(a.id),
+            });
+          }
+        } catch {}
+
+        // Recent insurance claims
+        try {
+          const { insuranceClaims } = await import("../../drizzle/schema");
+          const recentClaims = await db.select({
+            id: insuranceClaims.id, status: (insuranceClaims as any).status, createdAt: insuranceClaims.createdAt,
+          }).from(insuranceClaims).orderBy(desc(insuranceClaims.createdAt)).limit(Math.min(limit, 10));
+          for (const c of recentClaims) {
+            const sev = (c.status === "open" || c.status === "escalated") ? "critical" as const : "warning" as const;
+            events.push({
+              id: `claim-${c.id}`, type: "claim", title: `Claim #${c.id}`,
+              detail: `Status: ${c.status || "open"}`,
+              timestamp: c.createdAt?.toISOString() || new Date().toISOString(),
+              severity: sev, entity: "claim", entityId: String(c.id),
+            });
+          }
+        } catch {}
+
+        // Counts
+        let loadCount = 0, bidCount = 0, agreementCount = 0, claimCount = 0;
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).loads); loadCount = r?.c || 0; } catch {}
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).bids); bidCount = r?.c || 0; } catch {}
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).agreements); agreementCount = r?.c || 0; } catch {}
+        try { const [r] = await db.select({ c: sql<number>`count(*)` }).from((await import("../../drizzle/schema")).insuranceClaims); claimCount = r?.c || 0; } catch {}
+
+        // Sort all events by timestamp desc
+        events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+        return {
+          events: events.slice(0, limit),
+          counts: { loads: loadCount, bids: bidCount, agreements: agreementCount, claims: claimCount, support: 0, users: recentUsers.length, zeun: 0 },
+        };
+      } catch (error) {
+        console.error('[Admin] getPlatformActivity error:', error);
+        return { events, counts: { loads: 0, bids: 0, agreements: 0, claims: 0, support: 0, users: 0, zeun: 0 } };
+      }
+    }),
 });

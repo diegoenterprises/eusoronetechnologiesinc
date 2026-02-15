@@ -720,7 +720,7 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
         )}
 
         {/* ── INSTRUCTIONS ── */}
-        <div className={`absolute top-12 left-3 text-[9px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
+        <div className={`absolute bottom-3 right-3 text-[9px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
           Scroll to zoom · Drag to pan · Click zone to focus
         </div>
       </div>

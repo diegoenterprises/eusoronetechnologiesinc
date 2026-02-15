@@ -1266,113 +1266,26 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     },
   ],
 
-  // SUPER_ADMIN: System administration, configuration
+  // SUPER_ADMIN: Platform-wide oversight — the one person who sees everything
   SUPER_ADMIN: [
-    { 
-      icon: "LayoutDashboard", 
-      label: "Dashboard", 
-      path: "/super-admin", 
-      badge: 0,
-      description: "System dashboard"
-    },
-    { 
-      icon: "Users", 
-      label: "Users", 
-      path: "/super-admin/users", 
-      badge: 0,
-      description: "All users"
-    },
-    { 
-      icon: "UserCheck", 
-      label: "Approvals", 
-      path: "/admin/approvals", 
-      badge: 0,
-      description: "Review and approve new registrations"
-    },
-    { 
-      icon: "Building2", 
-      label: "Companies", 
-      path: "/super-admin/companies", 
-      badge: 0,
-      description: "All companies"
-    },
-    { 
-      icon: "Package", 
-      label: "Loads", 
-      path: "/super-admin/loads", 
-      badge: 0,
-      description: "All loads"
-    },
-    { 
-      icon: "Activity", 
-      label: "Telemetry", 
-      path: "/admin/telemetry", 
-      badge: 0,
-      description: "GPS tracking and telemetry"
-    },
-    { 
-      icon: "MapPin", 
-      label: "Fleet Map", 
-      path: "/fleet-tracking", 
-      badge: 0,
-      description: "System-wide fleet tracking"
-    },
-    { 
-      icon: "Database", 
-      label: "Database", 
-      path: "/super-admin/database", 
-      badge: 0,
-      description: "Database management"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Logs", 
-      path: "/super-admin/logs", 
-      badge: 0,
-      description: "System logs"
-    },
-    { 
-      icon: "BarChart3", 
-      label: "Monitoring", 
-      path: "/super-admin/monitoring", 
-      badge: 0,
-      description: "System monitoring"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Market Intelligence", 
-      path: "/market-pricing", 
-      badge: 0,
-      description: "Freight rates, demand heatmaps & surge pricing"
-    },
-    { 
-      icon: "Settings", 
-      label: "Settings", 
-      path: "/super-admin/settings", 
-      badge: 0,
-      description: "System settings"
-    },
-    { 
-      icon: "Radio", 
-      label: "Company Channels", 
-      path: "/company-channels", 
-      badge: 0,
-      description: "Team communication channels"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "News", 
-      path: "/news", 
-      badge: 0,
-      description: "Platform news and updates"
-    },
-    { 
-      icon: "HelpCircle", 
-      label: "Support", 
-      path: "/support", 
-      badge: 0,
-      description: "Help"
-    },
+    { icon: "LayoutDashboard", label: "Command Center", path: "/super-admin", badge: 0, description: "Platform-wide oversight dashboard" },
+    { icon: "Users", label: "User Oversight", path: "/super-admin/users", badge: 0, description: "All platform users, roles & statuses" },
+    { icon: "UserCheck", label: "Approvals", path: "/admin/approvals", badge: 0, description: "Registration approval queue" },
+    { icon: "Building2", label: "Companies", path: "/super-admin/companies", badge: 0, description: "All registered companies" },
+    { icon: "Package", label: "Loads", path: "/super-admin/loads", badge: 0, description: "All platform loads — status, disputes, lifecycle" },
+    { icon: "PenTool", label: "Agreements", path: "/agreements", badge: 0, description: "All contracts & agreements across the platform" },
+    { icon: "AlertTriangle", label: "Claims & Disputes", path: "/claims", badge: 0, description: "Active claims, disputes & resolutions" },
+    { icon: "HelpCircle", label: "Support Tickets", path: "/support", badge: 0, description: "User support requests & issue resolution" },
+    { icon: "Wrench", label: "ZEUN Mechanics", path: "/admin/zeun", badge: 0, description: "Breakdown reports, diagnostics & repairs" },
+    { icon: "DollarSign", label: "Platform Fees", path: "/admin/platform-fees", badge: 0, description: "Fee configuration, commissions & revenue" },
+    { icon: "Activity", label: "Telemetry", path: "/admin/telemetry", badge: 0, description: "GPS tracking & system telemetry" },
+    { icon: "MapPin", label: "Fleet Map", path: "/fleet-tracking", badge: 0, description: "System-wide fleet tracking" },
+    { icon: "BarChart3", label: "Analytics", path: "/super-admin/monitoring", badge: 0, description: "Platform analytics & performance metrics" },
+    { icon: "TrendingUp", label: "Market Intelligence", path: "/market-pricing", badge: 0, description: "Freight rates, demand heatmaps & surge pricing" },
+    { icon: "FileText", label: "Audit Logs", path: "/super-admin/logs", badge: 0, description: "System-wide audit trail" },
+    { icon: "Database", label: "Database", path: "/super-admin/database", badge: 0, description: "Database health & management" },
+    { icon: "Settings", label: "Platform Config", path: "/super-admin/settings", badge: 0, description: "System settings & configuration" },
+    { icon: "Newspaper", label: "News", path: "/news", badge: 0, description: "Platform news and updates" },
   ],
 
   // Default/fallback menu

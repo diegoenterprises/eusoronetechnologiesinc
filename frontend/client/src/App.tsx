@@ -33,6 +33,7 @@ import ZeunBreakdownReport from "./pages/ZeunBreakdownReport";
 import ZeunMaintenanceTracker from "./pages/ZeunMaintenanceTracker";
 import ZeunProviderNetwork from "./pages/ZeunProviderNetwork";
 import MyLoadsPage from "./pages/MyLoads";
+import PlatformLoadsOversight from "./pages/PlatformLoadsOversight";
 import LoadCreatePage from "./pages/LoadCreate";
 import FindLoadsPage from "./pages/FindLoads";
 // ActiveLoads merged into MyLoads
@@ -441,7 +442,7 @@ function Router() {
       <Route path={"/super-admin"} component={guard(SUPR, <SuperAdminDashboard />)} />
       <Route path={"/super-admin/users"} component={guard(SUPR, <UserManagement />)} />
       <Route path={"/super-admin/companies"} component={guard(SUPR, <CompanyPage />)} />
-      <Route path={"/super-admin/loads"} component={guard(SUPR, <MyLoadsPage />)} />
+      <Route path={"/super-admin/loads"} component={guard(SUPR, <PlatformLoadsOversight />)} />
       <Route path={"/super-admin/database"} component={guard(SUPR, <DatabaseHealth />)} />
       <Route path={"/super-admin/logs"} component={guard(SUPR, <AuditLogs />)} />
       <Route path={"/super-admin/monitoring"} component={guard(SUPR, <Analytics />)} />
