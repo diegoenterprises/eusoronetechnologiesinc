@@ -90,10 +90,10 @@ export default function MarketPricing() {
 
   const { data, isLoading, refetch } = trpc.marketPricing.getCommodities.useQuery(
     { category: activeCategory !== "All Markets" ? activeCategory : undefined, search: search || undefined },
-    { refetchInterval: 30000 }
+    { refetchInterval: 15000 }
   );
 
-  const { data: intel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { refetchInterval: 60000 });
+  const { data: intel } = trpc.marketPricing.getMarketIntelligence.useQuery(undefined, { refetchInterval: 30000 });
 
   // Universal ticker search — calls searchCommodity which queries CommodityPriceAPI + local
   const searchQuery = (trpc as any).marketPricing?.searchCommodity?.useQuery?.(

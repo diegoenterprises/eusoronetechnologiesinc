@@ -660,7 +660,7 @@ export async function fetchMarketSnapshot(): Promise<MarketSnapshot> {
     isLiveData: hasAnyData,
   };
 
-  // Cache for 5 min (was 30 — shorter now since CommodityPriceAPI updates every 60 sec)
-  setCache(cacheKey, snapshot, 5 * 60 * 1000);
+  // Cache for 90 sec — CommodityPriceAPI updates every 60 sec, keep it fresh
+  setCache(cacheKey, snapshot, 90 * 1000);
   return snapshot;
 }

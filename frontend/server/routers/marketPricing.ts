@@ -16,18 +16,98 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { desc, sql, eq, and, gte, lte } from "drizzle-orm";
-import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, fetchCommodityPriceAPI, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
+import { fetchMarketSnapshot, type MarketSnapshot, searchCommodityPriceAPI, fetchCommodityPriceAPI, fetchCPAPIHistorical, fetchAllCPAPIQuotes, CPAPI_SYMBOL_MAP } from "../services/marketDataService";
 
 // Cached live snapshot (shared across endpoints)
 let _liveSnapshot: MarketSnapshot | null = null;
 let _liveSnapshotAt = 0;
 async function getLiveSnapshot(): Promise<MarketSnapshot | null> {
-  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 5 * 60 * 1000) return _liveSnapshot;
+  if (_liveSnapshot && Date.now() - _liveSnapshotAt < 90 * 1000) return _liveSnapshot;
   try {
     _liveSnapshot = await fetchMarketSnapshot();
     _liveSnapshotAt = Date.now();
     return _liveSnapshot;
   } catch { return _liveSnapshot; }
+}
+
+// Cached historical prices for change calculation (refreshes once per hour)
+let _historicalPrices: Record<string, number> = {};
+let _historicalAt = 0;
+async function getYesterdayPrices(): Promise<Record<string, number>> {
+  if (Object.keys(_historicalPrices).length > 0 && Date.now() - _historicalAt < 60 * 60 * 1000) return _historicalPrices;
+  try {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+    const cpapiSymbols = Object.values(CPAPI_SYMBOL_MAP);
+    const hist = await fetchCPAPIHistorical(cpapiSymbols, yesterday);
+    // Map CPAPI symbols back to internal symbols
+    const mapped: Record<string, number> = {};
+    for (const [internal, cpapi] of Object.entries(CPAPI_SYMBOL_MAP)) {
+      if (hist[cpapi] && hist[cpapi] > 0) mapped[internal] = hist[cpapi];
+    }
+    if (Object.keys(mapped).length > 0) {
+      _historicalPrices = mapped;
+      _historicalAt = Date.now();
+    }
+    return _historicalPrices;
+  } catch { return _historicalPrices; }
+}
+
+// Fetch real freight rates from DB (uses cargoType + rate/distance to compute $/mile)
+async function getRealFreightRates(): Promise<Record<string, { rate: number; prevRate: number; count: number }>> {
+  try {
+    const db = await getDb();
+    if (!db) return {};
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 86400000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 86400000);
+
+    // Current week avg rate-per-mile by cargoType
+    const currentRates = await db.select({
+      cargoType: loads.cargoType,
+      avgRpm: sql<number>`AVG(CAST(${loads.rate} AS DECIMAL(10,2)) / NULLIF(CAST(${loads.distance} AS DECIMAL(10,2)), 0))`,
+      cnt: sql<number>`COUNT(*)`,
+    }).from(loads)
+      .where(and(
+        gte(loads.createdAt, oneWeekAgo),
+        sql`CAST(${loads.rate} AS DECIMAL(10,2)) > 0`,
+        sql`CAST(${loads.distance} AS DECIMAL(10,2)) > 0`,
+      ))
+      .groupBy(loads.cargoType);
+
+    // Previous week for comparison
+    const prevRates = await db.select({
+      cargoType: loads.cargoType,
+      avgRpm: sql<number>`AVG(CAST(${loads.rate} AS DECIMAL(10,2)) / NULLIF(CAST(${loads.distance} AS DECIMAL(10,2)), 0))`,
+    }).from(loads)
+      .where(and(
+        gte(loads.createdAt, twoWeeksAgo),
+        lte(loads.createdAt, oneWeekAgo),
+        sql`CAST(${loads.rate} AS DECIMAL(10,2)) > 0`,
+        sql`CAST(${loads.distance} AS DECIMAL(10,2)) > 0`,
+      ))
+      .groupBy(loads.cargoType);
+
+    const prevMap: Record<string, number> = {};
+    for (const r of prevRates) {
+      if (r.cargoType) prevMap[r.cargoType] = Number(r.avgRpm) || 0;
+    }
+
+    const result: Record<string, { rate: number; prevRate: number; count: number }> = {};
+    for (const r of currentRates) {
+      const rpm = Number(r.avgRpm);
+      if (r.cargoType && rpm > 0 && rpm < 50) {
+        result[r.cargoType] = {
+          rate: rpm,
+          prevRate: prevMap[r.cargoType] || rpm,
+          count: Number(r.cnt),
+        };
+      }
+    }
+    return result;
+  } catch (err) {
+    console.warn("[MarketPricing] DB freight rate query failed:", err);
+    return {};
+  }
 }
 
 // Market rate indices (like Platts/Argus benchmarks)
@@ -300,90 +380,146 @@ export const marketPricingRouter = router({
       }
     }),
 
-  // Get all commodity market data — overlays live FRED/EIA data on energy commodities
+  // Get all commodity market data — LIVE from CommodityPriceAPI + Yahoo + FRED/EIA
   getCommodities: protectedProcedure
     .input(z.object({
       category: z.string().optional(),
       search: z.string().optional(),
     }).optional())
     .query(async ({ input }) => {
-      // Start with seed data + dynamic variation, then overlay live prices
-      let all = applyDynamicVariation([...COMMODITIES]);
-      const snap = await getLiveSnapshot();
+      // Fetch live data + yesterday's prices + real freight rates in parallel
+      const [snap, yesterdayPrices, dbFreight] = await Promise.all([
+        getLiveSnapshot(),
+        getYesterdayPrices(),
+        getRealFreightRates(),
+      ]);
 
-      console.log(`[MarketPricing] Snapshot: isLive=${snap?.isLiveData}, source=${snap?.source}, yahoo=${Object.keys(snap?.yahooQuotes || {}).length} quotes, cpapi=${Object.keys(snap?.cpapiQuotes || {}).length} quotes, fred_crude=${!!snap?.crudeOilWTI}, eia_diesel=${!!snap?.dieselNational}`);
+      const cpapi = snap?.cpapiQuotes || {};
+      const yq = snap?.yahooQuotes || {};
+      const hasLive = snap?.isLiveData || false;
 
-      if (snap?.isLiveData) {
-        // === CROSS-REFERENCING ENGINE ===
-        // Priority: CommodityPriceAPI (60s updates) > Yahoo Finance (real-time) > FRED/EIA (daily/weekly)
-        // For each commodity, pick the best available price from the highest-priority source
+      // === BUILD LIVE PRICE MAP ===
+      // For each commodity, compute: best price, real change from yesterday, source
+      const livePrices: Record<string, { price: number; changePct: number; changeAmt: number; prevClose: number; open: number; high: number; low: number; volume: string; source: string }> = {};
 
-        const cpapi = snap.cpapiQuotes || {};
-        const yq = snap.yahooQuotes || {};
+      // Layer 1: FRED/EIA government data
+      if (snap?.crudeOilWTI) livePrices["CL"] = { price: snap.crudeOilWTI.price, changePct: snap.crudeOilWTI.change, changeAmt: +(snap.crudeOilWTI.price * snap.crudeOilWTI.change / 100).toFixed(2), prevClose: +(snap.crudeOilWTI.price / (1 + snap.crudeOilWTI.change / 100)).toFixed(2), open: 0, high: 0, low: 0, volume: "N/A", source: "FRED" };
+      if (snap?.naturalGas) livePrices["NG"] = { price: snap.naturalGas.price, changePct: snap.naturalGas.change, changeAmt: +(snap.naturalGas.price * snap.naturalGas.change / 100).toFixed(4), prevClose: +(snap.naturalGas.price / (1 + snap.naturalGas.change / 100)).toFixed(4), open: 0, high: 0, low: 0, volume: "N/A", source: "FRED" };
+      if (snap?.dieselNational) {
+        livePrices["ULSD"] = { price: snap.dieselNational.price, changePct: snap.dieselNational.change, changeAmt: +(snap.dieselNational.price * snap.dieselNational.change / 100).toFixed(4), prevClose: +(snap.dieselNational.price / (1 + snap.dieselNational.change / 100)).toFixed(4), open: 0, high: 0, low: 0, volume: "N/A", source: "EIA" };
+        livePrices["DOE"] = { ...livePrices["ULSD"], source: "EIA" };
+      }
 
-        // Build overrides from ALL sources, highest priority wins
-        const overrides: Record<string, { price: number; change: number; source: string }> = {};
+      // Layer 2: Yahoo Finance (real-time OHLCV)
+      for (const [sym, q] of Object.entries(yq)) {
+        livePrices[sym] = {
+          price: q.price, changePct: q.changePercent, changeAmt: q.change,
+          prevClose: q.prevClose, open: q.open, high: q.high, low: q.low,
+          volume: q.volume > 1000 ? `${Math.round(q.volume / 1000)}K` : String(q.volume),
+          source: "Yahoo",
+        };
+      }
 
-        // Layer 1: FRED/EIA government data (lowest priority, but most authoritative for certain series)
-        if (snap.crudeOilWTI) overrides["CL"] = { price: snap.crudeOilWTI.price, change: snap.crudeOilWTI.change, source: "FRED" };
-        if (snap.naturalGas) overrides["NG"] = { price: snap.naturalGas.price, change: snap.naturalGas.change, source: "FRED" };
-        if (snap.dieselNational) {
-          overrides["ULSD"] = { price: snap.dieselNational.price, change: snap.dieselNational.change, source: "EIA" };
-          overrides["DOE"] = { price: snap.dieselNational.price, change: snap.dieselNational.change, source: "EIA" };
-        }
+      // Layer 3: CommodityPriceAPI (highest priority — 60-sec updates)
+      // Compute REAL change% from yesterday's historical prices
+      for (const [sym, price] of Object.entries(cpapi)) {
+        if (price > 0) {
+          const yestPrice = yesterdayPrices[sym];
+          const existing = livePrices[sym];
+          let changePct = existing?.changePct || 0;
+          let changeAmt = existing?.changeAmt || 0;
+          let prevClose = existing?.prevClose || 0;
 
-        // Layer 2: Yahoo Finance (higher priority — real-time during market hours)
-        for (const sym of Object.keys(yq)) {
-          overrides[sym] = { price: yq[sym].price, change: yq[sym].changePercent, source: "Yahoo" };
-        }
-
-        // Layer 3: CommodityPriceAPI (highest priority — 60-second updates, 130+ commodities)
-        for (const sym of Object.keys(cpapi)) {
-          if (cpapi[sym] > 0) {
-            // Cross-reference: only override if price is realistic (within 50% of existing)
-            const existing = overrides[sym];
-            if (!existing || Math.abs(cpapi[sym] - existing.price) / existing.price < 0.5) {
-              overrides[sym] = { price: cpapi[sym], change: existing?.change || 0, source: "CommodityPriceAPI" };
-            }
+          if (yestPrice && yestPrice > 0) {
+            // Real change from yesterday's close
+            changePct = +((price - yestPrice) / yestPrice * 100).toFixed(2);
+            changeAmt = +(price - yestPrice).toFixed(price >= 100 ? 2 : 4);
+            prevClose = yestPrice;
           }
-        }
 
-        // Apply all overrides to seed data
-        all = all.map(c => {
-          const ov = overrides[c.symbol];
-          if (!ov) return c;
-          const yQuote = yq[c.symbol];
-          const changeAmt = yQuote ? yQuote.change : +(ov.price * ov.change / 100).toFixed(4);
-          return {
-            ...c,
-            price: ov.price,
-            change: +changeAmt.toFixed(4),
-            changePercent: +ov.change.toFixed(2),
-            previousClose: yQuote ? +yQuote.prevClose.toFixed(4) : +(ov.price - changeAmt).toFixed(4),
-            open: yQuote ? +yQuote.open.toFixed(4) : +(ov.price - changeAmt * 0.5).toFixed(4),
-            high: yQuote ? +yQuote.high.toFixed(4) : +(ov.price * 1.005).toFixed(4),
-            low: yQuote ? +yQuote.low.toFixed(4) : +(ov.price * 0.995).toFixed(4),
-            volume: yQuote ? (yQuote.volume > 1000 ? `${Math.round(yQuote.volume / 1000)}K` : String(yQuote.volume)) : c.volume,
-            intraday: ov.change > 0.5 ? "BULL" as const : ov.change < -0.5 ? "BEAR" as const : "FLAT" as const,
-            daily: ov.change > 0 ? "UP" as const : ov.change < 0 ? "DOWN" as const : "FLAT" as const,
-            sparkline: generateSparkline(ov.price, ov.change > 0.5 ? "up" : ov.change < -0.5 ? "down" : "flat"),
+          livePrices[sym] = {
+            price, changePct, changeAmt, prevClose,
+            open: existing?.open || +(price - changeAmt * 0.3).toFixed(4),
+            high: existing?.high || +(price * 1.003).toFixed(4),
+            low: existing?.low || +(price * 0.997).toFixed(4),
+            volume: existing?.volume || "N/A",
+            source: "CommodityPriceAPI",
           };
-        });
+        }
+      }
 
-        // Also update fuel index commodities with live EIA
-        const liveFuel = await getLiveFuelIndex();
+      // === APPLY LIVE PRICES TO COMMODITIES ===
+      let all: CommodityData[] = COMMODITIES.map(c => {
+        const live = livePrices[c.symbol];
+        if (!live) return c; // Keep seed data for symbols with no live source
+        return {
+          ...c,
+          price: live.price,
+          change: live.changeAmt,
+          changePercent: live.changePct,
+          previousClose: live.prevClose || +(live.price - live.changeAmt).toFixed(4),
+          open: live.open || c.open,
+          high: live.high || c.high,
+          low: live.low || c.low,
+          volume: live.volume || c.volume,
+          intraday: live.changePct > 0.5 ? "BULL" as const : live.changePct < -0.5 ? "BEAR" as const : "FLAT" as const,
+          daily: live.changePct > 0 ? "UP" as const : live.changePct < 0 ? "DOWN" as const : "FLAT" as const,
+          weekly: live.changePct > 1 ? "UP" as const : live.changePct < -1 ? "DOWN" as const : c.weekly,
+          sparkline: generateSparkline(live.price, live.changePct > 0.5 ? "up" : live.changePct < -0.5 ? "down" : "flat"),
+        };
+      });
+
+      // === FREIGHT INDICES FROM REAL DB DATA ===
+      // Map cargoType enum values to our display symbols
+      const freightSymMap: Record<string, { sym: string; name: string }> = {
+        general: { sym: "DVAN", name: "Dry Van National" },
+        hazmat: { sym: "HAZM", name: "Hazmat National" },
+        refrigerated: { sym: "REEF", name: "Reefer National" },
+        oversized: { sym: "OVER", name: "Oversize National" },
+        liquid: { sym: "TANK", name: "Tanker National" },
+        petroleum: { sym: "TANK", name: "Tanker National" },
+        chemicals: { sym: "HAZM", name: "Hazmat National" },
+        gas: { sym: "TANK", name: "Tanker National" },
+      };
+
+      const dbUpdated = new Set<string>();
+      for (const [eqType, data] of Object.entries(dbFreight)) {
+        const mapping = freightSymMap[eqType.toLowerCase()];
+        if (mapping && !dbUpdated.has(mapping.sym)) {
+          dbUpdated.add(mapping.sym);
+          const changePct = data.prevRate > 0 ? +((data.rate - data.prevRate) / data.prevRate * 100).toFixed(2) : 0;
+          const changeAmt = +(data.rate - data.prevRate).toFixed(4);
+          all = all.map(c => c.symbol === mapping.sym ? {
+            ...c,
+            price: +data.rate.toFixed(4),
+            change: changeAmt,
+            changePercent: changePct,
+            previousClose: +data.prevRate.toFixed(4),
+            volume: `${data.count} loads`,
+            intraday: changePct > 0.5 ? "BULL" as const : changePct < -0.5 ? "BEAR" as const : "FLAT" as const,
+            daily: changePct > 0 ? "UP" as const : changePct < 0 ? "DOWN" as const : "FLAT" as const,
+            sparkline: generateSparkline(data.rate, changePct > 0.5 ? "up" : changePct < -0.5 ? "down" : "flat"),
+          } : c);
+        }
+      }
+
+      // === FUEL INDICES FROM LIVE EIA ===
+      const liveFuel = await getLiveFuelIndex();
+      if (liveFuel.isLive) {
         all = all.map(c => {
-          if (c.symbol === "FSC" && liveFuel.isLive) {
-            const fscBase = 0.406;
-            return { ...c, price: liveFuel.surchargePerMile, change: +(liveFuel.surchargePerMile - fscBase).toFixed(4), changePercent: +((liveFuel.surchargePerMile - fscBase) / fscBase * 100).toFixed(2) };
+          if (c.symbol === "FSC") {
+            const prev = 0.406;
+            return { ...c, price: liveFuel.surchargePerMile, change: +(liveFuel.surchargePerMile - prev).toFixed(4), changePercent: +((liveFuel.surchargePerMile - prev) / prev * 100).toFixed(2) };
           }
-          if (c.symbol === "DEF" && liveFuel.isLive) {
-            return { ...c, price: liveFuel.def.current };
+          if (c.symbol === "DEF") {
+            const prev = 2.95;
+            return { ...c, price: liveFuel.def.current, change: +(liveFuel.def.current - prev).toFixed(4), changePercent: +((liveFuel.def.current - prev) / prev * 100).toFixed(2) };
           }
           return c;
         });
       }
 
+      // === FILTER + SORT ===
       let data = [...all];
       if (input?.category && input.category !== "ALL") {
         data = data.filter(c => c.category === input.category);
@@ -392,9 +528,14 @@ export const marketPricingRouter = router({
         const q = input.search.toLowerCase();
         data = data.filter(c => c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q));
       }
+
       const categories = Array.from(new Set(all.map(c => c.category)));
       const gainers = [...all].sort((a, b) => b.changePercent - a.changePercent).slice(0, 5);
       const losers = [...all].sort((a, b) => a.changePercent - b.changePercent).slice(0, 5);
+
+      const liveCount = Object.keys(livePrices).length;
+      const dbFreightCount = Object.keys(dbFreight).length;
+
       return {
         commodities: data,
         categories,
@@ -406,8 +547,10 @@ export const marketPricingRouter = router({
           unchanged: all.filter(c => c.changePercent === 0).length,
         },
         lastUpdated: snap?.fetchedAt || new Date().toISOString(),
-        isLiveData: snap?.isLiveData || false,
-        source: snap?.source || "Seed Data",
+        isLiveData: hasLive || liveCount > 0,
+        source: hasLive
+          ? `${snap?.source}${dbFreightCount > 0 ? " + Platform Loads" : ""} · ${liveCount} live prices`
+          : dbFreightCount > 0 ? `Platform Loads (${dbFreightCount} equipment types)` : "Seed Data",
       };
     }),
 
