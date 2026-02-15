@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { APP_LOGO, APP_TITLE, getLoginUrl } from "@/const";
 import { getMenuForRole, getMenuForRoleWithApproval } from "@/config/menuConfig";
-import { getApprovalStatus } from "@/lib/approvalGating";
+import { getApprovalStatus, pathRequiresApproval } from "@/lib/approvalGating";
 import { ApprovalBanner, ApprovalGateInline } from "@/components/ApprovalGate";
 import {
   LayoutDashboard,
@@ -799,7 +799,7 @@ export default function DashboardLayout({
 
           <AnimatePresence mode="wait">
             <DominoPage key={location} className="p-3 sm:p-4 md:p-6">
-              {!isApproved && menuItems.find(m => m.path === location)?.requiresApproval ? (
+              {!isApproved && pathRequiresApproval(location) ? (
                 <ApprovalGateInline />
               ) : (
                 children

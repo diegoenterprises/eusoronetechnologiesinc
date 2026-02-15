@@ -17,8 +17,9 @@ import {
   Newspaper, Clock, Share2, Bookmark, BookmarkCheck, Search, ExternalLink,
   TrendingUp, AlertTriangle, Truck, DollarSign, Shield, Fuel,
   Snowflake, FlaskConical, Ship, Zap, RefreshCw, Radio, Wifi,
-  WifiOff, Activity, Landmark, BookOpen
+  WifiOff, Activity, Landmark, BookOpen, Lock
 } from "lucide-react";
+import { getApprovalStatus, pathRequiresApproval } from "@/lib/approvalGating";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
@@ -129,14 +130,30 @@ function QuickLinksNav() {
   };
 
   const links = ROLE_LINKS[role] || ROLE_LINKS.SHIPPER;
+  const approvalStatus = getApprovalStatus(user);
+  const isApproved = approvalStatus === "approved";
 
   return (
     <div className="space-y-1">
-      {links.map((link, idx) => (
-        <Button key={idx} variant="ghost" size="sm" className="w-full justify-start text-slate-400 hover:text-white h-8" onClick={() => navigate(link.path)}>
-          <link.icon className="w-3.5 h-3.5 mr-2" />{link.label}
-        </Button>
-      ))}
+      {links.map((link, idx) => {
+        const locked = !isApproved && pathRequiresApproval(link.path);
+        return (
+          <Button
+            key={idx}
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "w-full justify-start h-8",
+              locked ? "text-slate-600 cursor-not-allowed" : "text-slate-400 hover:text-white"
+            )}
+            onClick={() => { if (!locked) navigate(link.path); }}
+            disabled={locked}
+          >
+            {locked ? <Lock className="w-3.5 h-3.5 mr-2 text-slate-600" /> : <link.icon className="w-3.5 h-3.5 mr-2" />}
+            {link.label}
+          </Button>
+        );
+      })}
     </div>
   );
 }
