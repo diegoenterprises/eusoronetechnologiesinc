@@ -45,29 +45,48 @@ export const adminRouter = router({
       if (!db) return [];
 
       try {
-        let query = db.select({
+        const { companies } = await import("../../drizzle/schema");
+        const userList = await db.select({
           id: users.id,
           name: users.name,
           email: users.email,
+          phone: users.phone,
           role: users.role,
           profilePicture: users.profilePicture,
           isActive: users.isActive,
           isVerified: users.isVerified,
           lastSignedIn: users.lastSignedIn,
           createdAt: users.createdAt,
-        }).from(users);
+          companyId: users.companyId,
+          metadata: users.metadata,
+          currentLocation: users.currentLocation,
+          companyName: companies.name,
+          companyLogo: companies.logo,
+        }).from(users)
+          .leftJoin(companies, eq(users.companyId, companies.id))
+          .orderBy(desc(users.createdAt))
+          .limit(input.limit);
 
-        const userList = await query.orderBy(desc(users.createdAt)).limit(input.limit);
-
-        let filtered = userList.map(u => ({
-          id: String(u.id),
-          name: u.name || 'Unknown',
-          email: u.email || '',
-          role: u.role?.toLowerCase() || 'user',
-          profilePicture: u.profilePicture || null,
-          status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended',
-          lastLogin: u.lastSignedIn?.toISOString().split('T')[0] || null,
-        }));
+        let filtered = userList.map(u => {
+          let approvalStatus = "unknown";
+          try { const meta = u.metadata ? JSON.parse(u.metadata as string) : {}; approvalStatus = meta.approvalStatus || "unknown"; } catch {}
+          const loc = u.currentLocation as any;
+          return {
+            id: String(u.id),
+            name: u.name || 'Unknown',
+            email: u.email || '',
+            phone: u.phone || null,
+            role: u.role?.toLowerCase() || 'user',
+            profilePicture: u.profilePicture || null,
+            status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended',
+            lastLogin: u.lastSignedIn?.toISOString().split('T')[0] || null,
+            createdAt: u.createdAt?.toISOString().split('T')[0] || null,
+            approvalStatus,
+            companyName: u.companyName || null,
+            companyLogo: u.companyLogo || null,
+            location: loc ? `${loc.city || ''}${loc.city && loc.state ? ', ' : ''}${loc.state || ''}` : null,
+          };
+        });
 
         if (input.search) {
           const q = input.search.toLowerCase();

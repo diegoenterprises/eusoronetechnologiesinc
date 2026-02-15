@@ -14,7 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import {
   Users, Search, CheckCircle, XCircle, Shield,
-  Plus, Mail
+  Plus, Mail, Phone, Building2, MapPin, CalendarDays, Clock, UserCheck
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -143,26 +143,48 @@ export default function UserManagement() {
           ) : (
             <div className="divide-y divide-slate-700/50">
               {(usersQuery.data as any)?.map((user: any) => (
-                <div key={user.id} className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
+                <div key={user.id} className="p-4 flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4 flex-1 min-w-0">
                     {user.profilePicture ? (
-                      <img src={user.profilePicture} alt="" className="w-12 h-12 rounded-full object-cover" />
+                      <img src={user.profilePicture} alt="" className="w-14 h-14 rounded-full object-cover flex-shrink-0" />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg">{user.name?.charAt(0)}</div>
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center font-bold text-white text-lg flex-shrink-0">{user.name?.charAt(0)}</div>
                     )}
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-white font-bold">{user.name}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <p className="text-white font-bold text-base">{user.name}</p>
                         {getRoleBadge(user.role)}
                         {getStatusBadge(user.status)}
+                        {user.approvalStatus && user.approvalStatus !== "unknown" && (
+                          <Badge className={cn("border-0 text-[10px]",
+                            user.approvalStatus === "approved" ? "bg-green-500/20 text-green-400" :
+                            user.approvalStatus === "pending_review" ? "bg-yellow-500/20 text-yellow-400" :
+                            user.approvalStatus === "rejected" ? "bg-red-500/20 text-red-400" :
+                            "bg-slate-500/20 text-slate-400"
+                          )}>
+                            <UserCheck className="w-3 h-3 mr-0.5" />
+                            {user.approvalStatus === "pending_review" ? "Pending Review" : user.approvalStatus}
+                          </Badge>
+                        )}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-slate-500">
-                        <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{user.email}</span>
-                        <span>Last login: {user.lastLogin || "Never"}</span>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-1 text-xs text-slate-400">
+                        <span className="flex items-center gap-1.5 truncate"><Mail className="w-3 h-3 text-slate-500 flex-shrink-0" />{user.email}</span>
+                        {user.phone && <span className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-500 flex-shrink-0" />{user.phone}</span>}
+                        {user.companyName && (
+                          <span className="flex items-center gap-1.5 truncate">
+                            {user.companyLogo ? <img src={user.companyLogo} className="w-3.5 h-3.5 rounded-full flex-shrink-0" alt="" /> : <Building2 className="w-3 h-3 text-slate-500 flex-shrink-0" />}
+                            {user.companyName}
+                          </span>
+                        )}
+                        {user.location && <span className="flex items-center gap-1.5 truncate"><MapPin className="w-3 h-3 text-slate-500 flex-shrink-0" />{user.location}</span>}
+                      </div>
+                      <div className="flex items-center gap-4 mt-1.5 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />Joined: {user.createdAt || "—"}</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />Last login: {user.lastLogin || "Never"}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0 pt-1">
                     <Button size="sm" variant="outline" className={cn("rounded-lg", user.status === "active" ? "bg-red-500/20 border-red-500/30 text-red-400" : "bg-green-500/20 border-green-500/30 text-green-400")} onClick={() => toggleStatusMutation.mutate({ id: user.id })}>
                       {user.status === "active" ? "Deactivate" : "Activate"}
                     </Button>
