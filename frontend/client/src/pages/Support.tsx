@@ -1,6 +1,7 @@
 /**
- * SUPPORT CENTER — Theme-aware | Brand gradient | Full ticket management
- * ESANG AI integration | Knowledge base | Priority support
+ * SUPPORT PAGE — Role-aware
+ * SUPER_ADMIN / ADMIN: Support Management Dashboard (you ARE the support)
+ * Other roles: User-facing ticket submission
  */
 
 import React, { useState } from "react";
@@ -16,7 +17,8 @@ import {
   CheckCircle, Plus, Send, Loader2, Bot,
   BookOpen, Shield, AlertTriangle, ChevronRight,
   Headphones, LifeBuoy, Zap, FileText, Search,
-  ExternalLink, Star, TrendingUp
+  ExternalLink, Star, TrendingUp, Inbox, Users,
+  RefreshCw, Filter, Activity, BarChart3
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
@@ -26,12 +28,240 @@ import { toast } from "sonner";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getApprovalStatus } from "@/lib/approvalGating";
 
-type Tab = "tickets" | "new" | "kb" | "contact";
-
 export default function Support() {
+  const { user } = useAuth();
+  const role = (user?.role || "").toUpperCase();
+  const isAdmin = role === "SUPER_ADMIN" || role === "ADMIN";
+
+  if (isAdmin) return <AdminSupportView />;
+  return <UserSupportView />;
+}
+
+/* ═══════════════════════════════════════════
+   ADMIN VIEW — Support Management Dashboard
+   ═══════════════════════════════════════════ */
+function AdminSupportView() {
+  const { theme } = useTheme();
+  const L = theme === "light";
+  const [activeTab, setActiveTab] = useState<"queue" | "kb" | "health">("queue");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const ticketsQuery = (trpc as any).support?.getTickets?.useQuery?.({ search: searchQuery || undefined, status: statusFilter !== "all" ? statusFilter : undefined }) || { data: [], isLoading: false };
+  const summaryQuery = (trpc as any).support?.getSummary?.useQuery?.() || { data: null, isLoading: false };
+  const summary = summaryQuery.data;
+  const tickets: any[] = Array.isArray(ticketsQuery.data) ? ticketsQuery.data : [];
+
+  const cc = cn("rounded-2xl border backdrop-blur-sm", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
+  const vl = cn("font-medium text-sm", L ? "text-slate-800" : "text-white");
+  const mt = cn("text-sm", L ? "text-slate-500" : "text-slate-400");
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, string> = { open: "bg-yellow-500/15 text-yellow-500 border-yellow-500/30", in_progress: "bg-blue-500/15 text-blue-500 border-blue-500/30", resolved: "bg-green-500/15 text-green-500 border-green-500/30", closed: "bg-slate-500/15 text-slate-400 border-slate-500/30" };
+    return <Badge className={cn("border text-[10px] font-bold", map[status] || map.closed)}>{status?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Unknown"}</Badge>;
+  };
+
+  const priorityDot = (p: string) => {
+    const map: Record<string, string> = { urgent: "bg-red-500", high: "bg-orange-500", medium: "bg-blue-500", low: "bg-slate-400" };
+    return <div className={cn("w-2 h-2 rounded-full flex-shrink-0", map[p] || map.medium)} title={p} />;
+  };
+
+  return (
+    <div className="p-4 md:p-6 space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">Support Management</h1>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+              <Headphones className="w-3 h-3 text-blue-500" />
+              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">Admin</span>
+            </div>
+          </div>
+          <p className={cn("text-sm mt-1", mt)}>Manage incoming tickets, platform health & knowledge base</p>
+        </div>
+        <Button variant="outline" size="sm" className={cn("rounded-xl", L ? "border-slate-200" : "border-slate-700")} onClick={() => { ticketsQuery?.refetch?.(); summaryQuery?.refetch?.(); }}>
+          <RefreshCw className="w-3.5 h-3.5 mr-1.5" />Refresh
+        </Button>
+      </div>
+
+      {/* ESANG AI Banner */}
+      <div className={cn("p-4 rounded-2xl border", L ? "bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200" : "bg-gradient-to-r from-[#1473FF]/10 to-[#BE01FF]/10 border-slate-700/50")}>
+        <div className="flex items-center gap-4">
+          <div className="p-3 rounded-xl bg-gradient-to-br from-[#1473FF]/20 to-[#BE01FF]/20 flex-shrink-0"><Bot className="w-7 h-7 text-blue-500" /></div>
+          <div className="flex-1 min-w-0">
+            <p className={cn("font-bold", vl)}>ESANG AI handles Tier 1 support automatically</p>
+            <p className="text-xs text-slate-400">Users can ask ESANG AI compliance questions, ERG lookups, platform help, and troubleshooting before creating a ticket.</p>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 border border-green-500/20 flex-shrink-0">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            <span className="text-[11px] font-bold text-green-500">AI Active</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: "Total Tickets", value: summary?.total ?? 0, icon: <Inbox className="w-4 h-4" />, color: "text-blue-500", bg: "from-blue-500/10 to-blue-600/5" },
+          { label: "Open", value: summary?.open ?? 0, icon: <Clock className="w-4 h-4" />, color: "text-yellow-500", bg: "from-yellow-500/10 to-yellow-600/5" },
+          { label: "In Progress", value: summary?.inProgress ?? 0, icon: <Zap className="w-4 h-4" />, color: "text-blue-400", bg: "from-blue-400/10 to-blue-500/5" },
+          { label: "Resolved", value: summary?.resolved ?? 0, icon: <CheckCircle className="w-4 h-4" />, color: "text-green-500", bg: "from-green-500/10 to-green-600/5" },
+        ].map(s => (
+          <div key={s.label} className={cn("rounded-2xl p-4 bg-gradient-to-br border", L ? `${s.bg} border-slate-200/60` : `${s.bg} border-slate-700/30`)}>
+            <div className="flex items-center justify-between mb-2"><span className={s.color}>{s.icon}</span></div>
+            <p className={cn("text-2xl font-bold tracking-tight", s.color)}>{s.value}</p>
+            <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className={cn("flex items-center gap-1 p-1 rounded-xl w-fit", L ? "bg-slate-100" : "bg-slate-800/60")}>
+        {[
+          { id: "queue" as const, label: "Ticket Queue", icon: Inbox },
+          { id: "kb" as const, label: "Knowledge Base", icon: BookOpen },
+          { id: "health" as const, label: "Platform Health", icon: Activity },
+        ].map(tab => (
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={cn("flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all",
+            activeTab === tab.id ? "bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white shadow-md" : L ? "text-slate-500 hover:text-slate-700" : "text-slate-400 hover:text-white"
+          )}><tab.icon className="w-3.5 h-3.5" />{tab.label}</button>
+        ))}
+      </div>
+
+      {/* TICKET QUEUE */}
+      {activeTab === "queue" && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <Search className={cn("absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4", L ? "text-slate-400" : "text-slate-500")} />
+              <Input value={searchQuery} onChange={(e: any) => setSearchQuery(e.target.value)} placeholder="Search tickets..." className={cn("pl-10 rounded-xl", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")} />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className={cn("w-[150px] rounded-xl", L ? "bg-white border-slate-200" : "bg-slate-800/50 border-slate-700")}><Filter className="w-3.5 h-3.5 mr-1.5" /><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Card className={cc}>
+            <CardContent className="p-0">
+              {ticketsQuery.isLoading ? (
+                <div className="p-4 space-y-3">{[1,2,3].map((i: number) => <div key={i} className={cn("h-20 rounded-xl animate-pulse", L ? "bg-slate-100" : "bg-slate-800")} />)}</div>
+              ) : tickets.length === 0 ? (
+                <div className="text-center py-20 px-4">
+                  <div className="w-20 h-20 mx-auto mb-5 rounded-2xl bg-gradient-to-br from-[#1473FF]/10 to-[#BE01FF]/10 flex items-center justify-center">
+                    <Inbox className="w-10 h-10 text-slate-400/40" />
+                  </div>
+                  <p className={cn("font-bold text-lg mb-2", vl)}>No incoming tickets</p>
+                  <p className={cn("text-sm max-w-md mx-auto mb-6", mt)}>When users submit support tickets, they'll appear here for you to triage and resolve. ESANG AI handles Tier 1 questions automatically.</p>
+                  <div className={cn("p-4 rounded-xl border max-w-sm mx-auto", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/30 border-slate-700/30")}>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-green-500/10"><CheckCircle className="w-5 h-5 text-green-500" /></div>
+                      <div className="text-left">
+                        <p className={cn("font-semibold text-xs", vl)}>All clear</p>
+                        <p className="text-[11px] text-slate-400">No tickets need your attention right now</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className={cn("divide-y", L ? "divide-slate-100" : "divide-slate-700/30")}>
+                  {tickets.map((ticket: any) => (
+                    <div key={ticket.id} className={cn("p-4 transition-all cursor-pointer group", L ? "hover:bg-blue-50/50" : "hover:bg-slate-700/20")}>
+                      <div className="flex items-start gap-3">
+                        {priorityDot(ticket.priority || "medium")}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <p className={cn("font-bold text-sm", vl)}>{ticket.subject || "Untitled"}</p>
+                            {statusBadge(ticket.status)}
+                          </div>
+                          <p className={cn("text-xs line-clamp-1 mb-1.5", mt)}>{ticket.message || ""}</p>
+                          <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                            {ticket.userName && <span className="flex items-center gap-1"><Users className="w-3 h-3" />{ticket.userName}</span>}
+                            {ticket.createdAt && <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(ticket.createdAt).toLocaleDateString()}</span>}
+                          </div>
+                        </div>
+                        <ChevronRight className={cn("w-4 h-4 flex-shrink-0 mt-2", L ? "text-slate-300" : "text-slate-600")} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* KNOWLEDGE BASE */}
+      {activeTab === "kb" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { title: "Getting Started with EusoTrip", desc: "Learn the basics of creating loads and finding catalysts", icon: <BookOpen className="w-5 h-5 text-blue-500" />, category: "Onboarding" },
+            { title: "HazMat Compliance Guide", desc: "DOT/FMCSA requirements for hazardous materials transport", icon: <Shield className="w-5 h-5 text-orange-500" />, category: "Compliance" },
+            { title: "Understanding Platform Fees", desc: "How the dynamic commission engine calculates fees (5-15%)", icon: <TrendingUp className="w-5 h-5 text-purple-500" />, category: "Billing" },
+            { title: "Agreements & Smart Contracts", desc: "Creating, signing, and managing catalyst agreements", icon: <FileText className="w-5 h-5 text-blue-400" />, category: "Contracts" },
+            { title: "Emergency Response (ERG 2024)", desc: "Using ESANG AI for real-time emergency guidance", icon: <AlertTriangle className="w-5 h-5 text-red-400" />, category: "Safety" },
+            { title: "Spectra-Match Product ID", desc: "How crude oil identification works with spectral analysis", icon: <EsangIcon className="w-5 h-5 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent" />, category: "Technology" },
+          ].map((article, i) => (
+            <Card key={i} className={cn(cc, "hover:shadow-md transition-shadow cursor-pointer")}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={cn("p-2.5 rounded-xl flex-shrink-0", L ? "bg-slate-50" : "bg-slate-800/50")}>{article.icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className={cn("font-bold text-sm", vl)}>{article.title}</p>
+                      <Badge className="bg-slate-500/10 text-slate-400 border-slate-500/20 border text-[9px]">{article.category}</Badge>
+                    </div>
+                    <p className="text-xs text-slate-400">{article.desc}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* PLATFORM HEALTH */}
+      {activeTab === "health" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { icon: <Bot className="w-6 h-6 text-blue-500" />, title: "ESANG AI (Tier 1)", desc: "Handles compliance, ERG, platform help automatically", status: "Active", sc: "text-green-500", bg: "bg-blue-500/15" },
+            { icon: <Mail className="w-6 h-6 text-purple-500" />, title: "Email Inbox", desc: "support@eusotrip.com — forwarded to this queue", status: "Connected", sc: "text-green-500", bg: "bg-purple-500/15" },
+            { icon: <Phone className="w-6 h-6 text-cyan-500" />, title: "Phone Line", desc: "1-800-EUSOTRIP — 24/7 for urgent issues", status: "Active", sc: "text-green-500", bg: "bg-cyan-500/15" },
+            { icon: <Shield className="w-6 h-6 text-orange-500" />, title: "Emergency (CHEMTREC)", desc: "1-800-424-9300 — Hazmat spill & transport emergencies", status: "External", sc: "text-orange-500", bg: "bg-orange-500/15" },
+          ].map((ch, i) => (
+            <div key={i} className={cn("rounded-2xl p-5 border", L ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/40 border-slate-700/40")}>
+              <div className="flex items-start gap-4">
+                <div className={cn("p-3 rounded-xl flex-shrink-0", ch.bg)}>{ch.icon}</div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className={cn("font-bold text-sm", vl)}>{ch.title}</p>
+                    <span className={cn("text-[10px] font-bold", ch.sc)}>{ch.status}</span>
+                  </div>
+                  <p className="text-xs text-slate-400">{ch.desc}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   USER VIEW — Ticket Submission (original)
+   ═══════════════════════════════════════════ */
+function UserSupportView() {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const [, setLocation] = useLocation();
+  type Tab = "tickets" | "new" | "kb" | "contact";
   const [activeTab, setActiveTab] = useState<Tab>("tickets");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
