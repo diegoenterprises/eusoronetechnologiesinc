@@ -362,17 +362,21 @@ export const agreementsRouter = router({
       const db = await getDb();
       if (!db) return { agreements: [], total: 0 };
       try {
-        const userId = await resolveUserId(ctx.user);
+        const userRole = ctx.user?.role || "SHIPPER";
+        const isAdmin = userRole === "SUPER_ADMIN" || userRole === "ADMIN";
         const conditions: any[] = [];
 
-        // User can see agreements where they are party A or party B
-        if (userId) {
-          conditions.push(
-            or(
-              eq(agreements.partyAUserId, userId),
-              eq(agreements.partyBUserId, userId)
-            )
-          );
+        // Admin/Super Admin see ALL agreements; regular users see only theirs
+        if (!isAdmin) {
+          const userId = await resolveUserId(ctx.user);
+          if (userId) {
+            conditions.push(
+              or(
+                eq(agreements.partyAUserId, userId),
+                eq(agreements.partyBUserId, userId)
+              )
+            );
+          }
         }
 
         if (input.status) conditions.push(eq(agreements.status, input.status as any));

@@ -455,17 +455,19 @@ export const loadsRouter = router({
       // If marketplace mode, show ALL posted/bidding loads (for Load Board / Find Loads)
       // Otherwise scope by user role so each user only sees THEIR loads
       if (!input.marketplace) {
-        const dbUserId = await resolveUserId(ctx.user);
         const role = ctx.user?.role || 'SHIPPER';
         if (role === 'ADMIN' || role === 'SUPER_ADMIN') {
-          // Admins see all
-        } else if (role === 'CATALYST' || role === 'DISPATCH') {
-          filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.catalystId} = ${dbUserId})`);
-        } else if (role === 'DRIVER' || role === 'ESCORT') {
-          filters.push(sql`(${loads.driverId} = ${dbUserId} OR ${loads.shipperId} = ${dbUserId})`);
+          // Admins see all — no filter needed, skip resolveUserId entirely
         } else {
-          // SHIPPER, BROKER, etc. — see loads they created
-          filters.push(eq(loads.shipperId, dbUserId));
+          const dbUserId = await resolveUserId(ctx.user);
+          if (role === 'CATALYST' || role === 'DISPATCH') {
+            filters.push(sql`(${loads.shipperId} = ${dbUserId} OR ${loads.catalystId} = ${dbUserId})`);
+          } else if (role === 'DRIVER' || role === 'ESCORT') {
+            filters.push(sql`(${loads.driverId} = ${dbUserId} OR ${loads.shipperId} = ${dbUserId})`);
+          } else {
+            // SHIPPER, BROKER, etc. — see loads they created
+            filters.push(eq(loads.shipperId, dbUserId));
+          }
         }
       } else {
         // Marketplace: only show publicly available loads

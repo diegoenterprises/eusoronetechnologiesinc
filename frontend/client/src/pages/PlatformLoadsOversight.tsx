@@ -114,29 +114,32 @@ export default function PlatformLoadsOversight() {
               </div>
               {loads.map((l: any) => {
                 const st = STATUS_CFG[l.status] || STATUS_CFG.posted;
+                const originCity = l.origin?.city || (l.pickupLocation as any)?.city || "";
+                const originState = l.origin?.state || (l.pickupLocation as any)?.state || "";
+                const destCity = l.destination?.city || (l.deliveryLocation as any)?.city || "";
+                const destState = l.destination?.state || (l.deliveryLocation as any)?.state || "";
                 return (
                   <div key={l.id} className="px-4 py-3 grid grid-cols-12 gap-3 items-center hover:bg-slate-700/20 transition-colors">
                     <div className="col-span-1">
-                      <span className="text-white font-mono text-sm">#{l.id}</span>
+                      <span className="text-white font-mono text-sm">#{l.loadNumber || l.id}</span>
                     </div>
                     <div className="col-span-3">
                       <p className="text-white text-sm font-medium truncate">
-                        {l.pickupCity || l.pickupState || "Origin"} <span className="text-slate-500 mx-1">-&gt;</span> {l.deliveryCity || l.deliveryState || "Dest"}
+                        {originCity || originState || "Origin"} <span className="text-slate-500 mx-1">-&gt;</span> {destCity || destState || "Dest"}
                       </p>
-                      <p className="text-[10px] text-slate-500 truncate">{l.commodityType || l.loadType || "General"} {l.weight ? `| ${l.weight} lbs` : ""}</p>
+                      <p className="text-[10px] text-slate-500 truncate">{l.commodity || l.cargoType || "General"} {l.weight ? `| ${l.weight} lbs` : ""}</p>
                     </div>
                     <div className="col-span-2">
                       <div className="flex items-center gap-2">
-                        {l.shipperLogo ? <img src={l.shipperLogo} className="w-6 h-6 rounded-full" alt="" /> : l.shipperCompanyLogo ? <img src={l.shipperCompanyLogo} className="w-6 h-6 rounded-full" alt="" /> : null}
+                        {(l.shipperProfilePicture || l.companyLogo) && <img src={l.shipperProfilePicture || l.companyLogo} className="w-6 h-6 rounded-full object-cover" alt="" />}
                         <div>
                           <p className="text-white text-xs truncate">{l.shipperName || "—"}</p>
-                          <p className="text-[10px] text-slate-500 truncate">{l.shipperCompanyName || ""}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{l.companyName || ""}</p>
                         </div>
                       </div>
                     </div>
                     <div className="col-span-2">
                       <div className="flex items-center gap-2">
-                        {l.catalystLogo ? <img src={l.catalystLogo} className="w-6 h-6 rounded-full" alt="" /> : l.catalystCompanyLogo ? <img src={l.catalystCompanyLogo} className="w-6 h-6 rounded-full" alt="" /> : null}
                         <div>
                           <p className="text-white text-xs truncate">{l.catalystName || "Unassigned"}</p>
                           <p className="text-[10px] text-slate-500 truncate">{l.catalystCompanyName || ""}</p>
@@ -144,7 +147,7 @@ export default function PlatformLoadsOversight() {
                       </div>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-emerald-400 font-medium text-sm">${(l.rate || l.totalRate || 0).toLocaleString()}</span>
+                      <span className="text-emerald-400 font-medium text-sm">${(l.rate || 0).toLocaleString()}</span>
                     </div>
                     <div className="col-span-1">
                       <Badge className={`border-0 text-[10px] ${st.bg} ${st.color} gap-1`}>
@@ -152,7 +155,7 @@ export default function PlatformLoadsOversight() {
                       </Badge>
                     </div>
                     <div className="col-span-1">
-                      <span className="text-[10px] text-slate-500">{l.createdAt ? timeAgo(l.createdAt) : ""}</span>
+                      <span className="text-[10px] text-slate-500">{l.createdAt || ""}</span>
                     </div>
                     <div className="col-span-1 flex justify-end">
                       <Button variant="ghost" size="sm" className="text-slate-400 hover:text-white h-8 w-8 p-0" onClick={() => nav(`/loads/${l.id}`)}>
