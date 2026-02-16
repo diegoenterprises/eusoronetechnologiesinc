@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { eq, desc, and, sql, gte, lte } from "drizzle-orm";
+import { eq, desc, and, or, like, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { esangAI } from "../_core/esangAI";
 import { getDb } from "../db";
@@ -91,6 +91,95 @@ function analyzeSymptoms(symptoms: string[]): { issue: string; probability: numb
   }
 
   return bestMatch;
+}
+
+// ============================================================================
+// FREE GEOCODING & MECHANIC DISCOVERY APIs (OpenStreetMap — no API key needed)
+// ============================================================================
+
+/** Geocode a location name to coordinates using Nominatim (OpenStreetMap) */
+async function geocodeLocation(query: string): Promise<{ lat: number; lng: number; displayName: string } | null> {
+  try {
+    const encoded = encodeURIComponent(query);
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1&countrycodes=us`,
+      { headers: { "User-Agent": "EusoTrip/1.0 (ZEUN Mechanics)" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
+    if (!data.length) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), displayName: data[0].display_name };
+  } catch (e) {
+    console.error("[ZEUN] Geocode error:", e);
+    return null;
+  }
+}
+
+/** Search for real mechanic/repair shops near coordinates using Overpass API (OpenStreetMap) */
+async function searchOverpassMechanics(lat: number, lng: number, radiusMeters: number = 40000): Promise<Array<{
+  name: string; lat: number; lng: number; phone?: string; website?: string;
+  address?: string; city?: string; state?: string; zip?: string;
+  providerType: string; services: string[];
+}>> {
+  try {
+    // Search for car repair shops, truck repair, fuel stations, tyre shops within radius
+    const query = `
+      [out:json][timeout:15];
+      (
+        node["shop"="car_repair"](around:${radiusMeters},${lat},${lng});
+        node["shop"="tyres"](around:${radiusMeters},${lat},${lng});
+        node["amenity"="car_repair"](around:${radiusMeters},${lat},${lng});
+        node["craft"="mechanic"](around:${radiusMeters},${lat},${lng});
+        way["shop"="car_repair"](around:${radiusMeters},${lat},${lng});
+        way["shop"="tyres"](around:${radiusMeters},${lat},${lng});
+        way["amenity"="car_repair"](around:${radiusMeters},${lat},${lng});
+      );
+      out center body 50;
+    `;
+    const res = await fetch("https://overpass-api.de/api/interpreter", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": "EusoTrip/1.0" },
+      body: `data=${encodeURIComponent(query)}`,
+    });
+    if (!res.ok) { console.warn("[ZEUN] Overpass API error:", res.status); return []; }
+    const data = await res.json() as { elements: Array<{ lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }> };
+
+    return (data.elements || []).filter(el => el.tags?.name).map(el => {
+      const tags = el.tags || {};
+      const elLat = el.lat ?? el.center?.lat ?? 0;
+      const elLng = el.lon ?? el.center?.lon ?? 0;
+      let providerType = "INDEPENDENT";
+      if (tags.shop === "tyres") providerType = "TIRE_SHOP";
+      else if (tags.amenity === "fuel" || tags.name?.toLowerCase().includes("truck stop")) providerType = "TRUCK_STOP";
+      else if (tags.name?.toLowerCase().includes("dealer")) providerType = "DEALER";
+
+      const services: string[] = [];
+      if (tags["service:vehicle:car_repair"] === "yes" || tags.shop === "car_repair") services.push("General Repair");
+      if (tags["service:vehicle:tyres"] === "yes" || tags.shop === "tyres") services.push("Tire Service");
+      if (tags["service:vehicle:oil_change"] === "yes") services.push("Oil Change");
+      if (tags["service:vehicle:brakes"] === "yes") services.push("Brake Service");
+      if (tags["service:vehicle:transmission"] === "yes") services.push("Transmission");
+      if (tags["service:vehicle:engine"] === "yes") services.push("Engine Repair");
+      if (services.length === 0) services.push("General Repair");
+
+      return {
+        name: tags.name || "Unknown Shop",
+        lat: elLat,
+        lng: elLng,
+        phone: tags.phone || tags["contact:phone"] || undefined,
+        website: tags.website || tags["contact:website"] || undefined,
+        address: [tags["addr:housenumber"], tags["addr:street"]].filter(Boolean).join(" ") || undefined,
+        city: tags["addr:city"] || undefined,
+        state: tags["addr:state"] || undefined,
+        zip: tags["addr:postcode"] || undefined,
+        providerType,
+        services,
+      };
+    });
+  } catch (e) {
+    console.error("[ZEUN] Overpass search error:", e);
+    return [];
+  }
 }
 
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -443,6 +532,162 @@ export const zeunMechanicsRouter = router({
       score: p.score,
       aiGenerated: !p.externalId && !p.lastVerified,
     }));
+  }),
+
+  // ============================================================================
+  // SEARCH PROVIDERS — Location search, name search, + free OpenStreetMap API
+  // ============================================================================
+
+  searchProviders: protectedProcedure.input(z.object({
+    query: z.string().min(1),
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+    radiusMiles: z.number().default(50),
+    maxResults: z.number().default(20),
+  })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return { providers: [], searchLocation: null, source: "none" as const };
+
+    const query = input.query.trim();
+    const results: Array<{
+      id: number | null; name: string; type: string; chainName: string | null;
+      address: string | null; city: string | null; state: string | null;
+      phone: string | null; distance: number; rating: number | null;
+      reviewCount: number | null; available24x7: boolean | null;
+      hasMobileService: boolean | null; services: string[] | null;
+      score: number; source: string; website: string | null;
+    }> = [];
+    const seenNames = new Set<string>();
+
+    // 1) SEARCH DB BY NAME / CHAIN NAME
+    const nameMatches = await db.select().from(zeunRepairProviders).where(
+      and(
+        eq(zeunRepairProviders.isActive, true),
+        or(
+          like(zeunRepairProviders.name, `%${query}%`),
+          like(zeunRepairProviders.chainName, `%${query}%`),
+          like(zeunRepairProviders.city, `%${query}%`),
+          like(zeunRepairProviders.state, `%${query}%`),
+          like(zeunRepairProviders.address, `%${query}%`)
+        )
+      )
+    ).limit(50);
+
+    const refLat = input.latitude ?? 30.5127;
+    const refLng = input.longitude ?? -97.6792;
+
+    for (const p of nameMatches) {
+      const distance = p.latitude && p.longitude
+        ? calculateDistance(refLat, refLng, Number(p.latitude), Number(p.longitude))
+        : 999;
+      const key = p.name.toLowerCase().replace(/\s+/g, "");
+      if (!seenNames.has(key)) {
+        seenNames.add(key);
+        results.push({
+          id: p.id, name: p.name, type: p.providerType,
+          chainName: p.chainName, address: p.address, city: p.city, state: p.state,
+          phone: p.phone, distance: Number(distance.toFixed(1)),
+          rating: p.rating ? Number(p.rating) : null,
+          reviewCount: p.reviewCount, available24x7: p.available24x7,
+          hasMobileService: p.hasMobileService, services: p.services,
+          score: 100 + (p.rating ? Number(p.rating) * 10 : 0),
+          source: "database", website: null,
+        });
+      }
+    }
+
+    // 2) GEOCODE THE QUERY (is it a location name like "Houston"?)
+    let searchLocation: { lat: number; lng: number; displayName: string } | null = null;
+    const geo = await geocodeLocation(query);
+    if (geo) {
+      searchLocation = geo;
+      console.log(`[ZEUN] Geocoded "${query}" → ${geo.lat.toFixed(4)}, ${geo.lng.toFixed(4)} (${geo.displayName})`);
+
+      // Also search DB near the geocoded location
+      const allActive = await db.select().from(zeunRepairProviders).where(eq(zeunRepairProviders.isActive, true)).limit(200);
+      for (const p of allActive) {
+        if (!p.latitude || !p.longitude) continue;
+        const distance = calculateDistance(geo.lat, geo.lng, Number(p.latitude), Number(p.longitude));
+        if (distance > input.radiusMiles) continue;
+        const key = p.name.toLowerCase().replace(/\s+/g, "");
+        if (seenNames.has(key)) continue;
+        seenNames.add(key);
+        results.push({
+          id: p.id, name: p.name, type: p.providerType,
+          chainName: p.chainName, address: p.address, city: p.city, state: p.state,
+          phone: p.phone, distance: Number(distance.toFixed(1)),
+          rating: p.rating ? Number(p.rating) : null,
+          reviewCount: p.reviewCount, available24x7: p.available24x7,
+          hasMobileService: p.hasMobileService, services: p.services,
+          score: 100 - distance + (p.rating ? Number(p.rating) * 10 : 0),
+          source: "database", website: null,
+        });
+      }
+
+      // 3) SEARCH OVERPASS API for real mechanics near the geocoded location
+      const radiusMeters = Math.round(input.radiusMiles * 1609.34);
+      const overpassResults = await searchOverpassMechanics(geo.lat, geo.lng, Math.min(radiusMeters, 80000));
+      console.log(`[ZEUN] Overpass returned ${overpassResults.length} real mechanics near "${query}"`);
+
+      const VALID_TYPES = ["TRUCK_STOP", "DEALER", "INDEPENDENT", "MOBILE", "TOWING", "TIRE_SHOP"] as const;
+      type ValidType = typeof VALID_TYPES[number];
+
+      for (const op of overpassResults) {
+        const key = op.name.toLowerCase().replace(/\s+/g, "");
+        if (seenNames.has(key)) continue;
+        seenNames.add(key);
+
+        const distance = calculateDistance(geo.lat, geo.lng, op.lat, op.lng);
+
+        // Cache into DB for persistence
+        const pType = VALID_TYPES.includes(op.providerType as ValidType) ? (op.providerType as ValidType) : "INDEPENDENT";
+        try {
+          const [inserted] = await db.insert(zeunRepairProviders).values({
+            source: "GOOGLE" as const,
+            name: op.name.slice(0, 255),
+            providerType: pType,
+            address: op.address?.slice(0, 500) || null,
+            city: op.city?.slice(0, 100) || null,
+            state: op.state?.slice(0, 2) || null,
+            zip: op.zip?.slice(0, 10) || null,
+            latitude: String(op.lat),
+            longitude: String(op.lng),
+            phone: op.phone?.slice(0, 20) || null,
+            website: op.website?.slice(0, 500) || null,
+            services: op.services,
+            isActive: true,
+            rating: "4.0",
+          });
+          results.push({
+            id: (inserted as any)?.insertId || null,
+            name: op.name, type: pType, chainName: null,
+            address: op.address || null, city: op.city || null, state: op.state || null,
+            phone: op.phone || null, distance: Number(distance.toFixed(1)),
+            rating: 4.0, reviewCount: 0, available24x7: null,
+            hasMobileService: null, services: op.services,
+            score: 90 - distance, source: "openstreetmap", website: op.website || null,
+          });
+        } catch {
+          // Duplicate or insert error — still add to results
+          results.push({
+            id: null, name: op.name, type: pType, chainName: null,
+            address: op.address || null, city: op.city || null, state: op.state || null,
+            phone: op.phone || null, distance: Number(distance.toFixed(1)),
+            rating: 4.0, reviewCount: 0, available24x7: null,
+            hasMobileService: null, services: op.services,
+            score: 90 - distance, source: "openstreetmap", website: op.website || null,
+          });
+        }
+      }
+    }
+
+    // Sort by score descending, limit results
+    results.sort((a, b) => b.score - a.score);
+    return {
+      providers: results.slice(0, input.maxResults),
+      searchLocation,
+      source: searchLocation ? "geocoded" as const : "name_search" as const,
+    };
   }),
 
   getProvider: protectedProcedure.input(z.object({ providerId: z.number() })).query(async ({ input }) => {

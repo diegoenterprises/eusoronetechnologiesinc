@@ -4,7 +4,7 @@
  * Theme-aware | Brand gradient | Premium UX | ESANG AI powered.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import {
   MapPin, Phone, Star, Clock, Wrench, Navigation, Search,
   Building2, Truck, Zap, RefreshCw, ChevronRight, Shield,
-  Filter, Activity, ExternalLink,
+  Filter, Activity, ExternalLink, Globe, Loader2,
 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -37,9 +37,17 @@ export default function ZeunProviderNetwork() {
   const [providerType, setProviderType] = useState("");
   const [radius, setRadius] = useState(100);
   const [searchText, setSearchText] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locationName, setLocationName] = useState("Detecting location...");
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchText(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value.trim()), 500);
+  }, []);
 
   const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
 
@@ -72,6 +80,7 @@ export default function ZeunProviderNetwork() {
     }
   };
 
+  // Default: nearby geo-based search
   const { data: providers, isLoading, refetch } = (trpc as any).zeunMechanics.findProviders.useQuery(
     {
       latitude: coords?.lat || 30.2672,
@@ -80,14 +89,26 @@ export default function ZeunProviderNetwork() {
       providerType: providerType || undefined,
       maxResults: 20,
     },
-    { enabled: !!coords }
+    { enabled: !!coords && !debouncedSearch }
   );
 
-  const filteredProviders = (providers || []).filter((p: any) =>
-    !searchText ||
-    p.name?.toLowerCase().includes(searchText.toLowerCase()) ||
-    p.chainName?.toLowerCase().includes(searchText.toLowerCase()) ||
-    p.city?.toLowerCase().includes(searchText.toLowerCase())
+  // Text search: location name, mechanic name, city, etc.
+  const { data: searchResults, isLoading: searchLoading } = (trpc as any).zeunMechanics.searchProviders.useQuery(
+    {
+      query: debouncedSearch,
+      latitude: coords?.lat || 30.2672,
+      longitude: coords?.lng || -97.7431,
+      radiusMiles: radius,
+      maxResults: 20,
+    },
+    { enabled: !!debouncedSearch }
+  );
+
+  const activeProviders = debouncedSearch ? (searchResults?.providers || []) : (providers || []);
+  const activeLoading = debouncedSearch ? searchLoading : isLoading;
+
+  const filteredProviders = activeProviders.filter((p: any) =>
+    !providerType || p.type === providerType || p.providerType === providerType
   );
 
   return (
@@ -137,10 +158,13 @@ export default function ZeunProviderNetwork() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
                 value={searchText}
-                onChange={(e: any) => setSearchText(e.target.value)}
-                placeholder="Search by name, chain, or city..."
+                onChange={(e: any) => handleSearchChange(e.target.value)}
+                placeholder="Search by city, state, or mechanic name (e.g. 'Houston', 'Loves Travel')..."
                 className={cn("pl-10 rounded-xl", L ? "" : "bg-slate-800/50 border-slate-700/50")}
               />
+              {searchLoading && debouncedSearch && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-blue-500" />
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-slate-400 flex-shrink-0" />
@@ -154,6 +178,14 @@ export default function ZeunProviderNetwork() {
               ))}
             </div>
           </div>
+
+          {/* Geocoded location indicator */}
+          {searchResults?.searchLocation && debouncedSearch && (
+            <div className="flex items-center gap-2 text-xs">
+              <Globe className={cn("h-3 w-3", L ? "text-green-600" : "text-green-400")} />
+              <span className={L ? "text-slate-500" : "text-slate-400"}>Showing results near <strong>{searchResults.searchLocation.displayName.split(',').slice(0, 2).join(',')}</strong></span>
+            </div>
+          )}
 
           {/* Provider type pills */}
           <div className="flex flex-wrap gap-2">
@@ -177,26 +209,27 @@ export default function ZeunProviderNetwork() {
       </Card>
 
       {/* ── Results Count ── */}
-      {!isLoading && providers && (
+      {!activeLoading && (activeProviders.length > 0 || debouncedSearch) && (
         <div className="flex items-center justify-between">
           <p className={cn("text-sm font-medium", L ? "text-slate-600" : "text-slate-400")}>
             <span className="font-bold bg-gradient-to-r from-[#1473FF] to-[#BE01FF] bg-clip-text text-transparent">{filteredProviders.length}</span>
-            {" "}provider{filteredProviders.length !== 1 ? "s" : ""} found within {radius} mi
+            {" "}provider{filteredProviders.length !== 1 ? "s" : ""} found
+            {debouncedSearch ? ` for "${debouncedSearch}"` : ` within ${radius} mi`}
           </p>
-          {filteredProviders.some((p: any) => p.aiGenerated) && (
+          {filteredProviders.some((p: any) => p.aiGenerated || p.source === "openstreetmap") && (
             <Badge className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] border-0">
-              <Zap className="w-3 h-3 mr-1" />AI-Discovered
+              <Zap className="w-3 h-3 mr-1" />{filteredProviders.some((p: any) => p.source === "openstreetmap") ? "Live Discovery" : "AI-Discovered"}
             </Badge>
           )}
         </div>
       )}
 
       {/* ── Provider Cards ── */}
-      {isLoading ? (
+      {activeLoading ? (
         <div className="space-y-3">
           <div className={cn("flex items-center gap-2 text-sm mb-1", L ? "text-slate-500" : "text-slate-400")}>
             <Activity className="h-4 w-4 animate-pulse text-blue-500" />
-            <span>ESANG AI is discovering providers in your area...</span>
+            <span>{debouncedSearch ? `Searching for "${debouncedSearch}"...` : "ESANG AI is discovering providers in your area..."}</span>
           </div>
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 w-full rounded-2xl" />)}
         </div>
@@ -212,7 +245,8 @@ export default function ZeunProviderNetwork() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         {isTop && <Badge className="border-0 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[9px] font-bold px-2 py-0.5">TOP PICK</Badge>}
-                        {provider.aiGenerated && <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-500 px-1.5 py-0.5">AI</Badge>}
+                        {provider.source === "openstreetmap" && <Badge variant="outline" className="text-[9px] border-green-500/30 text-green-600 px-1.5 py-0.5"><Globe className="w-2.5 h-2.5 mr-0.5" />OSM</Badge>}
+                      {provider.aiGenerated && !provider.source && <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-500 px-1.5 py-0.5">AI</Badge>}
                       </div>
                       <h3 className={cn("font-bold text-base mt-1 truncate", L ? "text-slate-800" : "text-white")}>{provider.name}</h3>
                       <p className={cn("text-xs mt-0.5", L ? "text-slate-500" : "text-slate-400")}>

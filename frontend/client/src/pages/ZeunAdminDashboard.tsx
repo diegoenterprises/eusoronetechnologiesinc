@@ -2,7 +2,7 @@
  * ZEUN Admin Dashboard - Platform-wide breakdown and provider analytics
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,14 @@ import { Input } from "@/components/ui/input";
 import { 
   Wrench, AlertTriangle, Truck, TrendingUp, DollarSign, Users,
   Clock, CheckCircle, RefreshCw, Search, Download, BarChart3,
-  Activity, MapPin, Star, Building2, Phone
+  Activity, MapPin, Star, Building2, Phone, Globe, Database, Loader2
 } from "lucide-react";
 
 export default function ZeunAdminDashboard() {
   const [providerSearch, setProviderSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searchLocation, setSearchLocation] = useState({ lat: 30.2672, lng: -97.7431 }); // fallback only if geolocation denied
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Detect user's actual location on mount
   useEffect(() => {
@@ -30,17 +32,37 @@ export default function ZeunAdminDashboard() {
     }
   }, []);
 
+  // Debounce search input (500ms)
+  const handleSearchChange = useCallback((value: string) => {
+    setProviderSearch(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setDebouncedSearch(value.trim()), 500);
+  }, []);
+
   const { data: fleetBreakdowns, isLoading: breakdownsLoading, refetch } = (trpc as any).zeunMechanics.getFleetBreakdowns.useQuery({
     status: "ALL",
     limit: 100,
   });
 
+  // Default nearby providers (when no search query)
   const { data: providers, isLoading: providersLoading } = (trpc as any).zeunMechanics.findProviders.useQuery({
     latitude: searchLocation.lat,
     longitude: searchLocation.lng,
     radiusMiles: 100,
     maxResults: 20,
-  });
+  }, { enabled: !debouncedSearch });
+
+  // Text search providers (location name, mechanic name, etc.)
+  const { data: searchResults, isLoading: searchLoading } = (trpc as any).zeunMechanics.searchProviders.useQuery({
+    query: debouncedSearch,
+    latitude: searchLocation.lat,
+    longitude: searchLocation.lng,
+    radiusMiles: 100,
+    maxResults: 20,
+  }, { enabled: !!debouncedSearch });
+
+  const activeProviders = debouncedSearch ? (searchResults?.providers || []) : (providers || []);
+  const isSearching = debouncedSearch ? searchLoading : providersLoading;
 
   const { data: costAnalytics, isLoading: costLoading } = (trpc as any).zeunMechanics.getFleetCostAnalytics.useQuery({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
@@ -265,43 +287,48 @@ export default function ZeunAdminDashboard() {
           <CardDescription>AI-powered repair provider discovery — powered by ESANG AI</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
+          <div className="mb-4 space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search providers..."
+                placeholder="Search by city, state, or mechanic name (e.g. 'Houston', 'Loves Travel')..."
                 value={providerSearch}
-                onChange={(e: any) => setProviderSearch(e.target.value)}
+                onChange={(e: any) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
+              {searchLoading && debouncedSearch && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-blue-500" />
+              )}
             </div>
+            {searchResults?.searchLocation && debouncedSearch && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Globe className="h-3 w-3" />
+                <span>Showing results near <strong>{searchResults.searchLocation.displayName.split(',').slice(0, 2).join(',')}</strong></span>
+              </div>
+            )}
           </div>
 
-          {providersLoading ? (
+          {isSearching ? (
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Activity className="h-4 w-4 animate-pulse text-blue-500" />
-                <span>ESANG AI is discovering providers in your area...</span>
+                <span>{debouncedSearch ? `Searching for "${debouncedSearch}"...` : "ESANG AI is discovering providers in your area..."}</span>
               </div>
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
               <Skeleton className="h-20 w-full" />
             </div>
-          ) : providers && providers.length > 0 ? (
+          ) : activeProviders.length > 0 ? (
             <div>
               <p className="text-xs text-muted-foreground mb-3">
-                {providers.length} provider{providers.length !== 1 ? "s" : ""} found near your area
+                {activeProviders.length} provider{activeProviders.length !== 1 ? "s" : ""} found
+                {debouncedSearch ? ` for "${debouncedSearch}"` : " near your area"}
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {providers
-                  .filter((p: { name: string; chainName: string | null }) => 
-                    !providerSearch || 
-                    p.name.toLowerCase().includes(providerSearch.toLowerCase()) ||
-                    (p.chainName && p.chainName.toLowerCase().includes(providerSearch.toLowerCase()))
-                  )
-                  .slice(0, 10)
-                  .map((provider: { id: number; name: string; type: string; chainName: string | null; distance: number; rating: number | null; phone: string | null; available24x7: boolean | null; services: string[] | null; aiGenerated?: boolean }) => (
-                    <div key={provider.id} className="p-4 border rounded-lg">
+                {activeProviders
+                  .slice(0, 20)
+                  .map((provider: { id: number | null; name: string; type: string; chainName: string | null; distance: number; rating: number | null; phone: string | null; available24x7: boolean | null; services: string[] | null; aiGenerated?: boolean; source?: string; website?: string | null; address?: string | null; city?: string | null; state?: string | null }) => (
+                    <div key={provider.id || provider.name} className="p-4 border rounded-lg hover:border-blue-500/30 transition-colors">
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-bold">{provider.name}</h4>
@@ -314,11 +341,22 @@ export default function ZeunAdminDashboard() {
                           {provider.available24x7 && (
                             <Badge variant="secondary">24/7</Badge>
                           )}
-                          {provider.aiGenerated && (
+                          {provider.source === "openstreetmap" && (
+                            <Badge variant="outline" className="text-[10px] border-green-500/30 text-green-600"><Globe className="h-3 w-3 mr-1" />OSM</Badge>
+                          )}
+                          {provider.source === "database" && (
+                            <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500"><Database className="h-3 w-3 mr-1" />DB</Badge>
+                          )}
+                          {provider.aiGenerated && !provider.source && (
                             <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-500">AI</Badge>
                           )}
                         </div>
                       </div>
+                      {(provider.address || provider.city) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {[provider.address, provider.city, provider.state].filter(Boolean).join(", ")}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4 mt-3 text-sm">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-4 w-4" />
@@ -334,6 +372,12 @@ export default function ZeunAdminDashboard() {
                           <a href={`tel:${provider.phone}`} className="flex items-center gap-1 text-primary hover:underline">
                             <Phone className="h-4 w-4" />
                             Call
+                          </a>
+                        )}
+                        {provider.website && (
+                          <a href={provider.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                            <Globe className="h-3 w-3" />
+                            Website
                           </a>
                         )}
                       </div>
@@ -356,8 +400,12 @@ export default function ZeunAdminDashboard() {
           ) : (
             <div className="text-center py-6">
               <Activity className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">No providers found in this area</p>
-              <p className="text-xs text-muted-foreground mt-1">ESANG AI will automatically discover providers when available</p>
+              <p className="text-muted-foreground">
+                {debouncedSearch ? `No providers found for "${debouncedSearch}"` : "No providers found in this area"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {debouncedSearch ? "Try a different city, state, or shop name" : "ESANG AI will automatically discover providers when available"}
+              </p>
             </div>
           )}
         </CardContent>
