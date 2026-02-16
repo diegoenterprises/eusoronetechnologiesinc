@@ -17,6 +17,7 @@ import { getDb } from "../db";
 import { users, companies, wallets, walletTransactions, payments } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";
 import { SUBSCRIPTION_PRODUCTS, PLATFORM_FEE_PERCENTAGE, MINIMUM_PLATFORM_FEE, calculatePlatformFee } from "../stripe/products";
+import { feeCalculator } from "../services/feeCalculator";
 
 // Helper: resolve user by email (primary) — select only safe columns (openId may not exist in DB)
 async function resolveUser(openIdOrEmail: string | number, email?: string): Promise<{ id: number; row: any } | null> {
@@ -275,7 +276,32 @@ export const stripeRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const amountCents = Math.round(input.amount * 100);
-      const platformFeeCents = calculatePlatformFee(amountCents);
+
+      // Use dynamic fee calculator (admin-configured) with fallback to static fee
+      let platformFeeCents: number;
+      try {
+        const feeResult = await feeCalculator.calculateFee({
+          userId: ctx.user.id,
+          userRole: ctx.user.role || "DRIVER",
+          transactionType: "load_booking",
+          amount: input.amount,
+        });
+        platformFeeCents = Math.round(feeResult.finalFee * 100);
+        if (platformFeeCents <= 0) platformFeeCents = calculatePlatformFee(amountCents);
+
+        // Record the fee collection
+        await feeCalculator.recordFeeCollection(
+          input.loadId,
+          "load_booking",
+          ctx.user.id,
+          input.amount,
+          feeResult
+        );
+        console.log(`[Stripe] Load ${input.loadNumber} fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+      } catch (feeErr) {
+        console.warn("[Stripe] Fee calculator fallback:", (feeErr as Error).message);
+        platformFeeCents = calculatePlatformFee(amountCents);
+      }
 
       const sessionParams: any = {
         payment_method_types: ["card"],
@@ -655,7 +681,25 @@ export const stripeRouter = router({
       };
 
       if (input.destinationConnectId) {
-        const feeCents = calculatePlatformFee(amountCents);
+        let feeCents: number;
+        try {
+          const feeResult = await feeCalculator.calculateFee({
+            userId: ctx.user.id,
+            userRole: ctx.user.role || "DRIVER",
+            transactionType: "load_booking",
+            amount: input.amount,
+            loadId: input.loadId,
+          });
+          feeCents = Math.round(feeResult.finalFee * 100);
+          if (feeCents <= 0) feeCents = calculatePlatformFee(amountCents);
+          if (input.loadId) {
+            await feeCalculator.recordFeeCollection(input.loadId, "load_booking", ctx.user.id, input.amount, feeResult);
+          }
+          console.log(`[Stripe] PaymentIntent fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+        } catch (feeErr) {
+          console.warn("[Stripe] PaymentIntent fee calculator fallback:", (feeErr as Error).message);
+          feeCents = calculatePlatformFee(amountCents);
+        }
         params.application_fee_amount = feeCents;
         params.transfer_data = { destination: input.destinationConnectId };
       }

@@ -113,8 +113,8 @@ export default function ZeunBreakdown() {
     if (!issueCategory || !severity || symptoms.length === 0 || canDrive === null) return;
 
     // Get current location
-    let latitude = 32.7767; // Default Dallas
-    let longitude = -96.7970;
+    let latitude = 30.2672; // Fallback if geolocation denied
+    let longitude = -97.7431;
     
     if (navigator.geolocation) {
       try {

@@ -214,7 +214,7 @@ const resolveApiUrl = () =>
 
 const assertApiKey = () => {
   if (!ENV.geminiApiKey) {
-    throw new Error("GEMINI_API_KEY is not configured");
+    throw new Error("ESANG AI API key is not configured");
   }
 };
 

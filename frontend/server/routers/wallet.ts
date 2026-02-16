@@ -20,6 +20,7 @@ import {
   users,
   conversations,
 } from "../../drizzle/schema";
+import { feeCalculator } from "../services/feeCalculator";
 
 const transactionTypeSchema = z.enum([
   "earnings", "payout", "fee", "refund", "bonus", "adjustment", "transfer", "deposit"
@@ -332,7 +333,24 @@ export const walletRouter = router({
       instant: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
-      const fee = input.instant ? input.amount * 0.015 : 0;
+      const userId = Number(ctx.user?.id) || 0;
+      // Use admin-configured fee calculator for wallet withdrawals
+      let fee = input.instant ? input.amount * 0.015 : 0;
+      try {
+        const feeResult = await feeCalculator.calculateFee({
+          userId,
+          userRole: ctx.user?.role || "DRIVER",
+          transactionType: "wallet_withdrawal",
+          amount: input.amount,
+        });
+        if (feeResult.finalFee > 0) {
+          fee = feeResult.finalFee;
+          console.log(`[Wallet] Withdrawal fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+          await feeCalculator.recordFeeCollection(0, "wallet_withdrawal", userId, input.amount, feeResult);
+        }
+      } catch (feeErr) {
+        console.warn("[Wallet] Withdrawal fee calculator fallback:", (feeErr as Error).message);
+      }
       const netAmount = input.amount - fee;
       
       return {
@@ -514,8 +532,22 @@ export const walletRouter = router({
           .limit(1);
       }
 
-      // Calculate fee (1% for instant, 0 for standard)
-      const fee = input.transferType === "instant" ? input.amount * 0.01 : 0;
+      // Calculate fee using admin-configured platform fee calculator
+      let fee = input.transferType === "instant" ? input.amount * 0.01 : 0;
+      try {
+        const feeResult = await feeCalculator.calculateFee({
+          userId,
+          userRole: ctx.user?.role || "DRIVER",
+          transactionType: "p2p_transfer",
+          amount: input.amount,
+        });
+        if (feeResult.finalFee > 0) {
+          fee = feeResult.finalFee;
+          console.log(`[Wallet] P2P transfer fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+        }
+      } catch (feeErr) {
+        console.warn("[Wallet] P2P fee calculator fallback:", (feeErr as Error).message);
+      }
       const netAmount = input.amount - fee;
 
       // Create transfer record
@@ -530,6 +562,14 @@ export const walletRouter = router({
         status: input.transferType === "scheduled" ? "pending" : "completed",
         completedAt: input.transferType !== "scheduled" ? new Date() : undefined,
       });
+
+      // Record fee collection for platform revenue tracking
+      if (fee > 0) {
+        try {
+          const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "p2p_transfer", amount: input.amount });
+          await feeCalculator.recordFeeCollection(result.insertId, "p2p_transfer", userId, input.amount, feeResult);
+        } catch {}
+      }
 
       // Update balances if not scheduled
       if (input.transferType !== "scheduled") {
@@ -654,9 +694,24 @@ export const walletRouter = router({
 
       if (!wallet) throw new Error("Wallet not found");
 
-      // Calculate fee (5% for cash advance)
-      const feePercent = 5;
-      const fee = input.amount * (feePercent / 100);
+      // Calculate fee using admin-configured platform fee calculator
+      let feePercent = 5;
+      let fee = input.amount * (feePercent / 100);
+      try {
+        const feeResult = await feeCalculator.calculateFee({
+          userId,
+          userRole: ctx.user?.role || "DRIVER",
+          transactionType: "cash_advance",
+          amount: input.amount,
+        });
+        if (feeResult.finalFee > 0) {
+          fee = feeResult.finalFee;
+          feePercent = feeResult.breakdown.baseRate ?? feePercent;
+          console.log(`[Wallet] Cash advance fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+        }
+      } catch (feeErr) {
+        console.warn("[Wallet] Cash advance fee calculator fallback:", (feeErr as Error).message);
+      }
       const totalRepayment = input.amount + fee;
 
       // Check for existing pending advances
@@ -682,6 +737,12 @@ export const walletRouter = router({
         status: "pending",
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
       });
+
+      // Record fee collection for platform revenue tracking
+      try {
+        const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "cash_advance", amount: input.amount });
+        await feeCalculator.recordFeeCollection(result.insertId, "cash_advance", userId, input.amount, feeResult);
+      } catch {}
 
       return {
         id: result.insertId,
@@ -769,9 +830,24 @@ export const walletRouter = router({
 
       if (!payoutMethod) throw new Error("Payout method not found");
 
-      // Calculate fee (1.5% for instant pay)
-      const feePercent = 1.5;
-      const fee = Math.max(input.amount * (feePercent / 100), 0.50); // Min $0.50 fee
+      // Calculate fee using admin-configured platform fee calculator
+      let feePercent = 1.5;
+      let fee = Math.max(input.amount * (feePercent / 100), 0.50);
+      try {
+        const feeResult = await feeCalculator.calculateFee({
+          userId,
+          userRole: ctx.user?.role || "DRIVER",
+          transactionType: "instant_pay",
+          amount: input.amount,
+        });
+        if (feeResult.finalFee > 0) {
+          fee = feeResult.finalFee;
+          feePercent = feeResult.breakdown.baseRate ?? feePercent;
+          console.log(`[Wallet] Instant pay fee: $${fee.toFixed(2)} (${feeResult.breakdown.feeCode})`);
+        }
+      } catch (feeErr) {
+        console.warn("[Wallet] Instant pay fee calculator fallback:", (feeErr as Error).message);
+      }
       const netAmount = input.amount - fee;
 
       const [result] = await db.insert(instantPayRequests).values({
@@ -785,6 +861,12 @@ export const walletRouter = router({
         payoutMethodId: input.payoutMethodId,
         status: "processing",
       });
+
+      // Record fee collection for platform revenue tracking
+      try {
+        const feeResult = await feeCalculator.calculateFee({ userId, userRole: ctx.user?.role || "DRIVER", transactionType: "instant_pay", amount: input.amount });
+        await feeCalculator.recordFeeCollection(result.insertId, "instant_pay", userId, input.amount, feeResult);
+      } catch {}
 
       // Deduct from wallet
       await db.update(wallets)

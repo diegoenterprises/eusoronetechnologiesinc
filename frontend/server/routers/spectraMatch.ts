@@ -147,7 +147,7 @@ export const spectraMatchRouter = router({
           safetyNotes: aiAnalysis.safetyNotes,
           marketContext: aiAnalysis.marketContext,
           learningInsight: aiAnalysis.learningInsight,
-          poweredBy: "ESANG AI™ / Gemini",
+          poweredBy: "ESANG AI™",
         } : null,
         // ERG 2024 Emergency Response Integration
         ergInfo: await (async () => {
@@ -198,7 +198,7 @@ export const spectraMatchRouter = router({
       });
       return {
         ...result,
-        poweredBy: "ESANG AI™ / Gemini",
+        poweredBy: "ESANG AI™",
         timestamp: new Date().toISOString(),
       };
     }),

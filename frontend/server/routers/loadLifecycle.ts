@@ -15,6 +15,10 @@
 
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
+import { feeCalculator } from "../services/feeCalculator";
+import { getDb } from "../db";
+import { loads } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // ── LOAD STATES ──
 const LOAD_STATES = [
@@ -141,7 +145,7 @@ export const loadLifecycleRouter = router({
         podSigned: z.boolean().optional(),
       }).optional(),
     }))
-    .mutation(({ input }) => {
+    .mutation(async ({ input }) => {
       const { loadId, currentState, nextState, location, targetLocation, metadata, complianceChecks } = input;
 
       // 1. Validate transition
@@ -198,11 +202,62 @@ export const loadLifecycleRouter = router({
         return { success: false, errors, step: "COMPLIANCE_VALIDATION" };
       }
 
-      // 3. Financial hooks that will be triggered
+      // 3. Financial hooks — execute fee collection on DELIVERED/COMPLETED
       const financialActions = getFinancialHooks(nextState);
+      let feeCollected: { amount: number; feeCode: string } | null = null;
 
-      // 4. In production: update DB, trigger notifications, execute financial hooks
-      // Here we return the validated transition result
+      if (financialActions.length > 0) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const numericLoadId = Number(loadId) || 0;
+            const [load] = numericLoadId > 0
+              ? await db.select().from(loads).where(eq(loads.id, numericLoadId)).limit(1)
+              : [null];
+
+            if (load && financialActions.includes("CAPTURE_ESCROW")) {
+              // DELIVERED: capture escrow + collect load_completion fee
+              const loadAmount = parseFloat((load as any).rate || (load as any).amount || "0");
+              if (loadAmount > 0) {
+                const feeResult = await feeCalculator.calculateFee({
+                  userId: (load as any).shipperId || (load as any).userId || 0,
+                  userRole: "SHIPPER",
+                  transactionType: "load_completion",
+                  amount: loadAmount,
+                  loadId: numericLoadId,
+                });
+                if (feeResult.finalFee > 0) {
+                  await feeCalculator.recordFeeCollection(numericLoadId, "load_completion", (load as any).shipperId || 0, loadAmount, feeResult);
+                  feeCollected = { amount: feeResult.finalFee, feeCode: feeResult.breakdown.feeCode };
+                  console.log(`[LoadLifecycle] DELIVERED fee: $${feeResult.finalFee.toFixed(2)} (${feeResult.breakdown.feeCode}) for load ${loadId}`);
+                }
+              }
+            }
+
+            if (load && financialActions.includes("PROCESS_FINAL_SETTLEMENT")) {
+              // COMPLETED: final settlement fee if not already captured at DELIVERED
+              const loadAmount = parseFloat((load as any).rate || (load as any).amount || "0");
+              if (loadAmount > 0 && !feeCollected) {
+                const feeResult = await feeCalculator.calculateFee({
+                  userId: (load as any).shipperId || (load as any).userId || 0,
+                  userRole: "SHIPPER",
+                  transactionType: "load_completion",
+                  amount: loadAmount,
+                  loadId: numericLoadId,
+                });
+                if (feeResult.finalFee > 0) {
+                  await feeCalculator.recordFeeCollection(numericLoadId, "load_completion", (load as any).shipperId || 0, loadAmount, feeResult);
+                  feeCollected = { amount: feeResult.finalFee, feeCode: feeResult.breakdown.feeCode };
+                  console.log(`[LoadLifecycle] COMPLETED settlement fee: $${feeResult.finalFee.toFixed(2)} for load ${loadId}`);
+                }
+              }
+            }
+          }
+        } catch (feeErr) {
+          console.warn(`[LoadLifecycle] Financial hook error for load ${loadId}:`, (feeErr as Error).message);
+        }
+      }
+
       return {
         success: true,
         loadId,
@@ -210,6 +265,7 @@ export const loadLifecycleRouter = router({
         newState: nextUpper,
         complianceChecked: compReqs,
         financialActionsTriggered: financialActions,
+        feeCollected,
         transitionedAt: new Date().toISOString(),
         metadata: metadata || {},
       };

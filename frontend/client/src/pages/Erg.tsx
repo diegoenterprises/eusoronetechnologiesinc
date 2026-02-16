@@ -628,7 +628,7 @@ export default function Erg() {
                   </p>
                   <div className="flex items-center gap-4 mt-3 text-xs text-slate-400">
                     <span className="flex items-center gap-1"><Database className="w-3 h-3" /> ERG 2024</span>
-                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> Gemini AI</span>
+                    <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> ESANG AI</span>
                     <span className="flex items-center gap-1"><Navigation className="w-3 h-3" /> SPECTRA-MATCH</span>
                   </div>
                 </CardContent>

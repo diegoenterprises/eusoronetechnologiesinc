@@ -167,7 +167,7 @@ export const zeunMechanicsRouter = router({
       status: "REPORTED",
     }).$returningId();
 
-    // Run ESANG AI Gemini-powered diagnosis
+    // Run ESANG AI-powered diagnosis
     const aiDiag = await esangAI.diagnoseBreakdown({
       symptoms: input.symptoms,
       faultCodes: input.faultCodes,
@@ -200,7 +200,7 @@ export const zeunMechanicsRouter = router({
       estimatedRepairTimeMin: 1,
       estimatedRepairTimeMax: aiDiag.estimatedRepairHours,
       processingTimeMs: Date.now() - startTime,
-      aiModel: "esang-gemini-2.0-flash",
+      aiModel: "esang-ai",
     });
 
     // Update report status
@@ -233,7 +233,7 @@ export const zeunMechanicsRouter = router({
       safetyWarnings: aiDiag.safetyWarnings,
       preventiveTips: aiDiag.preventiveTips,
       alternativeDiagnoses: aiDiag.alternativeDiagnoses,
-      aiModel: "esang-gemini-2.0-flash",
+      aiModel: "esang-ai",
     };
   }),
 
@@ -347,9 +347,26 @@ export const zeunMechanicsRouter = router({
 
     let providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
 
-    // AI FALLBACK: If DB has no providers, use ESANG AI (Gemini) to discover them
-    if (providers.length === 0) {
-      console.log(`[ZEUN] No providers in DB — invoking ESANG AI discovery for ${input.latitude.toFixed(2)}, ${input.longitude.toFixed(2)}`);
+    // Helper: score and filter providers by radius
+    const scoreAndFilter = (list: typeof providers) => {
+      return list.map((p) => {
+        const distance = p.latitude && p.longitude ? calculateDistance(input.latitude, input.longitude, Number(p.latitude), Number(p.longitude)) : 999;
+        let score = 100;
+        if (distance < 5) score += 30;
+        else if (distance < 15) score += 25;
+        else if (distance < 30) score += 15;
+        if (p.rating) score += (Number(p.rating) - 3.0) * 10;
+        if (p.available24x7) score += 10;
+        return { ...p, distance, score };
+      }).filter((p) => p.distance <= input.radiusMiles).sort((a, b) => b.score - a.score).slice(0, input.maxResults);
+    };
+
+    let scoredProviders = scoreAndFilter(providers);
+
+    // AI FALLBACK: If DB has no providers OR none within search radius, use ESANG AI
+    if (scoredProviders.length === 0) {
+      const reason = providers.length === 0 ? "no providers in DB" : "no providers within radius";
+      console.log(`[ZEUN] ${reason} — invoking ESANG AI discovery for ${input.latitude.toFixed(4)}, ${input.longitude.toFixed(4)} (${input.radiusMiles}mi)`);
       try {
         const aiProviders = await esangAI.discoverProviders({
           latitude: input.latitude,
@@ -363,6 +380,7 @@ export const zeunMechanicsRouter = router({
         if (aiProviders.length > 0) {
           const VALID_TYPES = ["TRUCK_STOP", "DEALER", "INDEPENDENT", "MOBILE", "TOWING", "TIRE_SHOP"] as const;
           type ValidType = typeof VALID_TYPES[number];
+          let cached = 0;
           for (const ap of aiProviders) {
             try {
               const pType = VALID_TYPES.includes(ap.providerType as ValidType)
@@ -391,30 +409,21 @@ export const zeunMechanicsRouter = router({
                 averageWaitTimeMinutes: ap.averageWaitTimeMinutes || 60,
                 isActive: true,
               });
+              cached++;
             } catch (insertErr) {
               console.warn("[ZEUN] Failed to cache provider:", (insertErr as Error).message);
             }
           }
-          console.log(`[ZEUN] Cached ${aiProviders.length} AI-generated providers into DB`);
+          console.log(`[ZEUN] Cached ${cached}/${aiProviders.length} AI-generated providers into DB`);
 
           // Re-query from DB so we get proper IDs
           providers = await db.select().from(zeunRepairProviders).where(and(...conditions)).limit(100);
+          scoredProviders = scoreAndFilter(providers);
         }
       } catch (aiErr) {
         console.error("[ZEUN] AI provider discovery failed:", aiErr);
       }
     }
-
-    const scoredProviders = providers.map((p) => {
-      const distance = p.latitude && p.longitude ? calculateDistance(input.latitude, input.longitude, Number(p.latitude), Number(p.longitude)) : 999;
-      let score = 100;
-      if (distance < 5) score += 30;
-      else if (distance < 15) score += 25;
-      else if (distance < 30) score += 15;
-      if (p.rating) score += (Number(p.rating) - 3.0) * 10;
-      if (p.available24x7) score += 10;
-      return { ...p, distance, score };
-    }).filter((p) => p.distance <= input.radiusMiles).sort((a, b) => b.score - a.score).slice(0, input.maxResults);
 
     return scoredProviders.map((p) => ({
       id: p.id,
@@ -846,7 +855,7 @@ export const zeunMechanicsRouter = router({
       };
     }
 
-    // Fallback: Use ESANG AI Gemini for deep fault code analysis
+    // Fallback: Use ESANG AI for deep fault code analysis
     try {
       const aiResult = await esangAI.analyzeDTC(normalizedCode);
       if (aiResult.description && aiResult.description !== `Code ${normalizedCode}`) {
@@ -858,7 +867,7 @@ export const zeunMechanicsRouter = router({
           ...aiResult,
           estimatedCost: aiResult.estimatedCost,
           estimatedTimeHours: aiResult.estimatedHours,
-          source: "esang-gemini-ai",
+          source: "esang-ai",
         };
       }
     } catch { /* AI unavailable, return generic */ }

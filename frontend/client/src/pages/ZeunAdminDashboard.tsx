@@ -2,7 +2,7 @@
  * ZEUN Admin Dashboard - Platform-wide breakdown and provider analytics
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,18 @@ import {
 
 export default function ZeunAdminDashboard() {
   const [providerSearch, setProviderSearch] = useState("");
-  const [searchLocation, setSearchLocation] = useState({ lat: 32.7767, lng: -96.7970 }); // Dallas default
+  const [searchLocation, setSearchLocation] = useState({ lat: 30.2672, lng: -97.7431 }); // fallback only if geolocation denied
+
+  // Detect user's actual location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setSearchLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {}, // keep fallback
+        { timeout: 5000 }
+      );
+    }
+  }, []);
 
   const { data: fleetBreakdowns, isLoading: breakdownsLoading, refetch } = (trpc as any).zeunMechanics.getFleetBreakdowns.useQuery({
     status: "ALL",
@@ -251,7 +262,7 @@ export default function ZeunAdminDashboard() {
             Provider Network
             <Badge className="ml-2 bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white text-[10px] px-2">ESANG AI</Badge>
           </CardTitle>
-          <CardDescription>AI-powered repair provider discovery — powered by Gemini</CardDescription>
+          <CardDescription>AI-powered repair provider discovery — powered by ESANG AI</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="mb-4">
@@ -279,7 +290,7 @@ export default function ZeunAdminDashboard() {
           ) : providers && providers.length > 0 ? (
             <div>
               <p className="text-xs text-muted-foreground mb-3">
-                {providers.length} provider{providers.length !== 1 ? "s" : ""} found within 100mi of Dallas, TX
+                {providers.length} provider{providers.length !== 1 ? "s" : ""} found near your area
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {providers

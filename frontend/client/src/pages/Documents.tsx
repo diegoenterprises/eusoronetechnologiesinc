@@ -284,7 +284,7 @@ function UploadModal({ open, onClose, onUploaded }: { open: boolean; onClose: ()
                           <div className="flex items-center gap-2">
                             <div className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
                             <span className="text-[11px] text-purple-300 font-medium uppercase tracking-wider">ESANG AI Classification</span>
-                            <span className="text-[10px] text-slate-500 ml-auto">via {aiResult.ocr?.engine === "paddleocr" ? "PaddleOCR" : "Gemini Vision"}</span>
+                            <span className="text-[10px] text-slate-500 ml-auto">via {aiResult.ocr?.engine === "paddleocr" ? "PaddleOCR" : "ESANG AI Vision"}</span>
                           </div>
                           <p className="text-white text-sm">{aiResult.classification?.summary}</p>
                           <div className="flex flex-wrap gap-1.5">

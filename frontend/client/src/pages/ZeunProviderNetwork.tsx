@@ -58,24 +58,24 @@ export default function ZeunProviderNetwork() {
           setLocating(false);
         },
         () => {
-          // Fallback to Dallas
-          setCoords({ lat: 32.7767, lng: -96.7970 });
-          setLocationName("Dallas, TX (default)");
+          // Fallback to Austin, TX if geolocation denied
+          setCoords({ lat: 30.2672, lng: -97.7431 });
+          setLocationName("Austin, TX (location unavailable)");
           setLocating(false);
         },
         { timeout: 5000 }
       );
     } else {
-      setCoords({ lat: 32.7767, lng: -96.7970 });
-      setLocationName("Dallas, TX (default)");
+      setCoords({ lat: 30.2672, lng: -97.7431 });
+      setLocationName("Austin, TX (location unavailable)");
       setLocating(false);
     }
   };
 
   const { data: providers, isLoading, refetch } = (trpc as any).zeunMechanics.findProviders.useQuery(
     {
-      latitude: coords?.lat || 32.7767,
-      longitude: coords?.lng || -96.7970,
+      latitude: coords?.lat || 30.2672,
+      longitude: coords?.lng || -97.7431,
       radiusMiles: radius,
       providerType: providerType || undefined,
       maxResults: 20,

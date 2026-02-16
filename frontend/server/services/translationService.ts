@@ -1,6 +1,6 @@
 /**
  * TRANSLATION SERVICE
- * Uses ESANG AI (OpenAI + Google Gemini + LangChain) to translate RSS feeds
+ * Uses ESANG AI to translate RSS feeds
  * to user's preferred language automatically
  */
 

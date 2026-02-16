@@ -3,7 +3,7 @@
  * 
  * Tiered OCR pipeline:
  *   1. PaddleOCR (Python) — highest accuracy for scanned docs
- *   2. Gemini Vision — native multimodal OCR + understanding
+ *   2. ESANG AI Vision — native multimodal OCR + understanding
  * 
  * After text extraction, feeds to ESANG AI for intelligent classification:
  *   - Document type detection
@@ -101,7 +101,7 @@ async function runPaddleOCR(base64Data: string): Promise<OCRResult | null> {
 }
 
 // ---------------------------------------------------------------------------
-// 2. Gemini Vision OCR (fallback — always available)
+// 2. ESANG AI Vision OCR (fallback — always available)
 // ---------------------------------------------------------------------------
 const GEMINI_VISION_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
@@ -109,7 +109,7 @@ const GEMINI_VISION_URL =
 async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null> {
   const apiKey = ENV.geminiApiKey;
   if (!apiKey) {
-    console.warn("[DocumentOCR] Gemini API key not configured");
+    console.warn("[DocumentOCR] ESANG AI API key not configured");
     return null;
   }
 
@@ -123,7 +123,7 @@ async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null>
     if (mimeMatch) mimeType = mimeMatch[1];
   }
 
-  // For PDFs, tell Gemini it's a PDF
+  // For PDFs, specify PDF mime type
   if (mimeType === "application/pdf") {
     mimeType = "application/pdf";
   }
@@ -156,7 +156,7 @@ async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null>
     });
 
     if (!response.ok) {
-      console.warn("[DocumentOCR] Gemini Vision error:", response.status);
+      console.warn("[DocumentOCR] ESANG AI Vision error:", response.status);
       return null;
     }
 
@@ -179,7 +179,7 @@ async function runGeminiVisionOCR(base64Data: string): Promise<OCRResult | null>
       avgConfidence: 0.9,
     };
   } catch (err) {
-    console.error("[DocumentOCR] Gemini Vision error:", err);
+    console.error("[DocumentOCR] ESANG AI Vision error:", err);
     return null;
   }
 }
@@ -355,7 +355,7 @@ function fallbackClassification(filename: string, text: string): DocumentClassif
 
 /**
  * Full digitize pipeline: OCR → ESANG AI Classification
- * Tries PaddleOCR first, falls back to Gemini Vision.
+ * Tries PaddleOCR first, falls back to ESANG AI Vision.
  */
 export async function digitizeDocument(
   base64Data: string,
@@ -366,9 +366,9 @@ export async function digitizeDocument(
   // Step 1: Try PaddleOCR
   let ocrResult = await runPaddleOCR(base64Data);
 
-  // Step 2: Fall back to Gemini Vision
+  // Step 2: Fall back to ESANG AI Vision
   if (!ocrResult || !ocrResult.text.trim()) {
-    console.log("[DocumentOCR] PaddleOCR unavailable, using Gemini Vision");
+    console.log("[DocumentOCR] PaddleOCR unavailable, using ESANG AI Vision");
     ocrResult = await runGeminiVisionOCR(base64Data);
   }
 

@@ -179,8 +179,8 @@ export const esangRouter = router({
    * - GENERAL_QUESTION: Creative model (summaries, Q&A)
    * - NEWS_SUMMARY: Creative model (news feed, market updates)
    *
-   * In production: GPT-4.1-mini for logic, Gemini 2.5 Flash for creative
-   * Currently: Gemini handles both, but intent classification enables future split
+   * In production: GPT-4.1-mini for logic, ESANG AI for creative
+   * Currently: ESANG AI handles both, but intent classification enables future split
    */
   classifyIntent: protectedProcedure
     .input(z.object({
@@ -237,22 +237,22 @@ export const esangRouter = router({
           }
         }
         if (!response) {
-          // Fall through to Gemini for complex compliance queries
+          // Fall through to ESANG AI for complex compliance queries
           response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
-          response = { ...response, source: "gemini_logic" };
+          response = { ...response, source: "esang_logic" };
         }
       } else {
-        // All other intents go to Gemini (both logic and creative for now)
+        // All other intents go to ESANG AI (both logic and creative for now)
         response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
-        response = { ...response, source: modelTarget === "logic" ? "gemini_logic" : "gemini_creative" };
+        response = { ...response, source: modelTarget === "logic" ? "esang_logic" : "esang_creative" };
       }
 
       return {
         intent,
         modelTarget,
         confidence,
-        modelUsed: "gemini-2.0-flash", // Current single model
-        futureModels: { logic: "gpt-4.1-mini", creative: "gemini-2.5-flash" },
+        modelUsed: "esang-ai", // ESANG AI Engine
+        futureModels: { logic: "gpt-4.1-mini", creative: "esang-ai-creative" },
         response,
       };
     }),

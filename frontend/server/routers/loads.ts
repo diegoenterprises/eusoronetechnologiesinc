@@ -19,6 +19,7 @@ import { WS_EVENTS } from "@shared/websocket-events";
 import { emailService } from "../_core/email";
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
+import { feeCalculator } from "../services/feeCalculator";
 
 async function resolveUserId(ctxUser: any): Promise<number> {
   const db = await getDb();
@@ -1443,6 +1444,25 @@ export const bidsRouter = router({
       fireGamificationEvent({ userId, type: 'load_delivered', value: 1 });
       if (load.shipperId) {
         emitNotification(String(load.shipperId), { id: `notif_${Date.now()}`, type: 'load_delivered', title: 'Load Delivered', message: `Load ${load.loadNumber} has been delivered`, priority: 'high', data: { loadId: input.loadId }, actionUrl: `/loads/${input.loadId}`, timestamp: new Date().toISOString() });
+      }
+      // Collect load_completion platform fee
+      try {
+        const loadRate = parseFloat(load.rate || "0");
+        if (loadRate > 0) {
+          const feeResult = await feeCalculator.calculateFee({
+            userId: load.shipperId || userId,
+            userRole: 'SHIPPER',
+            transactionType: 'load_completion',
+            amount: loadRate,
+            loadId: loadIdNum,
+          });
+          if (feeResult.finalFee > 0) {
+            await feeCalculator.recordFeeCollection(loadIdNum, 'load_completion', load.shipperId || userId, loadRate, feeResult);
+            console.log(`[Loads] Completion fee: $${feeResult.finalFee.toFixed(2)} for load ${load.loadNumber}`);
+          }
+        }
+      } catch (feeErr) {
+        console.warn('[Loads] Load completion fee error:', (feeErr as Error).message);
       }
     }
     return { success: true, loadId: input.loadId, status: input.status };
