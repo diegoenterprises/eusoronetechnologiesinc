@@ -1,8 +1,8 @@
 /**
- * EUSOTRIP MENU CONFIGURATION - 9-ROLE SYSTEM
+ * EUSOTRIP MENU CONFIGURATION - 12-ROLE SYSTEM
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
  * 
- * Defines role-specific navigation for all user types:
+ * Defines role-specific navigation for all 12 user types:
  * - SHIPPER: Load posting, tracking, payments
  * - CATALYST: Load bidding, fleet management, earnings
  * - BROKER: Marketplace management, load distribution
@@ -10,6 +10,9 @@
  * - DISPATCH: Specialization matching, load optimization
  * - ESCORT: Convoy management, security coordination
  * - TERMINAL_MANAGER: Facility operations, compliance
+ * - FACTORING: Invoice factoring, funding, risk
+ * - COMPLIANCE_OFFICER: Regulatory compliance oversight
+ * - SAFETY_MANAGER: Safety monitoring, incident management
  * - ADMIN: Platform management, user administration
  * - SUPER_ADMIN: System administration, configuration
  */
@@ -33,10 +36,12 @@ export type UserRole =
   | 'ESCORT' 
   | 'TERMINAL_MANAGER' 
   | 'FACTORING'
+  | 'COMPLIANCE_OFFICER'
+  | 'SAFETY_MANAGER'
   | 'ADMIN' 
   | 'SUPER_ADMIN';
 
-// Menu configuration for all 9 user roles
+// Menu configuration for all 12 user roles
 export const menuConfigs: Record<string, MenuItem[]> = {
   // SHIPPER: Load posting, tracking, payments
   SHIPPER: [
@@ -1391,6 +1396,8 @@ export function getRoleDisplayName(role: string | UserRole): string {
     ESCORT: 'Escort',
     TERMINAL_MANAGER: 'Terminal Manager',
     FACTORING: 'Factoring Company',
+    COMPLIANCE_OFFICER: 'Compliance Officer',
+    SAFETY_MANAGER: 'Safety Manager',
     ADMIN: 'Administrator',
     SUPER_ADMIN: 'Super Administrator',
   };

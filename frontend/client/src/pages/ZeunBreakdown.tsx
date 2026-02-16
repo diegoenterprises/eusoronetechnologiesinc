@@ -4,7 +4,7 @@
  * Theme-aware | Brand gradient | Premium UX.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,9 @@ import { cn } from "@/lib/utils";
 import { 
   Wrench, AlertTriangle, Truck, Phone, MapPin, Clock, 
   CheckCircle, XCircle, ChevronRight, Star, RefreshCw,
-  Thermometer, Fuel, Gauge, Battery, Navigation, Zap, Shield
+  Thermometer, Fuel, Gauge, Battery, Navigation, Zap, Shield,
+  BookOpen, HardHat, Search, ExternalLink, ChevronDown, ChevronUp,
+  Flame, Heart, Cloud, CircleDot, ShieldAlert, Siren, Info
 } from "lucide-react";
 
 const ISSUE_CATEGORIES = [
@@ -72,6 +74,11 @@ export default function ZeunBreakdown() {
   const [symptomInput, setSymptomInput] = useState("");
   const [canDrive, setCanDrive] = useState<boolean | null>(null);
   const [driverNotes, setDriverNotes] = useState("");
+  const [showEmergency, setShowEmergency] = useState(false);
+  const [dtcCode, setDtcCode] = useState("");
+  const [dtcSearch, setDtcSearch] = useState("");
+  const [showSelfRepair, setShowSelfRepair] = useState(false);
+  const [emergencyDetail, setEmergencyDetail] = useState<string | null>(null);
   const cc = cn("rounded-2xl border backdrop-blur-sm transition-all", L ? "bg-white/80 border-slate-200/80 shadow-sm" : "bg-slate-800/40 border-slate-700/40");
   const [reportResult, setReportResult] = useState<{
     reportId: number;
@@ -79,6 +86,10 @@ export default function ZeunBreakdown() {
     canDrive: boolean;
     providers: Array<{ id: number; name: string; type: string; distance: string; phone: string | null; rating: number | null; available24x7: boolean | null }>;
     estimatedCost: { min: number; max: number };
+    safetyWarnings?: string[];
+    preventiveTips?: string[];
+    alternativeDiagnoses?: Array<{ issue: string; probability: number; severity: string }>;
+    partsLikelyNeeded?: string[];
   } | null>(null);
 
   const { data: fleetVehicles, isLoading: fleetLoading } = (trpc as any).fleet.getVehicles.useQuery(
@@ -97,6 +108,34 @@ export default function ZeunBreakdown() {
     limit: 5,
     status: "OPEN",
   });
+
+  // Emergency roadside data
+  const { data: emergencyData } = (trpc as any).zeunMechanics.getEmergencyRoadside.useQuery({}, { staleTime: 300000 });
+
+  // DTC code lookup
+  const dtcQuery = (trpc as any).zeunMechanics.lookupDTC.useQuery(
+    { code: dtcSearch },
+    { enabled: !!dtcSearch }
+  );
+
+  // Self-repair guide (loads after diagnosis on step 6)
+  const selfRepairQuery = (trpc as any).zeunMechanics.getSelfRepairGuide.useQuery(
+    {
+      issueCategory: issueCategory || "OTHER",
+      severity: severity || "MEDIUM",
+      symptoms,
+      vehicleMake: selectedVehicle?.make,
+      vehicleModel: selectedVehicle?.model,
+      vehicleYear: selectedVehicle?.year,
+    },
+    { enabled: step === 6 && !!issueCategory }
+  );
+
+  // Emergency procedure detail
+  const emergencyProcQuery = (trpc as any).zeunMechanics.getEmergencyProcedure.useQuery(
+    { emergencyType: emergencyDetail || "breakdown_highway" },
+    { enabled: !!emergencyDetail }
+  );
 
   const addSymptom = (symptom: string) => {
     if (symptom.trim() && !symptoms.includes(symptom.trim())) {
@@ -150,6 +189,10 @@ export default function ZeunBreakdown() {
     setCanDrive(null);
     setDriverNotes("");
     setReportResult(null);
+    setShowSelfRepair(false);
+    setDtcCode("");
+    setDtcSearch("");
+    setEmergencyDetail(null);
     refetch();
   };
 
@@ -174,6 +217,148 @@ export default function ZeunBreakdown() {
           </Button>
         )}
       </div>
+
+      {/* ── Emergency Roadside Assistance Panel ── */}
+      {step < 6 && (
+        <Card className={cn(cc, showEmergency ? "border-red-500/30" : "")}>
+          <button onClick={() => setShowEmergency(!showEmergency)}
+            className={cn("w-full px-4 py-3 flex items-center justify-between", L ? "hover:bg-red-50/50" : "hover:bg-red-500/5")}>
+            <div className="flex items-center gap-2">
+              <Siren className="w-4 h-4 text-red-500" />
+              <span className={cn("text-sm font-semibold", L ? "text-red-700" : "text-red-400")}>Emergency Roadside Assistance</span>
+            </div>
+            {showEmergency ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+          </button>
+          {showEmergency && (
+            <CardContent className="p-4 pt-0 space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <a href="tel:911" className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-red-500/30 transition-all hover:border-red-500 hover:shadow-md", L ? "bg-red-50" : "bg-red-500/10")}>
+                  <Phone className="h-6 w-6 text-red-500" />
+                  <span className="text-xs font-bold text-red-500">911 Emergency</span>
+                </a>
+                <button onClick={() => setEmergencyDetail("breakdown_highway")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-orange-50 hover:border-orange-300" : "border-slate-700/50 bg-orange-500/10 hover:border-orange-500/30")}>
+                  <ShieldAlert className="h-6 w-6 text-orange-500" />
+                  <span className={cn("text-xs font-bold", L ? "text-orange-700" : "text-orange-400")}>Highway Safety</span>
+                </button>
+                <button onClick={() => setEmergencyDetail("engine_fire")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-red-50 hover:border-red-300" : "border-slate-700/50 bg-red-500/10 hover:border-red-500/30")}>
+                  <Flame className="h-6 w-6 text-red-500" />
+                  <span className={cn("text-xs font-bold", L ? "text-red-700" : "text-red-400")}>Vehicle Fire</span>
+                </button>
+                <button onClick={() => setEmergencyDetail("medical_emergency")} className={cn("flex flex-col items-center gap-2 p-4 rounded-xl border transition-all hover:shadow-md", L ? "border-slate-200 bg-pink-50 hover:border-pink-300" : "border-slate-700/50 bg-pink-500/10 hover:border-pink-500/30")}>
+                  <Heart className="h-6 w-6 text-pink-500" />
+                  <span className={cn("text-xs font-bold", L ? "text-pink-700" : "text-pink-400")}>Medical Help</span>
+                </button>
+              </div>
+
+              {emergencyDetail && emergencyProcQuery.data && (
+                <div className={cn("p-4 rounded-xl border", L ? "bg-yellow-50 border-yellow-200" : "bg-yellow-500/10 border-yellow-500/20")}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <h4 className={cn("font-bold text-sm", L ? "text-yellow-800" : "text-yellow-300")}>{emergencyProcQuery.data.title || "Emergency Procedure"}</h4>
+                  </div>
+                  <ol className="space-y-2">
+                    {(emergencyProcQuery.data.steps || emergencyProcQuery.data.instructions || []).map((s: string, i: number) => (
+                      <li key={i} className={cn("flex gap-2 text-sm", L ? "text-yellow-900" : "text-yellow-200")}>
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center text-[10px] font-bold text-yellow-600">{i + 1}</span>
+                        {s}
+                      </li>
+                    ))}
+                  </ol>
+                  {emergencyProcQuery.data.doNot && emergencyProcQuery.data.doNot.length > 0 && (
+                    <div className="mt-3 p-2 rounded-lg bg-red-500/10 border border-red-500/20 space-y-1">
+                      {emergencyProcQuery.data.doNot.map((w: string, i: number) => (
+                        <p key={i} className="text-xs font-bold text-red-500">⚠ {w}</p>
+                      ))}
+                    </div>
+                  )}
+                  <button onClick={() => setEmergencyDetail(null)} className="mt-3 text-xs text-slate-400 hover:text-slate-300 underline">Dismiss</button>
+                </div>
+              )}
+
+              {emergencyData && (
+                <div className="space-y-3">
+                  {emergencyData.emergencyContacts && emergencyData.emergencyContacts.length > 0 && (
+                    <div>
+                      <p className={cn("text-xs font-bold uppercase tracking-wider mb-2", L ? "text-slate-500" : "text-slate-400")}>Emergency Contacts</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {emergencyData.emergencyContacts.map((c: any, i: number) => (
+                          <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                            <div>
+                              <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{c.name}</p>
+                              <p className="text-xs text-slate-400">{c.description || c.type}</p>
+                            </div>
+                            {c.number && (
+                              <Button size="sm" variant="outline" className="rounded-xl text-xs" asChild>
+                                <a href={`tel:${c.number}`}><Phone className="h-3 w-3 mr-1" />{c.number}</a>
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          )}
+        </Card>
+      )}
+
+      {/* ── DTC Code Quick Lookup ── */}
+      {step === 1 && (
+        <Card className={cc}>
+          <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+            <Search className="w-4 h-4 text-purple-500" />
+            <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Quick DTC Code Lookup</span>
+          </div>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex gap-2">
+              <Input
+                value={dtcCode}
+                onChange={(e: any) => setDtcCode(e.target.value.toUpperCase())}
+                onKeyDown={(e: any) => e.key === "Enter" && dtcCode.trim() && setDtcSearch(dtcCode.trim())}
+                placeholder="Enter DTC code (e.g. P0300, U0100)..."
+                className={cn("rounded-xl font-mono", L ? "" : "bg-slate-800/50 border-slate-700/50")}
+              />
+              <Button onClick={() => dtcCode.trim() && setDtcSearch(dtcCode.trim())} disabled={!dtcCode.trim() || dtcQuery.isFetching}
+                className="bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white rounded-xl">
+                {dtcQuery.isFetching ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </Button>
+            </div>
+            {dtcQuery.data && (
+              <div className={cn("p-4 rounded-xl border space-y-3", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                <div className="flex items-center gap-2">
+                  <Badge className="border-0 bg-purple-500/15 text-purple-500 text-[10px] font-bold font-mono">{dtcQuery.data.code}</Badge>
+                  <span className={cn("font-bold text-sm", L ? "text-slate-800" : "text-white")}>{dtcQuery.data.description || dtcQuery.data.title}</span>
+                </div>
+                {dtcQuery.data.system && <p className="text-xs text-slate-400">System: {dtcQuery.data.system}</p>}
+                {dtcQuery.data.possibleCauses && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Possible Causes</p>
+                    <ul className="space-y-1">
+                      {(Array.isArray(dtcQuery.data.possibleCauses) ? dtcQuery.data.possibleCauses : [dtcQuery.data.possibleCauses]).map((cause: string, i: number) => (
+                        <li key={i} className={cn("text-sm flex items-start gap-1.5", L ? "text-slate-600" : "text-slate-300")}>
+                          <CircleDot className="h-3 w-3 mt-0.5 text-slate-400 flex-shrink-0" />{cause}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {dtcQuery.data.severity && (
+                  <Badge className={cn("border-0 text-[10px] font-bold",
+                    dtcQuery.data.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" :
+                    dtcQuery.data.severity === "HIGH" ? "bg-orange-500/15 text-orange-500" :
+                    "bg-yellow-500/15 text-yellow-500"
+                  )}>{dtcQuery.data.severity}</Badge>
+                )}
+                {dtcQuery.data.repairDifficulty && (
+                  <p className="text-xs text-slate-400">Repair Difficulty: <strong className={cn(L ? "text-slate-700" : "text-slate-200")}>{dtcQuery.data.repairDifficulty}</strong></p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Active Breakdowns ── */}
       {step === 1 && (
@@ -504,6 +689,218 @@ export default function ZeunBreakdown() {
               )}
             </CardContent>
           </Card>
+
+          {/* Manufacturer & Vehicle Data */}
+          {selectedVehicle && (
+            <Card className={cc}>
+              <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+                <Truck className="w-4 h-4 text-indigo-500" />
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Manufacturer & Vehicle Data</span>
+              </div>
+              <CardContent className="p-4 space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Make / Model</p>
+                    <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.make} {selectedVehicle.model}</p>
+                  </div>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Year</p>
+                    <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.year}</p>
+                  </div>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Unit #</p>
+                    <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.unitNumber}</p>
+                  </div>
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider">Type</p>
+                    <p className={cn("text-sm font-bold mt-0.5", L ? "text-slate-800" : "text-white")}>{selectedVehicle.type || "N/A"}</p>
+                  </div>
+                </div>
+                {selfRepairQuery.data?.manufacturer?.dealerTip && (
+                  <div className={cn("p-3 rounded-xl border", L ? "bg-indigo-50 border-indigo-200" : "bg-indigo-500/10 border-indigo-500/20")}>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Info className="h-3.5 w-3.5 text-indigo-500" />
+                      <p className="text-xs font-bold text-indigo-500 uppercase tracking-wider">Manufacturer Notes</p>
+                    </div>
+                    <p className={cn("text-sm", L ? "text-indigo-900" : "text-indigo-200")}>{selfRepairQuery.data.manufacturer.dealerTip}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Safety Warnings */}
+          {reportResult.safetyWarnings && reportResult.safetyWarnings.length > 0 && (
+            <Card className={cn(cc, "border-red-500/20")}>
+              <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-red-100" : "border-red-500/20")}>
+                <ShieldAlert className="w-4 h-4 text-red-500" />
+                <span className={cn("text-sm font-semibold", L ? "text-red-700" : "text-red-400")}>Safety Warnings</span>
+              </div>
+              <CardContent className="p-4">
+                <ul className="space-y-2">
+                  {reportResult.safetyWarnings.map((w: string, i: number) => (
+                    <li key={i} className={cn("flex items-start gap-2 text-sm p-2 rounded-lg", L ? "bg-red-50" : "bg-red-500/5")}>
+                      <AlertTriangle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className={cn(L ? "text-red-800" : "text-red-300")}>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Alternative Diagnoses */}
+          {reportResult.alternativeDiagnoses && reportResult.alternativeDiagnoses.length > 0 && (
+            <Card className={cc}>
+              <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+                <CircleDot className="w-4 h-4 text-amber-500" />
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Alternative Diagnoses</span>
+              </div>
+              <CardContent className="p-4">
+                <div className="space-y-2">
+                  {reportResult.alternativeDiagnoses.map((d: any, i: number) => (
+                    <div key={i} className={cn("flex items-center justify-between p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                      <div>
+                        <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{d.issue}</p>
+                        <Badge className={cn("border-0 text-[10px] font-bold mt-1",
+                          d.severity === "CRITICAL" ? "bg-red-500/15 text-red-500" :
+                          d.severity === "HIGH" ? "bg-orange-500/15 text-orange-500" :
+                          "bg-yellow-500/15 text-yellow-500"
+                        )}>{d.severity}</Badge>
+                      </div>
+                      <span className="text-xs text-slate-400">Probability: <strong className="text-blue-500">{(d.probability * 100).toFixed(0)}%</strong></span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Parts Likely Needed */}
+          {reportResult.partsLikelyNeeded && reportResult.partsLikelyNeeded.length > 0 && (
+            <Card className={cc}>
+              <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+                <Wrench className="w-4 h-4 text-teal-500" />
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Parts Likely Needed</span>
+              </div>
+              <CardContent className="p-4">
+                <div className="flex flex-wrap gap-2">
+                  {reportResult.partsLikelyNeeded.map((part: string, i: number) => (
+                    <Badge key={i} className={cn("border text-xs font-medium px-3 py-1", L ? "bg-teal-50 border-teal-200 text-teal-700" : "bg-teal-500/10 border-teal-500/20 text-teal-400")}>{part}</Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Self-Repair Guide */}
+          <Card className={cn(cc, "border-emerald-500/20")}>
+            <button onClick={() => setShowSelfRepair(!showSelfRepair)}
+              className={cn("w-full px-4 py-3 flex items-center justify-between border-b", L ? "border-emerald-100 hover:bg-emerald-50/50" : "border-emerald-500/20 hover:bg-emerald-500/5")}>
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-emerald-500" />
+                <span className={cn("text-sm font-semibold", L ? "text-emerald-700" : "text-emerald-400")}>Self-Repair Guide</span>
+                {selfRepairQuery.data?.difficulty && (
+                  <Badge className={cn("border-0 text-[10px] font-bold",
+                    selfRepairQuery.data.difficulty === "EASY" ? "bg-green-500/15 text-green-500" :
+                    selfRepairQuery.data.difficulty === "MODERATE" ? "bg-yellow-500/15 text-yellow-500" :
+                    "bg-red-500/15 text-red-500"
+                  )}>{selfRepairQuery.data.difficulty}</Badge>
+                )}
+              </div>
+              {showSelfRepair ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
+            </button>
+            {showSelfRepair && (
+              <CardContent className="p-4 space-y-4">
+                {selfRepairQuery.isLoading ? (
+                  <div className="space-y-2"><Skeleton className="h-12 w-full rounded-xl" /><Skeleton className="h-12 w-full rounded-xl" /><Skeleton className="h-12 w-full rounded-xl" /></div>
+                ) : selfRepairQuery.data ? (
+                  <>
+                    {selfRepairQuery.data.canDIY === false && (
+                      <div className={cn("p-3 rounded-xl border", L ? "bg-red-50 border-red-200" : "bg-red-500/10 border-red-500/20")}>
+                        <p className={cn("text-sm font-bold", L ? "text-red-700" : "text-red-400")}>Professional repair recommended for this issue</p>
+                        <p className={cn("text-xs mt-1", L ? "text-red-600" : "text-red-300")}>{selfRepairQuery.data.manufacturer?.dealerTip || "This repair requires specialized tools and expertise."}</p>
+                      </div>
+                    )}
+
+                    {selfRepairQuery.data.safetyWarnings && selfRepairQuery.data.safetyWarnings.length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <HardHat className="h-3.5 w-3.5 text-yellow-500" />
+                          <p className="text-xs font-bold text-yellow-500 uppercase tracking-wider">Safety Precautions</p>
+                        </div>
+                        <ul className="space-y-1.5">
+                          {selfRepairQuery.data.safetyWarnings.map((p: string, i: number) => (
+                            <li key={i} className={cn("flex items-start gap-2 text-sm", L ? "text-slate-700" : "text-slate-300")}>
+                              <Shield className="h-3.5 w-3.5 mt-0.5 text-yellow-500 flex-shrink-0" />{p}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {selfRepairQuery.data.tools && selfRepairQuery.data.tools.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tools Required</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selfRepairQuery.data.tools.map((tool: string, i: number) => (
+                            <Badge key={i} className={cn("border text-xs", L ? "bg-slate-50 border-slate-200 text-slate-600" : "bg-slate-800/50 border-slate-700/30 text-slate-300")}>{tool}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selfRepairQuery.data.steps && selfRepairQuery.data.steps.length > 0 && (
+                      <div>
+                        <p className="text-xs font-bold text-emerald-500 uppercase tracking-wider mb-2">Repair Steps</p>
+                        <ol className="space-y-3">
+                          {selfRepairQuery.data.steps.map((s: any, i: number) => (
+                            <li key={i} className={cn("p-3 rounded-xl border", L ? "bg-slate-50 border-slate-200" : "bg-slate-800/50 border-slate-700/30")}>
+                              <div className="flex items-start gap-2">
+                                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] flex items-center justify-center text-[10px] font-bold text-white">{i + 1}</span>
+                                <div>
+                                  <p className={cn("text-sm font-medium", L ? "text-slate-800" : "text-white")}>{typeof s === "string" ? s : s.title || s.instruction}</p>
+                                  {typeof s !== "string" && s.detail && <p className="text-xs text-slate-400 mt-0.5">{s.detail}</p>}
+                                </div>
+                              </div>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+
+                    {selfRepairQuery.data.estimatedTime && (
+                      <div className="flex items-center gap-2 text-xs text-slate-400">
+                        <Clock className="h-3.5 w-3.5" />
+                        Estimated repair time: <strong className={cn(L ? "text-slate-700" : "text-slate-200")}>{selfRepairQuery.data.estimatedTime}</strong>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-center py-4 text-sm text-slate-400">Self-repair guidance unavailable for this issue</p>
+                )}
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Preventive Tips */}
+          {reportResult.preventiveTips && reportResult.preventiveTips.length > 0 && (
+            <Card className={cc}>
+              <div className={cn("px-4 py-3 border-b flex items-center gap-2", L ? "border-slate-100" : "border-slate-700/30")}>
+                <Shield className="w-4 h-4 text-blue-500" />
+                <span className={cn("text-sm font-semibold", L ? "text-slate-800" : "text-white")}>Preventive Tips</span>
+              </div>
+              <CardContent className="p-4">
+                <ul className="space-y-2">
+                  {reportResult.preventiveTips.map((tip: string, i: number) => (
+                    <li key={i} className={cn("flex items-start gap-2 text-sm", L ? "text-slate-600" : "text-slate-300")}>
+                      <CheckCircle className="h-3.5 w-3.5 mt-0.5 text-blue-500 flex-shrink-0" />{tip}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
 
           <div className="flex justify-center">
             <Button onClick={resetForm} className="rounded-xl"><RefreshCw className="h-4 w-4 mr-2" />Report Another Issue</Button>

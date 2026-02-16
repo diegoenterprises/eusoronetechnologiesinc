@@ -20,6 +20,7 @@ export const ROLES = {
   DISPATCH: 'DISPATCH',
   ESCORT: 'ESCORT',
   TERMINAL_MANAGER: 'TERMINAL_MANAGER',
+  FACTORING: 'FACTORING',
   COMPLIANCE_OFFICER: 'COMPLIANCE_OFFICER',
   SAFETY_MANAGER: 'SAFETY_MANAGER',
 } as const;
@@ -32,7 +33,7 @@ const ROLE_HIERARCHY: Record<string, string[]> = {
   ADMIN: [
     ROLES.ADMIN, ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER,
     ROLES.DRIVER, ROLES.DISPATCH, ROLES.ESCORT, ROLES.TERMINAL_MANAGER,
-    ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER,
+    ROLES.FACTORING, ROLES.COMPLIANCE_OFFICER, ROLES.SAFETY_MANAGER,
   ],
 };
 
@@ -140,6 +141,7 @@ export const driverProcedure = roleProcedure(ROLES.DRIVER);
 export const dispatchProcedure = roleProcedure(ROLES.DISPATCH);
 export const escortProcedure = roleProcedure(ROLES.ESCORT);
 export const terminalProcedure = roleProcedure(ROLES.TERMINAL_MANAGER);
+export const factoringProcedure = roleProcedure(ROLES.FACTORING);
 export const complianceProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER);
 export const safetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER);
 
@@ -282,6 +284,7 @@ export const auditedDriverProcedure = roleProcedure(ROLES.DRIVER).use(autoAudit)
 export const auditedDispatchProcedure = roleProcedure(ROLES.DISPATCH).use(autoAudit);
 export const auditedEscortProcedure = roleProcedure(ROLES.ESCORT).use(autoAudit);
 export const auditedTerminalProcedure = roleProcedure(ROLES.TERMINAL_MANAGER).use(autoAudit);
+export const auditedFactoringProcedure = roleProcedure(ROLES.FACTORING).use(autoAudit);
 export const auditedComplianceProcedure = roleProcedure(ROLES.COMPLIANCE_OFFICER).use(autoAudit);
 export const auditedSafetyProcedure = roleProcedure(ROLES.SAFETY_MANAGER).use(autoAudit);
 export const auditedOperationsProcedure = roleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH).use(autoAudit);

@@ -1388,6 +1388,428 @@ export const zeunMechanicsRouter = router({
   }),
 
   // ============================================================================
+  // SELF-REPAIR GUIDE — Manufacturer-specific DIY steps + tools + safety
+  // ============================================================================
+
+  getSelfRepairGuide: protectedProcedure.input(z.object({
+    issueCategory: issueCategoryEnum,
+    severity: severityEnum,
+    symptoms: z.array(z.string()),
+    vehicleMake: z.string().optional(),
+    vehicleModel: z.string().optional(),
+    vehicleYear: z.number().optional(),
+  })).query(async ({ input }) => {
+    // Manufacturer-specific tips keyed by make
+    const MFG_DATA: Record<string, { commonIssues: string[]; tsb: string[]; specialTools: string[]; dealerTip: string }> = {
+      FREIGHTLINER: {
+        commonIssues: ["DEF system derates (Cascadia)", "Aftertreatment heater relay failures", "Detroit DD13/DD15 EGR cooler leaks"],
+        tsb: ["TSB 47-010: Aftertreatment SCR catalyst", "TSB 25-023: Air compressor oil carry-over"],
+        specialTools: ["Detroit Diesel Diagnostic Link (DDDL)", "Freightliner ServiceLink"],
+        dealerTip: "Freightliner TeamRun service centers have 24/7 mobile repair",
+      },
+      PETERBILT: {
+        commonIssues: ["PACCAR MX-13 injector failures", "Eaton Fuller shifting hard", "Aftertreatment 5th wheel sensor issues"],
+        tsb: ["TSB PB-346: Front axle king pin wear", "TSB PB-221: HVAC blend door actuator"],
+        specialTools: ["PACCAR Davie4 diagnostic tool", "PACCAR ESA (Electronic Service Analyst)"],
+        dealerTip: "Peterbilt SmartLINQ remote diagnostics can pre-diagnose before you arrive",
+      },
+      KENWORTH: {
+        commonIssues: ["PACCAR MX engine turbo actuator codes", "Dash cluster intermittent failures", "Air dryer purge valve sticking"],
+        tsb: ["TSB KW-178: Steering gear input shaft seal", "TSB KW-156: Cab mount bushing wear"],
+        specialTools: ["PACCAR Davie4", "Kenworth TruckTech+"],
+        dealerTip: "Kenworth PremierCare has guaranteed uptime with 2-hour response",
+      },
+      VOLVO: {
+        commonIssues: ["D13 engine turbo compound unit failures", "I-Shift transmission adaptation issues", "VNL aftertreatment DPF sensor drift"],
+        tsb: ["TSB VL-2024-11: Coolant crossover tube leak", "TSB VL-2024-08: DEF dosing unit"],
+        specialTools: ["Volvo Tech Tool (PTT)", "Volvo VOCOM II adapter"],
+        dealerTip: "Volvo ASIST dealer network provides remote pre-diagnosis",
+      },
+      INTERNATIONAL: {
+        commonIssues: ["MaxxForce engine issues (pre-2017)", "Cummins X15 aftertreatment on LT series", "HV series electrical gremlins"],
+        tsb: ["TSB INT-G-21-004: A/C compressor clutch", "TSB INT-E-22-001: Fuel filter housing"],
+        specialTools: ["Navistar OnCommand diagnostic", "ServiceMaxx diagnostic software"],
+        dealerTip: "International OnCommand Connection provides remote diagnostics OTA",
+      },
+      MACK: {
+        commonIssues: ["MP8 engine coolant leak at EGR", "mDRIVE transmission calibration", "Anthem ADAS sensor alignment"],
+        tsb: ["TSB MA-240: Charge air cooler leak", "TSB MA-198: Fuel tank sender unit"],
+        specialTools: ["Mack VCADS Pro", "Volvo Tech Tool (PTT) — shared platform"],
+        dealerTip: "Mack Uptime Center monitors trucks 24/7 via GuardDog Connect",
+      },
+      WESTERN_STAR: {
+        commonIssues: ["DD16 engine oil consumption", "Allison transmission shift concerns", "X-Series electrical integration"],
+        tsb: ["TSB WS-042: Frame rail cracking at crossmember", "TSB WS-039: Steering column play"],
+        specialTools: ["Detroit Diesel Diagnostic Link (DDDL)", "Allison DOC"],
+        dealerTip: "Western Star uses Freightliner TeamRun network for service",
+      },
+    };
+
+    // DIY repair guides per issue category
+    const DIY_GUIDES: Record<string, {
+      difficulty: "EASY" | "MODERATE" | "ADVANCED" | "SHOP_ONLY";
+      canDIY: boolean;
+      estimatedTime: string;
+      tools: string[];
+      steps: string[];
+      safetyWarnings: string[];
+      parts: string[];
+      videoSearchTerm: string;
+    }> = {
+      ENGINE: {
+        difficulty: "ADVANCED",
+        canDIY: false,
+        estimatedTime: "2-8 hours",
+        tools: ["OBD-II scanner", "Multimeter", "Socket set", "Torque wrench"],
+        steps: [
+          "Connect diagnostic scanner and read all fault codes",
+          "Check engine oil level and condition on dipstick",
+          "Inspect coolant level in overflow tank (engine COOL)",
+          "Check air filter — remove and inspect for debris/blockage",
+          "Inspect serpentine belt for cracks, glazing, or fraying",
+          "Listen for unusual noises — knocking, ticking, hissing",
+          "Check for visible fluid leaks under the truck",
+          "If derate: check DEF level and quality",
+          "Record all codes and contact a certified mechanic",
+        ],
+        safetyWarnings: [
+          "NEVER work under a truck supported only by a jack",
+          "Let engine cool completely before opening cooling system",
+          "Disconnect batteries before any electrical work",
+          "Wear safety glasses and gloves",
+        ],
+        parts: ["Air filter", "Oil filter", "Serpentine belt", "Coolant"],
+        videoSearchTerm: "semi truck engine diagnostic troubleshooting",
+      },
+      BRAKES: {
+        difficulty: "SHOP_ONLY",
+        canDIY: false,
+        estimatedTime: "1-4 hours (shop)",
+        tools: ["Air pressure gauge", "Brake adjustment tool", "Flashlight"],
+        steps: [
+          "Check dash air pressure gauges — both should read 100-130 PSI",
+          "Listen for air leaks around brake chambers and lines",
+          "Visually inspect brake drums for cracks or scoring",
+          "Check push rod stroke — should not exceed adjustment limit",
+          "Inspect brake hoses and lines for damage, chafing, or leaks",
+          "Check air dryer — drain moisture from tanks",
+          "DO NOT attempt brake chamber or slack adjuster repair yourself",
+          "Call a mobile brake service or tow to shop",
+        ],
+        safetyWarnings: [
+          "BRAKE WORK IS SAFETY-CRITICAL — improper repair can cause fatality",
+          "Spring brakes are under extreme pressure — never disassemble",
+          "Always chock wheels before working near brakes",
+          "This is a CDL out-of-service violation if brakes are defective",
+        ],
+        parts: ["Brake shoes/pads", "S-cam bushings", "Slack adjusters", "Air brake hoses"],
+        videoSearchTerm: "commercial truck air brake troubleshooting",
+      },
+      TRANSMISSION: {
+        difficulty: "SHOP_ONLY",
+        canDIY: false,
+        estimatedTime: "4-12 hours (shop)",
+        tools: ["Diagnostic scanner", "Transmission fluid dipstick/sight glass"],
+        steps: [
+          "Check transmission fluid level and color",
+          "Scan for transmission fault codes",
+          "Note: is the issue in specific gears or all gears?",
+          "Check clutch pedal free play (manual transmissions)",
+          "For automated trans (Eaton, mDRIVE): check software version",
+          "Inspect transmission linkage and shift cables if manual",
+          "Listen for grinding — indicates synchronizer or gear damage",
+          "Contact dealer or heavy-duty transmission shop",
+        ],
+        safetyWarnings: [
+          "Transmission fluid is hot — wait for cool-down",
+          "Never work under a truck in gear without wheel chocks",
+          "Automated transmissions require OEM software for calibration",
+        ],
+        parts: ["Transmission fluid", "Clutch kit", "Synchronizer rings", "Shift actuator"],
+        videoSearchTerm: "semi truck transmission troubleshooting",
+      },
+      ELECTRICAL: {
+        difficulty: "MODERATE",
+        canDIY: true,
+        estimatedTime: "30 min - 2 hours",
+        tools: ["Multimeter", "Battery load tester", "Wire brush", "Terminal cleaner"],
+        steps: [
+          "Check battery voltage — should read 12.4-12.8V per battery",
+          "Inspect battery terminals for corrosion — clean with wire brush",
+          "Check battery cable connections — tighten if loose",
+          "Test alternator output — should be 13.5-14.5V with engine running",
+          "Check all fuses in the main fuse panel",
+          "Inspect ground cables for corrosion or damage",
+          "Check for parasitic draw if batteries drain overnight",
+          "For starting issues: test starter relay and solenoid",
+        ],
+        safetyWarnings: [
+          "Disconnect negative terminal first, reconnect last",
+          "Batteries produce explosive hydrogen gas — no sparks or flames",
+          "Wear eye protection — battery acid causes blindness",
+          "Remove all jewelry before working on electrical systems",
+        ],
+        parts: ["Batteries (Group 31)", "Battery cables", "Fuses", "Alternator"],
+        videoSearchTerm: "semi truck electrical system battery troubleshooting",
+      },
+      TIRES: {
+        difficulty: "MODERATE",
+        canDIY: true,
+        estimatedTime: "30-90 minutes",
+        tools: ["Tire pressure gauge", "Lug wrench (1-1/2\")", "Jack/jack stand", "Flashlight", "Tire iron"],
+        steps: [
+          "Move to safe location off the roadway",
+          "Set parking brake and place wheel chocks",
+          "Set emergency triangles 50/100/200 feet behind",
+          "Inspect tire damage — sidewall punctures cannot be repaired",
+          "If low pressure: inflate to placard spec (usually 100-110 PSI)",
+          "For flat: call mobile tire service — truck tires need special equipment",
+          "If you have a spare: loosen lugs, jack truck, swap tire, torque to spec",
+          "Check all other tires for damage while stopped",
+          "Drive slowly to nearest truck stop for proper repair",
+        ],
+        safetyWarnings: [
+          "NEVER stand in front of a tire being inflated — blowout risk",
+          "Truck tires at 100+ PSI can be lethal if they fail",
+          "Never use a highway jack on soft ground",
+          "Wear high-visibility vest when roadside",
+        ],
+        parts: ["Replacement tire", "Valve stems", "Lug nuts"],
+        videoSearchTerm: "semi truck flat tire change roadside",
+      },
+      FUEL_SYSTEM: {
+        difficulty: "MODERATE",
+        canDIY: true,
+        estimatedTime: "30-60 minutes",
+        tools: ["Fuel filter wrench", "Drain pan", "Priming pump", "Clean rags"],
+        steps: [
+          "Check fuel gauges — rule out empty tank",
+          "Inspect fuel/water separator — drain water from bowl",
+          "Replace fuel filter if overdue (every 15-25k miles)",
+          "Check for fuel leaks at lines, fittings, and tank",
+          "Bleed/prime fuel system after filter change",
+          "Inspect fuel tank cap seal — vacuum leak causes issues",
+          "If engine won't start after filter change: cycle key to prime",
+          "For diesel gelling in cold weather: add anti-gel treatment",
+        ],
+        safetyWarnings: [
+          "No smoking or open flames near fuel",
+          "Catch all spilled fuel — it's an environmental hazard",
+          "Diesel fuel is slippery — clean any spills immediately",
+          "Dispose of old filters properly",
+        ],
+        parts: ["Fuel filter", "Fuel/water separator", "Fuel line fittings", "Anti-gel additive"],
+        videoSearchTerm: "diesel truck fuel filter change troubleshooting",
+      },
+      COOLING: {
+        difficulty: "MODERATE",
+        canDIY: true,
+        estimatedTime: "30-90 minutes",
+        tools: ["Coolant pressure tester", "Infrared thermometer", "Flashlight", "Coolant"],
+        steps: [
+          "WAIT for engine to cool — NEVER open radiator cap when hot",
+          "Check coolant level in overflow reservoir",
+          "Inspect radiator for visible leaks, debris blocking airflow",
+          "Check all coolant hoses for bulging, cracks, or soft spots",
+          "Inspect water pump weep hole for coolant dripping",
+          "Check thermostat operation — should open at ~180-195°F",
+          "Clean bugs/debris from radiator and charge air cooler",
+          "Top off coolant with correct type (usually ELC/OAT)",
+          "If overheating persists: do NOT drive — call for service",
+        ],
+        safetyWarnings: [
+          "NEVER open a hot cooling system — steam causes severe burns",
+          "Coolant is toxic to animals — clean all spills",
+          "Do not mix coolant types — can cause gel blockage",
+          "Engine fan can start without warning — keep hands clear",
+        ],
+        parts: ["Coolant (ELC/OAT type)", "Radiator hoses", "Thermostat", "Radiator cap"],
+        videoSearchTerm: "diesel truck overheating coolant system troubleshooting",
+      },
+      EXHAUST: {
+        difficulty: "ADVANCED",
+        canDIY: false,
+        estimatedTime: "2-6 hours (shop)",
+        tools: ["Diagnostic scanner (OEM level)", "Infrared thermometer"],
+        steps: [
+          "Read all fault codes — DEF/SCR codes are complex",
+          "Check DEF tank level — refill if below 1/4",
+          "Inspect DEF quality — should be clear, not cloudy or crystallized",
+          "Check DEF filler cap seal and lines for crystallization",
+          "If regen needed: find safe location, initiate parked regen via dash",
+          "Monitor regen temps — should reach 1000°F+",
+          "If regen won't complete: likely sensor or DPF issue — need shop",
+          "For derate codes: you may have limited miles before engine shutdown",
+          "Contact OEM dealer — aftertreatment requires specialized tools",
+        ],
+        safetyWarnings: [
+          "DPF/SCR system reaches 1000°F+ during regen — fire hazard",
+          "Never park on grass or near combustibles during regen",
+          "DEF fluid is corrosive — avoid contact with paint and electrical",
+          "Aftertreatment work requires OEM diagnostic tool",
+        ],
+        parts: ["DEF fluid", "DEF doser/injector", "NOx sensors", "DPF filter"],
+        videoSearchTerm: "diesel truck DEF aftertreatment DPF troubleshooting",
+      },
+      STEERING: {
+        difficulty: "SHOP_ONLY",
+        canDIY: false,
+        estimatedTime: "2-6 hours (shop)",
+        tools: ["Power steering fluid", "Flashlight"],
+        steps: [
+          "Check power steering fluid level — top off if low",
+          "Inspect for power steering fluid leaks under truck",
+          "Check power steering belt tension and condition",
+          "Listen for whining noise — indicates low fluid or pump issue",
+          "Check tie rod ends for play — grab tire and push/pull",
+          "Inspect steering gear box for leaks at input shaft seal",
+          "DO NOT drive if steering is severely compromised",
+          "Call for tow to alignment/steering shop",
+        ],
+        safetyWarnings: [
+          "STEERING FAILURE IS LIFE-THREATENING — do not drive",
+          "Chock wheels before inspecting underneath",
+          "Power steering fluid is hot — let it cool",
+        ],
+        parts: ["Power steering fluid", "Tie rod ends", "Steering gear seal kit", "Power steering pump"],
+        videoSearchTerm: "semi truck power steering troubleshooting",
+      },
+      SUSPENSION: {
+        difficulty: "SHOP_ONLY",
+        canDIY: false,
+        estimatedTime: "2-8 hours (shop)",
+        tools: ["Flashlight", "Pry bar (inspection only)"],
+        steps: [
+          "Visually inspect air bags/springs for damage or leaks",
+          "Check ride height — truck should be level side-to-side",
+          "Listen for air leaks around suspension components",
+          "Inspect shock absorbers for leaking fluid",
+          "Check leaf springs for cracked or broken leaves",
+          "Inspect U-bolts and hangers for damage",
+          "If air ride: check leveling valve and air lines",
+          "Drive slowly to nearest truck repair facility",
+        ],
+        safetyWarnings: [
+          "Never work under a truck with deflated air bags without support",
+          "Broken springs can shift suddenly — use extreme caution",
+          "Suspension failure can cause loss of control",
+        ],
+        parts: ["Air bags/springs", "Shock absorbers", "Leaf springs", "U-bolts"],
+        videoSearchTerm: "semi truck air ride suspension troubleshooting",
+      },
+      HVAC: {
+        difficulty: "EASY",
+        canDIY: true,
+        estimatedTime: "15-45 minutes",
+        tools: ["Cabin air filter", "Multimeter", "Refrigerant gauge (optional)"],
+        steps: [
+          "Check cabin air filter — replace if dirty or clogged",
+          "Verify blower motor works on all speeds",
+          "Check coolant level (heater uses engine coolant)",
+          "For no A/C: check if compressor clutch engages",
+          "Inspect A/C belt for damage or slipping",
+          "Check for refrigerant leaks — oily residue at fittings",
+          "Verify blend door moves — switch between hot and cold",
+          "If no heat: check heater hoses are hot with engine warm",
+          "A/C recharge requires certified technician (EPA regulation)",
+        ],
+        safetyWarnings: [
+          "A/C refrigerant is under high pressure — can cause frostbite",
+          "EPA requires certified technician for refrigerant handling",
+          "Let engine cool before checking heater hoses",
+        ],
+        parts: ["Cabin air filter", "Blower motor resistor", "A/C belt", "Heater hoses"],
+        videoSearchTerm: "semi truck HVAC heater AC troubleshooting",
+      },
+      OTHER: {
+        difficulty: "MODERATE",
+        canDIY: false,
+        estimatedTime: "Varies",
+        tools: ["Diagnostic scanner", "Flashlight", "Basic hand tools"],
+        steps: [
+          "Document all symptoms in detail",
+          "Note when the issue occurs — speed, temperature, load condition",
+          "Check all fluid levels — oil, coolant, DEF, power steering, transmission",
+          "Scan for diagnostic trouble codes",
+          "Check all warning lights and gauges",
+          "Take photos/videos of any visible damage or leaks",
+          "Contact a qualified mechanic with your findings",
+        ],
+        safetyWarnings: [
+          "If unsure about safety — do NOT drive",
+          "When in doubt, call for professional help",
+        ],
+        parts: [],
+        videoSearchTerm: "semi truck general troubleshooting inspection",
+      },
+    };
+
+    const guide = DIY_GUIDES[input.issueCategory] || DIY_GUIDES["OTHER"];
+    const makeLower = (input.vehicleMake || "").toUpperCase().replace(/\s+/g, "_");
+    const mfg = MFG_DATA[makeLower] || null;
+
+    // Severity override: if CRITICAL, always mark as SHOP_ONLY
+    if (input.severity === "CRITICAL") {
+      guide.difficulty = "SHOP_ONLY";
+      guide.canDIY = false;
+      guide.safetyWarnings.unshift("⚠ CRITICAL SEVERITY — This issue requires immediate professional attention. Do NOT attempt self-repair.");
+    }
+
+    return {
+      issueCategory: input.issueCategory,
+      ...guide,
+      manufacturer: mfg ? {
+        make: input.vehicleMake,
+        model: input.vehicleModel,
+        year: input.vehicleYear,
+        commonIssues: mfg.commonIssues,
+        technicalServiceBulletins: mfg.tsb,
+        specialDiagnosticTools: mfg.specialTools,
+        dealerTip: mfg.dealerTip,
+      } : null,
+    };
+  }),
+
+  // ============================================================================
+  // EMERGENCY ROADSIDE — Quick panel with all emergency contacts + procedures
+  // ============================================================================
+
+  getEmergencyRoadside: protectedProcedure.input(z.object({
+    latitude: z.number().optional(),
+    longitude: z.number().optional(),
+  })).query(async ({ input }) => {
+    return {
+      emergencyContacts: [
+        { name: "911 Emergency", number: "911", type: "emergency", icon: "phone" },
+        { name: "CHEMTREC (Hazmat)", number: "1-800-424-9300", type: "hazmat", icon: "alert-triangle" },
+        { name: "National Response Center", number: "1-800-424-8802", type: "hazmat", icon: "shield" },
+        { name: "FBI Cargo Theft Hotline", number: "1-888-324-3228", type: "theft", icon: "shield" },
+        { name: "Poison Control", number: "1-800-222-1222", type: "medical", icon: "heart" },
+        { name: "FMCSA Safety Hotline", number: "1-888-327-4236", type: "regulatory", icon: "file-text" },
+        { name: "Roadside Assistance (AAA)", number: "1-800-222-4357", type: "roadside", icon: "truck" },
+      ],
+      emergencyTypes: [
+        { type: "engine_fire", label: "Engine Fire", icon: "flame", severity: "CRITICAL" },
+        { type: "brake_failure", label: "Brake Failure", icon: "alert-triangle", severity: "CRITICAL" },
+        { type: "tire_blowout", label: "Tire Blowout", icon: "circle", severity: "HIGH" },
+        { type: "hazmat_spill", label: "Hazmat Spill", icon: "alert-triangle", severity: "CRITICAL" },
+        { type: "medical_emergency", label: "Medical Emergency", icon: "heart", severity: "CRITICAL" },
+        { type: "accident", label: "Vehicle Accident", icon: "truck", severity: "HIGH" },
+        { type: "rollover", label: "Rollover", icon: "alert-triangle", severity: "CRITICAL" },
+        { type: "breakdown_highway", label: "Highway Breakdown", icon: "map-pin", severity: "MEDIUM" },
+        { type: "stolen_vehicle", label: "Cargo Theft", icon: "shield", severity: "HIGH" },
+        { type: "weather_severe", label: "Severe Weather", icon: "cloud", severity: "HIGH" },
+      ],
+      quickTips: [
+        "Always carry emergency triangles, fire extinguisher, and first aid kit",
+        "Know your exact GPS coordinates — share with 911 if needed",
+        "Keep your CDL, registration, and insurance accessible",
+        "If hauling hazmat: always have ERG guide and shipping papers ready",
+      ],
+    };
+  }),
+
+  // ============================================================================
   // HEALTH CHECK
   // ============================================================================
 

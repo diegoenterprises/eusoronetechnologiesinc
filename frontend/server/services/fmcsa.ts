@@ -117,7 +117,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/catalysts/${dotNumber}?webKey=${this.apiKey}`,
+        `${this.baseUrl}/carriers/${dotNumber}?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -132,7 +132,7 @@ class FMCSAService {
       }
 
       const data = await response.json();
-      return data.content?.catalyst || null;
+      return data.content?.[0]?.carrier || data.content?.carrier || data.content?.[0]?.catalyst || data.content?.catalyst || null;
     } catch (error) {
       console.error("[FMCSA] getCatalystByDOT error:", error);
       return null;
@@ -150,7 +150,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/catalysts/docket-number/${mcNumber}?webKey=${this.apiKey}`,
+        `${this.baseUrl}/carriers/docket-number/${mcNumber}?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -164,7 +164,7 @@ class FMCSAService {
       }
 
       const data = await response.json();
-      return data.content?.catalyst || null;
+      return data.content?.[0]?.carrier || data.content?.carrier || data.content?.[0]?.catalyst || data.content?.catalyst || null;
     } catch (error) {
       console.error("[FMCSA] getCatalystByMC error:", error);
       return null;
@@ -181,7 +181,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/catalysts/${dotNumber}/safetyRating?webKey=${this.apiKey}`,
+        `${this.baseUrl}/carriers/${dotNumber}/safetyRating?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -212,7 +212,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/catalysts/${dotNumber}/authority?webKey=${this.apiKey}`,
+        `${this.baseUrl}/carriers/${dotNumber}/authority?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -243,7 +243,7 @@ class FMCSAService {
 
     try {
       const response = await fetch(
-        `${this.baseUrl}/catalysts/${dotNumber}/insurance?webKey=${this.apiKey}`,
+        `${this.baseUrl}/carriers/${dotNumber}/insurance?webKey=${this.apiKey}`,
         {
           method: "GET",
           headers: {
@@ -364,7 +364,7 @@ class FMCSAService {
     }
 
     try {
-      let url = `${this.baseUrl}/catalysts/name/${encodeURIComponent(name)}?webKey=${this.apiKey}&size=${limit}`;
+      let url = `${this.baseUrl}/carriers/name/${encodeURIComponent(name)}?webKey=${this.apiKey}&size=${limit}`;
       if (state) {
         url += `&state=${state}`;
       }

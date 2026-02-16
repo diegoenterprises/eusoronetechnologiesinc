@@ -11,7 +11,8 @@ interface ProtectedRouteProps {
 
 const ALL_ROLES: UserRole[] = [
   "SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH",
-  "ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN",
+  "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER",
+  "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN",
 ];
 
 export default function ProtectedRoute({ children, allowedRoles = ALL_ROLES }: ProtectedRouteProps) {

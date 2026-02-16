@@ -1,9 +1,10 @@
 /**
- * USEROLACCESS HOOK - 9-ROLE SYSTEM
+ * USEROLACCESS HOOK - 12-ROLE SYSTEM
  * TRILLION DOLLAR CODE STANDARD - NO PLACEHOLDERS
  * 
- * Provides role-based access control for all 9 user types:
- * - SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER, ADMIN, SUPER_ADMIN
+ * Provides role-based access control for all 12 user types:
+ * - SHIPPER, CATALYST, BROKER, DRIVER, DISPATCH, ESCORT, TERMINAL_MANAGER,
+ *   FACTORING, COMPLIANCE_OFFICER, SAFETY_MANAGER, ADMIN, SUPER_ADMIN
  */
 
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -19,6 +20,8 @@ export type UserRole =
   | "ESCORT" 
   | "TERMINAL_MANAGER" 
   | "FACTORING"
+  | "COMPLIANCE_OFFICER"
+  | "SAFETY_MANAGER"
   | "ADMIN" 
   | "SUPER_ADMIN"
   | "USER"; // Default fallback
@@ -30,7 +33,7 @@ interface RoleAccessConfig {
 // Comprehensive page access configuration for all 9 roles
 const PAGE_ACCESS: RoleAccessConfig = {
   // Dashboard
-  "/": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Shipper-specific pages
   "/loads": ["SHIPPER", "CATALYST", "BROKER", "ADMIN", "SUPER_ADMIN"],
@@ -66,7 +69,7 @@ const PAGE_ACCESS: RoleAccessConfig = {
   // Escort-specific pages
   "/convoys": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/team": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
-  "/incidents": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/escort/incidents": ["ESCORT", "ADMIN", "SUPER_ADMIN"],
   "/reports": ["ESCORT", "TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Terminal Manager-specific pages
@@ -75,7 +78,7 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/outgoing": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/staff": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/operations": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
-  "/compliance": ["TERMINAL_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/compliance": ["TERMINAL_MANAGER", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Factoring-specific pages
   "/factoring": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
@@ -90,14 +93,38 @@ const PAGE_ACCESS: RoleAccessConfig = {
   "/factoring/reports": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
   "/factoring/settings": ["FACTORING", "ADMIN", "SUPER_ADMIN"],
 
+  // Compliance Officer-specific pages
+  "/compliance/dq-files": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/compliance/calendar": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/compliance/clearinghouse": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/compliance/eld": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/violations": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/audits": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/fleet-compliance": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/driver-compliance": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+  "/compliance/reports": ["COMPLIANCE_OFFICER", "ADMIN", "SUPER_ADMIN"],
+
+  // Safety Manager-specific pages
+  "/safety": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/safety-metrics": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/safety/incidents": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/safety/csa-scores": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/safety/driver-performance": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/driver-health": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/vehicle-safety": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/training": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/hazmat": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/incidents": ["SAFETY_MANAGER", "ESCORT", "ADMIN", "SUPER_ADMIN"],
+  "/accident-report": ["SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+
   // Shared pages
-  "/messages": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/messages": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   "/payments": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/wallet": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/company": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/profile": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/settings": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
-  "/support": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "ADMIN", "SUPER_ADMIN"],
+  "/wallet": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/company": ["SHIPPER", "CATALYST", "BROKER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/profile": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/settings": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
+  "/support": ["SHIPPER", "CATALYST", "BROKER", "DRIVER", "DISPATCH", "ESCORT", "TERMINAL_MANAGER", "FACTORING", "COMPLIANCE_OFFICER", "SAFETY_MANAGER", "ADMIN", "SUPER_ADMIN"],
   
   // Admin pages
   "/admin": ["ADMIN", "SUPER_ADMIN"],
@@ -213,11 +240,13 @@ export function getRoleHierarchy(role: UserRole): number {
     DISPATCH: 3,
     TERMINAL_MANAGER: 4,
     FACTORING: 5,
-    SHIPPER: 6,
-    CATALYST: 7,
-    BROKER: 8,
-    ADMIN: 9,
-    SUPER_ADMIN: 10,
+    COMPLIANCE_OFFICER: 6,
+    SAFETY_MANAGER: 7,
+    SHIPPER: 8,
+    CATALYST: 9,
+    BROKER: 10,
+    ADMIN: 11,
+    SUPER_ADMIN: 12,
   };
   return hierarchy[role] || 0;
 }

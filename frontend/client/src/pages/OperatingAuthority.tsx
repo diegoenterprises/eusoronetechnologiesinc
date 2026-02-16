@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight } from "lucide-react";
+import { Shield, FileText, CheckCircle, XCircle, AlertTriangle, Plus, Search, Building2, Truck, ArrowRight, Clock, Handshake, Scale, Eye, ChevronRight, Zap, Lock, MapPin, ArrowUpRight, Users, Phone, Globe, Star, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 const LEASE_TYPE_LABEL: Record<string, { label: string; color: string; bg: string; desc: string }> = {
@@ -38,6 +38,9 @@ export default function OperatingAuthority() {
   const [activeTab, setActiveTab] = useState<"overview" | "leases" | "equipment" | "browse">("overview");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [browseSearch, setBrowseSearch] = useState("");
+  const [fmcsaQuery, setFmcsaQuery] = useState("");
+  const [selectedCarrier, setSelectedCarrier] = useState<any>(null);
+  const [showFMCSALeaseDialog, setShowFMCSALeaseDialog] = useState(false);
 
   const authorityQuery = (trpc as any).authority?.getMyAuthority?.useQuery?.();
   const leasesQuery = (trpc as any).authority?.getMyLeases?.useQuery?.();
@@ -45,9 +48,19 @@ export default function OperatingAuthority() {
   const equipmentQuery = (trpc as any).authority?.getEquipmentAuthority?.useQuery?.();
   const browseQuery = (trpc as any).authority?.browseAuthorities?.useQuery?.({ search: browseSearch });
 
+  // FMCSA SAFER API search — powers the "Find Authority" tab
+  const fmcsaSearchQuery = (trpc as any).authority?.searchAuthority?.useQuery?.(
+    { query: fmcsaQuery, searchType: "auto" as const },
+    { enabled: fmcsaQuery.length >= 2 }
+  );
+
   const createLeaseMutation = (trpc as any).authority?.createLease?.useMutation?.({
     onSuccess: () => { toast.success("Lease agreement created"); setShowCreateDialog(false); leasesQuery?.refetch?.(); statsQuery?.refetch?.(); authorityQuery?.refetch?.(); },
     onError: (e: any) => toast.error("Failed to create", { description: e.message }),
+  });
+  const createLeaseFromFMCSAMutation = (trpc as any).authority?.createLeaseFromFMCSA?.useMutation?.({
+    onSuccess: () => { toast.success("Lease agreement created from FMCSA data"); setShowFMCSALeaseDialog(false); setSelectedCarrier(null); leasesQuery?.refetch?.(); statsQuery?.refetch?.(); authorityQuery?.refetch?.(); setActiveTab("leases"); },
+    onError: (e: any) => toast.error("Failed to create lease", { description: e.message }),
   });
   const updateComplianceMutation = (trpc as any).authority?.updateCompliance?.useMutation?.({
     onSuccess: () => { toast.success("Compliance updated"); leasesQuery?.refetch?.(); authorityQuery?.refetch?.(); },
@@ -67,6 +80,8 @@ export default function OperatingAuthority() {
   const stats = statsQuery?.data;
   const equipment = equipmentQuery?.data || [];
   const authorities = browseQuery?.data || [];
+  const fmcsaResults = fmcsaSearchQuery?.data?.results || [];
+  const fmcsaSearching = fmcsaSearchQuery?.isLoading || fmcsaSearchQuery?.isFetching;
   const loading = authorityQuery?.isLoading;
 
   const complianceScore = authority?.complianceScore ?? 0;
@@ -345,70 +360,178 @@ export default function OperatingAuthority() {
         </div>
       )}
 
-      {/* ─── BROWSE TAB ─── */}
+      {/* ─── FIND AUTHORITY TAB (FMCSA SAFER) ─── */}
       {activeTab === "browse" && (
-        <div className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <Input
-              placeholder="Search by company name, MC#, or DOT#..."
-              value={browseSearch}
-              onChange={e => setBrowseSearch(e.target.value)}
-              className="pl-10 bg-slate-800/50 border-slate-700/50 text-white rounded-xl"
-            />
-          </div>
+        <div className="space-y-5">
+          {/* FMCSA Search Bar */}
+          <Card className="bg-slate-800/50 border-slate-700/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-white font-semibold text-sm">FMCSA SAFER Lookup</p>
+                  <p className="text-slate-500 text-xs">Search the federal motor carrier database by DOT#, MC#, or company name</p>
+                </div>
+              </div>
+              <form onSubmit={e => { e.preventDefault(); setFmcsaQuery(browseSearch.trim()); }} className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Input
+                    placeholder="Enter DOT#, MC#, or company name..."
+                    value={browseSearch}
+                    onChange={e => setBrowseSearch(e.target.value)}
+                    className="pl-10 bg-slate-900/60 border-slate-700/50 text-white rounded-xl h-11"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={browseSearch.trim().length < 2 || fmcsaSearching}
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl h-11 px-6"
+                >
+                  {fmcsaSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                  <span className="ml-2">{fmcsaSearching ? "Searching..." : "Search"}</span>
+                </Button>
+              </form>
+              {fmcsaSearchQuery?.data?.searchType && (
+                <p className="text-xs text-slate-600 mt-2">
+                  Searched by: <span className="text-slate-400 uppercase">{fmcsaSearchQuery.data.searchType}</span>
+                  {fmcsaSearchQuery.data.error && <span className="text-red-400 ml-2">({fmcsaSearchQuery.data.error})</span>}
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
-          {browseQuery?.isLoading ? (
-            <div className="space-y-3">{[1,2,3,4].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
-          ) : authorities.length === 0 ? (
+          {/* Results */}
+          {fmcsaSearching ? (
+            <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-32 w-full rounded-xl" />)}</div>
+          ) : fmcsaQuery && fmcsaResults.length === 0 ? (
             <Card className="bg-slate-800/50 border-slate-700/50">
-              <CardContent className="py-12 text-center">
+              <CardContent className="py-14 text-center">
                 <Building2 className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                <p className="text-slate-400">No carriers with registered authority found</p>
+                <p className="text-white font-semibold">No Results Found</p>
+                <p className="text-slate-500 text-sm mt-1">No carriers found matching "{fmcsaQuery}" in the FMCSA database.</p>
               </CardContent>
             </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {authorities.map((c: any) => (
-                <Card key={c.companyId} className="bg-slate-800/50 border-slate-700/50 hover:border-blue-500/30 transition-all group cursor-pointer">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
+          ) : fmcsaResults.length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-slate-500 text-xs font-medium uppercase tracking-wider">
+                {fmcsaResults.length} carrier{fmcsaResults.length > 1 ? "s" : ""} found
+              </p>
+              {fmcsaResults.map((c: any, idx: number) => (
+                <Card key={`${c.dotNumber}-${idx}`} className="bg-slate-800/50 border-slate-700/50 hover:border-blue-500/30 transition-all overflow-hidden">
+                  <div className={`h-0.5 ${c.allowedToOperate ? "bg-gradient-to-r from-emerald-500 to-teal-500" : "bg-gradient-to-r from-red-500 to-orange-500"}`} />
+                  <CardContent className="p-5">
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600/20 to-purple-600/20 flex items-center justify-center border border-blue-500/20">
-                          <Building2 className="w-5 h-5 text-blue-400" />
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${c.allowedToOperate ? "bg-emerald-500/10 border-emerald-500/20" : "bg-red-500/10 border-red-500/20"}`}>
+                          <Building2 className={`w-5 h-5 ${c.allowedToOperate ? "text-emerald-400" : "text-red-400"}`} />
                         </div>
                         <div>
-                          <p className="text-white font-medium">{c.companyName}</p>
-                          <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5">
-                            {c.mcNumber && <span>MC {c.mcNumber}</span>}
-                            {c.dotNumber && <span>DOT {c.dotNumber}</span>}
+                          <p className="text-white font-semibold text-base">{c.legalName}</p>
+                          {c.dbaName && c.dbaName !== c.legalName && (
+                            <p className="text-slate-500 text-xs mt-0.5">DBA: {c.dbaName}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1">
+                            <Badge className={`border-0 text-[10px] ${c.allowedToOperate ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                              {c.operatingStatus}
+                            </Badge>
+                            <Badge className="border-0 text-[10px] bg-blue-500/15 text-blue-400">FMCSA Verified</Badge>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1.5">
-                          {c.insuranceValid ? (
-                            <Badge className="border-0 text-[10px] bg-emerald-500/15 text-emerald-400">Insured</Badge>
-                          ) : (
-                            <Badge className="border-0 text-[10px] bg-red-500/15 text-red-400">No Insurance</Badge>
-                          )}
-                          <Badge className={`border-0 text-[10px] ${c.complianceStatus === "compliant" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>
-                            {c.complianceStatus}
-                          </Badge>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-blue-400 transition-colors" />
-                      </div>
+                      <Button
+                        size="sm"
+                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-xs px-4"
+                        onClick={() => { setSelectedCarrier(c); setShowFMCSALeaseDialog(true); }}
+                      >
+                        <Handshake className="w-3.5 h-3.5 mr-1.5" />Start Lease
+                      </Button>
+                    </div>
+
+                    {/* Key Info Grid */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                      <AuthorityField label="US DOT Number" value={c.dotNumber} />
+                      <AuthorityField label="MC Number" value={c.mcNumber || "N/A"} />
+                      <AuthorityField label="Safety Rating" value={c.safetyRating} />
+                      <AuthorityField label="Fleet Size" value={`${c.fleetSize} units`} />
+                    </div>
+
+                    {/* Authority Types & Details */}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {c.commonAuthority && c.commonAuthority !== "N" && (
+                        <Badge className="border-0 text-[10px] bg-purple-500/15 text-purple-400">Common Authority: {c.commonAuthority}</Badge>
+                      )}
+                      {c.contractAuthority && c.contractAuthority !== "N" && (
+                        <Badge className="border-0 text-[10px] bg-amber-500/15 text-amber-400">Contract Authority: {c.contractAuthority}</Badge>
+                      )}
+                      {c.brokerAuthority && c.brokerAuthority !== "N" && (
+                        <Badge className="border-0 text-[10px] bg-cyan-500/15 text-cyan-400">Broker Authority: {c.brokerAuthority}</Badge>
+                      )}
+                      {c.hazmat && (
+                        <Badge className="border-0 text-[10px] bg-orange-500/15 text-orange-400">HAZMAT</Badge>
+                      )}
+                      {c.bipdInsurance && (
+                        <Badge className="border-0 text-[10px] bg-emerald-500/15 text-emerald-400">BIPD Insured</Badge>
+                      )}
+                      {c.cargoInsurance && (
+                        <Badge className="border-0 text-[10px] bg-emerald-500/15 text-emerald-400">Cargo Insured</Badge>
+                      )}
+                    </div>
+
+                    {/* Contact & Location */}
+                    <div className="flex items-center gap-4 text-xs text-slate-500">
+                      {c.address && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />{c.address}
+                        </span>
+                      )}
+                      {c.phone && (
+                        <span className="flex items-center gap-1">
+                          <Phone className="w-3 h-3" />{c.phone}
+                        </span>
+                      )}
+                      {c.driverCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />{c.driverCount} drivers
+                        </span>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          )}
+          ) : !fmcsaQuery ? (
+            <Card className="bg-slate-800/50 border-slate-700/50">
+              <CardContent className="py-14 text-center">
+                <Search className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                <p className="text-white font-semibold">Search the FMCSA Database</p>
+                <p className="text-slate-500 text-sm mt-1 max-w-md mx-auto">
+                  Look up any motor carrier in the US DOT system. Enter a DOT number, MC number, or company name to get started.
+                </p>
+                <div className="flex items-center justify-center gap-6 mt-4 text-xs text-slate-600">
+                  <span>Try: <span className="text-slate-400">2233435</span></span>
+                  <span>Try: <span className="text-slate-400">MC-123456</span></span>
+                  <span>Try: <span className="text-slate-400">Swift Transportation</span></span>
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       )}
 
       {/* ─── CREATE LEASE DIALOG ─── */}
       <CreateLeaseDialog open={showCreateDialog} onOpenChange={setShowCreateDialog} onSubmit={createLeaseMutation} authorities={authorities} />
+
+      {/* ─── FMCSA LEASE DIALOG ─── */}
+      <FMCSALeaseDialog
+        open={showFMCSALeaseDialog}
+        onOpenChange={setShowFMCSALeaseDialog}
+        carrier={selectedCarrier}
+        onSubmit={createLeaseFromFMCSAMutation}
+      />
     </div>
   );
 }
@@ -715,6 +838,182 @@ function CreateLeaseDialog({ open, onOpenChange, onSubmit, authorities }: { open
             className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl h-11 text-sm font-semibold"
           >
             {onSubmit?.isLoading ? "Creating..." : "Create Lease Agreement"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function FMCSALeaseDialog({ open, onOpenChange, carrier, onSubmit }: { open: boolean; onOpenChange: (v: boolean) => void; carrier: any; onSubmit: any }) {
+  const [form, setForm] = useState({
+    leaseType: "full_lease" as string,
+    startDate: "",
+    endDate: "",
+    revenueSharePercent: 75,
+    originCity: "",
+    originState: "",
+    destinationCity: "",
+    destinationState: "",
+    trailerTypes: [] as string[],
+    notes: "",
+  });
+
+  if (!carrier) return null;
+
+  const handleSubmit = () => {
+    onSubmit?.mutate?.({
+      dotNumber: carrier.dotNumber,
+      mcNumber: carrier.mcNumber || undefined,
+      legalName: carrier.legalName,
+      address: carrier.address || undefined,
+      city: carrier.city || undefined,
+      state: carrier.state || undefined,
+      phone: carrier.phone || undefined,
+      leaseType: form.leaseType,
+      startDate: form.startDate || undefined,
+      endDate: form.endDate || undefined,
+      revenueSharePercent: form.revenueSharePercent || undefined,
+      originCity: form.originCity || undefined,
+      originState: form.originState || undefined,
+      destinationCity: form.destinationCity || undefined,
+      destinationState: form.destinationState || undefined,
+      trailerTypes: form.trailerTypes.length > 0 ? form.trailerTypes : undefined,
+      notes: form.notes || undefined,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+            Start Lease Agreement
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-2">
+          {/* Carrier Info (pre-filled from FMCSA) */}
+          <Card className="bg-slate-800/60 border-slate-700/50">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${carrier.allowedToOperate ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-red-500/10 border border-red-500/20"}`}>
+                  <Building2 className={`w-5 h-5 ${carrier.allowedToOperate ? "text-emerald-400" : "text-red-400"}`} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-semibold text-sm truncate">{carrier.legalName}</p>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                    <span>DOT {carrier.dotNumber}</span>
+                    {carrier.mcNumber && <span>{carrier.mcNumber}</span>}
+                    <Badge className={`border-0 text-[9px] ${carrier.allowedToOperate ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"}`}>
+                      {carrier.operatingStatus}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Lease Type */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Lease Type</Label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
+              {Object.entries(LEASE_TYPE_LABEL).map(([key, cfg]) => (
+                <button
+                  key={key}
+                  onClick={() => setForm(f => ({ ...f, leaseType: key }))}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    form.leaseType === key
+                      ? `${cfg.bg} border-current ${cfg.color}`
+                      : "bg-slate-800/50 border-slate-700/50 text-slate-400 hover:border-slate-600"
+                  }`}
+                >
+                  <p className="font-medium text-sm">{cfg.label}</p>
+                  <p className="text-[10px] mt-0.5 opacity-70">{cfg.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue Share */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Revenue Share (%)</Label>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={form.revenueSharePercent}
+              onChange={e => setForm(f => ({ ...f, revenueSharePercent: Number(e.target.value) }))}
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl"
+            />
+          </div>
+
+          {/* Dates */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-slate-400 text-xs uppercase tracking-wider">Start Date</Label>
+              <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+            </div>
+            <div>
+              <Label className="text-slate-400 text-xs uppercase tracking-wider">End Date</Label>
+              <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+            </div>
+          </div>
+
+          {/* Trip Lease Route */}
+          {form.leaseType === "trip_lease" && (
+            <div>
+              <Label className="text-slate-400 text-xs uppercase tracking-wider">Route</Label>
+              <div className="grid grid-cols-2 gap-3 mt-1.5">
+                <Input placeholder="Origin city" value={form.originCity} onChange={e => setForm(f => ({ ...f, originCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Origin state" value={form.originState} onChange={e => setForm(f => ({ ...f, originState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination city" value={form.destinationCity} onChange={e => setForm(f => ({ ...f, destinationCity: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+                <Input placeholder="Destination state" value={form.destinationState} onChange={e => setForm(f => ({ ...f, destinationState: e.target.value }))} className="bg-slate-800/50 border-slate-700/50 text-white rounded-xl" />
+              </div>
+            </div>
+          )}
+
+          {/* Trailer Types */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Trailer Types</Label>
+            <div className="flex flex-wrap gap-1.5 mt-1.5">
+              {TRAILER_TYPES.map(tt => (
+                <button
+                  key={tt}
+                  onClick={() => setForm(f => ({
+                    ...f,
+                    trailerTypes: f.trailerTypes.includes(tt) ? f.trailerTypes.filter(t => t !== tt) : [...f.trailerTypes, tt],
+                  }))}
+                  className={`px-2.5 py-1 rounded-lg text-xs transition-all ${
+                    form.trailerTypes.includes(tt)
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "bg-slate-800 text-slate-500 border border-slate-700/50 hover:border-slate-600"
+                  }`}
+                >
+                  {tt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label className="text-slate-400 text-xs uppercase tracking-wider">Notes</Label>
+            <Textarea
+              value={form.notes}
+              onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              placeholder="Additional terms or notes..."
+              className="mt-1.5 bg-slate-800/50 border-slate-700/50 text-white rounded-xl resize-none"
+              rows={3}
+            />
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            disabled={onSubmit?.isLoading}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-xl h-11 text-sm font-semibold"
+          >
+            {onSubmit?.isLoading ? "Creating Lease..." : `Create Lease with ${carrier.legalName}`}
           </Button>
         </div>
       </DialogContent>

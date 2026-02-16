@@ -447,6 +447,238 @@ export const authorityRouter = router({
       return [];
     }
   }),
+  /**
+   * FMCSA SAFER API search — search by DOT#, MC#, or company name
+   * Powers the "Find Authority" tab with real federal data
+   */
+  searchAuthority: protectedProcedure
+    .input(z.object({
+      query: z.string().min(1).max(100),
+      searchType: z.enum(["auto", "dot", "mc", "name"]).default("auto"),
+    }))
+    .query(async ({ input }) => {
+      const FMCSA_BASE = "https://mobile.fmcsa.dot.gov/qc/services";
+      const FMCSA_KEY = process.env.FMCSA_WEBKEY || "891b0bbf613e9937bd584968467527aa1f29aec2";
+
+      if (!FMCSA_KEY) {
+        return { results: [], error: "FMCSA API key not configured" };
+      }
+
+      const q = input.query.trim().replace(/^(MC|MX|DOT)[#\-\s]*/i, "");
+      let searchType = input.searchType;
+
+      // Auto-detect search type
+      if (searchType === "auto") {
+        if (/^\d{1,8}$/.test(q)) {
+          searchType = "dot";
+        } else if (/^\d{1,8}$/.test(q.replace(/^(MC|MX)-?/i, ""))) {
+          searchType = "mc";
+        } else {
+          searchType = "name";
+        }
+      }
+
+      async function fmcsaFetch(endpoint: string) {
+        const url = `${FMCSA_BASE}${endpoint}${endpoint.includes("?") ? "&" : "?"}webKey=${FMCSA_KEY}`;
+        const res = await fetch(url, {
+          headers: { Accept: "application/json" },
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!res.ok) throw new Error(`FMCSA ${res.status}`);
+        return res.json();
+      }
+
+      try {
+        if (searchType === "dot") {
+          // Single carrier lookup by DOT number
+          const [carrierRes, authRes] = await Promise.allSettled([
+            fmcsaFetch(`/carriers/${q}`),
+            fmcsaFetch(`/carriers/${q}/authority`),
+          ]);
+
+          const carrierData = carrierRes.status === "fulfilled" ? carrierRes.value : null;
+          const c = carrierData?.content?.[0]?.carrier || carrierData?.content?.carrier;
+          if (!c) {
+            return { results: [], searchType: "dot", query: q };
+          }
+
+          const authData = authRes.status === "fulfilled" ? authRes.value : null;
+          const dockets = authData?.content || [];
+          const mcDocket = dockets.find?.((d: any) => d.prefix === "MC") || dockets[0];
+
+          return {
+            results: [{
+              dotNumber: String(c.dotNumber || q),
+              mcNumber: mcDocket?.docketNumber ? `MC-${mcDocket.docketNumber}` : null,
+              legalName: c.legalName || "",
+              dbaName: c.dbaName || null,
+              phone: c.telephone || null,
+              email: c.emailAddress || null,
+              address: [c.phyStreet, c.phyCity, c.phyState, c.phyZip].filter(Boolean).join(", "),
+              city: c.phyCity || "",
+              state: c.phyState || "",
+              allowedToOperate: c.allowedToOperate === "Y",
+              operatingStatus: c.allowedToOperate === "Y" ? "ACTIVE" : "INACTIVE",
+              commonAuthority: c.commonAuthorityStatus || "N",
+              contractAuthority: c.contractAuthorityStatus || "N",
+              brokerAuthority: c.brokerAuthorityStatus || "N",
+              safetyRating: c.safetyRating || "NOT RATED",
+              fleetSize: c.totalPowerUnits || 0,
+              driverCount: c.totalDrivers || 0,
+              hazmat: c.hazmatFlag === "Y",
+              bipdInsurance: c.bipdInsuranceOnFile === "Y",
+              cargoInsurance: c.cargoInsuranceOnFile === "Y",
+              source: "FMCSA" as const,
+            }],
+            searchType: "dot",
+            query: q,
+          };
+        }
+
+        if (searchType === "mc") {
+          const cleanMC = q.replace(/^(MC|MX)-?/i, "");
+          const res = await fmcsaFetch(`/carriers/docket/${cleanMC}`);
+          const carriers = res?.content || [];
+          return {
+            results: carriers.slice(0, 20).map((c: any) => ({
+              dotNumber: String(c.dotNumber || ""),
+              mcNumber: `MC-${cleanMC}`,
+              legalName: c.legalName || "",
+              dbaName: c.dbaName || null,
+              phone: c.telephone || null,
+              address: [c.phyStreet, c.phyCity, c.phyState, c.phyZip].filter(Boolean).join(", "),
+              city: c.phyCity || "",
+              state: c.phyState || "",
+              allowedToOperate: c.allowedToOperate === "Y",
+              operatingStatus: c.allowedToOperate === "Y" ? "ACTIVE" : "INACTIVE",
+              safetyRating: c.safetyRating || "NOT RATED",
+              fleetSize: c.totalPowerUnits || 0,
+              driverCount: c.totalDrivers || 0,
+              hazmat: c.hazmatFlag === "Y",
+              bipdInsurance: c.bipdInsuranceOnFile === "Y",
+              source: "FMCSA" as const,
+            })),
+            searchType: "mc",
+            query: cleanMC,
+          };
+        }
+
+        // Name search
+        const res = await fmcsaFetch(`/carriers/name/${encodeURIComponent(q)}`);
+        const carriers = res?.content || [];
+        return {
+          results: carriers.slice(0, 20).map((c: any) => ({
+            dotNumber: String(c.dotNumber || ""),
+            mcNumber: null,
+            legalName: c.legalName || "",
+            dbaName: c.dbaName || null,
+            phone: c.telephone || null,
+            address: [c.phyStreet, c.phyCity, c.phyState, c.phyZip].filter(Boolean).join(", "),
+            city: c.phyCity || "",
+            state: c.phyState || "",
+            allowedToOperate: c.allowedToOperate === "Y",
+            operatingStatus: c.allowedToOperate === "Y" ? "ACTIVE" : "INACTIVE",
+            safetyRating: c.safetyRating || "NOT RATED",
+            fleetSize: c.totalPowerUnits || 0,
+            driverCount: c.totalDrivers || 0,
+            hazmat: c.hazmatFlag === "Y",
+            bipdInsurance: c.bipdInsuranceOnFile === "Y",
+            source: "FMCSA" as const,
+          })),
+          searchType: "name",
+          query: q,
+        };
+      } catch (err: any) {
+        console.error("[Authority] FMCSA search error:", err.message);
+        return { results: [], error: err.message, searchType, query: q };
+      }
+    }),
+
+  /**
+   * Create lease from FMCSA lookup — auto-creates company record if needed
+   */
+  createLeaseFromFMCSA: protectedProcedure
+    .input(z.object({
+      dotNumber: z.string(),
+      mcNumber: z.string().optional(),
+      legalName: z.string(),
+      address: z.string().optional(),
+      city: z.string().optional(),
+      state: z.string().optional(),
+      phone: z.string().optional(),
+      leaseType: z.enum(["full_lease", "trip_lease", "interline", "seasonal"]),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      revenueSharePercent: z.number().min(0).max(100).optional(),
+      originCity: z.string().optional(),
+      originState: z.string().optional(),
+      destinationCity: z.string().optional(),
+      destinationState: z.string().optional(),
+      trailerTypes: z.array(z.string()).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = typeof ctx.user.id === "string" ? parseInt(ctx.user.id, 10) : ctx.user.id;
+
+      // Find or create company from FMCSA data
+      let companyId: number;
+      const cleanDot = input.dotNumber.replace(/\D/g, "");
+      const cleanMc = input.mcNumber?.replace(/^MC-?/i, "").replace(/\D/g, "") || null;
+
+      // Try to find existing company by DOT number
+      const existingByDot = await db.select({ id: companies.id }).from(companies)
+        .where(eq(companies.dotNumber, cleanDot)).limit(1);
+
+      if (existingByDot.length > 0) {
+        companyId = existingByDot[0].id;
+      } else {
+        // Create new company record from FMCSA data
+        const [newCompany] = await db.insert(companies).values({
+          name: input.legalName,
+          legalName: input.legalName,
+          dotNumber: cleanDot,
+          mcNumber: cleanMc,
+          address: input.address || null,
+          city: input.city || null,
+          state: input.state || null,
+          phone: input.phone || null,
+          complianceStatus: "pending",
+          isActive: true,
+        } as any);
+        companyId = (newCompany as any).insertId;
+      }
+
+      // Create the lease agreement
+      const [result] = await db.insert(leaseAgreements).values({
+        lessorCompanyId: companyId,
+        lessorUserId: null,
+        lesseeUserId: userId,
+        lesseeCompanyId: null,
+        leaseType: input.leaseType,
+        status: "draft",
+        mcNumber: cleanMc,
+        dotNumber: cleanDot,
+        startDate: input.startDate ? new Date(input.startDate) : null,
+        endDate: input.endDate ? new Date(input.endDate) : null,
+        revenueSharePercent: input.revenueSharePercent?.toString() || null,
+        originCity: input.originCity || null,
+        originState: input.originState || null,
+        destinationCity: input.destinationCity || null,
+        destinationState: input.destinationState || null,
+        trailerTypes: input.trailerTypes || null,
+        notes: input.notes || null,
+      } as any);
+
+      return {
+        success: true,
+        leaseId: (result as any).insertId,
+        companyId,
+        companyName: input.legalName,
+      };
+    }),
 });
 
 function formatLease(l: any) {

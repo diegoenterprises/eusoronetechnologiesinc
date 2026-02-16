@@ -145,16 +145,16 @@ export const fmcsaRouter = router({
 
       try {
         const [catalystRes, authorityRes, basicsRes, cargoRes] = await Promise.allSettled([
-          fmcsaFetch(`/catalysts/${input.dotNumber}`),
-          fmcsaFetch(`/catalysts/${input.dotNumber}/authority`),
-          fmcsaFetch(`/catalysts/${input.dotNumber}/basics`),
-          fmcsaFetch(`/catalysts/${input.dotNumber}/cargo-carried`),
+          fmcsaFetch(`/carriers/${input.dotNumber}`),
+          fmcsaFetch(`/carriers/${input.dotNumber}/authority`),
+          fmcsaFetch(`/carriers/${input.dotNumber}/basics`),
+          fmcsaFetch(`/carriers/${input.dotNumber}/cargo-carried`),
         ]);
 
         const catalyst = catalystRes.status === "fulfilled" ? catalystRes.value : null;
-        const c = catalyst?.content?.[0]?.catalyst || catalyst?.content?.catalyst;
+        const c = catalyst?.content?.[0]?.carrier || catalyst?.content?.carrier || catalyst?.content?.[0]?.catalyst || catalyst?.content?.catalyst;
         if (!c) {
-          return { verified: false, error: "Catalyst not found for this USDOT number" };
+          return { verified: false, error: "Carrier not found for this USDOT number" };
         }
 
         const parsed = parseCatalystResponse(c);
@@ -224,7 +224,7 @@ export const fmcsaRouter = router({
       if (cached) return cached;
 
       try {
-        const res = await fmcsaFetch(`/catalysts/docket/${input.mcNumber}`);
+        const res = await fmcsaFetch(`/carriers/docket/${input.mcNumber}`);
         const catalysts = res?.content || [];
         const result = {
           results: catalysts.slice(0, 10).map((c: any) => ({
@@ -253,7 +253,7 @@ export const fmcsaRouter = router({
       }
 
       try {
-        const res = await fmcsaFetch(`/catalysts/name/${encodeURIComponent(input.name)}`);
+        const res = await fmcsaFetch(`/carriers/name/${encodeURIComponent(input.name)}`);
         const catalysts = res?.content || [];
         return {
           results: catalysts.slice(0, 10).map((c: any) => ({

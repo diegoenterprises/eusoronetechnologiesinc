@@ -1192,7 +1192,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
     }
 
     const response = await fetch(
-      `https://mobile.fmcsa.dot.gov/qc/services/catalysts/${usdotNumber}?webKey=${webKey}`,
+      `https://mobile.fmcsa.dot.gov/qc/services/carriers/${usdotNumber}?webKey=${webKey}`,
       { headers: { Accept: "application/json" } }
     );
 
@@ -1201,7 +1201,7 @@ async function verifyUSDOT(usdotNumber: string): Promise<{
     }
 
     const data = await response.json();
-    const catalyst = data.content?.catalyst;
+    const catalyst = data.content?.[0]?.carrier || data.content?.carrier || data.content?.[0]?.catalyst || data.content?.catalyst;
 
     if (!catalyst) {
       return { verified: false, error: "Invalid USDOT response" };

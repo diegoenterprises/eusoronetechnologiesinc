@@ -172,6 +172,14 @@ export function getApprovalChecklist(role: string): { label: string; key: string
         { label: "OSHA compliance reviewed", key: "osha_reviewed" },
         { label: "Admin approval", key: "admin_approved" },
       ];
+    case "FACTORING":
+      return [...base,
+        { label: "Company information verified", key: "company_verified" },
+        { label: "EIN validated", key: "ein_validated" },
+        { label: "State licensing confirmed", key: "state_license" },
+        { label: "Surety bond or insurance reviewed", key: "bond_reviewed" },
+        { label: "Admin approval", key: "admin_approved" },
+      ];
     case "COMPLIANCE_OFFICER":
     case "SAFETY_MANAGER":
       return [...base,

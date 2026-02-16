@@ -196,7 +196,7 @@ import FactoringReportsPage from "./pages/factoring/FactoringReports";
 
 function Router() {
   // Role constants for route protection
-  const ALL: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","FACTORING","ADMIN","SUPER_ADMIN"];
+  const ALL: UserRole[] = ["SHIPPER","CATALYST","BROKER","DRIVER","DISPATCH","ESCORT","TERMINAL_MANAGER","FACTORING","COMPLIANCE_OFFICER","SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
   const SHIP: UserRole[] = ["SHIPPER","ADMIN","SUPER_ADMIN"];
   const CARR: UserRole[] = ["CATALYST","ADMIN","SUPER_ADMIN"];
   const BROK: UserRole[] = ["BROKER","ADMIN","SUPER_ADMIN"];
@@ -205,8 +205,8 @@ function Router() {
   const ESCT: UserRole[] = ["ESCORT","ADMIN","SUPER_ADMIN"];
   const TERM: UserRole[] = ["TERMINAL_MANAGER","ADMIN","SUPER_ADMIN"];
   const FACT: UserRole[] = ["FACTORING","ADMIN","SUPER_ADMIN"];
-  const COMP: UserRole[] = ["TERMINAL_MANAGER","ADMIN","SUPER_ADMIN"];
-  const SAFE: UserRole[] = ["ADMIN","SUPER_ADMIN"];
+  const COMP: UserRole[] = ["COMPLIANCE_OFFICER","ADMIN","SUPER_ADMIN"];
+  const SAFE: UserRole[] = ["SAFETY_MANAGER","ADMIN","SUPER_ADMIN"];
   const ADMN: UserRole[] = ["ADMIN","SUPER_ADMIN"];
   const SUPR: UserRole[] = ["SUPER_ADMIN"];
   const LOAD: UserRole[] = ["SHIPPER","CATALYST","BROKER","ADMIN","SUPER_ADMIN"];
