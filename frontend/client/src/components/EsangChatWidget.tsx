@@ -21,6 +21,7 @@ import {
   Loader2, ArrowRight, Beaker, Shield, MapPin, FileText
 } from "lucide-react";
 import { EsangIcon } from "@/components/EsangIcon";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 interface ChatMsg {
   role: "user" | "assistant";
@@ -43,6 +44,7 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [lastActions, setLastActions] = useState<any[]>([]);
+  const geo = useGeolocation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -100,9 +102,9 @@ export default function EsangChatWidget({ open, onClose, dissolving }: EsangChat
       content: text,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     }]);
-    sendMutation.mutate({ message: text, context: { currentPage: location } });
+    sendMutation.mutate({ message: text, context: { currentPage: location, latitude: geo?.latitude, longitude: geo?.longitude } });
     setMessage("");
-  }, [message, sendMutation]);
+  }, [message, sendMutation, geo]);
 
   const toggleVoice = useCallback(() => {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {

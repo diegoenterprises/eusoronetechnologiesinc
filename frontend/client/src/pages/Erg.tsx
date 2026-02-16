@@ -20,12 +20,14 @@ import {
 import { EsangIcon } from "@/components/EsangIcon";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 export default function Erg() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("lookup");
   const [selectedGuideNumber, setSelectedGuideNumber] = useState<string | null>(null);
   const [aiQuestion, setAiQuestion] = useState("");
+  const geo = useGeolocation();
 
   // tRPC queries
   const searchQuery = (trpc as any).esang.searchERG.useQuery(
@@ -64,7 +66,7 @@ export default function Erg() {
     if (!aiQuestion.trim()) return;
     aiChatMutation.mutate({
       message: aiQuestion,
-      context: { currentPage: "erg" },
+      context: { currentPage: "erg", latitude: geo?.latitude, longitude: geo?.longitude },
     });
   }, [aiQuestion, aiChatMutation]);
 

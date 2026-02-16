@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useGeolocation } from "@/hooks/useGeolocation";
 
 // Role-specific capabilities
 const ROLE_CAPABILITIES: Record<string, Array<{ icon: any; label: string }>> = {
@@ -93,6 +94,7 @@ export default function ESANGChat() {
   const [, navigate] = useLocation();
   const [dissolving, setDissolving] = useState(false);
   const [dissolveParticles, setDissolveParticles] = useState<Array<{startX: number; startY: number; delay: number; size: number; color: string; dur: number}>>([]);
+  const geo = useGeolocation();
 
   const utils = trpc.useUtils();
   const historyQuery = (trpc as any).esang.getChatHistory.useQuery();
@@ -172,7 +174,7 @@ export default function ESANGChat() {
   const handleSend = () => {
     if (message.trim()) {
       setMessages(prev => [...prev, { role: "user", content: message }]);
-      sendMutation.mutate({ message });
+      sendMutation.mutate({ message, context: { currentPage: "esang", latitude: geo?.latitude, longitude: geo?.longitude } });
       setMessage("");
     }
   };

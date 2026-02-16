@@ -103,7 +103,32 @@ export interface ERGResponse {
   emergencyContacts: { name: string; phone: string }[];
 }
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+const GEMINI_TIMEOUT_MS = 30_000;
+const GEMINI_MAX_RETRIES = 2;
+
+/** Fetch with timeout + simple retry (exponential back-off) */
+async function gemFetch(url: string, init: RequestInit, retries = GEMINI_MAX_RETRIES): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+    try {
+      const resp = await fetch(url, { ...init, signal: controller.signal });
+      clearTimeout(timer);
+      if (resp.ok || resp.status < 500) return resp; // don't retry 4xx
+      if (attempt < retries) {
+        await new Promise(r => setTimeout(r, 500 * 2 ** attempt));
+        continue;
+      }
+      return resp;
+    } catch (err: any) {
+      clearTimeout(timer);
+      if (attempt >= retries) throw err;
+      await new Promise(r => setTimeout(r, 500 * 2 ** attempt));
+    }
+  }
+  throw new Error("gemFetch: exhausted retries");
+}
 
 const SYSTEM_PROMPT = `You are ESANG AI™, the intelligent assistant for EusoTrip - a hazardous materials logistics and petroleum transportation platform. You are deeply knowledgeable about:
 
@@ -340,7 +365,7 @@ class ESANGAIService {
   async chat(
     userId: string,
     message: string,
-    context?: { role?: string; currentPage?: string; loadId?: string },
+    context?: { role?: string; currentPage?: string; loadId?: string; latitude?: number; longitude?: number },
     actionContext?: ActionContext
   ): Promise<ESANGResponse> {
     // Get or create conversation history (don't mutate until success)
@@ -357,6 +382,9 @@ class ESANGAIService {
     }
     if (context?.loadId) {
       contextPrompt += `\nViewing load ID: ${context.loadId}`;
+    }
+    if (context?.latitude != null && context?.longitude != null) {
+      contextPrompt += `\nUser geolocation: ${context.latitude.toFixed(4)}°N, ${context.longitude.toFixed(4)}°W — use this to give location-aware answers (nearby services, weather, route info, fuel prices, terminals).`;
     }
 
     try {
@@ -471,7 +499,7 @@ class ESANGAIService {
       },
     ];
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+    const response = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -482,7 +510,7 @@ class ESANGAIService {
           temperature: 0.7,
           topK: 40,
           topP: 0.95,
-          maxOutputTokens: 1024,
+          maxOutputTokens: 4096,
         },
         safetySettings: [
           { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -720,7 +748,7 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
         { role: "user", parts: [{ text: parameterPrompt }] },
       ];
 
-      const response = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const response = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -729,7 +757,7 @@ Category: ${request.category || "unknown"}\nAPI Gravity: ${request.apiGravity}°
             temperature: 0.3,
             topK: 20,
             topP: 0.8,
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
           },
           safetySettings: [
             { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_MEDIUM_AND_ABOVE" },
@@ -1054,7 +1082,7 @@ Enhance each clause with specific, legally-precise language incorporating all th
         { role: "user", parts: [{ text: requestPrompt }] },
       ];
 
-      const response = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const response = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1244,11 +1272,11 @@ Enhance each clause with specific, legally-precise language incorporating all th
 
     try {
       if (!this.apiKey) return this.fallbackZeunDiag(request);
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           contents: [{ role: "user", parts: [{ text: ZEUN_PROMPT }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: input }] }],
-          generationConfig: { temperature: 0.3, topK: 20, topP: 0.85, maxOutputTokens: 2048 },
+          generationConfig: { temperature: 0.3, topK: 20, topP: 0.85, maxOutputTokens: 4096 },
           safetySettings: [{ category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" }],
         }),
       });
@@ -1311,9 +1339,9 @@ Enhance each clause with specific, legally-precise language incorporating all th
     const prompt = `Analyze finances for a ${request.role} on EusoTrip. Balance: $${request.balance}, Monthly earnings: $${request.monthlyEarnings||0}, expenses: $${request.monthlyExpenses||0}, outstanding invoices: $${request.outstandingInvoices||0}. Recent: ${request.recentTransactions.slice(0,5).map(t=>`${t.type} $${t.amount}`).join(", ")}. JSON: {"summary":"string","insights":["string"],"recommendations":["string"],"cashFlowForecast":"string","riskAlerts":["string"]}`;
     try {
       if (!this.apiKey) return { summary: "AI unavailable", insights: [], recommendations: [], cashFlowForecast: "N/A", riskAlerts: [] };
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "You are ESANG AI financial analyst for freight professionals. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 1024 } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "You are ESANG AI financial analyst for freight professionals. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4, maxOutputTokens: 2048 } }),
       });
       if (!resp.ok) throw new Error("API error");
       const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1331,9 +1359,9 @@ Enhance each clause with specific, legally-precise language incorporating all th
     const prompt = `Generate smart reply suggestions for a ${request.userRole} named ${request.userName}. Recent messages:\n${request.messages.slice(-6).map(m=>`[${m.sender}]: ${m.text}`).join("\n")}\nJSON: {"replies":["3 professional replies"],"sentiment":"positive|neutral|negative|urgent","summary":"one-sentence summary"}`;
     try {
       if (!this.apiKey) return { replies: [], sentiment: "neutral", summary: "" };
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI: generate smart freight conversation replies. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 512 } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI: generate smart freight conversation replies. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.7, maxOutputTokens: 1024 } }),
       });
       if (!resp.ok) throw new Error("API error");
       const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1352,9 +1380,9 @@ Enhance each clause with specific, legally-precise language incorporating all th
     const prompt = `Analyze freight rate: ${request.origin} to ${request.destination}, ${request.cargoType}${request.hazmat?" HAZMAT":""},${request.distance?` ${request.distance}mi,`:""} proposed $${request.proposedRate}. JSON: {"fairnessScore":0-100,"recommendation":"accept|negotiate|reject","reasoning":"string","marketEstimate":{"low":number,"mid":number,"high":number},"factors":[{"name":"string","impact":"positive|negative|neutral","score":number}],"counterOffer":number_or_null}`;
     try {
       if (!this.apiKey) { const d = request.distance||500; const rpm = request.proposedRate/d; return { fairnessScore: rpm>2?70:40, recommendation: rpm>2?"accept":"negotiate", reasoning: "Offline", marketEstimate: { low: d*1.8, mid: d*2.5, high: d*3.2 }, factors: [] }; }
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI freight rate analyst. US market knowledge. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 1024 } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI freight rate analyst. US market knowledge. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 2048 } }),
       });
       if (!resp.ok) throw new Error("API error");
       const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1372,9 +1400,9 @@ Enhance each clause with specific, legally-precise language incorporating all th
     const prompt = `Generate 3 personalized gamification missions for Level ${request.level} ${request.role}. Recent: ${request.recentActivity.slice(0,3).join(",")}. Done: ${request.completedMissions.slice(0,3).join(",")}. JSON: {"missions":[{"title":"string","description":"string","xpReward":number,"difficulty":"easy|medium|hard|legendary","category":"safety|efficiency|community|learning"}]}`;
     try {
       if (!this.apiKey) return { missions: [] };
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI mission generator for freight gamification. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 1024 } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI mission generator for freight gamification. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 2048 } }),
       });
       if (!resp.ok) throw new Error("API error");
       const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1395,9 +1423,9 @@ Enhance each clause with specific, legally-precise language incorporating all th
     const prompt = `Analyze truck DTC fault code: ${code}${vehicleInfo?.make ? `, Vehicle: ${vehicleInfo.year||""} ${vehicleInfo.make}` : ""}${vehicleInfo?.engine ? `, Engine: ${vehicleInfo.engine}` : ""}. JSON: {"description":"string","severity":"LOW|MEDIUM|HIGH|CRITICAL","category":"string","symptoms":["string"],"commonCauses":["string"],"canDrive":boolean,"repairUrgency":"string","estimatedCost":{"min":number,"max":number},"estimatedHours":number,"affectedSystems":["string"],"techTips":["string"]}`;
     try {
       if (!this.apiKey) return { description: `Code ${code}`, severity: "MEDIUM", category: "Unknown", symptoms: [], commonCauses: [], canDrive: true, repairUrgency: "Schedule inspection", estimatedCost: { min: 0, max: 0 }, estimatedHours: 0, affectedSystems: [], techTips: [] };
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI: expert J1939/OBD-II truck fault code analyst. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 1024 } }),
+        body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: "ESANG AI: expert J1939/OBD-II truck fault code analyst. JSON only." }] }, { role: "model", parts: [{ text: '{"ready":true}' }] }, { role: "user", parts: [{ text: prompt }] }], generationConfig: { temperature: 0.2, maxOutputTokens: 2048 } }),
       });
       if (!resp.ok) throw new Error("API error");
       const d = await resp.json(); const t = d.candidates?.[0]?.content?.parts?.[0]?.text || "";
@@ -1476,7 +1504,7 @@ Respond in VALID JSON array only — no markdown, no explanation:
     try {
       if (!this.apiKey) return this.fallbackProviders(request);
 
-      const resp = await fetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
+      const resp = await gemFetch(`${GEMINI_API_URL}?key=${this.apiKey}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

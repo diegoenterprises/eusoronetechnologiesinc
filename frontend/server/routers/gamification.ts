@@ -557,14 +557,24 @@ export const gamificationRouter = router({
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       const userId = Number(ctx.user?.id) || 0;
+      const userRole = ((ctx.user as any)?.role || "DRIVER").toUpperCase();
 
       if (!db) return { active: [], completed: [], available: [] };
+
+      // Ensure weekly missions are seeded (idempotent)
+      try { await generateWeeklyMissions(); } catch (_) {}
 
       // Get all active missions
       let missionList = await db.select()
         .from(missions)
         .where(eq(missions.isActive, true))
         .orderBy(missions.sortOrder);
+
+      // Filter by user role — only show missions applicable to this role
+      missionList = missionList.filter(m => {
+        if (!m.applicableRoles || (m.applicableRoles as string[]).length === 0) return true;
+        return (m.applicableRoles as string[]).includes(userRole);
+      });
 
       if (input?.type && input.type !== "all") {
         missionList = missionList.filter(m => m.type === input.type);

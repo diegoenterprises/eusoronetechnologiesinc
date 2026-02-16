@@ -25,6 +25,8 @@ export const esangRouter = router({
           .object({
             currentPage: z.string().optional(),
             loadId: z.string().optional(),
+            latitude: z.number().optional(),
+            longitude: z.number().optional(),
           })
           .optional(),
       })
@@ -38,6 +40,8 @@ export const esangRouter = router({
           role: ctx.user.role,
           currentPage: input.context?.currentPage,
           loadId: input.context?.loadId,
+          latitude: input.context?.latitude,
+          longitude: input.context?.longitude,
         },
         {
           userId: numericUserId,
@@ -189,6 +193,8 @@ export const esangRouter = router({
         currentPage: z.string().optional(),
         loadId: z.string().optional(),
         role: z.string().optional(),
+        latitude: z.number().optional(),
+        longitude: z.number().optional(),
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -238,12 +244,12 @@ export const esangRouter = router({
         }
         if (!response) {
           // Fall through to ESANG AI for complex compliance queries
-          response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
+          response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId, latitude: input.context?.latitude, longitude: input.context?.longitude }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
           response = { ...response, source: "esang_logic" };
         }
       } else {
         // All other intents go to ESANG AI (both logic and creative for now)
-        response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
+        response = await esangAI.chat(String(ctx.user.id), input.message, { role: input.context?.role, currentPage: input.context?.currentPage, loadId: input.context?.loadId, latitude: input.context?.latitude, longitude: input.context?.longitude }, { userId: typeof ctx.user.id === 'number' ? ctx.user.id : parseInt(String(ctx.user.id), 10) || 0, userEmail: ctx.user.email || '', userName: ctx.user.name || 'User', role: ctx.user.role || 'SHIPPER' });
         response = { ...response, source: modelTarget === "logic" ? "esang_logic" : "esang_creative" };
       }
 

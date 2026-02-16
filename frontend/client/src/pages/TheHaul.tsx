@@ -100,7 +100,14 @@ export default function TheHaul() {
   const msgs = lobbyQ.data?.messages || [];
   const dbM = missionsQ.data || { active: [], completed: [], available: [] };
   const aiM = aiMissionsQ.data || [];
-  const allAvail = [...(dbM.available || []), ...aiM, ...aiGenMissions];
+  // Deduplicate: getMissions and getAIMissions can both return wk_* weekly missions
+  const seenIds = new Set<number | string>();
+  const allAvail = [...(dbM.available || []), ...aiM, ...aiGenMissions].filter(m => {
+    const key = m.id;
+    if (seenIds.has(key)) return false;
+    seenIds.add(key);
+    return true;
+  });
   const activeM = dbM.active || [];
   const rewards = rewardsQ.data;
   const crates = cratesQ.data || [];
@@ -246,7 +253,7 @@ export default function TheHaul() {
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2"><Badge className="bg-cyan-500/20 text-cyan-400 border-0 text-[10px]">{m.category}</Badge><Badge className="bg-slate-500/20 text-slate-400 border-0 text-[10px]">{m.type}</Badge>{m.hosCompliant && <Badge className="bg-green-500/20 text-green-400 border-0 text-[10px]">HOS</Badge>}</div>
                     <div className="flex items-center gap-2"><span className="text-xs font-bold text-yellow-400">+{m.xpReward} XP</span>
-                      {typeof m.id === "number" && <Button size="sm" className="h-6 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" onClick={() => startMut.mutate({ missionId: m.id })}>Start</Button>}
+                      {(typeof m.id === "number" || (typeof m.id === "string" && !String(m.id).startsWith("ai-gen-"))) && <Button size="sm" className="h-6 text-[10px] bg-gradient-to-r from-[#1473FF] to-[#BE01FF]" onClick={() => startMut.mutate({ missionId: Number(m.id) })}>Start</Button>}
                     </div>
                   </div>
                 </div>))}</div>}</CardContent></Card>
