@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { eq, and, desc, gte, lte, sql, or } from "drizzle-orm";
 import { router, auditedProtectedProcedure, auditedAdminProcedure, sensitiveData, pci } from "../_core/trpc";
 import { getDb } from "../db";
@@ -38,13 +39,17 @@ export const walletRouter = router({
       description: z.string().optional(),
       loadId: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      // SECURITY: Verify wallet belongs to current user
+      const [wallet] = await db.select().from(wallets).where(and(eq(wallets.id, input.walletId), eq(wallets.userId, userId))).limit(1);
+      if (!wallet) throw new TRPCError({ code: "NOT_FOUND", message: "Wallet not found" });
       const fee = input.type === "payout" ? Math.round(input.amount * 0.015 * 100) / 100 : 0;
       const netAmount = Math.round((input.amount - fee) * 100) / 100;
       const [result] = await db.insert(walletTransactions).values({
-        walletId: input.walletId,
+        walletId: wallet.id,
         type: input.type as any,
         amount: String(input.amount),
         fee: String(fee),
@@ -61,9 +66,15 @@ export const walletRouter = router({
       id: z.number(),
       status: transactionStatusSchema.optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      // SECURITY: Verify transaction belongs to user's wallet
+      const [txn] = await db.select({ walletId: walletTransactions.walletId }).from(walletTransactions).where(eq(walletTransactions.id, input.id)).limit(1);
+      if (!txn) throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+      const [wallet] = await db.select().from(wallets).where(and(eq(wallets.id, txn.walletId), eq(wallets.userId, userId))).limit(1);
+      if (!wallet) throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       const updates: Record<string, any> = {};
       if (input.status) {
         updates.status = input.status;
@@ -77,9 +88,15 @@ export const walletRouter = router({
 
   delete: auditedProtectedProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const { walletTransactions } = await import("../../drizzle/schema");
       const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      // SECURITY: Verify transaction belongs to user's wallet
+      const [txn] = await db.select({ walletId: walletTransactions.walletId }).from(walletTransactions).where(eq(walletTransactions.id, input.id)).limit(1);
+      if (!txn) throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
+      const [wallet] = await db.select().from(wallets).where(and(eq(wallets.id, txn.walletId), eq(wallets.userId, userId))).limit(1);
+      if (!wallet) throw new TRPCError({ code: "NOT_FOUND", message: "Transaction not found" });
       await db.update(walletTransactions).set({ status: "cancelled" }).where(eq(walletTransactions.id, input.id));
       return { success: true, id: input.id };
     }),

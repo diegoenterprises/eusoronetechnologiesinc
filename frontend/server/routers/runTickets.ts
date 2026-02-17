@@ -5,7 +5,8 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { TRPCError } from "@trpc/server";
+import { router, auditedProtectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { runTickets, runTicketExpenses, loads } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
@@ -14,7 +15,7 @@ export const runTicketsRouter = router({
   /**
    * List run tickets for the current user/company
    */
-  list: protectedProcedure
+  list: auditedProtectedProcedure
     .input(z.object({
       status: z.string().optional(),
       loadId: z.number().optional(),
@@ -53,7 +54,7 @@ export const runTicketsRouter = router({
   /**
    * Aggregate stats for the dashboard
    */
-  getStats: protectedProcedure.query(async ({ ctx }) => {
+  getStats: auditedProtectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return { total: 0, active: 0, completed: 0, pendingReview: 0, totalFuel: 0, totalTolls: 0, totalExpenses: 0, avgPerTrip: 0 };
     try {
@@ -84,7 +85,7 @@ export const runTicketsRouter = router({
   /**
    * Create a new run ticket linked to a load
    */
-  create: protectedProcedure
+  create: auditedProtectedProcedure
     .input(z.object({
       loadNumber: z.string(),
       loadId: z.number().optional(),
@@ -135,7 +136,7 @@ export const runTicketsRouter = router({
   /**
    * Add an expense line item to a run ticket
    */
-  addExpense: protectedProcedure
+  addExpense: auditedProtectedProcedure
     .input(z.object({
       ticketId: z.number(),
       type: z.string(),
@@ -146,6 +147,10 @@ export const runTicketsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
+      // SECURITY: Verify ticket belongs to user's company
+      const companyId = ctx.user?.companyId || 0;
+      const [ticket] = await db.select().from(runTickets).where(and(eq(runTickets.id, input.ticketId), eq(runTickets.companyId, companyId))).limit(1);
+      if (!ticket) throw new TRPCError({ code: "NOT_FOUND", message: "Run ticket not found" });
       try {
         // Insert expense
         const [result] = await db.insert(runTicketExpenses).values({
@@ -180,11 +185,15 @@ export const runTicketsRouter = router({
   /**
    * Get expenses for a specific run ticket
    */
-  getExpenses: protectedProcedure
+  getExpenses: auditedProtectedProcedure
     .input(z.object({ ticketId: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) return [];
+      // SECURITY: Verify ticket belongs to user's company
+      const companyId = ctx.user?.companyId || 0;
+      const [ticket] = await db.select().from(runTickets).where(and(eq(runTickets.id, input.ticketId), eq(runTickets.companyId, companyId))).limit(1);
+      if (!ticket) return [];
       try {
         const rows = await db.select().from(runTicketExpenses).where(eq(runTicketExpenses.ticketId, input.ticketId)).orderBy(desc(runTicketExpenses.createdAt));
         return rows.map(r => ({
@@ -201,7 +210,7 @@ export const runTicketsRouter = router({
   /**
    * Complete a run ticket
    */
-  complete: protectedProcedure
+  complete: auditedProtectedProcedure
     .input(z.object({
       id: z.number(),
       notes: z.string().optional(),
@@ -210,6 +219,10 @@ export const runTicketsRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       try {
+        const companyId = ctx.user?.companyId || 0;
+        // SECURITY: Verify ticket belongs to user's company
+        const [existing] = await db.select().from(runTickets).where(and(eq(runTickets.id, input.id), eq(runTickets.companyId, companyId))).limit(1);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Run ticket not found" });
         const now = new Date();
         await db.update(runTickets).set({
           status: 'completed',
@@ -223,14 +236,16 @@ export const runTicketsRouter = router({
   /**
    * Get a single run ticket by ID with expenses
    */
-  getById: protectedProcedure
+  getById: auditedProtectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
       try {
-        const [ticket] = await db.select().from(runTickets).where(eq(runTickets.id, input.id)).limit(1);
-        if (!ticket) throw new Error("Run ticket not found");
+        const companyId = ctx.user?.companyId || 0;
+        // SECURITY: Verify ticket belongs to user's company
+        const [ticket] = await db.select().from(runTickets).where(and(eq(runTickets.id, input.id), eq(runTickets.companyId, companyId))).limit(1);
+        if (!ticket) throw new TRPCError({ code: "NOT_FOUND", message: "Run ticket not found" });
         const expenses = await db.select().from(runTicketExpenses).where(eq(runTicketExpenses.ticketId, input.id)).orderBy(desc(runTicketExpenses.createdAt));
         return {
           id: ticket.id,
@@ -262,7 +277,7 @@ export const runTicketsRouter = router({
   /**
    * Export run ticket as PDF or CSV
    */
-  export: protectedProcedure
+  export: auditedProtectedProcedure
     .input(z.object({
       ticketId: z.number(),
       format: z.enum(["pdf", "csv"]),
@@ -294,7 +309,7 @@ export const runTicketsRouter = router({
    * - ERG guide assignment
    * - Real-time regulatory checks
    */
-  validateRunTicket: protectedProcedure
+  validateRunTicket: auditedProtectedProcedure
     .input(z.object({
       loadId: z.number(),
       ticketId: z.number().optional(),
@@ -318,7 +333,6 @@ export const runTicketsRouter = router({
         verificationStatus: z.string().optional(),
       }),
       // Driver performing the validation
-      driverUserId: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const { bolCargoName, bolUnNumber, bolIsHazmat, spectraMatchResult } = input;

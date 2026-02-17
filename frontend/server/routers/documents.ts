@@ -5,8 +5,9 @@
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { documents, users } from "../../drizzle/schema";
 import { digitizeDocument } from "../services/documentOCR";
@@ -19,7 +20,7 @@ export const documentsRouter = router({
   /**
    * Get all documents for DocumentCenter
    */
-  getAll: protectedProcedure
+  getAll: auditedProtectedProcedure
     .input(z.object({ search: z.string().optional(), category: z.string().optional() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -57,7 +58,7 @@ export const documentsRouter = router({
   /**
    * Get document stats for DocumentCenter
    */
-  getStats: protectedProcedure
+  getStats: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { total: 0, active: 0, valid: 0, expiring: 0, expired: 0 };
@@ -85,7 +86,7 @@ export const documentsRouter = router({
   /**
    * Get document categories
    */
-  getCategories: protectedProcedure
+  getCategories: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
@@ -109,7 +110,7 @@ export const documentsRouter = router({
   /**
    * Delete document mutation
    */
-  delete: protectedProcedure
+  delete: auditedProtectedProcedure
     .input(z.object({ id: z.string(), documentId: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -129,7 +130,7 @@ export const documentsRouter = router({
   /**
    * List all documents with filtering
    */
-  list: protectedProcedure
+  list: auditedProtectedProcedure
     .input(z.object({
       category: documentCategorySchema.optional(),
       status: documentStatusSchema.optional(),
@@ -150,9 +151,9 @@ export const documentsRouter = router({
   /**
    * Get single document by ID
    */
-  getById: protectedProcedure
+  getById: auditedProtectedProcedure
     .input(z.object({ id: z.string(), documentId: z.string().optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       return {
         id: input.id,
         name: "",
@@ -171,7 +172,7 @@ export const documentsRouter = router({
   /**
    * Upload document
    */
-  upload: protectedProcedure
+  upload: auditedProtectedProcedure
     .input(z.object({
       name: z.string(),
       category: documentCategorySchema,
@@ -226,7 +227,7 @@ export const documentsRouter = router({
    * Extracts text via OCR, then classifies with AI to determine type,
    * extract fields, detect expiry dates, and auto-categorize.
    */
-  digitize: protectedProcedure
+  digitize: auditedProtectedProcedure
     .input(z.object({
       fileData: z.string(),
       filename: z.string(),
@@ -276,7 +277,7 @@ export const documentsRouter = router({
   /**
    * Get document file data for download
    */
-  getFileData: protectedProcedure
+  getFileData: auditedProtectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
@@ -298,7 +299,7 @@ export const documentsRouter = router({
   /**
    * Delete document (detailed version)
    */
-  deleteDetailed: protectedProcedure
+  deleteDetailed: auditedProtectedProcedure
     .input(z.object({ id: z.string(), documentId: z.string().optional() }))
     .mutation(async ({ input }) => {
       return { success: true, id: input.id };
@@ -307,7 +308,7 @@ export const documentsRouter = router({
   /**
    * Update document metadata
    */
-  update: protectedProcedure
+  update: auditedProtectedProcedure
     .input(z.object({
       id: z.string(),
       name: z.string().optional(),
@@ -323,13 +324,13 @@ export const documentsRouter = router({
   /**
    * Get expiring documents
    */
-  getExpiring: protectedProcedure
+  getExpiring: auditedProtectedProcedure
     .input(z.object({ days: z.number().default(30) }))
     .query(async ({ input }) => {
       return [];
     }),
 
-  getSummary: protectedProcedure.query(async ({ ctx }) => {
+  getSummary: auditedProtectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { total: 0, pending: 0, expiring: 0, categories: 0, valid: 0, expired: 0 };
       try {
@@ -349,7 +350,7 @@ export const documentsRouter = router({
   /**
    * Get driver documents for DriverDocuments page
    */
-  getDriverDocuments: protectedProcedure.query(async ({ ctx }) => {
+  getDriverDocuments: auditedProtectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
     if (!db) return [];
     try {
@@ -370,7 +371,7 @@ export const documentsRouter = router({
   /**
    * Get compliance status for driver
    */
-  getComplianceStatus: protectedProcedure.query(async ({ ctx }) => {
+  getComplianceStatus: auditedProtectedProcedure.query(async ({ ctx }) => {
     return {
       score: 0,
       totalRequired: 0,
@@ -389,7 +390,7 @@ export const documentsRouter = router({
   /**
    * Upload document (driver version)
    */
-  uploadDocument: protectedProcedure
+  uploadDocument: auditedProtectedProcedure
     .input(z.object({
       documentType: z.string(),
       expirationDate: z.string().optional(),
@@ -407,7 +408,7 @@ export const documentsRouter = router({
   /**
    * Verify document
    */
-  verifyDocument: protectedProcedure
+  verifyDocument: auditedProtectedProcedure
     .input(z.object({ documentId: z.string() }))
     .mutation(async ({ input }) => {
       return { success: true, documentId: input.documentId, status: 'verified' };
@@ -416,7 +417,7 @@ export const documentsRouter = router({
   /**
    * Save user's digital signature to DB (one per user, upsert)
    */
-  saveSignature: protectedProcedure
+  saveSignature: auditedProtectedProcedure
     .input(z.object({ signatureData: z.string() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -449,7 +450,7 @@ export const documentsRouter = router({
   /**
    * Get user's saved signature
    */
-  getSignature: protectedProcedure
+  getSignature: auditedProtectedProcedure
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { signatureData: null };
@@ -470,7 +471,7 @@ export const documentsRouter = router({
   /**
    * Delete user's saved signature
    */
-  deleteSignature: protectedProcedure
+  deleteSignature: auditedProtectedProcedure
     .mutation(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("Database not available");
