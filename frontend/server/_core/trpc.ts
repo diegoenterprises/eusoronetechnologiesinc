@@ -310,3 +310,66 @@ export const pci = {
   sanitizeForStorage,
   sanitizeLogMessage,
 };
+
+// =============================================================================
+// DATA ISOLATION MIDDLEWARE (Application-Level RLS)
+// Builds verified isolation context (userId, companyId, scope, linkedCompanies)
+// and attaches it to ctx.isolation for use in all downstream procedures.
+// =============================================================================
+
+let _buildIsolationContext: typeof import("../middleware/rls-context").buildIsolationContext | null = null;
+
+const isolationMiddleware = t.middleware(async (opts) => {
+  const { ctx, next } = opts;
+  if (!ctx.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+  }
+
+  // Lazy-load to avoid circular dependencies
+  if (!_buildIsolationContext) {
+    const mod = await import("../middleware/rls-context");
+    _buildIsolationContext = mod.buildIsolationContext;
+  }
+
+  const user = ctx.user as any;
+  const isolation = await _buildIsolationContext(
+    { id: user.id, role: user.role, email: user.email || "", companyId: user.companyId },
+    ctx.req
+  );
+
+  return next({
+    ctx: { ...ctx, user: ctx.user, isolation },
+  });
+});
+
+/**
+ * ISOLATED PROCEDURE
+ * Auth + Isolation Context + Audit.
+ * The gold standard for data-sensitive endpoints.
+ * ctx.isolation is guaranteed to be present.
+ */
+export const isolatedProcedure = t.procedure.use(requireUser).use(isolationMiddleware).use(autoAudit);
+
+/**
+ * ISOLATED + APPROVED PROCEDURE
+ * Auth + Approval Gate + Isolation Context + Audit.
+ * For critical operations (loads, bids, wallet, billing).
+ */
+export const isolatedApprovedProcedure = t.procedure.use(requireUser).use(requireApproval).use(isolationMiddleware).use(autoAudit);
+
+/**
+ * ISOLATED ROLE PROCEDURE FACTORY
+ * Creates a procedure restricted to specific roles with isolation context.
+ */
+export function isolatedRoleProcedure(...allowedRoles: string[]) {
+  return roleProcedure(...allowedRoles).use(isolationMiddleware).use(autoAudit);
+}
+
+// Pre-built isolated role procedures
+export const isolatedAdminProcedure = isolatedRoleProcedure(ROLES.ADMIN, ROLES.SUPER_ADMIN);
+export const isolatedSuperAdminProcedure = isolatedRoleProcedure(ROLES.SUPER_ADMIN);
+export const isolatedDriverProcedure = isolatedRoleProcedure(ROLES.DRIVER);
+export const isolatedCatalystProcedure = isolatedRoleProcedure(ROLES.CATALYST);
+export const isolatedShipperProcedure = isolatedRoleProcedure(ROLES.SHIPPER);
+export const isolatedBrokerProcedure = isolatedRoleProcedure(ROLES.BROKER);
+export const isolatedOperationsProcedure = isolatedRoleProcedure(ROLES.SHIPPER, ROLES.CATALYST, ROLES.BROKER, ROLES.DISPATCH);
