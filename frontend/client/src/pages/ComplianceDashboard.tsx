@@ -174,6 +174,59 @@ export default function ComplianceDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* IRP Compliance Section (C-073) */}
+      <Card className="bg-slate-800/50 border-slate-700/50 rounded-xl">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-white text-lg flex items-center gap-2">
+            <Truck className="w-5 h-5 text-cyan-400" />
+            IRP Compliance
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-slate-400 mb-4">International Registration Plan — apportioned vehicle registrations across jurisdictions</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="p-4 rounded-lg bg-slate-700/30">
+              <p className="text-xs text-slate-400">Cab Card Status</p>
+              <div className="flex items-center gap-2 mt-1">
+                <CheckCircle className="w-4 h-4 text-green-400" />
+                <span className="text-green-400 font-bold">Active</span>
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-slate-700/30">
+              <p className="text-xs text-slate-400">Registered States</p>
+              <p className="text-2xl font-bold text-white mt-1">48</p>
+            </div>
+            <div className="p-4 rounded-lg bg-slate-700/30">
+              <p className="text-xs text-slate-400">Renewal Due</p>
+              <div className="flex items-center gap-2 mt-1">
+                <Clock className="w-4 h-4 text-yellow-400" />
+                <span className="text-yellow-400 font-bold">Dec 31</span>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {[
+              { state: "TX", weight: "80,000 lbs", status: "active", pct: "22.4%" },
+              { state: "CA", weight: "80,000 lbs", status: "active", pct: "15.8%" },
+              { state: "IL", weight: "80,000 lbs", status: "active", pct: "11.2%" },
+              { state: "PA", weight: "80,000 lbs", status: "active", pct: "8.6%" },
+              { state: "OH", weight: "80,000 lbs", status: "active", pct: "7.1%" },
+            ].map((reg) => (
+              <div key={reg.state} className="flex items-center justify-between p-2.5 rounded-lg bg-slate-700/20 hover:bg-slate-700/40 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-cyan-500/20 flex items-center justify-center text-xs font-bold text-cyan-400">{reg.state}</span>
+                  <div>
+                    <span className="text-white text-sm font-medium">Max Weight: {reg.weight}</span>
+                    <p className="text-xs text-slate-500">Distance %: {reg.pct}</p>
+                  </div>
+                </div>
+                <Badge className="border-0 bg-green-500/20 text-green-400 text-xs">{reg.status}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

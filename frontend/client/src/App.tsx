@@ -240,6 +240,9 @@ import FactoringAgingPage from "./pages/factoring/FactoringAging";
 import FactoringChargebacksPage from "./pages/factoring/FactoringChargebacks";
 import FactoringDebtorsPage from "./pages/factoring/FactoringDebtors";
 import FactoringReportsPage from "./pages/factoring/FactoringReports";
+// ── Gold Standard: Final 5 missing screens ──────────────────────────────────
+import ReeferTemperatureLog from "./pages/ReeferTemperatureLog";
+import PerLoadInsurance from "./pages/PerLoadInsurance";
 // ── Gold Standard Wiring: 46 previously dead-code pages ─────────────────────
 import BackgroundChecks from "./pages/BackgroundChecks";
 import BOLManagementPage from "./pages/BOLManagement";
@@ -373,6 +376,7 @@ function Router() {
       <Route path={"/fmcsa-lookup"} component={guard([...CARR, ...BROK, ...COMP, ...SHIP], <SAFERLookupPage />)} />
       <Route path={"/hazmat/certifications"} component={guard(ALL, <HazmatCertsPage />)} />
       <Route path={"/insurance"} component={guard([...CARR, ...BROK, ...COMP], <InsuranceMgmtPage />)} />
+      <Route path={"/insurance/per-load"} component={guard([...CARR, ...SHIP, ...BROK], <PerLoadInsurance />)} />
       <Route path={"/inspections"} component={guard([...CARR, ...COMP, ...SAFE], <VehicleInspectionsPage />)} />
       <Route path={"/report-builder"} component={guard([...CARR, ...BROK, ...COMP, ...SAFE, ...ADMN], <ReportBuilderPage />)} />
 
@@ -514,6 +518,7 @@ function Router() {
       <Route path={"/route-planning"} component={guard([...DRIV, ...DISP, ...CARR], <RoutePlanningPage />)} />
       <Route path={"/tax-documents"} component={guard([...DRIV, ...CARR], <TaxDocumentsPage />)} />
       <Route path={"/scale-locations"} component={guard(DRIV, <ScaleLocationsPage />)} />
+      <Route path={"/driver/reefer-temp"} component={guard(DRIV, <ReeferTemperatureLog />)} />
 
       {/* ============================================ */}
       {/* DISPATCH (DISPATCHER) ROUTES */}
