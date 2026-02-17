@@ -208,6 +208,7 @@ import EscortPermits from "./pages/EscortPermits";
 import EscortSchedule from "./pages/EscortSchedule";
 import SpectraMatch from "./pages/SpectraMatch";
 import EusoTicket from "./pages/EusoTicket";
+import LocationIntelligence from "./pages/LocationIntelligence";
 import AdminRSSFeeds from "./pages/AdminRSSFeeds";
 import AdminPlatformFees from "./pages/AdminPlatformFees";
 import Missions from "./pages/Missions";
@@ -354,6 +355,7 @@ function Router() {
       <Route path={"/missions"} component={guard(ALL, <Missions />)} />
       <Route path={"/live-tracking"} component={guard(ALL, <DriverTracking />)} />
       <Route path={"/fleet-tracking"} component={guard(ALL, <FleetTracking />)} />
+      <Route path={"/location-intelligence"} component={guard(ALL, <LocationIntelligence />)} />
       <Route path={"/admin/telemetry"} component={guard(ADMN, <AdminTelemetry />)} />
       <Route path={"/admin/approvals"} component={guard(ADMN, <AdminApprovalQueue />)} />
       <Route path={"/zeun-breakdown"} component={guard(ALL, <ZeunBreakdown />)} />
