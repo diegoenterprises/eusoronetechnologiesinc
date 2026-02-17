@@ -2532,4 +2532,70 @@ export const complianceRouter = router({
       };
       return requirements[input.userType] || [];
     }),
+
+  // ============================================================================
+  // IRP COMPLIANCE (C-073)
+  // ============================================================================
+
+  /**
+   * Get IRP status summary for company
+   */
+  getIRPStatus: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { irpRegistrations } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) return { cabCardStatus: "unknown", registeredStates: 0, renewalDue: null, totalFees: 0 };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          active: sql<number>`SUM(CASE WHEN ${irpRegistrations.status} = 'active' THEN 1 ELSE 0 END)`,
+          totalFees: sql<number>`COALESCE(SUM(CAST(${irpRegistrations.feesPaid} AS DECIMAL)), 0)`,
+          nearestExpiry: sql<string>`MIN(${irpRegistrations.expirationDate})`,
+        }).from(irpRegistrations).where(eq(irpRegistrations.companyId, companyId));
+
+        const activeCount = stats?.active || 0;
+        return {
+          cabCardStatus: activeCount > 0 ? "active" : "inactive",
+          registeredStates: activeCount,
+          renewalDue: stats?.nearestExpiry || null,
+          totalFees: Math.round(stats?.totalFees || 0),
+        };
+      } catch (e) {
+        console.error("[Compliance] getIRPStatus error:", e);
+        return { cabCardStatus: "unknown", registeredStates: 0, renewalDue: null, totalFees: 0 };
+      }
+    }),
+
+  /**
+   * Get IRP registrations by state
+   */
+  getIRPRegistrations: protectedProcedure
+    .input(z.object({ limit: z.number().default(50) }))
+    .query(async ({ ctx, input }) => {
+      const { irpRegistrations } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(irpRegistrations)
+          .where(eq(irpRegistrations.companyId, companyId))
+          .orderBy(desc(sql`CAST(${irpRegistrations.distancePercent} AS DECIMAL)`))
+          .limit(input.limit);
+
+        return rows.map(r => ({
+          id: String(r.id),
+          state: r.state,
+          maxWeight: r.maxWeight || 80000,
+          distancePercent: r.distancePercent ? parseFloat(String(r.distancePercent)) : 0,
+          feesPaid: r.feesPaid ? parseFloat(String(r.feesPaid)) : 0,
+          status: r.status,
+          cabCardNumber: r.cabCardNumber,
+          expirationDate: r.expirationDate?.toISOString() || null,
+        }));
+      } catch (e) {
+        console.error("[Compliance] getIRPRegistrations error:", e);
+        return [];
+      }
+    }),
 });

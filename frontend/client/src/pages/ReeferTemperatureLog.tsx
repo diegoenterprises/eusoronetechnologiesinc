@@ -16,27 +16,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import {
   Thermometer, AlertTriangle, CheckCircle, Clock, TrendingDown,
   TrendingUp, Plus, Download, Shield, Activity, BarChart3, Send
 } from "lucide-react";
-
-interface TempReading {
-  id: string;
-  timestamp: Date;
-  tempF: number;
-  tempC: number;
-  zone: string;
-  status: "normal" | "warning" | "critical";
-}
-
-interface TempAlert {
-  id: string;
-  timestamp: Date;
-  message: string;
-  severity: "warning" | "critical";
-  acknowledged: boolean;
-}
 
 const ZONES = ["Front", "Center", "Rear"] as const;
 
@@ -47,36 +31,9 @@ const PRESET_RANGES: Record<string, { min: number; max: number; label: string }>
   custom: { min: 0, max: 0, label: "Custom Range" },
 };
 
-function generateMockReadings(): TempReading[] {
-  const readings: TempReading[] = [];
-  const now = new Date();
-  for (let i = 23; i >= 0; i--) {
-    const timestamp = new Date(now.getTime() - i * 3600000);
-    ZONES.forEach((zone) => {
-      const base = 35 + (zone === "Front" ? -1 : zone === "Rear" ? 1.5 : 0);
-      const variance = (Math.random() - 0.5) * 4;
-      const tempF = Math.round((base + variance) * 10) / 10;
-      const tempC = Math.round(((tempF - 32) * 5) / 9 * 10) / 10;
-      const status = tempF > 40 ? "critical" : tempF > 38 ? "warning" : "normal";
-      readings.push({ id: `${i}-${zone}`, timestamp, tempF, tempC, zone, status });
-    });
-  }
-  return readings;
-}
-
-function generateMockAlerts(): TempAlert[] {
-  const now = new Date();
-  return [
-    { id: "a1", timestamp: new Date(now.getTime() - 7200000), message: "Rear zone exceeded 40°F for 12 minutes", severity: "warning", acknowledged: true },
-    { id: "a2", timestamp: new Date(now.getTime() - 1800000), message: "Door-open event detected — temp spike +4°F", severity: "warning", acknowledged: false },
-  ];
-}
-
 export default function ReeferTemperatureLog() {
   const { theme } = useTheme();
   const isLight = theme === "light";
-  const [readings] = useState<TempReading[]>(generateMockReadings);
-  const [alerts, setAlerts] = useState<TempAlert[]>(generateMockAlerts);
   const [selectedRange, setSelectedRange] = useState("refrigerated");
   const [manualTemp, setManualTemp] = useState("");
   const [manualZone, setManualZone] = useState<string>("Center");
@@ -84,50 +41,44 @@ export default function ReeferTemperatureLog() {
 
   const range = PRESET_RANGES[selectedRange];
 
-  const latestByZone = useMemo(() => {
-    const map: Record<string, TempReading> = {};
-    readings.forEach((r) => {
-      if (!map[r.zone] || r.timestamp > map[r.zone].timestamp) map[r.zone] = r;
-    });
-    return map;
-  }, [readings]);
+  // Real tRPC queries
+  const latestQuery = (trpc as any).reeferTemp.getLatestByZone.useQuery({});
+  const statsQuery = (trpc as any).reeferTemp.getStats.useQuery({ targetMin: range.min, targetMax: range.max });
+  const hourlyQuery = (trpc as any).reeferTemp.getHourlyAvgs.useQuery({});
+  const alertsQuery = (trpc as any).reeferTemp.getAlerts.useQuery({});
 
-  const stats = useMemo(() => {
-    const temps = readings.map((r) => r.tempF);
-    return {
-      min: Math.min(...temps),
-      max: Math.max(...temps),
-      avg: Math.round((temps.reduce((a, b) => a + b, 0) / temps.length) * 10) / 10,
-      excursions: readings.filter((r) => r.tempF > range.max || r.tempF < range.min).length,
-      totalReadings: readings.length,
-    };
-  }, [readings, range]);
+  const addReadingMut = (trpc as any).reeferTemp.addReading.useMutation({
+    onSuccess: () => {
+      toast.success(`Manual reading logged: ${manualTemp}°F in ${manualZone} zone`);
+      setManualTemp("");
+      latestQuery.refetch();
+      statsQuery.refetch();
+      hourlyQuery.refetch();
+    },
+    onError: () => toast.error("Failed to log reading"),
+  });
+  const ackAlertMut = (trpc as any).reeferTemp.acknowledgeAlert.useMutation({
+    onSuccess: () => { toast.success("Alert acknowledged"); alertsQuery.refetch(); },
+    onError: () => toast.error("Failed to acknowledge"),
+  });
 
-  const hourlyAvgs = useMemo(() => {
-    const hours: Record<number, number[]> = {};
-    readings.forEach((r) => {
-      const h = r.timestamp.getHours();
-      if (!hours[h]) hours[h] = [];
-      hours[h].push(r.tempF);
-    });
-    return Object.entries(hours)
-      .map(([h, temps]) => ({
-        hour: parseInt(h),
-        avg: Math.round((temps.reduce((a, b) => a + b, 0) / temps.length) * 10) / 10,
-      }))
-      .sort((a, b) => a.hour - b.hour);
-  }, [readings]);
+  const latestByZone: Record<string, any> = latestQuery.data || {};
+  const stats = statsQuery.data || { min: 0, max: 0, avg: 0, totalReadings: 0, excursions: 0 };
+  const hourlyAvgs: { hour: number; avg: number }[] = hourlyQuery.data || [];
+  const alerts: any[] = alertsQuery.data || [];
 
-  const acknowledgeAlert = (id: string) => {
-    setAlerts((prev) => prev.map((a) => (a.id === id ? { ...a, acknowledged: true } : a)));
-    toast.success("Alert acknowledged");
-  };
+  const acknowledgeAlert = (id: string) => ackAlertMut.mutate({ alertId: parseInt(id) });
 
   const addManualReading = () => {
     const temp = parseFloat(manualTemp);
     if (isNaN(temp)) { toast.error("Enter a valid temperature"); return; }
-    toast.success(`Manual reading logged: ${temp}°F in ${manualZone} zone`);
-    setManualTemp("");
+    addReadingMut.mutate({
+      tempF: temp,
+      zone: manualZone.toLowerCase() as "front" | "center" | "rear",
+      targetMin: range.min,
+      targetMax: range.max,
+      notes: notes || undefined,
+    });
   };
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
@@ -172,8 +123,17 @@ export default function ReeferTemperatureLog() {
       {/* Live Zone Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {ZONES.map((zone) => {
-          const r = latestByZone[zone];
-          if (!r) return null;
+          const zoneKey = zone.toLowerCase();
+          const r = latestByZone[zoneKey];
+          if (!r) return (
+            <Card key={zone} className={cn(cc, "overflow-hidden")}>
+              <div className="h-1 bg-slate-500/30" />
+              <CardContent className="p-5">
+                <span className={cn("text-xs font-semibold uppercase tracking-wider", isLight ? "text-slate-400" : "text-slate-500")}>{zone} Zone</span>
+                <p className={cn("text-sm mt-2", sub)}>No data</p>
+              </CardContent>
+            </Card>
+          );
           const inRange = r.tempF >= range.min && r.tempF <= range.max;
           return (
             <Card key={zone} className={cn(cc, "overflow-hidden")}>
@@ -195,7 +155,7 @@ export default function ReeferTemperatureLog() {
                   <span className={cn("text-lg", isLight ? "text-slate-400" : "text-slate-500")}>°F</span>
                 </div>
                 <p className={cn("text-xs mt-1", isLight ? "text-slate-400" : "text-slate-500")}>
-                  {r.tempC}°C · {r.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {r.tempC}°C · {r.recordedAt ? new Date(r.recordedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
                 </p>
               </CardContent>
             </Card>
@@ -358,7 +318,7 @@ export default function ReeferTemperatureLog() {
                         {alert.message}
                       </p>
                       <p className={cn("text-xs mt-0.5", isLight ? "text-slate-400" : "text-slate-500")}>
-                        {alert.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        {alert.createdAt ? new Date(alert.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "--"}
                       </p>
                     </div>
                     {!alert.acknowledged && (

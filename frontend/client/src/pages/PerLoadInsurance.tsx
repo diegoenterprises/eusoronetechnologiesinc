@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import {
   Shield, CheckCircle, Clock, DollarSign, Truck, Package,
   AlertTriangle, FileText, ArrowRight, Lock, Zap, Star,
@@ -32,7 +33,7 @@ interface QuoteResult {
   highValueSurcharge: number;
   totalPremium: number;
   policyType: string;
-  validUntil: Date;
+  validUntil: string;
 }
 
 const COMMODITY_TYPES = [
@@ -70,43 +71,57 @@ export default function PerLoadInsurance() {
   const [destination, setDestination] = useState("");
   const [miles, setMiles] = useState("");
   const [quote, setQuote] = useState<QuoteResult | null>(null);
+  const [policyNumber, setPolicyNumber] = useState("");
   const [showCommodityDropdown, setShowCommodityDropdown] = useState(false);
 
   const selectedCommodity = COMMODITY_TYPES.find((c) => c.value === commodity);
+
+  const quoteMut = (trpc as any).insurance.getPerLoadQuote.useMutation({
+    onSuccess: (data: any) => {
+      setQuote(data);
+      setStep("review");
+    },
+    onError: () => toast.error("Failed to generate quote"),
+  });
+
+  const purchaseMut = (trpc as any).insurance.purchasePerLoad.useMutation({
+    onSuccess: (data: any) => {
+      setPolicyNumber(data.policyNumber);
+      setStep("purchased");
+      toast.success("Insurance policy activated");
+    },
+    onError: () => toast.error("Failed to purchase policy"),
+  });
 
   const calculateQuote = () => {
     const value = parseFloat(cargoValue);
     if (isNaN(value) || value <= 0) { toast.error("Enter a valid cargo value"); return; }
     if (!origin || !destination) { toast.error("Enter origin and destination"); return; }
-
-    const rate = selectedCommodity?.rate || 0.0012;
-    const base = Math.max(value * rate, 25);
-    const isHazmat = commodity.startsWith("hazmat_");
-    const isReefer = commodity === "food_reefer";
-    const isHighValue = value > 500000;
-
-    const hazmatSurcharge = isHazmat ? base * 0.45 : 0;
-    const reeferSurcharge = isReefer ? base * 0.15 : 0;
-    const highValueSurcharge = isHighValue ? base * 0.20 : 0;
-    const totalPremium = Math.round((base + hazmatSurcharge + reeferSurcharge + highValueSurcharge) * 100) / 100;
-
-    setQuote({
-      premium: Math.round(base * 100) / 100,
-      coverage,
-      deductible: Math.round(coverage * 0.01),
-      hazmatSurcharge: Math.round(hazmatSurcharge * 100) / 100,
-      reeferSurcharge: Math.round(reeferSurcharge * 100) / 100,
-      highValueSurcharge: Math.round(highValueSurcharge * 100) / 100,
-      totalPremium,
-      policyType: isHazmat ? "Hazmat Cargo + Environmental" : "All-Risk Cargo",
-      validUntil: new Date(Date.now() + 24 * 3600000),
+    quoteMut.mutate({
+      cargoValue: value,
+      commodityType: commodity,
+      coverageAmount: coverage,
+      origin,
+      destination,
     });
-    setStep("review");
   };
 
   const purchasePolicy = () => {
-    setStep("purchased");
-    toast.success("Insurance policy activated");
+    if (!quote) return;
+    purchaseMut.mutate({
+      cargoValue: parseFloat(cargoValue),
+      coverageAmount: quote.coverage,
+      deductible: quote.deductible,
+      premium: quote.totalPremium,
+      basePremium: quote.premium,
+      hazmatSurcharge: quote.hazmatSurcharge,
+      reeferSurcharge: quote.reeferSurcharge,
+      highValueSurcharge: quote.highValueSurcharge,
+      commodityType: commodity,
+      policyType: quote.policyType,
+      origin,
+      destination,
+    });
   };
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
@@ -133,22 +148,22 @@ export default function PerLoadInsurance() {
               <div className="flex justify-between">
                 <span className={sub}>Policy Number</span>
                 <span className={cn("font-mono text-sm font-semibold", isLight ? "text-slate-800" : "text-white")}>
-                  EUS-{Date.now().toString(36).toUpperCase()}
+                  {policyNumber || "EUS-..."}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className={sub}>Coverage</span>
                 <span className={cn("font-semibold", isLight ? "text-slate-800" : "text-white")}>
-                  ${quote.coverage.toLocaleString()}
+                  ${(quote.coverage || 0).toLocaleString()}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className={sub}>Premium Paid</span>
-                <span className="font-semibold text-green-500">${quote.totalPremium}</span>
+                <span className="font-semibold text-green-500">${quote.totalPremium || 0}</span>
               </div>
               <div className="flex justify-between">
                 <span className={sub}>Type</span>
-                <span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{quote.policyType}</span>
+                <span className={cn("text-sm", isLight ? "text-slate-700" : "text-slate-300")}>{quote.policyType || "All-Risk Cargo"}</span>
               </div>
             </div>
             <div className="flex gap-3 mt-8 justify-center">
@@ -193,7 +208,7 @@ export default function PerLoadInsurance() {
                 </span>
               </div>
               <p className={cn("text-xs mt-2", isLight ? "text-slate-400" : "text-slate-500")}>
-                One-time payment · Valid until {quote.validUntil.toLocaleDateString()}
+                One-time payment · Valid until {new Date(quote.validUntil).toLocaleDateString()}
               </p>
             </div>
 

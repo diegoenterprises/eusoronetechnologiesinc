@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "sonner";
+import { trpc } from "@/lib/trpc";
 import {
   Users, Search, Shield, CheckCircle, AlertTriangle, Clock,
   TrendingUp, TrendingDown, DollarSign, FileText, Building2,
@@ -35,14 +36,6 @@ interface Debtor {
   riskLevel: "low" | "medium" | "high";
 }
 
-const MOCK_DEBTORS: Debtor[] = [
-  { id: "d1", name: "Permian Basin Energy LLC", type: "shipper", creditScore: 92, creditRating: "A+", totalFactored: 2450000, outstanding: 185000, avgDaysToPay: 18, invoiceCount: 87, lastPayment: "2 days ago", trend: "up", riskLevel: "low" },
-  { id: "d2", name: "Gulf Coast Petrochemicals", type: "shipper", creditScore: 85, creditRating: "A", totalFactored: 1820000, outstanding: 320000, avgDaysToPay: 24, invoiceCount: 62, lastPayment: "5 days ago", trend: "stable", riskLevel: "low" },
-  { id: "d3", name: "Midwest Freight Brokers Inc", type: "broker", creditScore: 74, creditRating: "B+", totalFactored: 890000, outstanding: 145000, avgDaysToPay: 32, invoiceCount: 41, lastPayment: "8 days ago", trend: "down", riskLevel: "medium" },
-  { id: "d4", name: "TransContinental Shipping", type: "shipper", creditScore: 68, creditRating: "B", totalFactored: 560000, outstanding: 210000, avgDaysToPay: 38, invoiceCount: 23, lastPayment: "14 days ago", trend: "down", riskLevel: "medium" },
-  { id: "d5", name: "Delta Chemicals Corp", type: "shipper", creditScore: 51, creditRating: "C", totalFactored: 340000, outstanding: 175000, avgDaysToPay: 47, invoiceCount: 15, lastPayment: "21 days ago", trend: "down", riskLevel: "high" },
-];
-
 export default function FactoringDebtors() {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -50,11 +43,22 @@ export default function FactoringDebtors() {
   const [selectedDebtor, setSelectedDebtor] = useState<Debtor | null>(null);
   const [creditCheckEntity, setCreditCheckEntity] = useState("");
   const [creditCheckResult, setCreditCheckResult] = useState<any>(null);
-  const [checking, setChecking] = useState(false);
 
-  const filtered = MOCK_DEBTORS.filter((d) =>
-    d.name.toLowerCase().includes(search.toLowerCase())
-  );
+  // Real tRPC queries
+  const debtorsQuery = (trpc as any).factoring.getDebtors.useQuery({ search: search || undefined });
+  const statsQuery = (trpc as any).factoring.getDebtorStats.useQuery();
+  const creditCheckMut = (trpc as any).factoring.runCreditCheck.useMutation({
+    onSuccess: (data: any) => {
+      setCreditCheckResult(data);
+      toast.success("Credit check complete");
+    },
+    onError: () => toast.error("Credit check failed"),
+  });
+
+  const filtered: Debtor[] = (debtorsQuery.data || []).map((d: any) => ({
+    ...d,
+    creditRating: d.creditRating || "N/A",
+  }));
 
   const cc = cn("rounded-2xl border", isLight ? "bg-white border-slate-200 shadow-sm" : "bg-slate-800/60 border-slate-700/50");
   const sub = cn("text-sm", isLight ? "text-slate-500" : "text-slate-400");
@@ -79,30 +83,14 @@ export default function FactoringDebtors() {
     return "bg-red-500/15 text-red-500 border-red-500/30";
   };
 
+  const checking = creditCheckMut.isPending;
+
   const runCreditCheck = () => {
     if (!creditCheckEntity.trim()) { toast.error("Enter a company name or MC/DOT number"); return; }
-    setChecking(true);
-    setTimeout(() => {
-      setCreditCheckResult({
-        name: creditCheckEntity,
-        score: Math.floor(Math.random() * 40) + 55,
-        rating: ["A", "B+", "B", "C"][Math.floor(Math.random() * 4)],
-        avgDaysToPay: Math.floor(Math.random() * 30) + 15,
-        publicRecords: Math.floor(Math.random() * 3),
-        yearsInBusiness: Math.floor(Math.random() * 15) + 2,
-        recommendation: Math.random() > 0.3 ? "approve" : "review",
-      });
-      setChecking(false);
-      toast.success("Credit check complete");
-    }, 1500);
+    creditCheckMut.mutate({ entityName: creditCheckEntity });
   };
 
-  const totals = {
-    outstanding: MOCK_DEBTORS.reduce((s, d) => s + d.outstanding, 0),
-    factored: MOCK_DEBTORS.reduce((s, d) => s + d.totalFactored, 0),
-    avgDays: Math.round(MOCK_DEBTORS.reduce((s, d) => s + d.avgDaysToPay, 0) / MOCK_DEBTORS.length),
-    highRisk: MOCK_DEBTORS.filter((d) => d.riskLevel === "high").length,
-  };
+  const totals = statsQuery.data || { outstanding: 0, factored: 0, avgDays: 0, highRisk: 0, totalDebtors: 0 };
 
   return (
     <div className="p-4 md:p-6 space-y-6 max-w-[1200px] mx-auto">
@@ -115,17 +103,17 @@ export default function FactoringDebtors() {
           <p className={sub}>Debtor accounts, credit scores & payment behavior</p>
         </div>
         <Badge className="rounded-full px-3 py-1 text-xs font-medium border bg-[#1473FF]/15 text-[#1473FF] border-[#1473FF]/30">
-          {MOCK_DEBTORS.length} Active Debtors
+          {totals.totalDebtors || filtered.length} Active Debtors
         </Badge>
       </div>
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Outstanding", value: `$${(totals.outstanding / 1000).toFixed(0)}K`, icon: DollarSign, color: "text-[#1473FF]", bg: "from-[#1473FF]/20 to-[#BE01FF]/20" },
-          { label: "Total Factored", value: `$${(totals.factored / 1000000).toFixed(1)}M`, icon: TrendingUp, color: "text-green-500", bg: "from-green-500/20 to-emerald-500/20" },
-          { label: "Avg Days to Pay", value: `${totals.avgDays}`, icon: Clock, color: "text-yellow-500", bg: "from-yellow-500/20 to-orange-500/20" },
-          { label: "High Risk", value: `${totals.highRisk}`, icon: AlertTriangle, color: "text-red-500", bg: "from-red-500/20 to-orange-500/20" },
+          { label: "Outstanding", value: totals.outstanding >= 1000000 ? `$${(totals.outstanding / 1000000).toFixed(1)}M` : `$${(totals.outstanding / 1000).toFixed(0)}K`, icon: DollarSign, color: "text-[#1473FF]", bg: "from-[#1473FF]/20 to-[#BE01FF]/20" },
+          { label: "Total Factored", value: totals.factored >= 1000000 ? `$${(totals.factored / 1000000).toFixed(1)}M` : `$${(totals.factored / 1000).toFixed(0)}K`, icon: TrendingUp, color: "text-green-500", bg: "from-green-500/20 to-emerald-500/20" },
+          { label: "Avg Days to Pay", value: `${totals.avgDays || 0}`, icon: Clock, color: "text-yellow-500", bg: "from-yellow-500/20 to-orange-500/20" },
+          { label: "High Risk", value: `${totals.highRisk || 0}`, icon: AlertTriangle, color: "text-red-500", bg: "from-red-500/20 to-orange-500/20" },
         ].map((s) => (
           <Card key={s.label} className={cc}>
             <CardContent className="p-4">

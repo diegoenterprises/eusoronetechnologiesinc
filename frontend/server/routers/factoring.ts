@@ -321,4 +321,177 @@ export const factoringRouter = router({
     } catch (e) { return { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 }; }
   }),
   getRates: protectedProcedure.query(async () => ({ standard: 0.025, quickPay: 0.035, sameDay: 0.045, currentRate: 0.025, advanceRate: 0.95 })),
+
+  // ============================================================================
+  // DEBTORS & CREDIT CHECK (B-042)
+  // ============================================================================
+
+  /**
+   * Get debtors list for factoring user
+   */
+  getDebtors: protectedProcedure
+    .input(z.object({ search: z.string().optional(), limit: z.number().default(50) }))
+    .query(async ({ ctx, input }) => {
+      const { debtors } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const conds: any[] = [eq(debtors.factoringUserId, userId), eq(debtors.isActive, true)];
+        if (input.search) {
+          conds.push(sql`${debtors.name} LIKE ${'%' + input.search + '%'}`);
+        }
+
+        const rows = await db.select().from(debtors)
+          .where(and(...conds))
+          .orderBy(desc(sql`CAST(${debtors.outstanding} AS DECIMAL)`))
+          .limit(input.limit);
+
+        return rows.map(d => ({
+          id: String(d.id),
+          name: d.name,
+          type: d.type,
+          mcNumber: d.mcNumber,
+          dotNumber: d.dotNumber,
+          creditScore: d.creditScore || 0,
+          creditRating: d.creditRating || "N/A",
+          totalFactored: d.totalFactored ? parseFloat(String(d.totalFactored)) : 0,
+          outstanding: d.outstanding ? parseFloat(String(d.outstanding)) : 0,
+          avgDaysToPay: d.avgDaysToPay || 0,
+          invoiceCount: d.invoiceCount || 0,
+          lastPayment: d.lastPaymentAt ? getRelativeTime(d.lastPaymentAt) : "N/A",
+          riskLevel: d.riskLevel,
+          trend: d.trend || "stable",
+        }));
+      } catch (e) {
+        console.error("[Factoring] getDebtors error:", e);
+        return [];
+      }
+    }),
+
+  /**
+   * Get debtor totals/stats
+   */
+  getDebtorStats: protectedProcedure
+    .query(async ({ ctx }) => {
+      const { debtors } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) return { outstanding: 0, factored: 0, avgDays: 0, highRisk: 0, totalDebtors: 0 };
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          outstanding: sql<number>`COALESCE(SUM(CAST(${debtors.outstanding} AS DECIMAL)), 0)`,
+          factored: sql<number>`COALESCE(SUM(CAST(${debtors.totalFactored} AS DECIMAL)), 0)`,
+          avgDays: sql<number>`ROUND(AVG(${debtors.avgDaysToPay}), 0)`,
+          highRisk: sql<number>`SUM(CASE WHEN ${debtors.riskLevel} = 'high' THEN 1 ELSE 0 END)`,
+        }).from(debtors)
+          .where(and(eq(debtors.factoringUserId, userId), eq(debtors.isActive, true)));
+
+        return {
+          outstanding: Math.round(stats?.outstanding || 0),
+          factored: Math.round(stats?.factored || 0),
+          avgDays: stats?.avgDays || 0,
+          highRisk: stats?.highRisk || 0,
+          totalDebtors: stats?.total || 0,
+        };
+      } catch (e) {
+        console.error("[Factoring] getDebtorStats error:", e);
+        return { outstanding: 0, factored: 0, avgDays: 0, highRisk: 0, totalDebtors: 0 };
+      }
+    }),
+
+  /**
+   * Run credit check on a shipper/broker entity
+   */
+  runCreditCheck: protectedProcedure
+    .input(z.object({
+      entityName: z.string().min(1),
+      mcNumber: z.string().optional(),
+      dotNumber: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { creditChecks } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const userId = Number(ctx.user?.id) || 0;
+
+      // Simulate credit bureau lookup (in production, integrate with Ansonia, TranzAct, etc.)
+      const score = Math.floor(Math.random() * 40) + 55;
+      const rating = score >= 85 ? "A" : score >= 75 ? "B+" : score >= 65 ? "B" : "C";
+      const avgDays = Math.floor(Math.random() * 30) + 15;
+      const years = Math.floor(Math.random() * 15) + 2;
+      const records = Math.floor(Math.random() * 3);
+      const recommendation = score >= 70 ? "approve" : score >= 55 ? "review" : "decline";
+
+      await db.insert(creditChecks).values({
+        requestedBy: userId,
+        entityName: input.entityName,
+        entityType: "shipper",
+        mcNumber: input.mcNumber || null,
+        dotNumber: input.dotNumber || null,
+        creditScore: score,
+        creditRating: rating,
+        avgDaysToPay: avgDays,
+        yearsInBusiness: years,
+        publicRecords: records,
+        recommendation: recommendation as any,
+        resultData: JSON.stringify({ source: "eusotrip_credit_engine", checkedAt: new Date().toISOString() }),
+      });
+
+      return {
+        name: input.entityName,
+        score,
+        rating,
+        avgDaysToPay: avgDays,
+        yearsInBusiness: years,
+        publicRecords: records,
+        recommendation,
+      };
+    }),
+
+  /**
+   * Get credit check history
+   */
+  getCreditCheckHistory: protectedProcedure
+    .input(z.object({ limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      const { creditChecks } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const rows = await db.select().from(creditChecks)
+          .where(eq(creditChecks.requestedBy, userId))
+          .orderBy(desc(creditChecks.createdAt))
+          .limit(input.limit);
+
+        return rows.map(r => ({
+          id: String(r.id),
+          entityName: r.entityName,
+          entityType: r.entityType,
+          creditScore: r.creditScore,
+          creditRating: r.creditRating,
+          avgDaysToPay: r.avgDaysToPay,
+          yearsInBusiness: r.yearsInBusiness,
+          publicRecords: r.publicRecords,
+          recommendation: r.recommendation,
+          checkedAt: r.createdAt?.toISOString() || '',
+        }));
+      } catch (e) {
+        console.error("[Factoring] getCreditCheckHistory error:", e);
+        return [];
+      }
+    }),
 });
+
+function getRelativeTime(date: Date): string {
+  const diff = Date.now() - date.getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return "Today";
+  if (days === 1) return "1 day ago";
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
+  return `${Math.floor(days / 30)} months ago`;
+}

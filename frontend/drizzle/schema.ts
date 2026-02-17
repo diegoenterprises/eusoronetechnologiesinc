@@ -4577,3 +4577,202 @@ export const runTicketExpenses = mysqlTable(
 export type RunTicketExpense = typeof runTicketExpenses.$inferSelect;
 export type InsertRunTicketExpense = typeof runTicketExpenses.$inferInsert;
 
+// ============================================================================
+// REEFER TEMPERATURE MONITORING (D-066 / FSMA 21 CFR 1.908)
+// ============================================================================
+
+export const reeferReadings = mysqlTable(
+  "reefer_readings",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId"),
+    vehicleId: int("vehicleId"),
+    driverId: int("driverId").notNull(),
+    companyId: int("companyId"),
+    zone: mysqlEnum("zone", ["front", "center", "rear"]).notNull(),
+    tempF: decimal("tempF", { precision: 6, scale: 2 }).notNull(),
+    tempC: decimal("tempC", { precision: 6, scale: 2 }).notNull(),
+    targetMinF: decimal("targetMinF", { precision: 6, scale: 2 }),
+    targetMaxF: decimal("targetMaxF", { precision: 6, scale: 2 }),
+    status: mysqlEnum("status", ["normal", "warning", "critical"]).default("normal").notNull(),
+    source: mysqlEnum("source", ["sensor", "manual"]).default("sensor").notNull(),
+    notes: text("notes"),
+    recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("reefer_reading_driver_idx").on(table.driverId),
+    loadIdx: index("reefer_reading_load_idx").on(table.loadId),
+    vehicleIdx: index("reefer_reading_vehicle_idx").on(table.vehicleId),
+    recordedAtIdx: index("reefer_reading_recorded_idx").on(table.recordedAt),
+    statusIdx: index("reefer_reading_status_idx").on(table.status),
+  })
+);
+
+export type ReeferReading = typeof reeferReadings.$inferSelect;
+export type InsertReeferReading = typeof reeferReadings.$inferInsert;
+
+export const reeferAlerts = mysqlTable(
+  "reefer_alerts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    loadId: int("loadId"),
+    vehicleId: int("vehicleId"),
+    driverId: int("driverId").notNull(),
+    companyId: int("companyId"),
+    severity: mysqlEnum("severity", ["warning", "critical"]).notNull(),
+    message: text("message").notNull(),
+    zone: mysqlEnum("zone", ["front", "center", "rear"]),
+    tempF: decimal("tempF", { precision: 6, scale: 2 }),
+    acknowledged: boolean("acknowledged").default(false).notNull(),
+    acknowledgedAt: timestamp("acknowledgedAt"),
+    acknowledgedBy: int("acknowledgedBy"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("reefer_alert_driver_idx").on(table.driverId),
+    loadIdx: index("reefer_alert_load_idx").on(table.loadId),
+    acknowledgedIdx: index("reefer_alert_ack_idx").on(table.acknowledged),
+  })
+);
+
+export type ReeferAlert = typeof reeferAlerts.$inferSelect;
+export type InsertReeferAlert = typeof reeferAlerts.$inferInsert;
+
+// ============================================================================
+// PER-LOAD INSURANCE (C-100/S-053 + C-101/S-054)
+// ============================================================================
+
+export const perLoadInsurancePolicies = mysqlTable(
+  "per_load_insurance_policies",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    policyNumber: varchar("policyNumber", { length: 50 }).notNull().unique(),
+    loadId: int("loadId"),
+    userId: int("userId").notNull(),
+    companyId: int("companyId"),
+    cargoValue: decimal("cargoValue", { precision: 12, scale: 2 }).notNull(),
+    coverageAmount: decimal("coverageAmount", { precision: 12, scale: 2 }).notNull(),
+    deductible: decimal("deductible", { precision: 10, scale: 2 }).notNull(),
+    premium: decimal("premium", { precision: 10, scale: 2 }).notNull(),
+    basePremium: decimal("basePremium", { precision: 10, scale: 2 }).notNull(),
+    hazmatSurcharge: decimal("hazmatSurcharge", { precision: 10, scale: 2 }).default("0"),
+    reeferSurcharge: decimal("reeferSurcharge", { precision: 10, scale: 2 }).default("0"),
+    highValueSurcharge: decimal("highValueSurcharge", { precision: 10, scale: 2 }).default("0"),
+    commodityType: varchar("commodityType", { length: 100 }).notNull(),
+    policyType: varchar("policyType", { length: 100 }).notNull(),
+    origin: varchar("origin", { length: 255 }),
+    destination: varchar("destination", { length: 255 }),
+    status: mysqlEnum("status", ["quoted", "active", "expired", "cancelled", "claimed"]).default("quoted").notNull(),
+    activatedAt: timestamp("activatedAt"),
+    expiresAt: timestamp("expiresAt"),
+    walletTransactionId: int("walletTransactionId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    userIdx: index("pli_user_idx").on(table.userId),
+    loadIdx: index("pli_load_idx").on(table.loadId),
+    statusIdx: index("pli_status_idx").on(table.status),
+    policyNumIdx: unique("pli_policy_num_unique").on(table.policyNumber),
+  })
+);
+
+export type PerLoadInsurancePolicy = typeof perLoadInsurancePolicies.$inferSelect;
+export type InsertPerLoadInsurancePolicy = typeof perLoadInsurancePolicies.$inferInsert;
+
+// ============================================================================
+// IRP REGISTRATIONS (C-073)
+// ============================================================================
+
+export const irpRegistrations = mysqlTable(
+  "irp_registrations",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId").notNull(),
+    vehicleId: int("vehicleId"),
+    cabCardNumber: varchar("cabCardNumber", { length: 100 }),
+    state: varchar("state", { length: 5 }).notNull(),
+    maxWeight: int("maxWeight"),
+    distancePercent: decimal("distancePercent", { precision: 5, scale: 2 }),
+    feesPaid: decimal("feesPaid", { precision: 10, scale: 2 }),
+    status: mysqlEnum("status", ["active", "pending", "expired", "suspended"]).default("active").notNull(),
+    effectiveDate: timestamp("effectiveDate"),
+    expirationDate: timestamp("expirationDate"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    companyIdx: index("irp_company_idx").on(table.companyId),
+    stateIdx: index("irp_state_idx").on(table.state),
+    statusIdx: index("irp_status_idx").on(table.status),
+  })
+);
+
+export type IrpRegistration = typeof irpRegistrations.$inferSelect;
+export type InsertIrpRegistration = typeof irpRegistrations.$inferInsert;
+
+// ============================================================================
+// DEBTORS & CREDIT CHECKS (B-042)
+// ============================================================================
+
+export const debtors = mysqlTable(
+  "debtors",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    companyId: int("companyId"),
+    factoringUserId: int("factoringUserId").notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    type: mysqlEnum("type", ["shipper", "broker"]).notNull(),
+    mcNumber: varchar("mcNumber", { length: 50 }),
+    dotNumber: varchar("dotNumber", { length: 50 }),
+    creditScore: int("creditScore"),
+    creditRating: varchar("creditRating", { length: 5 }),
+    totalFactored: decimal("totalFactored", { precision: 14, scale: 2 }).default("0"),
+    outstanding: decimal("outstanding", { precision: 14, scale: 2 }).default("0"),
+    avgDaysToPay: int("avgDaysToPay"),
+    invoiceCount: int("invoiceCount").default(0),
+    lastPaymentAt: timestamp("lastPaymentAt"),
+    riskLevel: mysqlEnum("riskLevel", ["low", "medium", "high"]).default("medium").notNull(),
+    trend: mysqlEnum("trend", ["up", "down", "stable"]).default("stable"),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    factoringUserIdx: index("debtor_factoring_user_idx").on(table.factoringUserId),
+    riskIdx: index("debtor_risk_idx").on(table.riskLevel),
+    nameIdx: index("debtor_name_idx").on(table.name),
+  })
+);
+
+export type Debtor = typeof debtors.$inferSelect;
+export type InsertDebtor = typeof debtors.$inferInsert;
+
+export const creditChecks = mysqlTable(
+  "credit_checks",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    requestedBy: int("requestedBy").notNull(),
+    entityName: varchar("entityName", { length: 255 }).notNull(),
+    entityType: mysqlEnum("entityType", ["shipper", "broker", "carrier"]),
+    mcNumber: varchar("mcNumber", { length: 50 }),
+    dotNumber: varchar("dotNumber", { length: 50 }),
+    creditScore: int("creditScore"),
+    creditRating: varchar("creditRating", { length: 5 }),
+    avgDaysToPay: int("avgDaysToPay"),
+    yearsInBusiness: int("yearsInBusiness"),
+    publicRecords: int("publicRecords").default(0),
+    recommendation: mysqlEnum("recommendation", ["approve", "review", "decline"]),
+    resultData: json("resultData"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    requestedByIdx: index("credit_check_user_idx").on(table.requestedBy),
+    entityNameIdx: index("credit_check_entity_idx").on(table.entityName),
+  })
+);
+
+export type CreditCheck = typeof creditChecks.$inferSelect;
+export type InsertCreditCheck = typeof creditChecks.$inferInsert;
+

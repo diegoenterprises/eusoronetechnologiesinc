@@ -686,4 +686,163 @@ export const insuranceRouter = router({
       
       return { success: true, newExpiration: newExp.toISOString().split("T")[0] };
     }),
+
+  // ============================================================================
+  // PER-LOAD INSURANCE (C-100/S-053 + C-101/S-054)
+  // ============================================================================
+
+  /**
+   * Get instant per-load insurance quote
+   */
+  getPerLoadQuote: protectedProcedure
+    .input(z.object({
+      cargoValue: z.number().min(1),
+      commodityType: z.string(),
+      coverageAmount: z.number(),
+      origin: z.string(),
+      destination: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      const RATES: Record<string, number> = {
+        general: 0.0012, electronics: 0.0018, food_dry: 0.0014,
+        food_reefer: 0.0020, pharma: 0.0025, hazmat_flammable: 0.0035,
+        hazmat_corrosive: 0.0032, hazmat_gas: 0.0038, hazmat_explosive: 0.0055,
+        hazmat_radioactive: 0.0060, crude_oil: 0.0022, machinery: 0.0016, auto: 0.0020,
+      };
+
+      const rate = RATES[input.commodityType] || 0.0012;
+      const base = Math.max(input.cargoValue * rate, 25);
+      const isHazmat = input.commodityType.startsWith("hazmat_");
+      const isReefer = input.commodityType === "food_reefer";
+      const isHighValue = input.cargoValue > 500000;
+
+      const hazmatSurcharge = isHazmat ? Math.round(base * 0.45 * 100) / 100 : 0;
+      const reeferSurcharge = isReefer ? Math.round(base * 0.15 * 100) / 100 : 0;
+      const highValueSurcharge = isHighValue ? Math.round(base * 0.20 * 100) / 100 : 0;
+      const totalPremium = Math.round((base + hazmatSurcharge + reeferSurcharge + highValueSurcharge) * 100) / 100;
+
+      return {
+        premium: Math.round(base * 100) / 100,
+        coverage: input.coverageAmount,
+        deductible: Math.round(input.coverageAmount * 0.01),
+        hazmatSurcharge,
+        reeferSurcharge,
+        highValueSurcharge,
+        totalPremium,
+        policyType: isHazmat ? "Hazmat Cargo + Environmental" : "All-Risk Cargo",
+        validUntil: new Date(Date.now() + 24 * 3600000).toISOString(),
+      };
+    }),
+
+  /**
+   * Purchase per-load insurance policy
+   */
+  purchasePerLoad: protectedProcedure
+    .input(z.object({
+      cargoValue: z.number(),
+      coverageAmount: z.number(),
+      deductible: z.number(),
+      premium: z.number(),
+      basePremium: z.number(),
+      hazmatSurcharge: z.number().default(0),
+      reeferSurcharge: z.number().default(0),
+      highValueSurcharge: z.number().default(0),
+      commodityType: z.string(),
+      policyType: z.string(),
+      origin: z.string(),
+      destination: z.string(),
+      loadId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { perLoadInsurancePolicies } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      const userId = Number(ctx.user?.id) || 0;
+      const companyId = Number(ctx.user?.companyId) || 0;
+      const policyNumber = `EUS-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+      const [result] = await db.insert(perLoadInsurancePolicies).values({
+        policyNumber,
+        loadId: input.loadId || null,
+        userId,
+        companyId: companyId || null,
+        cargoValue: String(input.cargoValue),
+        coverageAmount: String(input.coverageAmount),
+        deductible: String(input.deductible),
+        premium: String(input.premium),
+        basePremium: String(input.basePremium),
+        hazmatSurcharge: String(input.hazmatSurcharge),
+        reeferSurcharge: String(input.reeferSurcharge),
+        highValueSurcharge: String(input.highValueSurcharge),
+        commodityType: input.commodityType,
+        policyType: input.policyType,
+        origin: input.origin,
+        destination: input.destination,
+        status: "active",
+        activatedAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 3600000),
+      });
+
+      // Debit EusoWallet
+      try {
+        const { walletTransactions, wallets } = await import("../../drizzle/schema");
+        const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+        if (wallet) {
+          await db.insert(walletTransactions).values({
+            walletId: wallet.id,
+            type: "fee",
+            amount: String(-input.premium),
+            netAmount: String(-input.premium),
+            fee: "0",
+            description: `Per-load insurance: ${policyNumber}`,
+            status: "completed",
+            completedAt: new Date(),
+            metadata: JSON.stringify({ policyNumber, commodityType: input.commodityType }),
+          });
+        }
+      } catch (e) {
+        console.error("[Insurance] wallet debit error:", e);
+      }
+
+      return { success: true, policyNumber };
+    }),
+
+  /**
+   * Get user's per-load insurance policies
+   */
+  getMyPerLoadPolicies: protectedProcedure
+    .input(z.object({ status: z.string().optional(), limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      const { perLoadInsurancePolicies } = await import("../../drizzle/schema");
+      const db = await getDb();
+      if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const conds: any[] = [eq(perLoadInsurancePolicies.userId, userId)];
+        if (input.status) conds.push(eq(perLoadInsurancePolicies.status, input.status as any));
+
+        const rows = await db.select().from(perLoadInsurancePolicies)
+          .where(and(...conds))
+          .orderBy(desc(perLoadInsurancePolicies.createdAt))
+          .limit(input.limit);
+
+        return rows.map(r => ({
+          id: String(r.id),
+          policyNumber: r.policyNumber,
+          coverageAmount: r.coverageAmount ? parseFloat(String(r.coverageAmount)) : 0,
+          premium: r.premium ? parseFloat(String(r.premium)) : 0,
+          commodityType: r.commodityType,
+          policyType: r.policyType,
+          status: r.status,
+          origin: r.origin,
+          destination: r.destination,
+          activatedAt: r.activatedAt?.toISOString() || null,
+          expiresAt: r.expiresAt?.toISOString() || null,
+        }));
+      } catch (e) {
+        console.error("[Insurance] getMyPerLoadPolicies error:", e);
+        return [];
+      }
+    }),
 });
