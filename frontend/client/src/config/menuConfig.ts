@@ -69,7 +69,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
     { 
       icon: "Navigation", 
       label: "Dispatch Control", 
-      path: "/dispatch", 
+      path: "/shipper/dispatch", 
       badge: 0,
       description: "Routes, tracking & catalyst coordination"
     },

@@ -447,6 +447,94 @@ export const authorityRouter = router({
       return [];
     }
   }),
+
+  /**
+   * Add a vehicle to the company fleet
+   */
+  addVehicle: protectedProcedure
+    .input(z.object({
+      vin: z.string().min(11).max(17),
+      make: z.string().min(1).max(100),
+      model: z.string().min(1).max(100),
+      year: z.number().min(1990).max(2030),
+      vehicleType: z.enum(["tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"]),
+      licensePlate: z.string().max(20).optional(),
+      capacity: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = typeof ctx.user.id === "string" ? parseInt(ctx.user.id, 10) : ctx.user.id;
+      const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+
+      if (!user?.companyId) {
+        // Auto-create a company for the user if none exists
+        const result = await db.insert(companies).values({
+          name: ctx.user.name ? `${ctx.user.name}'s Fleet` : "My Fleet",
+          isActive: true,
+        } as any);
+        const companyId = (result as any).insertId || (result as any)[0]?.insertId;
+        if (companyId) {
+          await db.update(users).set({ companyId }).where(eq(users.id, userId));
+          await db.insert(vehicles).values({
+            companyId,
+            vin: input.vin.toUpperCase(),
+            make: input.make,
+            model: input.model,
+            year: input.year,
+            vehicleType: input.vehicleType,
+            licensePlate: input.licensePlate || null,
+            capacity: input.capacity || null,
+            status: "available",
+            isActive: true,
+          } as any);
+          return { success: true, message: "Vehicle registered" };
+        }
+        throw new Error("Failed to create company");
+      }
+
+      await db.insert(vehicles).values({
+        companyId: user.companyId,
+        vin: input.vin.toUpperCase(),
+        make: input.make,
+        model: input.model,
+        year: input.year,
+        vehicleType: input.vehicleType,
+        licensePlate: input.licensePlate || null,
+        capacity: input.capacity || null,
+        status: "available",
+        isActive: true,
+      } as any);
+
+      return { success: true, message: "Vehicle registered" };
+    }),
+
+  /**
+   * Remove a vehicle from fleet
+   */
+  removeVehicle: protectedProcedure
+    .input(z.object({ vehicleId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database not available");
+
+      const userId = typeof ctx.user.id === "string" ? parseInt(ctx.user.id, 10) : ctx.user.id;
+      const [user] = await db.select({ companyId: users.companyId }).from(users).where(eq(users.id, userId)).limit(1);
+      if (!user?.companyId) throw new Error("No company found");
+
+      // Verify vehicle belongs to user's company
+      const [vehicle] = await db.select({ id: vehicles.id }).from(vehicles)
+        .where(and(eq(vehicles.id, input.vehicleId), eq(vehicles.companyId, user.companyId)))
+        .limit(1);
+      if (!vehicle) throw new Error("Vehicle not found");
+
+      await db.update(vehicles).set({ isActive: false, deletedAt: new Date() } as any)
+        .where(eq(vehicles.id, input.vehicleId));
+
+      return { success: true, message: "Vehicle removed" };
+    }),
+
   /**
    * FMCSA SAFER API search — search by DOT#, MC#, or company name
    * Powers the "Find Authority" tab with real federal data

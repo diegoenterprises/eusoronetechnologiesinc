@@ -145,9 +145,23 @@ export default function TheHaul() {
                 xpReward: m.xpReward || 100, difficulty: m.difficulty || "medium",
                 category: m.category || "learning", type: "ai_generated", source: "esang-ai",
               }));
-              setAiGenMissions(generated);
-              toast.success(`ESANG AI generated ${generated.length} personalized missions!`);
-            } catch { toast.error("Mission generation unavailable"); }
+              if (generated.length > 0) {
+                setAiGenMissions(generated);
+                toast.success(`ESANG AI generated ${generated.length} personalized missions!`);
+              } else {
+                // Gemini returned empty — refresh DB missions instead
+                await missionsQ.refetch?.();
+                await aiMissionsQ.refetch?.();
+                toast.success("Missions refreshed from weekly rotation");
+              }
+            } catch {
+              // Gemini API unavailable — refresh DB-seeded missions as fallback
+              try {
+                await missionsQ.refetch?.();
+                await aiMissionsQ.refetch?.();
+                toast.success("Missions refreshed from weekly rotation");
+              } catch { toast.error("Could not load missions — check connection"); }
+            }
             setAiGenLoading(false);
           }}
         >

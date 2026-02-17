@@ -34,18 +34,41 @@ const TRAILER_TYPES = [
   "Oversized", "Intermodal", "Pneumatic", "Side Kit", "Curtain Side",
 ];
 
+const VEHICLE_TYPES = [
+  { value: "tractor", label: "Tractor" },
+  { value: "trailer", label: "Trailer" },
+  { value: "tanker", label: "Tanker" },
+  { value: "flatbed", label: "Flatbed" },
+  { value: "refrigerated", label: "Refrigerated" },
+  { value: "dry_van", label: "Dry Van" },
+  { value: "lowboy", label: "Lowboy" },
+  { value: "step_deck", label: "Step Deck" },
+];
+
 export default function OperatingAuthority() {
   const [activeTab, setActiveTab] = useState<"overview" | "leases" | "equipment" | "browse">("overview");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
   const [browseSearch, setBrowseSearch] = useState("");
   const [fmcsaQuery, setFmcsaQuery] = useState("");
   const [selectedCarrier, setSelectedCarrier] = useState<any>(null);
   const [showFMCSALeaseDialog, setShowFMCSALeaseDialog] = useState(false);
+  const [vForm, setVForm] = useState({ vin: "", make: "", model: "", year: new Date().getFullYear(), vehicleType: "tractor", licensePlate: "", capacity: "" });
 
   const authorityQuery = (trpc as any).authority?.getMyAuthority?.useQuery?.();
   const leasesQuery = (trpc as any).authority?.getMyLeases?.useQuery?.();
   const statsQuery = (trpc as any).authority?.getLeaseStats?.useQuery?.();
   const equipmentQuery = (trpc as any).authority?.getEquipmentAuthority?.useQuery?.();
+
+  const addVehicleMut = (trpc as any).authority?.addVehicle?.useMutation?.({
+    onSuccess: (d: any) => { if (d?.success) { toast.success("Vehicle registered"); setShowAddVehicle(false); setVForm({ vin: "", make: "", model: "", year: new Date().getFullYear(), vehicleType: "tractor", licensePlate: "", capacity: "" }); equipmentQuery?.refetch?.(); } },
+    onError: (e: any) => toast.error(e?.message || "Failed to register vehicle"),
+  }) || { mutate: () => {}, isPending: false };
+
+  const removeVehicleMut = (trpc as any).authority?.removeVehicle?.useMutation?.({
+    onSuccess: (d: any) => { if (d?.success) { toast.success("Vehicle removed"); equipmentQuery?.refetch?.(); } },
+    onError: (e: any) => toast.error(e?.message || "Failed to remove vehicle"),
+  }) || { mutate: () => {}, isPending: false };
   const browseQuery = (trpc as any).authority?.browseAuthorities?.useQuery?.({ search: browseSearch });
 
   // FMCSA SAFER API search — powers the "Find Authority" tab
@@ -320,6 +343,12 @@ export default function OperatingAuthority() {
       {/* ─── EQUIPMENT TAB ─── */}
       {activeTab === "equipment" && (
         <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-white font-semibold text-sm">{equipment.length} Vehicle{equipment.length !== 1 ? "s" : ""} Registered</p>
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" size="sm" onClick={() => setShowAddVehicle(true)}>
+              <Plus className="w-4 h-4 mr-2" />Add Equipment
+            </Button>
+          </div>
           {equipmentQuery?.isLoading ? (
             <div className="space-y-3">{[1,2,3].map(i => <Skeleton key={i} className="h-20 w-full rounded-xl" />)}</div>
           ) : equipment.length === 0 ? (
@@ -327,7 +356,10 @@ export default function OperatingAuthority() {
               <CardContent className="py-16 text-center">
                 <Truck className="w-14 h-14 text-slate-600 mx-auto mb-4" />
                 <p className="text-white font-semibold text-lg">No Equipment Registered</p>
-                <p className="text-slate-500 text-sm mt-1">Your fleet vehicles and their authority assignments will appear here.</p>
+                <p className="text-slate-500 text-sm mt-1">Register your fleet vehicles to track authority assignments and lease-on status.</p>
+                <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl" onClick={() => setShowAddVehicle(true)}>
+                  <Plus className="w-4 h-4 mr-2" />Register First Vehicle
+                </Button>
               </CardContent>
             </Card>
           ) : (
@@ -345,11 +377,16 @@ export default function OperatingAuthority() {
                           <p className="text-slate-500 text-xs">VIN: {v.vin?.slice(-6)} · {v.licensePlate || "No plate"}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Badge className={`border-0 text-xs ${v.authoritySource === "leased" ? "bg-blue-500/20 text-blue-400" : "bg-slate-600/30 text-slate-400"}`}>
-                          {v.authoritySource === "leased" ? `Leased · MC ${v.leaseMcNumber}` : "Own Authority"}
-                        </Badge>
-                        <p className="text-[10px] text-slate-600 mt-1 capitalize">{v.type?.replace(/_/g, " ")}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="text-right">
+                          <Badge className={`border-0 text-xs ${v.authoritySource === "leased" ? "bg-blue-500/20 text-blue-400" : "bg-slate-600/30 text-slate-400"}`}>
+                            {v.authoritySource === "leased" ? `Leased · MC ${v.leaseMcNumber}` : "Own Authority"}
+                          </Badge>
+                          <p className="text-[10px] text-slate-600 mt-1 capitalize">{v.type?.replace(/_/g, " ")}</p>
+                        </div>
+                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-8 w-8 p-0" onClick={() => { if (confirm("Remove this vehicle from your fleet?")) removeVehicleMut.mutate({ vehicleId: v.vehicleId }); }}>
+                          <XCircle className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -359,6 +396,43 @@ export default function OperatingAuthority() {
           )}
         </div>
       )}
+
+      {/* ─── ADD VEHICLE DIALOG ─── */}
+      <Dialog open={showAddVehicle} onOpenChange={setShowAddVehicle}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2"><Truck className="w-5 h-5 text-blue-400" /> Register Equipment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs text-slate-400">Make</Label><Input value={vForm.make} onChange={e => setVForm(p => ({ ...p, make: e.target.value }))} placeholder="Freightliner" className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1" /></div>
+              <div><Label className="text-xs text-slate-400">Model</Label><Input value={vForm.model} onChange={e => setVForm(p => ({ ...p, model: e.target.value }))} placeholder="Cascadia" className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs text-slate-400">Year</Label><Input type="number" value={vForm.year} onChange={e => setVForm(p => ({ ...p, year: parseInt(e.target.value) || 2024 }))} className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1" /></div>
+              <div><Label className="text-xs text-slate-400">Type</Label>
+                <Select value={vForm.vehicleType} onValueChange={v => setVForm(p => ({ ...p, vehicleType: v }))}>
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>{VEHICLE_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label className="text-xs text-slate-400">VIN</Label><Input value={vForm.vin} onChange={e => setVForm(p => ({ ...p, vin: e.target.value.toUpperCase() }))} placeholder="1FUJHHDR97LZ12345" maxLength={17} className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1 font-mono" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs text-slate-400">License Plate</Label><Input value={vForm.licensePlate} onChange={e => setVForm(p => ({ ...p, licensePlate: e.target.value.toUpperCase() }))} placeholder="ABC-1234" className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1" /></div>
+              <div><Label className="text-xs text-slate-400">Capacity (lbs)</Label><Input value={vForm.capacity} onChange={e => setVForm(p => ({ ...p, capacity: e.target.value }))} placeholder="45000" className="bg-slate-800 border-slate-700 text-white rounded-xl mt-1" /></div>
+            </div>
+            <Button
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl mt-2"
+              disabled={!vForm.vin || vForm.vin.length < 11 || !vForm.make || !vForm.model || addVehicleMut.isPending}
+              onClick={() => addVehicleMut.mutate({ vin: vForm.vin, make: vForm.make, model: vForm.model, year: vForm.year, vehicleType: vForm.vehicleType as any, licensePlate: vForm.licensePlate || undefined, capacity: vForm.capacity || undefined })}
+            >
+              {addVehicleMut.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+              Register Vehicle
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* ─── FIND AUTHORITY TAB (FMCSA SAFER) ─── */}
       {activeTab === "browse" && (

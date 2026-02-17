@@ -68,8 +68,9 @@ export default function MyLoads() {
 
   // Format selected date as YYYY-MM-DD for DB query
   const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
-  // Pass date to backend so the calendar is wired to the DB
-  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, date: dateStr });
+  // Show all loads by default — only filter by date when the calendar is used
+  const [dateFilterActive, setDateFilterActive] = useState(false);
+  const loadsQuery = (trpc as any).loads.list.useQuery({ limit: 100, ...(dateFilterActive ? { date: dateStr } : {}) });
 
   // Message catalyst/driver
   const createConversation = (trpc as any).messages?.createConversation?.useMutation?.({
@@ -227,9 +228,16 @@ export default function MyLoads() {
           <button onClick={() => shiftWeek(-1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronLeft className="w-5 h-5 text-slate-400" />
           </button>
-          <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
-            {formatMonthYear(selectedDate)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className={cn("text-sm font-semibold", isLight ? "text-slate-700" : "text-white")}>
+              {formatMonthYear(selectedDate)}
+            </p>
+            {dateFilterActive && (
+              <button onClick={() => setDateFilterActive(false)} className="text-[10px] px-2 py-0.5 rounded-full bg-gradient-to-r from-[#1473FF] to-[#BE01FF] text-white font-medium">
+                Show All
+              </button>
+            )}
+          </div>
           <button onClick={() => shiftWeek(1)} className={cn("p-1.5 rounded-lg transition-colors", isLight ? "hover:bg-slate-100" : "hover:bg-slate-700")}>
             <ChevronRight className="w-5 h-5 text-slate-400" />
           </button>
@@ -242,7 +250,7 @@ export default function MyLoads() {
             return (
               <button
                 key={i}
-                onClick={() => setSelectedDate(day)}
+                onClick={() => { setSelectedDate(day); setDateFilterActive(true); }}
                 className={cn(
                   "flex flex-col items-center py-2 rounded-xl transition-all text-center",
                   isSelected
