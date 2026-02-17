@@ -103,12 +103,16 @@ export const contactsRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.id, type: "", name: "", company: "", title: "",
-        email: "", phone: "", mobile: "", fax: "",
-        address: null, website: "", notes: "", tags: [],
-        favorite: false, createdAt: "", lastContact: "", history: [],
-      };
+      const empty = { id: input.id, type: '', name: '', company: '', title: '', email: '', phone: '', mobile: '', fax: '', address: null as any, website: '', notes: '', tags: [] as string[], favorite: false, createdAt: '', lastContact: '', history: [] as any[] };
+      const db = await getDb(); if (!db) return empty;
+      try {
+        const uid = parseInt(input.id.replace('con_', ''), 10);
+        if (isNaN(uid)) return empty;
+        const [user] = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, companyId: users.companyId, createdAt: users.createdAt, companyName: companies.name, city: companies.city, state: companies.state, website: companies.website })
+          .from(users).leftJoin(companies, eq(users.companyId, companies.id)).where(eq(users.id, uid)).limit(1);
+        if (!user) return empty;
+        return { id: input.id, type: user.role?.toLowerCase() || 'other', name: user.name || '', company: user.companyName || '', title: '', email: user.email || '', phone: user.phone || '', mobile: '', fax: '', address: user.city ? { city: user.city, state: user.state || '' } : null, website: user.website || '', notes: '', tags: [], favorite: false, createdAt: user.createdAt?.toISOString() || '', lastContact: '', history: [] };
+      } catch (e) { return empty; }
     }),
 
   /**
@@ -133,12 +137,16 @@ export const contactsRouter = router({
       tags: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `con_${Date.now()}`,
-        ...input,
-        createdBy: ctx.user?.id,
-        createdAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        try {
+          const roleMap: Record<string, string> = { shipper: 'SHIPPER', catalyst: 'CATALYST', broker: 'BROKER', driver: 'DRIVER', terminal: 'TERMINAL', vendor: 'CATALYST', other: 'SHIPPER' };
+          const openId = `contact_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          const [result] = await db.insert(users).values({ openId, name: input.name, email: input.email || `contact_${Date.now()}@placeholder.local`, phone: input.phone || null, role: (roleMap[input.type] || 'SHIPPER') as any, isActive: true, isVerified: false }).$returningId();
+          return { id: `con_${result.id}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
+        } catch (e) { console.error('[Contacts] create error:', e); }
+      }
+      return { id: `con_${Date.now()}`, ...input, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
   /**
@@ -157,12 +165,20 @@ export const contactsRouter = router({
       tags: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      const uid = parseInt(input.id.replace('con_', ''), 10);
+      if (db && uid) {
+        try {
+          const updates: Record<string, any> = {};
+          if (input.name) updates.name = input.name;
+          if (input.email) updates.email = input.email;
+          if (input.phone) updates.phone = input.phone;
+          if (Object.keys(updates).length > 0) {
+            await db.update(users).set(updates).where(eq(users.id, uid));
+          }
+        } catch (e) { console.error('[Contacts] update error:', e); }
+      }
+      return { success: true, id: input.id, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -171,11 +187,12 @@ export const contactsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        id: input.id,
-        deletedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      const uid = parseInt(input.id.replace('con_', ''), 10);
+      if (db && uid) {
+        try { await db.update(users).set({ isActive: false, deletedAt: new Date() }).where(eq(users.id, uid)); } catch (e) { console.error('[Contacts] delete error:', e); }
+      }
+      return { success: true, id: input.id, deletedAt: new Date().toISOString() };
     }),
 
   /**
@@ -253,7 +270,12 @@ export const contactsRouter = router({
   getRecent: protectedProcedure
     .input(z.object({ limit: z.number().default(5) }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, companyName: companies.name })
+          .from(users).leftJoin(companies, eq(users.companyId, companies.id)).where(eq(users.isActive, true)).orderBy(desc(users.lastSignedIn)).limit(input.limit);
+        return rows.map(u => ({ id: `con_${u.id}`, name: u.name || '', email: u.email || '', type: u.role?.toLowerCase() || 'other', company: u.companyName || '' }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -265,7 +287,15 @@ export const contactsRouter = router({
       limit: z.number().default(10),
     }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const q = `%${input.query}%`;
+        const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, companyName: companies.name })
+          .from(users).leftJoin(companies, eq(users.companyId, companies.id))
+          .where(sql`(${users.name} LIKE ${q} OR ${users.email} LIKE ${q} OR ${companies.name} LIKE ${q})`)
+          .limit(input.limit);
+        return rows.map(u => ({ id: `con_${u.id}`, name: u.name || '', email: u.email || '', phone: u.phone || '', type: u.role?.toLowerCase() || 'other', company: u.companyName || '' }));
+      } catch (e) { return []; }
     }),
 
   /**

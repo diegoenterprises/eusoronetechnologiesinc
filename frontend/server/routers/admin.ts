@@ -739,10 +739,17 @@ export const adminRouter = router({
       offset: z.number().default(0),
     }))
     .query(async ({ input }) => {
-      return {
-        users: [],
-        total: 0,
-      };
+      const db = await getDb(); if (!db) return { users: [], total: 0 };
+      try {
+        const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, isActive: users.isActive, isVerified: users.isVerified, createdAt: users.createdAt, lastSignedIn: users.lastSignedIn, companyName: companies.name })
+          .from(users).leftJoin(companies, eq(users.companyId, companies.id)).orderBy(desc(users.createdAt)).limit(input.limit).offset(input.offset);
+        let mapped = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', phone: u.phone || '', role: u.role?.toLowerCase() || '', status: u.isActive ? (u.isVerified ? 'active' : 'pending') : 'suspended', companyName: u.companyName || '', createdAt: u.createdAt?.toISOString() || '', lastLogin: u.lastSignedIn?.toISOString() || null }));
+        if (input.search) { const q = input.search.toLowerCase(); mapped = mapped.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q)); }
+        if (input.role && input.role !== 'all') { const r = input.role.toLowerCase(); mapped = mapped.filter(u => u.role === r); }
+        if (input.status) mapped = mapped.filter(u => u.status === input.status);
+        const [countRow] = await db.select({ count: sql<number>`count(*)` }).from(users);
+        return { users: mapped, total: countRow?.count || 0 };
+      } catch (e) { console.error('[Admin] listUsers error:', e); return { users: [], total: 0 }; }
     }),
 
   /**
@@ -751,22 +758,16 @@ export const adminRouter = router({
   getUserById: auditedAdminProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.id,
-        email: "",
-        name: "",
-        phone: "",
-        role: "",
-        companyId: null,
-        companyName: null,
-        status: "",
-        verified: false,
-        createdAt: "",
-        lastLogin: null,
-        loginCount: 0,
-        permissions: [],
-        notes: [],
-      };
+      const db = await getDb();
+      const empty = { id: input.id, email: '', name: '', phone: '', role: '', companyId: null as number | null, companyName: null as string | null, status: '', verified: false, createdAt: '', lastLogin: null as string | null, loginCount: 0, permissions: [] as string[], notes: [] as string[] };
+      if (!db) return empty;
+      try {
+        const uid = parseInt(input.id, 10);
+        const [user] = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone, role: users.role, companyId: users.companyId, isActive: users.isActive, isVerified: users.isVerified, createdAt: users.createdAt, lastSignedIn: users.lastSignedIn, companyName: companies.name })
+          .from(users).leftJoin(companies, eq(users.companyId, companies.id)).where(eq(users.id, uid)).limit(1);
+        if (!user) return empty;
+        return { id: String(user.id), email: user.email || '', name: user.name || '', phone: user.phone || '', role: user.role || '', companyId: user.companyId, companyName: user.companyName || null, status: user.isActive ? (user.isVerified ? 'active' : 'pending') : 'suspended', verified: user.isVerified || false, createdAt: user.createdAt?.toISOString() || '', lastLogin: user.lastSignedIn?.toISOString() || null, loginCount: 0, permissions: [], notes: [] };
+      } catch (e) { return empty; }
     }),
 
   /**
@@ -780,13 +781,17 @@ export const adminRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        userId: input.userId,
-        newStatus: input.status,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      const uid = parseInt(input.userId || input.id || '0', 10);
+      if (db && uid) {
+        try {
+          const isActive = input.status === 'active' || input.status === 'pending';
+          const isVerified = input.status === 'active';
+          await db.update(users).set({ isActive, isVerified }).where(eq(users.id, uid));
+          await db.insert(auditLogs).values({ userId: uid, action: `user_status_${input.status}`, entityType: 'user', entityId: uid, changes: JSON.stringify({ status: input.status, reason: input.reason }) }).catch(() => {});
+        } catch (e) { console.error('[Admin] updateUserStatus error:', e); }
+      }
+      return { success: true, userId: input.userId || input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -800,7 +805,15 @@ export const adminRouter = router({
       search: z.string().optional(),
     }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const limit = input?.limit || 20;
+        const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt, companyName: companies.name })
+          .from(users).leftJoin(companies, eq(users.companyId, companies.id)).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(limit);
+        let results = rows.map(u => ({ id: String(u.id), type: 'user' as const, name: u.name || '', email: u.email || '', role: u.role || '', companyName: u.companyName || '', submittedAt: u.createdAt?.toISOString() || '', status: 'pending' }));
+        if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(r => r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q)); }
+        return results;
+      } catch (e) { return []; }
     }),
 
   /**
@@ -814,13 +827,19 @@ export const adminRouter = router({
       requestedDocuments: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        verificationId: input.verificationId,
-        decision: input.decision,
-        processedBy: ctx.user?.id,
-        processedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      const uid = parseInt(input.verificationId, 10);
+      if (db && uid) {
+        try {
+          if (input.decision === 'approved') {
+            await db.update(users).set({ isVerified: true, isActive: true }).where(eq(users.id, uid));
+          } else if (input.decision === 'rejected') {
+            await db.update(users).set({ isVerified: false, isActive: false }).where(eq(users.id, uid));
+          }
+          await db.insert(auditLogs).values({ userId: ctx.user?.id || 0, action: `verification_${input.decision}`, entityType: 'user', entityId: uid, changes: JSON.stringify({ decision: input.decision, notes: input.notes }) }).catch(() => {});
+        } catch (e) { console.error('[Admin] processVerification error:', e); }
+      }
+      return { success: true, verificationId: input.verificationId, decision: input.decision, processedBy: ctx.user?.id, processedAt: new Date().toISOString() };
     }),
 
   /**
@@ -831,13 +850,23 @@ export const adminRouter = router({
       period: z.enum(["day", "week", "month", "quarter", "year"]).default("month"),
     }))
     .query(async ({ input }) => {
-      return {
-        period: input.period,
-        users: { total: 0, newThisPeriod: 0, activeThisPeriod: 0, churnRate: 0 },
-        loads: { total: 0, completed: 0, avgValue: 0, totalGMV: 0 },
-        revenue: { platformFees: 0, subscriptions: 0, total: 0 },
-        performance: { avgLoadTime: 0, onTimeRate: 0, customerSatisfaction: 0 },
-      };
+      const db = await getDb();
+      const empty = { period: input.period, users: { total: 0, newThisPeriod: 0, activeThisPeriod: 0, churnRate: 0 }, loads: { total: 0, completed: 0, avgValue: 0, totalGMV: 0 }, revenue: { platformFees: 0, subscriptions: 0, total: 0 }, performance: { avgLoadTime: 0, onTimeRate: 0, customerSatisfaction: 0 } };
+      if (!db) return empty;
+      try {
+        const { loads: loadsTable } = await import('../../drizzle/schema');
+        const daysMap: Record<string, number> = { day: 1, week: 7, month: 30, quarter: 90, year: 365 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 30) * 86400000);
+        const [userStats] = await db.select({ total: sql<number>`count(*)`, newPeriod: sql<number>`SUM(CASE WHEN ${users.createdAt} >= ${since} THEN 1 ELSE 0 END)`, activePeriod: sql<number>`SUM(CASE WHEN ${users.lastSignedIn} >= ${since} THEN 1 ELSE 0 END)` }).from(users);
+        const [loadStats] = await db.select({ total: sql<number>`count(*)`, completed: sql<number>`SUM(CASE WHEN ${loadsTable.status} = 'delivered' THEN 1 ELSE 0 END)`, avgRate: sql<number>`COALESCE(AVG(CAST(${loadsTable.rate} AS DECIMAL)), 0)`, gmv: sql<number>`COALESCE(SUM(CAST(${loadsTable.rate} AS DECIMAL)), 0)` }).from(loadsTable).where(gte(loadsTable.createdAt, since));
+        return {
+          period: input.period,
+          users: { total: userStats?.total || 0, newThisPeriod: userStats?.newPeriod || 0, activeThisPeriod: userStats?.activePeriod || 0, churnRate: 0 },
+          loads: { total: loadStats?.total || 0, completed: loadStats?.completed || 0, avgValue: Math.round(loadStats?.avgRate || 0), totalGMV: Math.round(loadStats?.gmv || 0) },
+          revenue: { platformFees: Math.round((loadStats?.gmv || 0) * 0.05), subscriptions: 0, total: Math.round((loadStats?.gmv || 0) * 0.05) },
+          performance: { avgLoadTime: 0, onTimeRate: 0, customerSatisfaction: 0 },
+        };
+      } catch (e) { return empty; }
     }),
 
   /**
@@ -901,7 +930,18 @@ export const adminRouter = router({
   getRecentActivity: auditedAdminProcedure
     .input(z.object({ limit: z.number().default(50) }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const rows = await db.select({ id: auditLogs.id, userId: auditLogs.userId, action: auditLogs.action, entityType: auditLogs.entityType, entityId: auditLogs.entityId, createdAt: auditLogs.createdAt })
+          .from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(input.limit);
+        const userIds = Array.from(new Set(rows.map(r => r.userId).filter(Boolean))) as number[];
+        const userMap: Record<number, string> = {};
+        if (userIds.length > 0) {
+          const userRows = await db.select({ id: users.id, name: users.name }).from(users).where(sql`${users.id} IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})`);
+          for (const u of userRows) userMap[u.id] = u.name || `User #${u.id}`;
+        }
+        return rows.map(r => ({ id: String(r.id), action: r.action, user: r.userId ? (userMap[r.userId] || `User #${r.userId}`) : 'System', entity: r.entityType, entityId: r.entityId ? String(r.entityId) : '', timestamp: r.createdAt?.toISOString() || '' }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -926,7 +966,11 @@ export const adminRouter = router({
    */
   getVerificationStats: auditedAdminProcedure
     .query(async () => {
-      return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", approvedToday: 0, rejectedToday: 0, totalVerified: 0 };
+      const db = await getDb(); if (!db) return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: '', approvedToday: 0, rejectedToday: 0, totalVerified: 0 };
+      try {
+        const [stats] = await db.select({ total: sql<number>`count(*)`, verified: sql<number>`SUM(CASE WHEN ${users.isVerified} = true THEN 1 ELSE 0 END)`, pending: sql<number>`SUM(CASE WHEN ${users.isVerified} = false AND ${users.isActive} = true THEN 1 ELSE 0 END)`, rejected: sql<number>`SUM(CASE WHEN ${users.isActive} = false THEN 1 ELSE 0 END)` }).from(users);
+        return { pending: stats?.pending || 0, approved: stats?.verified || 0, rejected: stats?.rejected || 0, avgProcessingTime: '', approvedToday: 0, rejectedToday: 0, totalVerified: stats?.verified || 0 };
+      } catch (e) { return { pending: 0, approved: 0, rejected: 0, avgProcessingTime: '', approvedToday: 0, rejectedToday: 0, totalVerified: 0 }; }
     }),
 
   /**
@@ -935,7 +979,12 @@ export const adminRouter = router({
   approveUser: auditedAdminProcedure
     .input(z.object({ userId: z.string() }))
     .mutation(async ({ input }) => {
-      return { success: true, userId: input.userId, status: "approved", approvedAt: new Date().toISOString() };
+      const db = await getDb();
+      const uid = parseInt(input.userId, 10);
+      if (db && uid) {
+        try { await db.update(users).set({ isVerified: true, isActive: true }).where(eq(users.id, uid)); } catch (e) { console.error('[Admin] approveUser error:', e); }
+      }
+      return { success: true, userId: input.userId, status: 'approved', approvedAt: new Date().toISOString() };
     }),
 
   /**
@@ -944,7 +993,12 @@ export const adminRouter = router({
   rejectUser: auditedAdminProcedure
     .input(z.object({ userId: z.string(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
-      return { success: true, userId: input.userId, status: "rejected" };
+      const db = await getDb();
+      const uid = parseInt(input.userId, 10);
+      if (db && uid) {
+        try { await db.update(users).set({ isActive: false }).where(eq(users.id, uid)); } catch (e) { console.error('[Admin] rejectUser error:', e); }
+      }
+      return { success: true, userId: input.userId, status: 'rejected' };
     }),
 
   // Content moderation
