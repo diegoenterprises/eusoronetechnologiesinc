@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { auditLogs, users } from "../../drizzle/schema";
@@ -54,23 +54,23 @@ export const activityRouter = router({
     .input(z.object({
       dateRange: z.string().optional(),
     }))
-    .query(async () => {
-      return {
-        totalActivities: 156,
-        todayActivities: 24,
-        weekActivities: 89,
-        totalToday: 24,
-        loadsToday: 8,
-        bidsToday: 12,
-        thisWeek: 89,
-        loadsCreated: 45,
-        driversAssigned: 38,
-        documentsUploaded: 28,
-        messagesExchanged: 156,
-        loadActivities: 45,
-        userActivities: 28,
-        paymentActivities: 15,
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0, loadsCreated: 0, driversAssigned: 0, documentsUploaded: 0, messagesExchanged: 0, loadActivities: 0, userActivities: 0, paymentActivities: 0 };
+      try {
+        const userId = ctx.user?.id || 0;
+        const now = new Date(); const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(eq(auditLogs.userId, userId));
+        const [today] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), gte(auditLogs.createdAt, todayStart)));
+        const [week] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), gte(auditLogs.createdAt, weekAgo)));
+        const [loadsToday] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'load'), gte(auditLogs.createdAt, todayStart)));
+        const [bidsToday] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'bid'), gte(auditLogs.createdAt, todayStart)));
+        const [loadActs] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'load')));
+        const [userActs] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'user')));
+        const [payActs] = await db.select({ count: sql<number>`count(*)` }).from(auditLogs).where(and(eq(auditLogs.userId, userId), eq(auditLogs.entityType, 'payment')));
+        return { totalActivities: total?.count || 0, todayActivities: today?.count || 0, weekActivities: week?.count || 0, totalToday: today?.count || 0, loadsToday: loadsToday?.count || 0, bidsToday: bidsToday?.count || 0, thisWeek: week?.count || 0, loadsCreated: loadActs?.count || 0, driversAssigned: 0, documentsUploaded: 0, messagesExchanged: 0, loadActivities: loadActs?.count || 0, userActivities: userActs?.count || 0, paymentActivities: payActs?.count || 0 };
+      } catch (e) { return { totalActivities: 0, todayActivities: 0, weekActivities: 0, totalToday: 0, loadsToday: 0, bidsToday: 0, thisWeek: 0, loadsCreated: 0, driversAssigned: 0, documentsUploaded: 0, messagesExchanged: 0, loadActivities: 0, userActivities: 0, paymentActivities: 0 }; }
     }),
 
   /**
@@ -80,7 +80,12 @@ export const activityRouter = router({
     .input(z.object({
       limit: z.number().optional().default(10),
     }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select().from(auditLogs).where(eq(auditLogs.userId, userId)).orderBy(desc(auditLogs.createdAt)).limit(input.limit);
+        return rows.map(r => ({ id: `act_${r.id}`, type: r.action, title: r.action?.replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Activity', description: r.entityType ? `${r.entityType} ${r.entityId || ''}` : '', timestamp: r.createdAt?.toISOString() || '' }));
+      } catch (e) { return []; }
     }),
 });
