@@ -48,23 +48,61 @@ async function resolveCompanyId(ctxUser: any): Promise<number> {
 }
 
 export const catalystsRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      vin: z.string(),
+      make: z.string().optional(),
+      model: z.string().optional(),
+      year: z.number().optional(),
+      licensePlate: z.string().optional(),
+      vehicleType: z.enum(["tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = await resolveCompanyId(Number(ctx.user?.id) || 0);
+      const [result] = await db.insert(vehicles).values({
+        companyId,
+        vin: input.vin,
+        make: input.make,
+        model: input.model,
+        year: input.year,
+        licensePlate: input.licensePlate,
+        vehicleType: input.vehicleType,
+        status: "available",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      dotNumber: z.string().optional(),
+      mcNumber: z.string().optional(),
+      phone: z.string().optional(),
+      email: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = await resolveCompanyId(Number(ctx.user?.id) || 0);
+      const updates: Record<string, any> = {};
+      if (input.name) updates.name = input.name;
+      if (input.dotNumber) updates.dotNumber = input.dotNumber;
+      if (input.mcNumber) updates.mcNumber = input.mcNumber;
+      if (input.phone) updates.phone = input.phone;
+      if (input.email) updates.email = input.email;
+      if (Object.keys(updates).length > 0) {
+        await db.update(companies).set(updates).where(eq(companies.id, companyId));
+      }
+      return { success: true, id: companyId };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(vehicles).set({ status: "out_of_service", isActive: false }).where(eq(vehicles.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

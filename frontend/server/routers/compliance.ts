@@ -18,23 +18,55 @@ const documentStatusSchema = z.enum(["valid", "expiring_soon", "expired", "missi
 const complianceCategorySchema = z.enum(["dq_file", "hos", "drug_alcohol", "vehicle", "hazmat", "documentation"]);
 
 export const complianceRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      userId: z.number(),
+      type: z.string(),
+      name: z.string(),
+      expiryDate: z.string().optional(),
+      documentUrl: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const { certifications } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const [result] = await db.insert(certifications).values({
+        userId: input.userId,
+        type: input.type,
+        name: input.name,
+        expiryDate: input.expiryDate ? new Date(input.expiryDate) : undefined,
+        documentUrl: input.documentUrl,
+        status: "active",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["active", "expired", "pending"]).optional(),
+      expiryDate: z.string().optional(),
+      documentUrl: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const { certifications } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) updates.status = input.status;
+      if (input.expiryDate) updates.expiryDate = new Date(input.expiryDate);
+      if (input.documentUrl) updates.documentUrl = input.documentUrl;
+      if (Object.keys(updates).length > 0) {
+        await db.update(certifications).set(updates).where(eq(certifications.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const { certifications } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(certifications).set({ status: "expired" }).where(eq(certifications.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

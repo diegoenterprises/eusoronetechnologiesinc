@@ -22,23 +22,55 @@ async function resolveUserId(ctxUser: any): Promise<number> {
 }
 
 export const messagingRouter = router({
-  // Generic CRUD
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      participantIds: z.array(z.number()),
+      name: z.string().optional(),
+      type: z.enum(["direct", "group", "job", "channel", "company", "support"]).default("direct"),
+      loadId: z.number().optional(),
+      initialMessage: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = await resolveUserId(ctx.user);
+      const allParticipants = [userId, ...input.participantIds.filter(id => id !== userId)];
+      const [conv] = await db.insert(conversations).values({
+        type: input.type,
+        name: input.name || null,
+        participants: allParticipants,
+        loadId: input.loadId,
+        lastMessageAt: new Date(),
+      }).$returningId();
+      if (input.initialMessage) {
+        await db.insert(messages).values({
+          conversationId: conv.id,
+          senderId: userId,
+          content: input.initialMessage,
+        });
+      }
+      return { success: true, id: conv.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (input.name) {
+        await db.update(conversations).set({ name: input.name }).where(eq(conversations.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      // Soft-delete by clearing participants
+      await db.update(conversations).set({ participants: [] }).where(eq(conversations.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

@@ -1452,23 +1452,50 @@ export const loadsRouter = router({
 
 
 export const bidsRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      loadId: z.number(),
+      amount: z.number(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const [result] = await db.insert(bids).values({
+        loadId: input.loadId,
+        catalystId: userId,
+        amount: String(input.amount),
+        notes: input.notes,
+        status: "pending",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      amount: z.number().optional(),
+      notes: z.string().optional(),
+      status: z.enum(["pending", "accepted", "rejected", "withdrawn", "expired"]).optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.amount !== undefined) updates.amount = String(input.amount);
+      if (input.notes) updates.notes = input.notes;
+      if (input.status) updates.status = input.status;
+      if (Object.keys(updates).length > 0) {
+        await db.update(bids).set(updates).where(eq(bids.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(bids).set({ status: "withdrawn" }).where(eq(bids.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

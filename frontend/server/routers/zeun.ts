@@ -13,23 +13,60 @@ import { vehicles } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 
 export const zeunRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      companyId: z.number(),
+      vin: z.string(),
+      make: z.string().optional(),
+      model: z.string().optional(),
+      year: z.number().optional(),
+      licensePlate: z.string().optional(),
+      vehicleType: z.enum(["tractor", "trailer", "tanker", "flatbed", "refrigerated", "dry_van", "lowboy", "step_deck"]),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const [result] = await db.insert(vehicles).values({
+        companyId: input.companyId,
+        vin: input.vin,
+        make: input.make,
+        model: input.model,
+        year: input.year,
+        licensePlate: input.licensePlate,
+        vehicleType: input.vehicleType,
+        status: "available",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      make: z.string().optional(),
+      model: z.string().optional(),
+      year: z.number().optional(),
+      licensePlate: z.string().optional(),
+      status: z.enum(["available", "in_use", "maintenance", "out_of_service"]).optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.make !== undefined) updates.make = input.make;
+      if (input.model !== undefined) updates.model = input.model;
+      if (input.year !== undefined) updates.year = input.year;
+      if (input.licensePlate !== undefined) updates.licensePlate = input.licensePlate;
+      if (input.status !== undefined) updates.status = input.status;
+      if (Object.keys(updates).length > 0) {
+        await db.update(vehicles).set(updates).where(eq(vehicles.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(vehicles).set({ status: "out_of_service", isActive: false }).where(eq(vehicles.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

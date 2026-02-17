@@ -203,7 +203,10 @@ export const widgetsRouter = router({
   // ════════════════════════════════════════════════════════
   // Legacy stubs — kept for backward compatibility
   // ════════════════════════════════════════════════════════
-  create: protectedProcedure.input(z.object({ type: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => ({ success: true, id: crypto.randomUUID(), ...input?.data })),
+  create: protectedProcedure.input(z.object({ type: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => {
+    console.warn("[STUB] widgets.create called with type:", input?.type);
+    return { success: true, id: `stub_${Date.now()}`, _stub: true, ...input?.data };
+  }),
   update: protectedProcedure.input(z.object({ id: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => ({ success: true, id: input?.id })),
   delete: protectedProcedure.input(z.object({ id: z.string() }).optional()).mutation(async ({ input }) => ({ success: true, id: input?.id })),
   getWidgets: protectedProcedure.query(async () => ({ items: [] })),

@@ -24,23 +24,58 @@ async function resolveBrokerUserId(ctxUser: any): Promise<number> {
 }
 
 export const brokersRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      origin: z.string(),
+      destination: z.string(),
+      rate: z.number().optional(),
+      cargoType: z.enum(["general", "hazmat", "refrigerated", "oversized", "liquid", "gas", "chemicals", "petroleum"]).default("general"),
+      weight: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = await resolveBrokerUserId(ctx.user);
+      const loadNumber = `BRK-${Date.now().toString(36).toUpperCase()}`;
+      const [result] = await db.insert(loads).values({
+        shipperId: userId,
+        loadNumber,
+        cargoType: input.cargoType,
+        pickupLocation: { address: input.origin, city: "", state: "", zipCode: "", lat: 0, lng: 0 },
+        deliveryLocation: { address: input.destination, city: "", state: "", zipCode: "", lat: 0, lng: 0 },
+        rate: input.rate ? String(input.rate) : undefined,
+        weight: input.weight ? String(input.weight) : undefined,
+        specialInstructions: input.notes,
+        status: "posted",
+      }).$returningId();
+      return { success: true, id: result.id, loadNumber };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      rate: z.number().optional(),
+      status: z.string().optional(),
+      notes: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.rate !== undefined) updates.rate = String(input.rate);
+      if (input.status) updates.status = input.status;
+      if (input.notes) updates.specialInstructions = input.notes;
+      if (Object.keys(updates).length > 0) {
+        await db.update(loads).set(updates).where(eq(loads.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(loads).set({ status: "cancelled" }).where(eq(loads.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

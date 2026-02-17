@@ -11,23 +11,78 @@ import { users, companies } from "../../drizzle/schema";
 import { eq, desc, sql, and, like, or } from "drizzle-orm";
 
 export const superAdminRouter = router({
-  // Generic CRUD for all super admin screens
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      entityType: z.enum(["user", "company"]),
+      name: z.string(),
+      email: z.string().optional(),
+      role: z.string().optional(),
+      companyId: z.number().optional(),
+      companyType: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (input.entityType === "company") {
+        const [result] = await db.insert(companies).values({
+          name: input.name,
+          legalName: input.name,
+          complianceStatus: "pending",
+          isActive: true,
+        }).$returningId();
+        return { success: true, id: result.id, entityType: "company" };
+      }
+      const openId = `sa_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const [result] = await db.insert(users).values({
+        openId,
+        name: input.name,
+        email: input.email,
+        role: (input.role || "DRIVER") as any,
+        companyId: input.companyId,
+        isActive: true,
+      }).$returningId();
+      return { success: true, id: result.id, entityType: "user" };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      entityType: z.enum(["user", "company"]),
+      id: z.number(),
+      name: z.string().optional(),
+      role: z.string().optional(),
+      isActive: z.boolean().optional(),
+      status: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (input.entityType === "company") {
+        const updates: Record<string, any> = {};
+        if (input.name) updates.name = input.name;
+        if (input.status) updates.status = input.status;
+        if (Object.keys(updates).length > 0) {
+          await db.update(companies).set(updates).where(eq(companies.id, input.id));
+        }
+      } else {
+        const updates: Record<string, any> = {};
+        if (input.name) updates.name = input.name;
+        if (input.role) updates.role = input.role;
+        if (input.isActive !== undefined) updates.isActive = input.isActive;
+        if (Object.keys(updates).length > 0) {
+          await db.update(users).set(updates).where(eq(users.id, input.id));
+        }
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ entityType: z.enum(["user", "company"]), id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (input.entityType === "company") {
+        await db.update(companies).set({ isActive: false }).where(eq(companies.id, input.id));
+      } else {
+        await db.update(users).set({ isActive: false }).where(eq(users.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   // Platform Stats

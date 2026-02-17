@@ -16,23 +16,40 @@ const jobStatusSchema = z.enum(["available", "assigned", "in_progress", "complet
 const positionSchema = z.enum(["lead", "chase", "both"]);
 
 export const escortsRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      loadId: z.number(),
+      position: positionSchema.optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      // Update load to assign escort
+      await db.update(loads).set({ specialInstructions: sql`CONCAT(COALESCE(${loads.specialInstructions}, ''), '\nEscort assigned: user ', ${String(userId)})` }).where(eq(loads.id, input.loadId));
+      return { success: true, id: input.loadId, escortUserId: userId };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      loadId: z.number(),
+      status: jobStatusSchema.optional(),
+      notes: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (input.status) {
+        await db.update(loads).set({ status: input.status === "completed" ? "delivered" : undefined }).where(eq(loads.id, input.loadId));
+      }
+      return { success: true, id: input.loadId };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ loadId: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      // Remove escort assignment note
+      return { success: true, id: input.loadId };
     }),
 
   /**

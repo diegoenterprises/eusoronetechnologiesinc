@@ -28,23 +28,53 @@ import { pickWeeklyMissions, getRewardsCatalogForRole, generateWeeklyMissions } 
 import { fireGamificationEvent } from "../services/gamificationDispatcher";
 
 export const gamificationRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      userId: z.number(),
+      type: z.enum(["mission_completion", "badge_earned", "level_up", "crate_opened", "referral", "achievement", "seasonal", "bonus"]),
+      rewardType: z.enum(["miles", "cash", "xp", "badge", "title", "fee_reduction", "priority_perk", "crate"]),
+      amount: z.number().optional(),
+      description: z.string().optional(),
+      expiresAt: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const [result] = await db.insert(rewards).values({
+        userId: input.userId,
+        type: input.type,
+        rewardType: input.rewardType,
+        amount: input.amount ? String(input.amount) : undefined,
+        description: input.description,
+        status: "pending",
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["pending", "claimed", "expired"]).optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) {
+        updates.status = input.status;
+        if (input.status === "claimed") updates.claimedAt = new Date();
+      }
+      if (Object.keys(updates).length > 0) {
+        await db.update(rewards).set(updates).where(eq(rewards.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(rewards).set({ status: "expired" }).where(eq(rewards.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

@@ -26,23 +26,49 @@ const locationSchema = z.object({
 });
 
 export const telemetryRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(locationSchema)
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const [result] = await db.insert(locationHistory).values({
+        userId,
+        latitude: String(input.latitude),
+        longitude: String(input.longitude),
+        horizontalAccuracy: input.horizontalAccuracy ? String(input.horizontalAccuracy) : undefined,
+        speed: input.speed ? String(input.speed) : undefined,
+        heading: input.heading ? String(input.heading) : undefined,
+        altitude: input.altitude ? String(input.altitude) : undefined,
+        loadId: input.loadId,
+        deviceId: input.deviceId,
+        deviceTimestamp: new Date(input.deviceTimestamp),
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      latitude: z.number().optional(),
+      longitude: z.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.latitude !== undefined) updates.latitude = String(input.latitude);
+      if (input.longitude !== undefined) updates.longitude = String(input.longitude);
+      if (Object.keys(updates).length > 0) {
+        await db.update(locationHistory).set(updates).where(eq(locationHistory.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.delete(locationHistory).where(eq(locationHistory.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   // Submit location update

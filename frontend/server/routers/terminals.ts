@@ -16,23 +16,54 @@ const appointmentStatusSchema = z.enum(["scheduled", "checked_in", "loading", "c
 const rackStatusSchema = z.enum(["available", "in_use", "maintenance", "offline"]);
 
 export const terminalsRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      terminalId: z.number(),
+      loadId: z.number().optional(),
+      driverId: z.number().optional(),
+      type: z.enum(["pickup", "delivery", "loading", "unloading"]),
+      scheduledAt: z.string(),
+      dockNumber: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const [result] = await db.insert(appointments).values({
+        terminalId: input.terminalId,
+        loadId: input.loadId,
+        driverId: input.driverId,
+        type: input.type,
+        scheduledAt: new Date(input.scheduledAt),
+        dockNumber: input.dockNumber,
+        status: "scheduled",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: appointmentStatusSchema.optional(),
+      scheduledAt: z.string().optional(),
+      dockNumber: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) updates.status = input.status;
+      if (input.scheduledAt) updates.scheduledAt = new Date(input.scheduledAt);
+      if (input.dockNumber) updates.dockNumber = input.dockNumber;
+      if (Object.keys(updates).length > 0) {
+        await db.update(appointments).set(updates).where(eq(appointments.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(appointments).set({ status: "cancelled" }).where(eq(appointments.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

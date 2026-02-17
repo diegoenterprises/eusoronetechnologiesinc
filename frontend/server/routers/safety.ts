@@ -18,23 +18,62 @@ const incidentSeveritySchema = z.enum(["critical", "major", "minor"]);
 const incidentStatusSchema = z.enum(["reported", "investigating", "pending_review", "closed"]);
 
 export const safetyRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      type: incidentTypeSchema,
+      severity: incidentSeveritySchema,
+      description: z.string(),
+      location: z.string().optional(),
+      occurredAt: z.string(),
+      driverId: z.number().optional(),
+      vehicleId: z.number().optional(),
+      injuries: z.number().optional(),
+      fatalities: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      const [result] = await db.insert(incidents).values({
+        companyId,
+        type: input.type as any,
+        severity: input.severity as any,
+        description: input.description,
+        location: input.location,
+        occurredAt: new Date(input.occurredAt),
+        driverId: input.driverId,
+        vehicleId: input.vehicleId,
+        injuries: input.injuries || 0,
+        fatalities: input.fatalities || 0,
+        status: "reported",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: incidentStatusSchema.optional(),
+      description: z.string().optional(),
+      severity: incidentSeveritySchema.optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) updates.status = input.status;
+      if (input.description) updates.description = input.description;
+      if (input.severity) updates.severity = input.severity;
+      if (Object.keys(updates).length > 0) {
+        await db.update(incidents).set(updates).where(eq(incidents.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(incidents).set({ status: "resolved" }).where(eq(incidents.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

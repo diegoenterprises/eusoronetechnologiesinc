@@ -16,23 +16,61 @@ const driverStatusSchema = z.enum(["active", "inactive", "suspended", "available
 const dutyStatusSchema = z.enum(["off_duty", "sleeper", "driving", "on_duty"]);
 
 export const driversRouter = router({
-  // Generic CRUD for screen templates
   create: auditedOperationsProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      userId: z.number(),
+      companyId: z.number(),
+      licenseNumber: z.string().optional(),
+      licenseState: z.string().optional(),
+      licenseExpiry: z.string().optional(),
+      medicalCardExpiry: z.string().optional(),
+      hazmatEndorsement: z.boolean().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const [result] = await db.insert(drivers).values({
+        userId: input.userId,
+        companyId: input.companyId,
+        licenseNumber: input.licenseNumber,
+        licenseState: input.licenseState,
+        licenseExpiry: input.licenseExpiry ? new Date(input.licenseExpiry) : undefined,
+        medicalCardExpiry: input.medicalCardExpiry ? new Date(input.medicalCardExpiry) : undefined,
+        hazmatEndorsement: input.hazmatEndorsement || false,
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: auditedOperationsProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      licenseNumber: z.string().optional(),
+      licenseState: z.string().optional(),
+      licenseExpiry: z.string().optional(),
+      medicalCardExpiry: z.string().optional(),
+      hazmatEndorsement: z.boolean().optional(),
+      status: driverStatusSchema.optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.licenseNumber !== undefined) updates.licenseNumber = input.licenseNumber;
+      if (input.licenseState !== undefined) updates.licenseState = input.licenseState;
+      if (input.licenseExpiry !== undefined) updates.licenseExpiry = new Date(input.licenseExpiry);
+      if (input.medicalCardExpiry !== undefined) updates.medicalCardExpiry = new Date(input.medicalCardExpiry);
+      if (input.hazmatEndorsement !== undefined) updates.hazmatEndorsement = input.hazmatEndorsement;
+      if (input.status !== undefined) updates.status = input.status;
+      if (Object.keys(updates).length > 0) {
+        await db.update(drivers).set(updates).where(eq(drivers.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: auditedOperationsProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(drivers).set({ status: "inactive" }).where(eq(drivers.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

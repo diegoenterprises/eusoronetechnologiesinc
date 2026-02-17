@@ -16,23 +16,55 @@ const userStatusSchema = z.enum(["active", "pending", "suspended", "inactive"]);
 const verificationStatusSchema = z.enum(["pending", "approved", "rejected", "needs_info"]);
 
 export const adminRouter = router({
-  // Generic CRUD for screen templates
   create: auditedAdminProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      name: z.string(),
+      email: z.string().email(),
+      role: z.string(),
+      companyId: z.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const openId = `admin_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const [result] = await db.insert(users).values({
+        openId,
+        name: input.name,
+        email: input.email,
+        role: input.role as any,
+        companyId: input.companyId,
+        isActive: true,
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: auditedAdminProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      role: z.string().optional(),
+      isActive: z.boolean().optional(),
+      companyId: z.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.name !== undefined) updates.name = input.name;
+      if (input.role !== undefined) updates.role = input.role;
+      if (input.isActive !== undefined) updates.isActive = input.isActive;
+      if (input.companyId !== undefined) updates.companyId = input.companyId;
+      if (Object.keys(updates).length > 0) {
+        await db.update(users).set(updates).where(eq(users.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: auditedAdminProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(users).set({ isActive: false }).where(eq(users.id, input.id));
+      await cleanupDeletedUser(input.id);
+      return { success: true, id: input.id };
     }),
 
   /**

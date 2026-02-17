@@ -30,23 +30,58 @@ const transactionStatusSchema = z.enum([
 ]);
 
 export const walletRouter = router({
-  // Generic CRUD for screen templates
   create: auditedProtectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      walletId: z.number(),
+      type: transactionTypeSchema,
+      amount: z.number(),
+      description: z.string().optional(),
+      loadId: z.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const { walletTransactions } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const fee = input.type === "payout" ? Math.round(input.amount * 0.015 * 100) / 100 : 0;
+      const netAmount = Math.round((input.amount - fee) * 100) / 100;
+      const [result] = await db.insert(walletTransactions).values({
+        walletId: input.walletId,
+        type: input.type as any,
+        amount: String(input.amount),
+        fee: String(fee),
+        netAmount: String(netAmount),
+        description: input.description,
+        loadId: input.loadId,
+        status: "pending",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: auditedProtectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: transactionStatusSchema.optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const { walletTransactions } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) {
+        updates.status = input.status;
+        if (input.status === "completed") updates.completedAt = new Date();
+      }
+      if (Object.keys(updates).length > 0) {
+        await db.update(walletTransactions).set(updates).where(eq(walletTransactions.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: auditedProtectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const { walletTransactions } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(walletTransactions).set({ status: "cancelled" }).where(eq(walletTransactions.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

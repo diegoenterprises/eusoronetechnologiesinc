@@ -20,23 +20,57 @@ import {
 } from "../../drizzle/schema";
 
 export const integrationsRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      providerId: z.number(),
+      providerSlug: z.string(),
+      authType: z.string(),
+      apiKey: z.string().optional(),
+      accessToken: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      const userId = Number(ctx.user?.id) || 0;
+      const [result] = await db.insert(integrationConnections).values({
+        companyId,
+        userId,
+        providerId: input.providerId,
+        providerSlug: input.providerSlug,
+        authType: input.authType,
+        apiKey: input.apiKey,
+        accessToken: input.accessToken,
+        status: "connected",
+        lastConnectedAt: new Date(),
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: z.enum(["pending", "connected", "syncing", "error", "disconnected", "expired"]).optional(),
+      syncEnabled: z.boolean().optional(),
+      apiKey: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) updates.status = input.status;
+      if (input.syncEnabled !== undefined) updates.syncEnabled = input.syncEnabled;
+      if (input.apiKey) updates.apiKey = input.apiKey;
+      if (Object.keys(updates).length > 0) {
+        await db.update(integrationConnections).set(updates).where(eq(integrationConnections.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(integrationConnections).set({ status: "disconnected", syncEnabled: false }).where(eq(integrationConnections.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   // ============================================================================

@@ -17,23 +17,47 @@ const loadStatusSchema = z.enum([
 ]);
 
 export const dispatchRoleRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      loadId: z.number(),
+      driverId: z.number(),
+      vehicleId: z.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(loads).set({
+        driverId: input.driverId,
+        vehicleId: input.vehicleId,
+        status: "assigned",
+      }).where(eq(loads.id, input.loadId));
+      return { success: true, id: input.loadId };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      loadId: z.number(),
+      status: loadStatusSchema.optional(),
+      driverId: z.number().optional(),
+      vehicleId: z.number().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) updates.status = input.status;
+      if (input.driverId) updates.driverId = input.driverId;
+      if (input.vehicleId) updates.vehicleId = input.vehicleId;
+      if (Object.keys(updates).length > 0) {
+        await db.update(loads).set(updates).where(eq(loads.id, input.loadId));
+      }
+      return { success: true, id: input.loadId };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ loadId: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(loads).set({ driverId: null, vehicleId: null, status: "posted" }).where(eq(loads.id, input.loadId));
+      return { success: true, id: input.loadId };
     }),
 
   /**

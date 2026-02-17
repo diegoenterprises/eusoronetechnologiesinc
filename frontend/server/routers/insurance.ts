@@ -21,23 +21,62 @@ import {
 } from "../../drizzle/schema";
 
 export const insuranceRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      policyNumber: z.string(),
+      policyType: z.string(),
+      providerName: z.string().optional(),
+      effectiveDate: z.string(),
+      expirationDate: z.string(),
+      perOccurrenceLimit: z.string().optional(),
+      aggregateLimit: z.string().optional(),
+      deductible: z.string().optional(),
+      annualPremium: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      const [result] = await db.insert(insurancePolicies).values({
+        companyId,
+        policyNumber: input.policyNumber,
+        policyType: input.policyType as any,
+        providerName: input.providerName,
+        effectiveDate: new Date(input.effectiveDate),
+        expirationDate: new Date(input.expirationDate),
+        perOccurrenceLimit: input.perOccurrenceLimit,
+        aggregateLimit: input.aggregateLimit,
+        deductible: input.deductible,
+        annualPremium: input.annualPremium,
+        status: "active",
+      }).$returningId();
+      return { success: true, id: result.id };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: z.string().optional(),
+      expirationDate: z.string().optional(),
+      annualPremium: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) updates.status = input.status;
+      if (input.expirationDate) updates.expirationDate = new Date(input.expirationDate);
+      if (input.annualPremium) updates.annualPremium = input.annualPremium;
+      if (Object.keys(updates).length > 0) {
+        await db.update(insurancePolicies).set(updates).where(eq(insurancePolicies.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(insurancePolicies).set({ status: "cancelled" as any }).where(eq(insurancePolicies.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   // ============================================================================

@@ -14,23 +14,60 @@ import { loads, bids, users, companies } from "../../drizzle/schema";
 const loadStatusSchema = z.enum(["draft", "posted", "assigned", "in_transit", "delivered", "cancelled"]);
 
 export const shippersRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      origin: z.string(),
+      destination: z.string(),
+      cargoType: z.enum(["general", "hazmat", "refrigerated", "oversized", "liquid", "gas", "chemicals", "petroleum"]).default("general"),
+      rate: z.number().optional(),
+      weight: z.number().optional(),
+      notes: z.string().optional(),
+      pickupDate: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      const loadNumber = `SHP-${Date.now().toString(36).toUpperCase()}`;
+      const [result] = await db.insert(loads).values({
+        shipperId: companyId,
+        loadNumber,
+        cargoType: input.cargoType,
+        pickupLocation: { address: input.origin, city: "", state: "", zipCode: "", lat: 0, lng: 0 },
+        deliveryLocation: { address: input.destination, city: "", state: "", zipCode: "", lat: 0, lng: 0 },
+        rate: input.rate ? String(input.rate) : undefined,
+        weight: input.weight ? String(input.weight) : undefined,
+        specialInstructions: input.notes,
+        pickupDate: input.pickupDate ? new Date(input.pickupDate) : undefined,
+        status: "posted",
+      }).$returningId();
+      return { success: true, id: result.id, loadNumber };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      rate: z.number().optional(),
+      status: loadStatusSchema.optional(),
+      notes: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.rate !== undefined) updates.rate = String(input.rate);
+      if (input.status) updates.status = input.status;
+      if (input.notes) updates.specialInstructions = input.notes;
+      if (Object.keys(updates).length > 0) {
+        await db.update(loads).set(updates).where(eq(loads.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(loads).set({ status: "cancelled" }).where(eq(loads.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**

@@ -10,27 +10,73 @@ import { getDb } from "../db";
 import { factoringInvoices, loads, users, companies } from "../../drizzle/schema";
 
 const invoiceStatusSchema = z.enum([
-  "pending", "submitted", "approved", "funded", "paid", "rejected", "disputed"
+  "submitted", "under_review", "approved", "funded", "collection",
+  "collected", "short_paid", "disputed", "chargedback", "closed"
 ]);
 
 export const factoringRouter = router({
-  // Generic CRUD for screen templates
   create: protectedProcedure
-    .input(z.object({ type: z.string(), data: z.any() }).optional())
-    .mutation(async ({ input }) => {
-      return { success: true, id: crypto.randomUUID(), ...input?.data };
+    .input(z.object({
+      loadId: z.number(),
+      invoiceAmount: z.number(),
+      advanceRate: z.number().optional(),
+      factoringFeePercent: z.number().optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+      const advRate = input.advanceRate || 97;
+      const feePercent = input.factoringFeePercent || 3;
+      const feeAmount = Math.round(input.invoiceAmount * (feePercent / 100) * 100) / 100;
+      const advanceAmount = Math.round(input.invoiceAmount * (advRate / 100) * 100) / 100;
+      const reserveAmount = Math.round((input.invoiceAmount - advanceAmount - feeAmount) * 100) / 100;
+      const [result] = await db.insert(factoringInvoices).values({
+        loadId: input.loadId,
+        catalystUserId: userId,
+        invoiceNumber,
+        invoiceAmount: String(input.invoiceAmount),
+        advanceRate: String(advRate),
+        factoringFeePercent: String(feePercent),
+        factoringFeeAmount: String(feeAmount),
+        advanceAmount: String(advanceAmount),
+        reserveAmount: String(reserveAmount),
+        notes: input.notes,
+        status: "submitted",
+        dueDate: new Date(Date.now() + 30 * 86400000),
+      }).$returningId();
+      return { success: true, id: result.id, invoiceNumber };
     }),
 
   update: protectedProcedure
-    .input(z.object({ id: z.string(), data: z.any() }).optional())
+    .input(z.object({
+      id: z.number(),
+      status: invoiceStatusSchema.optional(),
+      notes: z.string().optional(),
+    }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.status) {
+        updates.status = input.status;
+        if (input.status === "approved") updates.approvedAt = new Date();
+        if (input.status === "funded") updates.fundedAt = new Date();
+        if (input.status === "collected") updates.collectedAt = new Date();
+      }
+      if (input.notes) updates.notes = input.notes;
+      if (Object.keys(updates).length > 0) {
+        await db.update(factoringInvoices).set(updates).where(eq(factoringInvoices.id, input.id));
+      }
+      return { success: true, id: input.id };
     }),
 
   delete: protectedProcedure
-    .input(z.object({ id: z.string() }).optional())
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      return { success: true, id: input?.id };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(factoringInvoices).set({ status: "closed" }).where(eq(factoringInvoices.id, input.id));
+      return { success: true, id: input.id };
     }),
 
   /**
