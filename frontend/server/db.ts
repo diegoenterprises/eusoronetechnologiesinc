@@ -97,6 +97,135 @@ async function runStartupCleanup(db: ReturnType<typeof drizzle>) {
   } catch (err) {
     console.warn("[Startup] Cleanup error (non-fatal):", err);
   }
+
+  // Schema sync — ensure all Drizzle-defined columns exist in the DB
+  await runSchemaSync(db);
+}
+
+/**
+ * SCHEMA SYNC — adds missing columns to MySQL tables so Drizzle SELECT * queries don't fail.
+ * Uses information_schema to check existence before ALTERing. Non-fatal on error.
+ */
+async function runSchemaSync(db: ReturnType<typeof drizzle>) {
+  const pool = _pool?.promise();
+  if (!pool) return;
+
+  async function addColIfMissing(table: string, col: string, definition: string) {
+    try {
+      const [rows]: any = await pool!.query(
+        `SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+        [table, col]
+      );
+      if (rows.length === 0) {
+        await pool!.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${col}\` ${definition}`);
+        console.log(`[SchemaSync] Added ${table}.${col}`);
+      }
+    } catch (err: any) {
+      // Ignore — column might already exist or table might not exist
+      if (!err?.message?.includes("Duplicate column")) {
+        console.warn(`[SchemaSync] ${table}.${col}: ${err?.message?.slice(0, 120)}`);
+      }
+    }
+  }
+
+  async function ensureTable(table: string, createSQL: string) {
+    try {
+      const [rows]: any = await pool!.query(
+        `SELECT 1 FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+        [table]
+      );
+      if (rows.length === 0) {
+        await pool!.query(createSQL);
+        console.log(`[SchemaSync] Created table ${table}`);
+      }
+    } catch (err: any) {
+      console.warn(`[SchemaSync] Table ${table}: ${err?.message?.slice(0, 120)}`);
+    }
+  }
+
+  try {
+    console.log("[SchemaSync] Checking schema alignment...");
+
+    // --- loads table columns ---
+    await addColIfMissing("loads", "vehicleId", "INT DEFAULT NULL");
+    await addColIfMissing("loads", "hazmatClass", "VARCHAR(10) DEFAULT NULL");
+    await addColIfMissing("loads", "unNumber", "VARCHAR(10) DEFAULT NULL");
+    await addColIfMissing("loads", "volume", "DECIMAL(10,2) DEFAULT NULL");
+    await addColIfMissing("loads", "volumeUnit", "VARCHAR(10) DEFAULT 'gal'");
+    await addColIfMissing("loads", "estimatedDeliveryDate", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("loads", "actualDeliveryDate", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("loads", "distanceUnit", "VARCHAR(10) DEFAULT 'miles'");
+    await addColIfMissing("loads", "currency", "VARCHAR(3) DEFAULT 'USD'");
+    await addColIfMissing("loads", "specialInstructions", "TEXT DEFAULT NULL");
+    await addColIfMissing("loads", "commodityName", "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing("loads", "spectraMatchResult", "JSON DEFAULT NULL");
+    await addColIfMissing("loads", "documents", "JSON DEFAULT NULL");
+    await addColIfMissing("loads", "currentLocation", "JSON DEFAULT NULL");
+    await addColIfMissing("loads", "route", "JSON DEFAULT NULL");
+    await addColIfMissing("loads", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("loads", "weightUnit", "VARCHAR(10) DEFAULT 'lbs'");
+    await addColIfMissing("loads", "distance", "DECIMAL(10,2) DEFAULT NULL");
+
+    // --- documents table columns ---
+    await addColIfMissing("documents", "expiryDate", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("documents", "status", "VARCHAR(50) DEFAULT 'active'");
+    await addColIfMissing("documents", "type", "VARCHAR(50) DEFAULT 'other'");
+    await addColIfMissing("documents", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
+
+    // --- users table columns ---
+    await addColIfMissing("users", "companyId", "INT DEFAULT NULL");
+    await addColIfMissing("users", "profilePicture", "VARCHAR(500) DEFAULT NULL");
+    await addColIfMissing("users", "phone", "VARCHAR(20) DEFAULT NULL");
+    await addColIfMissing("users", "metadata", "JSON DEFAULT NULL");
+    await addColIfMissing("users", "currentLocation", "JSON DEFAULT NULL");
+    await addColIfMissing("users", "lastGPSUpdate", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("users", "stripeCustomerId", "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing("users", "stripeConnectId", "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing("users", "deletedAt", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("users", "passwordHash", "VARCHAR(255) DEFAULT NULL");
+    await addColIfMissing("users", "isActive", "BOOLEAN DEFAULT TRUE");
+    await addColIfMissing("users", "isVerified", "BOOLEAN DEFAULT FALSE");
+
+    // --- bids table columns ---
+    await addColIfMissing("bids", "catalystId", "INT DEFAULT NULL");
+    await addColIfMissing("bids", "estimatedPickup", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("bids", "estimatedDelivery", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("bids", "message", "TEXT DEFAULT NULL");
+    await addColIfMissing("bids", "expiresAt", "TIMESTAMP NULL DEFAULT NULL");
+
+    // --- audit_logs table ---
+    await ensureTable("audit_logs", `CREATE TABLE audit_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT DEFAULT NULL,
+      action VARCHAR(100) NOT NULL,
+      entityType VARCHAR(50) NOT NULL,
+      entityId INT DEFAULT NULL,
+      changes JSON DEFAULT NULL,
+      ipAddress VARCHAR(45) DEFAULT NULL,
+      userAgent TEXT DEFAULT NULL,
+      createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      INDEX audit_user_idx (userId),
+      INDEX audit_action_idx (action),
+      INDEX audit_entity_idx (entityType, entityId),
+      INDEX audit_created_at_idx (createdAt)
+    )`);
+
+    // --- wallets table columns ---
+    await addColIfMissing("wallets", "currency", "VARCHAR(3) DEFAULT 'USD'");
+    await addColIfMissing("wallets", "isDefault", "BOOLEAN DEFAULT FALSE");
+
+    // --- companies table columns ---
+    await addColIfMissing("companies", "logo", "VARCHAR(500) DEFAULT NULL");
+    await addColIfMissing("companies", "hazmatLicense", "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing("companies", "hazmatExpiry", "TIMESTAMP NULL DEFAULT NULL");
+    await addColIfMissing("companies", "complianceStatus", "VARCHAR(50) DEFAULT NULL");
+    await addColIfMissing("companies", "insurancePolicy", "VARCHAR(100) DEFAULT NULL");
+    await addColIfMissing("companies", "insuranceExpiry", "TIMESTAMP NULL DEFAULT NULL");
+
+    console.log("[SchemaSync] Done.");
+  } catch (err: any) {
+    console.warn("[SchemaSync] Non-fatal error:", err?.message?.slice(0, 200));
+  }
 }
 
 // Lazily create the drizzle instance backed by a connection pool.

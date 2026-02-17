@@ -296,65 +296,160 @@ export const YAHOO_COMMODITY_SYMBOLS: Record<string, string> = {
   "B0=F": "PROP",   // Propane (Mont Belvieu)
 };
 
+// Yahoo Finance crumb-based authentication (required since 2023)
+const YF_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+let _yCrumb: string | null = null;
+let _yCookies: string = "";
+let _yCrumbTs = 0;
+
+async function ensureYahooCrumb(): Promise<boolean> {
+  if (_yCrumb && Date.now() - _yCrumbTs < 6 * 3600 * 1000) return true;
+  try {
+    // Step 1: Get session cookies from Yahoo
+    const r1 = await fetch("https://fc.yahoo.com/", {
+      headers: { "User-Agent": YF_UA },
+      redirect: "manual",
+      signal: AbortSignal.timeout(5000),
+    });
+    let cookies: string[] = [];
+    if (typeof r1.headers.getSetCookie === "function") {
+      cookies = r1.headers.getSetCookie().map((c: string) => c.split(";")[0]);
+    } else {
+      // Fallback: parse raw headers
+      const raw = (r1.headers as any).raw?.()?.["set-cookie"] || [];
+      cookies = raw.map((c: string) => c.split(";")[0]);
+    }
+    const cookieStr = cookies.join("; ");
+    if (!cookieStr) { console.warn("[Yahoo] No cookies from fc.yahoo.com"); return false; }
+
+    // Step 2: Get crumb
+    const r2 = await fetch("https://query2.finance.yahoo.com/v1/test/getcrumb", {
+      headers: { "User-Agent": YF_UA, "Cookie": cookieStr },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r2.ok) { console.warn(`[Yahoo] Crumb fetch ${r2.status}`); return false; }
+    const crumb = await r2.text();
+    if (!crumb || crumb.length < 3) { console.warn("[Yahoo] Empty crumb"); return false; }
+
+    _yCrumb = crumb;
+    _yCookies = cookieStr;
+    _yCrumbTs = Date.now();
+    console.log("[Yahoo] Crumb authenticated OK");
+    return true;
+  } catch (err) {
+    console.warn(`[Yahoo] Crumb auth failed: ${(err as Error).message}`);
+    return false;
+  }
+}
+
+// Parse a v8 chart response into a YahooQuote
+function parseV8Chart(json: any, yahooSymbol: string): YahooQuote | null {
+  const result = json.chart?.result?.[0];
+  if (!result) return null;
+  const meta = result.meta;
+  const mappedSymbol = YAHOO_COMMODITY_SYMBOLS[yahooSymbol] || yahooSymbol;
+  const price = meta?.regularMarketPrice || 0;
+  const prevClose = meta?.chartPreviousClose || meta?.previousClose || price;
+  const change = +(price - prevClose).toFixed(4);
+  const changePct = prevClose > 0 ? +((change / prevClose) * 100).toFixed(2) : 0;
+  // Get OHLV from indicators if available
+  const indicators = result.indicators?.quote?.[0];
+  const closes = indicators?.close || [];
+  const highs = indicators?.high || [];
+  const lows = indicators?.low || [];
+  const opens = indicators?.open || [];
+  const volumes = indicators?.volume || [];
+  const last = closes.length - 1;
+  return {
+    symbol: mappedSymbol,
+    shortName: meta?.shortName || yahooSymbol,
+    regularMarketPrice: price,
+    regularMarketChange: change,
+    regularMarketChangePercent: changePct,
+    regularMarketPreviousClose: prevClose,
+    regularMarketOpen: opens[last] || price,
+    regularMarketDayHigh: highs[last] || price,
+    regularMarketDayLow: lows[last] || price,
+    regularMarketVolume: volumes[last] || 0,
+  };
+}
+
 export async function fetchYahooFinanceQuotes(symbols: string[]): Promise<Map<string, YahooQuote>> {
   const cacheKey = `yahoo_${symbols.sort().join(",")}`;
   const cached = getCached<Map<string, YahooQuote>>(cacheKey);
   if (cached) return cached;
 
-  // Try multiple Yahoo Finance endpoints (v7 is blocked server-side, try v6 and query2)
-  const endpoints = [
-    `https://query2.finance.yahoo.com/v6/finance/quote?symbols=${encodeURIComponent(symbols.join(","))}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent,regularMarketPreviousClose,regularMarketOpen,regularMarketDayHigh,regularMarketDayLow,regularMarketVolume,shortName`,
-    `https://query1.finance.yahoo.com/v8/finance/chart/${symbols[0]}?interval=1d&range=2d`,
-  ];
+  const quotes = new Map<string, YahooQuote>();
 
-  for (const url of endpoints) {
+  // Strategy 1: Crumb-authenticated batch v7 request (most efficient)
+  const hasCrumb = await ensureYahooCrumb();
+  if (hasCrumb && _yCrumb) {
     try {
+      const url = `https://query2.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(","))}&crumb=${encodeURIComponent(_yCrumb)}`;
       const res = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "application/json",
-        },
-        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": YF_UA, "Cookie": _yCookies, "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000),
       });
-
-      if (!res.ok) {
-        console.warn(`[MarketData] Yahoo endpoint returned ${res.status}: ${url.substring(0, 80)}...`);
-        continue;
-      }
-
-      const json = await res.json();
-      const quotes = new Map<string, YahooQuote>();
-
-      // v6/v7 format
-      const results = json.quoteResponse?.result || json.finance?.result || [];
-      for (const q of results) {
-        const mappedSymbol = YAHOO_COMMODITY_SYMBOLS[q.symbol] || q.symbol;
-        quotes.set(mappedSymbol, {
-          symbol: mappedSymbol,
-          shortName: q.shortName || q.symbol,
-          regularMarketPrice: q.regularMarketPrice || 0,
-          regularMarketChange: q.regularMarketChange || 0,
-          regularMarketChangePercent: q.regularMarketChangePercent || 0,
-          regularMarketPreviousClose: q.regularMarketPreviousClose || 0,
-          regularMarketOpen: q.regularMarketOpen || 0,
-          regularMarketDayHigh: q.regularMarketDayHigh || 0,
-          regularMarketDayLow: q.regularMarketDayLow || 0,
-          regularMarketVolume: q.regularMarketVolume || 0,
-        });
-      }
-
-      if (quotes.size > 0) {
-        console.log(`[MarketData] Yahoo Finance returned ${quotes.size} quotes`);
-        setCache(cacheKey, quotes, 5 * 60 * 1000);
-        return quotes;
+      if (res.ok) {
+        const json = await res.json();
+        const results = json.quoteResponse?.result || [];
+        for (const q of results) {
+          const mappedSymbol = YAHOO_COMMODITY_SYMBOLS[q.symbol] || q.symbol;
+          quotes.set(mappedSymbol, {
+            symbol: mappedSymbol,
+            shortName: q.shortName || q.symbol,
+            regularMarketPrice: q.regularMarketPrice || 0,
+            regularMarketChange: q.regularMarketChange || 0,
+            regularMarketChangePercent: q.regularMarketChangePercent || 0,
+            regularMarketPreviousClose: q.regularMarketPreviousClose || 0,
+            regularMarketOpen: q.regularMarketOpen || 0,
+            regularMarketDayHigh: q.regularMarketDayHigh || 0,
+            regularMarketDayLow: q.regularMarketDayLow || 0,
+            regularMarketVolume: q.regularMarketVolume || 0,
+          });
+        }
+        if (quotes.size > 0) {
+          console.log(`[Yahoo] Crumb batch: ${quotes.size} quotes`);
+          setCache(cacheKey, quotes, 5 * 60 * 1000);
+          return quotes;
+        }
+      } else {
+        console.warn(`[Yahoo] Crumb batch returned ${res.status}`);
+        // Invalidate crumb if auth failed
+        if (res.status === 401 || res.status === 403) { _yCrumb = null; _yCrumbTs = 0; }
       }
     } catch (err) {
-      console.warn(`[MarketData] Yahoo endpoint failed: ${(err as Error).message}`);
+      console.warn(`[Yahoo] Crumb batch failed: ${(err as Error).message}`);
     }
   }
 
-  console.warn("[MarketData] All Yahoo Finance endpoints failed — will rely on CommodityPriceAPI + FRED/EIA");
-  return new Map();
+  // Strategy 2: Individual v8/chart requests (slower but more resilient)
+  // Limit to top 10 symbols to stay within rate limits
+  const topSymbols = symbols.slice(0, 10);
+  for (const sym of topSymbols) {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=1d&range=5d`;
+      const res = await fetch(url, {
+        headers: { "User-Agent": YF_UA, "Accept": "application/json", ...(hasCrumb ? { "Cookie": _yCookies } : {}) },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const q = parseV8Chart(json, sym);
+        if (q && q.regularMarketPrice > 0) quotes.set(q.symbol, q);
+      }
+      // Small delay between requests to avoid 429
+      await new Promise(r => setTimeout(r, 150));
+    } catch {}
+  }
+
+  if (quotes.size > 0) {
+    console.log(`[Yahoo] Chart fallback: ${quotes.size} quotes`);
+    setCache(cacheKey, quotes, 5 * 60 * 1000);
+  } else {
+    console.warn("[Yahoo] All endpoints failed — relying on FRED/EIA");
+  }
+  return quotes;
 }
 
 // Convenience: fetch all tracked commodity futures
@@ -365,7 +460,13 @@ export async function fetchAllCommodityQuotes(): Promise<Map<string, YahooQuote>
 // ===== CommodityPriceAPI (Primary Source — 130+ commodities, 60-sec updates) =====
 
 const COMMODITY_PRICE_API_KEY = process.env.COMMODITY_PRICE_API_KEY || "20d6ed40-a652-472d-937f-5ff4cef11c8f";
-const COMMODITY_PRICE_API_BASE = "https://api.commoditypriceapi.com/v2";
+// Try multiple base URLs — v2 may be deprecated, fall back to v1 and root
+const COMMODITY_PRICE_API_BASES = [
+  "https://api.commoditypriceapi.com/v1",
+  "https://api.commoditypriceapi.com/v2",
+  "https://commoditypriceapi.com/api",
+];
+const COMMODITY_PRICE_API_BASE = COMMODITY_PRICE_API_BASES[0];
 
 // Map our internal symbols to CommodityPriceAPI symbols
 export const CPAPI_SYMBOL_MAP: Record<string, string> = {
@@ -393,32 +494,37 @@ export async function fetchCommodityPriceAPI(symbols: string[]): Promise<Record<
   const cached = getCached<Record<string, number>>(cacheKey);
   if (cached) return cached;
 
-  try {
-    const symbolStr = symbols.join(",");
-    const url = `${COMMODITY_PRICE_API_BASE}/latest?symbols=${encodeURIComponent(symbolStr)}&apiKey=${COMMODITY_PRICE_API_KEY}`;
+  const symbolStr = symbols.join(",");
 
-    const res = await fetch(url, {
-      headers: { "x-api-key": COMMODITY_PRICE_API_KEY },
-      signal: AbortSignal.timeout(10000),
-    });
+  // Try all known base URLs
+  for (const base of COMMODITY_PRICE_API_BASES) {
+    try {
+      const url = `${base}/latest?symbols=${encodeURIComponent(symbolStr)}&apiKey=${COMMODITY_PRICE_API_KEY}`;
 
-    if (!res.ok) {
-      console.error(`CommodityPriceAPI error: ${res.status}`);
-      return {};
+      const res = await fetch(url, {
+        headers: { "x-api-key": COMMODITY_PRICE_API_KEY, "Accept": "application/json" },
+        signal: AbortSignal.timeout(8000),
+      });
+
+      if (!res.ok) {
+        console.warn(`CommodityPriceAPI ${base} returned ${res.status}`);
+        continue;
+      }
+
+      const json = await res.json();
+      const rates: Record<string, number> = json.rates || json.data?.rates || json.data || {};
+      if (Object.keys(rates).length === 0) continue;
+
+      console.log(`[CPAPI] ${base}: ${Object.keys(rates).length} prices`);
+      setCache(cacheKey, rates, 2 * 60 * 1000);
+      return rates;
+    } catch (err) {
+      console.warn(`CommodityPriceAPI ${base} failed: ${(err as Error).message?.slice(0, 80)}`);
     }
-
-    const json = await res.json();
-    if (!json.success && !json.rates) return {};
-
-    const rates: Record<string, number> = json.rates || json.data?.rates || {};
-
-    // Cache for 2 minutes (API updates every 60 sec)
-    setCache(cacheKey, rates, 2 * 60 * 1000);
-    return rates;
-  } catch (err) {
-    console.error("CommodityPriceAPI fetch failed:", err);
-    return {};
   }
+
+  console.warn("[CPAPI] All endpoints exhausted");
+  return {};
 }
 
 // Fetch historical rate for change calculation

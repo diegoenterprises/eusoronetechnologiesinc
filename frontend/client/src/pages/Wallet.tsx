@@ -76,7 +76,7 @@ export default function Wallet() {
   const balance = balanceQuery.data;
   const transactions = transactionsQuery.data || [];
   const cards = cardsQuery.data || [];
-  const cardHolderName = cards[0]?.cardholderName || companyQuery.data?.name || user?.name || 'Account Holder';
+  const cardHolderName = user?.name || cards[0]?.cardholderName || companyQuery.data?.name || 'Account Holder';
   const bankAccounts = bankQuery.data || [];
   const escrowHolds = escrowQuery.data || [];
 
