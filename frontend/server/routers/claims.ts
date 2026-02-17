@@ -139,14 +139,20 @@ export const claimsRouter = router({
       evidenceIds: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      const claimNumber = `CLM-2025-${String(Date.now()).slice(-5)}`;
-      
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const typeMap: Record<string, string> = { damage: 'property_damage', shortage: 'property_damage', loss: 'property_damage', delay: 'near_miss', contamination: 'hazmat_spill', other: 'near_miss' };
+      const [result] = await db.insert(incidents).values({
+        companyId: ctx.user?.companyId || 0,
+        type: (typeMap[input.type] || 'near_miss') as any,
+        status: 'reported' as any,
+        description: `[Claim: ${input.type}] Load ${input.loadId} - $${input.amount} - ${input.description}`,
+        severity: 'moderate' as any,
+        occurredAt: new Date(),
+      }).$returningId();
       return {
-        id: `claim_${Date.now()}`,
-        claimNumber,
-        status: "submitted",
-        filedBy: ctx.user?.id,
-        filedAt: new Date().toISOString(),
+        id: `claim_${result.id}`,
+        claimNumber: `CLM-${new Date().getFullYear()}-${String(result.id).padStart(5, '0')}`,
+        status: 'submitted', filedBy: ctx.user?.id, filedAt: new Date().toISOString(),
       };
     }),
 
@@ -160,12 +166,16 @@ export const claimsRouter = router({
       description: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        const numId = parseInt(input.id.replace('claim_', ''));
+        const updates: Record<string, any> = {};
+        if (input.description) updates.description = input.description;
+        if (Object.keys(updates).length > 0) {
+          await db.update(incidents).set(updates).where(eq(incidents.id, numId));
+        }
+      }
+      return { success: true, id: input.id, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -179,13 +189,13 @@ export const claimsRouter = router({
       settledAmount: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        newStatus: input.status,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        const numId = parseInt(input.id.replace('claim_', ''));
+        const statusMap: Record<string, string> = { submitted: 'reported', under_review: 'investigating', investigating: 'investigating', approved: 'resolved', denied: 'resolved', settled: 'resolved', closed: 'resolved' };
+        await db.update(incidents).set({ status: (statusMap[input.status] || 'reported') as any }).where(eq(incidents.id, numId));
+      }
+      return { success: true, id: input.id, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -239,13 +249,13 @@ export const claimsRouter = router({
       evidenceIds: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        claimId: input.claimId,
-        response: input.response,
-        respondedBy: ctx.user?.id,
-        respondedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        const numId = parseInt(input.claimId.replace('claim_', ''));
+        const newStatus = input.response === 'accept' ? 'resolved' : 'investigating';
+        await db.update(incidents).set({ status: newStatus as any, description: sql`CONCAT(COALESCE(${incidents.description}, ''), '\n[Response: ${input.response}] ', ${input.explanation})` }).where(eq(incidents.id, numId));
+      }
+      return { success: true, claimId: input.claimId, response: input.response, respondedBy: ctx.user?.id, respondedAt: new Date().toISOString() };
     }),
 
   /**
@@ -283,13 +293,12 @@ export const claimsRouter = router({
       paymentMethod: z.enum(["deduct_from_payment", "separate_payment", "credit"]),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        claimId: input.claimId,
-        settledAmount: input.settledAmount,
-        settledBy: ctx.user?.id,
-        settledAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        const numId = parseInt(input.claimId.replace('claim_', ''));
+        await db.update(incidents).set({ status: 'resolved' as any }).where(eq(incidents.id, numId));
+      }
+      return { success: true, claimId: input.claimId, settledAmount: input.settledAmount, settledBy: ctx.user?.id, settledAt: new Date().toISOString() };
     }),
 
   /**

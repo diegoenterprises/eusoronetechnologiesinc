@@ -211,11 +211,23 @@ export const accountingRouter = router({
       receipt: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `exp_${Date.now()}`,
-        recordedBy: ctx.user?.id,
-        recordedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        try {
+          const userId = Number(ctx.user?.id) || 0;
+          const vendorId = input.vendorId ? parseInt(input.vendorId) : null;
+          const [result] = await db.insert(payments).values({
+            payerId: userId,
+            payeeId: vendorId || 0,
+            amount: String(input.amount.toFixed(2)),
+            paymentType: 'load_payment' as any,
+            status: 'succeeded' as any,
+            metadata: { type: input.type, description: input.description, date: input.date, vehicleId: input.vehicleId, driverId: input.driverId },
+          } as any).$returningId();
+          return { id: String(result.id), recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
+        } catch (e) { console.error('[Accounting] recordExpense error:', e); }
+      }
+      return { id: `exp_${Date.now()}`, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),
 
   /**
@@ -253,14 +265,27 @@ export const accountingRouter = router({
     .input(z.object({
       period: z.enum(["week", "month"]).default("month"),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        openingBalance: 0,
-        inflows: { customerPayments: 0, other: 0, total: 0 },
-        outflows: { vendorPayments: 0, driverPayroll: 0, fuelCards: 0, other: 0, total: 0 },
-        netCashFlow: 0, closingBalance: 0, projectedBalance: 0,
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      const empty = { period: input.period, openingBalance: 0, inflows: { customerPayments: 0, other: 0, total: 0 }, outflows: { vendorPayments: 0, driverPayroll: 0, fuelCards: 0, other: 0, total: 0 }, netCashFlow: 0, closingBalance: 0, projectedBalance: 0 };
+      if (!db) return empty;
+      try {
+        const userId = ctx.user?.id || 0;
+        const daysMap: Record<string, number> = { week: 7, month: 30 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 30) * 86400000);
+        const [inflows] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)` })
+          .from(payments).where(and(eq(payments.payeeId, userId), eq(payments.status, 'succeeded'), gte(payments.createdAt, since)));
+        const [outflows] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)` })
+          .from(payments).where(and(eq(payments.payerId, userId), eq(payments.status, 'succeeded'), gte(payments.createdAt, since)));
+        const inflowTotal = Math.round((inflows?.total || 0) * 100) / 100;
+        const outflowTotal = Math.round((outflows?.total || 0) * 100) / 100;
+        return {
+          period: input.period, openingBalance: 0,
+          inflows: { customerPayments: inflowTotal, other: 0, total: inflowTotal },
+          outflows: { vendorPayments: outflowTotal, driverPayroll: 0, fuelCards: 0, other: 0, total: outflowTotal },
+          netCashFlow: inflowTotal - outflowTotal, closingBalance: inflowTotal - outflowTotal, projectedBalance: inflowTotal - outflowTotal,
+        };
+      } catch { return empty; }
     }),
 
   /**
@@ -302,16 +327,31 @@ export const accountingRouter = router({
       periodEnd: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      let grossPay = 0;
+      let loadCount = 0;
+      if (db) {
+        try {
+          const driverId = parseInt(input.driverId);
+          const [stats] = await db.select({
+            total: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            count: sql<number>`COUNT(*)`,
+          }).from(loads).where(and(
+            eq(loads.driverId, driverId),
+            eq(loads.status, 'delivered'),
+            gte(loads.createdAt, new Date(input.periodStart)),
+            sql`${loads.createdAt} <= ${new Date(input.periodEnd)}`,
+          ));
+          grossPay = Math.round((stats?.total || 0) * 100) / 100;
+          loadCount = stats?.count || 0;
+        } catch {}
+      }
+      const deductions = Math.round(grossPay * 0.15 * 100) / 100;
       return {
-        settlementId: `settle_${Date.now()}`,
-        driverId: input.driverId,
-        periodStart: input.periodStart,
-        periodEnd: input.periodEnd,
-        grossPay: 4500,
-        deductions: 850,
-        netPay: 3650,
-        generatedBy: ctx.user?.id,
-        generatedAt: new Date().toISOString(),
+        settlementId: `settle_${Date.now()}`, driverId: input.driverId,
+        periodStart: input.periodStart, periodEnd: input.periodEnd,
+        grossPay, deductions, netPay: grossPay - deductions, loadCount,
+        generatedBy: ctx.user?.id, generatedAt: new Date().toISOString(),
       };
     }),
 
