@@ -4,10 +4,10 @@
  */
 
 import { z } from "zod";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, companies } from "../../drizzle/schema";
+import { loads, companies, vehicles, bids } from "../../drizzle/schema";
 
 const equipmentTypeSchema = z.enum(["tanker", "dry_van", "flatbed", "reefer", "step_deck", "lowboy"]);
 
@@ -108,9 +108,24 @@ export const loadBoardRouter = router({
       expiresIn: z.number().default(24),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadNumber = `LB-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+      const [result] = await db.insert(loads).values({
+        shipperId: ctx.user?.id || 0,
+        loadNumber,
+        status: "posted",
+        cargoType: input.hazmat ? "hazmat" as const : "general" as const,
+        commodityName: input.commodity,
+        weight: String(input.weight),
+        rate: String(input.rate),
+        pickupLocation: { address: input.origin.address, city: input.origin.city, state: input.origin.state, zipCode: input.origin.zip, lat: 0, lng: 0 },
+        deliveryLocation: { address: input.destination.address, city: input.destination.city, state: input.destination.state, zipCode: input.destination.zip, lat: 0, lng: 0 },
+        pickupDate: new Date(input.pickupDate),
+        deliveryDate: new Date(input.deliveryDate),
+      }).$returningId();
       return {
-        id: `lb_${Date.now()}`,
-        loadNumber: `LB-2025-${String(Date.now()).slice(-5)}`,
+        id: String(result.id),
+        loadNumber,
         status: "posted",
         postedBy: ctx.user?.id,
         postedAt: new Date().toISOString(),
@@ -129,13 +144,26 @@ export const loadBoardRouter = router({
       agreedRate: z.number().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId);
+      const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+      if (load.status !== "posted" && load.status !== "bidding") throw new Error("Load is no longer available");
+      await db.update(loads).set({
+        status: "assigned",
+        catalystId: ctx.user?.id || 0,
+        vehicleId: input.vehicleId ? parseInt(input.vehicleId) : undefined,
+        driverId: input.driverId ? parseInt(input.driverId) : undefined,
+        rate: input.agreedRate ? String(input.agreedRate) : load.rate,
+      }).where(eq(loads.id, loadId));
+      const confirmationNumber = `CONF-${String(Date.now()).slice(-6)}`;
       return {
-        bookingId: `book_${Date.now()}`,
+        bookingId: String(loadId),
         loadId: input.loadId,
-        status: "booked",
+        status: "assigned",
         bookedBy: ctx.user?.id,
         bookedAt: new Date().toISOString(),
-        confirmationNumber: `CONF-${String(Date.now()).slice(-6)}`,
+        confirmationNumber,
       };
     }),
 
@@ -149,8 +177,22 @@ export const loadBoardRouter = router({
       message: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId);
+      const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+      const [result] = await db.insert(bids).values({
+        loadId,
+        catalystId: ctx.user?.id || 0,
+        amount: String(input.proposedRate),
+        status: "pending",
+        notes: input.message || null,
+      }).$returningId();
+      if (load.status === "posted") {
+        await db.update(loads).set({ status: "bidding" }).where(eq(loads.id, loadId));
+      }
       return {
-        negotiationId: `neg_${Date.now()}`,
+        negotiationId: String(result.id),
         loadId: input.loadId,
         proposedRate: input.proposedRate,
         status: "pending",
@@ -238,6 +280,15 @@ export const loadBoardRouter = router({
       expiresAt: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId);
+      const updates: Record<string, any> = {};
+      if (input.rate !== undefined) updates.rate = String(input.rate);
+      if (input.pickupDate) updates.pickupDate = new Date(input.pickupDate);
+      if (input.deliveryDate) updates.deliveryDate = new Date(input.deliveryDate);
+      if (Object.keys(updates).length > 0) {
+        await db.update(loads).set(updates).where(eq(loads.id, loadId));
+      }
       return {
         success: true,
         loadId: input.loadId,
@@ -255,6 +306,12 @@ export const loadBoardRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId);
+      await db.update(loads).set({
+        status: "cancelled",
+        specialInstructions: input.reason ? `CANCELLED: ${input.reason}` : undefined,
+      }).where(eq(loads.id, loadId));
       return {
         success: true,
         loadId: input.loadId,
@@ -273,24 +330,36 @@ export const loadBoardRouter = router({
       equipmentType: equipmentTypeSchema,
     }))
     .query(async ({ input }) => {
+      const db = await getDb();
+      let avgRate = 3.15, minRate = 2.80, maxRate = 3.50, totalLoads = 0;
+      if (db) {
+        try {
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+          const [stats] = await db.select({
+            avg: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            min: sql<number>`COALESCE(MIN(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            max: sql<number>`COALESCE(MAX(CAST(${loads.rate} AS DECIMAL)), 0)`,
+            count: sql<number>`count(*)`,
+          }).from(loads).where(and(
+            sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.pickupLocation}, '$.state')) = ${input.origin.state}`,
+            sql`JSON_UNQUOTE(JSON_EXTRACT(${loads.deliveryLocation}, '$.state')) = ${input.destination.state}`,
+            gte(loads.createdAt, thirtyDaysAgo),
+          ));
+          if (stats && stats.count > 0) {
+            avgRate = Math.round(stats.avg * 100) / 100 || 3.15;
+            minRate = Math.round(stats.min * 100) / 100 || 2.80;
+            maxRate = Math.round(stats.max * 100) / 100 || 3.50;
+            totalLoads = stats.count || 0;
+          }
+        } catch (e) { console.error('[LoadBoard] getMarketRates error:', e); }
+      }
       return {
         lane: `${input.origin.city}, ${input.origin.state} to ${input.destination.city}, ${input.destination.state}`,
         equipmentType: input.equipmentType,
-        currentRate: {
-          low: 2.80,
-          average: 3.15,
-          high: 3.50,
-        },
-        trend: {
-          direction: "up",
-          change: 0.10,
-          period: "7 days",
-        },
-        volume: {
-          daily: 45,
-          weekly: 280,
-        },
-        recommendation: "Good time to book - rates trending up",
+        currentRate: { low: minRate, average: avgRate, high: maxRate },
+        trend: { direction: avgRate > 3.0 ? "up" : "down", change: Math.abs(avgRate - 3.0), period: "30 days" },
+        volume: { daily: Math.round(totalLoads / 30), weekly: Math.round(totalLoads / 4) },
+        recommendation: totalLoads > 10 ? (avgRate > 3.0 ? "Active lane - rates above average" : "Competitive lane - consider negotiating") : "Limited data for this lane",
       };
     }),
 });

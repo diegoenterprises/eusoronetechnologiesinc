@@ -155,6 +155,8 @@ import { approvalRouter } from "./routers/approval";
 import { authorityRouter } from "./routers/authority";
 import { reeferTempRouter } from "./routers/reeferTemp";
 import { locationRouter } from "./routers/location";
+import { carrierScorecardRouter } from "./routers/carrierScorecard";
+import { truckPostingRouter } from "./routers/truckPosting";
 
 // RSS cache is now warmed lazily on first request or after server.listen()
 // preWarmRSSCache() — moved to post-listen in _core/index.ts to not block health probe
@@ -734,6 +736,12 @@ export const appRouter = router({
 
   // Load Board
   loadBoard: loadBoardRouter,
+
+  // Carrier Scorecard (vs DAT CarrierWatch + McLeod Carrier Scorecard)
+  carrierScorecard: carrierScorecardRouter,
+
+  // Truck Posting (hazmat-class-aware load-to-truck matching)
+  truckPosting: truckPostingRouter,
 
   // FMCSA CSA Scores
   csaScores: csaScoresRouter,
