@@ -101,6 +101,235 @@ const COLD_ZONES = [
   { id: "cz-abq", name: "Albuquerque, NM", center: { lat: 35.08, lng: -106.65 }, surgeMultiplier: 0.83, reason: "Transit corridor, limited origin freight" },
   { id: "cz-oma", name: "Omaha, NE", center: { lat: 41.26, lng: -95.93 }, surgeMultiplier: 0.86, reason: "Seasonal agricultural gap" },
 ];
+// ── ROLE-SPECIFIC ZONE METRICS, FILTERING & SORTING ──
+function buildRoleMetrics(role: string, z: any): Array<{ label: string; value: string; color?: string }> {
+  const fmt = (n: number) => n >= 1000 ? `${(n/1000).toFixed(1)}k` : String(Math.round(n));
+  switch (role) {
+    case "CATALYST":
+      return [
+        { label: "Open Loads", value: fmt(z.liveLoads) },
+        { label: "Rate/mi", value: `$${Number(z.liveRate).toFixed(2)}` },
+        { label: "Surge", value: `${z.liveSurge}x`, color: z.liveSurge > 1.3 ? "red" : z.liveSurge > 1.1 ? "amber" : undefined },
+      ];
+    case "SHIPPER":
+      return [
+        { label: "Avail. Trucks", value: fmt(z.liveTrucks) },
+        { label: "Est. Rate", value: `$${Number(z.liveRate).toFixed(2)}/mi` },
+        { label: "Response", value: z.liveRatio > 2.5 ? "Slow" : z.liveRatio > 1.5 ? "Normal" : "Fast", color: z.liveRatio > 2.5 ? "red" : z.liveRatio > 1.5 ? "amber" : "green" },
+      ];
+    case "DRIVER":
+      return [
+        { label: "Loads", value: fmt(z.liveLoads) },
+        { label: "Est. Pay", value: `$${Math.round(Number(z.liveRate) * 250)}`, color: z.liveRate > 3 ? "green" : undefined },
+        { label: "Diesel", value: z.fuelPrice != null ? `$${Number(z.fuelPrice).toFixed(2)}` : "N/A" },
+      ];
+    case "BROKER": {
+      const margin = +((Number(z.liveRate) * Number(z.liveRatio) * 0.15)).toFixed(2);
+      return [
+        { label: "Loads", value: fmt(z.liveLoads) },
+        { label: "Margin/mi", value: `+$${margin}`, color: margin > 0.5 ? "green" : undefined },
+        { label: "Trucks", value: fmt(z.liveTrucks) },
+      ];
+    }
+    case "DISPATCH":
+      return [
+        { label: "Open Loads", value: fmt(z.liveLoads) },
+        { label: "Drivers", value: fmt(z.liveTrucks) },
+        { label: "Imbalance", value: `${z.liveRatio}x`, color: z.liveRatio > 2.5 ? "red" : z.liveRatio > 1.8 ? "amber" : "green" },
+      ];
+    case "TERMINAL_MANAGER": {
+      const hasTanker = (z.topEquipment || []).some((e: string) => ["TANKER","HAZMAT"].includes(e));
+      const marketerScore = hasTanker ? Math.round(z.liveLoads * 0.6) : Math.round(z.liveLoads * 0.2);
+      return [
+        { label: "Inbound Vol.", value: fmt(z.liveLoads) },
+        { label: "Marketers", value: fmt(marketerScore), color: marketerScore > 100 ? "green" : undefined },
+        { label: "Crude/Chem", value: hasTanker ? `${Math.min(100, Math.round(((z.hazmatClasses?.length || 0) / 5) * 100))}%` : "0%" },
+      ];
+    }
+    case "ESCORT": {
+      const ovsLabel = z.oversizedFrequency === "VERY_HIGH" ? "Very High" : z.oversizedFrequency === "HIGH" ? "High" : "Moderate";
+      return [
+        { label: "Oversized", value: ovsLabel, color: z.oversizedFrequency === "VERY_HIGH" ? "red" : z.oversizedFrequency === "HIGH" ? "amber" : undefined },
+        { label: "Rate/mi", value: `$${Number(z.liveRate).toFixed(2)}` },
+        { label: "Permits Req.", value: String(z.hazmatClasses?.length || 0) },
+      ];
+    }
+    case "FACTORING": {
+      const estInvoices = Math.round(z.liveLoads * 0.7);
+      return [
+        { label: "Est. Invoices", value: fmt(estInvoices) },
+        { label: "Avg Value", value: `$${fmt(Math.round(Number(z.liveRate) * 280))}` },
+        { label: "Credit Risk", value: z.liveRatio > 2.5 ? "High" : z.liveRatio > 1.5 ? "Med" : "Low", color: z.liveRatio > 2.5 ? "red" : z.liveRatio > 1.5 ? "amber" : "green" },
+      ];
+    }
+    case "COMPLIANCE_OFFICER":
+      return [
+        { label: "Risk Score", value: String(z.complianceRiskScore || 0), color: (z.complianceRiskScore || 0) > 50 ? "red" : (z.complianceRiskScore || 0) > 25 ? "amber" : "green" },
+        { label: "Hazmat", value: `${z.hazmatClasses?.length || 0} classes` },
+        { label: "Weather", value: z.weatherRiskLevel || "LOW", color: z.weatherRiskLevel === "HIGH" ? "red" : z.weatherRiskLevel === "MODERATE" ? "amber" : undefined },
+      ];
+    case "SAFETY_MANAGER": {
+      const ss = Math.max(0, 100 - Math.round(((z.weatherAlerts?.length || 0) * 15) + ((z.hazmatClasses?.length || 0) * 10)));
+      return [
+        { label: "Safety Score", value: String(ss), color: ss < 50 ? "red" : ss < 70 ? "amber" : "green" },
+        { label: "Hazmat", value: `${z.hazmatClasses?.length || 0} classes` },
+        { label: "Incidents", value: (z.weatherAlerts?.length || 0) > 2 ? "Active" : "Clear", color: (z.weatherAlerts?.length || 0) > 2 ? "red" : "green" },
+      ];
+    }
+    default: // ADMIN, SUPER_ADMIN
+      return [
+        { label: "Loads", value: fmt(z.liveLoads) },
+        { label: "Trucks", value: fmt(z.liveTrucks) },
+        { label: "L:T Ratio", value: `${z.liveRatio}x`, color: z.liveRatio > 2.5 ? "red" : z.liveRatio > 1.8 ? "amber" : undefined },
+      ];
+  }
+}
+
+function filterZonesForRole(role: string, zones: any[]): any[] {
+  switch (role) {
+    case "TERMINAL_MANAGER":
+      return zones.filter(z =>
+        z.topEquipment.some((e: string) => ["TANKER","HAZMAT","FLATBED"].includes(e)) ||
+        (z.hazmatClasses?.length || 0) > 2
+      );
+    case "ESCORT":
+      return zones.filter(z =>
+        z.topEquipment.some((e: string) => ["FLATBED","HAZMAT"].includes(e)) ||
+        ["HIGH","VERY_HIGH"].includes(z.oversizedFrequency || "")
+      );
+    default:
+      return zones;
+  }
+}
+
+function sortZonesForRole(role: string, zones: any[]): any[] {
+  const copy = [...zones];
+  switch (role) {
+    case "CATALYST":
+    case "DRIVER":
+      return copy.sort((a, b) => b.liveLoads - a.liveLoads);
+    case "SHIPPER":
+      return copy.sort((a, b) => b.liveTrucks - a.liveTrucks);
+    case "BROKER":
+      return copy.sort((a, b) => (b.liveRate * b.liveRatio) - (a.liveRate * a.liveRatio));
+    case "DISPATCH":
+      return copy.sort((a, b) => b.liveRatio - a.liveRatio);
+    case "TERMINAL_MANAGER":
+      return copy.sort((a, b) => {
+        const aT = (a.topEquipment || []).some((e: string) => ["TANKER","HAZMAT"].includes(e)) ? 1 : 0;
+        const bT = (b.topEquipment || []).some((e: string) => ["TANKER","HAZMAT"].includes(e)) ? 1 : 0;
+        return bT - aT || b.liveLoads - a.liveLoads;
+      });
+    case "ESCORT": {
+      const ovsO: Record<string, number> = { VERY_HIGH: 4, HIGH: 3, MODERATE: 2, LOW: 1 };
+      return copy.sort((a, b) => (ovsO[b.oversizedFrequency] || 0) - (ovsO[a.oversizedFrequency] || 0));
+    }
+    case "FACTORING":
+      return copy.sort((a, b) => b.liveLoads - a.liveLoads);
+    case "COMPLIANCE_OFFICER":
+      return copy.sort((a, b) => (b.complianceRiskScore || 0) - (a.complianceRiskScore || 0));
+    case "SAFETY_MANAGER":
+      return copy.sort((a, b) => {
+        const aS = 100 - ((a.weatherAlerts?.length || 0) * 15 + (a.hazmatClasses?.length || 0) * 10);
+        const bS = 100 - ((b.weatherAlerts?.length || 0) * 15 + (b.hazmatClasses?.length || 0) * 10);
+        return aS - bS;
+      });
+    default:
+      return copy.sort((a, b) => b.liveRatio - a.liveRatio);
+  }
+}
+
+function buildRolePulseStats(role: string, filtered: any[], fuelPrices: Record<string, { diesel: number }>, weatherAlerts: Array<{ severity: string }>): Array<{ label: string; value: string; icon: string }> {
+  const totalLoads = filtered.reduce((s, z) => s + (z.liveLoads || 0), 0);
+  const totalTrucks = filtered.reduce((s, z) => s + (z.liveTrucks || 0), 0);
+  const avgRate = filtered.length > 0 ? +(filtered.reduce((s, z) => s + z.liveRate, 0) / filtered.length).toFixed(2) : 0;
+  const critical = filtered.filter(z => z.demandLevel === "CRITICAL").length;
+  const fp = Object.values(fuelPrices);
+  const avgFuel = fp.length > 0 ? +(fp.reduce((s, f) => s + f.diesel, 0) / fp.length).toFixed(3) : null;
+  const sevWx = weatherAlerts.filter(a => ["Extreme","Severe"].includes(a.severity)).length;
+  const bestRate = filtered.length > 0 ? Math.max(...filtered.map(z => z.liveRate)) : 0;
+  switch (role) {
+    case "CATALYST":
+      return [
+        { label: "Open Loads", value: totalLoads.toLocaleString(), icon: "flame" },
+        { label: "Best Rate", value: `$${bestRate.toFixed(2)}/mi`, icon: "trending_up" },
+        { label: "Surge Zones", value: String(critical), icon: "zap" },
+        ...(avgFuel ? [{ label: "Diesel", value: `$${avgFuel}`, icon: "fuel" }] : []),
+      ];
+    case "SHIPPER":
+      return [
+        { label: "Avail. Trucks", value: totalTrucks.toLocaleString(), icon: "truck" },
+        { label: "Avg Rate", value: `$${avgRate}/mi`, icon: "trending_up" },
+        { label: "Hot Markets", value: String(critical), icon: "flame" },
+        ...(sevWx > 0 ? [{ label: "Weather Alerts", value: String(sevWx), icon: "cloud_rain" }] : []),
+      ];
+    case "DRIVER":
+      return [
+        { label: "Loads", value: totalLoads.toLocaleString(), icon: "flame" },
+        { label: "Best Rate", value: `$${bestRate.toFixed(2)}/mi`, icon: "trending_up" },
+        ...(avgFuel ? [{ label: "Avg Diesel", value: `$${avgFuel}`, icon: "fuel" }] : []),
+        { label: "Surge Zones", value: String(critical), icon: "zap" },
+      ];
+    case "BROKER":
+      return [
+        { label: "Total Loads", value: totalLoads.toLocaleString(), icon: "flame" },
+        { label: "Best Margin", value: `$${(bestRate * 0.15).toFixed(2)}/mi`, icon: "trending_up" },
+        { label: "Trucks", value: totalTrucks.toLocaleString(), icon: "truck" },
+        { label: "Critical", value: String(critical), icon: "zap" },
+      ];
+    case "DISPATCH":
+      return [
+        { label: "Open Loads", value: totalLoads.toLocaleString(), icon: "flame" },
+        { label: "Drivers Avail.", value: totalTrucks.toLocaleString(), icon: "truck" },
+        { label: "Avg Imbalance", value: `${totalTrucks > 0 ? (totalLoads / totalTrucks).toFixed(1) : 0}x`, icon: "bar_chart" },
+        { label: "Critical", value: String(critical), icon: "zap" },
+      ];
+    case "TERMINAL_MANAGER":
+      return [
+        { label: "Inbound Freight", value: totalLoads.toLocaleString(), icon: "flame" },
+        { label: "Active Marketers", value: String(Math.round(totalLoads * 0.4)), icon: "truck" },
+        { label: "Crude Zones", value: String(filtered.filter(z => z.topEquipment?.includes("TANKER")).length), icon: "bar_chart" },
+        ...(sevWx > 0 ? [{ label: "Weather", value: String(sevWx), icon: "cloud_rain" }] : []),
+      ];
+    case "ESCORT":
+      return [
+        { label: "Oversized Zones", value: String(filtered.filter(z => ["HIGH","VERY_HIGH"].includes(z.oversizedFrequency)).length), icon: "flame" },
+        { label: "Best Rate", value: `$${bestRate.toFixed(2)}/mi`, icon: "trending_up" },
+        { label: "Permit Corridors", value: String(filtered.length), icon: "navigation" },
+        ...(sevWx > 0 ? [{ label: "Weather", value: String(sevWx), icon: "cloud_rain" }] : []),
+      ];
+    case "FACTORING":
+      return [
+        { label: "Est. Invoices", value: String(Math.round(totalLoads * 0.7)), icon: "bar_chart" },
+        { label: "Avg Value", value: `$${Math.round(avgRate * 280)}`, icon: "trending_up" },
+        { label: "High Risk", value: String(filtered.filter(z => z.liveRatio > 2.5).length), icon: "alert" },
+        { label: "Active Zones", value: String(filtered.length), icon: "zap" },
+      ];
+    case "COMPLIANCE_OFFICER":
+      return [
+        { label: "Risk Zones", value: String(filtered.filter(z => (z.complianceRiskScore || 0) > 40).length), icon: "alert" },
+        { label: "Hazmat Active", value: String(filtered.filter(z => (z.hazmatClasses?.length || 0) > 2).length), icon: "shield" },
+        { label: "Avg Risk", value: String(Math.round(filtered.reduce((s, z) => s + (z.complianceRiskScore || 0), 0) / Math.max(filtered.length, 1))), icon: "bar_chart" },
+        ...(sevWx > 0 ? [{ label: "Weather", value: String(sevWx), icon: "cloud_rain" }] : []),
+      ];
+    case "SAFETY_MANAGER":
+      return [
+        { label: "Low Safety", value: String(filtered.filter(z => { const s2 = 100-((z.weatherAlerts?.length||0)*15+(z.hazmatClasses?.length||0)*10); return s2 < 60; }).length), icon: "alert" },
+        { label: "Hazmat Zones", value: String(filtered.filter(z => (z.hazmatClasses?.length || 0) > 2).length), icon: "shield" },
+        { label: "Active Incidents", value: String(sevWx), icon: "flame" },
+        { label: "Monitored", value: String(filtered.length), icon: "bar_chart" },
+      ];
+    default: // ADMIN, SUPER_ADMIN
+      return [
+        { label: "Total Loads", value: totalLoads.toLocaleString(), icon: "flame" },
+        { label: "Avg Rate", value: `$${avgRate}/mi`, icon: "trending_up" },
+        { label: "L:T Ratio", value: `${totalTrucks > 0 ? (totalLoads / totalTrucks).toFixed(1) : 0}x`, icon: "bar_chart" },
+        { label: "Critical", value: String(critical), icon: "zap" },
+        ...(avgFuel ? [{ label: "Diesel", value: `$${avgFuel}`, icon: "fuel" }] : []),
+      ];
+  }
+}
+
 // ── DB ENHANCEMENT ──
 interface DbEnhancement {
   loadsByState: Record<string, number>;
@@ -168,26 +397,26 @@ export const hotZonesRouter = router({
         const zoneFuel = fuelPrices[zone.state] || null;
         const zoneWeather = weatherAlerts.filter(a => a.state.includes(zone.state) && ["Extreme","Severe"].includes(a.severity));
 
-        return {
+        const compRisk = Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0));
+        const wxLevel = zoneWeather.length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW";
+        const zd = {
           zoneId: zone.id, zoneName: zone.name, state: zone.state, center: zone.center, radius: zone.radius,
-          demandLevel: liveRatio > 2.8 ? "CRITICAL" : liveRatio > 2.0 ? "HIGH" : "ELEVATED",
+          demandLevel: (liveRatio > 2.8 ? "CRITICAL" : liveRatio > 2.0 ? "HIGH" : "ELEVATED") as string,
           liveRate, liveLoads, liveTrucks, liveRatio, liveSurge,
           rateChange, rateChangePercent: rateChangePct,
           topEquipment: zone.topEquipment, reasons: zone.reasons, peakHours: zone.peakHours,
           hazmatClasses: zone.hazmatClasses, oversizedFrequency: zone.oversizedFrequency,
           fuelPrice: zoneFuel?.diesel || null, fuelPriceUpdated: zoneFuel?.updatedAt || null,
-          weatherAlerts: zoneWeather.slice(0, 3),
-          weatherRiskLevel: zoneWeather.length > 2 ? "HIGH" : zoneWeather.length > 0 ? "MODERATE" : "LOW",
-          complianceRiskScore: (role === "COMPLIANCE_OFFICER" || role === "SAFETY_MANAGER")
-            ? Math.round((zoneWeather.length * 20) + (zone.hazmatClasses?.length || 0) * 15 + (liveRatio > 2.5 ? 20 : 0))
-            : undefined,
+          weatherAlerts: zoneWeather.slice(0, 3), weatherRiskLevel: wxLevel,
+          complianceRiskScore: compRisk,
           platformLoads: dbLoads, timestamp: new Date().toISOString(),
         };
+        return { ...zd, roleMetrics: buildRoleMetrics(role, zd) };
       });
-      // Role-specific filtering
-      let filtered = [...feed];
-      if (role === "ESCORT") filtered = filtered.filter(z => z.topEquipment.some(e => ["FLATBED","HAZMAT"].includes(e)) || ["HIGH","VERY_HIGH"].includes(z.oversizedFrequency || ""));
+      // Role-specific filtering & sorting
+      let filtered = filterZonesForRole(role, [...feed]);
       if (input?.equipment) filtered = filtered.filter(z => z.topEquipment.includes(input.equipment!));
+      filtered = sortZonesForRole(role, filtered);
       const coldFeed = COLD_ZONES.map(z => ({ ...z, liveRate: +(z.surgeMultiplier * 2.20).toFixed(2), liveSurge: z.surgeMultiplier, timestamp: new Date().toISOString() }));
       return {
         zones: filtered, coldZones: coldFeed, roleContext,
@@ -203,6 +432,7 @@ export const hotZonesRouter = router({
           criticalZones: filtered.filter(z => z.demandLevel === "CRITICAL").length,
           avgFuelPrice: Object.values(fuelPrices).length > 0 ? +(Object.values(fuelPrices).reduce((s, f) => s + f.diesel, 0) / Object.values(fuelPrices).length).toFixed(3) : null,
           activeWeatherAlerts: weatherAlerts.filter(a => ["Extreme","Severe"].includes(a.severity)).length,
+          rolePulseStats: buildRolePulseStats(role, filtered, fuelPrices, weatherAlerts),
         },
       };
     }),

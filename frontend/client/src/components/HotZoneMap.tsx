@@ -613,10 +613,13 @@ export default function HotZoneMap({ zones, coldZones, roleCtx, selectedZone, on
                 <span className={`text-xs font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.zoneName}</span>
               </div>
               <div className={`grid grid-cols-3 gap-x-3 gap-y-1 text-[10px] ${isLight ? "text-slate-500" : "text-white/50"}`}>
+                {(tip.z.roleMetrics || []).map((m: any, mi: number) => (
+                  <div key={mi}>
+                    <span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">{m.label}</span>
+                    <span className={`font-bold ${m.color === "red" ? "text-red-400" : m.color === "amber" ? "text-amber-400" : m.color === "green" ? "text-emerald-400" : isLight ? "text-slate-800" : "text-white"}`}>{m.value}</span>
+                  </div>
+                ))}
                 <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Rate</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>${Number(tip.z.liveRate || 0).toFixed(2)}/mi</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Loads</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveLoads}</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Trucks</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{tip.z.liveTrucks}</span></div>
-                <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">L:T Ratio</span><span className={`font-bold ${isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.liveRatio || 0).toFixed(2)}x</span></div>
                 <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Surge</span><span className={`font-bold ${(tip.z.liveSurge || 1) > 1.2 ? "text-red-400" : isLight ? "text-slate-800" : "text-white"}`}>{Number(tip.z.liveSurge || 1).toFixed(2)}x</span></div>
                 <div><span className="block font-semibold text-[9px] uppercase tracking-wider opacity-60">Demand</span><span className={`font-bold ${tip.z.demandLevel === "CRITICAL" ? "text-red-400" : tip.z.demandLevel === "HIGH" ? "text-orange-400" : "text-amber-400"}`}>{tip.z.demandLevel}</span></div>
               </div>

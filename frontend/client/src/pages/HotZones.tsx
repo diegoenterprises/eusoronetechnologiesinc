@@ -182,20 +182,25 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
           {/* ── MARKET PULSE — minimal stat row ── */}
           {pulse && (
             <div className={`flex items-center gap-6 mt-4 pt-3 border-t ${isLight ? "border-slate-100" : "border-white/[0.04]"}`}>
-              {[
-                { label: roleCtx?.primaryMetric || "Loads", value: pulse.totalLoads.toLocaleString(), icon: Flame },
-                { label: "Avg Rate", value: `$${pulse.avgRate}/mi`, icon: TrendingUp },
-                { label: "L:T Ratio", value: `${pulse.avgRatio}x`, icon: BarChart3 },
-                { label: "Critical", value: String(pulse.criticalZones), icon: Zap },
-                ...(pulse.avgFuelPrice ? [{ label: "Diesel", value: `$${pulse.avgFuelPrice}`, icon: Fuel }] : []),
-                ...(pulse.activeWeatherAlerts > 0 ? [{ label: "Alerts", value: String(pulse.activeWeatherAlerts), icon: CloudRain }] : []),
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <s.icon className={`w-3.5 h-3.5 ${isLight ? "text-slate-400" : "text-white/30"}`} />
-                  <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>{s.label}</span>
-                  <span className={`text-sm font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{s.value}</span>
-                </div>
-              ))}
+              {(() => {
+                const PIC: Record<string, typeof Flame> = { flame: Flame, trending_up: TrendingUp, truck: Truck, bar_chart: BarChart3, zap: Zap, fuel: Fuel, cloud_rain: CloudRain, shield: Shield, alert: AlertTriangle, navigation: Navigation, clock: Clock };
+                const stats = pulse.rolePulseStats || [
+                  { label: "Loads", value: String(pulse.totalLoads), icon: "flame" },
+                  { label: "Avg Rate", value: `$${pulse.avgRate}/mi`, icon: "trending_up" },
+                  { label: "L:T Ratio", value: `${pulse.avgRatio}x`, icon: "bar_chart" },
+                  { label: "Critical", value: String(pulse.criticalZones), icon: "zap" },
+                ];
+                return stats.map((s: any, i: number) => {
+                  const Icon = PIC[s.icon] || Flame;
+                  return (
+                    <div key={i} className="flex items-center gap-2">
+                      <Icon className={`w-3.5 h-3.5 ${isLight ? "text-slate-400" : "text-white/30"}`} />
+                      <span className={`text-xs ${isLight ? "text-slate-500" : "text-white/40"}`}>{s.label}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{s.value}</span>
+                    </div>
+                  );
+                });
+              })()}
               <div className={`ml-auto text-[10px] ${isLight ? "text-slate-400" : "text-white/20"}`}>
                 {data?.feedSource}
               </div>
@@ -304,22 +309,16 @@ export default function HotZones({ embedded }: { embedded?: boolean } = {}) {
                       </div>
                     </div>
 
-                    {/* Metrics row */}
+                    {/* Metrics row — role-adaptive */}
                     <div className={`grid grid-cols-3 gap-3 py-3 border-t ${isLight ? "border-slate-100" : "border-white/[0.06]"}`}>
-                      <div>
-                        <div className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>Loads</div>
-                        <div className={`text-sm font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{zone.liveLoads}</div>
-                      </div>
-                      <div>
-                        <div className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>Trucks</div>
-                        <div className={`text-sm font-semibold tabular-nums ${isLight ? "text-slate-800" : "text-white/90"}`}>{zone.liveTrucks}</div>
-                      </div>
-                      <div>
-                        <div className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>L:T Ratio</div>
-                        <div className={`text-sm font-semibold tabular-nums ${zone.liveRatio > 2.5 ? "text-red-400" : zone.liveRatio > 1.8 ? "text-amber-400" : isLight ? "text-slate-800" : "text-white/90"}`}>
-                          {zone.liveRatio}x
+                      {(zone.roleMetrics || []).map((m: any, mi: number) => (
+                        <div key={mi}>
+                          <div className={`text-[10px] uppercase tracking-wider ${isLight ? "text-slate-400" : "text-white/30"}`}>{m.label}</div>
+                          <div className={`text-sm font-semibold tabular-nums ${
+                            m.color === "red" ? "text-red-400" : m.color === "amber" ? "text-amber-400" : m.color === "green" ? "text-emerald-400" : isLight ? "text-slate-800" : "text-white/90"
+                          }`}>{m.value}</div>
                         </div>
-                      </div>
+                      ))}
                     </div>
 
                     {/* Equipment pills */}
