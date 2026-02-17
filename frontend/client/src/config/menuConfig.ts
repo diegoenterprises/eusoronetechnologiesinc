@@ -541,6 +541,111 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Digital truck stop — lobby, missions, rewards"
     },
     { 
+      icon: "Calendar", 
+      label: "Today's Schedule", 
+      path: "/driver/today", 
+      badge: 0,
+      description: "Daily schedule and task overview"
+    },
+    { 
+      icon: "UserCheck", 
+      label: "Profile Setup", 
+      path: "/driver/profile-setup", 
+      badge: 0,
+      description: "Driver profile, CDL, and endorsement info"
+    },
+    { 
+      icon: "Clock", 
+      label: "Availability", 
+      path: "/driver/availability", 
+      badge: 0,
+      description: "Set your availability status"
+    },
+    { 
+      icon: "Banknote", 
+      label: "Trip Pay", 
+      path: "/driver/trip-pay", 
+      badge: 0,
+      description: "Trip pay breakdown and details"
+    },
+    { 
+      icon: "DollarSign", 
+      label: "Settlements", 
+      path: "/driver/settlement-history", 
+      badge: 0,
+      description: "Settlement history and deductions"
+    },
+    { 
+      icon: "Award", 
+      label: "Bonus Tracker", 
+      path: "/driver/bonus-tracker", 
+      badge: 0,
+      description: "Safety and performance bonuses"
+    },
+    { 
+      icon: "CreditCard", 
+      label: "Direct Deposit", 
+      path: "/driver/direct-deposit", 
+      badge: 0,
+      description: "Bank account and deposit settings"
+    },
+    { 
+      icon: "Bell", 
+      label: "Emergency Alerts", 
+      path: "/emergency-alerts", 
+      badge: 0,
+      description: "Emergency notifications and response"
+    },
+    { 
+      icon: "AlertTriangle", 
+      label: "Hazmat Safety", 
+      path: "/hazmat/placard-guide", 
+      badge: 0,
+      description: "Placard guide, spill response, and fire response"
+    },
+    { 
+      icon: "ClipboardCheck", 
+      label: "Hazmat Check-In", 
+      path: "/hazmat/check-in", 
+      badge: 0,
+      description: "Facility arrival and safety checklist"
+    },
+    { 
+      icon: "MapPin", 
+      label: "Dock Assignment", 
+      path: "/hazmat/dock-assignment", 
+      badge: 0,
+      description: "Dock/bay assignment and instructions"
+    },
+    { 
+      icon: "Activity", 
+      label: "Loading Status", 
+      path: "/hazmat/loading-status", 
+      badge: 0,
+      description: "Real-time loading/unloading progress"
+    },
+    { 
+      icon: "Navigation", 
+      label: "Route Compliance", 
+      path: "/hazmat/route-compliance", 
+      badge: 0,
+      description: "Pre-trip hazmat route verification"
+    },
+    { 
+      icon: "Droplet", 
+      label: "Spill Response", 
+      path: "/driver/spill-response", 
+      badge: 0,
+      description: "Hazmat spill response procedures"
+    },
+    { 
+      icon: "Flame", 
+      label: "Fire Response", 
+      path: "/hazmat/fire-response", 
+      badge: 0,
+      description: "Hazmat fire response guide"
+    },
+    { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
@@ -648,6 +753,48 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/company-channels", 
       badge: 0,
       description: "Team communication channels"
+    },
+    { 
+      icon: "Bell", 
+      label: "Emergency Broadcast", 
+      path: "/dispatch/emergency-broadcast", 
+      badge: 0,
+      description: "Send urgent alerts to drivers"
+    },
+    { 
+      icon: "Users", 
+      label: "Hazmat Drivers", 
+      path: "/hazmat/driver-filter", 
+      badge: 0,
+      description: "Find hazmat-qualified drivers"
+    },
+    { 
+      icon: "Truck", 
+      label: "Hazmat Equipment", 
+      path: "/hazmat/equipment-filter", 
+      badge: 0,
+      description: "Filter hazmat-rated equipment"
+    },
+    { 
+      icon: "Navigation", 
+      label: "Route Restrictions", 
+      path: "/hazmat/route-restrictions", 
+      badge: 0,
+      description: "Hazmat route restriction reference"
+    },
+    { 
+      icon: "Shield", 
+      label: "Route Compliance", 
+      path: "/hazmat/route-compliance", 
+      badge: 0,
+      description: "Pre-trip route compliance verification"
+    },
+    { 
+      icon: "Newspaper", 
+      label: "Regulatory Updates", 
+      path: "/hazmat/regulatory-updates", 
+      badge: 0,
+      description: "Hazmat regulatory news and compliance"
     },
     { 
       icon: "Settings", 
