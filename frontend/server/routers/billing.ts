@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure, auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { payments, loads, users, vehicles, companies, detentionClaims, factoringInvoices, wallets, walletTransactions } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";

@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, inArray } from "drizzle-orm";
-import { protectedProcedure, adminProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, adminProcedure, router } from "../_core/trpc";
 import { fmcsaService } from "../services/fmcsa";
 import { eldService } from "../services/eld";
 import { clearinghouseService } from "../services/clearinghouse";

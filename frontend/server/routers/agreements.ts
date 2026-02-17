@@ -7,7 +7,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, or, like, gte, lte, inArray } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { resolveUserRole, isAdminRole } from "../_core/resolveRole";
 import {

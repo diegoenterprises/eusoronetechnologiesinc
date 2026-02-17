@@ -12,7 +12,7 @@
 
 import { z } from "zod";
 import { eq, and, sql } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { users, companies, wallets, walletTransactions, payments } from "../../drizzle/schema";
 import { stripe } from "../stripe/service";

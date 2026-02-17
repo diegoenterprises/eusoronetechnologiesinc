@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { conversations, messages, users } from "../../drizzle/schema";
 

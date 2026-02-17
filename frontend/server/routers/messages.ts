@@ -15,7 +15,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, or, like, isNull, inArray } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { messages, users, conversations, conversationParticipants, wallets, walletTransactions } from "../../drizzle/schema";
 import { emitMessage } from "../_core/websocket";

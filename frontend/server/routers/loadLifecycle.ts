@@ -14,7 +14,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { feeCalculator } from "../services/feeCalculator";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";

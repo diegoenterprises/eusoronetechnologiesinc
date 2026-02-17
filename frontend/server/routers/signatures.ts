@@ -9,7 +9,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { desc, sql } from "drizzle-orm";
 

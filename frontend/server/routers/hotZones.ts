@@ -3,7 +3,7 @@
  * 12 user roles, 18 hot zones, EIA fuel prices, NWS weather alerts
  */
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql, count } from "drizzle-orm";
 import { loads } from "../../drizzle/schema";

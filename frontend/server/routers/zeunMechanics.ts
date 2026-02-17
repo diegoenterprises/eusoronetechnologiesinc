@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { eq, desc, and, or, like, sql, gte, lte } from "drizzle-orm";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { esangAI } from "../_core/esangAI";
 import { getDb } from "../db";
 import {

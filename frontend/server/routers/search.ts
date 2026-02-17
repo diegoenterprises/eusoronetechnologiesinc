@@ -9,7 +9,7 @@
 
 import { z } from "zod";
 import { eq, like, sql, or, and, desc } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, drivers, users, documents, companies } from "../../drizzle/schema";
 

@@ -29,7 +29,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure, adminProcedure } from "../_core/trpc";
 import {
   emitNotification,
   emitSystemAnnouncement,

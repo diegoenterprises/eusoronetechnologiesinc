@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { dashboardWidgets, dashboardLayouts, widgetConfigurations } from "../../drizzle/schema";
 import { eq, and, sql } from "drizzle-orm";

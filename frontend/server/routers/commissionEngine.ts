@@ -15,7 +15,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { getLiveCommodityValues, getAllCommodityIndexes } from "../_core/commodityData";
 
 // ── CONSTANTS ──

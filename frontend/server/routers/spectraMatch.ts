@@ -13,7 +13,7 @@
 
 import { z } from "zod";
 import { sql, desc, eq } from "drizzle-orm";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, auditedProtectedProcedure as protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads } from "../../drizzle/schema";
 import { esangAI, type SpectraMatchAIRequest } from "../_core/esangAI";

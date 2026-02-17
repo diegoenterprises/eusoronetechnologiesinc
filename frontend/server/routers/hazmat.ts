@@ -8,7 +8,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte, lte, inArray, isNotNull } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, drivers, companies, incidents, vehicles } from "../../drizzle/schema";
 import { searchMaterials, getGuide, getFullERGInfo, EMERGENCY_CONTACTS } from "../_core/ergDatabaseDB";

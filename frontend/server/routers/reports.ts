@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 import { eq, and, desc, sql, gte } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, vehicles, users, payments, incidents } from "../../drizzle/schema";
 // vehicles used in getDashboardMetrics for fleet stats

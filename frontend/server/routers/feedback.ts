@@ -5,7 +5,7 @@
 
 import { z } from "zod";
 import { sql } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { auditedProtectedProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 
 export const feedbackRouter = router({
