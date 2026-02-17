@@ -200,15 +200,51 @@ export const widgetsRouter = router({
       }
     }),
 
-  // ════════════════════════════════════════════════════════
-  // Legacy stubs — kept for backward compatibility
-  // ════════════════════════════════════════════════════════
-  create: protectedProcedure.input(z.object({ type: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => {
-    console.warn("[STUB] widgets.create called with type:", input?.type);
-    return { success: true, id: `stub_${Date.now()}`, _stub: true, ...input?.data };
-  }),
-  update: protectedProcedure.input(z.object({ id: z.string(), data: z.any() }).optional()).mutation(async ({ input }) => ({ success: true, id: input?.id })),
-  delete: protectedProcedure.input(z.object({ id: z.string() }).optional()).mutation(async ({ input }) => ({ success: true, id: input?.id })),
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string(),
+      description: z.string().optional(),
+      category: z.enum(["analytics", "operations", "financial", "communication", "productivity", "safety", "compliance", "performance", "planning", "tracking", "reporting", "management", "system"]).default("analytics"),
+      componentPath: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const widgetKey = `custom_${input.name.toLowerCase().replace(/\s+/g, "_")}_${Date.now().toString(36)}`;
+      const [result] = await db.insert(dashboardWidgets).values({
+        widgetKey,
+        name: input.name,
+        description: input.description,
+        category: input.category,
+        componentPath: input.componentPath,
+        isActive: true,
+      }).$returningId();
+      return { success: true, id: result.id, widgetKey };
+    }),
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().optional(),
+      description: z.string().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const updates: Record<string, any> = {};
+      if (input.name) updates.name = input.name;
+      if (input.description !== undefined) updates.description = input.description;
+      if (input.isActive !== undefined) updates.isActive = input.isActive;
+      if (Object.keys(updates).length > 0) {
+        await db.update(dashboardWidgets).set(updates).where(eq(dashboardWidgets.id, input.id));
+      }
+      return { success: true, id: input.id };
+    }),
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      await db.update(dashboardWidgets).set({ isActive: false }).where(eq(dashboardWidgets.id, input.id));
+      return { success: true, id: input.id };
+    }),
   getWidgets: protectedProcedure.query(async () => ({ items: [] })),
   getWidgetTemplates: protectedProcedure.query(async () => ({ templates: [] })),
   getWidgetSharing: protectedProcedure.query(async () => ({ shared: [] })),
