@@ -959,21 +959,24 @@ export const catalystsRouter = router({
       period: z.enum(["month", "quarter", "year"]).default("quarter"),
     }))
     .query(async ({ input }) => {
-      return {
-        catalystId: input.catalystId,
-        period: input.period,
-        history: [
-          { month: "Oct 2024", loads: 42, onTimeRate: 95, rating: 4.6 },
-          { month: "Nov 2024", loads: 45, onTimeRate: 94, rating: 4.7 },
-          { month: "Dec 2024", loads: 38, onTimeRate: 97, rating: 4.8 },
-          { month: "Jan 2025", loads: 45, onTimeRate: 96, rating: 4.7 },
-        ],
-        trends: {
-          loads: { change: 7.1, direction: "up" },
-          onTimeRate: { change: 1.0, direction: "up" },
-          rating: { change: 0.1, direction: "up" },
-        },
-      };
+      const db = await getDb();
+      if (!db) return { catalystId: input.catalystId, period: input.period, history: [], trends: { loads: { change: 0, direction: 'flat' }, onTimeRate: { change: 0, direction: 'flat' }, rating: { change: 0, direction: 'flat' } } };
+      try {
+        const catalystId = parseInt(input.catalystId, 10);
+        const monthsBack = input.period === 'month' ? 1 : input.period === 'quarter' ? 3 : 12;
+        const history: Array<{ month: string; loads: number; onTimeRate: number; rating: number }> = [];
+        for (let i = monthsBack - 1; i >= 0; i--) {
+          const start = new Date(); start.setMonth(start.getMonth() - i, 1); start.setHours(0, 0, 0, 0);
+          const end = new Date(start); end.setMonth(end.getMonth() + 1);
+          const [stats] = await db.select({ count: sql<number>`count(*)`, delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)` }).from(loads).where(and(eq(loads.catalystId, catalystId), gte(loads.createdAt, start), sql`${loads.createdAt} < ${end}`));
+          const loadCount = stats?.count || 0;
+          const deliveredCount = stats?.delivered || 0;
+          history.push({ month: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), loads: loadCount, onTimeRate: loadCount > 0 ? Math.round((deliveredCount / loadCount) * 100) : 0, rating: 4.5 });
+        }
+        const first = history[0]?.loads || 0; const last = history[history.length - 1]?.loads || 0;
+        const change = first > 0 ? Math.round(((last - first) / first) * 100 * 10) / 10 : 0;
+        return { catalystId: input.catalystId, period: input.period, history, trends: { loads: { change, direction: change > 0 ? 'up' : change < 0 ? 'down' : 'flat' }, onTimeRate: { change: 0, direction: 'flat' }, rating: { change: 0, direction: 'flat' } } };
+      } catch (e) { console.error('[Catalysts] getPerformanceHistory error:', e); return { catalystId: input.catalystId, period: input.period, history: [], trends: { loads: { change: 0, direction: 'flat' }, onTimeRate: { change: 0, direction: 'flat' }, rating: { change: 0, direction: 'flat' } } }; }
     }),
 
   /**
@@ -986,13 +989,15 @@ export const catalystsRouter = router({
       reason: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        catalystId: input.catalystId,
-        newStatus: input.status,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        try {
+          const companyId = parseInt(input.catalystId, 10);
+          const statusMap: Record<string, string> = { active: 'compliant', pending: 'pending', suspended: 'non_compliant', inactive: 'expired' };
+          await db.update(companies).set({ complianceStatus: (statusMap[input.status] || 'pending') as any, isActive: input.status === 'active' }).where(eq(companies.id, companyId));
+        } catch (e) { console.error('[Catalysts] updateStatus error:', e); }
+      }
+      return { success: true, catalystId: input.catalystId, newStatus: input.status, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -1200,26 +1205,21 @@ export const catalystsRouter = router({
    * Get safety rating for CatalystProfile page
    */
   getSafetyRating: protectedProcedure
-    .query(async () => {
-      return {
-        overallScore: 92,
-        unsafeDriving: 15,
-        hosCompliance: 8,
-        vehicleMaintenance: 12,
-        controlledSubstances: 0,
-        driverFitness: 5,
-        lastAudit: "2025-01-15",
-        nextAuditDue: "2026-01-15",
-        basicScores: [
-          { name: "Unsafe Driving", score: 0, threshold: 65 },
-          { name: "HOS Compliance", score: 0, threshold: 65 },
-          { name: "Vehicle Maintenance", score: 0, threshold: 80 },
-          { name: "Controlled Substances", score: 0, threshold: 80 },
-          { name: "Driver Fitness", score: 0, threshold: 80 },
-          { name: "Crash Indicator", score: 0, threshold: 65 },
-          { name: "Hazmat Compliance", score: 0, threshold: 80 },
-        ],
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      const fallback = { overallScore: 0, unsafeDriving: 0, hosCompliance: 0, vehicleMaintenance: 0, controlledSubstances: 0, driverFitness: 0, lastAudit: '', nextAuditDue: '', basicScores: [{ name: 'Unsafe Driving', score: 0, threshold: 65 }, { name: 'HOS Compliance', score: 0, threshold: 65 }, { name: 'Vehicle Maintenance', score: 0, threshold: 80 }, { name: 'Controlled Substances', score: 0, threshold: 80 }, { name: 'Driver Fitness', score: 0, threshold: 80 }, { name: 'Crash Indicator', score: 0, threshold: 65 }, { name: 'Hazmat Compliance', score: 0, threshold: 80 }] };
+      if (!db) return fallback;
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const { inspections, incidents } = await import('../../drizzle/schema');
+        const [inspTotal] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(eq(inspections.companyId, companyId));
+        const [inspPassed] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(and(eq(inspections.companyId, companyId), eq(inspections.status, 'passed')));
+        const [incidentCount] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.companyId, companyId));
+        const inspRate = (inspTotal?.count || 0) > 0 ? Math.round(((inspPassed?.count || 0) / (inspTotal?.count || 1)) * 100) : 100;
+        const incidentPenalty = Math.min((incidentCount?.count || 0) * 5, 40);
+        const overall = Math.max(0, inspRate - incidentPenalty);
+        return { ...fallback, overallScore: overall, vehicleMaintenance: 100 - inspRate, basicScores: fallback.basicScores.map(b => ({ ...b, score: b.name === 'Vehicle Maintenance' ? 100 - inspRate : b.name === 'Crash Indicator' ? incidentPenalty : 0 })) };
+      } catch (e) { return fallback; }
     }),
 
   // Catalyst packets
@@ -1236,8 +1236,16 @@ export const catalystsRouter = router({
   resendPacket: protectedProcedure.input(z.object({ catalystId: z.string(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, packetId: input.id || "p1" })),
 
   // Additional catalyst procedures
-  approve: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
-  reject: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
+  approve: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'compliant' as any, isActive: true }).where(eq(companies.id, id)); } catch (e) { console.error('[Catalysts] approve error:', e); } }
+    return { success: true, catalystId: input.catalystId };
+  }),
+  reject: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => {
+    const db = await getDb();
+    if (db) { try { const id = parseInt(input.catalystId, 10); await db.update(companies).set({ complianceStatus: 'non_compliant' as any }).where(eq(companies.id, id)); } catch (e) { console.error('[Catalysts] reject error:', e); } }
+    return { success: true, catalystId: input.catalystId };
+  }),
   getDrivers: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
     const db = await getDb(); if (!db) return [];
     try {
@@ -1309,7 +1317,17 @@ export const catalystsRouter = router({
       return results;
     } catch (e) { return []; }
   }),
-  getVettingStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
+  getVettingStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { pending: 0, approved: 0, rejected: 0, total: 0 };
+    try {
+      const [total] = await db.select({ count: sql<number>`count(*)` }).from(companies);
+      const [pending] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, 'pending'));
+      const [compliant] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, 'compliant'));
+      const [nonCompliant] = await db.select({ count: sql<number>`count(*)` }).from(companies).where(eq(companies.complianceStatus, 'non_compliant'));
+      return { pending: pending?.count || 0, approved: compliant?.count || 0, rejected: nonCompliant?.count || 0, total: total?.count || 0 };
+    } catch (e) { return { pending: 0, approved: 0, rejected: 0, total: 0 }; }
+  }),
 
   /**
    * Get catalyst analytics for CatalystAnalytics page
