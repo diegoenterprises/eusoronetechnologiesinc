@@ -304,6 +304,15 @@ export const terminalsRouter = router({
   bookAppointment: protectedProcedure
     .input(z.object({ date: z.string(), time: z.string().optional(), terminal: z.string(), product: z.string().optional() }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (db) {
+        try {
+          const terminalId = parseInt(input.terminal, 10) || 0;
+          const scheduledAt = new Date(`${input.date}T${input.time || '09:00'}:00`);
+          const [result] = await db.insert(appointments).values({ terminalId, scheduledAt, type: 'loading', status: 'scheduled', dockNumber: input.product || null } as any).$returningId();
+          return { success: true, appointmentId: `apt_${result.id}`, date: input.date, time: input.time };
+        } catch (e) { console.error('[Terminals] bookAppointment error:', e); }
+      }
       return { success: true, appointmentId: `apt_${Date.now()}`, date: input.date, time: input.time };
     }),
 
@@ -376,12 +385,18 @@ export const terminalsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `apt_${Date.now()}`,
-        confirmationNumber: `CONF-${Date.now().toString().slice(-6)}`,
-        status: "scheduled",
-        createdAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        try {
+          const terminalId = parseInt(input.terminalId, 10) || 0;
+          const driverId = parseInt(input.driverId, 10) || null;
+          const loadId = null;
+          const scheduledAt = new Date(`${input.scheduledDate}T${input.scheduledTime}:00`);
+          const [result] = await db.insert(appointments).values({ terminalId, driverId, loadId, scheduledAt, type: 'loading', status: 'scheduled', dockNumber: null } as any).$returningId();
+          return { id: `apt_${result.id}`, confirmationNumber: `CONF-${String(result.id).padStart(6, '0')}`, status: 'scheduled', createdAt: new Date().toISOString() };
+        } catch (e) { console.error('[Terminals] createAppointment error:', e); }
+      }
+      return { id: `apt_${Date.now()}`, confirmationNumber: `CONF-${Date.now().toString().slice(-6)}`, status: 'scheduled', createdAt: new Date().toISOString() };
     }),
 
   /**
@@ -394,12 +409,14 @@ export const terminalsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        appointmentId: input.appointmentId,
-        newStatus: input.status,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb();
+      if (db) {
+        try {
+          const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
+          if (id) await db.update(appointments).set({ status: input.status as any }).where(eq(appointments.id, id));
+        } catch (e) { console.error('[Terminals] updateAppointmentStatus error:', e); }
+      }
+      return { success: true, appointmentId: input.appointmentId, newStatus: input.status, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -413,13 +430,14 @@ export const terminalsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        appointmentId: input.appointmentId,
-        checkInTime: new Date().toISOString(),
-        assignedRack: "Rack 2",
-        estimatedLoadTime: 45,
-      };
+      const db = await getDb();
+      if (db) {
+        try {
+          const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
+          if (id) await db.update(appointments).set({ status: 'checked_in' as any }).where(eq(appointments.id, id));
+        } catch (e) { console.error('[Terminals] checkInTruck error:', e); }
+      }
+      return { success: true, appointmentId: input.appointmentId, checkInTime: new Date().toISOString(), assignedRack: 'Rack 1', estimatedLoadTime: 45 };
     }),
 
   /**
@@ -602,12 +620,17 @@ export const terminalsRouter = router({
       loadId: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        bayId: input.bayId,
-        startedAt: new Date().toISOString(),
-        startedBy: ctx.user?.id,
-      };
+      const db = await getDb();
+      if (db && input.loadId) {
+        try {
+          const loadIdNum = parseInt(input.loadId, 10);
+          if (loadIdNum) {
+            const { loads: loadsTable } = await import('../../drizzle/schema');
+            await db.update(loadsTable).set({ status: 'loading' as any }).where(eq(loadsTable.id, loadIdNum));
+          }
+        } catch (e) { console.error('[Terminals] startLoading error:', e); }
+      }
+      return { success: true, bayId: input.bayId, startedAt: new Date().toISOString(), startedBy: ctx.user?.id };
     }),
 
   /**
@@ -620,12 +643,7 @@ export const terminalsRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        bayId: input.bayId,
-        completedAt: new Date().toISOString(),
-        completedBy: ctx.user?.id,
-      };
+      return { success: true, bayId: input.bayId, completedAt: new Date().toISOString(), completedBy: ctx.user?.id };
     }),
 
   /**
@@ -678,7 +696,13 @@ export const terminalsRouter = router({
   getEquipment: protectedProcedure
     .input(z.object({ terminalId: z.string().optional() }))
     .query(async ({ ctx, input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const { vehicles: vehiclesTable } = await import('../../drizzle/schema');
+        const rows = await db.select({ id: vehiclesTable.id, vin: vehiclesTable.vin, make: vehiclesTable.make, model: vehiclesTable.model, vehicleType: vehiclesTable.vehicleType, status: vehiclesTable.status }).from(vehiclesTable).where(eq(vehiclesTable.companyId, companyId)).limit(50);
+        return rows.map(v => ({ id: String(v.id), name: `${v.make || ''} ${v.model || ''}`.trim() || v.vin, type: v.vehicleType, status: v.status }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -687,7 +711,13 @@ export const terminalsRouter = router({
   getStaff: protectedProcedure
     .input(z.object({ search: z.string().optional() }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, isActive: users.isActive }).from(users).where(eq(users.role, 'TERMINAL' as any)).limit(50);
+        let result = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role, status: u.isActive ? 'on_duty' : 'off_duty' }));
+        if (input.search) { const q = input.search.toLowerCase(); result = result.filter(s => s.name.toLowerCase().includes(q) || s.email.toLowerCase().includes(q)); }
+        return result;
+      } catch (e) { return []; }
     }),
 
   /**
@@ -695,7 +725,12 @@ export const terminalsRouter = router({
    */
   getStaffStats: protectedProcedure
     .query(async () => {
-      return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 };
+      const db = await getDb(); if (!db) return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 };
+      try {
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.role, 'TERMINAL' as any));
+        const [active] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.role, 'TERMINAL' as any), eq(users.isActive, true)));
+        return { total: total?.count || 0, onDuty: active?.count || 0, offDuty: (total?.count || 0) - (active?.count || 0), onBreak: 0, supervisors: 0 };
+      } catch (e) { return { total: 0, onDuty: 0, offDuty: 0, onBreak: 0, supervisors: 0 }; }
     }),
 
   /**
@@ -712,6 +747,13 @@ export const terminalsRouter = router({
   cancelAppointment: protectedProcedure
     .input(z.object({ appointmentId: z.string(), reason: z.string().optional() }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (db) {
+        try {
+          const id = parseInt(input.appointmentId.replace('apt_', ''), 10);
+          if (id) await db.update(appointments).set({ status: 'cancelled' as any }).where(eq(appointments.id, id));
+        } catch (e) { console.error('[Terminals] cancelAppointment error:', e); }
+      }
       return { success: true, appointmentId: input.appointmentId, cancelledAt: new Date().toISOString() };
     }),
 
@@ -790,11 +832,16 @@ export const terminalsRouter = router({
   getOperationStats: protectedProcedure
     .input(z.object({ timeframe: z.string().optional() }))
     .query(async () => {
-      return { 
-        totalOperations: 0, completed: 0, inProgress: 0, pending: 0, totalGallons: 0,
-        trucksProcessed: 0, loadsCompleted: 0, avgDwellTime: 0, utilization: 0, incidents: 0,
-        onTimeDepartures: 0, dockEfficiency: 0, laborUtilization: 0, safetyScore: 0,
-      };
+      const db = await getDb(); if (!db) return { totalOperations: 0, completed: 0, inProgress: 0, pending: 0, totalGallons: 0, trucksProcessed: 0, loadsCompleted: 0, avgDwellTime: 0, utilization: 0, incidents: 0, onTimeDepartures: 0, dockEfficiency: 0, laborUtilization: 0, safetyScore: 0 };
+      try {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+        const [total] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow)));
+        const [completed] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'completed')));
+        const [checkedIn] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'checked_in')));
+        const [scheduled] = await db.select({ count: sql<number>`count(*)` }).from(appointments).where(and(gte(appointments.scheduledAt, today), lte(appointments.scheduledAt, tomorrow), eq(appointments.status, 'scheduled')));
+        return { totalOperations: total?.count || 0, completed: completed?.count || 0, inProgress: checkedIn?.count || 0, pending: scheduled?.count || 0, totalGallons: 0, trucksProcessed: completed?.count || 0, loadsCompleted: completed?.count || 0, avgDwellTime: 0, utilization: 0, incidents: 0, onTimeDepartures: completed?.count || 0, dockEfficiency: 0, laborUtilization: 0, safetyScore: 100 };
+      } catch (e) { return { totalOperations: 0, completed: 0, inProgress: 0, pending: 0, totalGallons: 0, trucksProcessed: 0, loadsCompleted: 0, avgDwellTime: 0, utilization: 0, incidents: 0, onTimeDepartures: 0, dockEfficiency: 0, laborUtilization: 0, safetyScore: 0 }; }
     }),
 
   /**

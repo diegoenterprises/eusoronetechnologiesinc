@@ -8,7 +8,7 @@ import { router, superAdminProcedure as protectedProcedure } from "../_core/trpc
 import { getDb } from "../db";
 // @ts-ignore - Schema import
 import { users, companies } from "../../drizzle/schema";
-import { eq, desc, sql, and, like, or } from "drizzle-orm";
+import { eq, desc, sql, and, like, or, gte } from "drizzle-orm";
 
 export const superAdminRouter = router({
   create: protectedProcedure
@@ -92,14 +92,19 @@ export const superAdminRouter = router({
     
     const [userCount] = await db.select({ count: sql<number>`count(*)` }).from(users);
     const [companyCount] = await db.select({ count: sql<number>`count(*)` }).from(companies);
+    const { loads } = await import('../../drizzle/schema');
+    const [loadCount] = await db.select({ count: sql<number>`count(*)` }).from(loads);
+    const [revenue] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.status, 'delivered'));
+    const [activeDrivers] = await db.select({ count: sql<number>`count(*)` }).from(users).where(and(eq(users.role, 'DRIVER' as any), eq(users.isActive, true)));
+    const [pendingVerif] = await db.select({ count: sql<number>`count(*)` }).from(users).where(eq(users.isVerified, false));
     
     return {
       users: userCount?.count || 0,
       companies: companyCount?.count || 0,
-      loads: 0,
-      revenue: 0,
-      activeDrivers: 0,
-      pendingVerifications: 0,
+      loads: loadCount?.count || 0,
+      revenue: revenue?.sum || 0,
+      activeDrivers: activeDrivers?.count || 0,
+      pendingVerifications: pendingVerif?.count || 0,
     };
   }),
 
@@ -142,8 +147,13 @@ export const superAdminRouter = router({
   // Audit Logs
   getAuditLogs: protectedProcedure
     .input(z.object({ limit: z.number().optional() }).optional())
-    .query(async () => {
-      return [];
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const { auditLogs } = await import('../../drizzle/schema');
+        const rows = await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(input?.limit || 50);
+        return rows.map(r => ({ id: String(r.id), userId: r.userId, action: r.action, entityType: r.entityType, entityId: r.entityId, ip: r.ipAddress || '', timestamp: r.createdAt?.toISOString() || '' }));
+      } catch (e) { return []; }
     }),
 
   // Feature Flags
@@ -166,17 +176,30 @@ export const superAdminRouter = router({
   getRevenueAnalytics: protectedProcedure
     .input(z.object({ period: z.string().optional() }).optional())
     .query(async () => {
-      return {
-        total: 0,
-        byMonth: [],
-        byCategory: [],
-        growth: 0,
-      };
+      const db = await getDb(); if (!db) return { total: 0, byMonth: [], byCategory: [], growth: 0 };
+      try {
+        const { loads } = await import('../../drizzle/schema');
+        const [total] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(eq(loads.status, 'delivered'));
+        const byMonth: Array<{ month: string; revenue: number }> = [];
+        for (let i = 5; i >= 0; i--) {
+          const start = new Date(); start.setMonth(start.getMonth() - i, 1); start.setHours(0, 0, 0, 0);
+          const end = new Date(start); end.setMonth(end.getMonth() + 1);
+          const [m] = await db.select({ sum: sql<number>`COALESCE(SUM(CAST(rate AS DECIMAL)), 0)` }).from(loads).where(and(eq(loads.status, 'delivered'), gte(loads.createdAt, start), sql`${loads.createdAt} < ${end}`));
+          byMonth.push({ month: start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }), revenue: Math.round(m?.sum || 0) });
+        }
+        const first = byMonth[0]?.revenue || 0; const last = byMonth[byMonth.length - 1]?.revenue || 0;
+        const growth = first > 0 ? Math.round(((last - first) / first) * 100 * 10) / 10 : 0;
+        return { total: Math.round(total?.sum || 0), byMonth, byCategory: [], growth };
+      } catch (e) { return { total: 0, byMonth: [], byCategory: [], growth: 0 }; }
     }),
 
   // Verification Queue
   getVerificationQueue: protectedProcedure.query(async () => {
-    return [];
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(50);
+      return rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role, submittedAt: u.createdAt?.toISOString() || '' }));
+    } catch (e) { return []; }
   }),
 
   // Support Tickets
