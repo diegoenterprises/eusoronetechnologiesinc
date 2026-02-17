@@ -707,19 +707,42 @@ export const marketPricingRouter = router({
     .query(async ({ input }) => {
       const baseRate = FREIGHT_INDICES[input.equipment as keyof typeof FREIGHT_INDICES]?.national.current || 2.35;
       const days = input.period === "7d" ? 7 : input.period === "30d" ? 30 : input.period === "90d" ? 90 : 365;
+      const startDate = new Date(Date.now() - days * 86400000);
 
+      // Try to get real rate data from delivered loads
+      let dbRates: Array<{ date: string; avgRate: number; count: number }> = [];
+      try {
+        const { getDb } = await import("../db");
+        const { loads } = await import("../../drizzle/schema");
+        const { sql, gte, and } = await import("drizzle-orm");
+        const db = await getDb();
+        if (db) {
+          const rows = await db.select({
+            day: sql<string>`DATE(${loads.createdAt})`,
+            avgRate: sql<number>`ROUND(AVG(CAST(${loads.rate} AS DECIMAL) / NULLIF(CAST(${loads.distance} AS DECIMAL), 0)), 2)`,
+            count: sql<number>`COUNT(*)`,
+          }).from(loads).where(and(
+            gte(loads.createdAt, startDate),
+            sql`${loads.rate} > 0`,
+            sql`${loads.distance} > 0`,
+          )).groupBy(sql`DATE(${loads.createdAt})`).orderBy(sql`DATE(${loads.createdAt})`);
+          dbRates = rows.map(r => ({ date: String(r.day), avgRate: r.avgRate || 0, count: r.count || 0 }));
+        }
+      } catch { /* fall through to seed-based trends */ }
+
+      // Build data points: use real DB rates where available, fill gaps with base rate
+      const rateMap = new Map(dbRates.map(r => [r.date, r.avgRate]));
       const dataPoints = [];
       for (let i = days; i >= 0; i--) {
         const date = new Date();
         date.setDate(date.getDate() - i);
-        const variance = (Math.random() - 0.45) * 0.3;
+        const dateStr = date.toISOString().split("T")[0];
+        const dbRate = rateMap.get(dateStr);
         const trend = (days - i) / days * 0.15;
-        dataPoints.push({
-          date: date.toISOString().split("T")[0],
-          spotRate: +(baseRate + variance + trend + 0.15).toFixed(2),
-          contractRate: +(baseRate + trend - 0.10).toFixed(2),
-          nationalAvg: +(baseRate + (variance * 0.3) + trend).toFixed(2),
-        });
+        const spotRate = dbRate ? +dbRate.toFixed(2) : +(baseRate + trend + 0.15).toFixed(2);
+        const contractRate = dbRate ? +(dbRate * 0.92).toFixed(2) : +(baseRate + trend - 0.10).toFixed(2);
+        const nationalAvg = dbRate ? +(dbRate * 0.97).toFixed(2) : +(baseRate + trend).toFixed(2);
+        dataPoints.push({ date: dateStr, spotRate, contractRate, nationalAvg });
       }
 
       return {
@@ -734,6 +757,8 @@ export const marketPricingRouter = router({
         },
         equipment: input.equipment,
         period: input.period,
+        hasRealData: dbRates.length > 0,
+        dataPointsFromDB: dbRates.length,
       };
     }),
 

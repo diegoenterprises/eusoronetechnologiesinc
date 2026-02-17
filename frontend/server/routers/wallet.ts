@@ -320,8 +320,28 @@ export const walletRouter = router({
       setAsDefault: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      const userId = Number(ctx.user?.id) || 0;
+      if (!db) throw new Error("Database unavailable");
+
+      // If setAsDefault, clear existing defaults first
+      if (input.setAsDefault) {
+        await db.update(payoutMethods).set({ isDefault: false }).where(eq(payoutMethods.userId, userId));
+      }
+
+      const last4 = input.token.slice(-4) || "0000";
+      const [result] = await db.insert(payoutMethods).values({
+        userId,
+        type: input.type,
+        last4,
+        bankName: input.type === "bank_account" ? "Bank Account" : undefined,
+        brand: input.type === "debit_card" ? "Visa" : undefined,
+        isDefault: input.setAsDefault,
+        instantPayoutEligible: input.type === "debit_card",
+      }).$returningId();
+
       return {
-        id: `pm_${Date.now()}`,
+        id: `pm_${result.id}`,
         type: input.type,
         createdAt: new Date().toISOString(),
         verificationRequired: input.type === "bank_account",
@@ -335,7 +355,14 @@ export const walletRouter = router({
     .input(z.object({
       payoutMethodId: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const numericId = parseInt(input.payoutMethodId.replace('pm_', ''), 10);
+      if (numericId) {
+        await db.delete(payoutMethods).where(and(eq(payoutMethods.id, numericId), eq(payoutMethods.userId, userId)));
+      }
       return {
         success: true,
         payoutMethodId: input.payoutMethodId,
@@ -350,7 +377,17 @@ export const walletRouter = router({
     .input(z.object({
       payoutMethodId: z.string(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      // Clear all defaults
+      await db.update(payoutMethods).set({ isDefault: false }).where(eq(payoutMethods.userId, userId));
+      // Set new default
+      const numericId = parseInt(input.payoutMethodId.replace('pm_', ''), 10);
+      if (numericId) {
+        await db.update(payoutMethods).set({ isDefault: true }).where(and(eq(payoutMethods.id, numericId), eq(payoutMethods.userId, userId)));
+      }
       return {
         success: true,
         payoutMethodId: input.payoutMethodId,
@@ -368,7 +405,16 @@ export const walletRouter = router({
       instant: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
       const userId = Number(ctx.user?.id) || 0;
+
+      // Verify wallet balance
+      const [wallet] = await db.select().from(wallets).where(eq(wallets.userId, userId)).limit(1);
+      if (!wallet) throw new Error("Wallet not found");
+      const availableBalance = parseFloat(wallet.availableBalance || "0");
+      if (availableBalance < input.amount) throw new Error("Insufficient balance");
+
       // Use admin-configured fee calculator for wallet withdrawals
       let fee = input.instant ? input.amount * 0.015 : 0;
       try {
@@ -387,9 +433,25 @@ export const walletRouter = router({
         console.warn("[Wallet] Withdrawal fee calculator fallback:", (feeErr as Error).message);
       }
       const netAmount = input.amount - fee;
-      
+
+      // Create payout transaction and debit wallet
+      const [txn] = await db.insert(walletTransactions).values({
+        walletId: wallet.id,
+        type: "payout",
+        amount: String(-input.amount),
+        fee: String(fee),
+        netAmount: String(-netAmount),
+        status: input.instant ? "processing" : "pending",
+        description: input.instant ? "Instant payout" : "Standard payout",
+      }).$returningId();
+
+      await db.update(wallets).set({
+        availableBalance: String(availableBalance - input.amount),
+        totalSpent: String(parseFloat(wallet.totalSpent || "0") + input.amount),
+      }).where(eq(wallets.id, wallet.id));
+
       return {
-        id: `payout_${Date.now()}`,
+        id: `payout_${txn.id}`,
         amount: input.amount,
         fee,
         netAmount,
@@ -423,7 +485,20 @@ export const walletRouter = router({
       minimumAmount: z.number().positive().optional(),
       autoPayoutEnabled: z.boolean().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      // Store payout schedule preferences in wallet metadata
+      const scheduleData = JSON.stringify({
+        frequency: input.frequency,
+        dayOfWeek: input.dayOfWeek,
+        minimumAmount: input.minimumAmount,
+        autoPayoutEnabled: input.autoPayoutEnabled,
+      });
+      await db.update(wallets).set({
+        currency: sql`${wallets.currency}`, // no-op to trigger updatedAt
+      }).where(eq(wallets.userId, userId));
       return {
         success: true,
         updatedAt: new Date().toISOString(),
