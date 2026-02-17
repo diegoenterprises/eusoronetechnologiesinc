@@ -52,6 +52,53 @@ import FleetCommandCenter from "./pages/FleetCommandCenter";
 import EarningsPage from "./pages/Earnings";
 import ErgPage from "./pages/Erg";
 import Login from "./pages/Login";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import CDLVerification from "./pages/CDLVerification";
+import PlacardVerification from "./pages/PlacardVerification";
+import ShippingPapers from "./pages/ShippingPapers";
+import SpillResponse from "./pages/SpillResponse";
+import EvacuationDistance from "./pages/EvacuationDistance";
+import HazmatEndorsement from "./pages/HazmatEndorsement";
+import TWICCard from "./pages/TWICCard";
+import DrugTestAcknowledgment from "./pages/DrugTestAcknowledgment";
+import SegregationRules from "./pages/SegregationRules";
+import FireResponse from "./pages/FireResponse";
+import IncidentReportForm from "./pages/IncidentReportForm";
+import TripPay from "./pages/TripPay";
+import SettlementHistory from "./pages/SettlementHistory";
+import DeductionsBreakdown from "./pages/DeductionsBreakdown";
+import BonusTracker from "./pages/BonusTracker";
+import DirectDeposit from "./pages/DirectDeposit";
+import DriverAvailability from "./pages/DriverAvailability";
+import PlacardGuide from "./pages/PlacardGuide";
+import EmergencyNotification from "./pages/EmergencyNotification";
+import LanguageSettings from "./pages/LanguageSettings";
+import PrivacySettings from "./pages/PrivacySettings";
+import NRCReport from "./pages/NRCReport";
+import DOT5800Form from "./pages/DOT5800Form";
+import SecurityPlan from "./pages/SecurityPlan";
+import HazmatRegistration from "./pages/HazmatRegistration";
+import CorrectiveActions from "./pages/CorrectiveActions";
+import RegulatoryUpdates from "./pages/RegulatoryUpdates";
+import TankValve from "./pages/TankValve";
+import TankPressure from "./pages/TankPressure";
+import CryogenicTank from "./pages/CryogenicTank";
+import LiquidTankInspection from "./pages/LiquidTankInspection";
+import PressurizedTankInspection from "./pages/PressurizedTankInspection";
+import FlatbedSecurement from "./pages/FlatbedSecurement";
+import HopperInspection from "./pages/HopperInspection";
+import VoiceMessaging from "./pages/VoiceMessaging";
+import EmergencyBroadcast from "./pages/EmergencyBroadcast";
+import ProfileSetup from "./pages/ProfileSetup";
+import TodaySchedule from "./pages/TodaySchedule";
+import HazmatDriverFilter from "./pages/HazmatDriverFilter";
+import HazmatEquipmentFilter from "./pages/HazmatEquipmentFilter";
+import HazmatRouteRestriction from "./pages/HazmatRouteRestriction";
+import HazmatRouteCompliance from "./pages/HazmatRouteCompliance";
+import HazmatCheckIn from "./pages/HazmatCheckIn";
+import DockAssignment from "./pages/DockAssignment";
+import LoadingUnloadingStatus from "./pages/LoadingUnloadingStatus";
 // TestLogin removed from production - SOC II: no dev backdoors in prod
 import Register from "./pages/Register";
 import TermsOfService from "./pages/TermsOfService";
@@ -223,6 +270,8 @@ function Router() {
       {/* ============================================ */}
       <Route path={"/home"} component={Home} />
       <Route path={"/login"} component={Login} />
+      <Route path={"/forgot-password"} component={ForgotPassword} />
+      <Route path={"/reset-password"} component={ResetPassword} />
       <Route path={"/register"} component={Register} />
       <Route path={"/register/shipper"} component={RegisterShipper} />
       <Route path={"/register/catalyst"} component={RegisterCatalyst} />
@@ -318,7 +367,7 @@ function Router() {
       <Route path={"/navigation"} component={guard(DRIV, <LoadTracking />)} />
       <Route path={"/vehicle"} component={guard(DRIV, <DriverVehicle />)} />
       <Route path={"/diagnostics"} component={guard(DRIV, <DiagnosticsPage />)} />
-      <Route path={"/documents"} component={guard(DRIV, <DocumentCenter />)} />
+      <Route path={"/documents"} component={guard(ALL, <DocumentCenter />)} />
       <Route path={"/driver/hos"} component={guard(DRIV, <HOSTracker />)} />
       <Route path={"/driver/current-job"} component={guard(DRIV, <DriverCurrentJob />)} />
       <Route path={"/driver/vehicle"} component={guard(DRIV, <DriverVehicle />)} />
@@ -331,6 +380,51 @@ function Router() {
       <Route path={"/rewards"} component={guard(ALL, <Rewards />)} />
       <Route path={"/leaderboard"} component={guard(ALL, <Leaderboard />)} />
       <Route path={"/fuel"} component={guard(DRIV, <FuelManagement />)} />
+      <Route path={"/driver/cdl-verification"} component={guard(DRIV, <CDLVerification />)} />
+      <Route path={"/driver/placard-verification"} component={guard(DRIV, <PlacardVerification />)} />
+      <Route path={"/driver/shipping-papers"} component={guard(DRIV, <ShippingPapers />)} />
+      <Route path={"/driver/spill-response"} component={guard(DRIV, <SpillResponse />)} />
+      <Route path={"/driver/evacuation-distance"} component={guard(DRIV, <EvacuationDistance />)} />
+      <Route path={"/driver/hazmat-endorsement"} component={guard(DRIV, <HazmatEndorsement />)} />
+      <Route path={"/driver/twic-card"} component={guard(DRIV, <TWICCard />)} />
+      <Route path={"/driver/drug-test"} component={guard(DRIV, <DrugTestAcknowledgment />)} />
+      <Route path={"/hazmat/segregation-rules"} component={guard(ALL, <SegregationRules />)} />
+      <Route path={"/hazmat/fire-response"} component={guard(ALL, <FireResponse />)} />
+      <Route path={"/hazmat/incident-report"} component={guard(ALL, <IncidentReportForm />)} />
+      <Route path={"/driver/trip-pay"} component={guard(DRIV, <TripPay />)} />
+      <Route path={"/driver/settlement-history"} component={guard(DRIV, <SettlementHistory />)} />
+      <Route path={"/driver/deductions"} component={guard(DRIV, <DeductionsBreakdown />)} />
+      <Route path={"/driver/bonus-tracker"} component={guard(DRIV, <BonusTracker />)} />
+      <Route path={"/driver/direct-deposit"} component={guard(DRIV, <DirectDeposit />)} />
+      <Route path={"/driver/availability"} component={guard(DRIV, <DriverAvailability />)} />
+      <Route path={"/hazmat/placard-guide"} component={guard(ALL, <PlacardGuide />)} />
+      <Route path={"/emergency-alerts"} component={guard(ALL, <EmergencyNotification />)} />
+      <Route path={"/settings/language"} component={guard(ALL, <LanguageSettings />)} />
+      <Route path={"/settings/privacy"} component={guard(ALL, <PrivacySettings />)} />
+      <Route path={"/hazmat/nrc-report"} component={guard(ALL, <NRCReport />)} />
+      <Route path={"/hazmat/dot-5800"} component={guard(ALL, <DOT5800Form />)} />
+      <Route path={"/hazmat/security-plan"} component={guard(ALL, <SecurityPlan />)} />
+      <Route path={"/hazmat/registration"} component={guard(ALL, <HazmatRegistration />)} />
+      <Route path={"/hazmat/corrective-actions"} component={guard(ALL, <CorrectiveActions />)} />
+      <Route path={"/hazmat/regulatory-updates"} component={guard(ALL, <RegulatoryUpdates />)} />
+      <Route path={"/hazmat/tank-valve"} component={guard(ALL, <TankValve />)} />
+      <Route path={"/hazmat/tank-pressure"} component={guard(ALL, <TankPressure />)} />
+      <Route path={"/hazmat/cryogenic-tank"} component={guard(ALL, <CryogenicTank />)} />
+      <Route path={"/hazmat/liquid-tank"} component={guard(ALL, <LiquidTankInspection />)} />
+      <Route path={"/hazmat/pressurized-tank"} component={guard(ALL, <PressurizedTankInspection />)} />
+      <Route path={"/driver/flatbed-securement"} component={guard(DRIV, <FlatbedSecurement />)} />
+      <Route path={"/driver/hopper-inspection"} component={guard(DRIV, <HopperInspection />)} />
+      <Route path={"/driver/voice-messages"} component={guard(DRIV, <VoiceMessaging />)} />
+      <Route path={"/dispatch/emergency-broadcast"} component={guard(DISP, <EmergencyBroadcast />)} />
+      <Route path={"/driver/profile-setup"} component={guard(DRIV, <ProfileSetup />)} />
+      <Route path={"/driver/today"} component={guard(DRIV, <TodaySchedule />)} />
+      <Route path={"/hazmat/driver-filter"} component={guard(DISP, <HazmatDriverFilter />)} />
+      <Route path={"/hazmat/equipment-filter"} component={guard(DISP, <HazmatEquipmentFilter />)} />
+      <Route path={"/hazmat/route-restrictions"} component={guard(ALL, <HazmatRouteRestriction />)} />
+      <Route path={"/hazmat/route-compliance"} component={guard(ALL, <HazmatRouteCompliance />)} />
+      <Route path={"/hazmat/check-in"} component={guard(DRIV, <HazmatCheckIn />)} />
+      <Route path={"/hazmat/dock-assignment"} component={guard(DRIV, <DockAssignment />)} />
+      <Route path={"/hazmat/loading-status"} component={guard(DRIV, <LoadingUnloadingStatus />)} />
 
       {/* ============================================ */}
       {/* DISPATCH (DISPATCHER) ROUTES */}

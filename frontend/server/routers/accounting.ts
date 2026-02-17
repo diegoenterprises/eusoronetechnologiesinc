@@ -84,11 +84,23 @@ export const accountingRouter = router({
       vendorId: z.string().optional(),
       limit: z.number().default(20),
     }))
-    .query(async ({ input }) => {
-      return {
-        payables: [],
-        summary: { totalPending: 0, totalApproved: 0, dueThisWeek: 0 },
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { payables: [], summary: { totalPending: 0, totalApproved: 0, dueThisWeek: 0 } };
+      try {
+        const userId = ctx.user?.id || 0;
+        const conds: any[] = [eq(payments.payerId, userId)];
+        if (input.status !== 'all') {
+          const statusMap: Record<string, string> = { pending: 'pending', approved: 'processing', paid: 'succeeded' };
+          conds.push(eq(payments.status, (statusMap[input.status] || input.status) as any));
+        }
+        const rows = await db.select({ id: payments.id, amount: payments.amount, status: payments.status, createdAt: payments.createdAt, payeeId: payments.payeeId, payeeName: users.name })
+          .from(payments).leftJoin(users, eq(payments.payeeId, users.id)).where(and(...conds)).orderBy(desc(payments.createdAt)).limit(input.limit);
+        const totalPending = rows.filter(r => r.status === 'pending').reduce((s, r) => s + parseFloat(r.amount), 0);
+        return {
+          payables: rows.map(r => ({ id: String(r.id), vendor: r.payeeName || 'Vendor', amount: parseFloat(r.amount), status: r.status === 'succeeded' ? 'paid' : r.status, dueDate: '', createdAt: r.createdAt?.toISOString() || '' })),
+          summary: { totalPending: Math.round(totalPending * 100) / 100, totalApproved: 0, dueThisWeek: 0 },
+        };
+      } catch (e) { return { payables: [], summary: { totalPending: 0, totalApproved: 0, dueThisWeek: 0 } }; }
     }),
 
   /**
@@ -102,13 +114,23 @@ export const accountingRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `inv_${Date.now()}`,
-        invoiceNumber: `INV-2025-${String(Date.now()).slice(-5)}`,
-        status: "draft",
-        createdBy: ctx.user?.id,
-        createdAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const customerId = parseInt(input.customerId, 10);
+      // Sum load rates to get invoice amount
+      let totalAmount = 0;
+      for (const lid of input.loadIds) {
+        const [load] = await db.select({ rate: loads.rate }).from(loads).where(eq(loads.id, parseInt(lid, 10))).limit(1);
+        if (load?.rate) totalAmount += parseFloat(String(load.rate));
+      }
+      const result = await db.insert(payments).values({
+        loadId: input.loadIds.length > 0 ? parseInt(input.loadIds[0], 10) : null,
+        payerId: customerId, payeeId: userId,
+        amount: String(totalAmount.toFixed(2)),
+        paymentType: 'load_payment' as any, status: 'pending' as any,
+        metadata: { invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`, loadIds: input.loadIds, notes: input.notes, dueDate: input.dueDate },
+      } as any).$returningId();
+      return { id: String(result[0]?.id), invoiceNumber: `INV-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`, status: 'draft', createdBy: userId, createdAt: new Date().toISOString() };
     }),
 
   /**
@@ -143,13 +165,10 @@ export const accountingRouter = router({
       paymentDate: z.string(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        paymentId: `pmt_${Date.now()}`,
-        invoiceId: input.invoiceId,
-        amount: input.amount,
-        recordedBy: ctx.user?.id,
-        recordedAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const paymentId = parseInt(input.invoiceId, 10);
+      await db.update(payments).set({ status: 'succeeded' as any, paymentMethod: input.paymentMethod, metadata: { reference: input.reference, paymentDate: input.paymentDate } } as any).where(eq(payments.id, paymentId));
+      return { paymentId: String(paymentId), invoiceId: input.invoiceId, amount: input.amount, recordedBy: ctx.user?.id, recordedAt: new Date().toISOString() };
     }),
 
   /**
@@ -162,19 +181,19 @@ export const accountingRouter = router({
       endDate: z.string().optional(),
       limit: z.number().default(50),
     }))
-    .query(async ({ input }) => {
-      const expenses: any[] = [];
-
-      let filtered = expenses;
-      if (input.type) filtered = filtered.filter((e: any) => e.type === input.type);
-
-      return {
-        expenses: filtered.slice(0, input.limit),
-        total: filtered.length,
-        summary: {
-          totalExpenses: filtered.reduce((sum, e) => sum + e.amount, 0),
-        },
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { expenses: [], total: 0, summary: { totalExpenses: 0 } };
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select({ id: payments.id, amount: payments.amount, paymentType: payments.paymentType, status: payments.status, createdAt: payments.createdAt, metadata: payments.metadata })
+          .from(payments).where(eq(payments.payerId, userId)).orderBy(desc(payments.createdAt)).limit(input.limit);
+        const totalExpenses = rows.reduce((s, r) => s + parseFloat(r.amount), 0);
+        return {
+          expenses: rows.map(r => ({ id: String(r.id), type: r.paymentType || 'other', amount: parseFloat(r.amount), status: r.status, date: r.createdAt?.toISOString() || '', description: '' })),
+          total: rows.length,
+          summary: { totalExpenses: Math.round(totalExpenses * 100) / 100 },
+        };
+      } catch (e) { return { expenses: [], total: 0, summary: { totalExpenses: 0 } }; }
     }),
 
   /**
@@ -207,14 +226,24 @@ export const accountingRouter = router({
       period: z.enum(["month", "quarter", "year"]).default("month"),
       compareToLast: z.boolean().default(true),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        revenue: { linehaul: 0, fuelSurcharge: 0, accessorials: 0, total: 0 },
-        expenses: { fuel: 0, driverPay: 0, maintenance: 0, insurance: 0, equipment: 0, tolls: 0, permits: 0, other: 0, total: 0 },
-        grossProfit: 0, grossMargin: 0,
-        comparison: input.compareToLast ? { revenueChange: 0, expenseChange: 0, profitChange: 0 } : null,
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { period: input.period, revenue: { linehaul: 0, fuelSurcharge: 0, accessorials: 0, total: 0 }, expenses: { fuel: 0, driverPay: 0, maintenance: 0, insurance: 0, equipment: 0, tolls: 0, permits: 0, other: 0, total: 0 }, grossProfit: 0, grossMargin: 0, comparison: null };
+      try {
+        const userId = ctx.user?.id || 0;
+        const [rev] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)` }).from(payments).where(and(eq(payments.payeeId, userId), eq(payments.status, 'succeeded')));
+        const [exp] = await db.select({ total: sql<number>`COALESCE(SUM(CAST(${payments.amount} AS DECIMAL)), 0)` }).from(payments).where(and(eq(payments.payerId, userId), eq(payments.status, 'succeeded')));
+        const revenue = Math.round((rev?.total || 0) * 100) / 100;
+        const expenses = Math.round((exp?.total || 0) * 100) / 100;
+        const grossProfit = revenue - expenses;
+        return {
+          period: input.period,
+          revenue: { linehaul: revenue, fuelSurcharge: 0, accessorials: 0, total: revenue },
+          expenses: { fuel: 0, driverPay: 0, maintenance: 0, insurance: 0, equipment: 0, tolls: 0, permits: 0, other: expenses, total: expenses },
+          grossProfit, grossMargin: revenue > 0 ? Math.round((grossProfit / revenue) * 100) : 0,
+          comparison: input.compareToLast ? { revenueChange: 0, expenseChange: 0, profitChange: 0 } : null,
+        };
+      } catch (e) { return { period: input.period, revenue: { linehaul: 0, fuelSurcharge: 0, accessorials: 0, total: 0 }, expenses: { fuel: 0, driverPay: 0, maintenance: 0, insurance: 0, equipment: 0, tolls: 0, permits: 0, other: 0, total: 0 }, grossProfit: 0, grossMargin: 0, comparison: null }; }
     }),
 
   /**
@@ -238,16 +267,29 @@ export const accountingRouter = router({
    * Get aging report
    */
   getAgingReport: protectedProcedure
-    .query(async () => {
-      return {
-        current: { count: 0, amount: 0 },
-        days1to30: { count: 0, amount: 0 },
-        days31to60: { count: 0, amount: 0 },
-        days61to90: { count: 0, amount: 0 },
-        over90: { count: 0, amount: 0 },
-        total: { count: 0, amount: 0 },
-        byCustomer: [],
-      };
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { current: { count: 0, amount: 0 }, days1to30: { count: 0, amount: 0 }, days31to60: { count: 0, amount: 0 }, days61to90: { count: 0, amount: 0 }, over90: { count: 0, amount: 0 }, total: { count: 0, amount: 0 }, byCustomer: [] };
+      try {
+        const userId = ctx.user?.id || 0;
+        const now = new Date();
+        const d30 = new Date(now.getTime() - 30 * 86400000);
+        const d60 = new Date(now.getTime() - 60 * 86400000);
+        const d90 = new Date(now.getTime() - 90 * 86400000);
+        const pending = await db.select({ id: payments.id, amount: payments.amount, createdAt: payments.createdAt })
+          .from(payments).where(and(eq(payments.payeeId, userId), eq(payments.status, 'pending'))).limit(200);
+        const buckets = { current: { count: 0, amount: 0 }, days1to30: { count: 0, amount: 0 }, days31to60: { count: 0, amount: 0 }, days61to90: { count: 0, amount: 0 }, over90: { count: 0, amount: 0 } };
+        for (const p of pending) {
+          const amt = parseFloat(p.amount);
+          const created = p.createdAt || now;
+          if (created >= d30) { buckets.current.count++; buckets.current.amount += amt; }
+          else if (created >= d60) { buckets.days1to30.count++; buckets.days1to30.amount += amt; }
+          else if (created >= d90) { buckets.days31to60.count++; buckets.days31to60.amount += amt; }
+          else { buckets.over90.count++; buckets.over90.amount += amt; }
+        }
+        const total = { count: pending.length, amount: pending.reduce((s, p) => s + parseFloat(p.amount), 0) };
+        return { ...buckets, total, byCustomer: [] };
+      } catch (e) { return { current: { count: 0, amount: 0 }, days1to30: { count: 0, amount: 0 }, days31to60: { count: 0, amount: 0 }, days61to90: { count: 0, amount: 0 }, over90: { count: 0, amount: 0 }, total: { count: 0, amount: 0 }, byCustomer: [] }; }
     }),
 
   /**

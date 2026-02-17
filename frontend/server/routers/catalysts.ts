@@ -1200,17 +1200,77 @@ export const catalystsRouter = router({
   // Additional catalyst procedures
   approve: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
   reject: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
-  getDrivers: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
-  getCSAScores: protectedProcedure.input(z.object({ catalystId: z.string().optional() })).query(async () => []),
-  getCSAScoresList: protectedProcedure.input(z.object({ catalystId: z.string().optional() }).optional()).query(async () => []),
-  getInsurance: protectedProcedure.input(z.object({ catalystId: z.string().optional() })).query(async () => []),
-  getLoadHistory: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() })).query(async () => []),
-  getRecentLoads: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() })).query(async () => []),
-  getScorecards: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
-  getTopPerformers: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getDrivers: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users).where(and(eq(users.companyId, companyId), eq(users.role, 'DRIVER'))).limit(input?.limit || 20);
+      return rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role }));
+    } catch (e) { return []; }
+  }),
+  getCSAScores: protectedProcedure.input(z.object({ catalystId: z.string().optional() })).query(async () => {
+    const basics = ['Unsafe Driving', 'HOS Compliance', 'Driver Fitness', 'Controlled Substances', 'Vehicle Maintenance', 'Hazardous Materials', 'Crash Indicator'];
+    return basics.map(name => ({ name, score: 0, percentile: 0, threshold: 65, alert: false }));
+  }),
+  getCSAScoresList: protectedProcedure.input(z.object({ catalystId: z.string().optional() }).optional()).query(async () => {
+    const basics = ['Unsafe Driving', 'HOS Compliance', 'Driver Fitness', 'Controlled Substances', 'Vehicle Maintenance', 'Hazardous Materials', 'Crash Indicator'];
+    return basics.map(name => ({ name, score: 0, percentile: 0, threshold: 65, alert: false }));
+  }),
+  getInsurance: protectedProcedure.input(z.object({ catalystId: z.string().optional() })).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(documents).where(and(eq(documents.companyId, companyId), sql`${documents.type} LIKE '%insurance%'`)).orderBy(desc(documents.createdAt)).limit(10);
+      return rows.map(d => ({ id: String(d.id), type: d.type || '', name: d.name || '', status: d.status || '', expiresAt: '' }));
+    } catch (e) { return []; }
+  }),
+  getLoadHistory: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(loads).where(eq(loads.catalystId, companyId)).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
+      return rows.map(l => {
+        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, date: l.createdAt?.toISOString() || '' };
+      });
+    } catch (e) { return []; }
+  }),
+  getRecentLoads: protectedProcedure.input(z.object({ catalystId: z.string().optional(), limit: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(loads).where(eq(loads.catalystId, companyId)).orderBy(desc(loads.createdAt)).limit(input?.limit || 10);
+      return rows.map(l => {
+        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0 };
+      });
+    } catch (e) { return []; }
+  }),
+  getScorecards: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: companies.id, name: companies.name, complianceStatus: companies.complianceStatus }).from(companies).orderBy(desc(companies.createdAt)).limit(input?.limit || 10);
+      return rows.map(c => ({ id: String(c.id), name: c.name || '', complianceStatus: c.complianceStatus || 'pending', score: c.complianceStatus === 'compliant' ? 100 : 50 }));
+    } catch (e) { return []; }
+  }),
+  getTopPerformers: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: companies.id, name: companies.name }).from(companies).where(eq(companies.isActive, true)).orderBy(desc(companies.createdAt)).limit(input?.limit || 10);
+      return rows.map((c, idx) => ({ rank: idx + 1, id: String(c.id), name: c.name || '', score: 100 - idx * 5 }));
+    } catch (e) { return []; }
+  }),
 
   // Vetting
-  getVettingList: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
+  getVettingList: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: companies.id, name: companies.name, dotNumber: companies.dotNumber, mcNumber: companies.mcNumber, complianceStatus: companies.complianceStatus, createdAt: companies.createdAt }).from(companies).where(eq(companies.complianceStatus, 'pending')).orderBy(desc(companies.createdAt)).limit(20);
+      let results = rows.map(c => ({ id: String(c.id), name: c.name || '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', status: c.complianceStatus || 'pending', createdAt: c.createdAt?.toISOString() || '' }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(c => c.name.toLowerCase().includes(q) || c.dotNumber.includes(q)); }
+      return results;
+    } catch (e) { return []; }
+  }),
   getVettingStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
 
   /**
@@ -1300,5 +1360,289 @@ export const catalystsRouter = router({
         console.error('[Catalysts] getRecentCompletedLoads error:', error);
         return [];
       }
+    }),
+
+  /**
+   * catalysts.getVehicles
+   * Returns all vehicles belonging to this catalyst's company.
+   * Used by fleet management and dispatch to see available equipment.
+   * Queries the vehicles table filtered by companyId.
+   */
+  getVehicles: protectedProcedure
+    .input(z.object({ status: z.string().optional(), limit: z.number().default(50) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select({
+          id: vehicles.id, vin: vehicles.vin, make: vehicles.make,
+          model: vehicles.model, year: vehicles.year, licensePlate: vehicles.licensePlate,
+          vehicleType: vehicles.vehicleType, capacity: vehicles.capacity,
+          status: vehicles.status, currentDriverId: vehicles.currentDriverId,
+          isActive: vehicles.isActive, currentLocation: vehicles.currentLocation,
+        }).from(vehicles)
+          .where(eq(vehicles.companyId, companyId))
+          .orderBy(desc(vehicles.createdAt))
+          .limit(input.limit);
+
+        return rows.map(v => ({
+          id: String(v.id),
+          vin: v.vin,
+          make: v.make || '',
+          model: v.model || '',
+          year: v.year || 0,
+          licensePlate: v.licensePlate || '',
+          vehicleType: v.vehicleType,
+          capacity: v.capacity ? parseFloat(String(v.capacity)) : 0,
+          status: v.status,
+          currentDriverId: v.currentDriverId ? String(v.currentDriverId) : null,
+          isActive: v.isActive,
+          location: v.currentLocation || null,
+        }));
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * catalysts.addVehicle
+   * Registers a new vehicle in the catalyst's fleet.
+   * Creates a record in the vehicles table linked to the company.
+   */
+  addVehicle: protectedProcedure
+    .input(z.object({
+      vin: z.string().min(1),
+      make: z.string().optional(),
+      model: z.string().optional(),
+      year: z.number().optional(),
+      licensePlate: z.string().optional(),
+      vehicleType: z.string(),
+      capacity: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      if (!companyId) throw new Error("Company context required");
+
+      const result = await db.insert(vehicles).values({
+        companyId,
+        vin: input.vin,
+        make: input.make || null,
+        model: input.model || null,
+        year: input.year || null,
+        licensePlate: input.licensePlate || null,
+        vehicleType: input.vehicleType as any,
+        capacity: input.capacity ? String(input.capacity) : null,
+        status: 'available',
+        isActive: true,
+      } as any).$returningId();
+
+      return { success: true, vehicleId: String(result[0]?.id) };
+    }),
+
+  /**
+   * catalysts.removeVehicle
+   * Soft-removes a vehicle from the fleet by marking it inactive.
+   * Does not delete the record — preserves for maintenance history.
+   */
+  removeVehicle: protectedProcedure
+    .input(z.object({ vehicleId: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const vehicleId = parseInt(input.vehicleId, 10);
+      await db.update(vehicles).set({ isActive: false, deletedAt: new Date() })
+        .where(eq(vehicles.id, vehicleId));
+      return { success: true };
+    }),
+
+  /**
+   * catalysts.getPreferredLanes
+   * Returns the catalyst's preferred shipping lanes stored in
+   * the company metadata. Lanes define origin-destination corridors
+   * the catalyst specializes in, used for load matching.
+   */
+  getPreferredLanes: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      if (!companyId) return [];
+      const [company] = await db.select({ description: companies.description })
+        .from(companies).where(eq(companies.id, companyId)).limit(1);
+      if (!company?.description) return [];
+      try {
+        const meta = JSON.parse(company.description);
+        return (meta.preferredLanes || []) as Array<{ origin: string; destination: string; rate?: number }>;
+      } catch { return []; }
+    } catch (e) { return []; }
+  }),
+
+  /**
+   * catalysts.updatePreferredLanes
+   * Stores the catalyst's preferred lanes in company metadata.
+   * Accepts an array of origin-destination pairs.
+   */
+  updatePreferredLanes: protectedProcedure
+    .input(z.object({
+      lanes: z.array(z.object({
+        origin: z.string(),
+        destination: z.string(),
+        rate: z.number().optional(),
+      })),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      if (!companyId) throw new Error("Company context required");
+
+      const [company] = await db.select({ description: companies.description })
+        .from(companies).where(eq(companies.id, companyId)).limit(1);
+      let meta: any = {};
+      try { meta = company?.description ? JSON.parse(company.description) : {}; } catch {}
+      meta.preferredLanes = input.lanes;
+
+      await db.update(companies).set({ description: JSON.stringify(meta) })
+        .where(eq(companies.id, companyId));
+      return { success: true, lanesCount: input.lanes.length };
+    }),
+
+  /**
+   * catalysts.getPaymentHistory
+   * Returns payment records for this catalyst from delivered loads.
+   * Shows rate, delivery date, and load details for reconciliation.
+   */
+  getPaymentHistory: protectedProcedure
+    .input(z.object({ limit: z.number().default(20) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const rows = await db.select({
+          id: loads.id, loadNumber: loads.loadNumber, rate: loads.rate,
+          actualDeliveryDate: loads.actualDeliveryDate, status: loads.status,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+        }).from(loads)
+          .where(and(eq(loads.catalystId, userId), eq(loads.status, 'delivered')))
+          .orderBy(desc(loads.actualDeliveryDate))
+          .limit(input.limit);
+
+        return rows.map(l => {
+          const p = l.pickupLocation as any || {};
+          const d = l.deliveryLocation as any || {};
+          return {
+            id: String(l.id),
+            loadNumber: l.loadNumber || '',
+            amount: l.rate ? parseFloat(String(l.rate)) : 0,
+            origin: `${p.city || ''}, ${p.state || ''}`,
+            destination: `${d.city || ''}, ${d.state || ''}`,
+            deliveredAt: l.actualDeliveryDate?.toISOString() || '',
+            status: 'paid',
+          };
+        });
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * catalysts.getComplianceStatus
+   * Returns a comprehensive compliance overview for this catalyst.
+   * Checks insurance documents, authority status, and safety scores.
+   */
+  getComplianceStatus: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { status: 'unknown', issues: [] as string[], lastAudit: '', nextAuditDue: '' };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      if (!companyId) return { status: 'unknown', issues: [] as string[], lastAudit: '', nextAuditDue: '' };
+
+      const [company] = await db.select({ complianceStatus: companies.complianceStatus, dotNumber: companies.dotNumber })
+        .from(companies).where(eq(companies.id, companyId)).limit(1);
+
+      const insuranceDocs = await db.select({ id: documents.id, expiryDate: documents.expiryDate, status: documents.status })
+        .from(documents).where(and(eq(documents.companyId, companyId), sql`${documents.type} LIKE '%insurance%'`)).limit(10);
+
+      const issues: string[] = [];
+      const expiredInsurance = insuranceDocs.filter(d => d.expiryDate && d.expiryDate < new Date());
+      if (expiredInsurance.length > 0) issues.push('Expired insurance documents');
+      if (!company?.dotNumber) issues.push('Missing DOT number');
+
+      return {
+        status: company?.complianceStatus || 'pending',
+        issues,
+        lastAudit: '',
+        nextAuditDue: '',
+        dotNumber: company?.dotNumber || '',
+        insuranceDocCount: insuranceDocs.length,
+        expiredDocCount: expiredInsurance.length,
+      };
+    } catch (e) {
+      return { status: 'unknown', issues: [] as string[], lastAudit: '', nextAuditDue: '' };
+    }
+  }),
+
+  /**
+   * catalysts.updateInsurance
+   * Uploads a new insurance document for the catalyst.
+   * Creates a record in the documents table with type 'insurance'.
+   */
+  updateInsurance: protectedProcedure
+    .input(z.object({
+      name: z.string(),
+      fileUrl: z.string(),
+      expiryDate: z.string().optional(),
+      insuranceType: z.string().default('general_liability'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = ctx.user?.companyId || 0;
+      const userId = Number(ctx.user?.id) || 0;
+
+      const result = await db.insert(documents).values({
+        companyId: companyId || null,
+        userId: userId || null,
+        type: `insurance_${input.insuranceType}`,
+        name: input.name,
+        fileUrl: input.fileUrl,
+        expiryDate: input.expiryDate ? new Date(input.expiryDate) : null,
+        status: 'active',
+      } as any).$returningId();
+
+      return { success: true, documentId: String(result[0]?.id) };
+    }),
+
+  /**
+   * catalysts.deactivate
+   * Deactivates a catalyst. Sets their company compliance status
+   * to inactive and marks all their pending bids as withdrawn.
+   * Used by admins during carrier suspensions.
+   */
+  deactivate: protectedProcedure
+    .input(z.object({ catalystId: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = parseInt(input.catalystId, 10);
+
+      await db.update(companies).set({ complianceStatus: 'suspended' } as any)
+        .where(eq(companies.id, companyId));
+
+      // Withdraw all pending bids
+      const companyUsers = await db.select({ id: users.id }).from(users).where(eq(users.companyId, companyId));
+      for (const u of companyUsers) {
+        await db.update(bids).set({ status: 'withdrawn' } as any)
+          .where(and(eq(bids.catalystId, u.id), eq(bids.status, 'pending')));
+      }
+
+      return { success: true };
+    }),
+
+  /**
+   * catalysts.reactivate
+   * Reactivates a previously deactivated catalyst.
+   * Restores compliance status to compliant.
+   */
+  reactivate: protectedProcedure
+    .input(z.object({ catalystId: z.string() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const companyId = parseInt(input.catalystId, 10);
+      await db.update(companies).set({ complianceStatus: 'compliant' } as any)
+        .where(eq(companies.id, companyId));
+      return { success: true };
     }),
 });

@@ -326,21 +326,68 @@ export const analyticsRouter = router({
     }),
 
   // Benchmarks & Market
-  getBenchmarks: protectedProcedure.query(async () => []),
-  getCompetitors: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getBenchmarks: protectedProcedure.query(async () => {
+    // Industry benchmarks are reference data, not DB-driven
+    return [
+      { metric: 'On-Time Delivery', industry: 85, yours: 0, unit: '%' },
+      { metric: 'Deadhead Percentage', industry: 15, yours: 0, unit: '%' },
+      { metric: 'Revenue Per Mile', industry: 2.50, yours: 0, unit: '$' },
+      { metric: 'Driver Retention', industry: 50, yours: 0, unit: '%' },
+    ];
+  }),
+  getCompetitors: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => {
+    // Competitor data requires external integrations
+    return [];
+  }),
   getMarketShare: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ yourShare: 0, ourShare: 0, topCompetitor: 0, marketSize: 0, shareChange: 0, marketRank: 0 })),
 
   // Deadhead analysis
   getDeadheadSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ totalMiles: 0, percentage: 0, cost: 0, deadheadPercentage: 0, deadheadMiles: 0, trendPercent: 0, trend: 0, lostRevenue: 0, targetPercentage: 0 })),
-  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => []),
-  getDeadheadByDriver: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
-  getDeadheadByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getDeadheadTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => {
+    // Deadhead tracking requires per-trip mileage data; return empty until ELD integration
+    return [];
+  }),
+  getDeadheadByDriver: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => {
+    return [];
+  }),
+  getDeadheadByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => {
+    return [];
+  }),
 
   // On-time analysis
   getOnTimeSummary: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ rate: 0, onTime: 0, late: 0, lateDeliveries: 0, early: 0, onTimeRate: 0, onTimeDeliveries: 0, trendPercent: 0, trend: "stable", targetRate: 0 })),
-  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => []),
-  getOnTimeByCustomer: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
-  getOnTimeByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getOnTimeTrends: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select({ month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`, total: sql<number>`count(*)`, delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)` }).from(loads).where(eq(loads.shipperId, companyId)).groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`).limit(12);
+      return rows.map(r => ({ period: r.month, total: r.total || 0, onTime: r.delivered || 0, rate: r.total ? Math.round(((r.delivered || 0) / r.total) * 100) : 0 }));
+    } catch (e) { return []; }
+  }),
+  getOnTimeByCustomer: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select({ shipperId: loads.shipperId, total: sql<number>`count(*)`, delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)` }).from(loads).where(eq(loads.shipperId, companyId)).groupBy(loads.shipperId).limit(input?.limit || 10);
+      return rows.map(r => ({ customerId: String(r.shipperId), total: r.total || 0, onTime: r.delivered || 0, rate: r.total ? Math.round(((r.delivered || 0) / r.total) * 100) : 0 }));
+    } catch (e) { return []; }
+  }),
+  getOnTimeByLane: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).orderBy(desc(loads.createdAt)).limit(20);
+      const laneMap: Record<string, { total: number; delivered: number }> = {};
+      for (const l of rows) {
+        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        const lane = `${p.state || '?'} -> ${d.state || '?'}`;
+        if (!laneMap[lane]) laneMap[lane] = { total: 0, delivered: 0 };
+        laneMap[lane].total++;
+        if (l.status === 'delivered') laneMap[lane].delivered++;
+      }
+      return Object.entries(laneMap).map(([lane, stats]) => ({ lane, total: stats.total, onTime: stats.delivered, rate: Math.round((stats.delivered / stats.total) * 100) }));
+    } catch (e) { return []; }
+  }),
 
   // Performance reports
   getPerformanceSummary: protectedProcedure.input(z.object({ period: z.string().optional(), dateRange: z.string().optional() }).optional()).query(async () => ({ revenue: 0, revenueChange: 0, loads: 0, loadsChange: 0, milesLogged: 0, avgLoadTime: 0, totalReports: 0, mostPopular: "" })),
@@ -352,12 +399,27 @@ export const analyticsRouter = router({
 
   // Performance monitoring
   getPerformanceMetrics: protectedProcedure.input(z.object({ timeRange: z.string().optional() }).optional()).query(async () => ({ avgResponseTime: 0, p95ResponseTime: 0, requestsPerSecond: 0, errorRate: 0, cpu: { current: 0, avg: 0, peak: 0 }, memory: { current: 0, avg: 0, peak: 0 }, disk: { current: 0, used: 0, total: 0 }, network: { inbound: 0, outbound: 0 } })),
-  getPerformanceHistory: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getPerformanceHistory: protectedProcedure.input(z.object({ timeRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => {
+    // Server performance history requires monitoring infrastructure (Prometheus/Grafana)
+    return [];
+  }),
 
   // Platform analytics
   getPlatformStats: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => ({ dailyActiveUsers: 0, monthlyActiveUsers: 0, totalLoads: 0, totalRevenue: 0, revenue: 0, totalUsers: 0, usersChange: 0, usersChangeType: "stable", loadsChange: 0, loadsChangeType: "stable", revenueChange: 0, revenueChangeType: "stable" })),
-  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => []),
-  getPlatformTopUsers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getPlatformTrends: protectedProcedure.input(z.object({ dateRange: z.string().optional() }).optional()).query(async () => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ month: sql<string>`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`, count: sql<number>`count(*)`, revenue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).groupBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m')`).orderBy(sql`DATE_FORMAT(${loads.createdAt}, '%Y-%m') DESC`).limit(12);
+      return rows.map(r => ({ period: r.month, loads: r.count || 0, revenue: Math.round(r.revenue || 0) }));
+    } catch (e) { return []; }
+  }),
+  getPlatformTopUsers: protectedProcedure.input(z.object({ dateRange: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: users.id, name: users.name, role: users.role }).from(users).where(eq(users.isActive, true)).orderBy(desc(users.lastSignedIn)).limit(input?.limit || 10);
+      return rows.map((u, idx) => ({ rank: idx + 1, id: String(u.id), name: u.name || 'Unknown', role: u.role || '', activity: 0 }));
+    } catch (e) { return []; }
+  }),
 
   // Performance Reports
   getPerformanceData: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ revenue: [], loads: [], onTime: [] })),

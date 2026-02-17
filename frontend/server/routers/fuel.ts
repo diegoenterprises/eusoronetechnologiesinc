@@ -69,8 +69,25 @@ export const fuelRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      return { transactions: [], total: 0 };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { transactions: [], total: 0 };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(fuelTransactions.companyId, companyId)];
+        if (input.vehicleId) conds.push(eq(fuelTransactions.vehicleId, parseInt(input.vehicleId, 10)));
+        if (input.driverId) conds.push(eq(fuelTransactions.driverId, parseInt(input.driverId, 10)));
+        const rows = await db.select().from(fuelTransactions).where(and(...conds)).orderBy(desc(fuelTransactions.transactionDate)).limit(input.limit);
+        return {
+          transactions: rows.map(r => ({
+            id: String(r.id), driverId: String(r.driverId), vehicleId: String(r.vehicleId),
+            stationName: r.stationName || '', gallons: parseFloat(String(r.gallons)),
+            pricePerGallon: parseFloat(String(r.pricePerGallon)),
+            totalAmount: parseFloat(String(r.totalAmount)),
+            date: r.transactionDate?.toISOString() || '',
+          })),
+          total: rows.length,
+        };
+      } catch (e) { return { transactions: [], total: 0 }; }
     }),
 
   /**
@@ -81,12 +98,36 @@ export const fuelRouter = router({
       period: z.enum(["week", "month", "quarter"]).default("month"),
       vehicleId: z.string().optional(),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        totalGallons: 0, totalCost: 0, avgPricePerGallon: 0, avgMpg: 0,
-        defGallons: 0, defCost: 0, transactions: 0, byVehicle: [], byDriver: [],
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { period: input.period, totalGallons: 0, totalCost: 0, avgPricePerGallon: 0, avgMpg: 0, defGallons: 0, defCost: 0, transactions: 0, byVehicle: [], byDriver: [] };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const [stats] = await db.select({
+          totalGallons: sql<number>`COALESCE(SUM(${fuelTransactions.gallons}), 0)`,
+          totalCost: sql<number>`COALESCE(SUM(${fuelTransactions.totalAmount}), 0)`,
+          avgPrice: sql<number>`AVG(${fuelTransactions.pricePerGallon})`,
+          txCount: sql<number>`COUNT(*)`,
+        }).from(fuelTransactions).where(eq(fuelTransactions.companyId, companyId));
+        const byVehicle = await db.select({
+          vehicleId: fuelTransactions.vehicleId,
+          gallons: sql<number>`SUM(${fuelTransactions.gallons})`,
+          cost: sql<number>`SUM(${fuelTransactions.totalAmount})`,
+        }).from(fuelTransactions).where(eq(fuelTransactions.companyId, companyId)).groupBy(fuelTransactions.vehicleId).limit(20);
+        const byDriver = await db.select({
+          driverId: fuelTransactions.driverId,
+          gallons: sql<number>`SUM(${fuelTransactions.gallons})`,
+          cost: sql<number>`SUM(${fuelTransactions.totalAmount})`,
+        }).from(fuelTransactions).where(eq(fuelTransactions.companyId, companyId)).groupBy(fuelTransactions.driverId).limit(20);
+        return {
+          period: input.period,
+          totalGallons: Math.round(stats?.totalGallons || 0),
+          totalCost: Math.round((stats?.totalCost || 0) * 100) / 100,
+          avgPricePerGallon: parseFloat((stats?.avgPrice || 0).toFixed(3)),
+          avgMpg: 0, defGallons: 0, defCost: 0, transactions: stats?.txCount || 0,
+          byVehicle: byVehicle.map(v => ({ vehicleId: String(v.vehicleId), gallons: Math.round(v.gallons || 0), cost: Math.round((v.cost || 0) * 100) / 100 })),
+          byDriver: byDriver.map(d => ({ driverId: String(d.driverId), gallons: Math.round(d.gallons || 0), cost: Math.round((d.cost || 0) * 100) / 100 })),
+        };
+      } catch (e) { return { period: input.period, totalGallons: 0, totalCost: 0, avgPricePerGallon: 0, avgMpg: 0, defGallons: 0, defCost: 0, transactions: 0, byVehicle: [], byDriver: [] }; }
     }),
 
   /**
@@ -169,12 +210,21 @@ export const fuelRouter = router({
       receiptImage: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `fuel_${Date.now()}`,
-        totalAmount: input.gallons * input.pricePerGallon,
-        reportedBy: ctx.user?.id,
-        reportedAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const companyId = ctx.user?.companyId || 0;
+      const totalAmount = input.gallons * input.pricePerGallon;
+      const result = await db.insert(fuelTransactions).values({
+        driverId: userId,
+        vehicleId: parseInt(input.vehicleId, 10),
+        companyId,
+        stationName: input.location,
+        gallons: String(input.gallons),
+        pricePerGallon: String(input.pricePerGallon),
+        totalAmount: String(totalAmount.toFixed(2)),
+        transactionDate: new Date(),
+      } as any).$returningId();
+      return { id: String(result[0]?.id), totalAmount, reportedBy: userId, reportedAt: new Date().toISOString() };
     }),
 
   /**
@@ -267,6 +317,17 @@ export const fuelRouter = router({
       }
     }),
 
-  getFuelCardStats: protectedProcedure.query(async () => ({ totalCards: 0, activeCards: 0, totalSpent: 0, monthlyLimit: 0, topStation: "", monthlySpend: 0, gallonsThisMonth: 0 })),
+  getFuelCardStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { totalCards: 0, activeCards: 0, totalSpent: 0, monthlyLimit: 0, topStation: '', monthlySpend: 0, gallonsThisMonth: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000);
+      const [stats] = await db.select({
+        totalSpent: sql<number>`COALESCE(SUM(${fuelTransactions.totalAmount}), 0)`,
+        gallonsThisMonth: sql<number>`COALESCE(SUM(${fuelTransactions.gallons}), 0)`,
+      }).from(fuelTransactions).where(and(eq(fuelTransactions.companyId, companyId), sql`${fuelTransactions.transactionDate} >= ${thirtyDaysAgo}`));
+      return { totalCards: 0, activeCards: 0, totalSpent: Math.round((stats?.totalSpent || 0) * 100) / 100, monthlyLimit: 0, topStation: '', monthlySpend: Math.round((stats?.totalSpent || 0) * 100) / 100, gallonsThisMonth: Math.round(stats?.gallonsThisMonth || 0) };
+    } catch (e) { return { totalCards: 0, activeCards: 0, totalSpent: 0, monthlyLimit: 0, topStation: '', monthlySpend: 0, gallonsThisMonth: 0 }; }
+  }),
   toggleCard: protectedProcedure.input(z.object({ cardId: z.string(), active: z.boolean().optional(), status: z.string().optional() })).mutation(async ({ input }) => ({ success: true, cardId: input.cardId, active: input.active })),
 });

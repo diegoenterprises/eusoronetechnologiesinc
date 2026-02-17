@@ -1017,9 +1017,30 @@ export const adminRouter = router({
   getAudiences: auditedAdminProcedure.query(async () => []),
 
   // Company management
-  getCompanies: auditedAdminProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => []),
-  getCompanyStats: auditedAdminProcedure.query(async () => ({ total: 0, active: 0, pending: 0, suspended: 0, verified: 0 })),
-  getPendingCompanies: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getCompanies: auditedAdminProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), type: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select().from(companies).orderBy(desc(companies.createdAt)).limit(50);
+      let results = rows.map(c => ({ id: String(c.id), name: c.name || '', status: c.complianceStatus || 'pending', type: '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(c => c.name.toLowerCase().includes(q) || c.dotNumber.includes(q)); }
+      if (input?.status && input.status !== 'all') results = results.filter(c => c.status === input.status);
+      return results;
+    } catch (e) { console.error('[Admin] getCompanies error:', e); return []; }
+  }),
+  getCompanyStats: auditedAdminProcedure.query(async () => {
+    const db = await getDb(); if (!db) return { total: 0, active: 0, pending: 0, suspended: 0, verified: 0 };
+    try {
+      const [stats] = await db.select({ total: sql<number>`count(*)`, active: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'compliant' THEN 1 ELSE 0 END)`, pending: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'pending' THEN 1 ELSE 0 END)`, suspended: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'non_compliant' THEN 1 ELSE 0 END)`, verified: sql<number>`SUM(CASE WHEN ${companies.complianceStatus} = 'compliant' THEN 1 ELSE 0 END)` }).from(companies);
+      return { total: stats?.total || 0, active: stats?.active || 0, pending: stats?.pending || 0, suspended: stats?.suspended || 0, verified: stats?.verified || 0 };
+    } catch (e) { return { total: 0, active: 0, pending: 0, suspended: 0, verified: 0 }; }
+  }),
+  getPendingCompanies: auditedAdminProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select().from(companies).where(eq(companies.complianceStatus, 'pending')).orderBy(desc(companies.createdAt)).limit(input?.limit || 20);
+      return rows.map(c => ({ id: String(c.id), name: c.name || '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', createdAt: c.createdAt?.toISOString() || '' }));
+    } catch (e) { return []; }
+  }),
   verifyCompany: auditedAdminProcedure.input(z.object({ companyId: z.string() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   rejectCompany: auditedAdminProcedure.input(z.object({ companyId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, companyId: input.companyId })),
   getCompanyVerificationSummary: auditedAdminProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, avgProcessingTime: "", total: 0, verified: 0 })),
@@ -1056,7 +1077,23 @@ export const adminRouter = router({
   // Permissions & Roles
   getPermissions: auditedAdminProcedure.input(z.object({ roleId: z.string().nullable().optional() }).optional()).query(async () => { const perms = [] as any; perms.categories = []; return perms; }),
   getRoleStats: auditedAdminProcedure.query(async () => ({ admin: 0, catalyst: 0, shipper: 0, driver: 0, totalRoles: 0, totalPermissions: 0, usersWithRoles: 0, customRoles: 0 })),
-  getRoles: auditedAdminProcedure.query(async () => []),
+  getRoles: auditedAdminProcedure.query(async () => {
+    // Return role definitions from application config (not DB-driven)
+    return [
+      { id: 'ADMIN', name: 'Admin', description: 'Platform administrator', permissions: ['all'] },
+      { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'Full system access', permissions: ['all'] },
+      { id: 'CATALYST', name: 'Catalyst', description: 'Carrier/Fleet operator', permissions: ['loads', 'fleet', 'drivers', 'billing'] },
+      { id: 'DISPATCH', name: 'Dispatch', description: 'Dispatcher/Broker', permissions: ['loads', 'dispatch', 'drivers'] },
+      { id: 'DRIVER', name: 'Driver', description: 'Truck driver', permissions: ['loads', 'hos', 'dvir'] },
+      { id: 'SHIPPER', name: 'Shipper', description: 'Freight shipper', permissions: ['loads', 'quotes', 'billing'] },
+      { id: 'BROKER', name: 'Broker', description: 'Freight broker', permissions: ['loads', 'carriers', 'billing'] },
+      { id: 'ESCORT', name: 'Escort', description: 'Escort vehicle operator', permissions: ['escorts', 'loads'] },
+      { id: 'SAFETY', name: 'Safety Manager', description: 'Safety officer', permissions: ['safety', 'compliance', 'inspections'] },
+      { id: 'COMPLIANCE', name: 'Compliance Officer', description: 'Compliance manager', permissions: ['compliance', 'documents', 'certifications'] },
+      { id: 'TERMINAL', name: 'Terminal Manager', description: 'Terminal/Facility manager', permissions: ['terminals', 'appointments'] },
+      { id: 'FACTORING', name: 'Factoring', description: 'Factoring company', permissions: ['billing', 'invoices'] },
+    ];
+  }),
   updateRolePermissions: auditedAdminProcedure.input(z.object({ roleId: z.string(), permissions: z.array(z.string()) })).mutation(async ({ input }) => ({ success: true, roleId: input.roleId })),
 
   // Rate limiting
@@ -1079,8 +1116,22 @@ export const adminRouter = router({
   }),
   getSystemLogs: auditedAdminProcedure.input(z.object({ level: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
   getLogStats: auditedAdminProcedure.query(async () => ({ total: 0, error: 0, warning: 0, info: 0, debug: 0 })),
-  getOnboardingUsers: auditedAdminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => []),
-  getOnboardingStats: auditedAdminProcedure.query(async () => ({ total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: "" })),
+  getOnboardingUsers: auditedAdminProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, createdAt: users.createdAt }).from(users).where(eq(users.isVerified, false)).orderBy(desc(users.createdAt)).limit(20);
+      return rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role || '', createdAt: u.createdAt?.toISOString() || '' }));
+    } catch (e) { return []; }
+  }),
+  getOnboardingStats: auditedAdminProcedure.query(async () => {
+    const db = await getDb(); if (!db) return { total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: '' };
+    try {
+      const [stats] = await db.select({ total: sql<number>`count(*)`, completed: sql<number>`SUM(CASE WHEN ${users.isVerified} = true THEN 1 ELSE 0 END)` }).from(users);
+      const total = stats?.total || 0;
+      const completed = stats?.completed || 0;
+      return { total, completed, inProgress: total - completed, abandoned: 0, avgCompletionTime: '' };
+    } catch (e) { return { total: 0, completed: 0, inProgress: 0, abandoned: 0, avgCompletionTime: '' }; }
+  }),
   sendOnboardingReminder: auditedAdminProcedure.input(z.object({ userId: z.string() })).mutation(async ({ input }) => ({ success: true, userId: input.userId })),
 
   // Audit log

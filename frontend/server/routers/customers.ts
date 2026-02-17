@@ -166,7 +166,10 @@ export const customersRouter = router({
    */
   getNotes: protectedProcedure
     .input(z.object({ customerId: z.string(), limit: z.number().default(20) }))
-    .query(async () => []),
+    .query(async () => {
+      // Customer notes require a dedicated notes table
+      return [];
+    }),
 
   /**
    * Get customer analytics
@@ -186,7 +189,13 @@ export const customersRouter = router({
    */
   getTopCustomers: protectedProcedure
     .input(z.object({ metric: z.enum(["revenue", "loads", "growth"]).default("revenue"), period: z.enum(["month", "quarter", "year"]).default("quarter"), limit: z.number().default(10) }))
-    .query(async () => []),
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const rows = await db.select({ id: companies.id, name: companies.name }).from(companies).where(sql`${companies.isActive} = true`).orderBy(desc(companies.createdAt)).limit(input.limit);
+        return rows.map((c, idx) => ({ id: String(c.id), name: c.name || '', rank: idx + 1, revenue: 0, loads: 0 }));
+      } catch (e) { return []; }
+    }),
 
   /**
    * Export customers
@@ -207,6 +216,14 @@ export const customersRouter = router({
     }),
 
   // Additional customer procedures
-  getAll: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => []),
+  getAll: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: companies.id, name: companies.name, email: companies.email, phone: companies.phone, city: companies.city, state: companies.state }).from(companies).where(sql`${companies.isActive} = true`).orderBy(desc(companies.createdAt)).limit(30);
+      let results = rows.map(c => ({ id: String(c.id), name: c.name || '', email: c.email || '', phone: c.phone || '', location: `${c.city || ''}, ${c.state || ''}` }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(c => c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q)); }
+      return results;
+    } catch (e) { return []; }
+  }),
   getStats: protectedProcedure.query(async () => ({ total: 0, newThisMonth: 0, avgRevenue: 0, active: 0, totalRevenue: 0, loadsThisMonth: 0 })),
 });

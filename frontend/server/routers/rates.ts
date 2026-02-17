@@ -308,11 +308,48 @@ export const ratesRouter = router({
     }),
 
   // Additional rate procedures
-  getAll: protectedProcedure.input(z.object({ search: z.string().optional(), type: z.string().optional() }).optional()).query(async () => []),
-  getStats: protectedProcedure.query(async () => ({ avgRate: 0, minRate: 0, maxRate: 0, totalLanes: 0, totalRates: 0, lanes: 0, highestRate: 0 })),
+  getAll: protectedProcedure.input(z.object({ search: z.string().optional(), type: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).orderBy(desc(loads.createdAt)).limit(50);
+      return rows.map(l => {
+        const pickup = l.pickupLocation as any || {};
+        const delivery = l.deliveryLocation as any || {};
+        return { id: String(l.id), lane: `${pickup.city || ''}, ${pickup.state || ''} → ${delivery.city || ''}, ${delivery.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, date: l.createdAt?.toISOString() || '' };
+      });
+    } catch (e) { return []; }
+  }),
+  getStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { avgRate: 0, minRate: 0, maxRate: 0, totalLanes: 0, totalRates: 0, lanes: 0, highestRate: 0 };
+    try {
+      const [stats] = await db.select({ avg: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)`, min: sql<number>`COALESCE(MIN(CAST(${loads.rate} AS DECIMAL)), 0)`, max: sql<number>`COALESCE(MAX(CAST(${loads.rate} AS DECIMAL)), 0)`, count: sql<number>`count(*)` }).from(loads).where(sql`${loads.rate} > 0`);
+      return { avgRate: Math.round(stats?.avg || 0), minRate: Math.round(stats?.min || 0), maxRate: Math.round(stats?.max || 0), totalLanes: 0, totalRates: stats?.count || 0, lanes: 0, highestRate: Math.round(stats?.max || 0) };
+    } catch (e) { return { avgRate: 0, minRate: 0, maxRate: 0, totalLanes: 0, totalRates: 0, lanes: 0, highestRate: 0 }; }
+  }),
   delete: protectedProcedure.input(z.object({ rateId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, rateId: input.rateId || input.id })),
 
   // Lane rates for LaneRates.tsx
-  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
-  getRecentRates: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select().from(loads).where(sql`${loads.rate} > 0 AND ${loads.status} = 'delivered'`).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
+      return rows.map(l => {
+        const pickup = l.pickupLocation as any || {};
+        const delivery = l.deliveryLocation as any || {};
+        return { id: String(l.id), origin: `${pickup.city || ''}, ${pickup.state || ''}`, destination: `${delivery.city || ''}, ${delivery.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, ratePerMile: (l.rate && l.distance) ? Math.round((parseFloat(String(l.rate)) / parseFloat(String(l.distance))) * 100) / 100 : 0, date: l.createdAt?.toISOString() || '' };
+      });
+    } catch (e) { return []; }
+  }),
+  getRecentRates: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select().from(loads).where(sql`${loads.rate} > 0`).orderBy(desc(loads.createdAt)).limit(input?.limit || 10);
+      return rows.map(l => {
+        const pickup = l.pickupLocation as any || {};
+        const delivery = l.deliveryLocation as any || {};
+        return { id: String(l.id), lane: `${pickup.city || ''}, ${pickup.state || ''} → ${delivery.city || ''}, ${delivery.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, date: l.createdAt?.toISOString() || '' };
+      });
+    } catch (e) { return []; }
+  }),
 });

@@ -643,23 +643,54 @@ export const brokersRouter = router({
     }),
 
   // Catalyst vetting
-  getPendingVetting: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
+  getPendingVetting: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: companies.id, name: companies.name, dotNumber: companies.dotNumber, mcNumber: companies.mcNumber, complianceStatus: companies.complianceStatus, createdAt: companies.createdAt }).from(companies).where(eq(companies.complianceStatus, 'pending')).orderBy(desc(companies.createdAt)).limit(20);
+      let results = rows.map(c => ({ id: String(c.id), name: c.name || '', dotNumber: c.dotNumber || '', mcNumber: c.mcNumber || '', status: c.complianceStatus || 'pending', createdAt: c.createdAt?.toISOString() || '' }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(c => c.name.toLowerCase().includes(q)); }
+      return results;
+    } catch (e) { return []; }
+  }),
   getVettingStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, total: 0 })),
   approveCatalyst: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
   rejectCatalyst: protectedProcedure.input(z.object({ catalystId: z.string(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
 
   // Capacity & Commission
   getCapacityStats: protectedProcedure.query(async () => ({ totalCapacity: 0, available: 0, booked: 0, verified: 0, avgRating: 0 })),
-  getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
+  getCommissionHistory: protectedProcedure.input(z.object({ period: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const userId = await resolveBrokerUserId(ctx.user);
+      const rows = await db.select().from(loads).where(eq(loads.shipperId, userId)).orderBy(desc(loads.createdAt)).limit(input?.limit || 20);
+      return rows.map(l => ({ id: String(l.id), loadNumber: l.loadNumber, rate: l.rate ? parseFloat(String(l.rate)) : 0, commission: l.rate ? Math.round(parseFloat(String(l.rate)) * 0.1) : 0, date: l.createdAt?.toISOString() || '', status: l.status }));
+    } catch (e) { return []; }
+  }),
 
   // Shippers
-  shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async () => []),
+  shippers: protectedProcedure.input(z.object({ search: z.string().optional() })).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, companyId: users.companyId }).from(users).where(eq(users.role, 'SHIPPER')).orderBy(desc(users.createdAt)).limit(20);
+      let results = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', companyId: u.companyId }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(u => u.name.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)); }
+      return results;
+    } catch (e) { return []; }
+  }),
 
   // Network Stats
   getNetworkStats: protectedProcedure.query(async () => ({ totalCatalysts: 0, activeCatalysts: 0, preferredCatalysts: 0, newThisMonth: 0, avgRating: 0, totalCapacity: 0 })),
 
   // Onboarding
-  getOnboardingCatalysts: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
+  getOnboardingCatalysts: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, isVerified: users.isVerified, createdAt: users.createdAt }).from(users).where(eq(users.role, 'CATALYST')).orderBy(desc(users.createdAt)).limit(20);
+      let results = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', verified: u.isVerified, createdAt: u.createdAt?.toISOString() || '' }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(u => u.name.toLowerCase().includes(q)); }
+      return results;
+    } catch (e) { return []; }
+  }),
   getOnboardingStats: protectedProcedure.query(async () => ({ pending: 0, inProgress: 0, completed: 0, rejected: 0, avgCompletionDays: 0 })),
   sendOnboardingReminder: protectedProcedure.input(z.object({ catalystId: z.string() })).mutation(async ({ input }) => ({ success: true, catalystId: input.catalystId })),
 
@@ -669,7 +700,15 @@ export const brokersRouter = router({
   getPrequalificationStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, rejected: 0, avgProcessingTime: "0 days", approvedToday: 0, rejectedToday: 0, totalVerified: 0, urgent: 0 })),
 
   // Customers
-  getCustomers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async () => []),
+  getCustomers: protectedProcedure.input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional()).query(async ({ input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, role: users.role, companyId: users.companyId, createdAt: users.createdAt }).from(users).where(eq(users.role, 'SHIPPER')).orderBy(desc(users.createdAt)).limit(20);
+      let results = rows.map(u => ({ id: String(u.id), name: u.name || '', email: u.email || '', role: u.role, createdAt: u.createdAt?.toISOString() || '' }));
+      if (input?.search) { const q = input.search.toLowerCase(); results = results.filter(u => u.name.toLowerCase().includes(q)); }
+      return results;
+    } catch (e) { return []; }
+  }),
   getCustomerStats: protectedProcedure.query(async () => ({
     totalCustomers: 0,
     activeCustomers: 0,
@@ -679,7 +718,16 @@ export const brokersRouter = router({
   })),
 
   // Lane Rates
-  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
+  getLaneRates: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const rows = await db.select().from(loads).where(sql`${loads.rate} > 0 AND ${loads.status} = 'delivered'`).orderBy(desc(loads.createdAt)).limit(20);
+      return rows.map(l => {
+        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        return { id: String(l.id), origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0 };
+      });
+    } catch (e) { return []; }
+  }),
   getMarketRates: protectedProcedure.input(z.object({ origin: z.string().optional(), destination: z.string().optional() }).optional()).query(async () => ({ avgRatePerMile: 0, trendDirection: "stable", trendPercent: 0, fuelSurcharge: 0, spotRate: 0, contractRate: 0 })),
   addLaneRate: protectedProcedure.input(z.object({ origin: z.string(), destination: z.string(), rate: z.number() })).mutation(async ({ input }) => ({ success: true, id: `lr_${Date.now()}`, ...input })),
 

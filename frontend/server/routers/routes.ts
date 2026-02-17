@@ -4,9 +4,10 @@
  */
 
 import { z } from "zod";
-import { sql } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
+import { routes as routesTable } from "../../drizzle/schema";
 
 export const routesRouter = router({
   /**
@@ -49,18 +50,19 @@ export const routesRouter = router({
   getById: protectedProcedure
     .input(z.object({ routeId: z.string() }))
     .query(async ({ input }) => {
-      return {
-        routeId: input.routeId,
-        status: "active",
-        origin: { address: "Shell Houston Terminal", lat: 29.7604, lng: -95.3698 },
-        destination: { address: "7-Eleven Distribution, Dallas", lat: 32.7767, lng: -96.7970 },
-        distance: 285.4,
-        duration: 4.5,
-        currentPosition: { lat: 31.5493, lng: -97.1467 },
-        progress: 0.65,
-        eta: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
-        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-      };
+      const db = await getDb(); if (!db) return null;
+      try {
+        const numId = parseInt(input.routeId.replace('route_', ''), 10);
+        const [row] = await db.select().from(routesTable).where(eq(routesTable.id, numId)).limit(1);
+        if (!row) return null;
+        return {
+          routeId: String(row.id), status: row.status || 'planned',
+          origin: { address: '', lat: 0, lng: 0 }, destination: { address: '', lat: 0, lng: 0 },
+          distance: parseFloat(String(row.distanceMiles)), duration: (row.durationMinutes || 0) / 60,
+          currentPosition: { lat: 0, lng: 0 }, progress: row.status === 'completed' ? 1 : 0,
+          eta: '', createdAt: row.createdAt?.toISOString() || '',
+        };
+      } catch (e) { return null; }
     }),
 
   /**
@@ -164,27 +166,9 @@ export const routesRouter = router({
    * Get favorite routes
    */
   getFavorites: protectedProcedure
-    .query(async ({ ctx }) => {
-      return [
-        {
-          id: "fav_001",
-          name: "Houston to Dallas",
-          origin: { address: "Houston, TX", lat: 29.7604, lng: -95.3698 },
-          destination: { address: "Dallas, TX", lat: 32.7767, lng: -96.7970 },
-          distance: 239,
-          duration: 3.5,
-          usageCount: 45,
-        },
-        {
-          id: "fav_002",
-          name: "Houston to San Antonio",
-          origin: { address: "Houston, TX", lat: 29.7604, lng: -95.3698 },
-          destination: { address: "San Antonio, TX", lat: 29.4241, lng: -98.4936 },
-          distance: 197,
-          duration: 3.0,
-          usageCount: 32,
-        },
-      ];
+    .query(async () => {
+      // Favorite routes require a dedicated user_favorite_routes table
+      return [];
     }),
 
   /**
@@ -238,26 +222,8 @@ export const routesRouter = router({
         west: z.number(),
       }),
     }))
-    .query(async ({ input }) => {
-      return [
-        {
-          id: "cond_001",
-          type: "construction",
-          location: { lat: 31.55, lng: -97.15 },
-          description: "Lane closure on I-35 N",
-          severity: "medium",
-          expectedClearance: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-          verifiedAt: new Date().toISOString(),
-        },
-        {
-          id: "cond_002",
-          type: "weather",
-          location: { lat: 32.10, lng: -96.80 },
-          description: "Heavy rain, reduced visibility",
-          severity: "high",
-          expectedClearance: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-          verifiedAt: new Date().toISOString(),
-        },
-      ];
+    .query(async () => {
+      // Road conditions require external traffic API integration
+      return [];
     }),
 });

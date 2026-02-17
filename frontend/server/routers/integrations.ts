@@ -234,7 +234,7 @@ export const integrationsRouter = router({
         title: 'Clearinghouse Query Submitted',
         message: `Pre-employment query submitted for ${input.firstName} ${input.lastName}`,
         priority: 'medium',
-        data: { queryId: result.queryId, driverId: input.driverId },
+        data: { queryId: result?.queryId, driverId: input.driverId },
         timestamp: new Date().toISOString(),
       });
 
@@ -449,7 +449,7 @@ export const integrationsRouter = router({
             driver,
             String(ctx.user?.id)
           );
-          return { driverId: driver.driverId, queryId: result.queryId, status: result.status };
+          return { driverId: driver.driverId, queryId: result?.queryId, status: result?.status };
         })
       );
 

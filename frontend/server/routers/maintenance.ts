@@ -8,7 +8,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { vehicles } from "../../drizzle/schema";
+import { vehicles, zeunMaintenanceSchedules } from "../../drizzle/schema";
 
 export const maintenanceRouter = router({
   /**
@@ -112,8 +112,16 @@ export const maintenanceRouter = router({
       status: z.string().optional(),
       search: z.string().optional(),
     }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const companyVehicles = await db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.companyId, companyId)).limit(200);
+        const vIds = companyVehicles.map(v => v.id);
+        if (vIds.length === 0) return [];
+        const rows = await db.select().from(zeunMaintenanceSchedules).where(sql`${zeunMaintenanceSchedules.vehicleId} IN (${sql.join(vIds.map(id => sql`${id}`), sql`, `)})`).orderBy(zeunMaintenanceSchedules.nextDueDate).limit(50);
+        return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), serviceType: r.serviceType, nextDueDate: r.nextDueDate?.toISOString() || '', isOverdue: r.isOverdue || false, priority: r.priority || 'MEDIUM', estimatedCost: parseFloat(String(r.estimatedCostMin || 0)) }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -123,16 +131,32 @@ export const maintenanceRouter = router({
     .input(z.object({
       limit: z.number().optional().default(20),
     }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const companyVehicles = await db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.companyId, companyId)).limit(200);
+        const vIds = companyVehicles.map(v => v.id);
+        if (vIds.length === 0) return [];
+        const rows = await db.select().from(zeunMaintenanceSchedules).where(and(sql`${zeunMaintenanceSchedules.vehicleId} IN (${sql.join(vIds.map(id => sql`${id}`), sql`, `)})`, lte(zeunMaintenanceSchedules.lastServiceDate, new Date()))).orderBy(desc(zeunMaintenanceSchedules.lastServiceDate)).limit(input.limit);
+        return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), serviceType: r.serviceType, completedDate: r.lastServiceDate?.toISOString() || '', odometer: r.lastServiceOdometer || 0 }));
+      } catch (e) { return []; }
     }),
 
   /**
    * Get maintenance alerts
    */
   getAlerts: protectedProcedure
-    .query(async () => {
-      return [];
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const companyVehicles = await db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.companyId, companyId)).limit(200);
+        const vIds = companyVehicles.map(v => v.id);
+        if (vIds.length === 0) return [];
+        const rows = await db.select().from(zeunMaintenanceSchedules).where(and(sql`${zeunMaintenanceSchedules.vehicleId} IN (${sql.join(vIds.map(id => sql`${id}`), sql`, `)})`, eq(zeunMaintenanceSchedules.isOverdue, true))).limit(20);
+        return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), serviceType: r.serviceType, priority: r.priority || 'HIGH', isOverdue: true, nextDueDate: r.nextDueDate?.toISOString() || '' }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -164,11 +188,15 @@ export const maintenanceRouter = router({
       estimatedCost: z.number().optional(),
     }))
     .mutation(async ({ input }) => {
-      return {
-        success: true,
-        maintenanceId: `maint_${Date.now()}`,
-        scheduledDate: input.scheduledDate,
-      };
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const result = await db.insert(zeunMaintenanceSchedules).values({
+        vehicleId: parseInt(input.vehicleId, 10),
+        serviceType: input.type,
+        nextDueDate: new Date(input.scheduledDate),
+        estimatedCostMin: input.estimatedCost ? String(input.estimatedCost) : '0',
+        priority: 'MEDIUM' as any,
+      } as any).$returningId();
+      return { success: true, maintenanceId: String(result[0]?.id), scheduledDate: input.scheduledDate };
     }),
 
   /**
@@ -196,9 +224,21 @@ export const maintenanceRouter = router({
     .input(z.object({
       days: z.number().optional().default(30),
     }))
-    .query(async () => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const futureDate = new Date(Date.now() + (input.days || 30) * 86400000);
+        const companyVehicles = await db.select({ id: vehicles.id }).from(vehicles).where(eq(vehicles.companyId, companyId)).limit(200);
+        const vIds = companyVehicles.map(v => v.id);
+        if (vIds.length === 0) return [];
+        const rows = await db.select().from(zeunMaintenanceSchedules).where(and(sql`${zeunMaintenanceSchedules.vehicleId} IN (${sql.join(vIds.map(id => sql`${id}`), sql`, `)})`, lte(zeunMaintenanceSchedules.nextDueDate, futureDate))).orderBy(zeunMaintenanceSchedules.nextDueDate).limit(20);
+        return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId), serviceType: r.serviceType, nextDueDate: r.nextDueDate?.toISOString() || '', priority: r.priority || 'MEDIUM', isOverdue: r.isOverdue || false }));
+      } catch (e) { return []; }
     }),
 
-  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => []),
+  list: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() })).query(async () => {
+    // Maintenance work orders require a dedicated maintenance_orders table
+    return [];
+  }),
 });

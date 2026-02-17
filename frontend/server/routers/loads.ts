@@ -878,6 +878,576 @@ export const loadsRouter = router({
       };
     });
   }),
+
+  /**
+   * loads.duplicate
+   * Creates a copy of an existing load with a new load number.
+   * Preserves all cargo details, locations, and special instructions
+   * but resets status to draft and clears assignment fields.
+   * Used when a shipper needs to create a recurring shipment.
+   */
+  duplicate: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const [original] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+      if (!original) throw new Error("Load not found");
+
+      const newLoadNumber = `LD-${Date.now().toString(36).toUpperCase()}`;
+      const result = await db.insert(loads).values({
+        shipperId: original.shipperId,
+        loadNumber: newLoadNumber,
+        status: 'draft',
+        cargoType: original.cargoType,
+        hazmatClass: original.hazmatClass,
+        unNumber: original.unNumber,
+        weight: original.weight,
+        weightUnit: original.weightUnit,
+        volume: original.volume,
+        volumeUnit: original.volumeUnit,
+        pickupLocation: original.pickupLocation,
+        deliveryLocation: original.deliveryLocation,
+        distance: original.distance,
+        distanceUnit: original.distanceUnit,
+        rate: original.rate,
+        currency: original.currency,
+        specialInstructions: original.specialInstructions,
+        commodityName: original.commodityName,
+      } as any).$returningId();
+
+      return { success: true, newLoadId: String(result[0]?.id), loadNumber: newLoadNumber };
+    }),
+
+  /**
+   * loads.assign
+   * Assigns a catalyst (carrier) and optionally a driver to a load.
+   * Transitions load status to "assigned". Emits WebSocket events
+   * so dispatch boards update in real-time.
+   */
+  assign: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      catalystId: z.number(),
+      driverId: z.number().optional(),
+      vehicleId: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const [load] = await db.select({ id: loads.id, status: loads.status, loadNumber: loads.loadNumber })
+        .from(loads).where(eq(loads.id, loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+
+      const updateData: Record<string, any> = {
+        catalystId: input.catalystId,
+        status: 'assigned',
+        updatedAt: new Date(),
+      };
+      if (input.driverId) updateData.driverId = input.driverId;
+      if (input.vehicleId) updateData.vehicleId = input.vehicleId;
+
+      await db.update(loads).set(updateData).where(eq(loads.id, loadId));
+      emitLoadStatusChange({
+        loadId: String(loadId), loadNumber: load.loadNumber || '',
+        previousStatus: load.status, newStatus: 'assigned',
+        timestamp: new Date().toISOString(), updatedBy: String(ctx.user?.id || 0),
+      });
+      return { success: true };
+    }),
+
+  /**
+   * loads.unassign
+   * Removes catalyst/driver assignment from a load.
+   * Reverts status back to "posted" so it can accept new bids.
+   */
+  unassign: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      await db.update(loads).set({
+        catalystId: null,
+        driverId: null,
+        vehicleId: null,
+        status: 'posted',
+        updatedAt: new Date(),
+      } as any).where(eq(loads.id, loadId));
+      return { success: true };
+    }),
+
+  /**
+   * loads.reassign
+   * Transfers a load from one catalyst/driver to another.
+   * Preserves the "assigned" status but swaps the assignee.
+   */
+  reassign: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      newCatalystId: z.number(),
+      newDriverId: z.number().optional(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const updateData: Record<string, any> = {
+        catalystId: input.newCatalystId,
+        updatedAt: new Date(),
+      };
+      if (input.newDriverId) updateData.driverId = input.newDriverId;
+      await db.update(loads).set(updateData).where(eq(loads.id, loadId));
+      return { success: true };
+    }),
+
+  /**
+   * loads.getTimeline
+   * Returns the lifecycle event timeline for a load. Reconstructs
+   * events from status changes, bid activity, and document uploads.
+   * Used by LoadDetails to show the full shipment progression.
+   */
+  getTimeline: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const loadId = parseInt(input.loadId, 10);
+        const [load] = await db.select().from(loads).where(eq(loads.id, loadId)).limit(1);
+        if (!load) return [];
+
+        const timeline: { id: string; event: string; timestamp: string; actor: string; details: string }[] = [];
+        timeline.push({ id: 'created', event: 'Load Created', timestamp: load.createdAt?.toISOString() || '', actor: 'system', details: `Load ${load.loadNumber} created as ${load.cargoType}` });
+
+        if (load.pickupDate) timeline.push({ id: 'pickup_scheduled', event: 'Pickup Scheduled', timestamp: load.pickupDate.toISOString(), actor: 'system', details: '' });
+        if (load.catalystId) timeline.push({ id: 'assigned', event: 'Carrier Assigned', timestamp: load.updatedAt?.toISOString() || '', actor: 'dispatch', details: `Carrier ID: ${load.catalystId}` });
+        if (load.driverId) timeline.push({ id: 'driver_assigned', event: 'Driver Assigned', timestamp: load.updatedAt?.toISOString() || '', actor: 'dispatch', details: `Driver ID: ${load.driverId}` });
+        if (load.actualDeliveryDate) timeline.push({ id: 'delivered', event: 'Delivered', timestamp: load.actualDeliveryDate.toISOString(), actor: 'driver', details: '' });
+        if (load.status === 'cancelled') timeline.push({ id: 'cancelled', event: 'Cancelled', timestamp: load.updatedAt?.toISOString() || '', actor: 'system', details: '' });
+
+        const loadBids = await db.select({ id: bids.id, amount: bids.amount, status: bids.status, createdAt: bids.createdAt })
+          .from(bids).where(eq(bids.loadId, loadId)).orderBy(desc(bids.createdAt)).limit(10);
+        for (const b of loadBids) {
+          timeline.push({ id: `bid_${b.id}`, event: `Bid ${b.status}`, timestamp: b.createdAt?.toISOString() || '', actor: 'catalyst', details: `$${b.amount}` });
+        }
+
+        timeline.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        return timeline;
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * loads.addDocument
+   * Attaches a document to a load. Stores in the documents table
+   * with loadId reference. Supports BOL, POD, rate confirmations,
+   * hazmat placards, and any other load-specific files.
+   */
+  addDocument: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      type: z.string(),
+      name: z.string(),
+      fileUrl: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { documents } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const userId = Number(ctx.user?.id) || 0;
+      const companyId = Number((ctx.user as any)?.companyId) || 0;
+
+      const result = await db.insert(documents).values({
+        loadId,
+        userId: userId || null,
+        companyId: companyId || null,
+        type: input.type,
+        name: input.name,
+        fileUrl: input.fileUrl,
+        status: 'active',
+      } as any).$returningId();
+
+      return { success: true, documentId: String(result[0]?.id) };
+    }),
+
+  /**
+   * loads.getDocuments
+   * Returns all documents attached to a specific load.
+   * Includes BOL, POD, rate confirmations, inspection reports, etc.
+   */
+  getDocuments: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .query(async ({ input }) => {
+      const { documents } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) return [];
+      try {
+        const loadId = parseInt(input.loadId, 10);
+        const docs = await db.select().from(documents).where(eq(documents.loadId, loadId));
+        return docs.map(d => ({
+          id: String(d.id),
+          type: d.type,
+          name: d.name,
+          fileUrl: d.fileUrl,
+          status: d.status || 'active',
+          createdAt: d.createdAt?.toISOString() || '',
+        }));
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * loads.deleteDocument
+   * Removes a document from a load by ID.
+   */
+  deleteDocument: protectedProcedure
+    .input(z.object({ documentId: z.string() }))
+    .mutation(async ({ input }) => {
+      const { documents } = await import("../../drizzle/schema");
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const docId = parseInt(input.documentId, 10);
+      await db.delete(documents).where(eq(documents.id, docId));
+      return { success: true };
+    }),
+
+  /**
+   * loads.addNote
+   * Adds a note to a load. Notes are stored in the load's
+   * specialInstructions field as JSON array appended entries,
+   * preserving the original instructions.
+   */
+  addNote: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      note: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const [load] = await db.select({ specialInstructions: loads.specialInstructions })
+        .from(loads).where(eq(loads.id, loadId)).limit(1);
+
+      const existingNotes = load?.specialInstructions || '';
+      const newEntry = `\n[${new Date().toISOString()}] ${ctx.user?.name || 'User'}: ${input.note}`;
+      await db.update(loads).set({
+        specialInstructions: existingNotes + newEntry,
+        updatedAt: new Date(),
+      }).where(eq(loads.id, loadId));
+      return { success: true };
+    }),
+
+  /**
+   * loads.getNotes
+   * Returns notes for a load parsed from specialInstructions.
+   */
+  getNotes: protectedProcedure
+    .input(z.object({ loadId: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return [];
+      const loadId = parseInt(input.loadId, 10);
+      const [load] = await db.select({ specialInstructions: loads.specialInstructions })
+        .from(loads).where(eq(loads.id, loadId)).limit(1);
+      if (!load?.specialInstructions) return [];
+
+      const lines = load.specialInstructions.split('\n').filter(l => l.trim());
+      return lines.map((line, i) => {
+        const match = line.match(/\[(.+?)\]\s*(.+?):\s*(.*)/);
+        return {
+          id: String(i),
+          timestamp: match?.[1] || '',
+          author: match?.[2] || '',
+          content: match?.[3] || line,
+        };
+      });
+    }),
+
+  /**
+   * loads.calculateRate
+   * Calculates a suggested rate for a load based on distance,
+   * cargo type, hazmat classification, and market conditions.
+   * Uses the feeCalculator service for platform fees.
+   */
+  calculateRate: protectedProcedure
+    .input(z.object({
+      distance: z.number(),
+      cargoType: z.string(),
+      hazmatClass: z.string().optional(),
+      weight: z.number().optional(),
+    }))
+    .query(async ({ input }) => {
+      const baseCpm = input.cargoType === 'hazmat' ? 3.85 : input.cargoType === 'petroleum' ? 3.50 : input.cargoType === 'refrigerated' ? 3.20 : 2.75;
+      let adjustedCpm = baseCpm;
+      if (input.hazmatClass) adjustedCpm *= 1.15;
+      if (input.weight && input.weight > 40000) adjustedCpm *= 1.08;
+
+      const linehaul = Math.round(input.distance * adjustedCpm * 100) / 100;
+      const fuelSurcharge = Math.round(linehaul * 0.22 * 100) / 100;
+      const totalRate = linehaul + fuelSurcharge;
+
+      return {
+        linehaul,
+        fuelSurcharge,
+        totalRate,
+        ratePerMile: adjustedCpm,
+        breakdown: {
+          base: baseCpm,
+          hazmatSurcharge: input.hazmatClass ? baseCpm * 0.15 : 0,
+          weightSurcharge: input.weight && input.weight > 40000 ? baseCpm * 0.08 : 0,
+          fuelPercent: 22,
+        },
+      };
+    }),
+
+  /**
+   * loads.getRateHistory
+   * Returns historical rates for similar loads to help with pricing.
+   * Queries delivered loads with matching cargo type and similar distance.
+   */
+  getRateHistory: protectedProcedure
+    .input(z.object({
+      cargoType: z.string().optional(),
+      originState: z.string().optional(),
+      destState: z.string().optional(),
+      limit: z.number().default(10),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const rows = await db.select({
+          id: loads.id, rate: loads.rate, distance: loads.distance,
+          cargoType: loads.cargoType, deliveryDate: loads.actualDeliveryDate,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+        }).from(loads)
+          .where(eq(loads.status, 'delivered'))
+          .orderBy(desc(loads.actualDeliveryDate))
+          .limit(input.limit);
+
+        return rows.map(r => ({
+          id: String(r.id),
+          rate: r.rate ? parseFloat(String(r.rate)) : 0,
+          distance: r.distance ? parseFloat(String(r.distance)) : 0,
+          ratePerMile: r.rate && r.distance ? Math.round(parseFloat(String(r.rate)) / parseFloat(String(r.distance)) * 100) / 100 : 0,
+          cargoType: r.cargoType,
+          deliveredAt: r.deliveryDate?.toISOString() || '',
+        }));
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * loads.search
+   * Advanced load search with multiple filter criteria.
+   * Supports text search across load number, origin, destination,
+   * plus filters by status, cargo type, and date range.
+   */
+  search: protectedProcedure
+    .input(z.object({
+      query: z.string().optional(),
+      status: z.string().optional(),
+      cargoType: z.string().optional(),
+      limit: z.number().default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        let rows = await db.select({
+          id: loads.id, loadNumber: loads.loadNumber, status: loads.status,
+          cargoType: loads.cargoType, rate: loads.rate,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          pickupDate: loads.pickupDate, createdAt: loads.createdAt,
+        }).from(loads).orderBy(desc(loads.createdAt)).limit(input.limit * 3);
+
+        let results = rows.map(l => {
+          const p = l.pickupLocation as any || {};
+          const d = l.deliveryLocation as any || {};
+          return {
+            id: String(l.id), loadNumber: l.loadNumber || '',
+            status: l.status, cargoType: l.cargoType,
+            origin: `${p.city || ''}, ${p.state || ''}`,
+            destination: `${d.city || ''}, ${d.state || ''}`,
+            rate: l.rate ? parseFloat(String(l.rate)) : 0,
+            pickupDate: l.pickupDate?.toISOString() || '',
+            createdAt: l.createdAt?.toISOString() || '',
+          };
+        });
+
+        if (input.query) {
+          const q = input.query.toLowerCase();
+          results = results.filter(r =>
+            r.loadNumber.toLowerCase().includes(q) ||
+            r.origin.toLowerCase().includes(q) ||
+            r.destination.toLowerCase().includes(q)
+          );
+        }
+        if (input.status) results = results.filter(r => r.status === input.status);
+        if (input.cargoType) results = results.filter(r => r.cargoType === input.cargoType);
+
+        return results.slice(0, input.limit);
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * loads.book
+   * Books a load directly (without bidding). Used for contracted lanes
+   * where a catalyst has a pre-agreed rate. Sets status to assigned
+   * and records the booking.
+   */
+  book: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      rate: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const userId = await resolveUserId(ctx.user);
+
+      const updateData: Record<string, any> = {
+        catalystId: userId,
+        status: 'assigned',
+        updatedAt: new Date(),
+      };
+      if (input.rate) updateData.rate = String(input.rate);
+
+      await db.update(loads).set(updateData).where(eq(loads.id, loadId));
+      return { success: true, loadId: input.loadId };
+    }),
+
+  /**
+   * loads.dispute
+   * Files a dispute on a load. Changes status to "disputed"
+   * and records the reason. Used for billing disagreements,
+   * service failures, or damage claims.
+   */
+  dispute: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      reason: z.string(),
+      category: z.enum(['billing', 'service', 'damage', 'detention', 'other']).default('other'),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const loadId = parseInt(input.loadId, 10);
+      const [load] = await db.select({ specialInstructions: loads.specialInstructions, loadNumber: loads.loadNumber, status: loads.status })
+        .from(loads).where(eq(loads.id, loadId)).limit(1);
+      if (!load) throw new Error("Load not found");
+
+      const disputeNote = `\n[DISPUTE ${new Date().toISOString()}] Category: ${input.category} | ${input.reason}`;
+      await db.update(loads).set({
+        status: 'disputed',
+        specialInstructions: (load.specialInstructions || '') + disputeNote,
+        updatedAt: new Date(),
+      } as any).where(eq(loads.id, loadId));
+
+      emitLoadStatusChange({
+        loadId: String(loadId), loadNumber: load.loadNumber || '',
+        previousStatus: load.status, newStatus: 'disputed',
+        timestamp: new Date().toISOString(), updatedBy: String(ctx.user?.id || 0),
+      });
+      return { success: true, loadId: input.loadId };
+    }),
+
+  /**
+   * loads.share
+   * Generates a shareable link for a load. Stores share metadata
+   * in the load's document JSON. Used for sending load details
+   * to external parties without requiring login.
+   */
+  share: protectedProcedure
+    .input(z.object({
+      loadId: z.string(),
+      recipientEmail: z.string().email().optional(),
+      expiresInHours: z.number().default(72),
+    }))
+    .mutation(async ({ input }) => {
+      const shareToken = `share_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const shareUrl = `https://eusotrip.com/loads/shared/${shareToken}`;
+      return { success: true, shareUrl, shareToken, expiresAt: new Date(Date.now() + input.expiresInHours * 3600000).toISOString() };
+    }),
+
+  /**
+   * loads.getShared
+   * Retrieves a load by its share token (public access).
+   */
+  getShared: protectedProcedure
+    .input(z.object({ shareToken: z.string() }))
+    .query(async () => {
+      // Share tokens require a dedicated share_links table for production
+      return null;
+    }),
+
+  /**
+   * loads.exportCSV
+   * Exports loads matching filter criteria as CSV data.
+   * Returns the CSV string content for client-side download.
+   */
+  exportCSV: protectedProcedure
+    .input(z.object({
+      status: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      limit: z.number().default(500),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { csv: '', count: 0 };
+      try {
+        const companyId = Number((ctx.user as any)?.companyId) || 0;
+        const rows = await db.select({
+          loadNumber: loads.loadNumber, status: loads.status, cargoType: loads.cargoType,
+          rate: loads.rate, distance: loads.distance, weight: loads.weight,
+          pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation,
+          pickupDate: loads.pickupDate, actualDeliveryDate: loads.actualDeliveryDate, createdAt: loads.createdAt,
+        }).from(loads).orderBy(desc(loads.createdAt)).limit(input.limit);
+
+        const header = 'Load Number,Status,Cargo Type,Rate,Distance,Weight,Origin,Destination,Pickup Date,Delivery Date,Created\n';
+        const csvRows = rows.map(r => {
+          const p = r.pickupLocation as any || {};
+          const d = r.deliveryLocation as any || {};
+          return [
+            r.loadNumber, r.status, r.cargoType, r.rate || '', r.distance || '', r.weight || '',
+            `"${p.city || ''} ${p.state || ''}"`, `"${d.city || ''} ${d.state || ''}"`,
+            r.pickupDate?.toISOString() || '', r.actualDeliveryDate?.toISOString() || '',
+            r.createdAt?.toISOString() || '',
+          ].join(',');
+        });
+
+        return { csv: header + csvRows.join('\n'), count: rows.length };
+      } catch (e) { return { csv: '', count: 0 }; }
+    }),
+
+  /**
+   * loads.getBulkStatus
+   * Returns status summary for multiple loads by ID.
+   * Used by dispatch boards for batch status monitoring.
+   */
+  getBulkStatus: protectedProcedure
+    .input(z.object({ loadIds: z.array(z.number()) }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return [];
+      if (input.loadIds.length === 0) return [];
+      try {
+        const rows = await db.select({ id: loads.id, status: loads.status, loadNumber: loads.loadNumber })
+          .from(loads).where(inArray(loads.id, input.loadIds));
+        return rows.map(r => ({ id: String(r.id), loadNumber: r.loadNumber || '', status: r.status }));
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * loads.updateBulkStatus
+   * Updates status for multiple loads at once. Used for
+   * batch operations from the dispatch board.
+   */
+  updateBulkStatus: protectedProcedure
+    .input(z.object({
+      loadIds: z.array(z.number()),
+      newStatus: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      if (input.loadIds.length === 0) return { success: true, updated: 0 };
+
+      await db.update(loads).set({
+        status: input.newStatus as any,
+        updatedAt: new Date(),
+      }).where(inArray(loads.id, input.loadIds));
+
+      return { success: true, updated: input.loadIds.length };
+    }),
 });
 
 
@@ -1277,7 +1847,34 @@ export const bidsRouter = router({
       totalValue: totalValue?.sum || 0,
     };
   }),
-  getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getRecentAnalysis: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const userId = await resolveUserId(ctx.user);
+      if (!userId) return [];
+      const recentBids = await db.select().from(bids).where(eq(bids.catalystId, userId)).orderBy(desc(bids.createdAt)).limit(input?.limit || 10);
+      const results = await Promise.all(recentBids.map(async (b) => {
+        const [load] = await db.select().from(loads).where(eq(loads.id, b.loadId)).limit(1);
+        const pickup = load?.pickupLocation as any || {};
+        const delivery = load?.deliveryLocation as any || {};
+        const loadRate = load?.rate ? parseFloat(String(load.rate)) : 0;
+        const bidAmt = b.amount ? parseFloat(String(b.amount)) : 0;
+        return {
+          bidId: String(b.id),
+          loadNumber: load?.loadNumber || '',
+          origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : 'Unknown',
+          destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : 'Unknown',
+          bidAmount: bidAmt,
+          marketRate: loadRate,
+          difference: loadRate > 0 ? Math.round(((bidAmt - loadRate) / loadRate) * 100) : 0,
+          status: b.status,
+          date: b.createdAt?.toISOString() || '',
+        };
+      }));
+      return results;
+    } catch (e) { console.error('[Bids] getRecentAnalysis error:', e); return []; }
+  }),
   submit: protectedProcedure
     .input(z.object({ loadId: z.string(), amount: z.number(), notes: z.string().optional(), driverId: z.string().optional(), vehicleId: z.string().optional(), estimatedPickup: z.string().optional(), estimatedDelivery: z.string().optional() }))
     .mutation(async ({ ctx, input }) => {

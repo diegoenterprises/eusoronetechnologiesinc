@@ -37,23 +37,43 @@ export const loadBoardRouter = router({
       offset: z.number().default(0),
       sortBy: z.enum(["rate", "distance", "pickup_date", "posted_date"]).default("posted_date"),
     }))
-    .query(async () => ({
-      loads: [],
-      total: 0,
-      marketStats: { avgRate: 0, totalLoads: 0, loadToTruckRatio: 0 },
-    })),
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return { loads: [], total: 0, marketStats: { avgRate: 0, totalLoads: 0, loadToTruckRatio: 0 } };
+      try {
+        const rows = await db.select().from(loads).where(sql`${loads.status} IN ('posted', 'available')`).orderBy(desc(loads.createdAt)).limit(input.limit);
+        const [stats] = await db.select({ count: sql<number>`count(*)`, avgRate: sql<number>`COALESCE(AVG(CAST(${loads.rate} AS DECIMAL)), 0)` }).from(loads).where(sql`${loads.status} IN ('posted', 'available')`);
+        return {
+          loads: rows.map(l => {
+            const pickup = l.pickupLocation as any || {};
+            const delivery = l.deliveryLocation as any || {};
+            return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: { city: pickup.city || '', state: pickup.state || '' }, destination: { city: delivery.city || '', state: delivery.state || '' }, rate: l.rate ? parseFloat(String(l.rate)) : 0, distance: l.distance ? parseFloat(String(l.distance)) : 0, weight: l.weight ? parseFloat(String(l.weight)) : 0, equipmentType: l.cargoType || '', hazmat: !!l.hazmatClass, postedAt: l.createdAt?.toISOString() || '' };
+          }),
+          total: stats?.count || 0,
+          marketStats: { avgRate: Math.round(stats?.avgRate || 0), totalLoads: stats?.count || 0, loadToTruckRatio: 0 },
+        };
+      } catch (e) { console.error('[LoadBoard] search error:', e); return { loads: [], total: 0, marketStats: { avgRate: 0, totalLoads: 0, loadToTruckRatio: 0 } }; }
+    }),
 
   /**
    * Get load details
    */
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => ({
-      id: input.id, loadNumber: "", status: "expired",
-      shipper: null, origin: null, destination: null, distance: 0,
-      pickup: null, delivery: null, freight: null, pricing: null, requirements: null,
-      postedAt: "", expiresAt: "", postedBy: "",
-    })),
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return null;
+      try {
+        const [load] = await db.select().from(loads).where(eq(loads.id, parseInt(input.id))).limit(1);
+        if (!load) return null;
+        const pickup = load.pickupLocation as any || {};
+        const delivery = load.deliveryLocation as any || {};
+        let shipperName = '';
+        if (load.shipperId) {
+          const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, load.shipperId)).limit(1);
+          shipperName = co?.name || '';
+        }
+        return { id: String(load.id), loadNumber: load.loadNumber, status: load.status, shipper: { name: shipperName }, origin: { city: pickup.city || '', state: pickup.state || '', address: pickup.address || '' }, destination: { city: delivery.city || '', state: delivery.state || '', address: delivery.address || '' }, distance: load.distance ? parseFloat(String(load.distance)) : 0, pricing: { rate: load.rate ? parseFloat(String(load.rate)) : 0 }, postedAt: load.createdAt?.toISOString() || '', postedBy: String(load.shipperId || '') };
+      } catch (e) { console.error('[LoadBoard] getById error:', e); return null; }
+    }),
 
   /**
    * Post load to board
@@ -144,13 +164,27 @@ export const loadBoardRouter = router({
    */
   getMyPostedLoads: protectedProcedure
     .input(z.object({ status: z.enum(["all", "active", "booked", "expired"]).default("all") }))
-    .query(async () => []),
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = ctx.user?.id || 0;
+        const rows = await db.select().from(loads).where(eq(loads.shipperId, userId)).orderBy(desc(loads.createdAt)).limit(50);
+        return rows.map(l => {
+          const pickup = l.pickupLocation as any || {};
+          const delivery = l.deliveryLocation as any || {};
+          return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: pickup.city && pickup.state ? `${pickup.city}, ${pickup.state}` : '', destination: delivery.city && delivery.state ? `${delivery.city}, ${delivery.state}` : '', rate: l.rate ? parseFloat(String(l.rate)) : 0, postedAt: l.createdAt?.toISOString() || '' };
+        });
+      } catch (e) { return []; }
+    }),
 
   /**
    * Get saved searches
    */
   getSavedSearches: protectedProcedure
-    .query(async () => []),
+    .query(async () => {
+      // Saved searches require a dedicated table; return empty until schema supports it
+      return [];
+    }),
 
   /**
    * Save search
@@ -187,7 +221,10 @@ export const loadBoardRouter = router({
    * Get load board alerts
    */
   getAlerts: protectedProcedure
-    .query(async () => []),
+    .query(async () => {
+      // Load board alerts require a dedicated table; return empty until schema supports it
+      return [];
+    }),
 
   /**
    * Update load

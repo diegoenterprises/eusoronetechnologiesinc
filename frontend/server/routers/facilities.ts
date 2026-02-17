@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, like } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { terminals } from "../../drizzle/schema";
@@ -25,81 +25,24 @@ export const facilitiesRouter = router({
       limit: z.number().default(20),
       offset: z.number().default(0),
     }))
-    .query(async ({ input }) => {
-      const facilities = [
-        {
-          id: "fac_001",
-          name: "Shell Houston Terminal",
-          type: "terminal",
-          address: "1234 Refinery Rd",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-          location: { lat: 29.7604, lng: -95.3698 },
-          phone: "555-0150",
-          operatingHours: "24/7",
-          products: ["Gasoline", "Diesel", "Jet Fuel"],
-          hazmatCertified: true,
-        },
-        {
-          id: "fac_002",
-          name: "Exxon Beaumont Refinery",
-          type: "refinery",
-          address: "900 Industrial Blvd",
-          city: "Beaumont",
-          state: "TX",
-          zip: "77701",
-          location: { lat: 30.0802, lng: -94.1266 },
-          phone: "555-0160",
-          operatingHours: "24/7",
-          products: ["Gasoline", "Diesel", "Crude Oil"],
-          hazmatCertified: true,
-        },
-        {
-          id: "fac_003",
-          name: "7-Eleven Distribution Center",
-          type: "distribution_center",
-          address: "5678 Commerce Dr",
-          city: "Dallas",
-          state: "TX",
-          zip: "75201",
-          location: { lat: 32.7767, lng: -96.7970 },
-          phone: "555-0170",
-          operatingHours: "Mon-Sat 6AM-10PM",
-          products: ["Gasoline"],
-          hazmatCertified: false,
-        },
-        {
-          id: "fac_004",
-          name: "",
-          type: "yard",
-          address: "2000 Trucking Lane",
-          city: "Houston",
-          state: "TX",
-          zip: "77002",
-          location: { lat: 29.75, lng: -95.35 },
-          phone: "555-0100",
-          operatingHours: "24/7",
-          products: [],
-          hazmatCertified: true,
-        },
-      ];
-
-      let filtered = facilities;
-      if (input.type) filtered = filtered.filter(f => f.type === input.type);
-      if (input.state) filtered = filtered.filter(f => f.state === input.state);
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        filtered = filtered.filter(f => 
-          f.name.toLowerCase().includes(q) ||
-          f.city.toLowerCase().includes(q)
-        );
-      }
-
-      return {
-        facilities: filtered.slice(input.offset, input.offset + input.limit),
-        total: filtered.length,
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { facilities: [], total: 0 };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(terminals.companyId, companyId)];
+        if (input.state) conds.push(eq(terminals.state, input.state));
+        if (input.search) conds.push(like(terminals.name, `%${input.search}%`));
+        const rows = await db.select().from(terminals).where(and(...conds)).orderBy(desc(terminals.createdAt)).limit(input.limit).offset(input.offset);
+        return {
+          facilities: rows.map(r => ({
+            id: String(r.id), name: r.name, type: 'terminal',
+            address: r.address || '', city: r.city || '', state: r.state || '',
+            zip: '', location: { lat: 0, lng: 0 },
+            phone: '', operatingHours: '24/7', products: [], hazmatCertified: false,
+          })),
+          total: rows.length,
+        };
+      } catch (e) { return { facilities: [], total: 0 }; }
     }),
 
   /**
@@ -108,53 +51,21 @@ export const facilitiesRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.id,
-        name: "Shell Houston Terminal",
-        type: "terminal",
-        address: {
-          street: "1234 Refinery Rd",
-          city: "Houston",
-          state: "TX",
-          zip: "77001",
-        },
-        location: { lat: 29.7604, lng: -95.3698 },
-        contact: {
-          phone: "555-0150",
-          email: "houston@shell-terminal.com",
-          dispatchPhone: "555-0151",
-        },
-        operatingHours: {
-          monday: { open: "00:00", close: "23:59" },
-          tuesday: { open: "00:00", close: "23:59" },
-          wednesday: { open: "00:00", close: "23:59" },
-          thursday: { open: "00:00", close: "23:59" },
-          friday: { open: "00:00", close: "23:59" },
-          saturday: { open: "00:00", close: "23:59" },
-          sunday: { open: "00:00", close: "23:59" },
-        },
-        products: [
-          { name: "Unleaded Gasoline", unNumber: "1203" },
-          { name: "Premium Gasoline", unNumber: "1203" },
-          { name: "Diesel", unNumber: "1202" },
-          { name: "Jet Fuel", unNumber: "1863" },
-        ],
-        capabilities: {
-          racks: 4,
-          loadingBays: 6,
-          avgLoadTime: 45,
-          hazmatCertified: true,
-          twicRequired: true,
-          scaleOnSite: true,
-        },
-        instructions: {
-          checkIn: "Report to guard shack with BOL and driver ID. TWIC card required.",
-          loading: "Follow rack assignments. No cell phones in loading area.",
-          safety: "PPE required: Hard hat, safety glasses, flame-resistant clothing.",
-        },
-        amenities: ["Restrooms", "Driver Lounge", "Vending Machines"],
-        status: "operational",
-      };
+      const db = await getDb(); if (!db) return null;
+      try {
+        const [row] = await db.select().from(terminals).where(eq(terminals.id, parseInt(input.id, 10))).limit(1);
+        if (!row) return null;
+        return {
+          id: String(row.id), name: row.name, type: 'terminal',
+          address: { street: row.address || '', city: row.city || '', state: row.state || '', zip: '' },
+          location: { lat: 0, lng: 0 },
+          contact: { phone: '', email: '', dispatchPhone: '' },
+          operatingHours: { monday: { open: '00:00', close: '23:59' }, tuesday: { open: '00:00', close: '23:59' }, wednesday: { open: '00:00', close: '23:59' }, thursday: { open: '00:00', close: '23:59' }, friday: { open: '00:00', close: '23:59' }, saturday: { open: '00:00', close: '23:59' }, sunday: { open: '00:00', close: '23:59' } },
+          products: [], capabilities: { racks: row.dockCount || 0, loadingBays: row.dockCount || 0, avgLoadTime: 45, hazmatCertified: false, twicRequired: false, scaleOnSite: false },
+          instructions: { checkIn: '', loading: '', safety: '' },
+          amenities: [], status: row.status || 'active',
+        };
+      } catch (e) { return null; }
     }),
 
   /**
@@ -166,25 +77,13 @@ export const facilitiesRouter = router({
       radius: z.number().default(50),
       type: facilityTypeSchema.optional(),
     }))
-    .query(async ({ input }) => {
-      return [
-        {
-          id: "fac_001",
-          name: "Shell Houston Terminal",
-          type: "terminal",
-          address: "1234 Refinery Rd, Houston, TX",
-          distance: 5.2,
-          location: { lat: 29.7604, lng: -95.3698 },
-        },
-        {
-          id: "fac_004",
-          name: "",
-          type: "yard",
-          address: "2000 Trucking Lane, Houston, TX",
-          distance: 8.5,
-          location: { lat: 29.75, lng: -95.35 },
-        },
-      ];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(20);
+        return rows.map(r => ({ id: String(r.id), name: r.name, type: 'terminal', address: `${r.address || ''}, ${r.city || ''}, ${r.state || ''}`, distance: 0, location: { lat: 0, lng: 0 } }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -240,12 +139,13 @@ export const facilitiesRouter = router({
       hazmatCertified: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `fac_${Date.now()}`,
-        ...input,
-        createdBy: ctx.user?.id,
-        createdAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const companyId = ctx.user?.companyId || 0;
+      const result = await db.insert(terminals).values({
+        companyId, name: input.name, address: input.address.street,
+        city: input.address.city, state: input.address.state,
+      } as any).$returningId();
+      return { id: String(result[0]?.id), name: input.name, type: input.type, address: input.address, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
   /**
@@ -260,12 +160,14 @@ export const facilitiesRouter = router({
       status: z.enum(["operational", "limited", "closed"]).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        id: input.id,
-        updatedBy: ctx.user?.id,
-        updatedAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const updates: any = {};
+      if (input.name) updates.name = input.name;
+      if (input.status) updates.status = input.status === 'closed' ? 'inactive' : 'active';
+      if (Object.keys(updates).length > 0) {
+        await db.update(terminals).set(updates).where(eq(terminals.id, parseInt(input.id, 10)));
+      }
+      return { success: true, id: input.id, updatedBy: ctx.user?.id, updatedAt: new Date().toISOString() };
     }),
 
   /**
@@ -273,10 +175,12 @@ export const facilitiesRouter = router({
    */
   getFavorites: protectedProcedure
     .query(async ({ ctx }) => {
-      return [
-        { id: "fac_001", name: "Shell Houston Terminal", type: "terminal", city: "Houston", state: "TX" },
-        { id: "fac_002", name: "Exxon Beaumont Refinery", type: "refinery", city: "Beaumont", state: "TX" },
-      ];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(10);
+        return rows.map(r => ({ id: String(r.id), name: r.name, type: 'terminal', city: r.city || '', state: r.state || '' }));
+      } catch (e) { return []; }
     }),
 
   /**

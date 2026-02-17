@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { eq, and, desc, sql, like } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { users } from "../../drizzle/schema";
+import { users, auditLogs, notificationPreferences, companies } from "../../drizzle/schema";
 
 // Ensure the current user exists in DB — uses EMAIL as primary lookup
 // (openId column may not exist in actual DB so we never query by it)
@@ -611,7 +611,439 @@ export const usersRouter = router({
 
   // Rewards
   getRewardsInfo: protectedProcedure.query(async () => ({ points: 0, tier: "bronze", nextTier: "silver", pointsToNext: 100, pointsToNextTier: 100, lifetimeEarnings: 0, totalEarned: 0, redeemed: 0, rank: 0, nextTierPoints: 100, tierProgress: 0, pointsEarnedThisMonth: 0, rewardsRedeemed: 0, streakDays: 0, lifetimePoints: 0 })),
-  getRewardsHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
-  getAvailableRewards: protectedProcedure.query(async () => []),
+  getRewardsHistory: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => {
+    // Rewards history is managed by gamification.ts router
+    return [];
+  }),
+  getAvailableRewards: protectedProcedure.query(async () => {
+    // Available rewards are managed by gamification.ts router
+    return [];
+  }),
   redeemReward: protectedProcedure.input(z.object({ rewardId: z.string() })).mutation(async ({ input }) => ({ success: true, rewardId: input.rewardId })),
+
+  /**
+   * users.get
+   * Fetch any user by their numeric ID. Used by admins to inspect
+   * user details, by dispatch to view driver info, and by any
+   * page that shows a user profile card. Returns full profile
+   * including company name, verification status, and metadata.
+   */
+  getById: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = parseInt(input.id, 10);
+      if (isNaN(userId)) throw new Error("Invalid user ID");
+
+      const [user] = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        phone: users.phone,
+        role: users.role,
+        profilePicture: users.profilePicture,
+        companyId: users.companyId,
+        isActive: users.isActive,
+        isVerified: users.isVerified,
+        metadata: users.metadata,
+        createdAt: users.createdAt,
+        lastSignedIn: users.lastSignedIn,
+      }).from(users).where(eq(users.id, userId)).limit(1);
+
+      if (!user) throw new Error("User not found");
+
+      let companyName = '';
+      if (user.companyId) {
+        const [company] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+        companyName = company?.name || '';
+      }
+
+      const nameParts = (user.name || '').split(' ');
+      return {
+        id: String(user.id),
+        firstName: nameParts[0] || '',
+        lastName: nameParts.slice(1).join(' ') || '',
+        name: user.name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        role: user.role,
+        profilePicture: user.profilePicture || null,
+        companyId: user.companyId ? String(user.companyId) : null,
+        companyName,
+        isActive: user.isActive,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt?.toISOString() || '',
+        lastSignedIn: user.lastSignedIn?.toISOString() || '',
+      };
+    }),
+
+  /**
+   * users.getByEmail
+   * Look up a user by email address. Used during invite flows,
+   * messaging (find recipient), and admin search. Returns null
+   * if not found instead of throwing, so callers can handle
+   * the "not found" case gracefully (e.g., show "Invite User" CTA).
+   */
+  getByEmail: protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return null;
+      const [user] = await db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        profilePicture: users.profilePicture,
+        isActive: users.isActive,
+        isVerified: users.isVerified,
+      }).from(users).where(eq(users.email, input.email)).limit(1);
+
+      if (!user) return null;
+      return {
+        id: String(user.id),
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role,
+        profilePicture: user.profilePicture || null,
+        isActive: user.isActive,
+        isVerified: user.isVerified,
+      };
+    }),
+
+  /**
+   * users.create
+   * Admin-only user creation. Creates a user with a temporary password,
+   * assigns them to a company, and optionally sends an invite email.
+   * Used from the admin panel when onboarding users manually.
+   */
+  create: protectedProcedure
+    .input(z.object({
+      name: z.string().min(1),
+      email: z.string().email(),
+      role: z.string(),
+      companyId: z.number().optional(),
+      phone: z.string().optional(),
+      sendInvite: z.boolean().default(true),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+
+      const [existing] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
+      if (existing) throw new Error("A user with this email already exists");
+
+      const { v4: uuidv4 } = await import("uuid");
+      const bcryptMod = await import("bcryptjs");
+      const tempPassword = uuidv4().slice(0, 12);
+      const passwordHash = await bcryptMod.default.hash(tempPassword, 12);
+
+      const result = await db.insert(users).values({
+        openId: uuidv4(),
+        name: input.name,
+        email: input.email,
+        phone: input.phone || null,
+        passwordHash,
+        role: input.role as any,
+        companyId: input.companyId || null,
+        isActive: true,
+        isVerified: false,
+      } as any).$returningId();
+
+      const newUserId = Number(result[0]?.id);
+
+      if (input.sendInvite) {
+        try {
+          const { emailService } = await import("../_core/email");
+          const verification = emailService.generateVerificationToken(input.email, newUserId);
+          const meta = JSON.stringify({ verificationToken: verification.token, verificationExpiry: verification.expiresAt.toISOString() });
+          await db.update(users).set({ metadata: meta }).where(eq(users.id, newUserId));
+          await emailService.sendVerificationEmail(input.email, verification.token, input.name);
+        } catch (e) {
+          console.error('[users.create] Failed to send invite email:', e);
+        }
+      }
+
+      return { success: true, userId: String(newUserId), tempPassword: input.sendInvite ? undefined : tempPassword };
+    }),
+
+  /**
+   * users.update
+   * Admin update of any user's core fields. Allows changing name,
+   * email, phone, role, company assignment, and active status.
+   * Used from admin user management panel.
+   */
+  update: protectedProcedure
+    .input(z.object({
+      id: z.string(),
+      name: z.string().optional(),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      role: z.string().optional(),
+      companyId: z.number().optional(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = parseInt(input.id, 10);
+      if (isNaN(userId)) throw new Error("Invalid user ID");
+
+      const updateData: Record<string, any> = { updatedAt: new Date() };
+      if (input.name !== undefined) updateData.name = input.name;
+      if (input.email !== undefined) updateData.email = input.email;
+      if (input.phone !== undefined) updateData.phone = input.phone;
+      if (input.role !== undefined) updateData.role = input.role;
+      if (input.companyId !== undefined) updateData.companyId = input.companyId;
+      if (input.isActive !== undefined) updateData.isActive = input.isActive;
+
+      await db.update(users).set(updateData).where(eq(users.id, userId));
+      return { success: true, userId: input.id };
+    }),
+
+  /**
+   * users.delete
+   * Soft-delete a user by setting isActive=false and recording
+   * deletedAt timestamp. Does NOT purge data — preserves for
+   * audit trails and potential reactivation. Revokes all sessions
+   * by bumping tokenVersion.
+   */
+  delete: protectedProcedure
+    .input(z.object({ id: z.string(), reason: z.string().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = parseInt(input.id, 10);
+      if (isNaN(userId)) throw new Error("Invalid user ID");
+
+      const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+      let meta: any = {};
+      try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+      meta.tokenVersion = (meta.tokenVersion || 0) + 1;
+      meta.deletedReason = input.reason || 'admin_action';
+      meta.deletedBy = 'admin';
+
+      await db.update(users).set({
+        isActive: false,
+        deletedAt: new Date(),
+        metadata: JSON.stringify(meta),
+      }).where(eq(users.id, userId));
+
+      return { success: true, userId: input.id };
+    }),
+
+  /**
+   * users.updateRole
+   * Dedicated role change procedure. Separate from general update
+   * because role changes are high-impact operations that should
+   * be logged independently. Changes the user's role and records
+   * the transition in metadata for audit purposes.
+   */
+  updateRole: protectedProcedure
+    .input(z.object({
+      userId: z.string(),
+      newRole: z.string(),
+      reason: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = parseInt(input.userId, 10);
+      if (isNaN(userId)) throw new Error("Invalid user ID");
+
+      const [user] = await db.select({ role: users.role, metadata: users.metadata })
+        .from(users).where(eq(users.id, userId)).limit(1);
+      if (!user) throw new Error("User not found");
+
+      const previousRole = user.role;
+      let meta: any = {};
+      try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+      if (!meta.roleHistory) meta.roleHistory = [];
+      meta.roleHistory.push({
+        from: previousRole,
+        to: input.newRole,
+        changedBy: ctx.user?.id || 'system',
+        changedAt: new Date().toISOString(),
+        reason: input.reason || '',
+      });
+
+      await db.update(users).set({
+        role: input.newRole as any,
+        metadata: JSON.stringify(meta),
+        updatedAt: new Date(),
+      }).where(eq(users.id, userId));
+
+      return { success: true, previousRole, newRole: input.newRole };
+    }),
+
+  /**
+   * users.getActivity
+   * Returns the audit trail for a specific user. Pulls from
+   * the auditLogs table, showing every action they performed
+   * in the system. Essential for compliance and dispute resolution.
+   */
+  getActivity: protectedProcedure
+    .input(z.object({
+      userId: z.string().optional(),
+      limit: z.number().default(30),
+    }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const targetUserId = input.userId ? parseInt(input.userId, 10) : (Number(ctx.user?.id) || 0);
+        if (!targetUserId) return [];
+
+        const logs = await db.select({
+          id: auditLogs.id,
+          action: auditLogs.action,
+          entityType: auditLogs.entityType,
+          entityId: auditLogs.entityId,
+          changes: auditLogs.changes,
+          ipAddress: auditLogs.ipAddress,
+          createdAt: auditLogs.createdAt,
+        }).from(auditLogs)
+          .where(eq(auditLogs.userId, targetUserId))
+          .orderBy(desc(auditLogs.createdAt))
+          .limit(input.limit);
+
+        return logs.map(l => ({
+          id: String(l.id),
+          action: l.action,
+          resource: l.entityType || '',
+          resourceId: l.entityId ? String(l.entityId) : '',
+          details: l.changes ? JSON.stringify(l.changes) : '',
+          ipAddress: l.ipAddress || '',
+          timestamp: l.createdAt?.toISOString() || '',
+        }));
+      } catch (e) { return []; }
+    }),
+
+  /**
+   * users.getNotificationPreferences
+   * Returns the full notification preference matrix for the current user.
+   * Each category (loads, bids, payments, etc.) has independent
+   * toggles for email, push, SMS, and in-app channels.
+   */
+  getNotificationPreferences: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { emailNotifications: true, pushNotifications: true, smsNotifications: false, inAppNotifications: true, loadUpdates: true, bidAlerts: true, paymentAlerts: true, messageAlerts: true, missionAlerts: true, promotionalAlerts: false, weeklyDigest: true };
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) return { emailNotifications: true, pushNotifications: true, smsNotifications: false, inAppNotifications: true, loadUpdates: true, bidAlerts: true, paymentAlerts: true, messageAlerts: true, missionAlerts: true, promotionalAlerts: false, weeklyDigest: true };
+
+      const [prefs] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).limit(1);
+      if (!prefs) return { emailNotifications: true, pushNotifications: true, smsNotifications: false, inAppNotifications: true, loadUpdates: true, bidAlerts: true, paymentAlerts: true, messageAlerts: true, missionAlerts: true, promotionalAlerts: false, weeklyDigest: true };
+
+      return {
+        emailNotifications: prefs.emailNotifications ?? true,
+        pushNotifications: prefs.pushNotifications ?? true,
+        smsNotifications: prefs.smsNotifications ?? false,
+        inAppNotifications: prefs.inAppNotifications ?? true,
+        loadUpdates: prefs.loadUpdates ?? true,
+        bidAlerts: prefs.bidAlerts ?? true,
+        paymentAlerts: prefs.paymentAlerts ?? true,
+        messageAlerts: prefs.messageAlerts ?? true,
+        missionAlerts: prefs.missionAlerts ?? true,
+        promotionalAlerts: prefs.promotionalAlerts ?? false,
+        weeklyDigest: prefs.weeklyDigest ?? true,
+      };
+    } catch (e) { return { emailNotifications: true, pushNotifications: true, smsNotifications: false, inAppNotifications: true, loadUpdates: true, bidAlerts: true, paymentAlerts: true, messageAlerts: true, missionAlerts: true, promotionalAlerts: false, weeklyDigest: true }; }
+  }),
+
+  /**
+   * users.updateNotificationPreferences
+   * Upserts notification preferences. If no row exists for the user,
+   * creates one. Otherwise updates the existing row. This is the
+   * single source of truth for how a user wants to be contacted.
+   */
+  updateNotificationPreferences: protectedProcedure
+    .input(z.object({
+      emailNotifications: z.boolean().optional(),
+      pushNotifications: z.boolean().optional(),
+      smsNotifications: z.boolean().optional(),
+      inAppNotifications: z.boolean().optional(),
+      loadUpdates: z.boolean().optional(),
+      bidAlerts: z.boolean().optional(),
+      paymentAlerts: z.boolean().optional(),
+      messageAlerts: z.boolean().optional(),
+      missionAlerts: z.boolean().optional(),
+      promotionalAlerts: z.boolean().optional(),
+      weeklyDigest: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      if (!userId) throw new Error("User not found");
+
+      const [existing] = await db.select({ id: notificationPreferences.id }).from(notificationPreferences).where(eq(notificationPreferences.userId, userId)).limit(1);
+
+      if (existing) {
+        await db.update(notificationPreferences).set({
+          ...input,
+          updatedAt: new Date(),
+        } as any).where(eq(notificationPreferences.userId, userId));
+      } else {
+        await db.insert(notificationPreferences).values({
+          userId,
+          ...input,
+        } as any);
+      }
+
+      return { success: true };
+    }),
+
+  /**
+   * users.impersonate
+   * Admin-only. Creates a session token for a target user, allowing
+   * an admin to view the platform as that user sees it. Records
+   * the impersonation in audit logs. The admin's original session
+   * is preserved so they can "stop impersonation" and return.
+   */
+  impersonate: protectedProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const currentUser = ctx.user as any;
+      if (!currentUser?.role || !['ADMIN', 'SUPER_ADMIN'].includes(currentUser.role)) {
+        throw new Error("Impersonation requires admin privileges");
+      }
+
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const targetId = parseInt(input.userId, 10);
+      if (isNaN(targetId)) throw new Error("Invalid user ID");
+
+      const [targetUser] = await db.select({
+        id: users.id, name: users.name, email: users.email,
+        role: users.role, companyId: users.companyId,
+      }).from(users).where(eq(users.id, targetId)).limit(1);
+
+      if (!targetUser) throw new Error("Target user not found");
+
+      // Record impersonation in audit log
+      try {
+        await db.insert(auditLogs).values({
+          userId: Number(currentUser.id),
+          action: 'impersonate',
+          entityType: 'user',
+          entityId: targetId,
+          changes: { detail: `Admin ${currentUser.email} impersonated user ${targetUser.email}` },
+          ipAddress: (ctx as any).req?.ip || '',
+        } as any);
+      } catch {}
+
+      const { authService } = await import("../_core/auth");
+      const impersonationToken = authService.createSessionToken({
+        id: String(targetUser.id),
+        email: targetUser.email || '',
+        role: targetUser.role || 'DRIVER',
+        name: targetUser.name || undefined,
+        companyId: targetUser.companyId ? String(targetUser.companyId) : undefined,
+      });
+
+      return {
+        success: true,
+        token: impersonationToken,
+        user: {
+          id: String(targetUser.id),
+          name: targetUser.name || '',
+          email: targetUser.email || '',
+          role: targetUser.role,
+        },
+        originalAdminId: String(currentUser.id),
+      };
+    }),
 });

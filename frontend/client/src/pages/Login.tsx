@@ -128,7 +128,10 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="text-center">
+            <div className="text-center space-y-2">
+              <a href="/forgot-password" className={`text-sm ${theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'} transition-colors`}>
+                Forgot your password?
+              </a>
               <p className={`text-sm ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
                 Don't have an account?{' '}
                 <a href="/register" className={`underline ${theme === 'dark' ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-500'}`}>

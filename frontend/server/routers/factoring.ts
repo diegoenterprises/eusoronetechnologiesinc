@@ -4,10 +4,10 @@
  */
 
 import { z } from "zod";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { adminProcedure as protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { payments, loads } from "../../drizzle/schema";
+import { factoringInvoices, loads, users, companies } from "../../drizzle/schema";
 
 const invoiceStatusSchema = z.enum([
   "pending", "submitted", "approved", "funded", "paid", "rejected", "disputed"
@@ -34,23 +34,53 @@ export const factoringRouter = router({
     }),
 
   /**
-   * Get factoring account overview — empty for new users
+   * Get factoring account overview from real DB data
    */
   getOverview: protectedProcedure
-    .query(async () => ({
-      account: { status: "inactive", creditLimit: 0, availableCredit: 0, usedCredit: 0, reserveBalance: 0, factoringRate: 0.025, advanceRate: 0.95 },
-      currentPeriod: { invoicesSubmitted: 0, totalFactored: 0, feesCharged: 0, pendingPayments: 0 },
-      recentActivity: [],
-    })),
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { account: { status: 'inactive', creditLimit: 0, availableCredit: 0, usedCredit: 0, reserveBalance: 0, factoringRate: 0.025, advanceRate: 0.95 }, currentPeriod: { invoicesSubmitted: 0, totalFactored: 0, feesCharged: 0, pendingPayments: 0 }, recentActivity: [] };
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          totalFactored: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.invoiceAmount} AS DECIMAL)), 0)`,
+          totalFees: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.factoringFeeAmount} AS DECIMAL)), 0)`,
+          totalReserve: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.reserveAmount} AS DECIMAL)), 0)`,
+          pending: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} IN ('submitted','under_review') THEN 1 ELSE 0 END)`,
+        }).from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, userId));
+        const hasActivity = (stats?.total || 0) > 0;
+        const recent = await db.select({ id: factoringInvoices.id, invoiceNumber: factoringInvoices.invoiceNumber, status: factoringInvoices.status, invoiceAmount: factoringInvoices.invoiceAmount, submittedAt: factoringInvoices.submittedAt }).from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, userId)).orderBy(desc(factoringInvoices.submittedAt)).limit(5);
+        return {
+          account: { status: hasActivity ? 'active' : 'inactive', creditLimit: 100000, availableCredit: 100000 - Math.round(stats?.totalFactored || 0), usedCredit: Math.round(stats?.totalFactored || 0), reserveBalance: Math.round(stats?.totalReserve || 0), factoringRate: 0.03, advanceRate: 0.97 },
+          currentPeriod: { invoicesSubmitted: stats?.total || 0, totalFactored: Math.round(stats?.totalFactored || 0), feesCharged: Math.round(stats?.totalFees || 0), pendingPayments: stats?.pending || 0 },
+          recentActivity: recent.map(r => ({ id: String(r.id), invoiceNumber: r.invoiceNumber, status: r.status, amount: r.invoiceAmount ? parseFloat(String(r.invoiceAmount)) : 0, date: r.submittedAt?.toISOString() || '' })),
+        };
+      } catch (e) { return { account: { status: 'inactive', creditLimit: 0, availableCredit: 0, usedCredit: 0, reserveBalance: 0, factoringRate: 0.025, advanceRate: 0.95 }, currentPeriod: { invoicesSubmitted: 0, totalFactored: 0, feesCharged: 0, pendingPayments: 0 }, recentActivity: [] }; }
+    }),
 
   /**
    * Get factored invoices — empty for new users
    */
   getInvoices: protectedProcedure
     .input(z.object({ status: invoiceStatusSchema.optional(), limit: z.number().default(20), offset: z.number().default(0) }))
-    .query(async () => {
-      const result: any[] = [];
-      return Object.assign(result, { invoices: result, total: 0 });
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const conds: any[] = [eq(factoringInvoices.catalystUserId, userId)];
+        if (input.status) conds.push(eq(factoringInvoices.status, input.status as any));
+        const rows = await db.select().from(factoringInvoices).where(and(...conds)).orderBy(desc(factoringInvoices.submittedAt)).limit(input.limit);
+        return rows.map(r => ({
+          id: String(r.id), invoiceNumber: r.invoiceNumber, loadId: r.loadId,
+          invoiceAmount: r.invoiceAmount ? parseFloat(String(r.invoiceAmount)) : 0,
+          advanceAmount: r.advanceAmount ? parseFloat(String(r.advanceAmount)) : 0,
+          factoringFee: r.factoringFeeAmount ? parseFloat(String(r.factoringFeeAmount)) : 0,
+          status: r.status, submittedAt: r.submittedAt?.toISOString() || '',
+          fundedAt: r.fundedAt?.toISOString() || null,
+          collectedAt: r.collectedAt?.toISOString() || null,
+        }));
+      } catch (e) { return []; }
     }),
 
   /**
@@ -69,18 +99,33 @@ export const factoringRouter = router({
       quickPay: z.boolean().default(false),
     }))
     .mutation(async ({ ctx, input }) => {
-      const advanceRate = input.quickPay ? 0.97 : 0.95;
-      const feeRate = input.quickPay ? 0.03 : 0.025;
-      
+      const db = await getDb(); if (!db) throw new Error("Database unavailable");
+      const userId = Number(ctx.user?.id) || 0;
+      const advanceRate = input.quickPay ? 97 : 95;
+      const feeRate = input.quickPay ? 3 : 2.5;
+      const feeAmount = input.invoiceAmount * (feeRate / 100);
+      const advanceAmount = input.invoiceAmount * (advanceRate / 100);
+      const reserveAmount = input.invoiceAmount - advanceAmount - feeAmount;
+      const invoiceNumber = `FI-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
+      const result = await db.insert(factoringInvoices).values({
+        loadId: parseInt(input.loadId, 10),
+        catalystUserId: userId,
+        shipperUserId: parseInt(input.customerId, 10) || null,
+        invoiceNumber,
+        invoiceAmount: String(input.invoiceAmount),
+        advanceRate: String(advanceRate),
+        factoringFeePercent: String(feeRate),
+        factoringFeeAmount: String(feeAmount.toFixed(2)),
+        advanceAmount: String(advanceAmount.toFixed(2)),
+        reserveAmount: String(reserveAmount.toFixed(2)),
+        status: 'submitted',
+        supportingDocs: input.documents.map(d => ({ type: d.type, url: '', name: d.documentId })),
+      } as any).$returningId();
       return {
-        factoringId: `fact_${Date.now()}`,
-        invoiceAmount: input.invoiceAmount,
-        advanceAmount: input.invoiceAmount * advanceRate,
-        estimatedFee: input.invoiceAmount * feeRate,
-        status: "submitted",
-        estimatedFundingTime: input.quickPay ? "4 hours" : "24 hours",
-        submittedBy: ctx.user?.id,
-        submittedAt: new Date().toISOString(),
+        factoringId: String(result[0]?.id), invoiceNumber,
+        invoiceAmount: input.invoiceAmount, advanceAmount, estimatedFee: feeAmount,
+        status: 'submitted', estimatedFundingTime: input.quickPay ? '4 hours' : '24 hours',
+        submittedBy: userId, submittedAt: new Date().toISOString(),
       };
     }),
 
@@ -89,16 +134,46 @@ export const factoringRouter = router({
    */
   getInvoiceStatus: protectedProcedure
     .input(z.object({ factoringId: z.string() }))
-    .query(async ({ input }) => ({
-      factoringId: input.factoringId, invoiceNumber: "", status: "pending",
-      timeline: [], payment: null,
-    })),
+    .query(async ({ input }) => {
+      const db = await getDb(); if (!db) return null;
+      try {
+        const id = parseInt(input.factoringId, 10);
+        const [inv] = await db.select().from(factoringInvoices).where(eq(factoringInvoices.id, id)).limit(1);
+        if (!inv) return null;
+        const timeline = [
+          { event: 'Submitted', date: inv.submittedAt?.toISOString() || '', status: 'completed' },
+          ...(inv.approvedAt ? [{ event: 'Approved', date: inv.approvedAt.toISOString(), status: 'completed' as const }] : []),
+          ...(inv.fundedAt ? [{ event: 'Funded', date: inv.fundedAt.toISOString(), status: 'completed' as const }] : []),
+          ...(inv.collectedAt ? [{ event: 'Collected', date: inv.collectedAt.toISOString(), status: 'completed' as const }] : []),
+        ];
+        return {
+          factoringId: String(inv.id), invoiceNumber: inv.invoiceNumber, status: inv.status,
+          invoiceAmount: inv.invoiceAmount ? parseFloat(String(inv.invoiceAmount)) : 0,
+          advanceAmount: inv.advanceAmount ? parseFloat(String(inv.advanceAmount)) : 0,
+          timeline, payment: inv.fundedAt ? { amount: inv.advanceAmount ? parseFloat(String(inv.advanceAmount)) : 0, date: inv.fundedAt.toISOString() } : null,
+        };
+      } catch (e) { return null; }
+    }),
 
   /**
    * Get approved customers
    */
   getApprovedCustomers: protectedProcedure
-    .query(async () => []),
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const rows = await db.select({ shipperUserId: factoringInvoices.shipperUserId }).from(factoringInvoices).where(and(eq(factoringInvoices.catalystUserId, userId), sql`${factoringInvoices.shipperUserId} IS NOT NULL`)).groupBy(factoringInvoices.shipperUserId).limit(50);
+        if (rows.length === 0) return [];
+        const customerIds = rows.map(r => r.shipperUserId!).filter(Boolean);
+        const customers: any[] = [];
+        for (const cid of customerIds) {
+          const [u] = await db.select({ id: users.id, name: users.name, email: users.email, companyId: users.companyId }).from(users).where(eq(users.id, cid)).limit(1);
+          if (u) customers.push({ id: String(u.id), name: u.name || '', email: u.email || '' });
+        }
+        return customers;
+      } catch (e) { return []; }
+    }),
 
   /**
    * Request customer credit check
@@ -126,7 +201,17 @@ export const factoringRouter = router({
    * Get reserve balance
    */
   getReserveBalance: protectedProcedure
-    .query(async () => ({ currentBalance: 0, pendingRelease: 0, history: [] })),
+    .query(async ({ ctx }) => {
+      const db = await getDb(); if (!db) return { currentBalance: 0, pendingRelease: 0, history: [] };
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const [stats] = await db.select({
+          currentBalance: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.reserveAmount} AS DECIMAL)), 0)`,
+          pendingRelease: sql<number>`COALESCE(SUM(CASE WHEN ${factoringInvoices.status} = 'collected' THEN CAST(${factoringInvoices.reserveAmount} AS DECIMAL) ELSE 0 END), 0)`,
+        }).from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, userId));
+        return { currentBalance: Math.round((stats?.currentBalance || 0) * 100) / 100, pendingRelease: Math.round((stats?.pendingRelease || 0) * 100) / 100, history: [] };
+      } catch (e) { return { currentBalance: 0, pendingRelease: 0, history: [] }; }
+    }),
 
   /**
    * Request reserve withdrawal
@@ -222,6 +307,18 @@ export const factoringRouter = router({
       };
     }),
 
-  getSummary: protectedProcedure.query(async () => ({ totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 })),
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 };
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const [s] = await db.select({
+        total: sql<number>`COUNT(*)`,
+        totalFactored: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.invoiceAmount} AS DECIMAL)), 0)`,
+        totalFunded: sql<number>`COALESCE(SUM(CAST(${factoringInvoices.advanceAmount} AS DECIMAL)), 0)`,
+        pending: sql<number>`SUM(CASE WHEN ${factoringInvoices.status} IN ('submitted','under_review','approved') THEN 1 ELSE 0 END)`,
+      }).from(factoringInvoices).where(eq(factoringInvoices.catalystUserId, userId));
+      return { totalFactored: Math.round(s?.totalFactored || 0), pendingPayments: s?.pending || 0, availableCredit: 100000, totalFunded: Math.round(s?.totalFunded || 0), pending: s?.pending || 0, invoicesFactored: s?.total || 0 };
+    } catch (e) { return { totalFactored: 0, pendingPayments: 0, availableCredit: 0, totalFunded: 0, pending: 0, invoicesFactored: 0 }; }
+  }),
   getRates: protectedProcedure.query(async () => ({ standard: 0.025, quickPay: 0.035, sameDay: 0.045, currentRate: 0.025, advanceRate: 0.95 })),
 });

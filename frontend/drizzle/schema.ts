@@ -4521,3 +4521,59 @@ export const leaseAgreements = mysqlTable(
 export type LeaseAgreement = typeof leaseAgreements.$inferSelect;
 export type InsertLeaseAgreement = typeof leaseAgreements.$inferInsert;
 
+// ============================================================================
+// RUN TICKETS (Trip Sheets)
+// ============================================================================
+
+export const runTickets = mysqlTable(
+  "run_tickets",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    ticketNumber: varchar("ticketNumber", { length: 50 }).notNull(),
+    loadId: int("loadId"),
+    loadNumber: varchar("loadNumber", { length: 100 }),
+    driverId: int("driverId").notNull(),
+    companyId: int("companyId").notNull(),
+    status: mysqlEnum("status", ["active", "completed", "pending_review", "disputed"]).default("active").notNull(),
+    origin: varchar("origin", { length: 255 }),
+    destination: varchar("destination", { length: 255 }),
+    totalMiles: decimal("totalMiles", { precision: 10, scale: 2 }).default("0"),
+    totalFuel: decimal("totalFuel", { precision: 10, scale: 2 }).default("0"),
+    totalTolls: decimal("totalTolls", { precision: 10, scale: 2 }).default("0"),
+    totalExpenses: decimal("totalExpenses", { precision: 10, scale: 2 }).default("0"),
+    driverNotes: text("driverNotes"),
+    completedAt: timestamp("completedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (table) => ({
+    driverIdx: index("run_ticket_driver_idx").on(table.driverId),
+    companyIdx: index("run_ticket_company_idx").on(table.companyId),
+    loadIdx: index("run_ticket_load_idx").on(table.loadId),
+    statusIdx: index("run_ticket_status_idx").on(table.status),
+  })
+);
+
+export type RunTicket = typeof runTickets.$inferSelect;
+export type InsertRunTicket = typeof runTickets.$inferInsert;
+
+export const runTicketExpenses = mysqlTable(
+  "run_ticket_expenses",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    ticketId: int("ticketId").notNull(),
+    type: mysqlEnum("type", ["fuel", "toll", "scale", "parking", "lumper", "detention", "repair", "meal", "other"]).notNull(),
+    amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+    description: text("description"),
+    receiptUrl: text("receiptUrl"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  (table) => ({
+    ticketIdx: index("expense_ticket_idx").on(table.ticketId),
+    typeIdx: index("expense_type_idx").on(table.type),
+  })
+);
+
+export type RunTicketExpense = typeof runTicketExpenses.$inferSelect;
+export type InsertRunTicketExpense = typeof runTicketExpenses.$inferInsert;
+

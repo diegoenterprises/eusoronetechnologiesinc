@@ -525,7 +525,14 @@ export const safetyRouter = router({
    */
   getVehicleInspections: protectedProcedure
     .input(z.object({ vehicleId: z.string().optional(), status: z.string().optional(), type: z.string().optional() }))
-    .query(async () => []),
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(inspections).where(eq(inspections.companyId, companyId)).orderBy(desc(inspections.createdAt)).limit(50);
+        return rows.map(r => ({ id: String(r.id), vehicleId: String(r.vehicleId || ''), type: r.type || '', status: r.status || '', date: r.completedAt?.toISOString() || r.createdAt?.toISOString() || '', defectsFound: r.defectsFound || 0 }));
+      } catch (e) { console.error('[Safety] getVehicleInspections error:', e); return []; }
+    }),
 
   /**
    * Submit vehicle inspection
@@ -554,35 +561,129 @@ export const safetyRouter = router({
     }),
 
   // Accident reports
-  getAccidentReports: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async () => []),
-  getAccidentSummary: protectedProcedure.query(async () => ({ 
-    total: 0, totalReports: 0, thisYear: 0, investigating: 0, closed: 0, open: 0, openReports: 0,
-    daysSinceLastIncident: 0, avgResolutionDays: 0, severe: 0, resolved: 0, thisMonth: 0,
-    bySeverity: { critical: 0, major: 0, minor: 0, nearMiss: 0 },
-    severity: { high: 0, medium: 0, low: 0 }
-  })),
-  submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional(), description: z.string().optional(), severity: z.string().optional() }).optional()).mutation(async ({ input }) => ({ success: true, reportId: "ar_123" })),
-  updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => ({ success: true, reportId: input.reportId })),
-  getPendingReports: protectedProcedure.query(async () => []),
+  getAccidentReports: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional() })).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(incidents).where(eq(incidents.companyId, companyId)).orderBy(desc(incidents.createdAt)).limit(50);
+      return rows.map(r => ({ id: String(r.id), type: r.type || 'accident', severity: r.severity || 'minor', status: r.status || 'reported', description: r.description || '', driverId: String(r.driverId || ''), date: r.occurredAt?.toISOString() || r.createdAt?.toISOString() || '', location: r.location || '' }));
+    } catch (e) { console.error('[Safety] getAccidentReports error:', e); return []; }
+  }),
+  getAccidentSummary: protectedProcedure.query(async ({ ctx }) => {
+    const fallback = { total: 0, totalReports: 0, thisYear: 0, investigating: 0, closed: 0, open: 0, openReports: 0, daysSinceLastIncident: 0, avgResolutionDays: 0, severe: 0, resolved: 0, thisMonth: 0, bySeverity: { critical: 0, major: 0, minor: 0, nearMiss: 0 }, severity: { high: 0, medium: 0, low: 0 } };
+    const db = await getDb(); if (!db) return fallback;
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [stats] = await db.select({ total: sql<number>`count(*)`, investigating: sql<number>`SUM(CASE WHEN ${incidents.status} = 'investigating' THEN 1 ELSE 0 END)`, resolved: sql<number>`SUM(CASE WHEN ${incidents.status} = 'resolved' THEN 1 ELSE 0 END)`, critical: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'critical' THEN 1 ELSE 0 END)`, major: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'major' THEN 1 ELSE 0 END)`, minor: sql<number>`SUM(CASE WHEN ${incidents.severity} = 'minor' THEN 1 ELSE 0 END)` }).from(incidents).where(eq(incidents.companyId, companyId));
+      const total = stats?.total || 0;
+      const resolved = stats?.resolved || 0;
+      const open = total - resolved;
+      return { ...fallback, total, totalReports: total, investigating: stats?.investigating || 0, closed: resolved, open, openReports: open, severe: stats?.critical || 0, resolved, bySeverity: { critical: stats?.critical || 0, major: stats?.major || 0, minor: stats?.minor || 0, nearMiss: 0 }, severity: { high: stats?.critical || 0, medium: stats?.major || 0, low: stats?.minor || 0 } };
+    } catch (e) { console.error('[Safety] getAccidentSummary error:', e); return fallback; }
+  }),
+  submitAccidentReport: protectedProcedure.input(z.object({ driverId: z.string().optional(), date: z.string().optional(), description: z.string().optional(), severity: z.string().optional() }).optional()).mutation(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) throw new Error('Database unavailable');
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [result] = await db.insert(incidents).values({ companyId, driverId: input?.driverId ? parseInt(input.driverId) : null, type: 'accident', severity: (input?.severity || 'minor') as any, status: 'reported', description: input?.description || '', occurredAt: input?.date ? new Date(input.date) : new Date() } as any);
+      return { success: true, reportId: String((result as any).insertId || 0) };
+    } catch (e) { console.error('[Safety] submitAccidentReport error:', e); throw new Error('Failed to submit report'); }
+  }),
+  updateReportStatus: protectedProcedure.input(z.object({ reportId: z.string(), status: z.string() })).mutation(async ({ input }) => {
+    const db = await getDb(); if (!db) throw new Error('Database unavailable');
+    await db.update(incidents).set({ status: input.status as any }).where(eq(incidents.id, parseInt(input.reportId)));
+    return { success: true, reportId: input.reportId };
+  }),
+  getPendingReports: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(incidents).where(and(eq(incidents.companyId, companyId), sql`${incidents.status} IN ('reported', 'investigating')`)).orderBy(desc(incidents.createdAt)).limit(20);
+      return rows.map(r => ({ id: String(r.id), type: r.type || 'accident', severity: r.severity || 'minor', status: r.status || 'reported', description: r.description || '', date: r.occurredAt?.toISOString() || '' }));
+    } catch (e) { return []; }
+  }),
 
   // CSA
-  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() }).optional()).query(async () => []),
-  getCSASummary: protectedProcedure.query(async () => ({ 
-    overallRisk: "none", overallScore: 0, alertCount: 0, improvementAreas: [],
-    trend: 0, trendPercent: 0, satisfactory: 0, conditional: 0, unsatisfactory: 0, inspections: 0,
-  })),
-  getCSAScoresList: protectedProcedure.query(async () => []),
+  getCSAHistory: protectedProcedure.input(z.object({ months: z.number().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(inspections).where(eq(inspections.companyId, companyId)).orderBy(desc(inspections.createdAt)).limit(50);
+      return rows.map(r => ({ id: String(r.id), date: r.completedAt?.toISOString() || r.createdAt?.toISOString() || '', type: r.type || '', status: r.status || '', defects: r.defectsFound || 0, vehicleId: String(r.vehicleId || '') }));
+    } catch (e) { return []; }
+  }),
+  getCSASummary: protectedProcedure.query(async ({ ctx }) => {
+    const fallback = { overallRisk: "none", overallScore: 0, alertCount: 0, improvementAreas: [] as string[], trend: 0, trendPercent: 0, satisfactory: 0, conditional: 0, unsatisfactory: 0, inspections: 0 };
+    const db = await getDb(); if (!db) return fallback;
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [stats] = await db.select({ total: sql<number>`count(*)`, passed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'passed' THEN 1 ELSE 0 END)`, failed: sql<number>`SUM(CASE WHEN ${inspections.status} = 'failed' THEN 1 ELSE 0 END)` }).from(inspections).where(eq(inspections.companyId, companyId));
+      const total = stats?.total || 0;
+      const passRate = total > 0 ? Math.round(((stats?.passed || 0) / total) * 100) : 100;
+      return { ...fallback, overallScore: passRate, inspections: total, satisfactory: stats?.passed || 0, unsatisfactory: stats?.failed || 0, overallRisk: passRate > 80 ? 'low' : passRate > 60 ? 'medium' : 'high' };
+    } catch (e) { return fallback; }
+  }),
+  getCSAScoresList: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const basics = ['Unsafe Driving', 'HOS Compliance', 'Driver Fitness', 'Controlled Substances', 'Vehicle Maintenance', 'Hazardous Materials', 'Crash Indicator'];
+      return basics.map(name => ({ name, score: 0, percentile: 0, threshold: 65, alert: false }));
+    } catch (e) { return []; }
+  }),
 
   // Driver safety
-  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => ({ avgScore: 0, incidents: 0, inspections: 0, violations: 0, excellent: 0, good: 0, needsImprovement: 0 })),
-  getDriverScores: protectedProcedure.input(z.object({ limit: z.number().optional(), search: z.string().optional() }).optional()).query(async () => []),
-  getDriverScoreDetail: protectedProcedure.input(z.object({ driverId: z.string() }).optional()).query(async ({ input }) => ({ 
-    driverId: input?.driverId || "", name: "", overall: 0, overallScore: 0, licenseNumber: "",
-    categories: [], recentEvents: [],
-  })),
-  getScorecardStats: protectedProcedure.query(async () => ({ avgScore: 0, topPerformer: "", improvementNeeded: 0, totalDrivers: 0, improving: 0, needsAttention: 0 })),
+  getDriverSafetyStats: protectedProcedure.input(z.object({ driverId: z.string().optional(), search: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { avgScore: 0, incidents: 0, inspections: 0, violations: 0, excellent: 0, good: 0, needsImprovement: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [stats] = await db.select({ avgScore: sql<number>`AVG(${drivers.safetyScore})`, count: sql<number>`count(*)` }).from(drivers).where(eq(drivers.companyId, companyId));
+      const [incCount] = await db.select({ count: sql<number>`count(*)` }).from(incidents).where(eq(incidents.companyId, companyId));
+      const [inspCount] = await db.select({ count: sql<number>`count(*)` }).from(inspections).where(eq(inspections.companyId, companyId));
+      const allDrivers = await db.select({ score: drivers.safetyScore }).from(drivers).where(eq(drivers.companyId, companyId));
+      const excellent = allDrivers.filter(d => (d.score || 0) >= 90).length;
+      const good = allDrivers.filter(d => (d.score || 0) >= 70 && (d.score || 0) < 90).length;
+      const needsImprovement = allDrivers.filter(d => (d.score || 0) < 70).length;
+      return { avgScore: Math.round(stats?.avgScore || 0), incidents: incCount?.count || 0, inspections: inspCount?.count || 0, violations: 0, excellent, good, needsImprovement };
+    } catch (e) { return { avgScore: 0, incidents: 0, inspections: 0, violations: 0, excellent: 0, good: 0, needsImprovement: 0 }; }
+  }),
+  getDriverScores: protectedProcedure.input(z.object({ limit: z.number().optional(), search: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select({ id: drivers.id, safetyScore: drivers.safetyScore, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore)).limit(input?.limit || 20);
+      return rows.map(r => ({ id: String(r.id), name: r.userName || 'Unknown', score: r.safetyScore || 0, status: (r.safetyScore || 0) >= 90 ? 'excellent' : (r.safetyScore || 0) >= 70 ? 'good' : 'needs_improvement' }));
+    } catch (e) { return []; }
+  }),
+  getDriverScoreDetail: protectedProcedure.input(z.object({ driverId: z.string() }).optional()).query(async ({ input }) => {
+    const db = await getDb();
+    const fallback = { driverId: input?.driverId || '', name: '', overall: 0, overallScore: 0, licenseNumber: '', categories: [] as any[], recentEvents: [] as any[] };
+    if (!db || !input?.driverId) return fallback;
+    try {
+      const did = parseInt(input.driverId);
+      const [driver] = await db.select({ safetyScore: drivers.safetyScore, licenseNumber: drivers.licenseNumber, userId: drivers.userId, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.id, did)).limit(1);
+      if (!driver) return fallback;
+      const recentInsp = await db.select().from(inspections).where(eq(inspections.driverId, driver.userId)).orderBy(desc(inspections.createdAt)).limit(5);
+      return { driverId: input.driverId, name: driver.userName || '', overall: driver.safetyScore || 0, overallScore: driver.safetyScore || 0, licenseNumber: driver.licenseNumber || '', categories: [{ name: 'Driving', score: driver.safetyScore || 0 }, { name: 'Compliance', score: 100 }, { name: 'Vehicle Care', score: 100 }], recentEvents: recentInsp.map(i => ({ type: 'inspection', date: i.createdAt?.toISOString() || '', status: i.status || '' })) };
+    } catch (e) { return fallback; }
+  }),
+  getScorecardStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { avgScore: 0, topPerformer: '', improvementNeeded: 0, totalDrivers: 0, improving: 0, needsAttention: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const allDrivers = await db.select({ safetyScore: drivers.safetyScore, userName: users.name }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).orderBy(desc(drivers.safetyScore));
+      const totalDrivers = allDrivers.length;
+      const avgScore = totalDrivers > 0 ? Math.round(allDrivers.reduce((s, d) => s + (d.safetyScore || 0), 0) / totalDrivers) : 0;
+      const topPerformer = allDrivers[0]?.userName || '';
+      const needsAttention = allDrivers.filter(d => (d.safetyScore || 0) < 70).length;
+      return { avgScore, topPerformer, improvementNeeded: needsAttention, totalDrivers, improving: 0, needsAttention };
+    } catch (e) { return { avgScore: 0, topPerformer: '', improvementNeeded: 0, totalDrivers: 0, improving: 0, needsAttention: 0 }; }
+  }),
 
   // Meetings
-  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => []),
-  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 0, attendance: 0, topics: [], total: 0, upcoming: 0, completed: 0, avgAttendance: 0 })),
+  getMeetings: protectedProcedure.input(z.object({ type: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => {
+    // Safety meetings would need a dedicated table; return empty until schema supports it
+    return [];
+  }),
+  getMeetingStats: protectedProcedure.query(async () => ({ thisMonth: 0, attendance: 0, topics: [] as string[], total: 0, upcoming: 0, completed: 0, avgAttendance: 0 })),
 });

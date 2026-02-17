@@ -45,7 +45,10 @@ export const permitsRouter = router({
    */
   getExpiring: protectedProcedure
     .input(z.object({ days: z.number().default(30) }))
-    .query(async () => []),
+    .query(async () => {
+      // Expiring permits require a dedicated permits table
+      return [];
+    }),
 
   /**
    * Renew permit
@@ -107,5 +110,8 @@ export const permitsRouter = router({
     { code: "TX", name: "Texas", permitsRequired: true }, { code: "OK", name: "Oklahoma", permitsRequired: true },
     { code: "LA", name: "Louisiana", permitsRequired: true }, { code: "NM", name: "New Mexico", permitsRequired: true },
   ]),
-  getRequirements: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async () => []),
+  getRequirements: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async () => {
+    // Permit requirements require dedicated table or FMCSA API
+    return [];
+  }),
 });

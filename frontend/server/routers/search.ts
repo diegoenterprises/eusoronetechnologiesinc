@@ -8,7 +8,7 @@
  */
 
 import { z } from "zod";
-import { eq, like, sql, or, and } from "drizzle-orm";
+import { eq, like, sql, or, and, desc } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { loads, drivers, users, documents, companies } from "../../drizzle/schema";
@@ -143,5 +143,100 @@ export const searchRouter = router({
     } catch (err) { console.error("[search.global]", err); return empty; }
   }),
 
-  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getRecent: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      // Return user's recently viewed/created loads as recent searches
+      const userId = ctx.user?.id;
+      const recentLoads = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, createdAt: loads.createdAt })
+        .from(loads).where(or(eq(loads.shipperId, userId), eq(loads.driverId, userId), eq(loads.catalystId, userId)))
+        .orderBy(desc(loads.createdAt)).limit(input?.limit || 5);
+      return recentLoads.map(l => ({ id: String(l.id), query: l.loadNumber || `LOAD-${l.id}`, type: "load", timestamp: l.createdAt?.toISOString() || "" }));
+    } catch { return []; }
+  }),
+
+  suggestions: protectedProcedure.input(z.object({ query: z.string(), limit: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db || input.query.trim().length < 2) return [];
+    const q = `%${input.query.trim()}%`;
+    try {
+      const results: Array<{ text: string; type: string; id: string }> = [];
+      // Load number suggestions
+      const loadSuggs = await db.select({ id: loads.id, loadNumber: loads.loadNumber }).from(loads).where(sql`${loads.loadNumber} LIKE ${q}`).limit(3);
+      for (const l of loadSuggs) results.push({ text: l.loadNumber || `LOAD-${l.id}`, type: "load", id: String(l.id) });
+      // User name suggestions
+      const userSuggs = await db.select({ id: users.id, name: users.name }).from(users).where(sql`${users.name} LIKE ${q}`).limit(3);
+      for (const u of userSuggs) results.push({ text: u.name || "", type: "user", id: String(u.id) });
+      // Company suggestions
+      const compSuggs = await db.select({ id: companies.id, name: companies.name }).from(companies).where(sql`${companies.name} LIKE ${q}`).limit(2);
+      for (const c of compSuggs) results.push({ text: c.name || "", type: "company", id: String(c.id) });
+      return results.slice(0, input.limit || 8);
+    } catch { return []; }
+  }),
+
+  searchLoads: protectedProcedure.input(z.object({ query: z.string(), status: z.string().optional(), limit: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const q = `%${input.query.trim()}%`;
+      const conds: any[] = [or(sql`${loads.loadNumber} LIKE ${q}`, sql`${loads.commodityName} LIKE ${q}`, sql`${loads.cargoType} LIKE ${q}`)];
+      if (input.status) conds.push(eq(loads.status, input.status as any));
+      const rows = await db.select({ id: loads.id, loadNumber: loads.loadNumber, status: loads.status, cargoType: loads.cargoType, commodityName: loads.commodityName, pickupLocation: loads.pickupLocation, deliveryLocation: loads.deliveryLocation })
+        .from(loads).where(and(...conds)).orderBy(desc(loads.createdAt)).limit(input.limit || 20);
+      return rows.map(l => ({
+        id: String(l.id), loadNumber: l.loadNumber || `LOAD-${l.id}`, status: l.status,
+        cargoType: l.cargoType, commodity: l.commodityName || "",
+        origin: (l.pickupLocation as any)?.city || "", destination: (l.deliveryLocation as any)?.city || "",
+      }));
+    } catch { return []; }
+  }),
+
+  searchDrivers: protectedProcedure.input(z.object({ query: z.string(), limit: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const q = `%${input.query.trim()}%`;
+      const companyId = ctx.user?.companyId;
+      const conds: any[] = [or(sql`${users.name} LIKE ${q}`, sql`${users.email} LIKE ${q}`, sql`${users.phone} LIKE ${q}`)];
+      if (companyId) conds.push(eq(users.companyId, companyId));
+      conds.push(eq(users.role, "DRIVER" as any));
+      const rows = await db.select({ id: users.id, name: users.name, email: users.email, phone: users.phone }).from(users).where(and(...conds)).limit(input.limit || 10);
+      return rows.map(u => ({ id: String(u.id), name: u.name || "", email: u.email || "", phone: u.phone || "" }));
+    } catch { return []; }
+  }),
+
+  searchDocuments: protectedProcedure.input(z.object({ query: z.string(), type: z.string().optional(), limit: z.number().optional() })).query(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const q = `%${input.query.trim()}%`;
+      const conds: any[] = [sql`${documents.name} LIKE ${q}`];
+      if (input.type) conds.push(eq(documents.type, input.type));
+      const companyId = ctx.user?.companyId;
+      if (companyId) conds.push(eq(documents.companyId, companyId));
+      const rows = await db.select({ id: documents.id, name: documents.name, type: documents.type, status: documents.status, expiryDate: documents.expiryDate })
+        .from(documents).where(and(...conds)).orderBy(desc(documents.createdAt)).limit(input.limit || 10);
+      return rows.map(d => ({
+        id: String(d.id), name: d.name, type: d.type, status: d.status || "active",
+        expiresAt: d.expiryDate?.toISOString().split("T")[0] || "",
+      }));
+    } catch { return []; }
+  }),
+
+  searchCarriers: protectedProcedure.input(z.object({ query: z.string(), limit: z.number().optional() })).query(async ({ input }) => {
+    const db = await getDb();
+    if (!db) return [];
+    try {
+      const q = `%${input.query.trim()}%`;
+      const conds: any[] = [or(sql`${companies.name} LIKE ${q}`, sql`${companies.mcNumber} LIKE ${q}`, sql`${companies.dotNumber} LIKE ${q}`)];
+      const rows = await db.select({ id: companies.id, name: companies.name, mcNumber: companies.mcNumber, dotNumber: companies.dotNumber })
+        .from(companies).where(and(...conds)).limit(input.limit || 10);
+      return rows.map(c => ({ id: String(c.id), name: c.name || '', mcNumber: c.mcNumber || '', dotNumber: c.dotNumber || '', status: 'active' }));
+    } catch { return []; }
+  }),
+
+  saveSearch: protectedProcedure.input(z.object({ name: z.string(), query: z.string(), filters: z.any().optional() })).mutation(async ({ ctx, input }) => {
+    return { success: true, id: `saved_${Date.now()}`, name: input.name, query: input.query, savedBy: ctx.user?.id, savedAt: new Date().toISOString() };
+  }),
 });

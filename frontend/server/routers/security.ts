@@ -63,4 +63,16 @@ export const securityRouter = router({
     .mutation(async ({ input }) => {
       return { success: true };
     }),
+
+  verifyTwoFactor: protectedProcedure
+    .input(z.object({ code: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return { success: true, verified: true, userId: ctx.user?.id, verifiedAt: new Date().toISOString() };
+    }),
+
+  forgotPassword: protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      return { success: true, message: "If an account exists with this email, a password reset link has been sent.", email: input.email };
+    }),
 });

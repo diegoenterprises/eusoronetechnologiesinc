@@ -813,8 +813,14 @@ export const terminalsRouter = router({
   }),
 
   // Alerts & Tanks
-  getActiveAlerts: protectedProcedure.input(z.object({ terminal: z.string().optional() }).optional()).query(async () => []),
-  getTankLevels: protectedProcedure.input(z.object({ terminal: z.string().optional() }).optional()).query(async () => []),
+  getActiveAlerts: protectedProcedure.input(z.object({ terminal: z.string().optional() }).optional()).query(async () => {
+    // Terminal alerts require SCADA integration
+    return [];
+  }),
+  getTankLevels: protectedProcedure.input(z.object({ terminal: z.string().optional() }).optional()).query(async () => {
+    // Tank levels require SCADA integration
+    return [];
+  }),
   getRackStats: protectedProcedure.query(async () => ({ total: 0, active: 0, idle: 0, maintenance: 0, available: 0, inUse: 0, utilization: 0 })),
 
   // SCADA stats
@@ -895,5 +901,8 @@ export const terminalsRouter = router({
   /**
    * Get bays for Facility page
    */
-  getBays: protectedProcedure.query(async () => []),
+  getBays: protectedProcedure.query(async () => {
+    // Loading bays require a dedicated bays table
+    return [];
+  }),
 });

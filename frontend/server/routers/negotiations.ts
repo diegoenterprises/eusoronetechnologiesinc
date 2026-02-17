@@ -13,7 +13,10 @@
  */
 
 import { z } from "zod";
+import { eq, and, or, desc, sql } from "drizzle-orm";
 import { router, protectedProcedure } from "../_core/trpc";
+import { getDb } from "../db";
+import { negotiations as negotiationsTable } from "../../drizzle/schema";
 
 // ── NEGOTIATION STATES ──
 const NEGOTIATION_STATES = ["INITIATED", "COUNTERED", "ACCEPTED", "SIGNED", "FAILED", "EXPIRED", "REJECTED"] as const;
@@ -45,19 +48,45 @@ export const negotiationsRouter = router({
       limit: z.number().optional().default(50),
     }))
     .query(async ({ ctx, input }) => {
-      // In production: fetch from DB filtered by user role (shipper/catalyst/broker)
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const userId = Number(ctx.user?.id) || 0;
+        const conds: any[] = [or(eq(negotiationsTable.initiatorUserId, userId), eq(negotiationsTable.respondentUserId, userId))];
+        if (input.loadId) conds.push(eq(negotiationsTable.loadId, input.loadId));
+        const rows = await db.select().from(negotiationsTable).where(and(...conds)).orderBy(desc(negotiationsTable.updatedAt)).limit(input.limit || 50);
+        return rows.map(r => ({
+          negotiationId: r.id, loadId: r.loadId, subject: r.subject,
+          status: r.status, totalRounds: r.totalRounds || 0,
+          currentOffer: r.currentOffer, initiatorUserId: r.initiatorUserId,
+          respondentUserId: r.respondentUserId, createdAt: r.createdAt?.toISOString() || '',
+          updatedAt: r.updatedAt?.toISOString() || '',
+        }));
+      } catch (e) { return []; }
     }),
 
   /**
    * Get negotiation statistics for the current user
    */
   getStats: protectedProcedure.query(async ({ ctx }) => {
-    return {
-      active: 0, pending: 0, accepted: 0, rejected: 0, expired: 0,
-      signed: 0, failed: 0,
-      winRate: 0, avgSavings: 0, avgRounds: 0, totalNegotiated: 0,
-    };
+    const db = await getDb(); if (!db) return { active: 0, pending: 0, accepted: 0, rejected: 0, expired: 0, signed: 0, failed: 0, winRate: 0, avgSavings: 0, avgRounds: 0, totalNegotiated: 0 };
+    try {
+      const userId = Number(ctx.user?.id) || 0;
+      const userFilter = or(eq(negotiationsTable.initiatorUserId, userId), eq(negotiationsTable.respondentUserId, userId));
+      const [stats] = await db.select({
+        total: sql<number>`count(*)`,
+        active: sql<number>`SUM(CASE WHEN ${negotiationsTable.status} IN ('open','awaiting_response','counter_offered') THEN 1 ELSE 0 END)`,
+        agreed: sql<number>`SUM(CASE WHEN ${negotiationsTable.status} = 'agreed' THEN 1 ELSE 0 END)`,
+        rejected: sql<number>`SUM(CASE WHEN ${negotiationsTable.status} = 'rejected' THEN 1 ELSE 0 END)`,
+        expired: sql<number>`SUM(CASE WHEN ${negotiationsTable.status} = 'expired' THEN 1 ELSE 0 END)`,
+        avgRounds: sql<number>`AVG(${negotiationsTable.totalRounds})`,
+      }).from(negotiationsTable).where(userFilter!);
+      return {
+        active: stats?.active || 0, pending: stats?.active || 0, accepted: stats?.agreed || 0,
+        rejected: stats?.rejected || 0, expired: stats?.expired || 0, signed: 0, failed: 0,
+        winRate: (stats?.total || 0) > 0 ? Math.round(((stats?.agreed || 0) / (stats?.total || 1)) * 100) : 0,
+        avgSavings: 0, avgRounds: Math.round(stats?.avgRounds || 0), totalNegotiated: stats?.total || 0,
+      };
+    } catch (e) { return { active: 0, pending: 0, accepted: 0, rejected: 0, expired: 0, signed: 0, failed: 0, winRate: 0, avgSavings: 0, avgRounds: 0, totalNegotiated: 0 }; }
   }),
 
   /**
@@ -72,16 +101,33 @@ export const negotiationsRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const platformFee = calcPlatformFee(input.proposedRate, input.cargoType);
-      // In production: validate load is POSTED, create negotiation record, notify counterparty
+      const db = await getDb();
+      if (db) {
+        try {
+          const userId = Number(ctx.user?.id) || 0;
+          const negNum = `NEG-${Date.now().toString(36).toUpperCase()}`;
+          const result = await db.insert(negotiationsTable).values({
+            negotiationNumber: negNum, negotiationType: 'load_rate' as any,
+            loadId: input.loadId, initiatorUserId: userId, respondentUserId: 0,
+            initiatorCompanyId: ctx.user?.companyId || null,
+            subject: `Rate negotiation for Load #${input.loadId}`,
+            currentOffer: { amount: input.proposedRate, proposedBy: userId, proposedAt: new Date().toISOString() },
+            totalRounds: 1, status: 'open' as any,
+          } as any).$returningId();
+          return {
+            negotiationId: result[0]?.id || Date.now(), loadId: input.loadId,
+            proposedRate: input.proposedRate, platformFee,
+            netAfterFee: Math.round((input.proposedRate - platformFee) * 100) / 100,
+            status: "INITIATED" as NegotiationState, proposedBy: ctx.user?.id, round: 1,
+            createdAt: new Date().toISOString(),
+          };
+        } catch (e) { /* fall through */ }
+      }
       return {
-        negotiationId: Date.now(),
-        loadId: input.loadId,
-        proposedRate: input.proposedRate,
-        platformFee,
+        negotiationId: Date.now(), loadId: input.loadId,
+        proposedRate: input.proposedRate, platformFee,
         netAfterFee: Math.round((input.proposedRate - platformFee) * 100) / 100,
-        status: "INITIATED" as NegotiationState,
-        proposedBy: ctx.user?.id,
-        round: 1,
+        status: "INITIATED" as NegotiationState, proposedBy: ctx.user?.id, round: 1,
         createdAt: new Date().toISOString(),
       };
     }),
@@ -245,7 +291,13 @@ export const negotiationsRouter = router({
       negotiationId: z.number(),
     }))
     .query(async ({ ctx, input }) => {
-      // In production: fetch full negotiation event history from DB
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const [neg] = await db.select().from(negotiationsTable).where(eq(negotiationsTable.id, input.negotiationId)).limit(1);
+        if (!neg) return [];
+        const events: any[] = [{ type: 'initiated', round: 1, offer: neg.currentOffer, status: neg.status, at: neg.createdAt?.toISOString() || '' }];
+        if (neg.resolvedAt) events.push({ type: 'resolved', outcome: neg.outcome, at: neg.resolvedAt.toISOString() });
+        return events;
+      } catch (e) { return []; }
     }),
 });

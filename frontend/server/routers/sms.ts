@@ -16,7 +16,10 @@ export const smsRouter = router({
     monthlyLimit: 1000,
   })),
 
-  getTemplates: protectedProcedure.query(async () => []),
+  getTemplates: protectedProcedure.query(async () => {
+    // SMS templates require Twilio integration
+    return [];
+  }),
 
   toggleTemplate: protectedProcedure.input(z.object({ templateId: z.string(), active: z.boolean().optional(), enabled: z.boolean().optional() })).mutation(async ({ input }) => ({
     success: true,
@@ -24,7 +27,10 @@ export const smsRouter = router({
     active: input.active ?? input.enabled,
   })),
 
-  getLogs: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => []),
+  getLogs: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => {
+    // SMS logs require Twilio integration
+    return [];
+  }),
 
   getUsage: protectedProcedure.query(async () => ({ sent: 0, delivered: 0, failed: 0, remaining: 0, costThisMonth: 0, sentThisMonth: 0, deliveryRate: 0 })),
 

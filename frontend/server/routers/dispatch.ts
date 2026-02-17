@@ -374,14 +374,52 @@ export const dispatchRouter = router({
     }),
 
   // Dispatch operations
-  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async () => []),
-  getDriverStatusStats: protectedProcedure.query(async () => ({ available: 0, driving: 0, onDuty: 0, offDuty: 0, sleeper: 0 })),
-  getLoads: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => []),
-  getSummary: protectedProcedure.input(z.object({ timeframe: z.string().optional() }).optional()).query(async () => ({ activeLoads: 0, unassigned: 0, unassignedLoads: 0, inTransit: 0, issues: 0, totalDrivers: 0, availableDrivers: 0 })),
-  getAlerts: protectedProcedure.query(async () => []),
+  getDrivers: protectedProcedure.input(z.object({ status: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select({ id: drivers.id, userId: drivers.userId, status: drivers.status, userName: users.name, phone: users.phone }).from(drivers).leftJoin(users, eq(drivers.userId, users.id)).where(eq(drivers.companyId, companyId)).limit(50);
+      return rows.map(r => ({ id: String(r.id), name: r.userName || '', status: r.status || 'off_duty', phone: r.phone || '' }));
+    } catch (e) { return []; }
+  }),
+  getDriverStatusStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { available: 0, driving: 0, onDuty: 0, offDuty: 0, sleeper: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [stats] = await db.select({ total: sql<number>`count(*)`, available: sql<number>`SUM(CASE WHEN ${drivers.status} = 'available' THEN 1 ELSE 0 END)`, driving: sql<number>`SUM(CASE WHEN ${drivers.status} = 'driving' THEN 1 ELSE 0 END)`, onDuty: sql<number>`SUM(CASE WHEN ${drivers.status} = 'on_duty' THEN 1 ELSE 0 END)`, offDuty: sql<number>`SUM(CASE WHEN ${drivers.status} = 'off_duty' THEN 1 ELSE 0 END)`, sleeper: sql<number>`SUM(CASE WHEN ${drivers.status} = 'sleeper' THEN 1 ELSE 0 END)` }).from(drivers).where(eq(drivers.companyId, companyId));
+      return { available: stats?.available || 0, driving: stats?.driving || 0, onDuty: stats?.onDuty || 0, offDuty: stats?.offDuty || 0, sleeper: stats?.sleeper || 0 };
+    } catch (e) { return { available: 0, driving: 0, onDuty: 0, offDuty: 0, sleeper: 0 }; }
+  }),
+  getLoads: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(loads).where(eq(loads.shipperId, companyId)).orderBy(desc(loads.createdAt)).limit(50);
+      return rows.map(l => {
+        const p = l.pickupLocation as any || {}; const d = l.deliveryLocation as any || {};
+        return { id: String(l.id), loadNumber: l.loadNumber, status: l.status, origin: `${p.city || ''}, ${p.state || ''}`, destination: `${d.city || ''}, ${d.state || ''}`, driverId: l.driverId ? String(l.driverId) : null, rate: l.rate ? parseFloat(String(l.rate)) : 0 };
+      });
+    } catch (e) { return []; }
+  }),
+  getSummary: protectedProcedure.input(z.object({ timeframe: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { activeLoads: 0, unassigned: 0, unassignedLoads: 0, inTransit: 0, issues: 0, totalDrivers: 0, availableDrivers: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [loadStats] = await db.select({ total: sql<number>`count(*)`, inTransit: sql<number>`SUM(CASE WHEN ${loads.status} = 'in_transit' THEN 1 ELSE 0 END)`, unassigned: sql<number>`SUM(CASE WHEN ${loads.driverId} IS NULL AND ${loads.status} IN ('posted','bidding','assigned') THEN 1 ELSE 0 END)` }).from(loads).where(eq(loads.shipperId, companyId));
+      const [driverStats] = await db.select({ total: sql<number>`count(*)`, available: sql<number>`SUM(CASE WHEN ${drivers.status} = 'available' THEN 1 ELSE 0 END)` }).from(drivers).where(eq(drivers.companyId, companyId));
+      return { activeLoads: loadStats?.total || 0, unassigned: loadStats?.unassigned || 0, unassignedLoads: loadStats?.unassigned || 0, inTransit: loadStats?.inTransit || 0, issues: 0, totalDrivers: driverStats?.total || 0, availableDrivers: driverStats?.available || 0 };
+    } catch (e) { return { activeLoads: 0, unassigned: 0, unassignedLoads: 0, inTransit: 0, issues: 0, totalDrivers: 0, availableDrivers: 0 }; }
+  }),
+  getAlerts: protectedProcedure.query(async () => {
+    // Dispatch alerts require real-time monitoring integration
+    return [];
+  }),
 
   // Exceptions
-  getExceptions: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => []),
+  getExceptions: protectedProcedure.input(z.object({ status: z.string().optional(), filter: z.string().optional() }).optional()).query(async () => {
+    // Dispatch exceptions require a dedicated exceptions table
+    return [];
+  }),
   getExceptionStats: protectedProcedure.query(async () => ({ open: 0, investigating: 0, resolved: 0, critical: 0, inProgress: 0, resolvedToday: 0 })),
   resolveException: protectedProcedure.input(z.object({ exceptionId: z.string().optional(), id: z.string().optional(), resolution: z.string().optional() })).mutation(async ({ input }) => ({ success: true, exceptionId: input.exceptionId || input.id })),
 

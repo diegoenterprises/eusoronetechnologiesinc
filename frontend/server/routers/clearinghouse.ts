@@ -100,16 +100,23 @@ export const clearinghouseRouter = router({
       status: z.enum(["all", "pending", "completed"]).default("all"),
       limit: z.number().default(20),
     }))
-    .query(async ({ input }) => {
-      return {
-        queries: [],
-        total: 0,
-        summary: {
-          pending: 0,
-          completed: 0,
-          withViolations: 0,
-        },
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { queries: [], total: 0, summary: { pending: 0, completed: 0, withViolations: 0 } };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const conds: any[] = [eq(drugTests.companyId, companyId)];
+        if (input.driverId) conds.push(eq(drugTests.driverId, parseInt(input.driverId, 10)));
+        if (input.status === 'pending') conds.push(eq(drugTests.result, 'pending'));
+        if (input.status === 'completed') conds.push(sql`${drugTests.result} != 'pending'`);
+        const rows = await db.select().from(drugTests).where(and(...conds)).orderBy(desc(drugTests.testDate)).limit(input.limit);
+        const pending = rows.filter(r => r.result === 'pending').length;
+        const completed = rows.filter(r => r.result !== 'pending').length;
+        const withViolations = rows.filter(r => r.result === 'positive').length;
+        return {
+          queries: rows.map(r => ({ id: String(r.id), driverId: String(r.driverId), type: r.type, testDate: r.testDate?.toISOString() || '', result: r.result, status: r.result === 'pending' ? 'pending' : 'completed' })),
+          total: rows.length, summary: { pending, completed, withViolations },
+        };
+      } catch (e) { return { queries: [], total: 0, summary: { pending: 0, completed: 0, withViolations: 0 } }; }
     }),
 
   /**
@@ -259,11 +266,24 @@ export const clearinghouseRouter = router({
     .input(z.object({
       daysAhead: z.number().default(30),
     }))
-    .query(async ({ input }) => {
-      return {
-        drivers: [],
-        total: 0,
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return { drivers: [], total: 0 };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        // Get all drivers, then check which ones don't have a test within the last year
+        const allDrivers = await db.select({ id: drivers.id, userId: drivers.userId, licenseNumber: drivers.licenseNumber, status: drivers.status })
+          .from(drivers).where(and(eq(drivers.companyId, companyId), eq(drivers.status, 'active'))).limit(100);
+        const oneYearAgo = new Date(Date.now() - 365 * 86400000);
+        const dueDrivers: any[] = [];
+        for (const d of allDrivers) {
+          const [lastTest] = await db.select({ testDate: drugTests.testDate }).from(drugTests).where(and(eq(drugTests.driverId, d.userId), gte(drugTests.testDate, oneYearAgo))).orderBy(desc(drugTests.testDate)).limit(1);
+          if (!lastTest) {
+            const [u] = await db.select({ name: users.name }).from(users).where(eq(users.id, d.userId)).limit(1);
+            dueDrivers.push({ driverId: String(d.userId), name: u?.name || '', licenseNumber: d.licenseNumber || '', lastQueryDate: null, dueDate: new Date().toISOString() });
+          }
+        }
+        return { drivers: dueDrivers, total: dueDrivers.length };
+      } catch (e) { return { drivers: [], total: 0 }; }
     }),
 
   /**
@@ -273,33 +293,30 @@ export const clearinghouseRouter = router({
     .input(z.object({
       period: z.enum(["month", "quarter", "year"]).default("year"),
     }))
-    .query(async ({ input }) => {
-      return {
-        period: input.period,
-        summary: {
-          totalDrivers: 45,
-          annualQueriesRequired: 45,
-          annualQueriesCompleted: 42,
-          complianceRate: 0.93,
-          preEmploymentQueries: 12,
-          violationsReported: 0,
-        },
-        byMonth: [
-          { month: "2025-01", queries: 8, preEmployment: 2, violations: 0 },
-          { month: "2024-12", queries: 5, preEmployment: 1, violations: 0 },
-          { month: "2024-11", queries: 6, preEmployment: 2, violations: 0 },
-        ],
-        upcomingDue: {
-          next30Days: 5,
-          next60Days: 8,
-          next90Days: 12,
-        },
-        recommendations: [
-          "Schedule annual queries for 5 drivers due within 30 days",
-          "Renew consent for 2 drivers with expiring consent",
-          "Complete pre-employment query for new hire",
-        ],
-      };
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { period: input.period, summary: { totalDrivers: 0, annualQueriesRequired: 0, annualQueriesCompleted: 0, complianceRate: 0, preEmploymentQueries: 0, violationsReported: 0 }, byMonth: [], upcomingDue: { next30Days: 0, next60Days: 0, next90Days: 0 }, recommendations: [] };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const yearStart = new Date(new Date().getFullYear(), 0, 1);
+        const [driverCount] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), eq(drivers.status, 'active')));
+        const [testStats] = await db.select({
+          total: sql<number>`count(*)`,
+          preEmployment: sql<number>`SUM(CASE WHEN ${drugTests.type} = 'pre_employment' THEN 1 ELSE 0 END)`,
+          violations: sql<number>`SUM(CASE WHEN ${drugTests.result} = 'positive' THEN 1 ELSE 0 END)`,
+        }).from(drugTests).where(and(eq(drugTests.companyId, companyId), gte(drugTests.testDate, yearStart)));
+        const totalDrivers = driverCount?.count || 0;
+        const totalTests = testStats?.total || 0;
+        const complianceRate = totalDrivers > 0 ? Math.min(1, totalTests / totalDrivers) : 0;
+        const recommendations: string[] = [];
+        if (complianceRate < 1) recommendations.push(`Schedule annual queries for ${Math.max(0, totalDrivers - totalTests)} drivers`);
+        if (testStats?.violations) recommendations.push(`Review ${testStats.violations} positive test result(s)`);
+        return {
+          period: input.period,
+          summary: { totalDrivers, annualQueriesRequired: totalDrivers, annualQueriesCompleted: totalTests, complianceRate: Math.round(complianceRate * 100) / 100, preEmploymentQueries: testStats?.preEmployment || 0, violationsReported: testStats?.violations || 0 },
+          byMonth: [], upcomingDue: { next30Days: 0, next60Days: 0, next90Days: 0 }, recommendations,
+        };
+      } catch (e) { return { period: input.period, summary: { totalDrivers: 0, annualQueriesRequired: 0, annualQueriesCompleted: 0, complianceRate: 0, preEmploymentQueries: 0, violationsReported: 0 }, byMonth: [], upcomingDue: { next30Days: 0, next60Days: 0, next90Days: 0 }, recommendations: [] }; }
     }),
 
   /**
@@ -355,7 +372,34 @@ export const clearinghouseRouter = router({
     }),
 
   // Additional clearinghouse procedures
-  getSummary: protectedProcedure.query(async () => ({ totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0 })),
-  getQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async () => []),
-  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async ({ input }) => []),
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [dc] = await db.select({ count: sql<number>`count(*)` }).from(drivers).where(and(eq(drivers.companyId, companyId), eq(drivers.status, 'active')));
+      const [tc] = await db.select({
+        pending: sql<number>`SUM(CASE WHEN ${drugTests.result} = 'pending' THEN 1 ELSE 0 END)`,
+        violations: sql<number>`SUM(CASE WHEN ${drugTests.result} = 'positive' THEN 1 ELSE 0 END)`,
+        clear: sql<number>`SUM(CASE WHEN ${drugTests.result} = 'negative' THEN 1 ELSE 0 END)`,
+      }).from(drugTests).where(eq(drugTests.companyId, companyId));
+      return { totalDrivers: dc?.count || 0, compliant: dc?.count || 0, pendingQueries: tc?.pending || 0, clearDrivers: tc?.clear || 0, violations: tc?.violations || 0 };
+    } catch (e) { return { totalDrivers: 0, compliant: 0, pendingQueries: 0, clearDrivers: 0, violations: 0 }; }
+  }),
+  getQueries: protectedProcedure.input(z.object({ status: z.string().optional(), limit: z.number().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(drugTests).where(eq(drugTests.companyId, companyId)).orderBy(desc(drugTests.testDate)).limit(input?.limit || 20);
+      return rows.map(r => ({ id: String(r.id), driverId: String(r.driverId), type: r.type, testDate: r.testDate?.toISOString() || '', result: r.result }));
+    } catch (e) { return []; }
+  }),
+  getDriverStatus: protectedProcedure.input(z.object({ driverId: z.string().optional() }).optional()).query(async ({ input }) => {
+    if (!input?.driverId) return [];
+    const db = await getDb(); if (!db) return [];
+    try {
+      const dId = parseInt(input.driverId, 10);
+      const rows = await db.select().from(drugTests).where(eq(drugTests.driverId, dId)).orderBy(desc(drugTests.testDate)).limit(10);
+      return rows.map(r => ({ id: String(r.id), type: r.type, testDate: r.testDate?.toISOString() || '', result: r.result }));
+    } catch (e) { return []; }
+  }),
 });

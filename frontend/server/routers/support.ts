@@ -68,7 +68,10 @@ export const supportRouter = router({
    */
   getTickets: protectedProcedure
     .input(z.object({ search: z.string().optional(), status: z.string().optional() }).optional())
-    .query(async () => []),
+    .query(async () => {
+      // Support tickets require a dedicated support_tickets table
+      return [];
+    }),
 
   /**
    * Get ticket stats for SupportTickets page
@@ -335,11 +338,17 @@ If you have trouble accepting a load, please contact support or check that your 
   startChatSession: protectedProcedure.input(z.object({ topic: z.string().optional() })).mutation(async () => ({ sessionId: `chat_${Date.now()}`, agentName: "" })),
   endChatSession: protectedProcedure.input(z.object({ sessionId: z.string() })).mutation(async ({ input }) => ({ success: true, sessionId: input.sessionId })),
   getChatSession: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async ({ input }) => ({ sessionId: input?.sessionId || "", status: "inactive", startedAt: "", active: false, agent: null })),
-  getChatMessages: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async () => []),
+  getChatMessages: protectedProcedure.input(z.object({ sessionId: z.string().optional() }).optional()).query(async () => {
+    // Chat messages require a dedicated chat_messages table
+    return [];
+  }),
   sendChatMessage: protectedProcedure.input(z.object({ sessionId: z.string(), content: z.string() })).mutation(async () => ({ success: true, messageId: `msg_${Date.now()}` })),
 
   // Surveys
-  getPendingSurveys: protectedProcedure.query(async () => []),
+  getPendingSurveys: protectedProcedure.query(async () => {
+    // Surveys require a dedicated surveys table
+    return [];
+  }),
   getCompletedSurveys: protectedProcedure.input(z.object({ limit: z.number().optional() }).optional()).query(async () => ({ surveys: [], total: 0, avgRating: 0 })),
   getSurveyDetail: protectedProcedure.input(z.object({ surveyId: z.string() })).query(async ({ input }) => ({ surveyId: input.surveyId, title: "", description: "", questions: [] })),
   submitSurvey: protectedProcedure.input(z.object({ surveyId: z.string(), responses: z.array(z.object({ questionId: z.string(), answer: z.any() })) })).mutation(async ({ input }) => ({ success: true, surveyId: input.surveyId })),

@@ -184,7 +184,73 @@ export const scadaRouter = router({
     }),
 
   // Additional SCADA procedures
-  getOverview: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => ({ terminals: 0, totalThroughput: 0, activeRacks: 0, alerts: 0, terminalsOnline: 0, totalTanks: 0, totalInventory: 0, activeFlows: 0 })),
-  getTerminals: protectedProcedure.query(async () => []),
-  getTanks: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async () => []),
+  getOverview: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return { terminals: 0, totalThroughput: 0, activeRacks: 0, alerts: 0, terminalsOnline: 0, totalTanks: 0, totalInventory: 0, activeFlows: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [stats] = await db.select({
+        total: sql<number>`count(*)`,
+        active: sql<number>`SUM(CASE WHEN ${terminals.status} = 'active' THEN 1 ELSE 0 END)`,
+        totalTanks: sql<number>`COALESCE(SUM(${terminals.tankCount}), 0)`,
+        totalDocks: sql<number>`COALESCE(SUM(${terminals.dockCount}), 0)`,
+      }).from(terminals).where(eq(terminals.companyId, companyId));
+      return {
+        terminals: stats?.total || 0,
+        terminalsOnline: stats?.active || 0,
+        totalTanks: stats?.totalTanks || 0,
+        activeRacks: stats?.totalDocks || 0,
+        totalThroughput: 0,
+        alerts: 0,
+        totalInventory: 0,
+        activeFlows: 0,
+      };
+    } catch (e) { return { terminals: 0, totalThroughput: 0, activeRacks: 0, alerts: 0, terminalsOnline: 0, totalTanks: 0, totalInventory: 0, activeFlows: 0 }; }
+  }),
+  getTerminals: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const rows = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(50);
+      return rows.map(t => ({
+        id: String(t.id),
+        name: t.name,
+        code: t.code || '',
+        address: t.address || '',
+        city: t.city || '',
+        state: t.state || '',
+        status: t.status || 'active',
+        dockCount: t.dockCount || 0,
+        tankCount: t.tankCount || 0,
+      }));
+    } catch (e) { return []; }
+  }),
+  getTanks: protectedProcedure.input(z.object({ terminalId: z.string().optional() }).optional()).query(async ({ ctx, input }) => {
+    const db = await getDb(); if (!db) return [];
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      let terminalRows;
+      if (input?.terminalId) {
+        terminalRows = await db.select().from(terminals).where(eq(terminals.id, parseInt(input.terminalId, 10))).limit(1);
+      } else {
+        terminalRows = await db.select().from(terminals).where(eq(terminals.companyId, companyId)).limit(20);
+      }
+      const tanks: { id: string; terminalId: string; terminalName: string; tankNumber: number; capacity: number; product: string; level: number; status: string }[] = [];
+      for (const t of terminalRows) {
+        const count = t.tankCount || 0;
+        for (let i = 1; i <= count; i++) {
+          tanks.push({
+            id: `${t.id}-T${String(i).padStart(2, '0')}`,
+            terminalId: String(t.id),
+            terminalName: t.name,
+            tankNumber: i,
+            capacity: 50000,
+            product: i % 3 === 0 ? 'diesel' : i % 2 === 0 ? 'premium' : 'unleaded',
+            level: 0,
+            status: t.status || 'active',
+          });
+        }
+      }
+      return tanks;
+    } catch (e) { return []; }
+  }),
 });

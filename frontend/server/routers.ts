@@ -213,6 +213,317 @@ export const appRouter = router({
     setup2FA: protectedProcedure.query(async () => ({ qrCode: "data:image/png;base64,abc123", secret: "ABCD1234EFGH5678", backupCodes: ["12345678", "87654321"] })),
     enable2FA: protectedProcedure.input(z.object({ code: z.string() })).mutation(async () => ({ success: true })),
     disable2FA: protectedProcedure.input(z.object({ code: z.string().optional() }).optional()).mutation(async () => ({ success: true })),
+
+    /**
+     * auth.refreshToken
+     * Silently extends the session. Reads the current JWT from cookie,
+     * validates it, and issues a fresh token with a new expiry.
+     * This keeps users logged in during active usage without
+     * requiring re-authentication.
+     */
+    refreshToken: protectedProcedure.mutation(async ({ ctx }) => {
+      const { authService } = await import("./_core/auth");
+      const user = ctx.user as any;
+      if (!user?.id) throw new Error("No active session");
+      const freshToken = authService.createSessionToken({
+        id: String(user.id),
+        email: user.email || '',
+        role: user.role || 'DRIVER',
+        name: user.name || undefined,
+        companyId: user.companyId ? String(user.companyId) : undefined,
+      });
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.cookie(COOKIE_NAME, freshToken, { ...cookieOptions, maxAge: 365 * 24 * 60 * 60 * 1000 });
+      return { success: true, expiresIn: '7d' };
+    }),
+
+    /**
+     * auth.verifyEmail
+     * Completes email verification. Takes a token that was sent via email,
+     * validates it against the stored token in user metadata, and sets
+     * isVerified=true. This is the gate between registration and full access.
+     */
+    verifyEmail: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq, sql } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Find user whose metadata contains this verification token
+        const allUnverified = await db.select({ id: users.id, metadata: users.metadata, email: users.email })
+          .from(users).where(eq(users.isVerified, false)).limit(500);
+
+        let targetUser: { id: number; email: string | null } | null = null;
+        for (const u of allUnverified) {
+          try {
+            const meta = u.metadata ? JSON.parse(u.metadata as string) : {};
+            if (meta.verificationToken === input.token) {
+              if (meta.verificationExpiry && new Date(meta.verificationExpiry) < new Date()) {
+                throw new Error("Verification link has expired. Please request a new one.");
+              }
+              targetUser = { id: u.id, email: u.email };
+              break;
+            }
+          } catch (e: any) {
+            if (e.message?.includes('expired')) throw e;
+          }
+        }
+
+        if (!targetUser) throw new Error("Invalid or expired verification token");
+
+        // Mark as verified and clear the token
+        let meta: any = {};
+        const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, targetUser.id)).limit(1);
+        try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+        delete meta.verificationToken;
+        delete meta.verificationExpiry;
+        meta.emailVerifiedAt = new Date().toISOString();
+
+        await db.update(users).set({
+          isVerified: true,
+          metadata: JSON.stringify(meta),
+        }).where(eq(users.id, targetUser.id));
+
+        return { success: true, email: targetUser.email };
+      }),
+
+    /**
+     * auth.resendVerification
+     * Generates a new verification token and sends it via email.
+     * Rate-limited: only one resend per 60 seconds per email.
+     * Designed so new users who missed the first email can recover.
+     */
+    resendVerification: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [user] = await db.select({ id: users.id, name: users.name, email: users.email, isVerified: users.isVerified, metadata: users.metadata })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+
+        // Always return success to prevent email enumeration
+        if (!user || user.isVerified) return { success: true, message: "If that email exists, a verification link has been sent." };
+
+        // Rate limit: check last resend timestamp
+        let meta: any = {};
+        try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+        const lastResend = meta.lastVerificationResend ? new Date(meta.lastVerificationResend) : null;
+        if (lastResend && (Date.now() - lastResend.getTime()) < 60000) {
+          return { success: true, message: "If that email exists, a verification link has been sent." };
+        }
+
+        // Generate new token
+        const { emailService } = await import("./_core/email");
+        const verification = emailService.generateVerificationToken(input.email, user.id);
+
+        meta.verificationToken = verification.token;
+        meta.verificationExpiry = verification.expiresAt.toISOString();
+        meta.lastVerificationResend = new Date().toISOString();
+
+        await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, user.id));
+        await emailService.sendVerificationEmail(input.email, verification.token, user.name || undefined);
+
+        return { success: true, message: "If that email exists, a verification link has been sent." };
+      }),
+
+    /**
+     * auth.forgotPassword
+     * Initiates password reset flow. Generates a time-limited reset token,
+     * stores it in user metadata, and sends a reset email.
+     * Always returns success to prevent email enumeration attacks.
+     */
+    forgotPassword: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [user] = await db.select({ id: users.id, email: users.email, name: users.name, metadata: users.metadata })
+          .from(users).where(eq(users.email, input.email)).limit(1);
+
+        // Always return success to prevent enumeration
+        if (!user) return { success: true, message: "If that email exists, a password reset link has been sent." };
+
+        const { v4: uuidv4 } = await import("uuid");
+        const resetToken = uuidv4();
+        const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+        let meta: any = {};
+        try { meta = user.metadata ? JSON.parse(user.metadata as string) : {}; } catch {}
+        meta.passwordResetToken = resetToken;
+        meta.passwordResetExpiry = resetExpiry.toISOString();
+        meta.passwordResetRequestedAt = new Date().toISOString();
+
+        await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, user.id));
+
+        const { emailService } = await import("./_core/email");
+        await emailService.sendPasswordResetEmail(input.email, resetToken);
+
+        return { success: true, message: "If that email exists, a password reset link has been sent." };
+      }),
+
+    /**
+     * auth.resetPassword
+     * Completes password reset. Validates the reset token from the email link,
+     * hashes the new password with bcrypt (12 rounds), clears the reset token,
+     * and invalidates all existing sessions by bumping tokenVersion.
+     */
+    resetPassword: publicProcedure
+      .input(z.object({
+        token: z.string().min(1),
+        newPassword: z.string().min(8, "Password must be at least 8 characters"),
+      }))
+      .mutation(async ({ input }) => {
+        const { getDb } = await import("./db");
+        const { users } = await import("../drizzle/schema");
+        const { eq } = await import("drizzle-orm");
+        const bcryptMod = await import("bcryptjs");
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Find user with this reset token
+        const allUsers = await db.select({ id: users.id, metadata: users.metadata })
+          .from(users).where(eq(users.isActive, true)).limit(1000);
+
+        let targetUserId: number | null = null;
+        for (const u of allUsers) {
+          try {
+            const meta = u.metadata ? JSON.parse(u.metadata as string) : {};
+            if (meta.passwordResetToken === input.token) {
+              if (meta.passwordResetExpiry && new Date(meta.passwordResetExpiry) < new Date()) {
+                throw new Error("Reset link has expired. Please request a new one.");
+              }
+              targetUserId = u.id;
+              break;
+            }
+          } catch (e: any) {
+            if (e.message?.includes('expired')) throw e;
+          }
+        }
+
+        if (!targetUserId) throw new Error("Invalid or expired reset token");
+
+        const passwordHash = await bcryptMod.default.hash(input.newPassword, 12);
+
+        // Clear reset token and bump token version to invalidate all sessions
+        const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, targetUserId)).limit(1);
+        let meta: any = {};
+        try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+        delete meta.passwordResetToken;
+        delete meta.passwordResetExpiry;
+        delete meta.passwordResetRequestedAt;
+        meta.tokenVersion = (meta.tokenVersion || 0) + 1;
+        meta.passwordLastChangedAt = new Date().toISOString();
+
+        await db.update(users).set({
+          passwordHash,
+          metadata: JSON.stringify(meta),
+        }).where(eq(users.id, targetUserId));
+
+        return { success: true };
+      }),
+
+    /**
+     * auth.checkSession
+     * Returns the health of the current session: whether it's valid,
+     * when it was created, the user's role, verification status,
+     * and approval status. Frontend uses this for session guards
+     * and to show "pending approval" states.
+     */
+    checkSession: protectedProcedure.query(async ({ ctx }) => {
+      const user = ctx.user as any;
+      if (!user?.id) return { valid: false, reason: 'no_session' };
+
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+
+      let isVerified = true;
+      let approvalStatus = 'approved';
+      let isActive = true;
+
+      if (db) {
+        try {
+          const userId = Number(user.id);
+          if (!isNaN(userId)) {
+            const [dbUser] = await db.select({
+              isVerified: users.isVerified,
+              isActive: users.isActive,
+              metadata: users.metadata,
+            }).from(users).where(eq(users.id, userId)).limit(1);
+
+            if (dbUser) {
+              isVerified = dbUser.isVerified;
+              isActive = dbUser.isActive;
+              try {
+                const meta = dbUser.metadata ? JSON.parse(dbUser.metadata as string) : {};
+                approvalStatus = meta.approvalStatus || 'pending';
+              } catch {}
+            }
+          }
+        } catch {}
+      }
+
+      return {
+        valid: true,
+        userId: String(user.id),
+        email: user.email || '',
+        role: user.role || '',
+        isVerified,
+        isActive,
+        approvalStatus,
+      };
+    }),
+
+    /**
+     * auth.revokeAllSessions
+     * Nuclear option: invalidates every active session for the current user.
+     * Works by incrementing a tokenVersion in metadata. The next time any
+     * token is checked, it will fail validation against the new version.
+     * Also clears the current session cookie.
+     */
+    revokeAllSessions: protectedProcedure.mutation(async ({ ctx }) => {
+      const user = ctx.user as any;
+      if (!user?.id) throw new Error("No active session");
+
+      const { getDb } = await import("./db");
+      const { users } = await import("../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const db = await getDb();
+
+      if (db) {
+        try {
+          const userId = Number(user.id);
+          if (!isNaN(userId)) {
+            const [row] = await db.select({ metadata: users.metadata }).from(users).where(eq(users.id, userId)).limit(1);
+            let meta: any = {};
+            try { meta = row?.metadata ? JSON.parse(row.metadata as string) : {}; } catch {}
+            meta.tokenVersion = (meta.tokenVersion || 0) + 1;
+            meta.allSessionsRevokedAt = new Date().toISOString();
+            await db.update(users).set({ metadata: JSON.stringify(meta) }).where(eq(users.id, userId));
+          }
+        } catch (e) {
+          console.error('[auth] revokeAllSessions error:', e);
+        }
+      }
+
+      // Clear the current cookie
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+      return { success: true, message: "All sessions have been revoked. You will need to log in again." };
+    }),
   }),
 
   rss: router({

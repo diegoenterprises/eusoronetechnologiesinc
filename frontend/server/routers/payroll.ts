@@ -164,11 +164,17 @@ export const payrollRouter = router({
     }),
 
   // Time off, tax docs, settlements, expenses, benefits — return empty for new users (no dedicated tables yet)
-  getTimeOffRequests: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => []),
+  getTimeOffRequests: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => {
+    // Time off requests require a dedicated time_off table
+    return [];
+  }),
   getTimeOffStats: protectedProcedure.query(async () => ({ pending: 0, approved: 0, denied: 0, thisMonth: 0, total: 0, daysUsed: 0 })),
   approveTimeOff: protectedProcedure.input(z.object({ requestId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, requestId: input.requestId || input.id, status: "approved" })),
   denyTimeOff: protectedProcedure.input(z.object({ requestId: z.string().optional(), id: z.string().optional(), reason: z.string().optional() })).mutation(async ({ input }) => ({ success: true, requestId: input.requestId || input.id, status: "denied" })),
-  getTaxDocuments: protectedProcedure.input(z.object({ year: z.string() })).query(async () => []),
+  getTaxDocuments: protectedProcedure.input(z.object({ year: z.string() })).query(async () => {
+    // Tax documents require a dedicated tax_documents table
+    return [];
+  }),
   getTaxDocStats: protectedProcedure.input(z.object({ year: z.string() })).query(async () => ({ totalDocuments: 0, available: 0, pending: 0, downloadedCount: 0, total: 0, downloaded: 0 })),
   getSettlements: protectedProcedure.input(z.object({ status: z.string().optional(), period: z.string().optional() }).optional()).query(async ({ ctx }) => {
     const db = await getDb();
@@ -190,9 +196,15 @@ export const payrollRouter = router({
       return { totalPaid: paid?.total || 0, pending: 0, thisWeek: 0, total: paid?.cnt || 0, totalRevenue: 0, totalSettled: paid?.total || 0 };
     } catch { return { totalPaid: 0, pending: 0, thisWeek: 0, total: 0, totalRevenue: 0, totalSettled: 0 }; }
   }),
-  getExpenseReports: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => []),
+  getExpenseReports: protectedProcedure.input(z.object({ status: z.string().optional() })).query(async () => {
+    // Expense reports require a dedicated expenses table
+    return [];
+  }),
   getExpenseStats: protectedProcedure.query(async () => ({ total: 0, approved: 0, pending: 0, denied: 0, pendingAmount: 0, approvedAmount: 0, reimbursedAmount: 0 })),
   approveExpense: protectedProcedure.input(z.object({ expenseId: z.string().optional(), id: z.string().optional() })).mutation(async ({ input }) => ({ success: true, expenseId: input.expenseId || input.id })),
-  getBenefits: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => []),
+  getBenefits: protectedProcedure.input(z.object({ search: z.string().optional() }).optional()).query(async () => {
+    // Benefits require a dedicated benefits table
+    return [];
+  }),
   getBenefitStats: protectedProcedure.query(async () => ({ enrolled: 0, pending: 0, totalMonthlyCost: 0, totalEmployees: 0, plans: 0, monthlyCost: 0 })),
 });

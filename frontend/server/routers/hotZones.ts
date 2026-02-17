@@ -330,4 +330,107 @@ export const hotZonesRouter = router({
       }
       return { history: points, zoneId: input.zoneId, zoneName: zone.name };
     }),
+
+  // Filter zones by equipment type
+  getZonesByEquipment: protectedProcedure
+    .input(z.object({ equipment: z.string() }))
+    .query(async ({ input }) => {
+      const filtered = HOT_ZONES.filter(zone => zone.topEquipment.includes(input.equipment.toUpperCase()));
+      return { zones: filtered.map(z => ({ id: z.id, name: z.name, center: z.center, radius: z.radius, state: z.state, avgRate: z.avgRate, loadToTruckRatio: z.loadToTruckRatio, surgeMultiplier: z.surgeMultiplier })), equipment: input.equipment, total: filtered.length, timestamp: new Date().toISOString() };
+    }),
+
+  // Filter zones by region
+  getZonesByRegion: protectedProcedure
+    .input(z.object({ region: z.enum(["northeast", "southeast", "midwest", "southwest", "west", "gulf_coast", "plains"]) }))
+    .query(async ({ input }) => {
+      const regionStates: Record<string, string[]> = {
+        northeast: ["NY","NJ","PA","CT","MA","ME","NH","VT","RI"],
+        southeast: ["GA","FL","SC","NC","VA","TN","AL","MS"],
+        midwest: ["IL","MI","OH","IN","WI","MN","MO","IA"],
+        southwest: ["TX","AZ","NM","OK"],
+        west: ["CA","WA","OR","CO","UT","NV"],
+        gulf_coast: ["TX","LA","MS","AL","FL"],
+        plains: ["ND","SD","NE","KS","MT","WY"],
+      };
+      const states = regionStates[input.region] || [];
+      const filtered = HOT_ZONES.filter(zone => states.includes(zone.state));
+      return { zones: filtered.map(z => ({ id: z.id, name: z.name, center: z.center, state: z.state, avgRate: z.avgRate, loadToTruckRatio: z.loadToTruckRatio, surgeMultiplier: z.surgeMultiplier, hazmatClasses: z.hazmatClasses })), region: input.region, total: filtered.length, timestamp: new Date().toISOString() };
+    }),
+
+  // Subscribe to zone alerts
+  subscribe: protectedProcedure
+    .input(z.object({ zoneId: z.string(), alertTypes: z.array(z.enum(["surge", "rate_change", "weather", "demand"])).default(["surge"]) }))
+    .mutation(async ({ ctx, input }) => {
+      return { success: true, zoneId: input.zoneId, alertTypes: input.alertTypes, subscribedBy: ctx.user?.id, subscribedAt: new Date().toISOString() };
+    }),
+
+  // Unsubscribe from zone alerts
+  unsubscribe: protectedProcedure
+    .input(z.object({ zoneId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return { success: true, zoneId: input.zoneId, unsubscribedBy: ctx.user?.id, unsubscribedAt: new Date().toISOString() };
+    }),
+
+  // Rate predictions based on historical trends
+  getPredictions: protectedProcedure
+    .input(z.object({ zoneId: z.string(), hoursAhead: z.number().default(24) }))
+    .query(async ({ input }) => {
+      const zone = HOT_ZONES.find(z => z.id === input.zoneId);
+      if (!zone) return { predictions: [], zoneId: input.zoneId };
+      const predictions = [];
+      const now = Date.now();
+      for (let i = 1; i <= input.hoursAhead; i++) {
+        const t = now + i * 3600000;
+        const hour = new Date(t).getHours();
+        const peakFactor = (hour >= 6 && hour <= 14) ? 1.1 : 0.95;
+        predictions.push({ timestamp: new Date(t).toISOString(), predictedRate: +(zone.avgRate * peakFactor).toFixed(2), predictedSurge: +(zone.surgeMultiplier * peakFactor).toFixed(2), confidence: 0.72 });
+      }
+      return { predictions, zoneId: input.zoneId, zoneName: zone.name, model: "time_series_baseline", timestamp: new Date().toISOString() };
+    }),
+
+  // Heatmap data for map visualization
+  getHeatmapData: protectedProcedure
+    .input(z.object({ metric: z.enum(["demand", "rate", "surge", "hazmat"]).default("demand") }))
+    .query(async ({ ctx }) => {
+      const role = ctx.user?.role?.toUpperCase() || "DRIVER";
+      const roleCtx = getRoleContext(role);
+      const allZones = [...HOT_ZONES.map(z => ({ lat: z.center.lat, lng: z.center.lng, weight: z.loadToTruckRatio, name: z.name, id: z.id, state: z.state })), ...COLD_ZONES.map(z => ({ lat: z.center.lat, lng: z.center.lng, weight: z.surgeMultiplier * 0.5, name: z.name, id: z.id, state: "" }))];
+      return { points: allZones, roleContext: roleCtx, gradient: roleCtx.gradient, totalPoints: allZones.length, timestamp: new Date().toISOString() };
+    }),
+
+  // Top performing lanes
+  getTopLanes: protectedProcedure
+    .input(z.object({ limit: z.number().default(10), sortBy: z.enum(["rate", "volume", "surge"]).default("rate") }))
+    .query(async () => {
+      const sorted = [...HOT_ZONES].sort((a, b) => b.avgRate - a.avgRate);
+      const lanes = [];
+      for (let i = 0; i < Math.min(sorted.length - 1, 10); i++) {
+        const origin = sorted[i]; const dest = sorted[(i + 1) % sorted.length];
+        lanes.push({ id: `lane_${i}`, origin: origin.name, destination: dest.name, originState: origin.state, destState: dest.state, avgRate: +((origin.avgRate + dest.avgRate) / 2).toFixed(2), volume: origin.loadCount + dest.loadCount, surgeMultiplier: +((origin.surgeMultiplier + dest.surgeMultiplier) / 2).toFixed(2), hazmatAvailable: origin.hazmatClasses.length > 2 || dest.hazmatClasses.length > 2 });
+      }
+      return { lanes: lanes.slice(0, 10), timestamp: new Date().toISOString() };
+    }),
+
+  // Market pulse summary
+  getMarketPulse: protectedProcedure.query(async ({ ctx }) => {
+    const role = ctx.user?.role?.toUpperCase() || "DRIVER";
+    const [fuelPrices, weatherAlerts] = await Promise.all([
+      cached("fuelPrices", fetchFuelPrices),
+      cached("weatherAlerts", fetchWeatherAlerts),
+    ]);
+    const totalLoads = HOT_ZONES.reduce((s, z) => s + z.loadCount, 0);
+    const totalTrucks = HOT_ZONES.reduce((s, z) => s + z.truckCount, 0);
+    const avgRate = +(HOT_ZONES.reduce((s, z) => s + z.avgRate, 0) / HOT_ZONES.length).toFixed(2);
+    const criticalZones = HOT_ZONES.filter(z => z.loadToTruckRatio > 2.8).length;
+    const hazmatZones = HOT_ZONES.filter(z => z.hazmatClasses.length > 3).length;
+    const avgFuel = Object.values(fuelPrices).length > 0 ? +(Object.values(fuelPrices).reduce((s, f) => s + f.diesel, 0) / Object.values(fuelPrices).length).toFixed(3) : null;
+    const severeWeather = weatherAlerts.filter(a => ["Extreme", "Severe"].includes(a.severity)).length;
+    return {
+      totalLoads, totalTrucks, avgRate, avgLoadToTruckRatio: +(totalLoads / Math.max(totalTrucks, 1)).toFixed(2),
+      criticalZones, hazmatZones, totalHotZones: HOT_ZONES.length, totalColdZones: COLD_ZONES.length,
+      avgFuelPrice: avgFuel, severeWeatherAlerts: severeWeather,
+      marketTrend: avgRate > 3.0 ? "bullish" : avgRate > 2.5 ? "neutral" : "bearish",
+      roleContext: getRoleContext(role), timestamp: new Date().toISOString(),
+    };
+  }),
 });

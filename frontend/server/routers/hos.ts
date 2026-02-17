@@ -72,7 +72,10 @@ export const hosRouter = router({
    */
   getLogHistory: protectedProcedure
     .input(z.object({ driverId: z.string().optional(), days: z.number().default(8) }))
-    .query(async () => []),
+    .query(async () => {
+      // HOS log history requires ELD integration
+      return [];
+    }),
 
   /**
    * Certify daily log
@@ -97,5 +100,8 @@ export const hosRouter = router({
    */
   getViolations: protectedProcedure
     .input(z.object({ driverId: z.string().optional(), startDate: z.string().optional(), endDate: z.string().optional() }))
-    .query(async () => []),
+    .query(async () => {
+      // HOS violations require ELD integration
+      return [];
+    }),
 });

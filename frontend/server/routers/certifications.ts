@@ -8,7 +8,7 @@ import { z } from "zod";
 import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { documents, drivers, users } from "../../drizzle/schema";
+import { documents, drivers, users, certifications } from "../../drizzle/schema";
 
 const certTypeSchema = z.enum([
   "cdl", "hazmat", "tanker", "doubles_triples", "passenger", "school_bus",
@@ -119,13 +119,23 @@ export const certificationsRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input }) => {
-      return {
-        id: input.id,
-        type: "", name: "", entityType: "", entityId: "", entityName: "",
-        number: "", issuedBy: "", issuedDate: "", expiresAt: "", status: "",
-        endorsements: [], restrictions: [], documents: [], history: [],
-        verificationStatus: "", verifiedAt: "", verifiedBy: "",
-      };
+      const db = await getDb(); if (!db) return null;
+      try {
+        const numId = parseInt(input.id.replace('cert_', ''), 10);
+        const [row] = await db.select({ id: certifications.id, type: certifications.type, name: certifications.name, userId: certifications.userId, expiryDate: certifications.expiryDate, status: certifications.status, documentUrl: certifications.documentUrl, createdAt: certifications.createdAt, userName: users.name })
+          .from(certifications).leftJoin(users, eq(certifications.userId, users.id)).where(eq(certifications.id, numId)).limit(1);
+        if (!row) return null;
+        const now = new Date();
+        const expiry = row.expiryDate ? new Date(row.expiryDate) : null;
+        let status = row.status || 'active';
+        if (expiry && expiry < now) status = 'expired';
+        return {
+          id: `cert_${row.id}`, type: row.type, name: row.name, entityType: 'driver', entityId: String(row.userId), entityName: row.userName || '',
+          number: `CERT-${row.id}`, issuedBy: '', issuedDate: row.createdAt?.toISOString().split('T')[0] || '', expiresAt: row.expiryDate?.toISOString().split('T')[0] || '', status,
+          endorsements: [], restrictions: [], documents: row.documentUrl ? [{ id: 'doc_1', url: row.documentUrl }] : [], history: [],
+          verificationStatus: '', verifiedAt: '', verifiedBy: '',
+        };
+      } catch (e) { return null; }
     }),
 
   /**
@@ -145,12 +155,13 @@ export const certificationsRouter = router({
       documentIds: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        id: `cert_${Date.now()}`,
-        status: "pending",
-        createdBy: ctx.user?.id,
-        createdAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const userId = parseInt(input.entityId, 10);
+      const result = await db.insert(certifications).values({
+        userId, type: input.type, name: input.name,
+        expiryDate: new Date(input.expiresAt), status: 'pending' as any,
+      } as any).$returningId();
+      return { id: `cert_${result[0]?.id}`, status: 'pending', createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
   /**
@@ -200,7 +211,19 @@ export const certificationsRouter = router({
       entityType: z.enum(["driver", "company", "vehicle", "all"]).default("all"),
     }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const now = new Date();
+        const futureDate = new Date(now.getTime() + input.daysAhead * 86400000);
+        const rows = await db.select({ id: certifications.id, type: certifications.type, name: certifications.name, userId: certifications.userId, expiryDate: certifications.expiryDate, userName: users.name })
+          .from(certifications).leftJoin(users, eq(certifications.userId, users.id))
+          .where(and(gte(certifications.expiryDate, now), lte(certifications.expiryDate, futureDate)))
+          .orderBy(certifications.expiryDate).limit(50);
+        return rows.map(r => {
+          const daysRemaining = r.expiryDate ? Math.floor((new Date(r.expiryDate).getTime() - now.getTime()) / 86400000) : 0;
+          return { id: `cert_${r.id}`, type: r.type, name: r.name, entityName: r.userName || '', expiresAt: r.expiryDate?.toISOString().split('T')[0] || '', daysRemaining };
+        });
+      } catch (e) { return []; }
     }),
 
   /**
@@ -256,19 +279,23 @@ export const certificationsRouter = router({
       entityType: z.enum(["driver", "company", "fleet"]).default("fleet"),
     }))
     .query(async ({ input }) => {
-      return {
-        entityType: input.entityType,
-        overallCompliance: 0.94,
-        byCategory: [
-          { category: "CDL", compliant: 45, nonCompliant: 0, expiringSoon: 3 },
-          { category: "Medical Cards", compliant: 42, nonCompliant: 2, expiringSoon: 5 },
-          { category: "Hazmat", compliant: 28, nonCompliant: 1, expiringSoon: 2 },
-          { category: "TWIC", compliant: 25, nonCompliant: 0, expiringSoon: 1 },
-        ],
-        actionRequired: [],
-        upcomingRenewals: 11,
-        estimatedRenewalCost: 2500,
-      };
+      const db = await getDb(); if (!db) return { entityType: input.entityType, overallCompliance: 0, byCategory: [], actionRequired: [], upcomingRenewals: 0, estimatedRenewalCost: 0 };
+      try {
+        const now = new Date();
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 86400000);
+        const types = ['cdl', 'hazmat', 'medical_card', 'twic'];
+        const byCategory: any[] = [];
+        for (const t of types) {
+          const [total] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(eq(certifications.type, t));
+          const [expired] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(and(eq(certifications.type, t), lte(certifications.expiryDate, now)));
+          const [expiring] = await db.select({ count: sql<number>`count(*)` }).from(certifications).where(and(eq(certifications.type, t), gte(certifications.expiryDate, now), lte(certifications.expiryDate, thirtyDaysFromNow)));
+          byCategory.push({ category: t.toUpperCase().replace('_', ' '), compliant: (total?.count || 0) - (expired?.count || 0), nonCompliant: expired?.count || 0, expiringSoon: expiring?.count || 0 });
+        }
+        const totalCompliant = byCategory.reduce((s, c) => s + c.compliant, 0);
+        const totalAll = byCategory.reduce((s, c) => s + c.compliant + c.nonCompliant, 0);
+        const upcomingRenewals = byCategory.reduce((s, c) => s + c.expiringSoon, 0);
+        return { entityType: input.entityType, overallCompliance: totalAll > 0 ? Math.round((totalCompliant / totalAll) * 100) / 100 : 1, byCategory, actionRequired: [], upcomingRenewals, estimatedRenewalCost: upcomingRenewals * 200 };
+      } catch (e) { return { entityType: input.entityType, overallCompliance: 0, byCategory: [], actionRequired: [], upcomingRenewals: 0, estimatedRenewalCost: 0 }; }
     }),
 
   /**

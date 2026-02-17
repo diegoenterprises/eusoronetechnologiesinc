@@ -440,9 +440,15 @@ export const escortsRouter = router({
   }),
 
   // Certifications
-  getMyCertifications: protectedProcedure.query(async () => []),
+  getMyCertifications: protectedProcedure.query(async () => {
+    // Escort certifications require a dedicated certifications table
+    return [];
+  }),
   getCertificationStats: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => ({ total: 0, valid: 0, expiring: 0, expired: 0, statesCovered: 0, reciprocity: 0 })),
-  getStateCertifications: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => []),
+  getStateCertifications: protectedProcedure.input(z.object({ escortId: z.string().optional() }).optional()).query(async () => {
+    // State certifications require dedicated table
+    return [];
+  }),
   uploadCertification: protectedProcedure.input(z.object({ state: z.string(), type: z.string(), expirationDate: z.string() })).mutation(async ({ input }) => ({ success: true, certId: "cert_123" })),
   getStateRequirements: protectedProcedure.input(z.object({ state: z.string().optional() }).optional()).query(async ({ input }) => { const reqs = [{ label: "Valid driver license", value: "required" }, { label: "Insurance", value: "required" }, { label: "Flags and signs", value: "required" }] as any; reqs.state = input?.state; reqs.requirements = ["Valid driver license", "Insurance", "Flags and signs"]; return reqs; }),
 
@@ -451,9 +457,15 @@ export const escortsRouter = router({
   getEarningsStats: protectedProcedure.input(z.object({ period: z.string().optional() }).optional()).query(async () => ({ thisWeek: 0, thisMonth: 0, thisYear: 0, avgPerJob: 0, jobsCompleted: 0, hoursWorked: 0, avgHourlyRate: 0 })),
 
   // Incidents & Reports
-  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), severity: z.string().optional() })).query(async () => []),
+  getIncidents: protectedProcedure.input(z.object({ status: z.string().optional(), search: z.string().optional(), severity: z.string().optional() })).query(async () => {
+    // Escort incidents require dedicated incidents table with escort reference
+    return [];
+  }),
   getIncidentStats: protectedProcedure.query(async () => ({ total: 0, open: 0, resolved: 0, critical: 0 })),
-  getReports: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional(), status: z.string().optional() })).query(async () => []),
+  getReports: protectedProcedure.input(z.object({ type: z.string().optional(), search: z.string().optional(), status: z.string().optional() })).query(async () => {
+    // Escort reports require dedicated reports table
+    return [];
+  }),
   getReportStats: protectedProcedure.query(async () => ({ total: 0, thisMonth: 0, submitted: 0, drafts: 0 })),
 
 });
