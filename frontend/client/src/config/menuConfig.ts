@@ -420,48 +420,43 @@ export const menuConfigs: Record<string, MenuItem[]> = {
   ],
 
   // DRIVER: Job assignments, tracking, earnings
+  // Consolidated: monetary items → EusoWallet | hazmat safety → Vehicle | job-ops → Current Job
+  // gamification → The Haul | profile/availability → Settings | schedule → Dashboard
   DRIVER: [
     { 
       icon: "LayoutDashboard", 
       label: "Dashboard", 
       path: "/", 
       badge: 0,
-      description: "Driver dashboard"
+      description: "Daily overview, schedule & availability"
     },
     { 
       icon: "Briefcase", 
       label: "My Jobs", 
       path: "/jobs", 
       badge: 0,
-      description: "Assigned jobs"
+      description: "Assigned & completed jobs"
     },
     { 
       icon: "CheckCircle", 
       label: "Current Job", 
       path: "/jobs/current", 
       badge: 0,
-      description: "Active job details"
-    },
-    { 
-      icon: "TrendingUp", 
-      label: "Earnings", 
-      path: "/earnings", 
-      badge: 0,
-      description: "Daily/weekly earnings"
+      description: "Active job, check-in, dock & loading status"
     },
     { 
       icon: "Truck", 
       label: "Vehicle", 
       path: "/vehicle", 
       badge: 0,
-      description: "Vehicle information"
+      description: "Vehicle info, hazmat safety, spill & fire response"
     },
     { 
       icon: "FileText", 
       label: "Documents", 
       path: "/documents", 
       badge: 0,
-      description: "License and permits"
+      description: "License, permits & compliance docs"
     },
     { 
       icon: "Shield", 
@@ -471,32 +466,25 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Authority you operate under & lease status"
     },
     { 
-      icon: "MessageSquare", 
-      label: "Messages", 
-      path: "/messages", 
+      icon: "Navigation", 
+      label: "Live Tracking", 
+      path: "/live-tracking", 
       badge: 0,
-      description: "Communication"
+      description: "GPS navigation, route compliance & tracking"
     },
     { 
       icon: "Wallet", 
       label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Account balance"
+      description: "Earnings, trip pay, settlements, bonuses & direct deposit"
     },
     { 
-      icon: "Target", 
-      label: "Missions", 
-      path: "/missions", 
+      icon: "MessageSquare", 
+      label: "Messages", 
+      path: "/messages", 
       badge: 0,
-      description: "Complete missions for rewards"
-    },
-    { 
-      icon: "Navigation", 
-      label: "Live Tracking", 
-      path: "/live-tracking", 
-      badge: 0,
-      description: "GPS tracking and navigation"
+      description: "Communication & emergency alerts"
     },
     { 
       icon: "Wrench", 
@@ -504,20 +492,6 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       path: "/zeun-breakdown", 
       badge: 0,
       description: "Breakdown reporting and diagnostics"
-    },
-    { 
-      icon: "Trophy", 
-      label: "Leaderboard", 
-      path: "/leaderboard", 
-      badge: 0,
-      description: "Driver rankings"
-    },
-    { 
-      icon: "Gift", 
-      label: "Rewards", 
-      path: "/rewards", 
-      badge: 0,
-      description: "Earned rewards and XP"
     },
     { 
       icon: "Radio", 
@@ -538,119 +512,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "The Haul", 
       path: "/the-haul", 
       badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
-    },
-    { 
-      icon: "Calendar", 
-      label: "Today's Schedule", 
-      path: "/driver/today", 
-      badge: 0,
-      description: "Daily schedule and task overview"
-    },
-    { 
-      icon: "UserCheck", 
-      label: "Profile Setup", 
-      path: "/driver/profile-setup", 
-      badge: 0,
-      description: "Driver profile, CDL, and endorsement info"
-    },
-    { 
-      icon: "Clock", 
-      label: "Availability", 
-      path: "/driver/availability", 
-      badge: 0,
-      description: "Set your availability status"
-    },
-    { 
-      icon: "Banknote", 
-      label: "Trip Pay", 
-      path: "/driver/trip-pay", 
-      badge: 0,
-      description: "Trip pay breakdown and details"
-    },
-    { 
-      icon: "DollarSign", 
-      label: "Settlements", 
-      path: "/driver/settlement-history", 
-      badge: 0,
-      description: "Settlement history and deductions"
-    },
-    { 
-      icon: "Award", 
-      label: "Bonus Tracker", 
-      path: "/driver/bonus-tracker", 
-      badge: 0,
-      description: "Safety and performance bonuses"
-    },
-    { 
-      icon: "CreditCard", 
-      label: "Direct Deposit", 
-      path: "/driver/direct-deposit", 
-      badge: 0,
-      description: "Bank account and deposit settings"
-    },
-    { 
-      icon: "Bell", 
-      label: "Emergency Alerts", 
-      path: "/emergency-alerts", 
-      badge: 0,
-      description: "Emergency notifications and response"
-    },
-    { 
-      icon: "AlertTriangle", 
-      label: "Hazmat Safety", 
-      path: "/hazmat/placard-guide", 
-      badge: 0,
-      description: "Placard guide, spill response, and fire response"
-    },
-    { 
-      icon: "ClipboardCheck", 
-      label: "Hazmat Check-In", 
-      path: "/hazmat/check-in", 
-      badge: 0,
-      description: "Facility arrival and safety checklist"
-    },
-    { 
-      icon: "MapPin", 
-      label: "Dock Assignment", 
-      path: "/hazmat/dock-assignment", 
-      badge: 0,
-      description: "Dock/bay assignment and instructions"
-    },
-    { 
-      icon: "Activity", 
-      label: "Loading Status", 
-      path: "/hazmat/loading-status", 
-      badge: 0,
-      description: "Real-time loading/unloading progress"
-    },
-    { 
-      icon: "Navigation", 
-      label: "Route Compliance", 
-      path: "/hazmat/route-compliance", 
-      badge: 0,
-      description: "Pre-trip hazmat route verification"
-    },
-    { 
-      icon: "Droplet", 
-      label: "Spill Response", 
-      path: "/driver/spill-response", 
-      badge: 0,
-      description: "Hazmat spill response procedures"
-    },
-    { 
-      icon: "Flame", 
-      label: "Fire Response", 
-      path: "/hazmat/fire-response", 
-      badge: 0,
-      description: "Hazmat fire response guide"
+      description: "Digital truck stop — missions, leaderboard, rewards"
     },
     { 
       icon: "Settings", 
       label: "Settings", 
       path: "/settings", 
       badge: 0,
-      description: "Profile, preferences & security"
+      description: "Profile setup, CDL, availability & preferences"
     },
     { 
       icon: "Newspaper", 
@@ -669,6 +538,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
   ],
 
   // DISPATCH: Specialization matching, load optimization
+  // Consolidated: hazmat drivers/equipment/routes → Fleet Tracking | emergency → Messages | regulatory → News
   DISPATCH: [
     { 
       icon: "LayoutDashboard", 
@@ -703,7 +573,7 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Fleet Tracking", 
       path: "/fleet-tracking", 
       badge: 0,
-      description: "Real-time fleet positions"
+      description: "Fleet positions, hazmat drivers, equipment & route compliance"
     },
     { 
       icon: "Shield", 
@@ -738,14 +608,14 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       label: "Messages", 
       path: "/messages", 
       badge: 0,
-      description: "Communication"
+      description: "Communication & emergency broadcasts"
     },
     { 
       icon: "Wallet", 
       label: "EusoWallet", 
       path: "/wallet", 
       badge: 0,
-      description: "Account balance"
+      description: "Account balance & payments"
     },
     { 
       icon: "Radio", 
@@ -755,46 +625,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Team communication channels"
     },
     { 
-      icon: "Bell", 
-      label: "Emergency Broadcast", 
-      path: "/dispatch/emergency-broadcast", 
-      badge: 0,
-      description: "Send urgent alerts to drivers"
-    },
-    { 
-      icon: "Users", 
-      label: "Hazmat Drivers", 
-      path: "/hazmat/driver-filter", 
-      badge: 0,
-      description: "Find hazmat-qualified drivers"
-    },
-    { 
       icon: "Truck", 
-      label: "Hazmat Equipment", 
-      path: "/hazmat/equipment-filter", 
+      label: "The Haul", 
+      path: "/the-haul", 
       badge: 0,
-      description: "Filter hazmat-rated equipment"
-    },
-    { 
-      icon: "Navigation", 
-      label: "Route Restrictions", 
-      path: "/hazmat/route-restrictions", 
-      badge: 0,
-      description: "Hazmat route restriction reference"
-    },
-    { 
-      icon: "Shield", 
-      label: "Route Compliance", 
-      path: "/hazmat/route-compliance", 
-      badge: 0,
-      description: "Pre-trip route compliance verification"
-    },
-    { 
-      icon: "Newspaper", 
-      label: "Regulatory Updates", 
-      path: "/hazmat/regulatory-updates", 
-      badge: 0,
-      description: "Hazmat regulatory news and compliance"
+      description: "Digital truck stop — lobby, missions, rewards"
     },
     { 
       icon: "Settings", 
@@ -804,18 +639,11 @@ export const menuConfigs: Record<string, MenuItem[]> = {
       description: "Profile, preferences & security"
     },
     { 
-      icon: "Truck", 
-      label: "The Haul", 
-      path: "/the-haul", 
-      badge: 0,
-      description: "Digital truck stop — lobby, missions, rewards"
-    },
-    { 
       icon: "Newspaper", 
       label: "News", 
       path: "/news", 
       badge: 0,
-      description: "Platform news and updates"
+      description: "Platform news & regulatory updates"
     },
     { 
       icon: "HelpCircle", 
