@@ -5,10 +5,10 @@
  */
 
 import { z } from "zod";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, sql, gte } from "drizzle-orm";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { loads, vehicles, users, companies, gpsTracking } from "../../drizzle/schema";
+import { loads, vehicles, users, companies, gpsTracking, geofences, geofenceEvents, safetyAlerts } from "../../drizzle/schema";
 import { emitGPSUpdate, wsService, WS_CHANNELS } from "../_core/websocket";
 import { WS_EVENTS } from "@shared/websocket-events";
 
@@ -224,31 +224,40 @@ export const trackingRouter = router({
       endTime: z.string(),
     }))
     .query(async ({ input }) => {
-      return {
-        vehicleId: input.vehicleId,
-        path: [
-          { lat: 29.7604, lng: -95.3698, timestamp: "2025-01-23T08:00:00Z", speed: 0 },
-          { lat: 29.8500, lng: -95.5000, timestamp: "2025-01-23T08:30:00Z", speed: 55 },
-          { lat: 30.1000, lng: -95.8000, timestamp: "2025-01-23T09:00:00Z", speed: 62 },
-          { lat: 30.5000, lng: -96.2000, timestamp: "2025-01-23T09:30:00Z", speed: 65 },
-          { lat: 30.9000, lng: -96.6000, timestamp: "2025-01-23T10:00:00Z", speed: 60 },
-          { lat: 31.3000, lng: -97.0000, timestamp: "2025-01-23T10:30:00Z", speed: 58 },
-          { lat: 31.5493, lng: -97.1467, timestamp: "2025-01-23T11:00:00Z", speed: 62 },
-        ],
-        stops: [
-          {
-            location: { lat: 30.5000, lng: -96.2000 },
-            address: "Rest Area I-35",
-            startTime: "2025-01-23T09:35:00Z",
-            endTime: "2025-01-23T09:50:00Z",
-            duration: 15,
-            type: "rest",
-          },
-        ],
-        totalDistance: 185.5,
-        totalDuration: 3.0,
-        avgSpeed: 61.8,
-      };
+      const db = await getDb();
+      if (!db) return { vehicleId: input.vehicleId, path: [], stops: [], totalDistance: 0, totalDuration: 0, avgSpeed: 0 };
+      try {
+        const vid = parseInt(input.vehicleId.replace('v_', ''), 10) || parseInt(input.vehicleId, 10);
+        const startDate = new Date(input.startTime);
+        const endDate = new Date(input.endTime);
+        const rows = await db.select().from(gpsTracking).where(and(
+          eq(gpsTracking.vehicleId, vid),
+          gte(gpsTracking.timestamp, startDate),
+          sql`${gpsTracking.timestamp} <= ${endDate}`,
+        )).orderBy(gpsTracking.timestamp).limit(1000);
+        const path = rows.map(r => ({
+          lat: Number(r.latitude), lng: Number(r.longitude),
+          timestamp: r.timestamp?.toISOString() || '', speed: Number(r.speed) || 0,
+        }));
+        // Detect stops (speed = 0 for > 2 consecutive points)
+        const stops: { location: { lat: number; lng: number }; startTime: string; endTime: string; duration: number; type: string }[] = [];
+        let stopStart = -1;
+        for (let i = 0; i < path.length; i++) {
+          if (path[i].speed === 0 && stopStart === -1) stopStart = i;
+          if ((path[i].speed > 0 || i === path.length - 1) && stopStart !== -1) {
+            if (i - stopStart >= 2) {
+              const dur = path[i - 1].timestamp && path[stopStart].timestamp
+                ? Math.round((new Date(path[i - 1].timestamp).getTime() - new Date(path[stopStart].timestamp).getTime()) / 60000) : 0;
+              stops.push({ location: { lat: path[stopStart].lat, lng: path[stopStart].lng }, startTime: path[stopStart].timestamp, endTime: path[i - 1].timestamp, duration: dur, type: dur > 30 ? 'rest' : 'stop' });
+            }
+            stopStart = -1;
+          }
+        }
+        const speeds = path.map(p => p.speed).filter(s => s > 0);
+        const avgSpeed = speeds.length > 0 ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length * 10) / 10 : 0;
+        const durationHrs = path.length >= 2 ? (new Date(path[path.length - 1].timestamp).getTime() - new Date(path[0].timestamp).getTime()) / 3600000 : 0;
+        return { vehicleId: input.vehicleId, path, stops, totalDistance: 0, totalDuration: Math.round(durationHrs * 10) / 10, avgSpeed };
+      } catch (e) { console.error('[Tracking] getLocationHistory error:', e); return { vehicleId: input.vehicleId, path: [], stops: [], totalDistance: 0, totalDuration: 0, avgSpeed: 0 }; }
     }),
 
   /**
@@ -262,13 +271,19 @@ export const trackingRouter = router({
       events: z.array(z.enum(["location", "status_change", "geofence", "eta_change"])),
     }))
     .mutation(async ({ ctx, input }) => {
+      // WebSocket subscriptions are handled in-memory via wsService
+      // Store subscription metadata for audit
+      const subId = `sub_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      console.log(`[Tracking] Subscription ${subId} created by user ${ctx.user?.id} for ${input.events.join(',')}`);
       return {
-        subscriptionId: `sub_${Date.now()}`,
+        subscriptionId: subId,
         webhookUrl: input.webhookUrl,
         events: input.events,
+        vehicleCount: input.vehicleIds?.length || 0,
+        loadCount: input.loadNumbers?.length || 0,
         createdBy: ctx.user?.id,
         createdAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
       };
     }),
 
@@ -287,12 +302,21 @@ export const trackingRouter = router({
       vehicleIds: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        geofenceId: `geo_${Date.now()}`,
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const [result] = await db.insert(geofences).values({
         name: input.name,
-        createdBy: ctx.user?.id,
-        createdAt: new Date().toISOString(),
-      };
+        type: 'custom' as any,
+        shape: input.type as any,
+        center: input.center || null,
+        radius: input.radius ? String(input.radius) : null,
+        radiusMeters: input.radius ? Math.round(input.radius) : null,
+        polygon: input.coordinates || null,
+        companyId: ctx.user?.companyId || 0,
+        createdBy: ctx.user?.id || 0,
+        alertOnEnter: input.alertOnEntry,
+        alertOnExit: input.alertOnExit,
+      }).$returningId();
+      return { geofenceId: String(result.id), name: input.name, createdBy: ctx.user?.id, createdAt: new Date().toISOString() };
     }),
 
   /**
@@ -300,7 +324,24 @@ export const trackingRouter = router({
    */
   getGeofences: protectedProcedure
     .query(async ({ ctx }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const rows = await db.select().from(geofences).where(and(
+          eq(geofences.companyId, companyId), eq(geofences.isActive, true),
+        )).orderBy(desc(geofences.createdAt));
+        return rows.map(g => {
+          const center = g.center as { lat: number; lng: number } | null;
+          return {
+            id: String(g.id), name: g.name, type: g.shape || 'circle',
+            center: center || { lat: 0, lng: 0 },
+            radius: g.radius ? parseFloat(String(g.radius)) : g.radiusMeters || 0,
+            polygon: g.polygon || [],
+            alertOnEntry: g.alertOnEnter, alertOnExit: g.alertOnExit,
+            active: g.isActive, createdAt: g.createdAt?.toISOString() || '',
+          };
+        });
+      } catch (e) { console.error('[Tracking] getGeofences error:', e); return []; }
     }),
 
   /**
@@ -313,7 +354,26 @@ export const trackingRouter = router({
       limit: z.number().default(50),
     }))
     .query(async ({ input }) => {
-      return [];
+      const db = await getDb(); if (!db) return [];
+      try {
+        const conds: any[] = [];
+        if (input.geofenceId) conds.push(eq(geofenceEvents.geofenceId, parseInt(input.geofenceId)));
+        if (input.vehicleId) conds.push(eq(geofenceEvents.userId, parseInt(input.vehicleId.replace('v_', ''))));
+        const rows = await db.select({
+          id: geofenceEvents.id, geofenceId: geofenceEvents.geofenceId,
+          eventType: geofenceEvents.eventType, lat: geofenceEvents.latitude, lng: geofenceEvents.longitude,
+          dwellSeconds: geofenceEvents.dwellSeconds, eventTimestamp: geofenceEvents.eventTimestamp,
+          geofenceName: geofences.name,
+        }).from(geofenceEvents)
+          .leftJoin(geofences, eq(geofenceEvents.geofenceId, geofences.id))
+          .where(conds.length > 0 ? and(...conds) : undefined)
+          .orderBy(desc(geofenceEvents.eventTimestamp)).limit(input.limit);
+        return rows.map(r => ({
+          id: String(r.id), geofenceId: String(r.geofenceId), geofenceName: r.geofenceName || '',
+          eventType: r.eventType, location: { lat: parseFloat(String(r.lat)), lng: parseFloat(String(r.lng)) },
+          dwellSeconds: r.dwellSeconds || 0, timestamp: r.eventTimestamp?.toISOString() || '',
+        }));
+      } catch (e) { console.error('[Tracking] getGeofenceEvents error:', e); return []; }
     }),
 
   /**
@@ -324,8 +384,27 @@ export const trackingRouter = router({
       type: z.enum(["all", "speeding", "idle", "deviation", "geofence"]).default("all"),
       acknowledged: z.boolean().optional(),
     }))
-    .query(async ({ input }) => {
-      return [];
+    .query(async ({ ctx, input }) => {
+      const db = await getDb(); if (!db) return [];
+      try {
+        const conds: any[] = [];
+        const companyId = ctx.user?.companyId || 0;
+        // Filter by type
+        const typeMap: Record<string, string> = { speeding: 'speeding', idle: 'no_signal', deviation: 'deviation', geofence: 'geofence_violation' };
+        if (input.type !== 'all' && typeMap[input.type]) conds.push(eq(safetyAlerts.type, typeMap[input.type] as any));
+        if (input.acknowledged === true) conds.push(eq(safetyAlerts.status, 'acknowledged'));
+        if (input.acknowledged === false) conds.push(eq(safetyAlerts.status, 'active'));
+        const rows = await db.select().from(safetyAlerts)
+          .where(conds.length > 0 ? and(...conds) : undefined)
+          .orderBy(desc(safetyAlerts.eventTimestamp)).limit(50);
+        return rows.map(a => ({
+          id: String(a.id), type: a.type, severity: a.severity, message: a.message || '',
+          location: a.latitude ? { lat: parseFloat(String(a.latitude)), lng: parseFloat(String(a.longitude)) } : null,
+          status: a.status, userId: a.userId, loadId: a.loadId,
+          timestamp: a.eventTimestamp?.toISOString() || '',
+          acknowledgedAt: a.acknowledgedAt?.toISOString() || null,
+        }));
+      } catch (e) { console.error('[Tracking] getAlerts error:', e); return []; }
     }),
 
   /**
@@ -337,12 +416,14 @@ export const trackingRouter = router({
       notes: z.string().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
-      return {
-        success: true,
-        alertId: input.alertId,
-        acknowledgedBy: ctx.user?.id,
-        acknowledgedAt: new Date().toISOString(),
-      };
+      const db = await getDb(); if (!db) throw new Error('Database unavailable');
+      const alertId = parseInt(input.alertId);
+      await db.update(safetyAlerts).set({
+        status: 'acknowledged',
+        acknowledgedBy: ctx.user?.id || 0,
+        acknowledgedAt: new Date(),
+      }).where(eq(safetyAlerts.id, alertId));
+      return { success: true, alertId: input.alertId, acknowledgedBy: ctx.user?.id, acknowledgedAt: new Date().toISOString() };
     }),
 
   /**
@@ -355,12 +436,19 @@ export const trackingRouter = router({
       recipientEmail: z.string().email().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      // Verify the load exists
+      if (db) {
+        const [load] = await db.select({ id: loads.id }).from(loads).where(eq(loads.loadNumber, input.loadNumber)).limit(1);
+        if (!load) throw new Error('Load not found');
+      }
       const accessCode = Math.random().toString(36).substring(2, 10).toUpperCase();
       return {
         trackingUrl: `https://eusotrip.com/track/${input.loadNumber}?code=${accessCode}`,
         accessCode,
-        expiresAt: new Date(Date.now() + input.expiresIn * 60 * 60 * 1000).toISOString(),
+        expiresAt: new Date(Date.now() + input.expiresIn * 3600000).toISOString(),
         createdBy: ctx.user?.id,
+        loadNumber: input.loadNumber,
       };
     }),
 

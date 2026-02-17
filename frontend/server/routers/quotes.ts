@@ -434,13 +434,58 @@ export const quotesRouter = router({
    */
   getAnalytics: protectedProcedure
     .input(z.object({ period: z.enum(["week", "month", "quarter"]).default("month") }))
-    .query(async ({ input }) => ({
-      period: input.period,
-      summary: { totalQuotes: 0, sent: 0, accepted: 0, declined: 0, expired: 0, pending: 0 },
-      conversionRate: 0, avgQuoteValue: 0, totalQuotedValue: 0, totalConvertedValue: 0, avgResponseTime: 0, topCustomers: [],
-    })),
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { period: input.period, summary: { totalQuotes: 0, sent: 0, accepted: 0, declined: 0, expired: 0, pending: 0 }, conversionRate: 0, avgQuoteValue: 0, totalQuotedValue: 0, totalConvertedValue: 0, avgResponseTime: 0, topCustomers: [] };
+      try {
+        const companyId = ctx.user?.companyId || 0;
+        const daysMap: Record<string, number> = { week: 7, month: 30, quarter: 90 };
+        const since = new Date(Date.now() - (daysMap[input.period] || 30) * 86400000);
+        const [stats] = await db.select({
+          total: sql<number>`COUNT(*)`,
+          posted: sql<number>`SUM(CASE WHEN ${loads.status} = 'posted' THEN 1 ELSE 0 END)`,
+          delivered: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+          cancelled: sql<number>`SUM(CASE WHEN ${loads.status} = 'cancelled' THEN 1 ELSE 0 END)`,
+          totalValue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+          convertedValue: sql<number>`COALESCE(SUM(CASE WHEN ${loads.status} = 'delivered' THEN CAST(${loads.rate} AS DECIMAL) ELSE 0 END), 0)`,
+        }).from(loads).where(and(eq(loads.shipperId, companyId), gte(loads.createdAt, since)));
+        const total = stats?.total || 0;
+        const accepted = stats?.delivered || 0;
+        return {
+          period: input.period,
+          summary: { totalQuotes: total, sent: stats?.posted || 0, accepted, declined: stats?.cancelled || 0, expired: 0, pending: total - accepted - (stats?.cancelled || 0) },
+          conversionRate: total > 0 ? Math.round((accepted / total) * 100) : 0,
+          avgQuoteValue: total > 0 ? Math.round((stats?.totalValue || 0) / total) : 0,
+          totalQuotedValue: Math.round(stats?.totalValue || 0),
+          totalConvertedValue: Math.round(stats?.convertedValue || 0),
+          avgResponseTime: 0, topCustomers: [],
+        };
+      } catch { return { period: input.period, summary: { totalQuotes: 0, sent: 0, accepted: 0, declined: 0, expired: 0, pending: 0 }, conversionRate: 0, avgQuoteValue: 0, totalQuotedValue: 0, totalConvertedValue: 0, avgResponseTime: 0, topCustomers: [] }; }
+    }),
 
   // Additional quote procedures
-  getSummary: protectedProcedure.query(async () => ({ pending: 0, accepted: 0, total: 0, avgValue: 0, quoted: 0 })),
-  respond: protectedProcedure.input(z.object({ quoteId: z.string(), action: z.enum(["accept", "decline"]), notes: z.string().optional() })).mutation(async ({ input }) => ({ success: true, quoteId: input.quoteId })),
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { pending: 0, accepted: 0, total: 0, avgValue: 0, quoted: 0 };
+    try {
+      const companyId = ctx.user?.companyId || 0;
+      const [stats] = await db.select({
+        total: sql<number>`COUNT(*)`,
+        accepted: sql<number>`SUM(CASE WHEN ${loads.status} = 'delivered' THEN 1 ELSE 0 END)`,
+        pending: sql<number>`SUM(CASE WHEN ${loads.status} = 'posted' THEN 1 ELSE 0 END)`,
+        totalValue: sql<number>`COALESCE(SUM(CAST(${loads.rate} AS DECIMAL)), 0)`,
+      }).from(loads).where(eq(loads.shipperId, companyId));
+      const total = stats?.total || 0;
+      return { pending: stats?.pending || 0, accepted: stats?.accepted || 0, total, avgValue: total > 0 ? Math.round((stats?.totalValue || 0) / total) : 0, quoted: total };
+    } catch { return { pending: 0, accepted: 0, total: 0, avgValue: 0, quoted: 0 }; }
+  }),
+  respond: protectedProcedure.input(z.object({ quoteId: z.string(), action: z.enum(["accept", "decline"]), notes: z.string().optional() })).mutation(async ({ ctx, input }) => {
+    const db = await getDb();
+    if (db) {
+      const loadId = parseInt(input.quoteId, 10);
+      const newStatus = input.action === 'accept' ? 'assigned' : 'cancelled';
+      await db.update(loads).set({ status: newStatus as any }).where(eq(loads.id, loadId));
+    }
+    return { success: true, quoteId: input.quoteId, action: input.action, respondedBy: ctx.user?.id, respondedAt: new Date().toISOString() };
+  }),
 });
